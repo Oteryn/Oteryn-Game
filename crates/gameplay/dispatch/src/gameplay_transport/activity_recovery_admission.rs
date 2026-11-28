@@ -462,6 +462,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
+        spells.replace_cooldown_transport(
+            actor,
+            session,
+            pending.next.continuity.connection_generation,
+        );
         self.activity_runtimes.remember(pending.next)?;
         self.forget_lost(session, pending.prior.continuity.connection_generation);
         pending.installed.store(true, Ordering::Release);

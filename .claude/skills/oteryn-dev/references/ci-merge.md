@@ -19,8 +19,8 @@ authorised; this file only says how the flow behaves.
 - The PostgreSQL harness (`pr-postgres-harness.yml`, checks named
   `PR early signal / Durability PostgreSQL harness (1..24)`) runs on a PR only
   when it carries the `heavy-tests` label and touches a game-server path. Add
-  the label to a **finished** mechanic PR or to one batch PR that merges
-  several finished ones, never to a work-in-progress head: each labelled push
+  the label to a **finished** mechanic PR or to the content train that merges
+  several finished units, never to a work-in-progress head: each labelled push
   re-runs about an hour of runner time (*Before every push*).
 - The PR node boot shards (`PR heavy / Node boot ...`) run only on a PR
   labelled `node-boot` (owner 2026-11-18). Node boot is informational, so
@@ -267,8 +267,8 @@ Start every merge round with the state of `main`:
 ```
 
 If the latest completed post-merge run is red, the next merge is the fix for
-it (or the PR that already carries it); other merges wait until a post-merge
-run on a later `main` is green or fails only on a job the fix does not touch.
+it (*Red `main`*); other merges wait until a post-merge run on a later `main`
+is green or fails only on a job the fix does not touch.
 
 A PR is mergeable when all of these hold on its **current** head SHA:
 
@@ -276,19 +276,30 @@ A PR is mergeable when all of these hold on its **current** head SHA:
 2. For a game-server change: all twenty-four PostgreSQL partitions green on that same
    head (root `AGENTS.md`: merge only a head whose own CI is green, the
    PostgreSQL legs included). The one exception is the owner's grouping
-   decision (2026-10-29, also stated in root `AGENTS.md`): a member of a batch
-   PR whose twenty-four partitions are green on the same `main`, with its own
-   `game-gate` green, merged right after the other members with no other
-   merge at all in between, so the final `main` is the tree the batch tested:
-   `git rev-parse origin/main^{tree}` equals the batch head's `^{tree}`. A
-   member that goes red or changes mid-way stops the landing; rebuild the
-   batch from the members left on the new `main` and test it again.
+   decision (2026-10-29, also stated in root `AGENTS.md`): a unit of a content
+   train (*The content train*) whose twenty-four partitions are green on the
+   same `main`, with its own `game-gate` green, merged right after the other
+   units with no other merge at all in between, so the final `main` is the
+   tree the train tested: `git rev-parse origin/main^{tree}` equals the train
+   head's `^{tree}`. A unit that goes red or changes mid-way stops the
+   landing; rebuild the train from the units left on the new `main` and test
+   it again.
 3. Changes whose paths select no PostgreSQL leg (client, docs, tools/CI,
    test-only fixes of `main`) need only (1); their own CI is then complete.
 4. The PR has its Codex review (`oteryn-review` §5): a
    `Codex review <SHA>` line in the report or a PR comment, and every
    confirmed P0/P1 from it fixed on the head being merged. A PR without it is
-   not merged; the merger runs the review first.
+   not merged; the merger runs the review first. The `heavy-tests` label does
+   not waive it for a content train PR or a PR with code in a risk class
+   (owner 2026-11-25); only a data-only `heavy-tests` PR keeps the automatic
+   skip.
+5. **Stale base.** The PR's tested merge base is older than the current
+   `main`, and `main` has changed a `.rs`, `Cargo.toml` or `Cargo.lock` file
+   since then. In that case `cargo check --workspace --all-targets` passes on
+   the local merge result (`git merge --no-commit origin/main` in a scratch
+   worktree, never pushed). This is not a branch update, so the rule against
+   merging `origin/main` below still holds. Two heads that were each green
+   can still fail to compile together: #3516 and #3518 broke `main` this way.
 
 Merge with squash and pass the full 40-character head SHA. After the merge,
 watch the post-merge `Game Merge Queue gate` run on the new `main`, and check
@@ -373,7 +384,7 @@ A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
 - Push once, when all of them pass. Collect follow-up fixes into the next push
   instead of pushing each one; a new push cancels the run in progress.
 - Never merge `origin/main` after every merge to `main`, to "stay current",
-  for STALE or before labelling. A package or batch branch created from a
+  for STALE or before labelling. A train branch created from a
   fresh `main` is not a merge. Cherry-pick a fix only into a PR that must
   merge before the main fix lands (*Reading a red check*, step 3).
 - Merge `origin/main` into the branch only in these two cases (owner
@@ -395,12 +406,8 @@ A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
 ## Many PRs at once
 
 - Keep about 10-12 PRs in CI at a time. Beyond that runners queue and every
-  PR waits longer.
-- Several finished mechanics that each touch game-server code: open one batch
-  PR that merges their heads onto a fresh `main` (try the merge locally
-  first), label only the batch `heavy-tests`, and once it is green merge the
-  members one by one, back to back (*Merge conditions*, 2). Then close the
-  batch.
+  PR waits longer. Finish and merge before starting new work (owner
+  2026-11-25): at most one content train in CI plus one in build.
 - After each merge to `main`, check every open PR for a new conflict
   (*Before every push*, case 1) before doing anything else, and fix only real
   conflicts; a
@@ -409,3 +416,71 @@ A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
   naming the failing check and what blocks it.
 
 New shared dispatch PostgreSQL fixtures go into `postgres_tests/support/`, never into a test entry.
+
+## The content train
+
+Owner decision 2026-11-25; it replaces the older package and batch wording.
+
+- **One writer.** The train branch is `claude/happy-davinci-ijz3wy-ctrain-N`,
+  cut from a fresh `main` (try each merge locally first). Lanes push unit
+  branches; only the writer merges them into the train. While the staging
+  flow (*The staging integration branch*) is in use, a unit still reaches
+  `main` by the route that section names.
+- **Merge and regenerate.** The writer merges the unit branches with the merge
+  drivers (`tools/merge-driver/install.sh`), then runs `cargo fmt` and
+  regenerates the derived files (pins, registries, goldens) once, on the
+  train. Each unit still carries its own regenerated derived files and
+  passes its own `pin-check`, so it can land or be dropped alone.
+- **A unit is a coherent piece that can be dropped alone.** Its risk class
+  (`oteryn-coding`, *Risk classes*) matters more than its size. There is no
+  line cap.
+- **A red unit leaves the train.** Fix it on its own branch and rebuild the
+  train from the units left. A main-red fix goes outside the train.
+- **Test and review.** Label only the train `heavy-tests`. Its Codex review
+  runs at effort high despite the label (`oteryn-review` §5). When it is
+  green, merge the units one by one, back to back (*Merge conditions*, 2).
+  Then close the train. When merging the units changed a derived file (pin,
+  registry, golden) beyond what the units carry, the units alone cannot
+  reproduce the tested tree: the train PR itself lands (squash) and the unit
+  PRs are closed with a link to it.
+
+## Red `main`
+
+Owner decision 2026-11-25.
+
+- Revert the culprit PR at once. Find it by bisecting the post-merge runs
+  (`oteryn-debugging` section 6). When the culprit is the last merge, the
+  revert is good only when its tree equals the last green `main` tree
+  (`git rev-parse <revert>^{tree}` and `git rev-parse <last-green>^{tree}`
+  are the same). When independent PRs merged after it, check instead that the
+  revert is a plain `git revert <culprit>` with no hand edit (`git show
+  <culprit> | git patch-id --stable` equals `git diff <revert> <revert>^ |
+  git patch-id --stable`) and that the red job is green on the revert head.
+- A forward fix is allowed only when a revert is impossible (later merges
+  depend on the culprit, a migration is already applied) or the fix is
+  already green on its own head. Search the open PRs for an existing fix
+  first (*Reading a red check*, step 3). A forward fix that meets the
+  hotfix conditions below merges as described there.
+- A main-red fix never travels in a content train.
+- **Hotfix merge without waiting for CI** (owner 2026-11-26). This is the
+  second exception to root `AGENTS.md` "merge only a head whose own CI is
+  green" and to *Merge conditions* 1-3 (no wait for `game-gate`, PostgreSQL legs or `heavy-gate`); conditions 4 and 5 still hold. A fix of a red `main` merges as soon as
+  all of these hold on its current head:
+  - The PR targets `main` and the GitHub PR `additions + deletions` is at most
+    20.
+  - No changed path matches `^\.github/`, `^tools/repository/`,
+    `/migrations/` or `repository-policy`.
+  - `cargo fmt --all --check`, Clippy (`-D warnings`, all targets) and the lib
+    tests of each changed crate pass locally on that head.
+  - *Merge conditions* 4 holds: a clean Codex review receipt for that head.
+  - No check run on that head has completed as `failure`. The one exception
+    is `heavy-gate`: it never blocks a hotfix, whether it is a mirror or real,
+    pending or failed.
+
+  Revert-first and the seam and node-boot wait of `oteryn-debugging` step 5
+  do not hold this fix back. The coordinator merges it with
+  `C:\Users\Public\fm-hotfix.ps1 -Num <pr> -Sha <head>`. The script re-checks
+  these conditions, bypasses ruleset 20991995 for the one squash and
+  restores the ruleset in `finally` (`docs/agents/AGENTS.md`, Game override
+  of the bypass substitute). The post-merge run on `main` is the
+  verification: if it is red, revert the hotfix.

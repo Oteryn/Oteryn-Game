@@ -1,0 +1,11 @@
+{
+  "quest": "oteryn:quest.the_beginning_quest",
+  "items": [
+    {
+      "item": "oteryn:item.tibia.i7882",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:39-41"
+      ]
+    }
+  ]
+}

@@ -81,6 +81,8 @@ pub async fn run_session<T: Stepper>(
                             152 => outbox.item_forge_result(&response),
                             153 => outbox.depot_search_result(&response),
                             154 | 479 => outbox.store_result(&response),
+                            15 if request.command_type == oteryn_client_runtime::world_interaction::world_object::COMMAND_TYPE_USE_INTENT =>
+                                outbox.store_lamp_result(&response),
                             179 => outbox.hotkey_equip_result(&response),
                             230 => outbox.browse_field_result(&response),
                             _ => {}

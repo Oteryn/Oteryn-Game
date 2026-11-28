@@ -1,5 +1,6 @@
 //! Stable native CommandRef association, recovered through the existing APP-1 receipt.
 //! Reconciliation is historical data; it never authorizes a new write or publication.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::foundation::CommandRef;
 
@@ -40,7 +41,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let Some(row) = load_appearance_receipt(&mut tx, request.occurrence).await?
                     else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let receipt = decode_appearance_receipt(&row)?;
@@ -54,7 +55,7 @@ impl DurabilityRoot {
                     if !receipt.matches_semantics(character, revision, &request, sex) {
                         return Ok(Err(CharacterProgressionError::ConflictingOccurrence.into()));
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(receipt)))
                 })
             })

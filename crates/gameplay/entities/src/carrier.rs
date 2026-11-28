@@ -274,6 +274,7 @@ pub use raid_spawn::{
 };
 pub use spawn_realization::AI01_PENDING_RESPAWN_TIMERS_PER_DEAD_ACTOR;
 pub use spawn_realization::ActivationSpawnFacts;
+pub use spawn_realization::ActivationSpawnPoint;
 pub use spawn_realization::ActivationSpawnPointFacts;
 pub use spawn_realization::ActivationSpawnSourceFacts;
 pub use spawn_realization::RespawnFamily;
@@ -1476,7 +1477,7 @@ impl ChannelRuntimeV1 {
     /// ceilings, slot headroom and windowed realization are the same.
     pub fn begin_activation_spawn_sources(
         &mut self,
-        sources: Vec<ActivationSpawnSourceFacts>,
+        sources: Vec<(Vec<impl Into<ActivationSpawnPoint>>, u64)>,
     ) -> Result<usize, CarrierError> {
         if sources.len() > CREATUREAI0_SPAWN_SOURCES_PER_CHANNEL_MAX {
             return Err(CarrierError::CapacityExceeded);
@@ -1578,6 +1579,15 @@ impl ChannelRuntimeV1 {
         now_micros: u64,
         sees: impl Fn(MovementLocalPosition, MovementLocalPosition) -> bool,
     ) -> Result<SpawnDriveReport, CarrierError> {
+        self.drive_spawn_respawns_at_world_time(now_micros, None, sees)
+    }
+
+    pub fn drive_spawn_respawns_at_world_time(
+        &mut self,
+        now_micros: u64,
+        is_day: Option<bool>,
+        sees: impl Fn(MovementLocalPosition, MovementLocalPosition) -> bool,
+    ) -> Result<SpawnDriveReport, CarrierError> {
         use spawn::{RespawnOutcome, RespawnStep};
         self.owner_fence()?;
         let mut report = SpawnDriveReport::default();
@@ -1629,6 +1639,13 @@ impl ChannelRuntimeV1 {
             let timing = self.spawn_timing(point)?;
             let cell = self.spawn_cell(point)?;
             let outcome = match pending.step {
+                // Crystal spawn_monster.cpp:363–386 checks the period before staging.
+                RespawnStep::Due | RespawnStep::Retry
+                    if !self.spawn_period_allows(point, is_day)? =>
+                {
+                    self.spawn_schedule
+                        .reschedule_skipped(point, timing, now_micros)
+                }
                 RespawnStep::Due
                 | RespawnStep::Retry
                 | RespawnStep::XmlWarningSecond

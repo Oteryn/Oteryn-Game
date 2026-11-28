@@ -472,6 +472,8 @@ fn scenario() -> TestResult {
         let replay = speak(&mut owner, deps.actor, command(17), npc, "begin").await?;
         assert!(has_line(&replay, "now married"));
         assert_eq!(count(&h, "game_item_marriage_records").await?, 5);
+        let commitment_phobic = "oteryn:achievement/commitment_phobic";
+        super::achievement_granters::seed_progress(&h, commitment_phobic, 2).await?;
         for (id, text) in [(18, "divorce"), (19, "yes")] {
             speak(&mut owner, deps.actor, command(id), npc, text).await?;
         }
@@ -486,6 +488,17 @@ fn scenario() -> TestResult {
             "divorce never revokes the permanent grant"
         );
         assert_eq!(count(&h, "game_character_marriage_receipts").await?, 6);
+        let earned = super::achievement_granters::assert_progress(
+            &h, commitment_phobic, 3, true, "oteryn:npc-divorce"
+        ).await?;
+        let replay = speak(&mut owner, deps.actor, command(19), npc, "yes").await?;
+        assert!(has_line(&replay, "now divorced"));
+        assert_eq!(
+            super::achievement_granters::assert_progress(
+                &h, commitment_phobic, 3, true, "oteryn:npc-divorce"
+            ).await?, earned
+        );
+
         assert_eq!(count(&h, "game_item_marriage_records").await?, 5);
         let revision:i64=sqlx::query_scalar("SELECT character_revision::bigint FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.eroth",
+      "greet": "Welcome to Ab'Dendriel. What brings you to our outpost?",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eroth.lua:1-40"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.one_eyed_joe",
+      "greet": "Mind the noises from the caves. They have been getting stranger lately.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/one_eyed_joe.lua:68-85"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "greet": "You know our greeting. Tell me why you have come to Mal'ouquah.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ubaid.lua:59-89"
+      ],
+      "greeting_words": [
+        "djanni'hah"
+      ]
+    }
+  ]
+}

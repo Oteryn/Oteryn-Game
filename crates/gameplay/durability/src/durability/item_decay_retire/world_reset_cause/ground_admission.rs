@@ -49,10 +49,12 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
             DecayRetireRefusal::NotACorpse,
         )));
     };
-    // Only receipt-proven death trees retire their retained contents atomically
-    // with the root. Other nested Ground shapes remain refused.
-    crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
-        .await?;
+    // Arena reset has its own pit custody and tree proof. Other nested Ground
+    // retirement requires a receipt-proven death tree.
+    if !matches!(step.cause, RetireCause::ArenaReset(_)) {
+        crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
+            .await?;
+    }
     let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2")
         .bind(step.corpse_item_instance_id.as_slice())
         .bind((CORPSE_CONTAINER_ENTRIES_MAX + 1) as i64)
@@ -61,7 +63,8 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
         return Err(DurabilityError::InvalidStoredState);
     }
     let placement_ordinal = if step.is_corpse_step() {
-        if !entries.is_empty() {
+        // Arena reset validates and retires the complete tree in this transaction.
+        if !entries.is_empty() && !matches!(step.cause, RetireCause::ArenaReset(_)) {
             return Ok(Err(DecayRetireError::Refused(
                 DecayRetireRefusal::EntriesRemain,
             )));

@@ -17,7 +17,10 @@ pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-cal
 // Each source document retains its closed admission bound.
 pub const MAX_CALLBACKS: usize = 512;
 // The merged source cohorts and native callbacks share a separate boot bound.
-pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1024;
+pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
+const MAX_COFFIN_RECOVERY_VARIANTS: usize = 2;
+pub(super) const MAX_EMBEDDED_CALLBACKS: usize =
+    MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -65,7 +68,7 @@ mod ice_islands_tests;
 mod imported_explore;
 mod legacy_world_claims;
 pub use legacy_world_claims::{
-    SERPENTINE_PEARL_CLAIM, legacy_world_claim, legacy_world_source_unique,
+    OUTFOX_CACHE, SERPENTINE_PEARL_CLAIM, legacy_world_claim, legacy_world_source_unique,
 };
 mod live_admission;
 mod native_trials;
@@ -206,6 +209,7 @@ mod native;
 mod nomads_land;
 mod nomads_window;
 use native::valid_native_callback;
+pub use nomads_window::alternate_completion_receipt as nomads_window_alternate_receipt;
 pub use phase::select_storage_phase;
 
 /// Creature appearance projected only while this committed Quest track is in range.
@@ -585,7 +589,49 @@ fn is_default_use_range(value: &u8) -> bool {
     *value == 1
 }
 
+const ORDINARY_COFFIN: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin";
+const ORDINARY_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-vampire-hunt-coffin-side";
+const WEAKENED_COFFIN: &str = "oteryn:quest-callback/inquisition-weakened-coffin";
+const WEAKENED_COFFIN_SIDE: &str = "oteryn:quest-callback/inquisition-weakened-coffin-side";
+
+pub const VAMPIRE_COFFIN_QUESTLINE: &str =
+    "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline";
+
+/// The encounter variant frozen by the quest transition at either coffin piece.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VampireCoffinKind {
+    Ordinary,
+    Weakened,
+}
+
+impl VampireCoffinKind {
+    pub fn for_callback(key: &str) -> Option<Self> {
+        match key {
+            ORDINARY_COFFIN | ORDINARY_COFFIN_SIDE => Some(Self::Ordinary),
+            WEAKENED_COFFIN | WEAKENED_COFFIN_SIDE => Some(Self::Weakened),
+            _ => None,
+        }
+    }
+}
+
 impl Callback {
+    /// A garlic offering selects the alternate encounter on the same coffin.
+    pub fn vampire_coffin_fallback(&self) -> Option<&'static str> {
+        match self.key.as_str() {
+            WEAKENED_COFFIN => Some(ORDINARY_COFFIN),
+            WEAKENED_COFFIN_SIDE => Some(ORDINARY_COFFIN_SIDE),
+            _ => None,
+        }
+    }
+
+    pub fn encounter_reservation_key(&self) -> &str {
+        if VampireCoffinKind::for_callback(&self.key).is_some() {
+            ORDINARY_COFFIN
+        } else {
+            &self.key
+        }
+    }
+
     /// Uses the same-floor Chebyshev rule; legacy callbacks retain one-cell reach.
     #[must_use]
     pub fn reaches(&self, actor: Position, target: Position) -> bool {
@@ -695,9 +741,17 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 }
 
 pub fn load() -> Result<Vec<Callback>, String> {
+    Ok(embedded_callbacks()?.to_vec())
+}
+
+pub(super) fn embedded_callbacks() -> Result<&'static [Callback], String> {
     // Durable quest writers also consult the base callbacks for ownership checks.
     static CALLBACKS: OnceLock<Result<Vec<Callback>, String>> = OnceLock::new();
-    CALLBACKS.get_or_init(load_embedded_callbacks).clone()
+    CALLBACKS
+        .get_or_init(load_embedded_callbacks)
+        .as_ref()
+        .map(Vec::as_slice)
+        .map_err(Clone::clone)
 }
 
 fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
@@ -706,16 +760,31 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         &serde_json::json!({"schema":1,"callbacks":[court_warlock::callback()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/nomads-land.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);
     callbacks.extend(parse(
         &serde_json::json!({"schema":1,"callbacks":[nomads_window::callback()?]}).to_string(),
     )?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/ape-city.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/beginning.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/children-grease.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m39-stories.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/cursed-crystal.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/postman.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/dream-courts.json"
@@ -725,6 +794,9 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/m09-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/hot-cuisine-books.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/ice-islands-seals.json"
@@ -799,16 +871,34 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qready1-clocks.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qd-steal-from-thieves.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qready1-crafts.json"
     ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/feaster-phase-routes.json"
     ))?);
+    let (coffin_variants, quest_contacts): (Vec<_>, Vec<_>) = parse(include_str!(
+        "../../../../../content/quests/world-callbacks/quest-contacts.json"
+    ))?
+    .into_iter()
+    .partition(|callback| callback.vampire_coffin_fallback().is_some());
+    callbacks.extend(quest_contacts);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/rottin-wood.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/source-outfits.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/threatened-dreams-mosaic-treasure.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/tibia-tales.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/too-hot-repairs.json"
     ))?);
     callbacks.extend(super::carried_step::callbacks());
     callbacks.extend(super::children_puzzle::callbacks());
@@ -866,6 +956,11 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
         return Err("callback bounds including djinn access".into());
     }
     counterparts::apply(&mut callbacks)?;
+    callbacks.extend(
+        coffin_variants
+            .into_iter()
+            .filter(|callback| super::in_runtime_scope(&callback.quest)),
+    );
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
@@ -878,12 +973,48 @@ pub(crate) fn validate_callbacks(callbacks: &[Callback]) -> Result<(), String> {
 }
 
 fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
-    if callbacks.len() > MAX_RUNTIME_CALLBACKS {
+    // The two exact alternate routes share the existing coffin selectors.
+    let coffin_variants = callbacks
+        .iter()
+        .filter(|callback| callback.vampire_coffin_fallback().is_some())
+        .count();
+    if coffin_variants > MAX_COFFIN_RECOVERY_VARIANTS
+        || callbacks.len() - coffin_variants > MAX_RUNTIME_CALLBACKS
+    {
         return Err("callback runtime registry bounds".into());
     }
     let mut keys = BTreeSet::new();
     let mut selectors = BTreeMap::<Vec<u8>, Vec<&Callback>>::new();
     for callback in callbacks {
+        if let Some(fallback) = callback.vampire_coffin_fallback()
+            && !callbacks.iter().any(|ordinary| {
+                ordinary.key == fallback
+                    && ordinary.quest == callback.quest
+                    && ordinary.selector == callback.selector
+                    && ordinary.storage.len() == callback.storage.len()
+                    && ordinary
+                        .storage
+                        .iter()
+                        .any(|gate| gate.track == VAMPIRE_COFFIN_QUESTLINE)
+                    && ordinary
+                        .storage
+                        .iter()
+                        .zip(&callback.storage)
+                        .all(|(first, paid)| {
+                            if first.track == VAMPIRE_COFFIN_QUESTLINE {
+                                let mut recovery = first.clone();
+                                recovery.maximum = recovery.set;
+                                first.set > first.maximum
+                                    && recovery.minimum == first.maximum
+                                    && recovery == *paid
+                            } else {
+                                first == paid
+                            }
+                        })
+            })
+        {
+            return Err("weakened coffin requires its matching source selector".into());
+        }
         if callback
             .item_on_target
             .as_ref()
@@ -907,7 +1038,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         let peers = selectors.entry(selector).or_default();
         if peers.len() >= MAX_EFFECTS
             || peers.iter().any(|peer| {
-                !phase::exclusive(peer, callback)
+                let coffin_pair = peer.vampire_coffin_fallback() == Some(callback.key.as_str())
+                    || callback.vampire_coffin_fallback() == Some(peer.key.as_str());
+                !coffin_pair
+                    && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
                     && !(selector_gates::disjoint(peer, callback)
@@ -985,7 +1119,13 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (callback.use_range > 1
                 && (callback.trigger != Trigger::Use
                     || selector.position.is_none()
-                    || callback.item_on_target.is_none()
+                    || (callback.item_on_target.is_none()
+                        && !callback.effects.encounter.as_ref().is_some_and(|encounter| {
+                            callback.requires_world_admission
+                                && encounter.timing.is_none()
+                                && matches!(encounter.players.as_slice(), [player]
+                                    if selector.position.is_some_and(|target| callback.reaches(player.from, target)))
+                        }))
                     || callback.storage.is_empty()
                     || callback.is_read_only()))
             || (selector.position.is_none()
@@ -1582,6 +1722,20 @@ fn extend_callbacks(
         .map_err(|e| format!("{e:?}"))
 }
 
+pub(super) const TOWER_BROTHERHOOD_RANK: &str =
+    "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits";
+
+/// Crystal movement_tower.lua admits rank four from either order on these three cells.
+pub fn tower_nightmare_rank(key: &str) -> Option<&'static str> {
+    matches!(
+        key,
+        "oteryn:quest-callback/dreamer-dread-lord-tower-3054"
+            | "oteryn:quest-callback/dreamer-dread-lord-tower-3055"
+            | "oteryn:quest-callback/dreamer-dread-lord-tower-3056"
+    )
+    .then_some("oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits")
+}
+
 /// Exact canonical state operation used by both lowering and the mutation boundary.
 pub fn primary_transition(callback: &Callback) -> Result<QuestTransition, String> {
     let binding = gated_binding(callback)?;
@@ -1680,6 +1834,12 @@ pub fn gated_binding(callback: &Callback) -> Result<Option<[u8; 32]>, String> {
     if let Some(policy) = super::world_change_journals::policy_binding(&callback.key)? {
         fields.insert("journal_policy".into(), policy);
     }
+    if let Some(alternate) = tower_nightmare_rank(&callback.key) {
+        fields.insert(
+            "tower_nightmare_rank".into(),
+            serde_json::json!([alternate, 4]),
+        );
+    }
     fields.remove("sources");
     fields.remove("success_message");
     fields.remove("failure_message");
@@ -1723,6 +1883,227 @@ mod scene_tests;
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn classic_quest_readables_bind_world_use_at_the_written_items() -> Result<(), String> {
+        use super::{Position, Trigger, load};
+
+        let callbacks = load()?;
+        for (key, position, appearance, phrase) in [
+            (
+                "oteryn:quest-callback/iron-helmet-porgol-account",
+                Position {
+                    x: 32769,
+                    y: 32224,
+                    floor: -7,
+                },
+                3506,
+                "Porgol stole your books on necromancy",
+            ),
+            (
+                "oteryn:quest-callback/isle-of-the-mists-book",
+                Position {
+                    x: 32855,
+                    y: 32331,
+                    floor: -7,
+                },
+                2838,
+                "leaving the Isle of the Mists",
+            ),
+        ] {
+            let row = callbacks.iter().find(|row| row.key == key).ok_or(key)?;
+            assert_eq!(row.trigger, Trigger::Use);
+            assert_eq!(row.selector.position, Some(position));
+            assert_eq!(row.selector.appearance, Some(appearance));
+            assert!(!row.requires_durable_commit());
+            assert!(
+                row.success_message
+                    .as_deref()
+                    .is_some_and(|text| text.contains(phrase))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn mastermind_source_caches_load_with_exact_container_allocations() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for (suffix, position, appearance, ordinal, contents) in [
+            (
+                "first",
+                (32216, 31168, -11),
+                2473,
+                1,
+                vec![(7440, 1), (3031, 78)],
+            ),
+            (
+                "second",
+                (32084, 31062, -10),
+                2472,
+                2,
+                vec![(7440, 1), (3031, 100), (3031, 23), (7159, 1), (7158, 2)],
+            ),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-mastermind-{suffix}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            let (x, y, floor) = position;
+            assert_eq!(
+                callback.selector.position,
+                Some(super::Position { x, y, floor })
+            );
+            assert_eq!(callback.selector.appearance, Some(appearance));
+            assert_eq!(callback.selector.ordinal, Some(ordinal));
+            let reward = callback.effects.item_reward.as_ref().ok_or("source bag")?;
+            assert_eq!(reward.item, "oteryn:item.tibia.i2853");
+            assert_eq!(reward.count, 1);
+            assert!(reward.backpack_outputs.is_empty());
+            assert_eq!(reward.contents.len(), contents.len());
+            for (actual, (item, count)) in reward.contents.iter().zip(contents) {
+                assert_eq!(actual.item, format!("oteryn:item.tibia.i{item}"));
+                assert_eq!(actual.count, count);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn kormarak_binds_the_native_body_and_coffin_room() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let body = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-kormarak-reward")
+            .ok_or("Kormarak body")?;
+        assert_eq!(
+            body.selector.position,
+            Some(super::Position {
+                x: 32552,
+                y: 32200,
+                floor: -11
+            })
+        );
+        assert_eq!(body.selector.appearance, Some(4240));
+        assert_eq!(body.selector.ordinal, Some(1));
+        let objectives = super::super::death_objectives::load()?;
+        let objective = objectives
+            .iter()
+            .find(|objective| objective.quest == body.quest)
+            .ok_or("Kormarak death objective")?;
+        assert!(objective.matches("oteryn:creature.demon_skeleton", 32552, 32198, 11));
+        assert!(
+            objective.guardian.is_none(),
+            "the source map already spawns the creature"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn temple_poison_route_gates_the_forcefield_room() -> Result<(), String> {
+        let callbacks = super::load()?;
+        let route = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-kormarak-poison-route")
+            .ok_or("poison route callback")?;
+        assert_eq!(route.trigger, super::Trigger::StepIn);
+        assert_eq!(
+            route.selector.position,
+            Some(super::Position {
+                x: 32497,
+                y: 32216,
+                floor: -12
+            })
+        );
+        assert_eq!(route.selector.ordinal, Some(0));
+        let room = callbacks
+            .iter()
+            .find(|c| c.key == "oteryn:quest-callback/authored-kormarak-inner")
+            .ok_or("forcefield room callback")?;
+        assert!(room.storage.iter().any(|s| s.track
+            == "oteryn:quest-progress/chosen/kormarak/gas-route"
+            && s.minimum == 1
+            && s.preserve));
+        Ok(())
+    }
+
+    #[test]
+    fn inukaya_sled_requires_the_native_cure_checkpoint_and_a_ham_each_way() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for (direction, source, destination) in [
+            ("east", (32367, 31058), (32407, 31067)),
+            ("west", (32409, 31066), (32365, 31059)),
+        ] {
+            let key = format!("oteryn:quest-callback/ice-islands/inukaya-sled-{direction}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            let selector = callback.selector.native.as_ref().ok_or("native sled")?;
+            assert_eq!(
+                selector.position,
+                super::Position {
+                    x: source.0,
+                    y: source.1,
+                    floor: -7
+                }
+            );
+            assert_eq!(selector.ordinal, 1);
+            assert_eq!(selector.appearance, 7266);
+            assert_eq!(
+                callback.teleport,
+                Some(super::Position {
+                    x: destination.0,
+                    y: destination.1,
+                    floor: -7
+                })
+            );
+            assert!(callback.return_on_failure);
+            assert!(callback.requires_world_admission);
+            assert!(
+                callback
+                    .storage
+                    .iter()
+                    .any(|s| s.track.ends_with("/mission06")
+                        && s.minimum == 8
+                        && s.maximum == 8
+                        && s.preserve)
+            );
+            let input = callback.item_on_target.as_ref().ok_or("Ham input")?;
+            assert!(input.on_step);
+            assert_eq!(input.item, "oteryn:item.tibia.i3582");
+            assert_eq!(input.count, 1);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn valley_uses_the_three_placed_shrines() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for (suffix, x, y, floor, item, progress) in [
+            ("inukaya", 32463, 31092, -5, 50336, (-1, 1, 2)),
+            ("muggy-plains", 33187, 31191, -6, 50337, (2, 2, 3)),
+            ("kilmaresh", 33836, 31677, -4, 50338, (3, 3, 4)),
+        ] {
+            let key = format!("oteryn:quest-callback/authored-mystery-{suffix}");
+            let callback = callbacks.iter().find(|c| c.key == key).ok_or(key)?;
+            assert_eq!(
+                callback.selector.position,
+                Some(super::Position { x, y, floor })
+            );
+            assert_eq!(callback.selector.appearance, Some(10225));
+            assert_eq!(callback.selector.ordinal, Some(1));
+            let [storage] = callback.storage.as_slice() else {
+                return Err("expected the Valley fragment stage".into());
+            };
+            assert_eq!((storage.minimum, storage.maximum, storage.set), progress);
+            assert_eq!(
+                callback
+                    .effects
+                    .item_reward
+                    .as_ref()
+                    .ok_or("shrine reward")?
+                    .item,
+                format!("oteryn:item.tibia.i{item}")
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn completion_is_bounded_terminal_and_requires_unique_claim_identities() -> Result<(), String> {
         let document: serde_json::Value = serde_json::from_str(include_str!(
@@ -2150,16 +2531,15 @@ mod tests {
 
     #[test]
     fn registry_refuses_different_keys_on_the_same_selector() -> Result<(), String> {
-        let mut callbacks = load()?;
-        let mut alias = callbacks
-            .iter()
+        let original = load()?
+            .into_iter()
             .find(|callback| callback.key.ends_with("triangle-tower-lever"))
-            .ok_or("triangle callback")?
-            .clone();
+            .ok_or("triangle callback")?;
+        let mut alias = original.clone();
         alias.key = "oteryn:quest-callback/triangle-selector-alias".into();
-        callbacks.push(alias);
+        // Isolate the duplicate selector from the separate registry size bound.
         assert_eq!(
-            validate_registry(&callbacks),
+            validate_registry(&[original, alias]),
             Err("duplicate callback selector across registries".into())
         );
         Ok(())
@@ -2939,6 +3319,9 @@ mod disguise_tests {
             .into_iter()
             .find(|c| c.key == "oteryn:quest-callback/authored-venore-machine-9")
             .ok_or("fixture callback")?;
+        // Maintenance now records each machine independently. Exercise the
+        // disguise validator with an earning transition into the test range.
+        callback.storage[0].set = 10;
         let rule = Disguise {
             track: callback.storage[0].track.clone(),
             minimum: 10,
@@ -3108,6 +3491,10 @@ mod phase_tests;
 #[cfg(test)]
 #[path = "world_callbacks/readable_text_tests.rs"]
 mod readable_text_tests;
+
+#[cfg(test)]
+#[path = "world_callbacks/source_outfit_tests.rs"]
+mod source_outfit_tests;
 
 /// A child completion is usable only as a participant of its native primary callback.
 /// The durable owner refuses direct requests for this synthetic transition.
@@ -3349,4 +3736,205 @@ mod srvenc_live_requirements_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod ape_city_map_tests {
+    use super::*;
+
+    #[test]
+    fn ape_city_callbacks_are_admitted_by_the_world_loader() -> Result<(), String> {
+        let callbacks = load()?;
+        let ape: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| callback.quest == "oteryn:quest.the_ape_city_quest")
+            .collect();
+        let decipher = ape
+            .iter()
+            .find(|callback| callback.selector.action == Some(12124))
+            .ok_or("parchment step")?;
+        assert_eq!(decipher.trigger, Trigger::StepIn);
+        assert_eq!(decipher.storage[0].minimum, 7);
+        assert_eq!(decipher.storage[1].set, 1);
+        assert_eq!(
+            ape.iter()
+                .filter(|callback| {
+                    callback.selector.action == Some(12129)
+                        && callback.lever == Some([2772, 2773])
+                        && callback.effects.reset_after_ms == Some(600_000)
+                })
+                .count(),
+            6
+        );
+        for unique in [1040, 1041, 9257] {
+            assert!(
+                ape.iter()
+                    .any(|callback| callback.selector.unique == Some(unique))
+            );
+        }
+        let casks: Vec<_> = ape
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/ape-city-cask-")
+            })
+            .collect();
+        assert_eq!(casks.len(), 7);
+        for cask in casks {
+            let tool = cask.item_on_target.as_ref().ok_or("cask tool")?;
+            assert_eq!(tool.item, "oteryn:item.tibia.i3304");
+            assert!(tool.reusable && tool.selected_instance);
+            assert_eq!(cask.storage.len(), 1);
+            assert_eq!(cask.storage[0].maximum, 2);
+            assert_eq!(cask.storage[0].add, Some(1));
+            assert_eq!(cask.storage[0].set, 3);
+            assert_eq!(cask.effects.transform, Some(3134));
+            assert_eq!(cask.effects.reset_after_ms, Some(180_000));
+        }
+        let destroy = ape
+            .iter()
+            .find(|callback| callback.key.ends_with("/ape-city-destroy-monument"))
+            .ok_or("monument callback")?;
+        let tool = destroy.item_on_target.as_ref().ok_or("monument tool")?;
+        assert_eq!(tool.item, "oteryn:item.tibia.i4835");
+        assert!(tool.selected_instance);
+        assert!(!tool.reusable);
+        assert_eq!(destroy.storage[0].minimum, 17);
+        assert_eq!(destroy.storage[1].set, 1);
+        assert_eq!(destroy.effects.transform, Some(4851));
+        Ok(())
+    }
+
+    #[test]
+    fn beginning_cellar_and_tool_chests_are_admitted_by_the_world_loader() -> Result<(), String> {
+        let callbacks = load()?;
+        let cellar = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("/beginning-santiago-cellar"))
+            .ok_or("beginning cellar")?;
+        assert_eq!(cellar.trigger, Trigger::StepIn);
+        assert_eq!(cellar.storage[0].minimum, 5);
+        assert!(
+            (cellar.storage[0].minimum..=cellar.storage[0].maximum).contains(&6),
+            "the active cockroach task must allow returning to the cellar"
+        );
+        assert_eq!(cellar.storage[0].set, 6);
+        assert!(cellar.return_on_failure);
+        assert_eq!(cellar.teleport.ok_or("cellar destination")?.floor, -7);
+
+        for (unique, item) in [
+            (50080, "oteryn:item.tibia.i2853"),
+            (50093, "oteryn:item.tibia.i3457"),
+            (50094, "oteryn:item.tibia.i3003"),
+        ] {
+            let chest = callbacks
+                .iter()
+                .find(|callback| callback.selector.unique == Some(unique))
+                .ok_or("beginning chest")?;
+            assert_eq!(chest.quest, "oteryn:quest.the_beginning_quest");
+            assert_eq!(chest.trigger, Trigger::Use);
+            let reward = chest.item_reward.as_ref().ok_or("beginning chest reward")?;
+            assert_eq!(reward.item, item);
+            assert_eq!(reward.count, 1);
+            if unique == 50080 {
+                assert_eq!(reward.contents.len(), 1);
+                assert_eq!(reward.contents[0].item, "oteryn:item.tibia.i3562");
+            } else {
+                assert!(reward.contents.is_empty());
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn ape_city_amphoras_and_dread_lord_benefits_are_admitted() -> Result<(), String> {
+    use std::collections::BTreeMap;
+
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = load_for(catalogue)?;
+    let by_uid = |uid| {
+        callbacks
+            .iter()
+            .find(|callback| {
+                callback.selector.unique == Some(uid) && callback.selector.native.is_some()
+            })
+            .ok_or_else(|| format!("native callback UID {uid}"))
+    };
+
+    let gate = by_uid(9258)?;
+    assert_eq!(gate.trigger, Trigger::StepIn);
+    assert!(gate.return_on_failure);
+    assert_eq!(gate.world_requirements.len(), 4);
+    for uid in 40092..=40095 {
+        let strike = by_uid(uid)?;
+        assert_eq!(strike.trigger, Trigger::Use);
+        assert!(strike.item_on_target.as_ref().is_some_and(|tool| {
+            tool.item == "oteryn:item.tibia.i4835" && tool.selected_instance && tool.reusable
+        }));
+        assert_eq!(strike.effects.reset_after_ms, Some(300_000));
+        assert!(gate.world_requirements.iter().any(|requirement| {
+            Some(requirement.position) == strike.selector.position
+                && Some(requirement.appearance) == strike.effects.transform
+        }));
+        let transition = catalogue
+            .transition(&strike.key)
+            .ok_or("amphora transition")?;
+        for (stage, eligible) in [(16, false), (17, true), (18, true)] {
+            let tracks = BTreeMap::from([(strike.storage[0].track.clone(), stage)]);
+            assert_eq!(catalogue.evaluate(transition, &tracks, 0).is_ok(), eligible);
+        }
+    }
+
+    for uid in [3047, 3054, 3055, 3056] {
+        let benefit = by_uid(uid)?;
+        let transition = catalogue
+            .transition(&benefit.key)
+            .ok_or("Dread Lord transition")?;
+        let rank = benefit.storage[0].track.clone();
+        let nightmare = rank.replace("brotherhood_", "nightmare_");
+        for (brotherhood, nightmare_rank, eligible) in [
+            (3, 0, false),
+            (0, 3, false),
+            (4, 0, true),
+            (0, 4, uid != 3047),
+        ] {
+            let tracks = BTreeMap::from([
+                (rank.clone(), brotherhood),
+                (nightmare.clone(), nightmare_rank),
+            ]);
+            assert_eq!(
+                catalogue.evaluate(transition, &tracks, 0).is_ok(),
+                eligible,
+                "UID {uid}"
+            );
+        }
+        if uid == 3047 {
+            assert_eq!(benefit.trigger, Trigger::Use);
+            assert_eq!(benefit.offerings.len(), 1);
+            assert!(benefit.item_reward().is_none());
+            let scene = benefit
+                .effects
+                .scene
+                .as_ref()
+                .ok_or("Crystal offering output")?;
+            let [created] = scene.open.as_slice() else {
+                return Err("expected one offering output".into());
+            };
+            assert_eq!(created.position, benefit.offerings[0].position);
+            assert_eq!(created.create, Some(7845));
+            assert_eq!(benefit.effects.reset_after_ms, Some(4000));
+        } else {
+            assert_eq!(benefit.trigger, Trigger::StepIn);
+            assert!(benefit.teleport.is_some() && benefit.return_on_failure);
+            assert!(benefit.item_on_target.as_ref().is_some_and(|crystal| {
+                crystal.on_step && !crystal.reusable && crystal.item == "oteryn:item.tibia.i5021"
+            }));
+        }
+    }
+    Ok(())
 }

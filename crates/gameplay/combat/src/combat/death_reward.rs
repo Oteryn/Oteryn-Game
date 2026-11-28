@@ -231,8 +231,12 @@ impl<const N: usize> RewardProgressionBinding<N> {
 /// Complete semantic input of one death's reward composition.
 #[derive(Debug, Clone)]
 pub struct CreatureDeathRewardInput<const N: usize> {
+    /// Roster ready once this death's final physical rewards materialize.
+    pub boss_achievement: Option<crate::durability::account_achievement::BossDeathAchievementWork>,
     /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
     pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    /// The retained Bakragore callback selected a child that must commit with the corpse.
+    pub atomic_source_loot: bool,
     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
     /// as the loot definitions are (Content binding of `i00005801` waits on
     /// the Content revision, D3-7).
@@ -278,6 +282,8 @@ impl CapturedRewardPrincipal {
 /// channel guards are released.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProjectedCreatureDeathFacts {
+    /// Live World robbery firing proven by the exact Channel spawn receipt.
+    pub bank_robbery: Option<[u8; 16]>,
     /// Captured daily selection on the lethal turn; retries preserve this multiplier.
     pub boosted_boss: bool,
     /// Server wall clock captured by the lethal producer for durable slot history.
@@ -319,6 +325,7 @@ pub fn capture_projected_death_facts(
         .unwrap_or(principal.character);
     let (occurrence, _) = owner.reward_occurrence(actor, *principal.character.as_bytes())?;
     Ok(ProjectedCreatureDeathFacts {
+        bank_robbery: None,
         boosted_boss: false,
         died_at_unix_ms: 0,
         death,
@@ -466,7 +473,10 @@ async fn settle_loot(
     inflight_before_this_death: usize,
     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
     corpse_source: Option<TypedDefinitionRef>,
+    bank_robbery: Option<[u8; 16]>,
     tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+    atomic_source_loot: bool,
+    boss_achievement: Option<crate::durability::account_achievement::BossDeathAchievementWork>,
 ) -> Result<Option<CommittedCorpseLoot>, CombatDeathRewardLootError> {
     let (corpse_item, loot_table_ref) = match (corpse_item, loot_table_ref) {
         (None, None) if loot_table.entries.is_empty() && tutorial_corruptor.is_none() => {
@@ -585,7 +595,12 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+    if bank_robbery.is_some()
+        || boss_achievement.is_some()
+        || atomic_source_loot
+        || tutorial_corruptor.is_some()
+        || plan.entries.iter().any(|entry| entry.parent.is_some())
+    {
         let mut children = Vec::with_capacity(plan.entries.len());
         for entry in &plan.entries {
             let parent = match entry.parent {
@@ -637,6 +652,8 @@ async fn settle_loot(
                 top_damage_character_id,
                 ground.boss_spawn.clone(),
                 tutorial_corruptor,
+                bank_robbery,
+                boss_achievement.map(|work| (death, work)),
             )
             .await
             .map_err(CombatDeathRewardLootError::Corpse)?;
@@ -886,7 +903,10 @@ async fn settle_creature_death_rewards_inner<const N: usize>(
         input.inflight_loot_mints_before_this_death,
         &mut committed_loot,
         corpse_source,
+        facts.bank_robbery,
         input.tutorial_corruptor.clone(),
+        input.atomic_source_loot,
+        input.boss_achievement,
     )
     .await;
 

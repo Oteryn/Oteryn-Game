@@ -78,6 +78,13 @@
       "identity_source": "data/XML/mounts.xml:246"
     },
     {
+      "key": "oteryn:item-grant.mount.227",
+      "kind": "mount",
+      "mount_id": 227,
+      "look_type": 1730,
+      "donor": "https://tibia.fandom.com/wiki/Special:PermanentLink/1194180"
+    },
+    {
       "key": "oteryn:item-grant.mount.23",
       "kind": "mount",
       "mount_id": 23,
@@ -1057,6 +1064,16 @@
       "donor": "data/scripts/actions/items/usable_outfit_items.lua:38"
     },
     {
+      "key": "oteryn:item-grant.outfit.1597-1598.base",
+      "kind": "outfit",
+      "look_types": [
+        1597,
+        1598
+      ],
+      "addon": 0,
+      "donor": "wiki:101463:1045728"
+    },
+    {
       "key": "oteryn:item-grant.outfit.1662-1663.addon1",
       "kind": "addon",
       "look_types": [
@@ -1085,6 +1102,66 @@
       ],
       "addon": 0,
       "donor": "data/scripts/actions/items/usable_outfit_items.lua:30"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1722-1723.addon1",
+      "kind": "addon",
+      "look_types": [
+        1722,
+        1723
+      ],
+      "addon": 1,
+      "donor": "wiki:104371:1046106"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1722-1723.addon2",
+      "kind": "addon",
+      "look_types": [
+        1722,
+        1723
+      ],
+      "addon": 2,
+      "donor": "wiki:104371:1046106"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1722-1723.base",
+      "kind": "outfit",
+      "look_types": [
+        1722,
+        1723
+      ],
+      "addon": 0,
+      "donor": "wiki:104371:1046106"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1774-1775.addon1",
+      "kind": "addon",
+      "look_types": [
+        1774,
+        1775
+      ],
+      "addon": 1,
+      "donor": "wiki:107079:1065255"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1774-1775.addon2",
+      "kind": "addon",
+      "look_types": [
+        1774,
+        1775
+      ],
+      "addon": 2,
+      "donor": "wiki:107079:1065255"
+    },
+    {
+      "key": "oteryn:item-grant.outfit.1774-1775.base",
+      "kind": "outfit",
+      "look_types": [
+        1774,
+        1775
+      ],
+      "addon": 0,
+      "donor": "wiki:107079:1065255"
     },
     {
       "key": "oteryn:item-grant.outfit.1808-1809.addon1",
@@ -5039,6 +5116,22 @@
       ]
     },
     {
+      "item_id": 40578,
+      "donor": "wiki:101463:1045728",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1597-1598.base"
+          ],
+          "owned": "oteryn:item-grant.outfit.1597-1598.base",
+          "required": [],
+          "cues": []
+        }
+      ]
+    },
+    {
       "item_id": 43899,
       "donor": "data/scripts/actions/items/usable_outfit_items.lua:30",
       "mode": "direct",
@@ -5128,6 +5221,97 @@
       "progress_key": "spiritual-horseshoe"
     },
     {
+      "item_id": 44753,
+      "donor": "wiki:104371:1046106",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1722-1723.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1722-1723.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1722-1723.base"
+          ],
+          "cues": []
+        }
+      ]
+    },
+    {
+      "item_id": 44754,
+      "donor": "wiki:104371:1046106",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1722-1723.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1722-1723.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1722-1723.base"
+          ],
+          "cues": []
+        }
+      ]
+    },
+    {
+      "item_id": 48424,
+      "donor": "https://tibia.fandom.com/wiki/Special:PermanentLink/1194180",
+      "mode": "direct",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.227"
+          ],
+          "owned": "oteryn:item-grant.mount.227",
+          "required": [],
+          "cues": [],
+          "achievements": [
+            "oteryn:achievement/i_wanna_fly_away"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 48514,
+      "donor": "wiki:107079:1065255",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1774-1775.addon1"
+          ],
+          "owned": "oteryn:item-grant.outfit.1774-1775.addon1",
+          "required": [
+            "oteryn:item-grant.outfit.1774-1775.base"
+          ],
+          "cues": []
+        }
+      ]
+    },
+    {
+      "item_id": 48515,
+      "donor": "wiki:107079:1065255",
+      "mode": "direct",
+      "premium": true,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.outfit.1774-1775.addon2"
+          ],
+          "owned": "oteryn:item-grant.outfit.1774-1775.addon2",
+          "required": [
+            "oteryn:item-grant.outfit.1774-1775.base"
+          ],
+          "cues": []
+        }
+      ]
+    },
+    {
       "item_id": 50060,
       "donor": "data/scripts/actions/items/usable_outfit_items.lua:43",
       "mode": "direct",
@@ -5198,7 +5382,8 @@
           "cues": [],
           "speech": "Bound by ancient magic, the primal demonic beast bows to the will of the boxes owner ... for now.",
           "achievements": [
-            "oteryn:achievement/natural_born_cowboy"
+            "oteryn:achievement/natural_born_cowboy",
+            "oteryn:achievement/fiend_rider"
           ]
         }
       ]

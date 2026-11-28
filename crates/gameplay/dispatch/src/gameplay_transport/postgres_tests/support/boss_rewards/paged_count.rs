@@ -56,7 +56,8 @@ pub(super) async fn all_groups(
                             contribution,
                             items: vec![BossRewardItem {
                                 definition: definition.clone(),
-                                quantity: 1
+                                quantity: 1,
+                                parent_ordinal: None,
                             }]
                         }],
                     }

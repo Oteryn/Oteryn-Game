@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use super::quest_state::{CommittedQuestTransition, QuestCause};
 
+mod achievements;
 mod availability;
 mod catalogue;
 mod custody;

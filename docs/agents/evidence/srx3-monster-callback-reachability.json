@@ -1184,18 +1184,18 @@
         "path": "crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs"
       },
       "compiled_familiar_flag": {
-        "file_sha256": "b53ff7b23edceb4106b3768c81da26ca7336e1dc301ac83148220b66e85fe41c",
+        "file_sha256": "fbf81daf490ca8576d68b5e803fd4c9998e53ea037e18a08a4aa023e429e5f26",
         "lines": [
           {
-            "line": 1794,
+            "line": 2197,
             "text": "            is_familiar: details.summoning.is_familiar,"
           },
           {
-            "line": 1795,
+            "line": 2198,
             "text": "            condition_immunities,"
           },
           {
-            "line": 1796,
+            "line": 2199,
             "text": "        });"
           }
         ],
