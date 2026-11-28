@@ -97,6 +97,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_V1,
     hireling::CAPABILITY_HIRELING_V1,
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+    arena::CAPABILITY_ARENA_V1,
     // CL26s3: native daily reward wall, query, and claim controls.
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,
@@ -271,6 +272,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::store::CAPABILITY_STORE_V1,
     hireling::CAPABILITY_HIRELING_V1,
     animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1,
+    arena::CAPABILITY_ARENA_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,
     oteryn_protocol_oteryn::weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
@@ -336,6 +338,22 @@ pub(super) fn capability_of_domain(domain_id: u32) -> Option<u32> {
     gated_routes()
         .find(|(_, _, domains)| domains.contains(&domain_id))
         .map(|(capability, _, _)| capability)
+}
+
+#[cfg(test)]
+#[test]
+fn arena_is_advertised_and_routes_catalogue_and_match() {
+    let capability = arena::CAPABILITY_ARENA_V1;
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+    assert!(gated_routes().any(|(id, commands, domains)| {
+        id == capability
+            && commands
+                == [
+                    arena::COMMAND_TYPE_ARENA_CATALOGUE,
+                    arena::COMMAND_TYPE_ARENA_MATCH,
+                ]
+            && domains.is_empty()
+    }));
 }
 
 #[cfg(test)]
