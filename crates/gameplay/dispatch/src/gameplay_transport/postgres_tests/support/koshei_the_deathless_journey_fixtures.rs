@@ -741,7 +741,7 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(entry_receipts, 2, "entry has one receipt per admitted life");
     assert_eq!(State::read(h).await?, expected);
-    super::elvenbane_combat_fixtures::fight(
+    super::elvenbane_combat_fixtures::fight_until_lethal(
         owner,
         admitted,
         boss.actor,
@@ -750,6 +750,28 @@ pub(super) async fn exercise(
         ChaseMode::Chase,
     )
     .await?;
+    // Freeze the real reservation, then make its first settlement hit the database lock budget.
+    // Reads stay available to the mint owner while the receipt insert waits.
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_item_mint_receipts IN SHARE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Deferred
+    );
+    blocker.rollback().await?;
+    let occurred: i64 = sqlx::query_scalar(
+        "SELECT occurred_at FROM game_item_mint_reservations WHERE loot_table_production_key='oteryn:item.tibia.i7535' AND loot_purpose_key='CORPSE_MATERIALIZATION'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    tokio::time::sleep(std::time::Duration::from_secs(11)).await;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
     expected.mission[3] = 1;
     assert_eq!(State::read(h).await?, expected);
 
@@ -778,15 +800,14 @@ pub(super) async fn exercise(
         rejected.map(|result| result.disposition),
         Some(UseDisposition::Rejected)
     );
-    // Model settlement after a retry while preserving the committed first-stage clock.
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    let changed = sqlx::query("UPDATE game_item_mint_receipts SET occurred_at=materialized_at-12000 WHERE item_instance_id=encode($1,'hex')::uuid AND loot_purpose_key='CORPSE_MATERIALIZATION'")
-        .bind(corpse_item.as_slice()).execute(&mut *tx).await?;
-    assert_eq!(changed.rows_affected(), 1);
-    tx.commit().await?;
+    let mint_clock: (i64, i64) = sqlx::query_as(
+        "SELECT occurred_at,materialized_at FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(corpse_item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(mint_clock.0, occurred);
+    assert!(mint_clock.1 - occurred >= 10_000);
     let corpse = seal(owner, admitted).await?;
     let sample: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_quest_corpse_samples WHERE \
