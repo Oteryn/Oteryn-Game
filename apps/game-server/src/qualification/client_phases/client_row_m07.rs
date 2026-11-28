@@ -59,6 +59,41 @@ fn rope_units(
         .sum())
 }
 
+async fn require_safe_position(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        let at = tile(client.world_spatial().actor_position)?;
+        let entities = client
+            .world_entities()
+            .ok_or("M07 occupant observations unavailable")?;
+        if let Some(creature) = entities.others().find(|entity| {
+            entity.kind == oteryn_dev_client::EntityKind::Creature
+                && tile(entity.position).is_ok_and(|position| {
+                    position.floor == at.floor
+                        && position.x.abs_diff(at.x).max(position.y.abs_diff(at.y)) <= 4
+                })
+        }) {
+            return Err(format!(
+                "M07 fixture unsafe at {at:?}: nearby creature {:?} at {:?}",
+                creature.entity, creature.position
+            )
+            .into());
+        }
+        let combat = client
+            .session_mut()
+            .combat_state()
+            .ok_or("M07 combat status unavailable")?;
+        if !combat.in_fight {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("M07 combat lock did not expire at the fixed position".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+        client.take_events();
+    }
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = verdict::observe(verify_ascent(clients)).await;
@@ -293,16 +328,10 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         verdict::Harness::global().progress("M07 approach");
         client.take_events();
     }
+    require_safe_position(&mut client).await?;
     let before = client.world_spatial().actor_position;
-    if !client.world_entities().is_some_and(|entities| {
-        entities
-            .others()
-            .all(|entity| entity.kind != oteryn_dev_client::EntityKind::Creature)
-    }) {
-        return Err("M07 planned fixture approach is in view of a creature".into());
-    }
     evidence(&format!(
-        "M07_FIXTURE placement={before:?} spot={spot:?} visible_creatures=0"
+        "M07_FIXTURE placement={before:?} spot={spot:?} nearby_creatures=0 in_fight=false"
     ));
     if before == expected {
         return Err("M07 already at the expected rope landing before use".into());
@@ -411,6 +440,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         result.server_sequence,
         delta.server_sequence,
     ));
+    require_safe_position(&mut client).await?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -428,6 +458,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         "M07_CHECK relog landing={expected:?} rope_count={}",
         before_rope_units
     ));
+    require_safe_position(&mut relog).await?;
     if relog.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
