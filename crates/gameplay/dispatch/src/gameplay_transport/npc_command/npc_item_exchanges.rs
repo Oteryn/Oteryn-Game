@@ -90,10 +90,15 @@ pub(super) async fn talk(
     );
     let yes = intent.text.trim().eq_ignore_ascii_case("yes");
     let chat = &admission.states.chat;
-    let fish_default_message = sinatuki_default_keyword(chat, &intent.text);
+    // The fixed-exchange writer accepted a standalone "nupi" anywhere in the
+    // message. Its exact command/actor receipt survives changes to fresh dialogue.
+    let fish_replay = oteryn_gameplay_npc::greeting::words(&intent.text)
+        .iter()
+        .any(|word| word == "nupi")
+        || sinatuki_default_keyword(chat, &intent.text);
     // Exact durable replay precedes the live NPC, inventory and conversation. A removed
     // source or ended dialogue cannot make a committed exchange run a second time.
-    if (yes || fish_default_message)
+    if (yes || fish_replay)
         && let Some(fence) = command.item_fence
     {
         match admission
@@ -108,7 +113,7 @@ pub(super) async fn talk(
         {
             Ok(Some(receipt))
                 if receipt.side == NpcTradeSide::Exchange
-                    && if fish_default_message {
+                    && if fish_replay {
                         receipt.npc_key == sinatuki_exchange::NPC
                     } else {
                         recipe(&receipt.npc_key).is_some()

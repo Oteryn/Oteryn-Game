@@ -581,8 +581,21 @@ async fn scenario(
                 assert_eq!(b.trade(Intent::Cancel).await?, ResultCode::Cancelled.payload());
             }
             assert!(!owner.states.player_trades.open(session));
-            let result = a.command(npc_wire::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await?;
-            assert_eq!(npc_wire::decode_npc_intent_result(&result).map_err(debug)?, NpcIntentDisposition::Ok);
+            // Sinatuki credits one fish per utterance. Exercise the same reserved
+            // stack through its final award, advancing the fixture talk-rate clock.
+            let clock = &owner.states.test_owner_time;
+            clock.store(owner.owner_now().get() + 1, std::sync::atomic::Ordering::Relaxed);
+            for given in 1..=100 {
+                clock.fetch_add(
+                    oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS + 1,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                let result = a.command(npc_wire::COMMAND_TYPE_NPC_TALK_INTENT, &payload).await?;
+                assert_eq!(npc_wire::decode_npc_intent_result(&result).map_err(debug)?, NpcIntentDisposition::Ok);
+                if given < 100 {
+                    assert_eq!(custody().await?, (100 - given, 0));
+                }
+            }
             assert_eq!(custody().await?, (0, 5), "the same hand-in commits with the trade closed");
             a.close().await?;
             b.close().await?;

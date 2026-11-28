@@ -53,6 +53,7 @@ const TRACKS: [(&str, i64); 2] = [
 enum Case {
     Trout,
     PerchResume,
+    HistoricalReceipt,
     EmbeddedKeyword,
     KeywordPrefix,
     MissingDonorPrerequisite,
@@ -66,6 +67,11 @@ fn sinatuki_exchange_postgres_dispatch() -> TestResult {
 #[test]
 fn sinatuki_exchange_postgres_resume() -> TestResult {
     run_case("sinatuki_resume", Case::PerchResume)
+}
+
+#[test]
+fn sinatuki_historical_receipt_replays_before_current_keywords() -> TestResult {
+    run_case("sinatuki_old_receipt", Case::HistoricalReceipt)
 }
 
 #[test]
@@ -179,6 +185,11 @@ fn scenario(name: &str, case: Case) -> TestResult {
         };
         open_session(&owner, &mut admitted).await?;
 
+        if matches!(case, Case::HistoricalReceipt) {
+            historical_replay(&owner, &admitted, npc, &h).await?;
+            drop(seal);
+            return h.cleanup().await;
+        }
         talk(
             &mut owner,
             &mut admitted,
@@ -191,7 +202,7 @@ fn scenario(name: &str, case: Case) -> TestResult {
             Case::EmbeddedKeyword => Some(("nupi anupi", Some(&[]))),
             Case::KeywordPrefix => Some(("nupix", Some(&[HAND_IN]))),
             Case::MissingDonorPrerequisite => Some(("nupi", None)),
-            Case::Trout | Case::PerchResume => None,
+            Case::Trout | Case::PerchResume | Case::HistoricalReceipt => None,
         };
         if let Some((text, reply)) = keyword_case {
             add_item(&h, 201, TROUT, 100, 1).await?;
@@ -291,6 +302,116 @@ fn scenario(name: &str, case: Case) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn historical_replay(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    npc: EntityRef,
+    h: &Harness,
+) -> TestResult {
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::durability::npc_trade::{
+        NpcTradeCause, NpcTradeCoins, NpcTradeRequest, NpcTradeSide,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::{
+        connection::{FreshAdmissionAuthority, UseCommand},
+        item_ref_admission::{NativeItemWeights, generation_item_facts},
+        npc_command::bank_coin_definitions,
+        npc_trade_command,
+    };
+
+    add_item(h, 201, TROUT, 100, 1).await?;
+    let session = admitted.game_session_id;
+    let command = admitted.continuity.next_command_id;
+    let fence = admitted.item_fence.ok_or("fence")?;
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native")?;
+    let facts = |key: &str| {
+        generation_item_facts(
+            native,
+            &TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: "definition-r1".into(),
+            },
+        )
+        .map_err(debug)
+    };
+    let (gold, platinum, crystal) = {
+        let runtime = owner.runtime.lock().await;
+        bank_coin_definitions(owner, &runtime).ok_or("coins")?
+    };
+    let request = NpcTradeRequest {
+        cause: NpcTradeCause {
+            npc_key: NPC.into(),
+            catalogue_revision: owner
+                .states
+                .chat
+                .npc_talk()
+                .ok_or("talk book")?
+                .catalogue_revision(),
+            offer_index: 0,
+            side: NpcTradeSide::Exchange,
+            occurrence: npc_trade_command::occurrence(session, command, npc),
+        },
+        command: CommandRef::new(session, CommandId::new(command).map_err(debug)?),
+        shopping_bag: None,
+        include_equipped: false,
+        fluid_subtype: None,
+        full_charges: None,
+        quantity: 1,
+        unit_price: 0,
+        offer_count: 5,
+        item: facts(SHARD)?,
+        backpack: facts("oteryn:item.tibia.i2854")?,
+        coins: NpcTradeCoins {
+            gold,
+            platinum,
+            crystal,
+        },
+        transaction_id: id(231),
+        event_id: id(232),
+        occurred_at_unix_ms: npc_trade_command::unix_ms_now(),
+        output_item_instance_ids: [id(233), id(234), id(235)],
+    };
+    owner
+        .root
+        .exchange_sinatuki_fish(
+            owner.character,
+            owner.holder,
+            fence,
+            request,
+            &NativeItemWeights(native),
+        )
+        .await
+        .map_err(debug)?;
+    assert_inventory(h, [0, 0, 5]).await?;
+    let replay = owner
+        .npc_talk(
+            admitted.runtime_actor.ok_or("actor")?,
+            UseCommand {
+                game_session_id: session,
+                command_id: command,
+                item_fence: Some(fence),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: "nupi anupi".into(),
+            },
+        )
+        .await;
+    assert_eq!(replay.disposition, NpcIntentDisposition::Ok);
+    assert!(
+        replay.inventory_changed && replay.conversation.is_none(),
+        "historical exchange acknowledged without a new hand-in"
+    );
+    assert_inventory(h, [0, 0, 5]).await?;
+    assert_eq!(quest_state(h).await?, (None, false, 0));
+    Ok(())
 }
 
 fn shipped_placement() -> TestResult<NpcPlacement> {

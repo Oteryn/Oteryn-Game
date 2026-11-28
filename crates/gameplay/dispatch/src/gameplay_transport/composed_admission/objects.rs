@@ -152,13 +152,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut runtime = self.runtime.lock().await;
+        let (mut runtime, mut spell_states) =
+            crate::gameplay_transport::lock_runtime_and_spell_states(
+                &self.runtime,
+                &self.states.spell_states,
+            )
+            .await;
         // Read the canonical actor-local Character facts through their owner, after taking the
         // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
         // current runtime generation; a stale slot or superseded session therefore contributes
         // neither a level nor a door mutation. Keep the guard through the toggle so a level-up,
         // death or actor replacement cannot race the predicate.
-        let mut spell_states = self.states.spell_states.lock().await;
         if spell_states.is_dead(actor) {
             return UseOutcome::rejected();
         }

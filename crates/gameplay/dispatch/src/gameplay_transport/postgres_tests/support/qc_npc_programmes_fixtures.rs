@@ -107,8 +107,8 @@ pub(super) async fn exercise(
         assert!(owner.states.command_ingress.reconcilable(original));
         let committed = snapshot(h).await?;
         with_wire(owner, admitted, cyclops, async |wire| {
-            // A new snapshot opens with no NPC conversation. Reconcile the
-            // durable result without publishing speech into that closed window.
+            wire.recovered_reply("Cling clang!").await?;
+            // Replaying the command still returns its original acknowledgement.
             assert_eq!(
                 wire.exchange(command, "yes", false).await?,
                 Some((NpcIntentDisposition::Ok, vec![])),
@@ -629,6 +629,40 @@ impl Wire<'_> {
             "NPC command {text:?} acknowledged without dialogue"
         );
         Ok(None)
+    }
+
+    async fn recovered_reply(&mut self, expected: &str) -> TestResult {
+        let mut closed = false;
+        let mut committed = false;
+        loop {
+            let bytes = self.read().await?.ok_or("missing recovered NPC reply")?;
+            let frame = decode_wire_envelope(&bytes).map_err(debug)?;
+            match frame.message_type() {
+                MessageType::SnapshotChunk => {
+                    let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(frame.payload())
+                        .map_err(debug)?;
+                    for domain in domains {
+                        if domain.domain_id == STATE_DOMAIN_NPC_CONVERSATION {
+                            let value = decode_npc_conversation(domain.payload).map_err(debug)?;
+                            assert_eq!(value, Default::default(), "resume closes NPC focus");
+                            closed = true;
+                        }
+                    }
+                }
+                MessageType::SnapshotCommit => committed = true,
+                MessageType::StateDelta => {
+                    let delta = decode_state_delta(frame.payload()).map_err(debug)?;
+                    if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION {
+                        assert!(closed && committed, "reply follows the closed snapshot");
+                        let reply = decode_npc_conversation(delta.payload).map_err(debug)?;
+                        assert!(reply.open.is_none(), "the reply cannot reopen the old focus");
+                        assert_eq!(reply.lines, [expected]);
+                        return Ok(());
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     async fn read(&mut self) -> TestResult<Option<Vec<u8>>> {
