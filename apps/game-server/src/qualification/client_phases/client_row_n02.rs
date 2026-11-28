@@ -105,7 +105,11 @@ fn csv(points: &[u16; 36]) -> String {
         .join(",")
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<String> {
     character_prep::declare_seeded(
         "N02.client",
         "level-75,premium,promotion-gold",
@@ -128,15 +132,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     character_prep::grant_item(&prepare, 3043, 2).await?;
     logout(&mut prepare).await?;
     drop(prepare);
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
     let mut client = connect_world(clients, 0xad).await?;
     let start = tile(client.world_spatial().actor_position)?;
     let stats = client
@@ -165,8 +160,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         y: 32172,
         floor: -6,
     };
-    let npc = metadata
-        .npcs
+    let npc = npcs
         .npcs
         .iter()
         .find(|npc| npc.key == "oteryn:npc.king_tibianus")
@@ -386,11 +380,18 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    npcs: &oteryn_world_bundle::npc::Table,
+) {
     let started = std::time::Instant::now();
     // The paced castle round trip exceeds 120 seconds without any refused steps.
-    match verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
-        .await
+    match verdict::indexed_timeout(
+        Duration::from_secs(360),
+        verdict::observe(journey(clients, world, npcs)),
+    )
+    .await
     {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N02.client status=CAPTURED seconds={:.3} {observed}",

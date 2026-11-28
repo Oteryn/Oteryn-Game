@@ -2094,7 +2094,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(141) {
                 verdict::indexed("N02.client", async {
-                    client_row_n02::run_packet(clients).await;
+                    client_row_n02::run_packet(clients, world, &metadata.npcs).await;
                     release_row_characters(clients).await
                 })
                 .await;
