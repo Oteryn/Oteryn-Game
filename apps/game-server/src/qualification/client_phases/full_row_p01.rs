@@ -436,6 +436,55 @@ pub(super) enum HuntEvidence<'a, 'b> {
     Contacts(&'a SeamClients<'b>, &'a mut CombatContacts),
 }
 
+// Crystal 201189f8, data/items/items.xml: item 5964 has duration 10 and decayTo 3994.
+const RAT_FRESH_DECAY_MS: i64 = 10_000;
+
+async fn verify_server_rat_decay(
+    clients: &SeamClients<'_>,
+    actor: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let channel = actor.channel_id().ok_or("Rat corpse death did not occur in a Channel")?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (item, reserved_ms, minted_ms, due_ms, transformed_ms): (String, i64, i64, i64, i64) =
+        sqlx::query_as(
+            "SELECT m.item_instance_id::text, m.occurred_at, m.materialized_at,
+                    s.expires_at_unix_ms, r.occurred_at_unix_ms
+             FROM game_item_mint_receipts m
+             JOIN game_spell_field_temporal_schedules s
+               ON s.item_instance_id=m.item_instance_id AND s.source_transaction_id=m.transaction_id
+             JOIN game_spell_field_temporal_receipts r
+               ON r.item_instance_id=s.item_instance_id AND r.source_stage=s.source_stage
+             WHERE m.death_world_id=encode($1,'hex')::uuid
+               AND m.death_channel_id=encode($2,'hex')::uuid AND m.death_scope_kind=1
+               AND m.death_scope_ownership_generation=$3::text::numeric
+               AND m.death_actor_local_id=$4 AND m.death_actor_local_generation=$5::text::numeric
+               AND m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+               AND m.loot_table_production_key='oteryn:item.tibia.i5964'
+               AND s.source_stage=1 AND s.duration_millis=10000
+               AND s.definition_production_key='oteryn:item.tibia.i5964'
+               AND s.target_production_key='oteryn:item.tibia.i3994' LIMIT 1",
+        )
+        .bind(actor.world_id().as_bytes().as_slice())
+        .bind(channel.as_bytes().as_slice())
+        .bind(actor.scope_generation().get().to_string())
+        .bind(i64::from(actor.actor_local_id()))
+        .bind(actor.actor_local_generation().to_string())
+        .fetch_one(&mut database)
+        .await?;
+    let elapsed_ms = transformed_ms.checked_sub(reserved_ms).ok_or("corpse time overflow")?;
+    evidence(&format!(
+        "P01_RAT_DECAY corpse={item} identity={:?} reservation_ms={reserved_ms} mint_ms={minted_ms} due_ms={due_ms} transform_ms={transformed_ms} minimum_death_to_transform_ms={elapsed_ms} authored_ms={RAT_FRESH_DECAY_MS}",
+        actor.corpse_identity()
+    ));
+    if minted_ms.checked_add(RAT_FRESH_DECAY_MS) != Some(due_ms)
+        || transformed_ms < due_ms
+        || !(0..=RAT_FRESH_DECAY_MS).contains(&elapsed_ms)
+    {
+        return Err(format!("BLOCKER-SERVER exact Rat corpse {item} transformed after {elapsed_ms} ms (authored {RAT_FRESH_DECAY_MS} ms)").into());
+    }
+    Err("BLOCKER-SERVER exact death wall timestamp is not exposed by the corpse receipts".into())
+}
+
 fn reject_late_hunt_evidence(event: &SessionEvent) -> TestResult {
     use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact};
     use oteryn_protocol_oteryn::damage_element::DamageElement;
@@ -670,7 +719,6 @@ pub(super) async fn hunt_exact_creature(
         return Err("selected hunt never published a combat-lock frame".into());
     }
     evidence("P01_CHECK hunt-combat-lock PASS observed-in-fight");
-    let fresh_seen = tokio::time::Instant::now();
     if key == "oteryn:creature.troll" {
         if (enflame_log_count == 1) != fire_damage {
             return Err("Enflame Server Log did not match an attributed impact".into());
@@ -685,7 +733,7 @@ pub(super) async fn hunt_exact_creature(
         }
     }
     client.session_mut().attack_target(None).await?;
-    {
+    let (clients, death_actor) = {
         let clients = match observations {
             HuntEvidence::Principal(clients) | HuntEvidence::Contacts(clients, _) => clients,
         };
@@ -710,15 +758,11 @@ pub(super) async fn hunt_exact_creature(
             "P01_CHECK exact-hunt-death PASS key={key} target={:?} corpse={:?}",
             target.entity, corpse.entity
         ));
-    }
+        (clients, death.actor)
+    };
     let corpse = if let Some(stage) = stage {
         let matured = client_hunt::wait_for_corpse_stage(client, corpse, stage).await?;
-        let elapsed = fresh_seen.elapsed();
-        // The authored fresh Rat stage lasts 10 s. Wire observation has bounded scheduling jitter.
-        if !(Duration::from_secs(8)..=Duration::from_secs(15)).contains(&elapsed) {
-            return Err(format!("Rat corpse stage outside the ten-second observation window: {elapsed:?}").into());
-        }
-        evidence(&format!("P01_CHECK rat-decay-timing PASS elapsed_ms={}", elapsed.as_millis()));
+        verify_server_rat_decay(clients, death_actor).await?;
         matured
     } else {
         corpse
