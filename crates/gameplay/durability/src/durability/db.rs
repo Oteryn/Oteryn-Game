@@ -438,7 +438,10 @@ impl Drop for PassOwner {
     fn drop(&mut self) {
         self.clear();
         if let Some(wait) = self.wait.take() {
-            self.emit(holder_wait_line(&wait, self.issued.duration_since(wait.first)));
+            self.emit(holder_wait_line(
+                &wait,
+                self.issued.duration_since(wait.first),
+            ));
         }
         record_holder_usage(Some(self.caller), Some(self.issued.elapsed()));
         if !self.finished {
@@ -455,7 +458,6 @@ impl Drop for PassOwner {
                 .field("held_ms", millis(self.issued.elapsed())),
             );
         }
-
     }
 }
 const WP3_RUNTIME_WORKER_THREADS: usize = 1;
@@ -683,11 +685,13 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
     }
 
     let maintenance = sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
-    for connections in [ROOT_HOLDER_CONNECTIONS, RETAINED_RECEIPT_PUBLISHER_CONNECTIONS] {
-        let pool_allocations = sqlx::pool::retained_pool_core_allocation_sizes::<Postgres>(
-            connections,
-        )
-        .ok_or(DurabilityError::RootUnavailable)?;
+    for connections in [
+        ROOT_HOLDER_CONNECTIONS,
+        RETAINED_RECEIPT_PUBLISHER_CONNECTIONS,
+    ] {
+        let pool_allocations =
+            sqlx::pool::retained_pool_core_allocation_sizes::<Postgres>(connections)
+                .ok_or(DurabilityError::RootUnavailable)?;
         for requested in pool_allocations.into_iter().chain([
             maintenance.future_box_request,
             maintenance.task_cell_request,
@@ -1335,7 +1339,10 @@ tokio::task_local! {
 
 impl DurabilityRoot {
     /// Cap each PostgreSQL lock wait while periodic equipment maintenance owns the spell lane.
-    pub fn with_periodic_lock_budget<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
+    pub fn with_periodic_lock_budget<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = F::Output> {
         PERIODIC_LOCK_BUDGET.scope((), Box::pin(future))
     }
 
@@ -1408,8 +1415,12 @@ impl DurabilityRoot {
     }
 
     pub(crate) fn next_house_disposition(&self, count: usize) -> Option<usize> {
-        holder_queue::is_background().then(||
-            self.holder_priority.house_cursor.fetch_add(1, Ordering::Relaxed) % count.max(1))
+        holder_queue::is_background().then(|| {
+            self.holder_priority
+                .house_cursor
+                .fetch_add(1, Ordering::Relaxed)
+                % count.max(1)
+        })
     }
 
     /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).
@@ -1501,7 +1512,8 @@ impl DurabilityRoot {
                         &runtime,
                     );
                 (maintenance
-                    == sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>())
+                    == sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>(
+                    ))
                 .then_some(pool)
             })
             .as_ref()
@@ -2095,7 +2107,10 @@ impl IssuedSemanticPass {
             return result;
         }
 
-        let disposition = self.holder.return_to_pool_observed_until(self.deadline).await;
+        let disposition = self
+            .holder
+            .return_to_pool_observed_until(self.deadline)
+            .await;
         drop(self.holder);
         if matches!(disposition, PoolConnectionReturnDisposition::ReturnedToIdle) {
             self.root.holder_returned.notify_waiters();
@@ -2214,8 +2229,8 @@ async fn begin_transaction<'a>(
                 holder.begin().await
             }
         })
-            .await
-            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+        .await
+        .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
 
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
@@ -2442,9 +2457,11 @@ pub(super) async fn try_lock_admission_relations(
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> Result<(), DurabilityError> {
     // Both parts are fixed SQL; no caller input enters the lock statement.
-    sqlx::query(sqlx::AssertSqlSafe(format!("{ADMISSION_RELATIONS_LOCK} NOWAIT")))
-        .execute(&mut **transaction)
-        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "{ADMISSION_RELATIONS_LOCK} NOWAIT"
+    )))
+    .execute(&mut **transaction)
+    .await?;
     Ok(())
 }
 

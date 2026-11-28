@@ -712,8 +712,14 @@ impl DurabilityRoot {
         capabilities: CurrentCapabilityCheck,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
         self.commit_composed_fresh_admission_until(
-            character, holder, composition, request, capabilities, None,
-        ).await
+            character,
+            holder,
+            composition,
+            request,
+            capabilities,
+            None,
+        )
+        .await
     }
 
     pub async fn commit_composed_fresh_admission_until(
@@ -768,7 +774,9 @@ impl DurabilityRoot {
         match checkout_deadline {
             Some(deadline) => {
                 let pass = self.issue_foreground_pass_until(deadline).await?;
-                store.commit_revalidated_with_pass(request, Some(revalidate), Some(pass)).await
+                store
+                    .commit_revalidated_with_pass(request, Some(revalidate), Some(pass))
+                    .await
             }
             None => store.commit_revalidated(request, Some(revalidate)).await,
         }

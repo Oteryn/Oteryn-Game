@@ -1,6 +1,7 @@
 //! Bounded admission for foreground owners between separate semantic passes.
 use super::{
-    DIAGNOSTIC_PROCESS, DurabilityError, DurabilityRoot, HOLDER_RETURN_POLL, IssuedSemanticPass, ROOT_RECOVERY_WINDOW, Site, site_text,
+    DIAGNOSTIC_PROCESS, DurabilityError, DurabilityRoot, HOLDER_RETURN_POLL, IssuedSemanticPass,
+    ROOT_RECOVERY_WINDOW, Site, site_text,
 };
 use crate::durability::SqlxFailureClass;
 
@@ -122,7 +123,10 @@ impl DurabilityRoot {
         let owner = self.holder_owner.lock().ok().and_then(|slot| *slot);
         let line = Line::new(Level::Warn, "durability", "holder_busy_timeout")
             .field("waiter", FieldValue::Owned(site_text(Some(waiter))))
-            .field("owner", FieldValue::Owned(site_text(owner.map(|(site, ..)| site))));
+            .field(
+                "owner",
+                FieldValue::Owned(site_text(owner.map(|(site, ..)| site))),
+            );
         oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
     }
 }
@@ -136,10 +140,15 @@ fn holder_min_busy_timeout_log_names_owner() -> Result<(), Box<dyn std::error::E
     }
     let waiter = site();
     let owner = site();
-    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
     let _runtime = runtime.enter();
     let root = DurabilityRoot::connect_test_runtime("postgres://oteryn@127.0.0.1:1/oteryn")?;
-    let mut slot = root.holder_owner.lock().map_err(|_| "owner slot poisoned")?;
+    let mut slot = root
+        .holder_owner
+        .lock()
+        .map_err(|_| "owner slot poisoned")?;
     *slot = Some((owner, std::time::Instant::now(), None));
     drop(slot);
     let lines = oteryn_error_codes::capture(|| root.report_holder_busy(waiter));

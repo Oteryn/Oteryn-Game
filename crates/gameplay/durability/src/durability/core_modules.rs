@@ -355,9 +355,8 @@ impl Display for DurabilityError {
             Self::CommitRejected => {
                 formatter.write_str("PostgreSQL rejected durability transaction commit")
             }
-            Self::CommitTransactionTimeout => {
-                formatter.write_str("PostgreSQL terminated the durability transaction during commit")
-            }
+            Self::CommitTransactionTimeout => formatter
+                .write_str("PostgreSQL terminated the durability transaction during commit"),
             Self::CommitOutcomeUnknown => {
                 formatter.write_str("game durability commit outcome is unknown")
             }
@@ -1218,7 +1217,12 @@ async fn insert_candidate_session_v2(
     )
     .bind(retained_attempt_count)
     .bind(V2_RECONNECTABLE)
-    .bind(record.compatibility().account_security_generation().to_string())
+    .bind(
+        record
+            .compatibility()
+            .account_security_generation()
+            .to_string(),
+    )
     .execute(&mut **transaction)
     .await?;
     if inserted.rows_affected() != 1 {
