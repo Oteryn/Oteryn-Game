@@ -437,7 +437,6 @@ async fn transfer(
         "WRONG_ITEMS",
     )
     .await?;
-    // Crystal indexes normal gold/core prices by receiver result tier, not donor tier.
     committed(
         h,
         owner,
@@ -450,7 +449,7 @@ async fn transfer(
             cost: if convergence {
                 (160, 1, 65_000_000)
             } else {
-                (100, 1, 8_000_000)
+                (100, 1, 20_000_000)
             },
         },
     )

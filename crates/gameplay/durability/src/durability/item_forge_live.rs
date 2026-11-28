@@ -328,7 +328,7 @@ impl DurabilityRoot {
                             .await?;
                     let reason = if active != Some(reserved.content)
                         || native.source_digest() != reserved.content
-                        || reserved.ruleset != storage::RULESET
+                        || reserved.ruleset != storage::ruleset(request.operation)
                         || reserved.simulation_revision
                             != oteryn_simulation_determinism::active_profile()
                                 .revision()
