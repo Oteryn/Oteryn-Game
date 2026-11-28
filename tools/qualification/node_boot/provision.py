@@ -12,7 +12,6 @@ PROFILES = (
     "levitate", "magic-rope",
     "c05-exiva", "c10-sorcerer", "w20b-light", "s13-party", "s02-knight", "s02-sorcerer", "s08-knight", "s08-sorcerer", "f5-c17a", "f5-c17c", "f5-c13", "f5-c18a", "f5-c17d", "c11-unassigned", "c11-knight", "c12-monk", "premium",
 )
->>>>>>> 6b6217805ad4f1fbb67d7642b82bb927de1bc243
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 NAMED_ITEM = re.compile(r"item-([1-9][0-9]{0,9})-(?:[1-9]|1[0-9]|20)")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
