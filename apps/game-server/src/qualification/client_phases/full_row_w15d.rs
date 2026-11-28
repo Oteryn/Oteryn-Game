@@ -123,14 +123,14 @@ pub(super) fn object_target(
     })
 }
 
-const GUILD_START: TilePos = TilePos { x: 32203, y: 32304, floor: -6 };
+const GUILD_START: TilePos = TilePos { x: 32201, y: 32303, floor: -6 };
 
 async fn place_at_guild(scope: &SeamClients<'_>, from: TilePos) -> TestResult {
     wait_character_released(scope, 0).await?;
     let mut connection = sqlx::PgConnection::connect(scope.url).await?;
     let placed = sqlx::query(
         "UPDATE game_character_last_positions AS p
-         SET tile_x=$4, tile_y=$5, tile_floor=$6
+         SET tile_x=$4, tile_y=$5, tile_floor=$6, write_sequence=p.write_sequence+1
          FROM game_character_roots AS c
          WHERE p.character_id=c.character_id
            AND c.character_id=encode($1,'hex')::uuid
