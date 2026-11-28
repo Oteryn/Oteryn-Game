@@ -1,9 +1,10 @@
-//! CONDITIONS-0 §3.5 (MAGIC-COND-1): content lowers the gate families by name; `agony` and
-//! any other unknown condition type stay unsupported.
+//! CONDITIONS-0 §3.5 (MAGIC-COND-1): content lowers the gate families by name and
+//! requires a damage schedule for Agony.
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use crate::content::ProjectV2InlineEffect;
 use crate::creature_condition_content::*;
+use crate::foundation::condition::COND0_RL_02_MIN_TICK_INTERVAL_MS;
 use crate::foundation::{ConditionDefinition, ConditionValues};
 use serde_json::{Value, json};
 
@@ -45,8 +46,8 @@ fn gate_families_lower_with_their_fixed_duration() {
 }
 
 #[test]
-fn agony_unknown_names_and_extra_gate_payload_fail_closed() {
-    for kind in ["agony", "mute", "Pacified", ""] {
+fn unknown_names_and_extra_gate_payload_fail_closed() {
+    for kind in ["mute", "Pacified", ""] {
         assert_eq!(
             lower_as(kind, |_| {}).unwrap_err(),
             ConditionContentError::UnsupportedCondition
@@ -67,4 +68,39 @@ fn agony_unknown_names_and_extra_gate_payload_fail_closed() {
         .unwrap_err(),
         ConditionContentError::InvalidDefinition
     );
+}
+
+#[test]
+fn agony_requires_an_exact_bounded_damage_schedule() {
+    assert_eq!(
+        lower_as("agony", |_| {}).unwrap_err(),
+        ConditionContentError::UnsupportedParameters
+    );
+    let min_interval = COND0_RL_02_MIN_TICK_INTERVAL_MS;
+    for (ticks, expected) in [
+        (json!([]), ConditionContentError::UnsupportedDamageSchedule),
+        (
+            json!([{"count": 2, "interval_ms": min_interval, "amount": u32::MAX}]),
+            ConditionContentError::NumericOverflow,
+        ),
+        (
+            json!([{"count": 1, "interval_ms": min_interval - 1, "amount": 100}]),
+            ConditionContentError::InvalidDefinition,
+        ),
+    ] {
+        assert_eq!(
+            lower_as("agony", |row| {
+                let operation = &mut row["effect"]["operation"];
+                operation["duration_ms"] = Value::Null;
+                operation["condition"]["lifetime"] = json!("DamageSchedule");
+                operation["condition"]["damage_over_time"] = json!({
+                    "tick_profile": "Fixed",
+                    "first_tick": "Immediate",
+                    "ticks": ticks,
+                });
+            })
+            .unwrap_err(),
+            expected
+        );
+    }
 }

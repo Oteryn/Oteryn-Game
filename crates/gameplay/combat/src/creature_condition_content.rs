@@ -114,8 +114,35 @@ pub fn lower_condition_definition(
             };
             ConditionValues::TimedStatus { kind, duration_ms }
         }
-        // CONDITIONS-0 §3.5: a gate family lasts a fixed duration. `agony` has no content
-        // shape, so it stays an unsupported condition below.
+        "agony" => {
+            if condition.lifetime != ProjectV2ConditionLifetime::DamageSchedule
+                || duration_ms.is_some()
+                || condition.speed_formula.is_some()
+                || resolved_formula.is_some()
+            {
+                return Err(E::UnsupportedParameters);
+            }
+            let Some(ProjectV2DamageOverTime::Fixed { first_tick, ticks }) =
+                &condition.damage_over_time
+            else {
+                return Err(E::UnsupportedDamageSchedule);
+            };
+            // CONDITIONS-0 §3.5 Agony executes uniform ticks through its own conflict key.
+            let [tick] = ticks.as_slice() else {
+                return Err(E::UnsupportedDamageSchedule);
+            };
+            let per_tick = u32::try_from(tick.amount).map_err(|_| E::NumericOverflow)?;
+            let interval_ms = u32::try_from(tick.interval_ms).map_err(|_| E::NumericOverflow)?;
+            let total = per_tick.checked_mul(tick.count).ok_or(E::NumericOverflow)?;
+            ConditionValues::Agony {
+                total_min: total,
+                total_max: total,
+                per_tick,
+                interval_ms,
+                delayed: *first_tick == ProjectV2FirstTick::AfterInterval,
+            }
+        }
+        // CONDITIONS-0 §3.5: a gate family lasts a fixed duration.
         "muted" | "pacified" | "powerless" => {
             if condition.lifetime != ProjectV2ConditionLifetime::FixedDuration
                 || condition.damage_over_time.is_some()
