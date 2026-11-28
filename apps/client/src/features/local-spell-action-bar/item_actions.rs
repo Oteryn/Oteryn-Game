@@ -36,7 +36,9 @@ pub(super) fn use_item(
         return;
     }
     let source = item_source(mailbox, definition, sub_type).map(|item| item.handle);
-    if source.is_none() && (!mailbox.world_context.use_with || sub_type.unwrap_or(0) != 0) {
+    if source.is_none()
+        && !definition_fallback(mailbox, definition, sub_type, mode != ItemUseMode::Use)
+    {
         mailbox.spell_bar.feedback =
             "That item is not visible in inventory or an open container".into();
         return;
@@ -47,7 +49,7 @@ pub(super) fn use_item(
         mailbox
             .world_context
             .begin_shortcut_targeting(source, source.is_none().then_some(definition));
-        mailbox.world_context.rune_targeting = false;
+        mailbox.world_context.rune_targeting = shortcut_rune(mailbox, definition);
         return;
     }
     let command = if mode == ItemUseMode::Use {
@@ -98,6 +100,26 @@ pub(super) fn use_item(
     } else {
         mailbox.spell_bar.feedback = "Session unavailable".into();
     }
+}
+
+pub(in crate::play) fn shortcut_rune(mailbox: &Mailbox, definition: NonZeroU32) -> bool {
+    mailbox
+        .spell_catalog
+        .catalog
+        .entries()
+        .iter()
+        .any(|entry| entry.rune_item == Some(definition.get()))
+}
+
+pub(in crate::play) fn definition_fallback(
+    mailbox: &Mailbox,
+    definition: NonZeroU32,
+    sub_type: Option<u32>,
+    targeted: bool,
+) -> bool {
+    mailbox.world_context.use_with
+        && sub_type.unwrap_or(0) == 0
+        && !(targeted && shortcut_rune(mailbox, definition))
 }
 
 #[cfg(bevy_shell)]

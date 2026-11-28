@@ -10,7 +10,9 @@ pub(in crate::play) use hotkeys::native_key;
 pub use item_actions::ItemUseMode;
 #[cfg(test)]
 pub(in crate::play) use item_actions::editor_items;
-pub(in crate::play) use item_actions::{carried_items, item_source, item_target};
+pub(in crate::play) use item_actions::{
+    carried_items, definition_fallback, item_source, item_target, shortcut_rune,
+};
 #[path = "amount.rs"]
 mod amount;
 #[path = "layout.rs"]

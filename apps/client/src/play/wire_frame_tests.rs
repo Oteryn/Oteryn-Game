@@ -225,6 +225,7 @@ impl Stepper for Recorder {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push((command.clone(), raw_wire));
+        tokio::task::yield_now().await;
         Ok(String::new())
     }
 }
@@ -309,6 +310,41 @@ fn a_world_context_command_keeps_its_native_selection_and_carries_the_raw_frame(
         let _ = outbox.world_context_run(&mut session, &command).await;
     })?;
     assert_eq!(*contexts.lock().map_err(|_| "contexts")?, [(command, true)]);
+    Ok(())
+}
+
+#[test]
+fn definition_use_keeps_second_click_pending_until_reply() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (link, mut commands, outbox) = play_channel();
+    let view = crate::play::tests::view()?;
+    let mut session = Recorder {
+        battle_state: None,
+        walks: Arc::default(),
+        combats: Arc::default(),
+        contexts: Arc::default(),
+    };
+    let command = WorldCommand {
+        target: Target::Position(at(101, 200, -7)),
+        action: Action::UseDefinitionOn(NonZeroU32::MIN),
+        selection: None,
+    };
+    crate::play::mailbox::lock(&link.mailbox)
+        .world_context
+        .pending = true;
+    let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+    runtime.block_on(async {
+        let mut reply = std::pin::pin!(outbox.world_context_run(&mut session, &command));
+        tokio::select! {
+            biased;
+            _ = &mut reply => panic!("test peer should yield before replying"),
+            () = std::future::ready(()) => {}
+        }
+        assert!(view.use_with_click(oteryn_renderer::TileCoord::new(101, 200), &link));
+        assert!(commands.try_recv().is_err());
+        reply.await
+    })??;
+    assert!(!crate::play::mailbox::lock(&link.mailbox).use_with_pending);
     Ok(())
 }
 

@@ -1,7 +1,9 @@
 //! Custom actions use the same live session callers as inventory, chat and cooldown panels.
 use super::{CustomAction, ObjectTarget};
 use crate::combat_input::PlayCommand;
-use crate::play::feature_local_spell_action_bar::view::{carried_items, item_source, item_target};
+use crate::play::feature_local_spell_action_bar::view::{
+    carried_items, definition_fallback, item_source, item_target, shortcut_rune,
+};
 use crate::play::{PlayLink, PlayView, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
 
@@ -305,7 +307,14 @@ impl PlayLink {
                 };
                 let item = item_source(&mailbox, definition_id, Some(*sub_type));
                 let handle = item.map(|item| item.handle);
-                if handle.is_none() && (!mailbox.world_context.use_with || *sub_type != 0) {
+                if handle.is_none()
+                    && !definition_fallback(
+                        &mailbox,
+                        definition_id,
+                        Some(*sub_type),
+                        *target != ObjectTarget::Use,
+                    )
+                {
                     mailbox.custom_hotkey_feedback =
                         Some("Custom hotkey: item is no longer visible in inventory or an open container".into());
                     return false;
@@ -339,12 +348,7 @@ impl PlayLink {
                         target
                     }
                     ObjectTarget::Cursor => {
-                        let rune = mailbox
-                            .spell_catalog
-                            .catalog
-                            .entries()
-                            .iter()
-                            .any(|entry| entry.rune_item == Some(*definition));
+                        let rune = shortcut_rune(&mailbox, definition_id);
                         mailbox.world_context.begin_shortcut_targeting(
                             handle,
                             handle.is_none().then_some(definition_id),
