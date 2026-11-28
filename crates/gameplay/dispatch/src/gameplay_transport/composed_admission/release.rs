@@ -281,7 +281,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 _ => ReleaseRetryStage::Conditions,
             };
             #[cfg(test)]
-            if let Some(probe) = &probe { probe.blocked(); }
+            if let Some(probe) = &probe {
+                probe.blocked();
+            }
             if !progress.retry(stage).await {
                 return ReleaseAttempt::Retry(stage);
             }

@@ -486,7 +486,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break step;
             };
             // Conditions already used the remaining window at their save point.
-            if matches!(stage, ReleaseRetryStage::Conditions | ReleaseRetryStage::ConditionsHolder) || !progress.retry(stage).await {
+            if matches!(
+                stage,
+                ReleaseRetryStage::Conditions | ReleaseRetryStage::ConditionsHolder
+            ) || !progress.retry(stage).await
+            {
                 break step;
             }
         };
@@ -543,7 +547,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     LogoutReply::Unknown
                 }
             }
-                        ReleaseAttempt::Retry(stage) => match self
+            ReleaseAttempt::Retry(stage) => match self
                 .settle_unended(&store, actor, &mut hold)
                 .await
             {
