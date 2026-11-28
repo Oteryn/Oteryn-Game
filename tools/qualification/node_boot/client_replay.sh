@@ -6,6 +6,19 @@ replay_client() {
   if grep -qF "e2e_all scenario=$row status=FAIL " "$log"; then
     return 1
   fi
+  # W05a binds the replay manifest to this journey's session and sequence.
+  if [[ "$row" == W05a.client ]]; then
+    local manifest="$captures/$row/w05a-expected.txt" binding=''
+    if [[ -f "$manifest" ]]; then
+      binding=$(tr '\n' ';' < "$manifest")
+    fi
+    if [[ -z "${binding:-}" ]] ||
+      ! grep -Fxq "SEAM_EVIDENCE e2e_capture scenario=$row status=CAPTURED evidence=$binding" "$log"; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=%s status=FAIL seconds=%s.000 evidence=capture-binding-missing\n' \
+        "$row" "$((SECONDS - started))"
+      return 1
+    fi
+  fi
   # The live journey and the exact client replay must both reach their assertions.
   if [[ $(grep -cF "e2e_capture scenario=$row status=CAPTURED " "$log") == 1 ]] \
     && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" \
@@ -36,6 +49,7 @@ selected_client_replays() {
     fi
   done <<'REPLAYS'
 190 W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal
+191 W05a.client oteryn-session e2e_w05a_countdown_delta_replay
 192 W05c.client oteryn-client-ui w05c_rashid_payloads_replay_into_service_panel
 193 W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal
 196 W13.client oteryn-client-ui e2e_w13_replays_daily_boost_selection_and_refusal

@@ -202,6 +202,7 @@ impl<S: SessionStream> Session<S> {
             gated_snapshots,
             gated_revisions,
             events,
+            server_save_frame_capture: None,
             entities,
             appearance,
             chat_revision,

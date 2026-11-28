@@ -682,6 +682,44 @@ class PgObserveTests(unittest.TestCase):
 
 
 class ClientReplayTests(unittest.TestCase):
+    def test_w05a_requires_current_capture_binding(self):
+        for recorded_session in ("new", "old", None):
+            with self.subTest(recorded_session=recorded_session), tempfile.TemporaryDirectory() as temp:
+                work = Path(temp)
+                capture = work / "W05a.client"
+                capture.mkdir()
+                if recorded_session is not None:
+                    (capture / "w05a-expected.txt").write_text(
+                        f"session={recorded_session}\nserver_sequence=42\n"
+                    )
+                (work / "node.log").write_text(
+                    "SEAM_EVIDENCE e2e_capture scenario=W05a.client status=CAPTURED "
+                    "evidence=session=new;server_sequence=42;\n"
+                )
+                cargo = work / "cargo"
+                cargo.write_text(
+                    '#!/bin/sh\n'
+                    'test "$*" = "test --locked -p oteryn-session --lib '
+                    'e2e_w05a_countdown_delta_replay" || exit 2\n'
+                    'echo invocation >> invoked\n'
+                    'echo "test result: ok. 1 passed; 0 failed; 0 ignored;"\n'
+                )
+                cargo.chmod(0o700)
+                result = bash(
+                    'source "$REPLAY_HELPER"; node_boot_client_replays node.log',
+                    {"REPLAY_HELPER": str(HERE / "client_replay.sh"), "CARGO": str(cargo),
+                     "E2E_ALL_CAPTURE_DIR": str(work), "OTERYN_E2E_ROW_BATCH": "191:1"},
+                    cwd=work,
+                )
+                if recorded_session == "new":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("status=PASS", result.stdout)
+                    self.assertEqual((work / "invoked").read_text(), "invocation\n")
+                else:
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn("status=FAIL", result.stdout)
+                    self.assertFalse((work / "invoked").exists())
+
     def test_scoped_replay_requires_a_unique_live_capture_and_one_passing_test(self):
         capture = 'SEAM_EVIDENCE e2e_capture scenario=W04.client status=CAPTURED evidence=fresh'
         failure = 'SEAM_EVIDENCE e2e_all scenario=W04.client status=FAIL seconds=0.000'

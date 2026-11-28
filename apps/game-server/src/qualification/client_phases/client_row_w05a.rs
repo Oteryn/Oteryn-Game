@@ -1,23 +1,9 @@
-//! W05a client replay capture: the real domain-40 server-save countdown snapshot delivered at
-//! admission, a local negative command-ownership probe (no player reset command exists) and, when
-//! the server's planned reset enters its five-minute window during the poll, the countdown delta. The session retains typed deltas, so a
-//! delta capture is the server-delivered value encoded with the production encoder (the C09
-//! convention). The consumer is `Session::apply_state_delta` via
-//! `crates/session/src/server_save_countdown.rs`.
+//! W05a captures the admitted domain-40 snapshot and the original countdown frame after
+//! checking the local command-ownership refusal. The mandatory replay applies the captured
+//! delta through the production session domain dispatcher.
 use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::server_save_countdown as wire;
-
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "W05A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
-}
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xfe).await?;
@@ -67,37 +53,43 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     );
 
     client.take_events();
+    client.session_mut().capture_server_save_frame();
     client.service_liveness(Duration::from_secs(7)).await?;
-    let notice = client
+    let delta = client
         .take_events()
         .into_iter()
         .find_map(|event| match event {
             SessionEvent::ServerSaveCountdown(delta) => Some(delta),
             _ => None,
-        });
-    capture("w05a-snapshot.bin", &snapshot.payload);
-    let mut expected = format!("snapshot_revision={}\n", snapshot.revision);
-    if let Some(delta) = notice {
-        if delta.new_revision != delta.base_revision + 1
-            || delta.value.ending_epoch == 0
-            || !(1..=wire::SERVER_SAVE_COUNTDOWN_MAX_MINUTES)
-                .contains(&delta.value.minutes_remaining)
-        {
-            return Err(format!("invalid countdown delta {delta:?}").into());
-        }
-        capture(
-            "w05a-countdown.bin",
-            &wire::encode_server_save_countdown(delta.value)
-                .map_err(|error| format!("{error:?}"))?,
-        );
-        expected.push_str(&format!(
-            "countdown=present\nbase_revision={}\nnew_revision={}\nending_epoch={}\nminutes_remaining={}\n",
-            delta.base_revision, delta.new_revision, delta.value.ending_epoch, delta.value.minutes_remaining
-        ));
-    } else {
-        return Err("step=countdown observed=no-live-domain-40-delta".into());
+        })
+        .ok_or("step=countdown observed=no-live-domain-40-delta")?;
+    if delta.base_revision != snapshot.revision
+        || delta.base_revision.checked_add(1) != Some(delta.new_revision)
+        || delta.value.ending_epoch == 0
+        || !(1..=wire::SERVER_SAVE_COUNTDOWN_MAX_MINUTES).contains(&delta.value.minutes_remaining)
+    {
+        return Err(format!("invalid countdown delta {delta:?}").into());
     }
-    capture("w05a-expected.txt", expected.as_bytes());
+    let frame = client
+        .session_mut()
+        .take_server_save_frame()
+        .ok_or("countdown frame missing")?;
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory missing")?;
+    let directory = Path::new(&root).join("W05a.client");
+    std::fs::create_dir(&directory)?;
+    let session = u128::from_be_bytes(*client.join_snapshot().game_session_id.as_bytes());
+    let expected = format!(
+        "snapshot_revision={}\ncountdown=present\nbase_revision={}\nnew_revision={}\nending_epoch={}\nminutes_remaining={}\nserver_sequence={}\nsession={session:032x}\n",
+        snapshot.revision,
+        delta.base_revision,
+        delta.new_revision,
+        delta.value.ending_epoch,
+        delta.value.minutes_remaining,
+        delta.server_sequence
+    );
+    std::fs::write(directory.join("w05a-snapshot.bin"), snapshot.payload)?;
+    std::fs::write(directory.join("w05a-countdown.bin"), frame)?;
+    std::fs::write(directory.join("w05a-expected.txt"), expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
 }
 

@@ -395,6 +395,7 @@ pub struct Session<S> {
     gated_snapshots: Vec<GatedSnapshot>,
     gated_revisions: Vec<(u32, u64)>,
     events: Vec<SessionEvent>,
+    server_save_frame_capture: Option<Vec<u8>>,
     /// `Some` exactly when capability 6 is selected.
     entities: Option<WorldEntities>,
     appearance: Option<appearance_state::AppearanceState>,

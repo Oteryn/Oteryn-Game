@@ -23,21 +23,14 @@ struct Captured {
 
 fn load() -> Result<Captured, BoxError> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
+        let root = std::path::Path::new(&root).join("W05a.client");
         let expected = std::fs::read_to_string(root.join("w05a-expected.txt"))?;
-        let countdown = if value(&expected, "countdown")? == "present" {
-            std::fs::read(root.join("w05a-countdown.bin"))?
-        } else {
-            // The planned reset was outside its five-minute window during the poll.
-            encode_server_save_countdown(ServerSaveCountdown {
-                ending_epoch: 20_388,
-                minutes_remaining: 5,
-            })
-            .map_err(|error| format!("{error:?}"))?
-        };
+        if value(&expected, "countdown")? != "present" {
+            return Err("live countdown capture is required".into());
+        }
         return Ok(Captured {
             snapshot: std::fs::read(root.join("w05a-snapshot.bin"))?,
-            countdown,
+            countdown: std::fs::read(root.join("w05a-countdown.bin"))?,
             expected,
         });
     }
@@ -104,7 +97,30 @@ fn e2e_w05a_countdown_delta_replay() -> Result<(), BoxError> {
         );
         assert_eq!(snapshot.revision, 0);
 
-        let event = delta(&mut session, 41, 0, &captured.countdown)?;
+        let mut live_payload = None;
+        let event = if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+            let frame = decode_wire_envelope(&captured.countdown)?;
+            frame.validate(Direction::ServerToClient, true)?;
+            assert_eq!(frame.message_type(), MessageType::StateDelta);
+            assert_eq!(
+                frame.server_sequence().to_string(),
+                value(expected, "server_sequence")?
+            );
+            let decoded = decode_state_delta(frame.payload())?;
+            assert_eq!(decoded.domain_id, STATE_DOMAIN_SERVER_SAVE_COUNTDOWN);
+            assert_eq!(
+                decoded.base_revision.to_string(),
+                value(expected, "base_revision")?
+            );
+            assert_eq!(
+                decoded.new_revision.to_string(),
+                value(expected, "new_revision")?
+            );
+            live_payload = Some(decoded.payload);
+            session.apply_state_delta(frame.server_sequence(), frame.payload())?
+        } else {
+            delta(&mut session, 41, 0, &captured.countdown)?
+        };
         let SessionEvent::ServerSaveCountdown(applied) = event else {
             return Err("countdown delta did not produce a countdown event".into());
         };
@@ -130,7 +146,15 @@ fn e2e_w05a_countdown_delta_replay() -> Result<(), BoxError> {
         // applied revision stays 1 and no event is produced.
         let zero_minutes = [0x08, 0x08, 0x10, 0x00];
         assert!(delta(&mut session, 42, 1, &zero_minutes).is_err());
-        assert!(delta(&mut session, 43, 0, &captured.countdown).is_err());
+        assert!(
+            delta(
+                &mut session,
+                43,
+                0,
+                live_payload.unwrap_or(&captured.countdown)
+            )
+            .is_err()
+        );
         assert_eq!(
             session.gated_revisions,
             vec![(STATE_DOMAIN_SERVER_SAVE_COUNTDOWN, 1)]

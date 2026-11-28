@@ -338,6 +338,18 @@ impl<S: SessionStream> Session<S> {
         }
     }
 
+    /// Requests capture of the next server-save delta wire envelope.
+    pub fn capture_server_save_frame(&mut self) {
+        self.server_save_frame_capture = Some(Vec::new());
+    }
+
+    /// Takes the captured wire envelope, if a countdown arrived.
+    pub fn take_server_save_frame(&mut self) -> Option<Vec<u8>> {
+        self.server_save_frame_capture
+            .take()
+            .filter(|frame| !frame.is_empty())
+    }
+
     /// Reads the next post-admission frame that is not a `LivenessProbe` (each probe is answered
     /// with a `LivenessAck` first). The envelope is validated as post-admission server traffic
     /// and must carry the admitted `connection_generation`.
@@ -364,6 +376,14 @@ impl<S: SessionStream> Session<S> {
                 continue;
             }
             if envelope.message_type() != MessageType::LivenessProbe {
+                if let Some(capture) = self.server_save_frame_capture.as_mut()
+                    && capture.is_empty()
+                    && envelope.message_type() == MessageType::StateDelta
+                    && decode_state_delta(envelope.payload())?.domain_id
+                        == oteryn_protocol_oteryn::server_save_countdown::STATE_DOMAIN_SERVER_SAVE_COUNTDOWN
+                {
+                    capture.extend_from_slice(&frame);
+                }
                 return Ok(frame);
             }
             self.answer_probe(envelope.payload()).await?;
