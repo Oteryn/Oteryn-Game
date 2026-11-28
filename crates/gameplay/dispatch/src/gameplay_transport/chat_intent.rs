@@ -810,6 +810,7 @@ pub fn chat_in_premium_channel(
         intent,
         now,
         None,
+        |_| None,
     )
 }
 
@@ -819,15 +820,16 @@ pub fn chat_in_premium_channel(
     clippy::too_many_arguments,
     reason = "the existing chat context and its read-only quest snapshot"
 )]
-fn chat_with_quest_greetings(
+fn chat_with_quest_greetings<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
     chat: &ChatRuntime,
-    runtime: &ChannelRuntimeV1,
+    mut runtime: R,
     states: &ChannelSpellStates,
     (actor, session): (ExactActorRef, GameSessionId),
     premium: PremiumGate,
     intent: &ChatIntent,
     now: SemanticTimeMicros,
     quest_tracks: Option<&BTreeMap<String, i64>>,
+    jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, ()>>,
 ) -> ChatIntentResult {
     let ChatIntent::Say { mode, text } = intent else {
         // Private and room lines never take the Channel path (`ComposedFreshAdmission::chat_relay`).
@@ -867,7 +869,7 @@ fn chat_with_quest_greetings(
     // An actor without cast facts has the level read at its chat admission.
     let gate = YellGate {
         level: states
-            .get(runtime, actor, session)
+            .get(&runtime, actor, session)
             .map_or(speaking.level, |state| state.character_facts().level),
         premium_current: premium.premium_current(),
     };
@@ -908,13 +910,14 @@ fn chat_with_quest_greetings(
         npc_answer(
             book,
             &chat.joins,
-            runtime,
+            &mut runtime,
             &mut sessions,
             session,
             at,
             &text,
             &listeners,
             quest_tracks,
+            jimmy_greeting,
         );
     }
     result(ChatDisposition::Ok)
@@ -965,16 +968,17 @@ fn npc_chat_chunks(mut remaining: &str) -> impl Iterator<Item = &str> {
     clippy::too_many_arguments,
     reason = "the answer's whole context under the chat lock"
 )]
-fn npc_answer(
+fn npc_answer<R: std::ops::Deref<Target = ChannelRuntimeV1>>(
     book: &NpcTalkBook,
     joins: &AtomicU64,
-    runtime: &ChannelRuntimeV1,
+    runtime: &mut R,
     sessions: &mut HashMap<GameSessionId, ChatSession>,
     session: GameSessionId,
     at: ChatPosition,
     text: &ChatText,
     listeners: &[(GameSessionId, ChatPosition)],
     quest_tracks: Option<&BTreeMap<String, i64>>,
+    jimmy_greeting: impl FnOnce(&mut R) -> Option<Result<&'static str, ()>>,
 ) {
     let visible = runtime.visible_entities();
     let mut spots = Vec::new();
@@ -1045,6 +1049,16 @@ fn npc_answer(
         && let Some(speaking) = sessions.get_mut(&session)
         && speaking.engaged == Some(reply.id)
     {
+        if runtime.npc_key(reply.id) == Some("oteryn:npc.jimmy")
+            && let Some(result) = jimmy_greeting(runtime)
+        {
+            let Ok(line) = result else {
+                speaking.engaged = prior;
+                return;
+            };
+            reply.text = line.into();
+            reply.continuation.clear();
+        }
         speaking.joined = joins.fetch_add(1, Ordering::Relaxed) + 1;
     }
     let Some((actor, generation, position, entry)) =
@@ -1213,8 +1227,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } => self.session_premium_gate(session).await,
             _ => PremiumGate::CLOSED,
         };
-        let runtime = self.runtime.lock().await;
-        let states = self.states.spell_states.lock().await;
+        let (mut runtime, states) =
+            super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states).await;
         let quest_tracks = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
             Some(
@@ -1226,13 +1240,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
         chat_with_quest_greetings(
             &self.states.chat,
-            &runtime,
+            &mut *runtime,
             &states,
             (actor, session),
             premium,
             intent,
             now,
             quest_tracks.as_ref(),
+            |runtime| super::npc_command::jimmy::greet(self, runtime, session),
         )
     }
 
@@ -2180,6 +2195,7 @@ mod tests {
                 &say("hi"),
                 BASE,
                 tracks.as_ref(),
+                |_| None,
             );
             assert_eq!(outcome, result(ChatDisposition::Ok));
             let heard = texts(chat.drain(first.1));
