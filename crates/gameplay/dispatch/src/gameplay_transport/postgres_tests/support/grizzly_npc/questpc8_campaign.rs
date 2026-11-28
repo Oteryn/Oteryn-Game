@@ -51,6 +51,31 @@ pub(super) async fn exercise(
         .map_err(debug)?
         .position();
     let mut command = 2;
+    // Crocodiles settle quest credit only. Complete an independent Bestiary
+    // entry through the normal kill owner before checking both grants.
+    let (race, _) = crate::content::canonical_bestiary_difficulties(
+        super::super::character_title_sources_fixtures::source_limits(),
+    )?
+    .into_iter()
+    .find(|(race, _)| race.key() == "oteryn:creature.bane_of_light")
+    .ok_or("Bane of Light Bestiary entry")?;
+    assert_eq!(race.kill_thresholds(), [2, 3, 5]);
+    command += 1;
+    hunt_with_decay(
+        owner,
+        admitted,
+        race.key(),
+        5,
+        command,
+        Some(h),
+        HunterRefresh::OncePerHunt,
+    )
+    .await?;
+    let permit: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/hunting_permit'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(permit, 1);
+
     let initial_experience = experience(h).await?;
     say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
     assert_eq!(experience(h).await?, initial_experience);
@@ -166,17 +191,6 @@ pub(super) async fn exercise(
     let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
-    // Crocodiles settle quest credit only. Complete an independent Bestiary
-    // entry through the normal kill owner before checking both grants.
-    let (race, _) = crate::content::canonical_bestiary_difficulties(
-        super::super::character_title_sources_fixtures::source_limits(),
-    )?
-    .into_iter()
-    .find(|(race, _)| race.key() == "oteryn:creature.bane_of_light")
-    .ok_or("Bane of Light Bestiary entry")?;
-    assert_eq!(race.kill_thresholds(), [2, 3, 5]);
-    command += 1;
-    hunt(owner, admitted, race.key(), 5, command).await?;
     let achievements: Vec<String> = sqlx::query_scalar(
         "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 6",
     )
