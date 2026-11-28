@@ -5,6 +5,87 @@ use oteryn_gameplay_durability::durability::native_world_read::qualified_combat_
 use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
 
 #[test]
+fn melee_batch_refuses_follow_up_to_lethal_hit_without_stderr_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin); // The shared runner opens and cleans up the routed database.
+    run_case(async |harness| {
+        prepare_current_session(harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
+        let active = controller.active().ok_or("active generation")?;
+        let (deps, _) = spread_dependencies(active, &pin)?;
+        let mut owner = deps.owner(harness, &authority);
+        owner.active_generation = Some(active);
+        owner.movement_cells = deps.room.movement_cells().into();
+        deps.initialize(&owner).await;
+        let attackers = {
+            let mut runtime = deps.runtime.lock().await;
+            let objects = deps.door.lock().await;
+            // This authored creature has a single melee entry with a positive minimum.
+            let policy = runtime.companion_policy("oteryn:creature.foreman_kneebiter").map_err(debug)?;
+            let spec = NativeRaidSpawnSpec::qualified(
+                &policy.definition_key, &policy.definition_revision,
+                runtime.content_pin().server_artifact_digest(), false,
+            ).map_err(debug)?;
+            let mut attackers = Vec::new();
+            for (index, (x, y)) in [(1, (1, 0)), (2, (0, 1))] {
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                let spawned = runtime.realize_raid_spawn(
+                    stamp,
+                    RaidSpawnIdentity {
+                        firing_id: *world.as_bytes(), wave: 0, entry: 0, index,
+                    },
+                    &spec,
+                    Some(MovementLocalPosition { x, y, floor: 7 }),
+                    |runtime, at| Some(qualified_combat_tile(&deps.room, runtime, &*objects, at)
+                        .is_ok_and(|tile| tile.ground_present() && !tile.block_solid())),
+                ).map_err(debug)?;
+                let RaidSpawnOutcome::Placed(actor) = spawned.outcome else {
+                    return Err("adjacent melee attacker placement refused".into());
+                };
+                attackers.push(actor);
+            }
+            attackers
+        };
+        crate::gameplay_transport::actor_spell::tests::wound(
+            &mut *owner.states.spell_states.lock().await, deps.actor,
+            deps.admitted.game_session_id, 1,
+        );
+        owner.clock_origin -= std::time::Duration::from_secs(10);
+
+        let mut warned = false;
+        for _ in 0..8 {
+            {
+                let mut drain = std::pin::pin!(owner.drain_monster_melee());
+                std::future::poll_fn(|cx| {
+                    let mut result = std::task::Poll::Pending;
+                    let lines = oteryn_error_codes::capture(|| result = drain.as_mut().poll(cx));
+                    warned |= lines.iter().any(|line| line.contains("monster melee refused"));
+                    result
+                }).await;
+            }
+            let states = owner.states.spell_states.lock().await;
+            if states.is_dead(deps.actor) {
+                assert!(attackers.iter().all(|&actor| states.monster_melee.creature_ai
+                    .native_melee_selection(actor, 0)
+                    .is_some_and(|selection| selection.target == Some(deps.actor))),
+                    "both adjacent attackers must select the player in the lethal batch");
+                assert!(!warned, "a follow-up refusal must not write synchronously to stderr");
+                return Ok(());
+            }
+            drop(states);
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+        }
+        Err("the selected melee batch did not deal a lethal hit".into())
+    })
+}
+
+#[test]
 fn adjacent_rat_melee_publishes_exact_attacker_and_applied_damage_postgres() -> TestResult {
     run_case(async |harness| {
         prepare_current_session(harness).await?;

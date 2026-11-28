@@ -805,7 +805,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ordinary.push(pair);
             }
         }
-        let mut logged_melee_refusal = false;
         for movement_retry in [false, true] {
             if movement_retry && runtime.has_pending_source_creature_deaths() {
                 continue;
@@ -1052,14 +1051,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
                     // landed attack starts the player's in-fight deadline. A replayed think returns its
                     // recorded dispatch without resolving a target again, so nothing runs twice.
-                    if let Err(error) | Ok(Dispatch::Bite(Err(error))) = dispatch
-                        && !logged_melee_refusal
-                    {
-                        super::operator_event(&format!(
-                            "monster melee refused creature={race_key} reason={error:?}"
-                        ));
-                        logged_melee_refusal = true;
-                    }
+                    // A prior bite may have killed the target in this batch. Refusals
+                    // finish without writing to stderr while the owner locks are held.
                     let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
                         continue;
                     };
