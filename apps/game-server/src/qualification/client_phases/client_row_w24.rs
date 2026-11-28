@@ -292,6 +292,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
             &mut minute,
             intended_city,
             entered,
+            outside_tile,
             &mut actions,
         )
         .await?;
@@ -344,6 +345,7 @@ async fn full_checks(
     minute: &mut u16,
     city: &str,
     entered: TilePos,
+    outside_edge: TilePos,
     actions: &mut String,
 ) -> TestResult {
     let blocked_direction = |at: TilePos| {
@@ -355,32 +357,40 @@ async fn full_checks(
             ) else {
                 return false;
             };
-            world
-                .base()
-                .tile(x, y, at.floor)
-                .is_some_and(|tile| !tile.walkable())
+            world.base().tile(x, y, at.floor).is_some_and(|tile| {
+                !tile.walkable()
+                    || !world.enterable(TilePos {
+                        x,
+                        y,
+                        floor: at.floor,
+                    })
+            })
         })
     };
     let same_city = |at| zone(world, at) == Some(city);
-    let boundary = |at| {
-        CARDINAL.into_iter().any(|direction| {
-            walking_landing(world, at, direction)
-                .is_some_and(|neighbor| zone(world, neighbor).is_none())
-        })
-    };
     let path = walking_route(
         world,
         entered,
-        |at| boundary(at) && blocked_direction(at).is_some(),
+        |at| blocked_direction(at).is_some(),
         same_city,
-    )?;
+    )
+    .map_err(|error| format!("step=collision-approach {error}"))?;
+    let planned = path
+        .iter()
+        .try_fold(entered, |at, direction| {
+            walking_landing(world, at, *direction)
+        })
+        .ok_or("invalid collision approach")?;
+    let direction =
+        blocked_direction(planned).ok_or("step=blocked-refusal no compiled collision")?;
     let (approach, _) = walk(client, world, minute, path, false).await?;
     if !approach.is_empty() {
         actions.push_str(&format!("\nW {approach}"));
     }
     let before = client.world_spatial().actor_position;
-    let direction =
-        blocked_direction(tile(before)?).ok_or("step=blocked-refusal no compiled collision")?;
+    if tile(before)? != planned {
+        return Err("step=blocked-refusal wrong approach tile".into());
+    }
     let reply = client.step(direction).await?;
     if reply.disposition != StepDisposition::Blocked
         || reply.world_spatial_delta.is_some()
@@ -396,35 +406,29 @@ async fn full_checks(
     }
     actions.push_str(&format!("\nB {}", direction_letter(direction)?));
 
-    let path = walking_route(
-        world,
-        tile(before)?,
-        |at| zone(world, at).is_none(),
-        |at| zone(world, at).is_none_or(|at_city| at_city == city),
-    )?;
-    let inside = path
-        .iter()
-        .take(path.len().saturating_sub(1))
-        .try_fold(tile(before)?, |at, direction| {
-            walking_landing(world, at, *direction)
-        })
-        .ok_or("invalid full exit route")?;
+    let mut path = walking_route(world, planned, |at| at == entered, same_city)?;
+    let exit_step = CARDINAL
+        .into_iter()
+        .find(|direction| walking_landing(world, entered, *direction) == Some(outside_edge))
+        .ok_or("step=city-exit entry boundary is not reversible")?;
+    path.push(exit_step);
     let (route, (event, _, sequence)) = walk_boundary(client, world, minute, path).await?;
     require_silence(event)?;
     let outside = tile(client.world_spatial().actor_position)?;
-    if zone(world, outside).is_some() {
+    if outside != outside_edge || zone(world, outside).is_some() {
         return Err("step=city-exit actual landing remains inside".into());
     }
     actions.push_str(&format!("\n{route} 0 {sequence}"));
     let path = walking_route(
         world,
         outside,
-        |at| at == inside,
-        |at| at == inside || zone(world, at).is_none(),
+        |at| at == entered,
+        |at| at == entered || zone(world, at).is_none(),
     )?;
     let (route, (event, observed_minute, sequence)) =
         walk_boundary(client, world, minute, path).await?;
-    if tile(client.world_spatial().actor_position)? != inside || zone(world, inside) != Some(city) {
+    if tile(client.world_spatial().actor_position)? != entered || zone(world, entered) != Some(city)
+    {
         return Err("step=city-reentry wrong boundary or city".into());
     }
     let cue = city_cue(city, event, observed_minute)?;
