@@ -1652,7 +1652,7 @@ PY_P02_SELECTED
       E2E_ALL_CAPTURE_DIR="$p02_captures" cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
         "$replay" -- --exact --nocapture 2>&1 | tee "$replay_log" &&
       grep -Eq "^test $replay \\.\.\. ok$" "$replay_log" &&
-      grep -Fxq 'SEAM_EVIDENCE P02_REPLAY progress=exact requests=9 refusals=rat,below-prowess assignment=exact cooldown_ms=490 malformed=2' "$replay_log" &&
+      grep -Fxq 'SEAM_EVIDENCE P02_REPLAY progress=exact requests=matched catalogue=verified refusals=rat,below-prowess assignment=exact cooldown_ms=490 malformed=2' "$replay_log" &&
       grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$replay_log"; then
       printf 'SEAM_EVIDENCE e2e_all scenario=P02.client status=PASS seconds=%s.000 evidence=live-bosstiary-replay\n' "$((SECONDS - replay_started))"
     else

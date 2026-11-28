@@ -88,20 +88,31 @@ async fn catalogue_entry(
     key: &str,
     capture: &str,
 ) -> TestResult<boss_encounter::catalogue::Entry> {
-    let query = boss_encounter::catalogue::Query {
+    let mut query = boss_encounter::catalogue::Query {
         search: search.into(),
         ..Default::default()
     };
-    let command = FeatureCommand {
-        capability: boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
-        kind: boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS,
-        payload: query
-            .encode()
-            .ok_or("P02 catalogue query encoding failed")?,
-    };
-    boss_encounter::catalogue::Page::decode(&exchange(client, command, Some(capture)).await?)
-        .and_then(|page| page.entries.into_iter().find(|entry| entry.key == key))
-        .ok_or_else(|| format!("P02 missing real boss {key} in catalogue").into())
+    for index in 0..16 {
+        let command = FeatureCommand {
+            capability: boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+            kind: boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS,
+            payload: query
+                .encode()
+                .ok_or("P02 catalogue query encoding failed")?,
+        };
+        let name = format!("{capture}-{index}.bin");
+        let page =
+            boss_encounter::catalogue::Page::decode(&exchange(client, command, Some(&name)).await?)
+                .ok_or("P02 malformed catalogue page")?;
+        if let Some(entry) = page.entries.into_iter().find(|entry| entry.key == key) {
+            return Ok(entry);
+        }
+        let Some(next) = page.next.filter(|next| *next > query.after) else {
+            break;
+        };
+        query.after = next;
+    }
+    Err(format!("P02 missing real boss {key} in bounded catalogue search").into())
 }
 
 async fn gold(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
@@ -185,20 +196,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &mut client,
         "Ferumbras",
         BELOW_PROWESS,
-        "p02-ineligible-catalogue.bin",
+        "p02-ineligible-catalogue",
     )
     .await?;
     if ineligible.category != 3 || ineligible.kills != 0 || ineligible.thresholds[0] != 1 {
         return Err(format!("P02 expected an unearned Nemesis: {ineligible:?}").into());
     }
     refuse_assignment(&mut client, BELOW_PROWESS, &empty, "p02-ineligible.bin").await?;
-    let eligible = catalogue_entry(
-        &mut client,
-        "Rotworm Queen",
-        ORDINARY_BOSS,
-        "p02-catalogue.bin",
-    )
-    .await?;
+    let eligible =
+        catalogue_entry(&mut client, "Rotworm Queen", ORDINARY_BOSS, "p02-catalogue").await?;
     if eligible.category != 3 || eligible.kills != 1 || eligible.thresholds[0] != 1 {
         return Err(format!("P02 expected earned Nemesis Prowess: {eligible:?}").into());
     }

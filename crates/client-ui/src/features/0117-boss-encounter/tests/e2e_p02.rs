@@ -73,6 +73,44 @@ fn apply_exchange(
     Ok(())
 }
 
+fn catalogue_exchanges(
+    directory: &std::path::Path,
+    prefix: &str,
+    key: &str,
+) -> Result<Vec<Exchange>, Error> {
+    use oteryn_client_runtime::boss_encounter::catalogue::Page;
+    let mut exchanges = Vec::new();
+    for index in 0..16 {
+        let exchange = read_exchange(directory, &format!("{prefix}-{index}.bin"))?;
+        let page = Page::decode(&exchange.reply.payload).ok_or("P02 malformed catalogue page")?;
+        exchanges.push(exchange);
+        if page.entries.iter().any(|entry| entry.key == key) {
+            return Ok(exchanges);
+        }
+        if page.next.is_none() {
+            break;
+        }
+    }
+    Err(format!("P02 catalogue captures missing exact boss {key}").into())
+}
+
+fn apply_catalogue(
+    panel: &mut BossEncounterPanel,
+    search: &str,
+    exchanges: &[Exchange],
+) -> Result<(), Error> {
+    panel.browser_search = search.into();
+    for (index, exchange) in exchanges.iter().enumerate() {
+        let intent = if index == 0 {
+            Intent::Catalogue
+        } else {
+            Intent::CatalogueNext
+        };
+        apply_exchange(panel, intent, exchange)?;
+    }
+    Ok(())
+}
+
 fn assert_credit(panel: &BossEncounterPanel) {
     let snapshot = panel.snapshot.as_ref();
     assert_eq!(snapshot.map(|value| value.points), Some(10));
@@ -167,22 +205,17 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
     let cooldowns = read_exchange(directory, "p02-cooldowns.bin")?;
     let slots = read_exchange(directory, "p02-slots.bin")?;
     let refused = read_exchange(directory, "p02-refused.bin")?;
-    let ineligible_catalogue = read_exchange(directory, "p02-ineligible-catalogue.bin")?;
+    let ineligible_catalogue =
+        catalogue_exchanges(directory, "p02-ineligible-catalogue", BELOW_PROWESS)?;
     let ineligible = read_exchange(directory, "p02-ineligible.bin")?;
-    let catalogue = read_exchange(directory, "p02-catalogue.bin")?;
+    let catalogue = catalogue_exchanges(directory, "p02-catalogue", BOSS)?;
     let ready = read_exchange(directory, "p02-ready.bin")?;
     let invested = read_exchange(directory, "p02-equipped.bin")?;
-    let exchanges = [
-        &locked,
-        &cooldowns,
-        &slots,
-        &refused,
-        &ineligible_catalogue,
-        &ineligible,
-        &catalogue,
-        &ready,
-        &invested,
-    ];
+    let mut exchanges = vec![&locked, &cooldowns, &slots, &refused];
+    exchanges.extend(&ineligible_catalogue);
+    exchanges.push(&ineligible);
+    exchanges.extend(&catalogue);
+    exchanges.extend([&ready, &invested]);
     if cooldowns.session == [0; 16]
         || exchanges.iter().any(|item| {
             item.session != cooldowns.session
@@ -230,8 +263,7 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
     assert_slots(&panel, 1, "", 0, 1, 26, 10);
     assert_eq!(panel.slots.as_ref(), Some(&empty));
 
-    panel.browser_search = "Ferumbras".into();
-    apply_exchange(&mut panel, Intent::Catalogue, &ineligible_catalogue)?;
+    apply_catalogue(&mut panel, "Ferumbras", &ineligible_catalogue)?;
     assert!(
         panel
             .catalogue
@@ -249,8 +281,7 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
     assert_slots(&panel, 1, "", 0, 1, 26, 10);
     assert_eq!(panel.slots.as_ref(), Some(&empty));
 
-    panel.browser_search = "Rotworm Queen".into();
-    apply_exchange(&mut panel, Intent::Catalogue, &catalogue)?;
+    apply_catalogue(&mut panel, "Rotworm Queen", &catalogue)?;
     apply_exchange(&mut panel, Intent::SlotsDetailed, &ready)?;
     assert_slots(&panel, 0, "", 0, 1, 26, 10);
     panel.fields[0] = BOSS.into();
@@ -270,7 +301,7 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
     assert_slots(&panel, 0, BOSS, expected_ready, 1, 26, 10);
     assert_malformed_preserves_state(&mut panel, &slots, &cooldowns)?;
     println!(
-        "SEAM_EVIDENCE P02_REPLAY progress=exact requests=9 refusals=rat,below-prowess assignment=exact cooldown_ms=490 malformed=2"
+        "SEAM_EVIDENCE P02_REPLAY progress=exact requests=matched catalogue=verified refusals=rat,below-prowess assignment=exact cooldown_ms=490 malformed=2"
     );
     Ok(())
 }
