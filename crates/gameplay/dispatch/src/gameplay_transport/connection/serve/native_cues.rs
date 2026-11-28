@@ -284,11 +284,16 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
             .map_or(0, |entry| entry.0);
         return Ok(());
     }
-    let visuals = if selected {
+    let mut visuals = if selected {
         authority.observe_creature_visuals(session.creature_visual_revision)
     } else {
         Vec::new()
     };
+    let visual_cursor = visuals.last().map(|entry| entry.0);
+    visuals.retain(|(_, kind)| {
+        !matches!(kind, crate::map::facts::CreatureVisualKind::MeleeDamage { target, .. }
+            if *target != session.actor)
+    });
     let effects = if selected {
         authority
             .observe_current_actor_movement_effects(
@@ -306,6 +311,9 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         Vec::new()
     };
     if effects.is_empty() && visuals.is_empty() && speech.is_empty() {
+        if let Some(cursor) = visual_cursor {
+            session.creature_visual_revision = cursor;
+        }
         return Ok(());
     }
     let Some(native_floor) = authority
@@ -336,7 +344,6 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     };
 
     let effect_cursor = effects.last().map(|entry| entry.0);
-    let visual_cursor = visuals.last().map(|entry| entry.0);
     {
         let mut pending: Vec<_> = effects
             .into_iter()
@@ -393,6 +400,47 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
                                 to: position(to)?,
                                 missile_id: u32::from(missile),
                                 source,
+                            },
+                        })
+                    }
+                    CreatureVisualKind::MeleeDamage {
+                        position,
+                        attacker,
+                        target,
+                        applied,
+                    } if super::outbound::movement_effect_visible(observer, position) => {
+                        let entity_ref = |actor: ExactActorRef| {
+                            oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                                identity: actor.placement_identity(),
+                                generation: actor.actor_local_generation(),
+                            }
+                        };
+                        let attacker = entity_ref(attacker);
+                        let visible_attacker = channel
+                            .entities
+                            .iter()
+                            .any(|entry| {
+                                entry.identity == attacker.identity
+                                    && entry.generation == attacker.generation
+                            })
+                            .then_some(attacker);
+                        Some(wire::PresentationEvent {
+                            decision_ordinal: 1,
+                            emission_ordinal: 1,
+                            kind: wire::PresentationEventKind::ValueText {
+                                kind: wire::PresentationValueKind::DamageReceived,
+                                position: oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                                    x: i32::from(position.x),
+                                    y: i32::from(position.y),
+                                    floor: cue_floor(position.floor)?,
+                                },
+                                target: entity_ref(target),
+                                attacker: visible_attacker,
+                                primary: wire::PresentationValue {
+                                    value: u64::from(applied.get()),
+                                    color: wire::PresentationColor::Red,
+                                },
+                                secondary: None,
                             },
                         })
                     }
