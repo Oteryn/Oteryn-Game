@@ -37,6 +37,13 @@ fn vitals(health: u32, mana: u32) -> ActorVitals {
 /// Admits, sends a join snapshot that carries `ACTOR_VITALS` (revision 3) and then answers two
 /// casts: `Cast` with its vitals delta, then `Rejected` (the closed server gate) with none.
 async fn send_vitals_join(stream: &mut DuplexStream) -> Result<(), BoxError> {
+    send_vitals_join_with_content(stream, CONTENT_GENERATION).await
+}
+
+async fn send_vitals_join_with_content(
+    stream: &mut DuplexStream,
+    content_generation: [u8; 32],
+) -> Result<(), BoxError> {
     read_frame(&mut *stream).await?;
     write_frame(
         &mut *stream,
@@ -56,6 +63,10 @@ async fn send_vitals_join(stream: &mut DuplexStream) -> Result<(), BoxError> {
         .map_err(|error| format!("overlay snapshot: {error:?}"))?;
     let vitals_payload = actor_spell::encode_actor_vitals(&vitals(150, 55))
         .map_err(|error| format!("vitals: {error:?}"))?;
+    let spatial = encode_world_spatial(&WireSpatialObservation {
+        content_generation,
+        actor_position: ActorPosition { x: 0, y: 0, floor: 0 },
+    });
     for frame in encode_single_chunk_snapshot(
         1,
         1,
@@ -65,7 +76,7 @@ async fn send_vitals_join(stream: &mut DuplexStream) -> Result<(), BoxError> {
                 domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                 revision: 5,
                 snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                payload: &spatial(0),
+                payload: &spatial,
             },
             DomainSnapshot {
                 domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
