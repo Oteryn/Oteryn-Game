@@ -25,7 +25,7 @@ fn qualification_i09_rotate_menu() -> Result {
     )?;
     install_test_dialogs(&mut app);
     app.update();
-    choose(&mut app, "Rotate")?;
+    click_rotate(&mut app)?;
     let dispatched = std::sync::Arc::new(std::sync::Mutex::new(None));
     let peer = I09NativeTransport(std::sync::Arc::clone(&dispatched));
     tokio::runtime::Builder::new_current_thread()
@@ -56,6 +56,53 @@ fn qualification_i09_rotate_menu() -> Result {
     });
     let command = (object.placement, object.expected_revision, selection);
     println!("I09_MENU_USE={}", serde_json::to_string(&command)?);
+    Ok(())
+}
+
+fn click_rotate(app: &mut App) -> Result {
+    use bevy::{
+        camera::RenderTarget,
+        picking::pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput},
+        ui::UiGlobalTransform,
+        window::PrimaryWindow,
+    };
+    // Run layout and visibility before locating the actual button geometry.
+    app.update();
+    for mut visibility in app
+        .world_mut()
+        .query::<&mut InheritedVisibility>()
+        .iter_mut(app.world_mut())
+    {
+        *visibility = InheritedVisibility::VISIBLE;
+    }
+    let button = choice_entity(app, "Rotate").ok_or("missing choice: Rotate")?;
+    let position = app
+        .world()
+        .get::<UiGlobalTransform>(button)
+        .ok_or("Rotate geometry")?
+        .translation;
+    let window = app
+        .world_mut()
+        .query_filtered::<Entity, With<PrimaryWindow>>()
+        .single(app.world())?;
+    let location = Location {
+        target: RenderTarget::default()
+            .normalize(Some(window))
+            .ok_or("I09 window target")?,
+        position,
+    };
+    for action in [
+        PointerAction::Move { delta: Vec2::ZERO },
+        PointerAction::Press(PointerButton::Primary),
+        PointerAction::Release(PointerButton::Primary),
+    ] {
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            action,
+        ));
+        app.update();
+    }
     Ok(())
 }
 

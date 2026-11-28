@@ -40,7 +40,7 @@ fn fixture_with(
     prepare: Prepare,
 ) -> Result<Fixture, Box<dyn std::error::Error>> {
     let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
-    fixture_for_view(view, dpi, cover, loot, prepare)
+    fixture_for_view(view, dpi, cover, loot, prepare, false)
 }
 
 fn fixture_for_view(
@@ -49,6 +49,7 @@ fn fixture_for_view(
     cover: bool,
     loot: bool,
     prepare: Prepare,
+    picking: bool,
 ) -> Result<Fixture, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(None)?;
     let (link, commands, outbox) = play_channel();
@@ -76,6 +77,28 @@ fn fixture_for_view(
         .insert_non_send(owner)
         .insert_non_send(input)
         .add_systems(Update, super::super::route);
+    if picking {
+        app.add_plugins((
+            bevy::asset::AssetPlugin::default(),
+            bevy::window::WindowPlugin {
+                primary_window: None,
+                close_when_requested: false,
+                ..default()
+            },
+            bevy::input::InputPlugin,
+            bevy::input_focus::InputFocusPlugin,
+            bevy::transform::TransformPlugin,
+            bevy::image::ImagePlugin::default(),
+            bevy::image::TextureAtlasPlugin,
+            bevy::mesh::MeshPlugin,
+            bevy::camera::CameraPlugin,
+            bevy::text::TextPlugin,
+            bevy::ui::UiPlugin,
+            bevy::picking::DefaultPickingPlugins,
+            bevy::ui_widgets::ButtonPlugin,
+        ))
+        .init_resource::<Assets<TextureAtlasLayout>>();
+    }
     modal::install(&mut app);
     crate::bevy_shell::game_ui::initialize_item_pointer_test_state(&mut app);
     let world = app.world_mut().spawn((WorldRegion, Node::default())).id();
@@ -107,14 +130,16 @@ fn fixture_for_view(
             }),
         ))
         .id();
-    app.world_mut()
-        .resource_mut::<HoverMap>()
-        .entry(PointerId::Mouse)
-        .or_default()
-        .insert(
-            if cover { editor } else { world },
-            HitData::new(window, 0., None, None),
-        );
+    if !picking {
+        app.world_mut()
+            .resource_mut::<HoverMap>()
+            .entry(PointerId::Mouse)
+            .or_default()
+            .insert(
+                if cover { editor } else { world },
+                HitData::new(window, 0., None, None),
+            );
+    }
     app.insert_resource(WorldViewport {
         origin: UVec2::ZERO,
         size: UVec2::new(w + 80, h + 32),
@@ -170,12 +195,14 @@ pub(in crate::bevy_shell) fn qualification_right_click(
     ),
     Box<dyn std::error::Error>,
 > {
-    let f = fixture_for_view(view, 1., false, false, |_, _, _| Ok(()))?;
+    let f = fixture_for_view(view, 1., false, false, |_, _, _| Ok(()), true)?;
     let Fixture {
         mut app,
         commands,
         outbox,
         pointer,
+        world,
+        window,
         ..
     } = f;
     let view = &app
@@ -187,14 +214,62 @@ pub(in crate::bevy_shell) fn qualification_right_click(
         .view;
     let [x, y] = view.scene().view().tile_to_screen(tile);
     let (w, h) = view.scene().view().viewport_px();
+
+    use bevy::camera::{ComputedCameraValues, RenderTargetInfo};
+    app.world_mut().spawn((
+        Camera2d,
+        IsDefaultUiCamera,
+        Camera {
+            computed: ComputedCameraValues {
+                target_info: Some(RenderTargetInfo {
+                    physical_size: UVec2::new(w, h),
+                    scale_factor: 1.,
+                }),
+                ..default()
+            },
+            ..default()
+        },
+    ));
+    app.world_mut()
+        .get_mut::<Window>(window)
+        .ok_or("I09 window")?
+        .resolution
+        .set_physical_resolution(w, h);
+    app.world_mut().entity_mut(world).insert((
+        Node {
+            width: percent(100.),
+            height: percent(100.),
+            ..default()
+        },
+        InheritedVisibility::VISIBLE,
+    ));
     app.world_mut().resource_mut::<WorldViewport>().size = UVec2::new(w, h);
     app.world_mut().resource_mut::<InputFocus>().clear();
+    app.world_mut().entity_mut(pointer).despawn();
     let click = Vec2::new(x + 1., y + 1.);
-    app.world_mut()
-        .get_mut::<PointerLocation>(pointer)
-        .and_then(|pointer| pointer.into_inner().location.as_mut())
-        .ok_or("I09 world pointer location")?
-        .position = click;
+    use bevy::picking::pointer::{PointerAction, PointerInput};
+    let target = bevy::window::WindowRef::Entity(window)
+        .normalize(None)
+        .ok_or("I09 pick window")?;
+    app.update();
+    app.world_mut().write_message(PointerInput::new(
+        PointerId::Mouse,
+        Location {
+            target: bevy::camera::NormalizedRenderTarget::Window(target),
+            position: click,
+        },
+        PointerAction::Move { delta: Vec2::ZERO },
+    ));
+    app.update();
+    app.update();
+    if !app
+        .world()
+        .resource::<HoverMap>()
+        .get(&PointerId::Mouse)
+        .is_some_and(|hits| hits.contains_key(&world))
+    {
+        return Err("I09 UI picking did not hit the world".into());
+    }
     mouse(&mut app, click);
     app.update();
     Ok((app, commands, outbox))
