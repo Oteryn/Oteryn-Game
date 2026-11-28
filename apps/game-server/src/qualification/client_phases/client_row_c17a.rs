@@ -202,6 +202,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
+// Tibia Formulae applies percentage buffs to the modifiable part of base speed.
+fn global_haste_speed(base: u32, percent: u32) -> u32 {
+    (base - 40) * percent / 100 + 40
+}
+
+#[test]
+fn c17a_global_haste_replacement_has_a_distinct_pace() -> TestResult {
+    use oteryn_gameplay_characters::speed::StepSpeedTable;
+
+    let table = StepSpeedTable::embedded().ok_or("missing embedded speed table")?;
+    for (percent, expected_speed, expected_ms) in
+        [(100, 129, 500), (130, 155, 400), (170, 191, 350)]
+    {
+        let speed = global_haste_speed(129, percent);
+        assert_eq!(speed, expected_speed);
+        assert_eq!(
+            table.step_duration(u16::try_from(speed)?, 150),
+            Some(Duration::from_millis(expected_ms)),
+        );
+    }
+    Ok(())
+}
+
 async fn check_step(
     client: &mut oteryn_dev_client::DevClientSession,
     direction: StepDirection,
@@ -211,7 +234,7 @@ async fn check_step(
     ground: u16,
 ) -> TestResult {
     use oteryn_gameplay_characters::speed::StepSpeedTable;
-    let speed = base * expected_percent / 100;
+    let speed = global_haste_speed(base, expected_percent);
     let expected = StepSpeedTable::embedded()
         .and_then(|table| table.step_duration(u16::try_from(speed).ok()?, ground))
         .ok_or("C17a expected pace unavailable")?;
