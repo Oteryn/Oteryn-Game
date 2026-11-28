@@ -244,7 +244,7 @@ fn scenario_with_loot(scenario: LootScenario) -> TestResult {
                 });
                 let entry = harness
                     .root
-                    .freeze_corpse_loot_mint(
+                    .freeze_kill_loot_entry(
                         &authority,
                         &harness.node,
                         CorpseLootMintRequest {
