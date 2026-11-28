@@ -143,13 +143,33 @@ pub(super) fn journal(name: &str, source_track: &str) -> Option<QuestLogMission>
     let task = TASKS
         .iter()
         .find(|task| task.source_track == source_track)?;
-    let completion = JournalText::Text(format!("You reported this hunt to {}.", task.report_to));
-    let end_value = if task.phase == LUGRI_PHASE { 3 } else { 2 };
-    let mut stages = BTreeMap::from([(1, hunt_text(task)), (end_value, completion)]);
-    if task.phase == LUGRI_PHASE {
-        let repeat = TASKS.iter().find(|task| task.phase == LUGRI_REPEAT_PHASE)?;
-        stages.insert(2, hunt_text(repeat));
-    }
+    let mut stages = BTreeMap::from([(1, hunt_text(task))]);
+    let text = |line: &str| JournalText::Text(line.into());
+    let end_value = match task.phase {
+        LUGRI_PHASE => {
+            let repeat = TASKS.iter().find(|task| task.phase == LUGRI_REPEAT_PHASE)?;
+            stages.insert(2, text("If you dare, you can try finding and fighting Necropharus in his Halls of Sacrifice, deep under Drefia. Note that this will be the only time you're allowed to enter his room, so be well prepared."));
+            stages.insert(
+                3,
+                text("You faced Necropharus. Go back to Lugri if you like."),
+            );
+            stages.insert(4, hunt_text(repeat));
+            stages.insert(5, text("You've finished this task - for now. If you want to kill the different necromancers and priestesses again for an experience and money bonus, talk to Lugri about this task."));
+            5
+        }
+        BUDRIK_PHASE => {
+            stages.insert(2, text("Budrik found the hideout of The Horned Fox! You have a single chance of bringing him down. Go for it."));
+            stages.insert(3, text("You have slain 5000 minotaurs and fought The Horned Fox for Budrik and the whole dwarven kind."));
+            3
+        }
+        _ => {
+            stages.insert(
+                2,
+                JournalText::Text(format!("You reported this hunt to {}.", task.report_to)),
+            );
+            2
+        }
+    };
     Some(QuestLogMission {
         name: name.into(),
         track: task.phase.into(),
@@ -180,10 +200,15 @@ pub(crate) fn journal_value(
     value: i64,
     facts: &(impl crate::quest::log::QuestLogFacts + ?Sized),
 ) -> i64 {
-    match (phase, value) {
-        (LUGRI_PHASE, 3) if facts.track_value(LUGRI_REPEAT_PHASE) == Some(1) => 2,
-        (LUGRI_PHASE, 2) => 3,
-        (BUDRIK_PHASE, 3) => 2,
-        _ => value,
+    if phase == LUGRI_PHASE && value == 3 {
+        if facts.track_value(LUGRI_REPEAT_PHASE) == Some(1) {
+            return 4;
+        }
+        if facts.track_value("oteryn:quest-progress/hunting-tasks/necromancers-repeat/count")
+            == Some(1000)
+        {
+            return 5;
+        }
     }
+    value
 }

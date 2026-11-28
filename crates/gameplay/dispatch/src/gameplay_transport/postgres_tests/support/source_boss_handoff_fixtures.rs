@@ -20,14 +20,7 @@ use std::time::Duration;
 
 pub(super) async fn with_unrelated_admission<T>(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    delivery: impl std::future::Future<Output = T>,
-) -> TestResult<T> {
-    with_admission_at(owner, crate::foundation::MovementLocalPosition { x: 80, y: 80, floor: 7 }, delivery).await
-}
-
-pub(super) async fn with_admission_at<T>(
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
-    spare_pad: crate::foundation::MovementLocalPosition,
+    position: crate::foundation::MovementLocalPosition,
     delivery: impl std::future::Future<Output = T>,
 ) -> TestResult<T> {
     use crate::foundation::{GameSessionId, MovementFacing};
@@ -44,7 +37,7 @@ pub(super) async fn with_admission_at<T>(
         let session = GameSessionId::decode(&id(237)).map_err(debug)?;
         let slot = runtime.reserve_fresh_session(session).map_err(debug)?;
         let observer = runtime.commit_fresh_session(slot).map_err(debug)?;
-        runtime.initialize_pinned_test_position(observer, spare_pad).map_err(debug)?;
+        runtime.initialize_pinned_test_position(observer, position).map_err(debug)?;
         let before = runtime.read_actor_position(observer).map_err(debug)?;
         let turned = runtime.borrow_movement_position().commit_turn(before, MovementFacing::East).map_err(debug)?;
         (observer, turned)

@@ -250,7 +250,7 @@ pub(super) async fn exercise(
     }
     let delivery = use_coffin(owner, admitted, weakened, if lost_ack { 63 } else { 62 });
     let outcome = if lost_ack {
-        super::source_boss_handoff_fixtures::with_unrelated_admission(owner, delivery).await??
+        super::source_boss_handoff_fixtures::with_unrelated_admission(owner, crate::foundation::MovementLocalPosition { x: 80, y: 80, floor: 7 }, delivery).await??
     } else {
         delivery.await?
     };

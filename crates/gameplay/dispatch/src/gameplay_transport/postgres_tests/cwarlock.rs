@@ -393,7 +393,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             let before = owner.owner_now().get();
             let lever = use_lever(&owner, &admitted, &placement, 0, 4);
             let outcome = if mode == 5 {
-                super::source_boss_handoff_fixtures::with_admission_at(
+                super::source_boss_handoff_fixtures::with_unrelated_admission(
                     &owner, MovementLocalPosition { x: 33842, y: 32144, floor: 3 }, lever,
                 ).await?
             } else {

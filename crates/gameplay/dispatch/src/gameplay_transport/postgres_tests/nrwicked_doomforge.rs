@@ -623,7 +623,7 @@ async fn two_player_encounter(
         barrier.1.notify_one();
         using_lever.await
     } else if matches!(case, Scenario::AdmissionAckLost) {
-        super::source_boss_handoff_fixtures::with_admission_at(
+        super::source_boss_handoff_fixtures::with_unrelated_admission(
             owner, MovementLocalPosition { x: i32::from(STAGING.x), y: i32::from(STAGING.y) + 2, floor: 14 }, use_lever,
         ).await?
     } else {

@@ -239,21 +239,18 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("source USE clock")?;
-            let use_flame = flame_wire(
-                &owner,
-                &mut admitted,
-                if mode == FlameCase::NoEssence { 1 } else { 2 },
-                payload,
-            );
-            let interrupted = matches!(mode, FlameCase::Interrupted(_));
-            let (reply, feedback) = crate::gameplay_transport::quest_callbacks::INTERRUPT_FLAME_VISUAL
-                .scope(std::cell::Cell::new(interrupted), use_flame).await?;
-            if interrupted {
-                assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+            let command = if mode == FlameCase::NoEssence { 1 } else { 2 };
+            if matches!(mode, FlameCase::Interrupted(_)) {
+                use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+                let interrupted = flame_disconnect(&owner, &mut admitted, command, &payload);
+                crate::gameplay_transport::quest_callbacks::INTERRUPT_FLAME_VISUAL
+                    .scope(std::cell::Cell::new(true), interrupted).await?;
+                assert!(owner.prepare_quest_callback_resume(&mut admitted).await);
             }
+            let (reply, feedback) = flame_wire(&owner, &mut admitted, command, payload).await?;
             assert_eq!(
                 oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-                if interrupted { UseDisposition::Rejected } else { UseDisposition::Committed },
+                UseDisposition::Committed,
                 "actual source flame USE returns true for mode {mode:?}; only Normal consumes the essence"
             );
             if !matches!(mode, FlameCase::Normal | FlameCase::Interrupted(_)) {
@@ -351,6 +348,46 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
         result.is_ok()
     );
     result
+}
+
+async fn flame_disconnect(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    command: u64,
+    payload: &[u8],
+) -> TestResult {
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use oteryn_protocol_oteryn as protocol;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let frame = protocol::encode_client_command(1, &protocol::ClientCommandValue {
+        command_id: command, command_type: 2, payload,
+    }).map_err(debug)?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&u32::try_from(frame.len())?.to_be_bytes()).await?;
+    client.write_all(&frame).await?;
+    let previous = *admitted;
+    let serving = async move { serve_admitted(&mut server, previous, owner, IDLE_LIVENESS).await };
+    let reader = async move {
+        let mut buf = Vec::new();
+        client.read_to_end(&mut buf).await?;
+        let mut bytes = buf.as_slice();
+        while !bytes.is_empty() {
+            let len = bytes.read_u32().await? as usize;
+            let (frame, rest) = bytes.split_at_checked(len).ok_or("incomplete frame")?;
+            assert_ne!(protocol::decode_wire_envelope(frame).map_err(debug)?.message_type(),
+                protocol::MessageType::CommandResult);
+            bytes = rest;
+        }
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (end, read) = tokio::time::timeout(std::time::Duration::from_secs(5),
+        async { tokio::join!(serving, reader) }).await?;
+    let ConnectionEnd::AdmittedThenDisconnected(session) = end else {
+        return Err("pending USE must disconnect".into());
+    };
+    *admitted = session;
+    read
 }
 
 /// Actual command transport with native feedback observed through a CHAT egress marker.
