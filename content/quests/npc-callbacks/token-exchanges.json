@@ -423,7 +423,9 @@
         "Ah, excellent. Here is your ethereal ring."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1148639"
       ],
       "failure_reply": [
         "Bring an unenchanted ethereal ring and 5 silver tokens."
@@ -462,7 +464,9 @@
         "Ah, excellent. Here is your merudri brooch."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1194210"
       ],
       "failure_reply": [
         "Bring an unenchanted merudri brooch and 2 silver tokens."
@@ -501,7 +505,9 @@
         "Ah, excellent. Here is your flamingo amulet of valor."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1195622"
       ],
       "failure_reply": [
         "Bring an unenchanted flamingo amulet of valor and 5 silver tokens."
@@ -540,7 +546,9 @@
         "Ah, excellent. Here is your flamingo amulet of precision."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1197152"
       ],
       "failure_reply": [
         "Bring an unenchanted flamingo amulet of precision and 5 silver tokens."
@@ -579,7 +587,9 @@
         "Ah, excellent. Here is your flamingo amulet of destruction."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1195619"
       ],
       "failure_reply": [
         "Bring an unenchanted flamingo amulet of destruction and 5 silver tokens."
@@ -618,7 +628,9 @@
         "Ah, excellent. Here is your flamingo amulet of nature."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1195620"
       ],
       "failure_reply": [
         "Bring an unenchanted flamingo amulet of nature and 5 silver tokens."
@@ -657,7 +669,9 @@
         "Ah, excellent. Here is your swan amulet of balance."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/cledwyn.lua:26,102-163:sha256:915bab4d2c1e44b43cc4855c7b896c64e31cb3abe6598af461155bcbf8143431",
+        "https://tibia.fandom.com/wiki/Cledwyn",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1195623"
       ],
       "failure_reply": [
         "Bring an unenchanted swan amulet of balance and 5 silver tokens."
@@ -2512,7 +2526,9 @@
         "You just swapped 20 silver raid tokens for 1 love elixir."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+        "https://tibia.fandom.com/wiki/Jorge",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1082691"
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
@@ -2547,7 +2563,9 @@
         "You just swapped 20 silver raid tokens for 1 chaos critical dice."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-136:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+        "https://tibia.fandom.com/wiki/Jorge",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1082690"
       ],
       "failure_reply": [
         "I need at least 20 silver raid tokens for that."
@@ -3177,7 +3195,9 @@
         "Thank you, here is your santa ahau."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+        "https://tibia.fandom.com/wiki/Ruprecht",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1162764"
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
@@ -3212,7 +3232,9 @@
         "Thank you, here is your draccoon santa."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+        "https://tibia.fandom.com/wiki/Ruprecht",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1046708"
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
@@ -3247,7 +3269,9 @@
         "Thank you, here is your arbaziloth santa."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+        "https://tibia.fandom.com/wiki/Ruprecht",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1162761"
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
@@ -3282,7 +3306,9 @@
         "Thank you, here is your ancient bonelord santa."
       ],
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ruprecht.lua:54-129:sha256:6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+        "https://tibia.fandom.com/wiki/Ruprecht",
+        "https://tibia.fandom.com/wiki/Special:PermanentLink/1162763"
       ],
       "failure_reply": [
         "You don't have enough Christmas tokens."
