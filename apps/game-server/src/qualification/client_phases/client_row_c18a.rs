@@ -21,7 +21,7 @@ const CAST_TILE: TilePos = TilePos {
     y: 32204,
     floor: -7,
 };
-const RAT_TILE: TilePos = TilePos { x: CAST_TILE.x + 2, ..CAST_TILE };
+const RAT_TILE: TilePos = TilePos { x: CAST_TILE.x + 4, ..CAST_TILE };
 const REST_TILE: TilePos = TilePos {
     x: 32394,
     y: 32203,
@@ -356,6 +356,14 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         result?;
     };
     let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
+    let view = client.world_entities().ok_or("C18a placement visibility absent")?;
+    let other_creatures: Vec<_> = view.iter().filter(|entity|
+        entity.kind == oteryn_dev_client::EntityKind::Creature && entity.entity != target
+    ).map(|entity| (entity.entity, entity.position)).collect();
+    evidence(&format!("c18a_cast_isolation caster={here:?} rat_tile={RAT_TILE:?} target={target:?} other_creatures={other_creatures:?}"));
+    if !other_creatures.is_empty() {
+        return Err("C18a fixed cast site exposed another creature".into());
+    }
     evidence(&format!(
         "c18a_select_send at_ms={} command={} sequence={} caster={here:?} target={target:?}",
         lock_trace_time_ms(), client.next_command_id(), client.last_server_sequence()
@@ -390,6 +398,9 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             && combat.target == Some(target)
             && precast_frame.is_some_and(|(_, state)| state == combat)
         {
+            if rat.position.x.abs_diff(here.x).max(rat.position.y.abs_diff(here.y)) < 3 {
+                return Err(format!("C18a Rat approached melee before cast: target={target:?} position={:?}", rat.position).into());
+            }
             require_unique_rat_tile(
                 entities.iter().map(|entity| (tile(entity.position).ok(), entity.detail)),
                 tile(rat.position)?,
@@ -441,10 +452,19 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     ).await?;
     let vitals_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     let (vitals_sequence, vitals_payload, after) = loop {
-        if let Some((sequence, payload, after)) =
-            first_cast_vitals(&exchange.inbound[cast_send_offset..], cast_send_sequence, before).await?
-        {
-            break (sequence, payload, after);
+        match first_cast_vitals(&exchange.inbound[cast_send_offset..], cast_send_sequence, before).await {
+            Ok(Some((sequence, payload, after))) => break (sequence, payload, after),
+            Ok(None) => {}
+            Err(error) => {
+                for event in client.take_events() {
+                    trace_setup_combat(&client, &event);
+                }
+                let _ = client.service_liveness(Duration::from_millis(500)).await;
+                for event in client.take_events() {
+                    trace_setup_combat(&client, &event);
+                }
+                return Err(error);
+            }
         }
         if tokio::time::Instant::now() >= vitals_deadline {
             return Err("C18a first cast stats change absent".into());

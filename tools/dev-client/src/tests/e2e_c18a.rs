@@ -690,7 +690,7 @@ fn scorch_requires_the_exact_fire_cone_and_cast_decision() -> Result<(), Error> 
         y: 32204,
         floor: 7,
     };
-    let rat_tile = ActorPosition { x: 32407, ..origin };
+    let rat_tile = ActorPosition { x: 32409, ..origin };
     let caster = EntityRef {
         identity: [1; 16],
         generation: 1,
