@@ -371,7 +371,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             held.source_pending.as_deref().cloned()
         };
-        let permit = self.spell_lane_permit().await.ok_or(())?;
+        let Some(permit) = self.spell_lane_permit().await else {
+            if pending.is_some() {
+                // A retained source attempt can already have committed. Keep its
+                // original command pending for the loss/recovery owner.
+                return Err(());
+            }
+            // This command has not prepared or sent a source mutation. The
+            // fenced lane is a gameplay refusal for it, even during a probe
+            // for a different USE owner.
+            return Ok(Some(UseOutcome::rejected()));
+        };
         let pending = if let Some(pending) = pending {
             if pending.actor != actor || pending.command != command || pending.wire != wire {
                 return Err(());

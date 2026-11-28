@@ -318,6 +318,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } else {
                 integrity.admit().await
             };
+            super::command::finish_pending_house_input(authority, &mut admitted, command).await?;
             match commands
                 .begin(
                     command.command_id,

@@ -1,4 +1,4 @@
-//! NBREL3: the real durable guards refuse contention without ending a command stream.
+//! A busy House guard cannot refuse unrelated STEP input; the activity guard still can.
 use super::*;
 use crate::gameplay_transport::connection::{
     AdmissionRefusal, FreshAdmissionAttempt, FreshAdmissionAuthority,
@@ -109,9 +109,15 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                     .current_session(admitted.game_session_id)
                     .await?,
             );
-            for capability in [
-                86,
-                oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+            for (capability, expected) in [
+                (
+                    oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+                    (CommandStatus::Accepted, StepDisposition::Blocked, 1),
+                ),
+                (
+                    oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+                    (CommandStatus::Rejected, StepDisposition::Rejected, 0),
+                ),
             ] {
                 admitted.continuity.selected_capabilities =
                     crate::gameplay_transport::capabilities::SelectedCapabilities::select(
@@ -153,15 +159,17 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                         client.write_u32(first.len() as u32).await?;
                         client.write_all(&first).await?;
                     }
-                    let refusal = result(&mut client).await?;
-                    assert_eq!(refusal.0, CommandStatus::Rejected);
-                    assert_eq!(decode_step_result(&refusal.1), Ok(StepDisposition::Rejected));
-                    assert_eq!(refusal.1, [0x08, 0x03]);
+                    let first_result = result(&mut client).await?;
+                    assert_eq!(first_result.0, expected.0);
+                    assert_eq!(decode_step_result(&first_result.1), Ok(expected.1));
+                    if expected.0 == CommandStatus::Rejected {
+                        assert_eq!(first_result.1, [0x08, 0x03]);
+                    }
                     assert_eq!(
                         result(&mut client).await?,
-                        (CommandStatus::DuplicateReplay, refusal.1)
+                        (CommandStatus::DuplicateReplay, first_result.1)
                     );
-                    assert_eq!(probe.steps.get(), 0);
+                    assert_eq!(probe.steps.get(), expected.2);
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
                     let next = command(2)?;
                     client.write_u32(next.len() as u32).await?;
@@ -169,7 +177,7 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
                     let next_result = result(&mut client).await?;
                     assert_eq!(next_result.0, CommandStatus::Accepted);
                     assert_eq!(decode_step_result(&next_result.1), Ok(StepDisposition::Blocked));
-                    assert_eq!(probe.steps.get(), 1);
+                    assert_eq!(probe.steps.get(), expected.2 + 1);
                     client.shutdown().await?;
                     Ok::<_, Box<dyn std::error::Error>>(())
                 };

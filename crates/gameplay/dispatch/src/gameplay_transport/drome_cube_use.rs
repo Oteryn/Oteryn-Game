@@ -75,6 +75,30 @@ where
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// A freshly dispatched plain USE can be refused when the shared item lane
+    /// is fenced. A retained Cube or Aid write still owns its original result.
+    async fn drome_lane_unavailable(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let gate = states
+            .item_uses
+            .gate(&runtime, actor, command.game_session_id)
+            .ok_or(())?;
+        if gate
+            .cube_pending
+            .as_ref()
+            .is_some_and(|pending| pending.request.command_id == command.command_id)
+            || gate.last.is_some_and(|(id, _)| id == command.command_id)
+        {
+            return Err(());
+        }
+        Ok(Some(UseOutcome::rejected()))
+    }
+
     /// None delegates an ordinary item. Errors leave the command open for receipt replay.
     pub(in crate::gameplay_transport) async fn use_drome_cube_impl(
         &self,
@@ -102,7 +126,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(&intent).map_err(|_| ())?).into();
-        let _permit = self.spell_lane_permit().await.ok_or(())?;
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return self.drome_lane_unavailable(actor, command).await;
+        };
         let budget = AdmissionRetryBudget::for_command(self.root);
         match retry_cube_read(&budget, "drome_cube_receipt", || async {
             self.root

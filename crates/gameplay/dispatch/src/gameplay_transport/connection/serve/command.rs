@@ -74,6 +74,7 @@ where
     } else {
         session.integrity.admit().await
     };
+    finish_pending_house_input(authority, &mut session.admitted, command).await?;
     match session.commands.begin(
         command.command_id,
         session.generation,
@@ -522,6 +523,60 @@ where
     )
 }
 
+/// A real handoff must journal its first input before advancing the new stream.
+/// A native instance without a House marker still checks its exact transport.
+/// The owner retries both checks within its foreground budget. If that budget
+/// expires, resume can retry the original unreserved command.
+pub(super) async fn finish_pending_house_input<A: FreshAdmissionAuthority>(
+    authority: &A,
+    admitted: &mut AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<(), ServeEnd> {
+    if !requires_house_input_before_reservation(admitted, command.command_type)
+        || command.command_id != admitted.continuity.next_command_id
+    {
+        return Ok(());
+    }
+    let _permit = authority
+        .enter_input(admitted.game_session_id)
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
+    if let Err(error) = authority.house_transfer_input(*admitted).await {
+        operator_event(&format!(
+            "event=house_first_input_unrecorded command_type={} command_id={} error={error:?}",
+            command.command_type, command.command_id,
+        ));
+        return Err(ServeEnd::Disconnected);
+    }
+    if admitted.continuity.house_input_pending == Some(true) {
+        admitted.continuity.house_input_pending = Some(false);
+    }
+    Ok(())
+}
+
+fn requires_house_input_before_reservation(admitted: &AdmittedSession, command_type: u32) -> bool {
+    !is_house_transfer_command(command_type)
+        && match admitted.continuity.house_input_pending {
+            Some(pending) => pending,
+            // This is the exact native-instance fence checked by note_house_input.
+            None => {
+                admitted.controller.is_some()
+                    && admitted.item_fence.zip(admitted.runtime_actor).is_some_and(
+                        |(fence, actor)| {
+                            matches!(
+                                fence.runtime_scope,
+                                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                            ) && actor.runtime_scope() == fence.runtime_scope
+                        },
+                    )
+            }
+        }
+}
+
+fn is_house_transfer_command(command_type: u32) -> bool {
+    command_type == oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER
+}
+
 /// Keep holder contention distinct from lost authority in both command loops.
 pub(super) async fn guards<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -530,6 +585,7 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
 ) -> Result<bool, ServeEnd> {
     let house_input = match admitted.continuity.house_input_pending {
         Some(false) => Ok(()),
+        None if requires_house_input_before_reservation(admitted, command.command_type) => Ok(()),
         pending => {
             let result = authority.house_transfer_input(*admitted).await;
             if pending == Some(true) && result.is_ok() {
@@ -538,13 +594,28 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
             result
         }
     };
-    let failure = match house_input {
+    let house_failure = match house_input {
+        // Only a confirmed handoff needs a first-input receipt. An optional
+        // house check must never turn an unrelated command into a refusal.
+        Err(
+            crate::durability::DurabilityError::RootUnavailable
+            | crate::durability::DurabilityError::RootPassDeadlineExceeded,
+        ) if admitted.continuity.house_input_pending.is_none()
+            && !is_house_transfer_command(command.command_type) =>
+        {
+            None
+        }
         Err(error) => Some(("house_transfer_input", error)),
-        Ok(()) => authority
+        Ok(()) => None,
+    };
+    let failure = if house_failure.is_some() {
+        house_failure
+    } else {
+        authority
             .activity_transfer_input(*admitted)
             .await
             .err()
-            .map(|error| ("activity_transfer_input", error)),
+            .map(|error| ("activity_transfer_input", error))
     };
     let Some((guard, error)) = failure else {
         return Ok(true);

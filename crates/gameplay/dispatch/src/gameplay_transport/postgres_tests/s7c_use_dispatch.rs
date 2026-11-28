@@ -25,8 +25,8 @@ use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
 };
 use oteryn_protocol_oteryn::world_object::{
-    COMMAND_TYPE_USE_INTENT, UseDisposition, UseIntent, UseTarget, decode_use_result,
-    encode_item_use_intent,
+    COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
+    decode_use_result, encode_item_use_intent,
 };
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, decode_snapshot_chunk,
@@ -38,6 +38,7 @@ use tokio::io::{AsyncWriteExt as _, DuplexStream};
 
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
+const PRIMAL_BAG: &str = "oteryn:item.tibia.i39546";
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -48,6 +49,15 @@ enum Case {
     CubeCommitted,
     CoinCommitted,
     CoinNotApplied,
+    UseLaneFenced,
+}
+
+#[test]
+fn fresh_use_with_fenced_spell_lane_returns_typed_refusal() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::UseLaneFenced)
 }
 
 #[test]
@@ -152,6 +162,7 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         Case::CubeCommitted => ("s7c_cube_committed", &[(DROME_CUBE_KEY, 1)]),
         Case::CoinCommitted => ("s7c_coin_committed", &[(GOLD, 100)]),
         Case::CoinNotApplied => ("s7c_coin_not_applied", &[(GOLD, 100)]),
+        Case::UseLaneFenced => ("s7c_use_lane_fenced", &[(PRIMAL_BAG, 1)]),
     };
     let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
     let result = exercise(&h, case, entries).await;
@@ -163,7 +174,7 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 }
 
 async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResult {
-    let recovery = if matches!(case, Case::Gold | Case::CubeShort) {
+    let recovery = if matches!(case, Case::Gold | Case::CubeShort | Case::UseLaneFenced) {
         prepare_current_session(h).await?;
         None
     } else {
@@ -319,6 +330,35 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 client.shutdown().await?;
                 Ok(None)
             }
+            Case::UseLaneFenced => {
+                let bag = definition(PRIMAL_BAG)?;
+                let item = inventory
+                    .iter()
+                    .find(|item| item.item_definition_ref == bag)
+                    .ok_or("Primal Bag in initial view")?;
+                let station = MapUseTarget::Object(WorldObjectTarget {
+                    placement: b"map-station".to_vec(),
+                    expected_revision: 0,
+                });
+                for (command_id, target, map_target) in [
+                    (1, UseTarget::Item(item.handle), None),
+                    (2, UseTarget::ItemByDefinition(bag), Some(station.clone())),
+                    (3, UseTarget::Item(item.handle), Some(station)),
+                ] {
+                    send_use_intent(&mut client, 1, command_id, UseIntent {
+                        target,
+                        use_with: None,
+                        use_with_map_item: map_target,
+                        use_with_position: None,
+                    }).await?;
+                    assert_eq!(
+                        read_use(&mut client, command_id).await?,
+                        (CommandStatus::Rejected, UseDisposition::Rejected)
+                    );
+                }
+                client.shutdown().await?;
+                Ok(None)
+            }
             _ => {
                 let target = if matches!(case, Case::CoinCommitted | Case::CoinNotApplied) {
                     let gold = definition(GOLD)?;
@@ -397,6 +437,17 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             .await?,
             1
         ),
+        Case::UseLaneFenced => {
+            assert_eq!(retained.continuity.next_command_id, 4);
+            let bag = h
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await?
+                .ok_or("durable backpack")?;
+            assert!(bag.entries.iter().any(|entry| {
+                entry.item.definition.production_key == PRIMAL_BAG && entry.item.quantity == 1
+            }));
+        }
     }
     if let Some(target) = original_target {
         assert!(!owner.states.command_ingress.resumable(&retained));
@@ -478,6 +529,17 @@ struct WireOwner<'a, 'b, 'f, 's> {
     case: Case,
 }
 
+impl WireOwner<'_, '_, '_, '_> {
+    async fn fence_spell_lane(&self) -> Result<(), ()> {
+        let mut permit = self.owner.spell_lane.acquire().await.map_err(|_| ())?;
+        // An unresolved writer fences the lane even though this USE has never
+        // reached its writer. The foreign attempt remains parked on resolution.
+        let parked: Box<dyn std::any::Any + Send> = Box::new(());
+        permit.open_commit_window(parked, std::convert::identity).park();
+        Ok(())
+    }
+}
+
 impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
     fn session_commands(
         &self,
@@ -511,6 +573,23 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         items: &mut SessionItemView,
     ) -> Option<Result<Option<MapUpdate>, MapViewError>> {
         self.owner.observe_world_map(actor, view, items).await
+    }
+
+    async fn use_soul_war_source_items(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if !matches!(self.case, Case::UseLaneFenced) {
+            return Ok(None);
+        }
+        self.fence_spell_lane().await?;
+        let outcome = self.owner.use_soul_war_source_items(actor, command, intent, source, target).await;
+        self.owner.spell_lane.clear_after_reload().await;
+        outcome
     }
 
     async fn use_rune(
@@ -581,6 +660,12 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
             Case::CubeCommitted => {
                 crate::gameplay_transport::item_use::drome_cube::test_faults::lose_next_ack();
                 return using.await;
+            }
+            Case::UseLaneFenced => {
+                self.fence_spell_lane().await?;
+                let result = using.await;
+                self.owner.spell_lane.clear_after_reload().await;
+                return result;
             }
             Case::Gold | Case::CoinCommitted | Case::CoinNotApplied => return using.await,
             Case::CubeShort => Duration::from_millis(100),
@@ -683,13 +768,21 @@ async fn send_use(
     command_id: u64,
     target: UseTarget,
 ) -> TestResult {
-    let payload = encode_item_use_intent(&UseIntent {
+    send_use_intent(client, generation, command_id, UseIntent {
         target,
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,
-    })
-    .map_err(debug)?;
+    }).await
+}
+
+async fn send_use_intent(
+    client: &mut DuplexStream,
+    generation: u64,
+    command_id: u64,
+    intent: UseIntent,
+) -> TestResult {
+    let payload = encode_item_use_intent(&intent).map_err(debug)?;
     let frame = encode_client_command(
         generation,
         &ClientCommandValue {

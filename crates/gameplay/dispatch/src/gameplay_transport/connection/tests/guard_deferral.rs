@@ -38,6 +38,14 @@ impl FreshAdmissionAuthority for GuardAuthority {
         Some(at(0))
     }
 
+    async fn observe_character_inventory(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
+        Some(Default::default())
+    }
+
     async fn house_scope_ack(&self, _: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
         Ok(Some((1, vec![1])))
     }
@@ -105,6 +113,30 @@ impl FreshAdmissionAuthority for GuardAuthority {
         TabView::GeneralStats(GeneralStats::default())
             .encode()
             .map_err(|_| ())
+    }
+
+    async fn team_finder_leader(
+        &self,
+        _: AdmittedSession,
+        _: u64,
+        listing: Option<oteryn_protocol_oteryn::team_finder::LeaderListing>,
+    ) -> Option<bool> {
+        Some(listing.is_some())
+    }
+
+    async fn weapon_proficiency_catalogue(
+        &self,
+        _: ExactActorRef,
+        _: UseCommand,
+        offset: u32,
+    ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage> {
+        Some(
+            oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage {
+                offset,
+                total: 0,
+                entries: Vec::new(),
+            },
+        )
     }
 
     async fn logout(&self, _: AdmittedSession) -> LogoutReply {
@@ -195,7 +227,9 @@ fn guard_case(
                     });
                 }
                 let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
-                for activity in [false, true] {
+                // Only the activity guard can refuse an unrelated command on
+                // contention. Both guards must still enforce a lost fence.
+                for &activity in if transient { &[true][..] } else { &[false, true][..] } {
                     let authority = GuardAuthority {
                         movement: StepAuthority {
                             steps: RefCell::new(Vec::new()),
@@ -297,7 +331,7 @@ fn guard_case(
 }
 
 #[test]
-fn house_transfer_guard_deadline_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
+fn activity_guard_deadline_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
     guard_case(
         || DurabilityError::RootPassDeadlineExceeded,
         true,
@@ -308,8 +342,7 @@ fn house_transfer_guard_deadline_defers_and_replay_never_executes() -> Result<()
 }
 
 #[test]
-fn house_transfer_guard_unavailable_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>>
-{
+fn activity_guard_unavailable_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
     guard_case(
         || DurabilityError::RootUnavailable,
         true,
@@ -360,7 +393,7 @@ fn unselected_chat_and_unknown_command_keep_empty_guard_rejection() -> Result<()
 }
 
 #[test]
-fn house_scope_step_guard_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
+fn house_scope_activity_guard_defers_and_replay_never_executes() -> Result<(), Box<dyn Error>> {
     guard_case(
         || DurabilityError::RootPassDeadlineExceeded,
         true,
@@ -375,6 +408,147 @@ fn house_scope_step_guard_defers_and_replay_never_executes() -> Result<(), Box<d
         &[],
         true,
     )
+}
+
+#[test]
+fn team_finder_and_proficiency_dispatch_with_busy_house_holder() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::{ClientCommandValue, team_finder, weapon_proficiency};
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let mut admitted = positioned()?;
+                let offered =
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    offered,
+                    &[
+                        oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+                        CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                        oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+                        team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
+                        weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
+                    ],
+                )
+                .ok_or("capability selection")?;
+                let listing = team_finder::encode_upsert(team_finder::LeaderListing {
+                    min_level: 8,
+                    max_level: 100,
+                    vocation_mask: 1,
+                    slots: 2,
+                    free_slots: 1,
+                    party_members_join: false,
+                    timestamp: 0,
+                    target: team_finder::TeamTarget::Boss(1),
+                })
+                .map_err(|error| format!("{error:?}"))?;
+                for (command_type, payload) in [
+                    (
+                        team_finder::COMMAND_TYPE_TEAM_FINDER_LEADER_UPSERT,
+                        listing.as_slice(),
+                    ),
+                    (
+                        weapon_proficiency::COMMAND_TYPE_PROFICIENCY_CATALOGUE,
+                        &[0; 4],
+                    ),
+                ] {
+                    assert!(
+                        admitted
+                            .continuity
+                            .selected_capabilities
+                            .command_selected(command_type)
+                    );
+                    let authority = GuardAuthority {
+                        movement: StepAuthority {
+                            steps: RefCell::new(Vec::new()),
+                            tutorial_notices: Default::default(),
+                        },
+                        failure: Cell::new(Some(|| DurabilityError::RootUnavailable)),
+                        activity: false,
+                        commands: Default::default(),
+                    };
+                    let frame = oteryn_protocol_oteryn::encode_client_command(
+                        admitted.continuity.connection_generation,
+                        &ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload,
+                        },
+                    )?;
+                    let (_, replies) = drive_session(&authority, admitted, &[frame]).await?;
+                    let mut statuses = Vec::new();
+                    for reply in &replies {
+                        let envelope = decode_wire_envelope(reply)?;
+                        if envelope.message_type() == MessageType::CommandResult {
+                            statuses.push(
+                                oteryn_protocol_oteryn::decode_command_result(envelope.payload())?
+                                    .status,
+                            );
+                        }
+                    }
+                    assert_eq!(
+                        statuses,
+                        [CommandStatus::Accepted],
+                        "command {command_type}"
+                    );
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "guard test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn busy_first_house_input_leaves_unrelated_command_unreserved() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let mut admitted = positioned()?;
+                admitted.continuity.house_input_pending = Some(true);
+                let authority = GuardAuthority {
+                    movement: StepAuthority {
+                        steps: RefCell::new(Vec::new()),
+                        tutorial_notices: Default::default(),
+                    },
+                    failure: Cell::new(Some(|| DurabilityError::RootUnavailable)),
+                    activity: false,
+                    commands: Default::default(),
+                };
+                let (end, replies) = drive_session(
+                    &authority,
+                    admitted,
+                    &[command(
+                        1,
+                        1,
+                        u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                        StepDirection::East,
+                    )],
+                )
+                .await?;
+                let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
+                    return Err(format!("unexpected first House input end {end:?}").into());
+                };
+                assert_eq!(retained.continuity.next_command_id, 1);
+                assert_eq!(retained.continuity.house_input_pending, Some(true));
+                for reply in &replies {
+                    assert_ne!(
+                        decode_wire_envelope(reply)?.message_type(),
+                        MessageType::CommandResult
+                    );
+                }
+                assert!(authority.movement.steps.borrow().is_empty());
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "guard test thread panicked")?
+        .map_err(Into::into)
 }
 
 #[test]

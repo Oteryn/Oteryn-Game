@@ -243,7 +243,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             _ => None,
         };
         // Soul War source consumption may already be committing on an opaque failure.
-        if let Some(outcome) = tokio::time::timeout(
+        match tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_soul_war_source_items(
                 actor,
@@ -258,10 +258,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
         )
         .await
-        .ok()?
-        .ok()?
         {
-            return Some(Dispatch::Use(outcome));
+            Ok(Ok(Some(outcome))) => return Some(Dispatch::Use(outcome)),
+            Ok(Ok(None)) => {}
+            failure => {
+                let kind = if failure.is_err() { "deadline" } else { "owner_error" };
+                transport::operator_event(&format!(
+                    "event=use_dispatch_unresolved stage=soul_war_source kind={kind} command_id={}",
+                    command.command_id,
+                ));
+                return None;
+            }
         }
     }
     if let Ok(intent) = &decoded
@@ -365,7 +372,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 // Carried targets otherwise enter the pick owner directly. Probe W07
                 // here, including historical receipts whose source handle was retired.
                 // An opaque failure can follow a sent Soulpit entry or soul-core commit.
-                if let Some(outcome) = tokio::time::timeout(
+                match tokio::time::timeout(
                     std::time::Duration::from_secs(10),
                     authority.use_soulpit_items(
                         actor,
@@ -373,8 +380,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                             command_id: command.command_id, item_fence: admitted.item_fence },
                         intent.clone(), source, target,
                     ),
-                ).await.ok()?.ok()? {
-                    return Some(Dispatch::Use(outcome));
+                ).await {
+                    Ok(Ok(Some(outcome))) => return Some(Dispatch::Use(outcome)),
+                    Ok(Ok(None)) => {}
+                    failure => {
+                        let kind = if failure.is_err() { "deadline" } else { "owner_error" };
+                        transport::operator_event(&format!(
+                            "event=use_dispatch_unresolved stage=soulpit_items kind={kind} command_id={}",
+                            command.command_id,
+                        ));
+                        return None;
+                    }
                 }
                 // Converter and catalyst failures can hide a sent, unacknowledged commit.
                 if let (Some(source), Some(target)) = (source, target)
@@ -472,7 +488,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }, intent, item_view.as_ref()).await {
                     Some(outcome) => Dispatch::Use(outcome),
                     // A map-tool or craft owner can lose the acknowledgement after sending COMMIT.
-                    None => return None,
+                    None => {
+                        transport::operator_event(&format!(
+                            "event=use_dispatch_unresolved stage=map_tool_or_craft command_id={}",
+                            command.command_id,
+                        ));
+                        return None;
+                    }
                 }
             }
             Ok(intent) if transport::rune_use_bridge::routes(

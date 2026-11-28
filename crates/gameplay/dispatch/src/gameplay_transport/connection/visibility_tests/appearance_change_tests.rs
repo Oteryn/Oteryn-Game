@@ -26,7 +26,7 @@ impl FreshAdmissionAuthority for AppearanceChannel {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         Err(AdmissionRefusal::Unavailable)
     }
-    async fn house_transfer_input(
+    async fn activity_transfer_input(
         &self,
         _: AdmittedSession,
     ) -> Result<(), crate::durability::DurabilityError> {

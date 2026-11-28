@@ -42,7 +42,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let binding: [u8; 32] =
             Sha256::digest(encode_item_use_intent(intent).map_err(|_| ())?).into();
-        let _permit = self.spell_lane_permit().await.ok_or(())?;
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return self.drome_lane_unavailable(actor, command).await;
+        };
         let pending = {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
