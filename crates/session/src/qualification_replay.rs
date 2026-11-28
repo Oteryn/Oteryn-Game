@@ -85,16 +85,14 @@ pub async fn replay_respawn(
                     world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
                         | actor_spell::STATE_DOMAIN_ACTOR_VITALS
                 ) {
-                    match session.apply_state_delta(sequence, envelope.payload())? {
-                        SessionEvent::ActorVitals(delta) => {
-                            damaged |= delta.value.health < delta.value.max_health
-                                && session.world_spatial.actor_position != temple;
-                        }
-                        SessionEvent::WorldSpatial(delta) => {
-                            returned |= damaged && delta.value.actor_position == temple;
-                        }
-                        _ => return Err("unexpected C20d replay projection".into()),
+                    let before = session.world_spatial.actor_position;
+                    let event = session.apply_state_delta(sequence, envelope.payload())?;
+                    if let SessionEvent::ActorVitals(delta) = event {
+                        damaged |= delta.value.health < delta.value.max_health && before != temple;
                     }
+                    returned |= damaged
+                        && before != temple
+                        && session.world_spatial.actor_position == temple;
                 }
             }
             _ => return Err("unexpected frame in C20d replay".into()),
