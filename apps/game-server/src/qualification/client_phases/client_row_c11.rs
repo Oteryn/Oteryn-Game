@@ -266,7 +266,6 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     character_prep::grant_item(&client, 3043, 2).await?;
-    character_prep::grant_premium(&client).await?;
     // Authored King: (32311,32172,z=6). Stage on the adjacent throne-room floor.
     let throne = TilePos {
         x: 32311,
@@ -285,6 +284,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     relog(&mut client, clients, ("throne-room", throne)).await?;
+    character_prep::grant_premium(&client).await?;
     let (vocation, level) = admitted_vocation(&mut client).await?;
     if Some(vocation) != oteryn_protocol_oteryn::cyclopedia_character::vocation_id("knight")
         || level != 625
