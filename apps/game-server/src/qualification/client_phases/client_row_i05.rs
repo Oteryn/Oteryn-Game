@@ -106,7 +106,7 @@ fn verify_active_ring(
     Ok(ring.item.handle)
 }
 
-async fn move_ring<S: native::SessionStream>(
+pub(super) async fn move_ring<S: native::SessionStream>(
     client: &mut native::Session<S>,
     source: items::ItemHandle,
     destination: items::ItemMoveDestination,

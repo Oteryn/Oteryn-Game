@@ -1,9 +1,9 @@
 //! I05 full-row journey: general timed items, equipment charges and transforms.
 //!
-//! Concrete player scenario, derived from matrix row I05, the Crystal re-audit row,
+//! Concrete player scenario, derived from matrix row I05, Global Energy Ring behavior,
 //! and `timed_item_clock` (the live server owner):
 //! 1. Admit the node-boot character and send TIMED_ITEM Inspect for an unknown
-//!    server handle; expect an accepted command frame containing a Rejected result
+//!    server handle; expect a Rejected command envelope carrying typed Stale
 //!    and no inventory delta (the refusal path must not mutate custody).
 //! 2. Earn 5,000 gold through ordinary rat combat/corpse looting, walk to a compiled
 //!    world NPC who sells energy ring 3051, say `hi` and `trade`, buy one, and require
@@ -36,11 +36,16 @@ struct Journey {
 
 impl Journey {
     fn new() -> Self {
-        Self { step: 0, started: std::time::Instant::now() }
+        Self {
+            step: 0,
+            started: std::time::Instant::now(),
+        }
     }
     fn passed(&mut self, step: usize, observation: &str) {
         self.step = step;
-        evidence(&format!("I05_CHECK step={step} PASS observed={observation}"));
+        evidence(&format!(
+            "I05_CHECK step={step} PASS observed={observation}"
+        ));
     }
     fn finish(self, result: TestResult) {
         if let Err(error) = &result {
@@ -48,7 +53,11 @@ impl Journey {
         }
         evidence(&format!(
             "e2e_all scenario=I05.full status={} seconds={:.3}",
-            if result.is_ok() && self.step == 6 { "PASS" } else { "FAIL" },
+            if result.is_ok() && self.step == 6 {
+                "PASS"
+            } else {
+                "FAIL"
+            },
             self.started.elapsed().as_secs_f64()
         ));
     }
@@ -56,7 +65,11 @@ impl Journey {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Journey::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(420),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => Err("journey-timeout:no-server-reply-within-420s".into()),
@@ -84,11 +97,23 @@ async fn timed_command(
             &payload,
         )
         .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!("timed-command-status:{:?}", reply.status).into());
+    let result = timed::decode_timed_item_result(&reply.payload)
+        .map_err(|error| format!("timed-result-decode:{error:?}:envelope={reply:?}"))?;
+    let expected = if result.disposition == timed::TimedDisposition::Ok {
+        CommandStatus::Accepted
+    } else {
+        CommandStatus::Rejected
+    };
+    if reply.status != expected {
+        return Err(format!(
+            "timed-command-status-mismatch:expected={expected:?}:envelope={reply:?}"
+        )
+        .into());
     }
-    timed::decode_timed_item_result(&reply.payload)
-        .map_err(|error| format!("timed-result-decode:{error:?}").into())
+    if action == timed::TimedAction::Inspect && target.get() == u64::MAX {
+        evidence(&format!("I05_UNKNOWN_HANDLE envelope={reply:?}"));
+    }
+    Ok(result)
 }
 
 fn reference(id: u32) -> TestResult<NonZeroU32> {
@@ -97,11 +122,23 @@ fn reference(id: u32) -> TestResult<NonZeroU32> {
 }
 
 fn carried_gold(client: &oteryn_dev_client::DevClientSession) -> TestResult<u64> {
-    let coins = [(reference(3031)?, 1), (reference(3035)?, 100), (reference(3043)?, 10_000)];
-    Ok(client.inventory().ok_or("gold-inventory-missing")?.entries.iter().map(|entry| {
-        coins.iter().find(|(key, _)| *key == entry.item_definition_ref)
-            .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
-    }).sum())
+    let coins = [
+        (reference(3031)?, 1),
+        (reference(3035)?, 100),
+        (reference(3043)?, 10_000),
+    ];
+    Ok(client
+        .inventory()
+        .ok_or("gold-inventory-missing")?
+        .entries
+        .iter()
+        .map(|entry| {
+            coins
+                .iter()
+                .find(|(key, _)| *key == entry.item_definition_ref)
+                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
+        })
+        .sum())
 }
 
 async fn earn_gold(
@@ -120,23 +157,47 @@ async fn earn_gold(
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     while carried_gold(client)? < PRICE {
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("combat-loot-budget-exhausted:gold={}:required={PRICE}", carried_gold(client)?).into());
+            return Err(format!(
+                "combat-loot-budget-exhausted:gold={}:required={PRICE}",
+                carried_gold(client)?
+            )
+            .into());
         }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("rat-walk:{error}"), error) })?;
-        client_hunt::hunt(client).await.map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("rat-combat-loot:{error}"), error) })?;
+        travel_to_spawn(client, world, spawns, "oteryn:creature.rat")
+            .await
+            .map_err(|error| {
+                verdict::record_error(verdict::IndexedError::as_error(&error));
+                verdict::context(format!("rat-walk:{error}"), error)
+            })?;
+        client_hunt::hunt(client).await.map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(format!("rat-combat-loot:{error}"), error)
+        })?;
     }
     Ok(())
 }
 
-fn bag_handles(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) -> TestResult<BTreeSet<items::ItemHandle>> {
-    let inventory = client.inventory().ok_or("step=ring-custody missing=inventory")?;
-    Ok(inventory.entries.iter().filter(|entry| entry.item_definition_ref == key)
-        .map(|entry| entry.handle).collect())
+fn bag_handles(
+    client: &oteryn_dev_client::DevClientSession,
+    key: NonZeroU32,
+) -> TestResult<BTreeSet<items::ItemHandle>> {
+    let inventory = client
+        .inventory()
+        .ok_or("step=ring-custody missing=inventory")?;
+    Ok(inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == key)
+        .map(|entry| entry.handle)
+        .collect())
 }
 
 fn item_count(client: &oteryn_dev_client::DevClientSession, key: NonZeroU32) -> TestResult<u64> {
-    Ok(client.inventory().ok_or("item-count-inventory-missing")?.entries.iter()
+    Ok(client
+        .inventory()
+        .ok_or("item-count-inventory-missing")?
+        .entries
+        .iter()
         .filter(|entry| entry.item_definition_ref == key)
         .map(|entry| u64::from(entry.count.get()))
         .sum())
@@ -151,7 +212,8 @@ async fn wait_for_item(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         if previous_count.checked_add(1) == Some(item_count(client, key)?)
-            && let Some(handle) = added_handle(bag_handles(client, key)?.into_iter(), previous_handles)
+            && let Some(handle) =
+                added_handle(bag_handles(client, key)?.into_iter(), previous_handles)
         {
             return Ok(handle);
         }
@@ -177,61 +239,119 @@ async fn buy_energy_ring(
         root.join("content/services/trade/trade-00000-00323.json"),
     )?)?;
     let key = format!("oteryn:item.tibia.i{ENERGY_RING}");
-    let sellers: BTreeSet<String> = catalogue["records"].as_array().ok_or("trade-records-missing")?
-        .iter().filter_map(|record| {
+    let sellers: BTreeSet<String> = catalogue["records"]
+        .as_array()
+        .ok_or("trade-records-missing")?
+        .iter()
+        .filter_map(|record| {
             let declaration = &record["declaration"];
-            declaration["offers"].as_array()?.iter().any(|offer| {
-                offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key
-            }).then(|| declaration["identity"]["key"].as_str()).flatten()
+            declaration["offers"]
+                .as_array()?
+                .iter()
+                .any(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
+                .then(|| declaration["identity"]["key"].as_str())
+                .flatten()
                 .and_then(|service| service.strip_prefix("oteryn:service.trade."))
                 .map(|name| format!("oteryn:npc.{name}"))
-        }).collect();
+        })
+        .collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let (seller, path) = npcs.npcs.iter().filter(|entry| sellers.contains(&entry.key))
-        .filter_map(|entry| route(world, here, |at| entry.placements.iter().any(|place| {
-            place.floor == at.floor && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
-        })).map(|path| (entry, path)))
+    let (seller, path) = npcs
+        .npcs
+        .iter()
+        .filter(|entry| sellers.contains(&entry.key))
+        .filter_map(|entry| {
+            route(world, here, |at| {
+                entry.placements.iter().any(|place| {
+                    place.floor == at.floor
+                        && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
+                })
+            })
+            .map(|path| (entry, path))
+        })
         .min_by_key(|(_, path)| path.len())
         .ok_or_else(|| format!("energy-ring-seller-unreachable:sellers={sellers:?}"))?;
     walk(client, world, &path).await?;
-    let actor = client.world_entities().and_then(|view| view.iter().find(|entry| {
-        entry.kind == oteryn_dev_client::EntityKind::Npc && seller.placements.iter().any(|place| {
-            entry.position.x == i32::from(place.x) && entry.position.y == i32::from(place.y)
-                && entry.position.floor == -i16::from(place.floor)
+    let actor = client
+        .world_entities()
+        .and_then(|view| {
+            view.iter().find(|entry| {
+                entry.kind == oteryn_dev_client::EntityKind::Npc
+                    && seller.placements.iter().any(|place| {
+                        entry.position.x == i32::from(place.x)
+                            && entry.position.y == i32::from(place.y)
+                            && entry.position.floor == -i16::from(place.floor)
+                    })
+            })
         })
-    })).map(|entry| entry.entity).ok_or("energy-ring-seller-actor-missing")?;
+        .map(|entry| entry.entity)
+        .ok_or("energy-ring-seller-actor-missing")?;
     for text in ["hi", "trade"] {
-        let reply = shop_runtime::talk(client.session_mut(), &npc::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
+        let reply = shop_runtime::talk(
+            client.session_mut(),
+            &npc::NpcTalkIntent {
+                npc_actor: actor,
+                text: text.into(),
+            },
+        )
+        .await?;
         if reply != npc::NpcIntentDisposition::Ok {
             return Err(format!("npc-talk-refused:text={text}:reply={reply:?}").into());
         }
     }
-    let delta = client.session_mut().read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1).await?;
-    let window = npc::decode_npc_trade_window(&delta.payload).map_err(|error| format!("trade-window-decode:{error:?}"))?;
+    let delta = client
+        .session_mut()
+        .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
+        .await?;
+    let window = npc::decode_npc_trade_window(&delta.payload)
+        .map_err(|error| format!("trade-window-decode:{error:?}"))?;
     let wanted = reference(ENERGY_RING)?;
-    let (offer_index, offer) = window.offers.iter().enumerate().find(|(_, offer)| {
-        offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == wanted.get()
-    }).ok_or("energy-ring-live-offer-missing")?;
+    let (offer_index, offer) = window
+        .offers
+        .iter()
+        .enumerate()
+        .find(|(_, offer)| {
+            offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == wanted.get()
+        })
+        .ok_or("energy-ring-live-offer-missing")?;
     let previous_count = item_count(client, wanted)?;
     let previous_handles = bag_handles(client, wanted)?;
-    let reply = shop_runtime::buy(client.session_mut(), &npc::NpcTradeIntent {
-        npc_actor: actor,
-        catalogue_revision: window.open.ok_or("energy-ring-trade-window-closed")?.1,
-        offer_index: u32::try_from(offer_index)?,
-        side: offer.side,
-        quantity: 1,
-        expected_unit_price: offer.unit_price,
-    }).await?;
+    let reply = shop_runtime::buy(
+        client.session_mut(),
+        &npc::NpcTradeIntent {
+            npc_actor: actor,
+            catalogue_revision: window.open.ok_or("energy-ring-trade-window-closed")?.1,
+            offer_index: u32::try_from(offer_index)?,
+            side: offer.side,
+            quantity: 1,
+            expected_unit_price: offer.unit_price,
+        },
+    )
+    .await?;
     if reply != npc::NpcIntentDisposition::Ok {
-        return Err(format!("energy-ring-buy-refused:reply={reply:?}:gold={}:price={}", carried_gold(client)?, offer.unit_price).into());
+        return Err(format!(
+            "energy-ring-buy-refused:reply={reply:?}:gold={}:price={}",
+            carried_gold(client)?,
+            offer.unit_price
+        )
+        .into());
     }
     wait_for_item(client, wanted, previous_count, &previous_handles).await
 }
 
-fn equipped_ring(client: &oteryn_dev_client::DevClientSession, active: NonZeroU32) -> TestResult<items::ItemHandle> {
-    client.inventory().and_then(|view| view.equipment.iter().find(|entry| {
-        entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active
-    })).map(|entry| entry.item.handle).ok_or("active-energy-ring-equipment-delta-missing".into())
+fn equipped_ring(
+    client: &oteryn_dev_client::DevClientSession,
+    active: NonZeroU32,
+) -> TestResult<items::ItemHandle> {
+    client
+        .inventory()
+        .and_then(|view| {
+            view.equipment.iter().find(|entry| {
+                entry.slot == items::EquipmentSlot::Ring && entry.item.item_definition_ref == active
+            })
+        })
+        .map(|entry| entry.item.handle)
+        .ok_or("active-energy-ring-equipment-delta-missing".into())
 }
 
 const STALE_PROBE_ACTION: timed::TimedAction = timed::TimedAction::Use;
@@ -242,47 +362,70 @@ fn has_paused_budget(
     previous_ms: u64,
 ) -> bool {
     first.disposition == timed::TimedDisposition::Ok
-        && first.remaining_ms.is_some_and(|ms| (1..=previous_ms).contains(&ms))
+        && first
+            .remaining_ms
+            .is_some_and(|ms| (1..=previous_ms).contains(&ms))
         && first == later
 }
 
 async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin: serde_json::Value = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let pin: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0xb0).await?;
     let result: TestResult = async {
-        if !client.selected_capabilities().contains(&timed::CAPABILITY_TIMED_ITEM_V1) {
+        if !client
+            .selected_capabilities()
+            .contains(&timed::CAPABILITY_TIMED_ITEM_V1)
+        {
             return Err("timed-item-capability-not-offered".into());
         }
-        let before = client.inventory().cloned().ok_or("refusal-inventory-missing")?;
+        let before = client
+            .inventory()
+            .cloned()
+            .ok_or("refusal-inventory-missing")?;
         let unknown = items::ItemHandle::new(u64::MAX).ok_or("invalid-test-handle")?;
         let refused = timed_command(&mut client, timed::TimedAction::Inspect, unknown, 0).await?;
-        if refused != timed::TimedItemResult::refused(timed::TimedDisposition::Rejected)
-            || client.inventory() != Some(&before) {
+        if refused != timed::TimedItemResult::refused(timed::TimedDisposition::Stale)
+            || client.inventory() != Some(&before)
+        {
             return Err(format!("unknown-handle-not-rollback-safe:reply={refused:?}").into());
         }
-        row.passed(1, "timed-rejected+inventory-unchanged");
+        row.passed(1, "rejected-envelope+typed-stale+inventory-unchanged");
 
         earn_gold(&mut client, world, &metadata.spawns).await?;
         let carried = buy_energy_ring(&mut client, world, &metadata.npcs).await?;
         row.passed(2, "combat-loot+npc-talk+trade-ok+inventory-delta");
 
-        client.take_events();
-        let moved = client.move_item(&items::ItemMoveIntent {
-            source: carried,
-            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
-        }).await?;
-        if moved.outcome != items::ItemMoveOutcome::Moved {
-            return Err(format!("energy-ring-equip-refused:reply={moved:?}").into());
-        }
+        let delta = super::client_row_i05::move_ring(
+            client.session_mut(),
+            carried,
+            items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
+        )
+        .await?;
         let active = reference(ACTIVE_ENERGY_RING)?;
         let handle = equipped_ring(&client, active)?;
+        if !delta.value.equipment.iter().any(|entry| {
+            entry.slot == items::EquipmentSlot::Ring
+                && entry.item.handle == handle
+                && entry.item.item_definition_ref == active
+                && entry.item.count.get() == 1
+        }) {
+            return Err("energy-ring-first-equip-delta-mismatch".into());
+        }
         row.passed(3, "item-move-moved+3051-to-3088-equipment-delta");
 
         let inspected = timed_command(&mut client, timed::TimedAction::Inspect, handle, 0).await?;
-        let remaining = inspected.remaining_ms.ok_or("inspect-missing-remaining-ms")?;
+        let remaining = inspected
+            .remaining_ms
+            .ok_or("inspect-missing-remaining-ms")?;
         if inspected.disposition != timed::TimedDisposition::Ok
             || inspected.revision != 0
             || remaining == 0
@@ -290,64 +433,117 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         {
             return Err(format!("equipped-inspect-invalid:reply={inspected:?}").into());
         }
-        let equipment = client.inventory().map(|view| view.equipment.clone()).ok_or("stale-equipment-missing")?;
+        let equipment = client
+            .inventory()
+            .map(|view| view.equipment.clone())
+            .ok_or("stale-equipment-missing")?;
         let stale = timed_command(&mut client, STALE_PROBE_ACTION, handle, u64::MAX).await?;
         if stale.disposition != timed::TimedDisposition::Stale
-            || client.inventory().is_none_or(|view| view.equipment != equipment) {
+            || client
+                .inventory()
+                .is_none_or(|view| view.equipment != equipment)
+        {
             return Err(format!("wrong-revision-not-stale-or-mutated:reply={stale:?}").into());
         }
-        let current = timed_command(&mut client, timed::TimedAction::Inspect, handle, inspected.revision).await?;
-        if current.disposition != timed::TimedDisposition::Ok { return Err(format!("current-revision-inspect-refused:reply={current:?}").into()); }
-        row.passed(4, "inspect-ok+revision-zero+bounded-budget+stale-refusal+no-delta+current-revision-ok");
+        let current = timed_command(
+            &mut client,
+            timed::TimedAction::Inspect,
+            handle,
+            inspected.revision,
+        )
+        .await?;
+        if current.disposition != timed::TimedDisposition::Ok {
+            return Err(format!("current-revision-inspect-refused:reply={current:?}").into());
+        }
+        row.passed(
+            4,
+            "inspect-ok+revision-zero+bounded-budget+stale-refusal+no-delta+current-revision-ok",
+        );
 
         let old_session = client.join_snapshot().game_session_id;
-        if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
             return Err("logout-refused-before-persistence-check".into());
         }
         client = connect_world(clients, 0xb1).await?;
-        if client.join_snapshot().game_session_id == old_session { return Err("fresh-admission-reused-session".into()); }
+        if client.join_snapshot().game_session_id == old_session {
+            return Err("fresh-admission-reused-session".into());
+        }
         let durable_handle = equipped_ring(&client, active)?;
-        let durable = timed_command(&mut client, timed::TimedAction::Inspect, durable_handle, current.revision).await?;
+        let durable = timed_command(
+            &mut client,
+            timed::TimedAction::Inspect,
+            durable_handle,
+            current.revision,
+        )
+        .await?;
         if durable.disposition != timed::TimedDisposition::Ok
-            || durable.remaining_ms.is_none_or(|value| value == 0 || value > remaining) {
-            return Err(format!("fresh-admission-timer-not-durable:before={remaining}:reply={durable:?}").into());
+            || durable
+                .remaining_ms
+                .is_none_or(|value| value == 0 || value > remaining)
+        {
+            return Err(format!(
+                "fresh-admission-timer-not-durable:before={remaining}:reply={durable:?}"
+            )
+            .into());
         }
         row.passed(5, "fresh-session+active-transform+nonincreasing-timer");
-        let last_equipped_ms = durable.remaining_ms.ok_or("step=unequip missing=last-equipped-budget")?;
+        let last_equipped_ms = durable
+            .remaining_ms
+            .ok_or("step=unequip missing=last-equipped-budget")?;
         let base = reference(ENERGY_RING)?;
         let previous_count = item_count(&client, base)?;
         let previous_handles = bag_handles(&client, base)?;
-        let moved = client.move_item(&items::ItemMoveIntent {
-            source: durable_handle,
-            destination: items::ItemMoveDestination::MainBackpack,
-        }).await?;
+        let moved = client
+            .move_item(&items::ItemMoveIntent {
+                source: durable_handle,
+                destination: items::ItemMoveDestination::MainBackpack,
+            })
+            .await?;
         if moved.outcome != items::ItemMoveOutcome::Moved {
             return Err(format!("step=unequip observed={moved:?}").into());
         }
-        let paused_handle = wait_for_item(&mut client, base, previous_count, &previous_handles).await?;
+        let paused_handle =
+            wait_for_item(&mut client, base, previous_count, &previous_handles).await?;
         if equipped_ring(&client, active).is_ok() {
             return Err("step=unequip observed=active-ring-still-equipped".into());
         }
-        let paused = timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, 0).await?;
+        let paused =
+            timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, 0).await?;
         client.service_liveness(Duration::from_secs(2)).await?;
-        let later = timed_command(&mut client, timed::TimedAction::Inspect, paused_handle, paused.revision).await?;
+        let later = timed_command(
+            &mut client,
+            timed::TimedAction::Inspect,
+            paused_handle,
+            paused.revision,
+        )
+        .await?;
         if !has_paused_budget(&paused, &later, last_equipped_ms) {
-            return Err(format!("step=unequip-pause observed=initial:{paused:?}/later:{later:?}").into());
+            return Err(
+                format!("step=unequip-pause observed=initial:{paused:?}/later:{later:?}").into(),
+            );
         }
         row.passed(6, "unequip-transformed-to-base+paused-duration-stable");
         Ok(())
-    }.await;
+    }
+    .await;
     let release = async {
-        if client.session_mut().logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
             return Err("final-logout-refused".into());
         }
         Ok(())
-    }.await;
+    }
+    .await;
     result.and(release)
 }
 
-
-fn added_handle(handles: impl Iterator<Item = items::ItemHandle>, previous: &BTreeSet<items::ItemHandle>) -> Option<items::ItemHandle> {
+fn added_handle(
+    handles: impl Iterator<Item = items::ItemHandle>,
+    previous: &BTreeSet<items::ItemHandle>,
+) -> Option<items::ItemHandle> {
     let mut added = handles.filter(|handle| !previous.contains(handle));
     let first = added.next()?;
     added.next().is_none().then_some(first)
@@ -360,9 +556,15 @@ mod tests {
         let old = items::ItemHandle::new(1).ok_or("old handle")?;
         let moved = items::ItemHandle::new(2).ok_or("moved handle")?;
         let previous = BTreeSet::from([old]);
-        assert_eq!(added_handle([old, moved].into_iter(), &previous), Some(moved));
+        assert_eq!(
+            added_handle([old, moved].into_iter(), &previous),
+            Some(moved)
+        );
         assert_eq!(added_handle([old].into_iter(), &previous), None);
-        assert_eq!(added_handle([old, moved, moved].into_iter(), &previous), None);
+        assert_eq!(
+            added_handle([old, moved, moved].into_iter(), &previous),
+            None
+        );
         Ok(())
     }
 
@@ -377,7 +579,10 @@ mod tests {
             remaining_ms: Some(50),
             ..timed::TimedItemResult::refused(timed::TimedDisposition::Ok)
         };
-        let countdown = timed::TimedItemResult { remaining_ms: Some(49), ..paused };
+        let countdown = timed::TimedItemResult {
+            remaining_ms: Some(49),
+            ..paused
+        };
         assert!(has_paused_budget(&paused, &paused, 60));
         assert!(!has_paused_budget(&paused, &countdown, 60));
         assert!(!has_paused_budget(&paused, &paused, 40));
@@ -385,6 +590,9 @@ mod tests {
 
     #[test]
     fn required_item_ids_and_price_are_fixed() {
-        assert_eq!((ENERGY_RING, ACTIVE_ENERGY_RING, PRICE), (3051, 3088, 5_000));
+        assert_eq!(
+            (ENERGY_RING, ACTIVE_ENERGY_RING, PRICE),
+            (3051, 3088, 5_000)
+        );
     }
 }
