@@ -170,6 +170,31 @@ case "$NODE_BOOT_WORLD_PROFILE" in
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac
+    # P16.client uses Eremo's authored island placement in the town projection.
+    case ",${selected_groups//[[:space:]]/}," in
+      ,,|*,rows,*)
+        if python3 - "${OTERYN_E2E_ROW_BATCH:-}" <<'PY_P16_REGION'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    raise SystemExit(0)
+parts = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+if parts is None:
+    raise SystemExit(1)
+start, length = (value.lstrip("0") or "0" for value in parts.groups())
+limit = str(2 * sys.maxsize + 1)
+if any((len(value), value) > (len(limit), limit) for value in (start, length)):
+    raise SystemExit(1)
+index = 172  # e2e_row_selected in client_phases/world.rs
+raise SystemExit(not int(start) <= index < int(start) + int(length))
+PY_P16_REGION
+        then
+          WORLD_REGIONS+=";130,124"
+        fi
+        ;;
+    esac
     ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;

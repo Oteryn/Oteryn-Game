@@ -291,6 +291,30 @@ WORK=.
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
+    def test_eremo_region_is_included_only_for_selected_p16_town_batches(self):
+        profile = section('NODE_BOOT_WORLD_PROFILE=', 'readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS')
+        for group, batch, selected in (
+            ('rows', '172:1', True),
+            ('rows', '171:2', True),
+            ('rows', '+0172:+01', True),
+            ('rows', 'all', True),
+            ('', '172:1', True),
+            ('rows', '171:1', False),
+            ('rows', '173:1', False),
+            ('rows', '172:0', False),
+            ('rows', '', False),
+            ('rows', '172:x', False),
+            ('f6', '172:1', False),
+        ):
+            with self.subTest(group=group, batch=batch):
+                result = bash(
+                    'set -Eeuo pipefail\n' + profile + 'printf "%s\\n" "$WORLD_REGIONS"\n',
+                    {'GAME_SOURCE': str(HERE.parents[2]), 'NODE_BOOT_E2E_ONLY': group,
+                     'OTERYN_E2E_ROW_BATCH': batch},
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual('130,124' in result.stdout.strip().split(';'), selected)
+
     def test_fresh_world_has_disjoint_core_packet_mp_and_sweep_fixtures(self):
         fixtures = section('readonly ACCOUNT_ID=', 'readonly FRESH_KEY_ID=')
         fixtures += section('BOOTSTRAP_ACCOUNTS=(', 'source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"')
