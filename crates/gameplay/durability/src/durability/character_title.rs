@@ -435,7 +435,14 @@ impl DurabilityRoot {
             let qualified = qualified_selection(selected, facts, now_unix_ms)
                 .filter(|title| earned.iter().any(|(earned, _)| earned == title));
             if !requalify_self {
-                commit_semantic_read(tx, deadline).await?;
+                // Preserve the upstream read-only commit outcome on this branch's
+                // older semantic-transaction API.
+                match commit_semantic_transaction(tx, deadline).await {
+                    Err(super::DurabilityError::CommitOutcomeUnknown) => {
+                        return Err(super::DurabilityError::RootUnavailable);
+                    }
+                    result => result?,
+                }
                 return Ok(Ok(CharacterTitleState { earned, selected: qualified, revision }));
             }
             if selected.is_some() && qualified.is_none() {
