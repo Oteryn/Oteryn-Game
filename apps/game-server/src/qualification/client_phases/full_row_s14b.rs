@@ -5,6 +5,7 @@
 //!    shows a Pending applicant and the durable member row exists.
 //! 3. The member cancels: accepted, browse shows no status, the applicant and the row are gone.
 //! 4. The leader removes the advertisement and its durable template.
+//!
 //! Member relogs verify request and cancel. A leader relog verifies removal.
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -420,7 +421,7 @@ async fn logout(client: &mut Client, step: &str) -> TestResult {
     expect(
         outcome.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
         step,
-        &outcome,
+        outcome,
     )?;
     client.seal(outcome.command_id, outcome.result_server_sequence);
     Ok(())
