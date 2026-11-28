@@ -44,7 +44,9 @@ impl Case {
         match self {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
-            Self::Trumpet | Self::LiveTrumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
+            Self::Trumpet | Self::LiveTrumpet | Self::GroundTrumpet | Self::NestedTrumpet => {
+                "oteryn:item.tibia.i6572"
+            }
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
             Self::Hat | Self::HatInBag => "oteryn:item.tibia.i6578",
             Self::VoodooSuccess
@@ -69,12 +71,26 @@ impl Case {
                 | Self::FeroxaTrapOutside
         )
     }
-    fn feroxa(self) -> bool { matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside) }
+    fn feroxa(self) -> bool {
+        matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside)
+    }
     fn origin(self) -> MovementLocalPosition {
         match self {
-            Self::FeroxaTrap => MovementLocalPosition { x: 33419, y: 31540, floor: 11 },
-            Self::FeroxaTrapOutside => MovementLocalPosition { x: 33420, y: 31540, floor: 11 },
-            _ => MovementLocalPosition { x: 6, y: 0, floor: 7 },
+            Self::FeroxaTrap => MovementLocalPosition {
+                x: 33419,
+                y: 31540,
+                floor: 11,
+            },
+            Self::FeroxaTrapOutside => MovementLocalPosition {
+                x: 33420,
+                y: 31540,
+                floor: 11,
+            },
+            _ => MovementLocalPosition {
+                x: 6,
+                y: 0,
+                floor: 7,
+            },
         }
     }
     fn nested(self) -> bool {
@@ -89,14 +105,21 @@ impl Case {
     fn refused(self) -> bool {
         matches!(
             self,
-            Self::HatInBag | Self::VoodooWithoutTarget | Self::VoodooFarTarget | Self::FeroxaTrapOutside
+            Self::HatInBag
+                | Self::VoodooWithoutTarget
+                | Self::VoodooFarTarget
+                | Self::FeroxaTrapOutside
         )
     }
 }
 #[test]
-fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult { run_case(Case::FeroxaTrap) }
+fn qn5_feroxa_trap_ground_use_is_fenced_and_replay_safe() -> TestResult {
+    run_case(Case::FeroxaTrap)
+}
 #[test]
-fn qn5_feroxa_trap_ground_use_checks_actor_room_boundary() -> TestResult { run_case(Case::FeroxaTrapOutside) }
+fn qn5_feroxa_trap_ground_use_checks_actor_room_boundary() -> TestResult {
+    run_case(Case::FeroxaTrapOutside)
+}
 #[test]
 fn novelty_costume_commits_condition_once() -> TestResult {
     run_case(Case::Costume)
@@ -115,7 +138,9 @@ fn novelty_trumpet_commits_original_absolute_deadline() -> TestResult {
 }
 #[test]
 fn novelty_carried_trumpet_expiry_pushes_inventory_to_idle_session() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     run_case(Case::LiveTrumpet)
 }
 #[test]

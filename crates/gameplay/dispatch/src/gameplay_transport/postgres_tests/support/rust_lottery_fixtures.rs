@@ -1,8 +1,8 @@
+use super::fixture::debug;
 use std::cell::RefCell;
 use std::num::NonZeroU32;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
-use super::fixture::debug;
 
 use super::TestResult;
 
@@ -357,7 +357,9 @@ async fn exchange_selected_source(
             {
                 let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())?;
                 let ack = oteryn_protocol_oteryn::encode_liveness_ack(
-                    envelope.connection_generation(), probe, applied_sequence,
+                    envelope.connection_generation(),
+                    probe,
+                    applied_sequence,
                 )?;
                 client.write_u32(u32::try_from(ack.len())?).await?;
                 client.write_all(&ack).await?;
@@ -378,15 +380,22 @@ async fn exchange_selected_source(
                     );
                 }
                 if let Some((played_ref, restored_ref)) = expiry
-                    && delta.domain_id == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                    && delta.domain_id
+                        == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
                 {
                     let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_equip_drop(
                         delta.payload, admitted.continuity.selected_capabilities.contains(12),
                     ).map_err(debug)?;
-                    if let Some(item) = inventory.entries.iter().find(|item| item.item_definition_ref == played_ref) {
+                    if let Some(item) = inventory
+                        .entries
+                        .iter()
+                        .find(|item| item.item_definition_ref == played_ref)
+                    {
                         played = Some(item.handle);
                     } else if let Some(handle) = played
-                        && inventory.entries.iter().any(|item| item.handle == handle && item.item_definition_ref == restored_ref)
+                        && inventory.entries.iter().any(|item| {
+                            item.handle == handle && item.item_definition_ref == restored_ref
+                        })
                     {
                         client.shutdown().await?;
                         return Ok((result.ok_or("USE result before restored trumpet")?, actual));
