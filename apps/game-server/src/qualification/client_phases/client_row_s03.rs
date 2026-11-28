@@ -140,6 +140,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if summary.name != GUILD_NAME
         || summary.guild != found.guild
         || summary.own_rank != 1
+        || !summary.title.is_empty()
+        || !summary.message.is_empty()
         || summary.state != 1
         || summary.revision != 1
         || summary.ranks != ["Leader", "Vice Leader", "Member"]
@@ -170,7 +172,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let [member] = members.as_slice() else {
         return Err(format!("roster mismatch: {members:?}").into());
     };
+    let expected_channel = founder
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1)
+        .then_some(founder_scope.channel);
     if member.name != founder_name
+        || !member.title.is_empty()
+        || member.channel != expected_channel
         || member.character != founder_scope.characters[0]
         || member.level != 1
     {
@@ -207,20 +215,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture(&capture_root, "s03-invitations.bin", &invitations_bytes)?;
     let expected = format!(
-        "guild_name={GUILD_NAME}\nfounder={founder_name}\nrank_count={}\nown_rank={}\nroster_level={}\ninvitee={invitee_name}\n",
+        "guild_name={GUILD_NAME}\nfounder={founder_name}\nrank_count={}\nown_rank={}\nroster_level={}\ninvitee={invitee_name}\nroster_channel={expected_channel:?}\n",
         summary.ranks.len(),
         summary.own_rank,
         member.level
     );
     capture(&capture_root, "s03-expected.txt", expected.as_bytes())?;
-    let (_, own_after_invite) = query(&mut founder, &wire::GuildQuery::Own).await?;
-    if !matches!(&own_after_invite, wire::GuildQueryResult::Own(Some(current))
-        if current.guild == summary.guild && current.name == summary.name
-            && current.own_rank == summary.own_rank && current.ranks == summary.ranks
-            && current.state == summary.state && current.revision == 2)
-    {
-        return Err("S03 founding state changed when sending the invitation".into());
+    let (own_after_invite_bytes, own_after_invite) =
+        query(&mut founder, &wire::GuildQuery::Own).await?;
+    let mut updated_summary = summary;
+    updated_summary.revision = 2;
+    if own_after_invite != wire::GuildQueryResult::Own(Some(updated_summary)) {
+        return Err("S03 invitation changed founding state beyond the revision".into());
     }
+    capture(
+        &capture_root,
+        "s03-own-after-invite.bin",
+        &own_after_invite_bytes,
+    )?;
     let invitee_session = invitee.join_snapshot().game_session_id;
     logout(&mut founder).await?;
     logout(&mut invitee).await?;

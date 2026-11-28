@@ -14,6 +14,7 @@ struct Replay {
     invite: Vec<u8>,
     invitee_own: Vec<u8>,
     persisted_roster: Vec<u8>,
+    own_after_invite: Vec<u8>,
     expected: String,
 }
 
@@ -30,6 +31,7 @@ fn load() -> Result<Replay, Error> {
             found: std::fs::read(root.join("s03-found.bin"))?,
             own: std::fs::read(root.join("s03-own.bin"))?,
             roster: std::fs::read(root.join("s03-roster.bin"))?,
+            own_after_invite: std::fs::read(root.join("s03-own-after-invite.bin"))?,
             invite: std::fs::read(root.join("s03-invite.bin"))?,
             invitee_own: std::fs::read(root.join("s03-invitee-own.bin"))?,
             persisted_roster: std::fs::read(root.join("s03-persisted-roster.bin"))?,
@@ -62,8 +64,21 @@ fn fixture() -> Result<Replay, Error> {
                 state: 1,
                 revision: 1,
                 own_rank: 1,
-                title: "Founder".into(),
-                message: "Welcome to the guild".into(),
+                title: String::new(),
+                message: String::new(),
+                ranks: vec!["Leader".into(), "Vice Leader".into(), "Member".into()],
+            },
+        )))
+        .map_err(|e| format!("own {e:?}"))?,
+        own_after_invite: guild::encode_guild_query_result(&guild::GuildQueryResult::Own(Some(
+            guild::GuildSummary {
+                guild: id,
+                name: "Qualification Guard".into(),
+                state: 1,
+                revision: 2,
+                own_rank: 1,
+                title: String::new(),
+                message: String::new(),
                 ranks: vec!["Leader".into(), "Vice Leader".into(), "Member".into()],
             },
         )))
@@ -75,7 +90,7 @@ fn fixture() -> Result<Replay, Error> {
                 character: uuid7(8),
                 name: "Aurelia".into(),
                 level: 1,
-                title: "Leader".into(),
+                title: String::new(),
             }],
             next: None,
         })
@@ -87,7 +102,7 @@ fn fixture() -> Result<Replay, Error> {
                 character: uuid7(8),
                 name: "Aurelia".into(),
                 level: 1,
-                title: "Leader".into(),
+                title: String::new(),
             }],
             next: None,
         })
@@ -105,7 +120,7 @@ fn fixture() -> Result<Replay, Error> {
             }],
         ))
         .map_err(|e| format!("invitations {e:?}"))?,
-        expected: "guild_name=Qualification Guard\nfounder=Aurelia\nrank_count=3\nown_rank=1\nroster_level=1\ninvitee=Berenike\n".into(),
+        expected: "guild_name=Qualification Guard\nfounder=Aurelia\nrank_count=3\nown_rank=1\nroster_level=1\ninvitee=Berenike\nroster_channel=None\n".into(),
     })
 }
 
@@ -118,12 +133,13 @@ fn query(bytes: &[u8]) -> Result<GuildReply, Error> {
 
 #[test]
 fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
-    verify(&load()?, request)
+    verify(&load()?, request, apply_result)
 }
 
 fn verify(
     replay: &Replay,
     request: impl Fn(&mut GuildPanel, Intent) -> Option<GuildCommand>,
+    apply_result: impl Fn(&mut GuildPanel, &GuildReply),
 ) -> Result<(), Error> {
     let name = value(&replay.expected, "guild_name")?;
     let founder = value(&replay.expected, "founder")?;
@@ -162,6 +178,8 @@ fn verify(
     apply_result(&mut panel, &query(&replay.own)?);
     let own = panel.own.as_ref().ok_or("own guild absent")?;
     assert_eq!(own.name, name);
+    assert!(own.title.is_empty());
+    assert!(own.message.is_empty());
     assert_eq!(own.guild, guild_id);
     assert_eq!(own.state, 1);
     assert_eq!(own.revision, 1);
@@ -170,7 +188,7 @@ fn verify(
     assert_eq!(own.own_rank, own_rank);
     assert_eq!(
         panel_text(&panel).lines().next(),
-        Some(format!("{name} — {}", own.title).as_str())
+        Some(format!("{name} — ").as_str())
     );
     assert!(
         panel_text(&panel)
@@ -179,6 +197,8 @@ fn verify(
     );
     assert_eq!(panel.feedback, None);
 
+    let mut expected_invited_summary = own.clone();
+    expected_invited_summary.revision = 2;
     let roster_query = GuildCommand::Query(guild::GuildQuery::Roster {
         guild: guild_id,
         after: None,
@@ -195,11 +215,13 @@ fn verify(
         (member.name.as_str(), member.level),
         (founder, roster_level)
     );
-    let roster_text = format!("{founder} — {} (rank {roster_level})", member.title);
-    let roster_text = match member.channel {
-        Some(_) => format!("{roster_text} — —"),
-        None => roster_text,
-    };
+    assert!(member.title.is_empty());
+    let expected_channel = value(&replay.expected, "roster_channel")?;
+    assert_eq!(format!("{:?}", member.channel), expected_channel);
+    let mut roster_text = format!("{founder} —  (rank {roster_level})");
+    if expected_channel != "None" {
+        roster_text.push_str(" — —");
+    }
     assert!(panel_text(&panel).lines().any(|line| line == roster_text));
     assert!(panel_text(&panel).lines().any(|l| l == "Roster (1):"));
 
@@ -230,6 +252,17 @@ fn verify(
     );
     assert_eq!(panel.feedback.as_deref(), Some("Guild action accepted"));
     assert_eq!(
+        request(&mut panel, Intent::RefreshOwn),
+        Some(GuildCommand::Query(guild::GuildQuery::Own))
+    );
+    let after_invite = query(&replay.own_after_invite)?;
+    assert!(
+        matches!(&after_invite, GuildReply::Query { result: Some(guild::GuildQueryResult::Own(Some(summary))), .. } if summary == &expected_invited_summary)
+    );
+    apply_result(&mut panel, &after_invite);
+    assert_eq!(panel.own.as_ref(), Some(&expected_invited_summary));
+
+    assert_eq!(
         request(&mut panel, Intent::RefreshRoster),
         Some(roster_query)
     );
@@ -249,11 +282,19 @@ fn verify(
     };
     assert_eq!((*guild, *revision, *next), (guild_id, 2, None));
     assert_eq!(members, &panel.roster);
+    // Clear the previous snapshot so a dropped relog reply cannot satisfy the check.
+    panel.roster.clear();
     apply_result(&mut panel, &persisted);
+    assert!(!panel.pending);
+    assert_eq!(&panel.roster, members);
+    assert_eq!(panel.next, *next);
 
-    // The invitee sees the pending invitation and no guild.
+    // Exercise clearing a stale projection using the live founder summary as prior panel state.
+    let stale_membership = panel.own.clone();
+    assert!(stale_membership.is_some());
     let mut invitee = GuildPanel {
         selected: true,
+        own: stale_membership,
         ..GuildPanel::default()
     };
     assert_eq!(
@@ -269,6 +310,8 @@ fn verify(
         }
     ));
     apply_result(&mut invitee, &own_reply);
+    assert!(!invitee.pending);
+    assert!(invitee.own.is_none());
     assert_eq!(
         request(&mut invitee, Intent::RefreshInvitations),
         Some(GuildCommand::Query(guild::GuildQuery::Invitations))
@@ -285,6 +328,7 @@ fn verify(
     assert!(text.lines().any(|l| l == name));
 
     // A refused query leaves the shown guild, roster and invitations untouched.
+    panel.invitations.clone_from(&invitee.invitations);
     let before = panel.clone();
     assert_eq!(
         request(&mut panel, Intent::RefreshOwn),
@@ -302,6 +346,7 @@ fn verify(
         Some("Guild request refused by the server")
     );
     assert_eq!((&panel.own, &panel.roster), (&before.own, &before.roster));
+    assert_eq!(panel.invitations, before.invitations);
     // A truncated reply cannot be decoded and never reaches the panel.
     assert!(guild::decode_guild_query_result(&replay.own[..replay.own.len() - 2]).is_err());
     Ok(())
@@ -311,7 +356,7 @@ fn verify(
 fn rejects_audited_false_positives() -> Result<(), Error> {
     let rejected = |case, replay: &Replay| {
         assert!(
-            std::panic::catch_unwind(|| verify(replay, request))
+            std::panic::catch_unwind(|| verify(replay, request, apply_result))
                 .map_or(true, |result| result.is_err()),
             "accepted {case}"
         );
@@ -367,24 +412,128 @@ fn rejects_audited_false_positives() -> Result<(), Error> {
         Intent::Invite("Berenike".into()),
     ] {
         let checked = std::panic::catch_unwind(|| {
-            verify(&replay, |panel, intent| {
-                if intent == wrong {
-                    let _ = request(panel, intent);
-                    let query = if wrong == Intent::RefreshOwn {
-                        guild::GuildQuery::Invitations
+            verify(
+                &replay,
+                |panel, intent| {
+                    if intent == wrong {
+                        let _ = request(panel, intent);
+                        let query = if wrong == Intent::RefreshOwn {
+                            guild::GuildQuery::Invitations
+                        } else {
+                            guild::GuildQuery::Own
+                        };
+                        Some(GuildCommand::Query(query))
                     } else {
-                        guild::GuildQuery::Own
-                    };
-                    Some(GuildCommand::Query(query))
-                } else {
-                    request(panel, intent)
-                }
-            })
+                        request(panel, intent)
+                    }
+                },
+                apply_result,
+            )
         });
         assert!(
             checked.map_or(true, |result| result.is_err()),
             "accepted wrong command for {wrong:?}"
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn rejects_dropped_or_corrupted_application() -> Result<(), Error> {
+    let replay = fixture()?;
+    for case in 0..4 {
+        let result = std::panic::catch_unwind(|| {
+            verify(&replay, request, |panel, reply| match (case, reply) {
+                (
+                    0,
+                    GuildReply::Query {
+                        result: Some(guild::GuildQueryResult::Roster { revision: 2, .. }),
+                        ..
+                    },
+                )
+                | (
+                    2,
+                    GuildReply::Query {
+                        result: Some(guild::GuildQueryResult::Own(None)),
+                        ..
+                    },
+                ) => {
+                    panel.pending = false;
+                }
+                (
+                    1,
+                    GuildReply::Query {
+                        result: Some(guild::GuildQueryResult::Roster { revision: 2, .. }),
+                        ..
+                    },
+                ) => {
+                    apply_result(panel, reply);
+                    panel.roster[0].title = "Corrupted".into();
+                }
+                (
+                    3,
+                    GuildReply::Query {
+                        status: CommandStatus::Rejected,
+                        ..
+                    },
+                ) => {
+                    apply_result(panel, reply);
+                    panel.invitations.clear();
+                }
+                _ => apply_result(panel, reply),
+            })
+        });
+        assert!(
+            result.map_or(true, |result| result.is_err()),
+            "accepted application mutation {case}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn rejects_wrong_titles_channel_and_invitation_side_effects() -> Result<(), Error> {
+    let rejected = |replay: &Replay| {
+        assert!(
+            std::panic::catch_unwind(|| verify(replay, request, apply_result))
+                .map_or(true, |result| result.is_err())
+        );
+    };
+    let mut replay = fixture()?;
+    let guild::GuildQueryResult::Own(Some(mut summary)) =
+        guild::decode_guild_query_result(&replay.own).map_err(|e| format!("{e:?}"))?
+    else {
+        return Err("fixture lacks founder summary".into());
+    };
+    summary.title = "Wrong".into();
+    replay.own =
+        guild::encode_guild_query_result(&guild::GuildQueryResult::Own(Some(summary.clone())))
+            .map_err(|e| format!("{e:?}"))?;
+    rejected(&replay);
+    summary.revision = 2;
+    for title in [true, false] {
+        let mut replay = fixture()?;
+        summary.title = if title { "Wrong".into() } else { String::new() };
+        summary.message = if title { String::new() } else { "Wrong".into() };
+        replay.own_after_invite =
+            guild::encode_guild_query_result(&guild::GuildQueryResult::Own(Some(summary.clone())))
+                .map_err(|e| format!("{e:?}"))?;
+        rejected(&replay);
+    }
+    for title in [true, false] {
+        let mut replay = fixture()?;
+        let mut reply =
+            guild::decode_guild_query_result(&replay.roster).map_err(|e| format!("{e:?}"))?;
+        let guild::GuildQueryResult::Roster { guild, members, .. } = &mut reply else {
+            return Err("fixture lacks roster".into());
+        };
+        if title {
+            members[0].title = "Wrong".into();
+        } else {
+            members[0].channel = Some(*guild);
+        }
+        replay.roster = guild::encode_guild_query_result(&reply).map_err(|e| format!("{e:?}"))?;
+        rejected(&replay);
     }
     Ok(())
 }
