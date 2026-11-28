@@ -7,6 +7,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::{CommandStatus, house, raw_feature};
+use oteryn_protocol_oteryn::house as wire;
 
 const TOWN_KEY: &str = "oteryn:content.area.city.thais";
 
@@ -19,7 +20,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "N01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -33,13 +36,51 @@ async fn send(
         .await?)
 }
 
-async fn first_page(client: &mut DevClientSession, world: [u8; 16]) -> TestResult<(house::Page, Vec<u8>)> {
-    let request = house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
-    let reply = send(client, request).await?;
+async fn observed_exchange(
+    client: &mut DevClientSession,
+    command: raw_feature::FeatureCommand,
+) -> TestResult<oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse> {
+    let capability = command.capability;
+    let kind = command.kind;
+    evidence(&format!(
+        "N01_WIRE direction=request capability={capability} command={kind} payload={}",
+        hex(&command.payload)
+    ));
+    let reply = send(client, command).await?;
+    evidence(&format!(
+        "N01_WIRE direction=reply capability={capability} command={kind} status={:?} payload={}",
+        reply.status,
+        hex(&reply.payload)
+    ));
+    Ok(reply)
+}
+
+fn observe_page(command: u32, page: &house::Page) {
+    evidence(&format!(
+        "N01_PAGE command={command} rows={} cursor={:?}",
+        page.rows.len(),
+        page.cursor
+    ));
+    for row in &page.rows {
+        evidence(&format!(
+            "N01_PROPERTY command={command} house={} kind={} state={} owned={} price={} ends={:?} maximum={:?}",
+            row.house, row.kind, row.state, row.owned, row.price, row.ends, row.maximum
+        ));
+    }
+}
+
+async fn first_page(
+    client: &mut DevClientSession,
+    world: [u8; 16],
+) -> TestResult<(house::Page, Vec<u8>)> {
+    let request =
+        house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
+    let reply = observed_exchange(client, request).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("catalogue status {:?}", reply.status).into());
     }
     let page = house::page(&reply.payload).map_err(|error| format!("catalogue decode {error}"))?;
+    observe_page(wire::COMMAND_TYPE_HOUSE_QUERY, &page);
     Ok((page, reply.payload))
 }
 
@@ -75,6 +116,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // Character 0 owns the house; S05 uses character 1 and the first private house of the page.
     let mut client = connect_character(clients, 0xab, 0).await?;
     let (initial, _) = first_page(&mut client, world_bytes).await?;
+    let auction_order_selected = client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_HOUSE_AUCTION_ORDER_V1);
+    evidence(&format!(
+        "N01_AUCTION_ORDER selected={auction_order_selected}"
+    ));
+    if auction_order_selected {
+        let mut request = house::query(world_bytes, TOWN_KEY, None)
+            .map_err(|error| format!("auction query encode {error}"))?;
+        request.capability = wire::CAPABILITY_HOUSE_AUCTION_ORDER_V1;
+        request.kind = wire::COMMAND_TYPE_HOUSE_AUCTION_LIST;
+        let reply = observed_exchange(&mut client, request).await?;
+        match house::page(&reply.payload) {
+            Ok(page) => observe_page(wire::COMMAND_TYPE_HOUSE_AUCTION_LIST, &page),
+            Err(error) => evidence(&format!("N01_AUCTION_ORDER decode={error:?}")),
+        }
+    }
     let from = tile(client.world_spatial().actor_position)?;
     let mut chosen = None;
     for row in initial.rows.iter().rev().filter(|row| row.kind == 1) {
@@ -87,13 +145,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (private, path) = chosen.ok_or("no reachable private house on the first page")?;
     walk(&mut client, world, &path).await?;
     let maximum = private.price.max(private.rent).max(1);
-    let bid = house::mutation(world_bytes, &private.house, private.revision, &house::Action::Bid(maximum))
-        .map_err(|error| format!("bid encode {error}"))?;
-    let bid_reply = send(&mut client, bid).await?;
+    let bid = house::mutation(
+        world_bytes,
+        &private.house,
+        private.revision,
+        &house::Action::Bid(maximum),
+    )
+    .map_err(|error| format!("bid encode {error}"))?;
+    evidence(&format!(
+        "N01_BID house={} maximum={maximum}",
+        private.house
+    ));
+    let bid_reply = observed_exchange(&mut client, bid).await?;
     let (bid_disposition, _) = house::result(&bid_reply.payload)
         .map_err(|error| format!("bid decode {error}; status {:?}", bid_reply.status))?;
     if bid_reply.status != CommandStatus::Accepted || bid_disposition != 1 {
-        return Err(format!("bid disposition {bid_disposition} status {:?}", bid_reply.status).into());
+        return Err(format!(
+            "bid disposition {bid_disposition} status {:?}",
+            bid_reply.status
+        )
+        .into());
     }
 
     let (page, page_bytes) = first_page(&mut client, world_bytes).await?;
@@ -148,7 +219,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N01.client status=CAPTURED evidence={}",
             observed.replace(' ', "_")
