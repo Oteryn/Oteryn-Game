@@ -100,7 +100,9 @@ fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResul
 
 #[test]
 fn holder_min_busy_command_replies_retryable_and_session_stays_live_postgres() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     busy_guard_scenario(Some(admin))
 }
 
@@ -126,7 +128,11 @@ fn busy_guard_scenario(admin: Option<String>) -> TestResult {
                     .await?,
             );
             let activity = oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
-            let capabilities: &[u32] = if require_typed_busy { &[activity] } else { &[86, activity] };
+            let capabilities: &[u32] = if require_typed_busy {
+                &[activity]
+            } else {
+                &[86, activity]
+            };
             for &capability in capabilities {
                 admitted.continuity.selected_capabilities =
                     crate::gameplay_transport::capabilities::SelectedCapabilities::select(
@@ -154,9 +160,6 @@ fn busy_guard_scenario(admin: Option<String>) -> TestResult {
                 // Only durable guard calls are delegated. Snapshot/step fixtures keep
                 // this test at the guard seam, through the production command dispatcher.
                 transport.continuity = SessionContinuity::FRESH;
-                if require_typed_busy {
-                    transport.continuity.house_input_pending = Some(false);
-                }
                 transport.first_entry = FirstEntryOutcome::Positioned;
                 let (mut server, mut client) = tokio::io::duplex(1 << 20);
                 let held = h.root.try_issue_semantic_pass()?;
@@ -174,14 +177,20 @@ fn busy_guard_scenario(admin: Option<String>) -> TestResult {
                     }
                     let refusal = result(&mut client).await?;
                     assert_eq!(refusal.0, CommandStatus::Rejected);
-                    assert_eq!(decode_step_result(&refusal.1), Ok(StepDisposition::Rejected));
+                    assert_eq!(
+                        decode_step_result(&refusal.1),
+                        Ok(StepDisposition::Rejected)
+                    );
                     assert_eq!(refusal.1, [0x08, 0x03]);
                     assert_eq!(
                         result(&mut client).await?,
                         (CommandStatus::DuplicateReplay, refusal.1)
                     );
                     if require_typed_busy {
-                        assert!(probe.activity_busy.get(), "checkout must return typed HolderBusy");
+                        assert!(
+                            probe.activity_busy.get(),
+                            "checkout must return typed HolderBusy"
+                        );
                     }
                     assert_eq!(probe.steps.get(), 0);
                     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
@@ -190,7 +199,10 @@ fn busy_guard_scenario(admin: Option<String>) -> TestResult {
                     client.write_all(&next).await?;
                     let next_result = result(&mut client).await?;
                     assert_eq!(next_result.0, CommandStatus::Accepted);
-                    assert_eq!(decode_step_result(&next_result.1), Ok(StepDisposition::Blocked));
+                    assert_eq!(
+                        decode_step_result(&next_result.1),
+                        Ok(StepDisposition::Blocked)
+                    );
                     assert_eq!(probe.steps.get(), 1);
                     client.shutdown().await?;
                     Ok::<_, Box<dyn std::error::Error>>(())
