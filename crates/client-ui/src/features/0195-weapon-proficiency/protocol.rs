@@ -55,6 +55,20 @@ pub fn request(p: &mut WeaponProficiencyPanel, intent: Intent) -> Option<Feature
         return None;
     }
     let intent = match intent {
+        Intent::RankUp => {
+            let Some(state) = p
+                .shaping
+                .as_ref()
+                .filter(|state| state.definition == p.weapon && state.revision != 0)
+            else {
+                p.feedback = Some(tr!(
+                    "Refresh committed shaping state before changing a slot"
+                ));
+                return None;
+            };
+            p.revision = state.revision;
+            Intent::RankUp
+        }
         Intent::CancelClear => {
             p.clear_confirmation = None;
             p.feedback = None;

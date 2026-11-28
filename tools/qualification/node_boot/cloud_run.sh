@@ -133,7 +133,7 @@ p08_replay() {
   session=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P08\.client status=CAPTURED evidence=session=([0-9a-f-]{36});.*/\1/p' "$log")
   [[ "$session" =~ ^[0-9a-f-]{36}$ ]] || return 1
   E2E_ALL_CAPTURE_DIR="$capture_dir" P08_CAPTURE_SESSION="$session" \
-    cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact > "$replay_log" 2>&1 \
+    cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --ignored --exact > "$replay_log" 2>&1 \
     && grep -Fxq "test $test ... ok" "$replay_log"
 }
 

@@ -6,78 +6,35 @@ use oteryn_client_runtime::{
     CommandStatus,
     raw_feature::GatedCommandResult,
     weapon_proficiency::{
-        ModificationOperation, ModificationReply, ModificationResult, ProficiencyCatalogueEntry,
-        ProficiencyCatalogueLevel, ProficiencyCataloguePage, ProficiencyPage, ProficiencyRow,
-        SelectPerkReply, SelectPerkResult,
+        ModificationOperation, ModificationReply, ModificationResult,
+        PROFICIENCY_CATALOGUE_PAGE_SIZE, ProficiencyCataloguePage, ProficiencyPage,
     },
 };
-use std::num::NonZeroU32;
+use std::path::Path;
 
 type Error = Box<dyn std::error::Error>;
 
 struct Captured {
-    catalogue: GatedCommandResult,
+    catalogue: Vec<GatedCommandResult>,
+    state: GatedCommandResult,
     browse: GatedCommandResult,
     select: GatedCommandResult,
     stale: GatedCommandResult,
     expected: String,
 }
 
-fn fixture() -> Result<Captured, Error> {
-    let none = || Error::from("fixture encoder refused");
-    let catalogue = ProficiencyCataloguePage {
-        offset: 0,
-        total: 1,
-        entries: vec![ProficiencyCatalogueEntry {
-            definition: 258,
-            weapon: "oteryn:item.wand".into(),
-            name: "Wand".into(),
-            experience: 120,
-            thresholds: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-            levels: vec![ProficiencyCatalogueLevel {
-                selected: None,
-                perks: vec!["+5% damage".into(), "+2 mana".into()],
-            }],
-        }],
-    };
-    let browse = ProficiencyPage {
-        offset: 0,
-        total: 1,
-        rows: vec![ProficiencyRow {
-            definition: NonZeroU32::new(259).ok_or("definition")?,
-            name: "Wand".into(),
-            experience: 120,
-            level: 1,
-            selections: vec![None],
-        }],
-    };
-    let select = SelectPerkReply {
-        result: SelectPerkResult::Accepted,
-        selections: vec![Some(0)],
-    };
-    let stale = ModificationReply {
-        result: ModificationResult::StaleRevision,
-        slot: None,
-    };
-    Ok(Captured {
-        catalogue: result(CommandStatus::Accepted, &catalogue.encode().ok_or_else(none)?),
-        browse: result(CommandStatus::Accepted, &browse.encode().ok_or_else(none)?),
-        select: result(CommandStatus::Accepted, &select.encode().ok_or_else(none)?),
-        stale: result(CommandStatus::Accepted, &stale.encode()),
-        expected: "catalogue_total=1\ncatalogue_first=258|Wand|120\nmutation_definition=259\nbrowse_total=1\nbrowse_rows=1\nselect_result=Accepted\nselect_levels=[Some(0)]\nstale_result=StaleRevision\n".into(),
-    })
+fn captured() -> Result<Captured, Error> {
+    let path =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("P08 live capture directory required")?;
+    let session =
+        std::env::var_os("P08_CAPTURE_SESSION").ok_or("P08 live capture session required")?;
+    read_capture(Path::new(&path), &session)
 }
 
-fn captured() -> Result<Captured, Error> {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return fixture();
-    };
-    let path = std::path::Path::new(&path);
+fn read_capture(path: &Path, session: &std::ffi::OsStr) -> Result<Captured, Error> {
     let expected = std::fs::read_to_string(path.join("p08-expected.txt"))?;
     let captured_session = value(&expected, "session")?;
-    if let Some(session) = std::env::var_os("P08_CAPTURE_SESSION")
-        && session != captured_session
-    {
+    if session != captured_session {
         return Err("P08 capture session does not match the live verdict".into());
     }
     let mut previous = (0, 0);
@@ -107,9 +64,19 @@ fn captured() -> Result<Captured, Error> {
             payload: std::fs::read(path.join(format!("p08-{name}.bin")))?,
         })
     };
+    let offset = value(&expected, "wand_offset")?.parse::<usize>()?;
+    let total = value(&expected, "catalogue_total")?.parse::<usize>()?;
+    if offset >= total || offset % PROFICIENCY_CATALOGUE_PAGE_SIZE != 0 {
+        return Err("P08 invalid Wand page offset".into());
+    }
+    let catalogue = (0..=offset)
+        .step_by(PROFICIENCY_CATALOGUE_PAGE_SIZE)
+        .map(|offset| read(&format!("catalogue-{offset}")))
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(Captured {
-        catalogue: read("catalogue")?,
+        catalogue,
         browse: read("browse")?,
+        state: read("state")?,
         select: read("select")?,
         stale: read("stale")?,
         expected,
@@ -133,11 +100,13 @@ fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
 }
 
 #[test]
+#[ignore = "requires Node Boot live capture and matching session"]
 fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Error> {
     let captured = captured()?;
     let e = captured.expected.as_str();
     let mut p = WeaponProficiencyPanel {
         selected: true,
+        state_selected: true,
         ..WeaponProficiencyPanel::default()
     };
 
@@ -146,7 +115,34 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
         (catalogue.kind, catalogue.payload.as_slice()),
         (660, &[0, 0, 0, 0][..])
     );
-    assert!(apply_result(&mut p, &captured.catalogue));
+    assert!(apply_result(&mut p, &captured.catalogue[0]));
+    for (index, reply) in captured.catalogue.iter().enumerate().skip(1) {
+        let command =
+            tick(&mut p, std::time::Instant::now()).ok_or("P08 next catalogue request")?;
+        let offset = u32::try_from(index * PROFICIENCY_CATALOGUE_PAGE_SIZE)?;
+        assert_eq!(
+            (command.kind, command.payload),
+            (660, offset.to_be_bytes().to_vec())
+        );
+        assert!(apply_result(&mut p, reply));
+    }
+    let expected_entries = captured
+        .catalogue
+        .iter()
+        .map(|reply| {
+            ProficiencyCataloguePage::decode(&reply.payload).ok_or("P08 invalid captured catalogue")
+        })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flat_map(|page| page.entries)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        p.catalogue
+            .as_ref()
+            .ok_or("P08 client catalogue missing")?
+            .entries,
+        expected_entries
+    );
     let [definition, name, experience]: [&str; 3] = value(e, "catalogue_first")?
         .splitn(3, '|')
         .collect::<Vec<_>>()
@@ -176,11 +172,51 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     let total = value(e, "browse_total")?;
     let header = format!("Weapons {}–{rows} / {total}", u32::from(rows > 0));
     assert!(panel_text(&p).lines().any(|line| line == header));
+    assert_eq!(p.page, ProficiencyPage::decode(&captured.browse.payload));
     let confirmed = p.page.clone();
+    let text = panel_text(&p);
+    for row in &confirmed.as_ref().ok_or("P08 client Browse missing")?.rows {
+        let line = format!("{}: {} XP, level {}", row.name, row.experience, row.level);
+        assert!(
+            text.lines().any(|visible| visible == line),
+            "missing Browse row {line}"
+        );
+    }
 
     // SelectPerk sends the exact weapon/level/perk bytes and shows the server's typed reply.
     let mutation_definition: u32 = value(e, "mutation_definition")?.parse()?;
-    p.weapon = mutation_definition;
+    let row = p
+        .catalogue
+        .as_ref()
+        .ok_or("P08 missing catalogue")?
+        .entries
+        .iter()
+        .position(|entry| {
+            entry.definition == mutation_definition && entry.weapon == "oteryn:item.tibia.i3074"
+        })
+        .ok_or("P08 Wand missing from client catalogue")?;
+    assert!(p.select_weapon(row));
+    assert_eq!(
+        p.weapon_entry().ok_or("P08 no selected Wand")?.levels[0].selected,
+        None
+    );
+    assert!(
+        request(&mut p, Intent::RankUp).is_none(),
+        "RankUp must require committed shaping state"
+    );
+    let state = request(&mut p, Intent::State).ok_or("P08 shaping refresh")?;
+    assert_eq!(
+        (state.capability, state.kind, state.payload),
+        (448, 732, mutation_definition.to_be_bytes().to_vec())
+    );
+    assert!(apply_result(&mut p, &captured.state));
+    let revision = p
+        .shaping
+        .as_ref()
+        .ok_or("P08 shaping state was not applied")?
+        .revision;
+    assert_ne!(revision, 0);
+    let mut rank_panel = p.clone();
     p.level = 0;
     p.perk = 0;
     let select = request(&mut p, Intent::SelectPerk).ok_or("select request")?;
@@ -197,14 +233,22 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
         ))
     );
 
-    // A RankUp bound to a stale revision is refused with the typed result and no slot.
+    assert_eq!(
+        p.weapon_entry()
+            .ok_or("P08 selected Wand disappeared")?
+            .levels[0]
+            .selected,
+        Some(0)
+    );
+
+    // The prior panel snapshot loses the race to the committed selection.
+    let p = &mut rank_panel;
     p.slot = 1;
-    p.revision = u64::MAX;
-    let stale = request(&mut p, Intent::RankUp).ok_or("rank-up request")?;
+    let stale = request(p, Intent::RankUp).ok_or("rank-up request")?;
     assert_eq!(stale.kind, ModificationOperation::RankUp.command_type());
     let mut expected_payload = mutation_definition.to_be_bytes().to_vec();
     expected_payload.push(1);
-    expected_payload.extend(u64::MAX.to_be_bytes());
+    expected_payload.extend(revision.to_be_bytes());
     assert_eq!(stale.payload, expected_payload);
     assert_eq!(
         ModificationReply::decode(&captured.stale.payload),
@@ -213,7 +257,7 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
             slot: None,
         })
     );
-    assert!(apply_result(&mut p, &captured.stale));
+    assert!(apply_result(p, &captured.stale));
     assert_eq!(
         p.result,
         Some(format!(
@@ -223,6 +267,27 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     );
     assert_eq!(p.page, confirmed);
 
+    Ok(())
+}
+
+#[test]
+fn browse_refusal_and_decode_failure_keep_the_confirmed_page() -> Result<(), Error> {
+    let confirmed = Some(ProficiencyPage {
+        offset: 0,
+        total: 1,
+        rows: vec![oteryn_client_runtime::weapon_proficiency::ProficiencyRow {
+            definition: std::num::NonZeroU32::MIN,
+            name: "Wand".into(),
+            experience: 1750,
+            level: 1,
+            selections: vec![Some(0)],
+        }],
+    });
+    let mut p = WeaponProficiencyPanel {
+        selected: true,
+        page: confirmed.clone(),
+        ..Default::default()
+    };
     // A rejected status and a malformed or mismatched page leave the confirmed page alone.
     request(&mut p, Intent::Browse).ok_or("browse request")?;
     assert!(!apply_result(&mut p, &result(CommandStatus::Rejected, &[])));
@@ -241,5 +306,42 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
         Some("The server returned an invalid proficiency page")
     );
     assert_eq!(p.page, confirmed);
+    Ok(())
+}
+
+#[test]
+fn rank_up_rejects_missing_or_mismatched_shaping_observation() -> Result<(), Error> {
+    use oteryn_client_runtime::weapon_proficiency_state::State;
+    let mut panel = WeaponProficiencyPanel {
+        selected: true,
+        state_selected: true,
+        weapon: 17,
+        slot: 1,
+        revision: 99,
+        ..WeaponProficiencyPanel::default()
+    };
+    assert!(request(&mut panel, Intent::RankUp).is_none());
+    panel.shaping = Some(State {
+        definition: 18,
+        revision: 41,
+        slots: [None, None],
+        modify_dust: [0; 2],
+        rank_dust: [0; 10],
+        reshape_dust: 0,
+        clear_dust: 0,
+        orbs: 0,
+    });
+    assert!(request(&mut panel, Intent::RankUp).is_none());
+    let state = panel.shaping.as_mut().ok_or("missing fixture state")?;
+    state.definition = 17;
+    state.revision = 0;
+    assert!(request(&mut panel, Intent::RankUp).is_none());
+    panel
+        .shaping
+        .as_mut()
+        .ok_or("missing fixture state")?
+        .revision = 41;
+    let command = request(&mut panel, Intent::RankUp).ok_or("matching committed shaping state")?;
+    assert_eq!(&command.payload[5..], &41_u64.to_be_bytes());
     Ok(())
 }

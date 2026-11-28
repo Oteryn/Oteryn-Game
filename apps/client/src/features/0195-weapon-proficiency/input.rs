@@ -179,9 +179,9 @@ impl PlayLink {
                 p.clear_perk = false;
                 Intent::Modify
             }
+            ProficiencyAction::Shape(Intent::RankUp) => Intent::RankUp,
             ProficiencyAction::Shape(
-                intent @ (Intent::RankUp
-                | Intent::OrbRank
+                intent @ (Intent::OrbRank
                 | Intent::ReshapeOffer
                 | Intent::ReshapeChoose
                 | Intent::DeclineOffer),
