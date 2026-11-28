@@ -118,7 +118,7 @@ async fn scenario(admin: String) -> TestResult {
     assert!(owner.refresh_pvp_locks(actor, session).await);
     h.root.maintain_ready_once().await?;
     let busy = h.root.try_issue_semantic_pass()?;
-    let _ = owner.observe_join_vitals(actor, readmitted, false).await;
+    let _ = owner.observe_actor_vitals(actor, session).await;
     {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
