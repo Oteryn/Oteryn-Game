@@ -368,53 +368,66 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         sail(&mut client, npc, keyword, arrival, fare, &coins).await?;
     }
     let npc = approach(&mut client, world, &metadata.npcs, "oteryn:npc.eremo").await?;
-    let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
-    if greeting.is_empty() {
-        return Err("hi produced an empty conversation".into());
-    }
-    let greeting_sequence = client.last_server_sequence();
-    capture("P16", "p16-greeting.bin", &greeting_bytes);
-    let (quote_bytes, quote) = talk(&mut client, npc, "solitude").await?;
-    if quote != ["Would you like to receive that protection for a sacrifice of 2000 gold, child?"] {
-        return Err(format!("blessing quote observed={quote:?}").into());
-    }
-    let quote_sequence = client.last_server_sequence();
-    capture("P16", "p16-quote.bin", &quote_bytes);
-    let (answer_bytes, answer) = talk(&mut client, npc, "no").await?;
-    if answer != ["Fine. You are free to decline my offer."] {
-        return Err(format!("blessing decline observed={answer:?}").into());
-    }
-    let answer_sequence = client.last_server_sequence();
-    capture("P16", "p16-answer.bin", &answer_bytes);
-    if !(greeting_sequence < quote_sequence && quote_sequence < answer_sequence) {
-        return Err("P16 capture sequences did not advance".into());
-    }
-    let capture_session = hex(client.join_snapshot().game_session_id.as_bytes());
-    let binding =
-        format!("{capture_session}:{greeting_sequence}:{quote_sequence}:{answer_sequence}");
-    let expected = format!(
-        "binding={binding}\nnpc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nanswer={}\n",
-        hex(&npc.identity),
-        npc.generation,
-        greeting.join("|"),
-        quote.join("|"),
-        answer.join("|")
-    );
-    capture("P16", "p16-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await?;
-    Ok(binding)
+    verdict::Harness::global().progress("eremo-dialogue");
+    capture_dialogue(&mut client, npc).await
+}
+
+async fn capture_dialogue(client: &mut DevClientSession, npc: EntityRef) -> TestResult<String> {
+    let observations = async {
+        let (greeting_bytes, greeting) = talk(client, npc, "hi").await?;
+        if greeting.is_empty() {
+            return Err("hi produced an empty conversation".into());
+        }
+        let greeting_sequence = client.last_server_sequence();
+        capture("P16", "p16-greeting.bin", &greeting_bytes);
+        let (quote_bytes, quote) = talk(client, npc, "solitude").await?;
+        evidence(&format!(
+            "P16_BLESSING_DIALOGUE sent=\"solitude\" server_sequence={} lines={quote:?}",
+            client.last_server_sequence()
+        ));
+        if quote
+            != ["Would you like to receive that protection for a sacrifice of 2000 gold, child?"]
+        {
+            return Err(format!("blessing quote observed={quote:?}").into());
+        }
+        let quote_sequence = client.last_server_sequence();
+        capture("P16", "p16-quote.bin", &quote_bytes);
+        let (answer_bytes, answer) = talk(client, npc, "no").await?;
+        if answer != ["Fine. You are free to decline my offer."] {
+            return Err(format!("blessing decline observed={answer:?}").into());
+        }
+        let answer_sequence = client.last_server_sequence();
+        capture("P16", "p16-answer.bin", &answer_bytes);
+        if !(greeting_sequence < quote_sequence && quote_sequence < answer_sequence) {
+            return Err("P16 capture sequences did not advance".into());
+        }
+        let capture_session = hex(client.join_snapshot().game_session_id.as_bytes());
+        let binding =
+            format!("{capture_session}:{greeting_sequence}:{quote_sequence}:{answer_sequence}");
+        let expected = format!(
+            "binding={binding}\nnpc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nanswer={}\n",
+            hex(&npc.identity),
+            npc.generation,
+            greeting.join("|"),
+            quote.join("|"),
+            answer.join("|")
+        );
+        capture("P16", "p16-expected.txt", expected.as_bytes());
+        let _ = client.session_mut().logout().await?;
+        Ok(binding)
+    };
+    verdict::indexed_timeout(Duration::from_secs(120), observations)
+        .await
+        .map_err(|_| "P16 Eremo dialogue capture deadline")?
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
-        .await
-    {
-        Ok(Ok(expected)) => evidence(&format!(
-            "e2e_capture scenario=P16.client status=CAPTURED binding={expected}"
+    match verdict::observe(journey(clients)).await {
+        Ok(binding) => evidence(&format!(
+            "e2e_capture scenario=P16.client status=CAPTURED binding={binding}"
         )),
-        Ok(Err(error)) => evidence(&format!(
+        Err(error) => evidence(&format!(
             "e2e_all scenario=P16.client status=FAIL evidence={error}"
         )),
-        Err(_) => evidence("e2e_all scenario=P16.client status=FAIL evidence=timeout"),
     }
 }
