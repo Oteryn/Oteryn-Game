@@ -105,7 +105,7 @@ impl DurabilityRoot {
         let node = node.clone();
         let pass = match scope {
             ReadScope::Channel { gallery: false } => self.try_issue_semantic_pass_by(
-                std::time::Instant::now() + std::time::Duration::from_secs(1),
+                tokio::time::Instant::now() + std::time::Duration::from_secs(1),
             )?,
             _ => self.try_issue_semantic_pass()?,
         };

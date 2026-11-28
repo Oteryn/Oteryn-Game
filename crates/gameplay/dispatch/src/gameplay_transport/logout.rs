@@ -518,10 +518,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Conditions already used the remaining window at their save point.
                 if stage == ReleaseRetryStage::Familiar
                     || (!channel_switch
-                    && matches!(
-                        stage,
-                        ReleaseRetryStage::Conditions | ReleaseRetryStage::ConditionsHolder
-                    ))
+                        && matches!(
+                            stage,
+                            ReleaseRetryStage::Conditions | ReleaseRetryStage::ConditionsHolder
+                        ))
                     || !progress.retry(stage).await
                 {
                     break step;
