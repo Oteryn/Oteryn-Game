@@ -78,10 +78,10 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
                 && let Some(updated) = delta
-                .value
-                .update
-                .iter()
-                .find(|entry| entry.entity == target.entity)
+                    .value
+                    .update
+                    .iter()
+                    .find(|entry| entry.entity == target.entity)
             {
                 last_position = updated.position;
                 if let EntityDetail::Actor { health_percent, .. } = updated.detail {
