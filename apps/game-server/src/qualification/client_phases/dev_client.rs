@@ -161,9 +161,10 @@ pub(super) async fn dev_client<'a>(
             },
         ));
     }
-    if dev_client.selected_capabilities().contains(
+    let private_channel_selected = dev_client.selected_capabilities().contains(
         &oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1,
-    ) {
+    );
+    if private_channel_selected {
         expected.push(oteryn_dev_client::SessionEvent::ChatChannelList(
             oteryn_dev_client::AppliedDelta {
                 server_sequence: expected.len() as u64 + 1,
@@ -214,6 +215,9 @@ pub(super) async fn dev_client<'a>(
     })
     .await
     .map_err(|_| "initial client pushes timed out")??;
+    if private_channel_selected {
+        expect_fresh_login_public_rooms_empty(&dev_client)?;
+    }
     expect_initial_pushes(&events, &expected)?;
     dev_client_door_scenario(
         &mut dev_client,
@@ -283,6 +287,20 @@ pub(super) async fn dev_client<'a>(
     evidence("dev_client released=terminal admissions=4");
 
     Ok(())
+}
+
+fn expect_fresh_login_public_rooms_empty(
+    client: &oteryn_dev_client::DevClientSession,
+) -> TestResult {
+    let list = client
+        .chat_log()
+        .and_then(|chat| chat.private_channels())
+        .ok_or("fresh login missing its negotiated ChatChannelList")?;
+    dev_client_expect(
+        "fresh login ChatChannelList public_rooms",
+        &list.public_rooms,
+        &oteryn_protocol_oteryn::chat::ChatRoomSet::default(),
+    )
 }
 
 fn expect_initial_pushes(

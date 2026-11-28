@@ -707,9 +707,6 @@ psql_admin oteryn_node_boot <<SQL
 CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
--- Provision the relay login as specified by migration 0122. Table grants are inherited.
-GRANT SET ON PARAMETER log_parameter_max_length, log_parameter_max_length_on_error,
-    log_statement, log_min_duration_statement TO nb_runtime;
 SQL
 secret_to() { # owner source destination
   install_owned "$1" -m 0600 "$2" "$3"
@@ -730,7 +727,14 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
-stage_chat_relay_key_ring "$BASE/node/secrets"
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  psql_admin oteryn_node_boot <<'SQL'
+-- Provision the relay login as specified by migration 0122. Table grants are inherited.
+GRANT SET ON PARAMETER log_parameter_max_length, log_parameter_max_length_on_error,
+    log_statement, log_min_duration_statement TO nb_runtime;
+SQL
+  stage_chat_relay_key_ring "$BASE/node/secrets"
+fi
 
 cat > "$WORK/ops.toml" <<TOML
 [operator]
@@ -861,8 +865,12 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" \
-      OTERYN_CHAT_RELAY_KEYS_FILE="${2%/*}/secrets/chat-relay.keys" "$BASE/bin/oteryn-game-server" \
+    # The basic seam expects the initial public room list of a node without a relay.
+    local -a relay_env=(-u OTERYN_CHAT_RELAY_KEYS_FILE)
+    if [[ "${NODE_BOOT_WORLD:-0}" == 1 ]]; then
+      relay_env=("OTERYN_CHAT_RELAY_KEYS_FILE=${2%/*}/secrets/chat-relay.keys")
+    fi
+    exec "${as_service[@]}" env "${relay_env[@]}" "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" \
       serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
