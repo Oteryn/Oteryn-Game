@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 impl DurabilityRoot {
     /// Only a new move into level2 consumes the actual TARGET Account's Premium decision.
@@ -114,7 +115,7 @@ impl DurabilityRoot {
                     Ok(GuildTargetPreflight::Fresh(uuid_text(&actor)?,account))
                 }.await;
                 match result {
-                    Ok(value) => { commit_semantic_transaction(tx, deadline).await?; Ok(Ok(value)) }
+                    Ok(value) => { commit_semantic_read(tx, deadline).await?; Ok(Ok(value)) }
                     Err(GuildError::Unavailable(error)) => Err(error),
                     Err(error) => Ok(Err(error)),
                 }

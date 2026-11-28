@@ -251,6 +251,15 @@
           },
           "item": "oteryn:item.tibia.i3264",
           "count": 1
+        },
+        {
+          "position": {
+            "x": 32673,
+            "y": 32088,
+            "floor": -8
+          },
+          "item": "oteryn:item.tibia.i50181",
+          "count": 1
         }
       ],
       "return_on_failure": false,
@@ -336,12 +345,30 @@
                 "y": 32093,
                 "floor": -8
               }
+            },
+            {
+              "to": {
+                "x": 32674,
+                "y": 32071,
+                "floor": -8
+              },
+              "offering": {
+                "x": 32673,
+                "y": 32088,
+                "floor": -8
+              },
+              "vocation": "monk",
+              "from": {
+                "x": 32673,
+                "y": 32089,
+                "floor": -8
+              }
             }
           ]
         }
       },
       "sources": [
-        "canary:04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-84#sha256:72e3bcedf70a9dd7ffe81bb5f71aaa831acdd66110b91bc44aae11ab43acf1ad"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-89#sha256:c39da1982605cef2febe4cbb8c5f344c71f480f08f8e9c1e7df7501eb9dde49d"
       ]
     },
     {
@@ -500,6 +527,118 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/ghoul-room-well",
+      "quest": "oteryn:quest.ghoul_room_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32508,
+          "y": 32176,
+          "floor": -13
+        },
+        "unique": null,
+        "action": 1000,
+        "appearance": 1931
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32508,
+        "y": 32176,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/teleport_draw_well.lua:1-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/iron-helmet-porgol-account",
+      "quest": "oteryn:quest.iron_helmet_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32769,
+          "y": 32224,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 3506
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/47/definition:sha256:3a91013e45892a6be4f6b074901ed87067a8163464bc00eb81809d6f89312980",
+        "https://tibia.fandom.com/index.php?curid=23373",
+        "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
+      ],
+      "success_message": "Muriel, I suspect Porgol stole your books on necromancy. He has yet to discover the fountain of life or the caves of inferno. I will send Laira to town. If I am right about him, she is safer there. — Arcian"
+    },
+    {
+      "key": "oteryn:quest-callback/isle-of-the-mists-book",
+      "quest": "oteryn:quest.isle_of_the_mists_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32855,
+          "y": 32331,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2838
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/49/definition:sha256:3a91013e45892a6be4f6b074901ed87067a8163464bc00eb81809d6f89312980",
+        "https://tibia.fandom.com/index.php?curid=29702",
+        "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
+      ],
+      "success_message": "Passage across the Plains of Havoc has become too dangerous. We are leaving the Isle of the Mists and giving up our meeting place for now. In safer times we may be able to return."
+    },
+    {
       "key": "oteryn:quest-callback/m01b/alawar-s-vault/s1/entry",
       "quest": "oteryn:quest.alawar_s_vault_quest",
       "trigger": "step_in",
@@ -651,7 +790,7 @@
       "failure_message": null,
       "requires_world_admission": true,
       "sources": [
-        "content/world/spawns/spawns-42000-43999.json#/records/110/declaration/points/3",
+        "content/world/spawns/spawns-42000-43999.json#/records/109/declaration/points/3",
         "content/world/placements/region-z12-x129-y123.b3",
         "OTERYN_CHOSEN_EXPLORE_ENTRY:source-map-approach;first-cycle-only"
       ],
@@ -3855,6 +3994,235 @@
       "track_initials": {
         "oteryn:quest-progress/chosen-source/the_pits_of_inferno_quest/s1": 0
       }
+    },
+    {
+      "key": "oteryn:quest-callback/rafzan-swamp-gas-33026-32183",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33026,
+          "y": 32183,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 17681
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17681",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+        "content/world/placements/region-z07-x129-y125.b3"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17672",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i17673",
+        "target_replacement": null,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/rafzan-swamp-gas-33067-32121",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33067,
+          "y": 32121,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 17681
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17681",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+        "content/world/placements/region-z07-x129-y125.b3"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17672",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i17673",
+        "target_replacement": null,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/rafzan-swamp-gas-33092-32061",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33092,
+          "y": 32061,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 17681
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/items/items.xml:item-17681",
+        "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+        "content/world/placements/region-z07-x129-y125.b3"
+      ],
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17672",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i17673",
+        "target_replacement": null,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/scale-armor-well-32353",
+      "quest": "oteryn:quest.scale_armor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32353,
+          "y": 32131,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 102,
+        "appearance": 1930
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32354,
+        "y": 32131,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/down_floor.lua:1-11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/scale-armor-well-32354",
+      "quest": "oteryn:quest.scale_armor_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32354,
+          "y": 32131,
+          "floor": -8
+        },
+        "unique": null,
+        "action": 102,
+        "appearance": 1931
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32355,
+        "y": 32131,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/down_floor.lua:1-11"
+      ]
     },
     {
       "key": "oteryn:quest-callback/thais-lighthouse-plate",

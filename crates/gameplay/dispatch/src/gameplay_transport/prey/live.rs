@@ -63,29 +63,6 @@ impl ChannelSpellStates {
         Some((wire::encode_reply(&state.reply).ok()?, state.permanent, state.activity.iter().map(|activity| activity.spent).sum(), state.pending.is_some()))
     }
 
-    pub(in crate::gameplay_transport) fn apply_prey_spell_damage(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        batch: &mut crate::spell::combat_batch::OwnerCombatBatch,
-    ) {
-        for effect in &mut batch.effects {
-            if let crate::spell::combat_batch::OwnerCombatChange::Damage { magnitude, .. } =
-                &mut effect.change
-                && let Ok(snapshot) = runtime.companion_snapshot(effect.target)
-            {
-                let percent = self.prey_percent(
-                    runtime,
-                    batch.caster,
-                    batch.command.game_session_id(),
-                    &snapshot.state.policy.definition_key,
-                    1,
-                    batch.now_us.map_or(batch.now_ms * 1000, |at| at.get()),
-                );
-                *magnitude = super::damage(*magnitude, percent);
-            }
-        }
-    }
-
     pub(in crate::gameplay_transport) fn load_prey(
         &mut self,
         runtime: &ChannelRuntimeV1,

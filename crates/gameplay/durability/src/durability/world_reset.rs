@@ -1,5 +1,6 @@
 //! Durable World reset owner (ADR-0021 §4.7). A decoded job is history;
 //! the privately constructed drain witness comes only from a current RETIRING row.
+use crate::durability::db::commit_semantic_read;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{ControlLossCauseV1, WorldId};
@@ -76,7 +77,7 @@ impl DurabilityRoot {
                 let target = row.try_get::<Vec<u8>, _>(2)?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
                 Ok(RetiringWorldReset { world, epoch, binding, target })
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(result)
         })).await
     }

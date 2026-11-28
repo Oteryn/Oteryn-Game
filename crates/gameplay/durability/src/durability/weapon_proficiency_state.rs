@@ -2,9 +2,7 @@
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
 };
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, commit_semantic_read, lock_admission_relations};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -57,7 +55,7 @@ impl DurabilityRoot {
                 if target.is_some() { return Err(DurabilityError::InvalidStoredState); }
                 *target = Some(perk);
             }
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(Ok(CommittedProficiencyState { revision,slots }))
         })).await?
     }

@@ -83,6 +83,94 @@ fn questpc6_deeper_fibula_well_literal_use_preserves_quest_state() -> TestResult
     })
 }
 
+#[test]
+fn ghoul_room_well_descends_to_the_key_door_landing() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("ghoul-room-well", || {
+        stateless_callback(
+            "ghoul-room-well",
+            Position { x: 32508, y: 32176, floor: -13 },
+            Position { x: 32508, y: 32176, floor: -14 },
+        )
+    })
+}
+
+#[test]
+fn source_quest_doors_apply_levels_and_keys() -> TestResult {
+    use super::fixture::{debug, id};
+    use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
+    use crate::gameplay_transport::map_door;
+    use crate::map::overlay::TilePos;
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+
+    let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+    let (controller, _) =
+        super::death_ml_loss_composed_fixtures::production_generation_with_pin(world_id, "content-1")?;
+    let active = controller.active().ok_or("active generation")?;
+    let native = active.native_gameplay().ok_or("native generation")?;
+    let doors = [
+        (32479, 31634, 354, 5111),
+        (32486, 31633, 354, 5111),
+        (32483, 31630, 354, 5102),
+        (32483, 31635, 355, 5102),
+    ];
+    let world = native_scene_with_appearances(native, vec![
+        NativeCrop {
+            bytes: include_bytes!("../../../../../../content/world/placements/region-z10-x126-y123.b3"),
+            region: (10, 126, 123),
+            bounds: (32478, 31630, 32487, 31636),
+            start: (32478, 31634),
+            expected: doors.iter().map(|&(x, y, ground, appearance)| ExpectedTile {
+                position: (x, y),
+                ids: vec![ground, appearance],
+                counted_entry: None,
+            }).collect(),
+        },
+        NativeCrop {
+            bytes: include_bytes!("../../../../../../content/world/placements/region-z14-x126-y125.b3"),
+            region: (14, 126, 125),
+            bounds: (32506, 32175, 32509, 32177),
+            start: (32508, 32176),
+            expected: vec![ExpectedTile {
+                position: (32506, 32175),
+                ids: vec![409, 5106],
+                counted_entry: None,
+            }],
+        },
+    ], &[], &[5103, 5107, 5108, 5112])?;
+    let target = |pos| -> TestResult<WorldObjectTarget> {
+        let key = crate::map::view::placement_key(pos, 1).ok_or("source door placement")?;
+        let mut placement = world.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        Ok(WorldObjectTarget { placement, expected_revision: 0 })
+    };
+    let generation = active.identity().client_artifact_digest();
+    for (x, y, _, _) in doors {
+        let pos = TilePos { x, y, floor: -10 };
+        let actor = TilePos { x: x - 1, ..pos };
+        let target = target(pos)?;
+        for (level, expected) in [(29, UseDisposition::Locked), (30, UseDisposition::Committed)] {
+            let result = map_door::use_door(
+                world.overlay(), world.facts(), generation, actor, |_| false, level, false, &target,
+            );
+            assert_eq!(result.disposition, expected, "source door at {x},{y} with level {level}");
+        }
+        assert!(world.enterable(pos));
+    }
+    let pos = TilePos { x: 32506, y: 32175, floor: -14 };
+    let actor = TilePos { x: 32507, ..pos };
+    let target = target(pos)?;
+    for (action, expected) in [(3599, UseDisposition::KeyMismatch), (3600, UseDisposition::Committed)] {
+        let (result, _) =
+            map_door::use_key_observed(world.overlay(), world.facts(), generation, actor, action, &target);
+        assert_eq!(result.disposition, expected);
+    }
+    assert!(world.enterable(pos));
+    Ok(())
+}
+
 fn stateless_callback(name: &str, trigger: Position, destination: Position) -> TestResult {
     use super::fixture::{Harness, debug, id, run};
     use super::quest_world_callbacks_fixtures::{local, wire, world};
@@ -108,7 +196,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
     assert!(callback.offerings.is_empty());
     assert!(callback.item_on_target.is_none());
     assert_eq!(callback.teleport, Some(destination));
-    let world = world(&callback, trigger)?;
+
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "questpc6_fibula_well", false, false)
             .await?;
@@ -130,13 +218,44 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
+        let start = if name == "ghoul-room-well" {
+            // The source draw-well piece west of the target blocks movement.
+            Position { y: trigger.y - 1, ..trigger }
+        } else {
+            Position { x: trigger.x - 1, ..trigger }
+        };
+        let world = if name == "ghoul-room-well" {
+            use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene};
+            assert_eq!(callback.selector.action, Some(1000));
+            let native = generation.native_gameplay().ok_or("native generation")?;
+            native_scene(native, vec![
+                NativeCrop {
+                    bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content/world/placements/region-z13-x126-y125.b3")),
+                    region: (13, 126, 125),
+                    bounds: (32507, 32175, 32509, 32177),
+                    start: (start.x, start.y),
+                    expected: vec![ExpectedTile {
+                        position: (32508, 32176),
+                        ids: vec![409, 1931],
+                        counted_entry: None,
+                    }],
+                },
+                NativeCrop {
+                    bytes: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content/world/placements/region-z14-x126-y125.b3")),
+                    region: (14, 126, 125),
+                    bounds: (32508, 32176, 32509, 32177),
+                    start: (32508, 32176),
+                    expected: vec![],
+                },
+            ], &[])?
+        } else {
+            world(&callback, trigger)?
+        };
+
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
-        let origin = local(Position {
-            x: trigger.x - 1,
-            ..trigger
-        });
+        let origin = local(start);
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,

@@ -262,6 +262,30 @@ fn m09_gathering_wire_marble_tier_removes_rock_and_grants_figurine() -> TestResu
     run_gathering(5908, 10426, None, Some(10428), true)
 }
 #[test]
+fn cach1_final_marble_sculpture_grants_marblelous_and_marble_madness() -> TestResult {
+    run_gathering(5908, 10426, None, Some(10429), true)
+}
+#[test]
+fn cach1_final_ice_sculpture_grants_ice_sculptor_and_cold_as_ice() -> TestResult {
+    run_gathering(5908, 7445, Some(7446), None, true)
+}
+#[test]
+fn cach1_blessed_stake_finishes_ice_and_grants_both_achievements() -> TestResult {
+    run_gathering(5942, 7445, Some(7446), None, true)
+}
+#[test]
+fn cach1_blessed_stake_finishes_marble_and_grants_both_achievements() -> TestResult {
+    run_gathering(5942, 10426, None, Some(10429), true)
+}
+#[test]
+fn cach1_ice_sculpture_admits_the_third_stage_without_an_award() -> TestResult {
+    run_gathering(5908, 7442, Some(7444), None, true)
+}
+#[test]
+fn cach1_ice_sculpture_admits_the_fourth_stage_without_an_award() -> TestResult {
+    run_gathering(5908, 7444, Some(7445), None, true)
+}
+#[test]
 fn m09_gathering_wire_dusting_grants_demon_dust() -> TestResult {
     run_gathering(5942, 5995, Some(4098), Some(5906), true)
 }
@@ -284,7 +308,7 @@ fn m09_gathering_wire_mechanical_sewer_water_reaches_complete_classifier() -> Te
 }
 #[test]
 fn m09_gathering_wire_mechanical_water_outside_sewers_returns_nothing_to_use() -> TestResult {
-    run_gathering_at(9306, 4597, Some(4597), None, false, false)
+    run_gathering_at(9306, 4597, Some(4597), None, false, false, SculptureSetup::Base)
 }
 #[test]
 fn m09_gathering_wire_failed_catch_keeps_hole_and_bait() -> TestResult {
@@ -312,6 +336,127 @@ fn p11_failed_dusting_marks_corpse_without_advancing_ashes_to_dust() -> TestResu
     run_gathering(5942, 5995, Some(4098), None, true)
 }
 
+#[test]
+fn review_carried_ice_consumes_the_material_without_minting() -> TestResult {
+    for tool in [5942, 5908] {
+        for (before, after) in [(7441, 7442), (7442, 7444), (7444, 7445), (7445, 7446)] {
+            run_gathering_at(tool, before, Some(after), None, true, false, SculptureSetup::Carried)?;
+        }
+        run_gathering_at(tool, 10426, None, Some(10429), true, false, SculptureSetup::Carried)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn review_all_marble_tiers_keep_the_sculptor_inscription() -> TestResult {
+    for tool in [5908, 5942] {
+        for figurine in [10427, 10428, 10429] {
+            run_gathering(tool, 10426, None, Some(figurine), true)?;
+        }
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SculptureSetup {
+    Base,
+    Carried,
+    NestedMaterial,
+    FullBackpackNestedMaterial,
+    FullBackpackNestedDropped,
+    FullBackpackNestedTerrain,
+    ObtainBag,
+    ConfiguredObtain,
+    FullBackpackQuiver,
+    FullBackpackConfiguredQuiver,
+    FullBackpackDirectMaterial,
+    NestedTool,
+    Dropped,
+    DroppedIceLostAck,
+    FullBackpack,
+    Overweight,
+    Offered,
+}
+
+#[test]
+fn review_nested_sculpture_material_commits() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::NestedMaterial)
+}
+
+#[test]
+fn review_sculpture_prefers_configured_obtain_container() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::ConfiguredObtain)
+}
+
+#[test]
+fn review_sculpture_skips_configured_quiver_before_dropping() -> TestResult {
+    run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpackConfiguredQuiver)
+}
+
+#[test]
+fn review_full_backpack_nested_marble_uses_nested_space() -> TestResult {
+    for tool in [5908, 5942] {
+        for setup in [
+            SculptureSetup::FullBackpackNestedMaterial,
+            SculptureSetup::FullBackpackNestedDropped,
+            SculptureSetup::FullBackpackNestedTerrain,
+        ] {
+            run_gathering_at(tool, 10426, None, Some(10429), true, false, setup)?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn review_marble_prefers_assigned_obtain_bag() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::ObtainBag)
+}
+
+#[test]
+fn review_marble_skips_ammunition_only_quiver() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpackQuiver)
+}
+
+#[test]
+fn review_full_backpack_direct_marble_drops_figurine() -> TestResult {
+    for tool in [5908, 5942] {
+        run_gathering_at(
+            tool, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpackDirectMaterial,
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn review_nested_sculpture_tool_commits() -> TestResult {
+    run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::NestedTool)
+}
+
+#[test]
+fn review_dropped_sculpture_material_commits() -> TestResult {
+    run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::Dropped)
+}
+
+#[test]
+fn dropped_ice_browse_reconciles_lost_sculpture_ack() -> TestResult {
+    run_gathering_at(5908, 7441, Some(7442), None, true, false, SculptureSetup::DroppedIceLostAck)
+}
+
+#[test]
+fn review_full_backpack_sculpture_drops_figurine() -> TestResult {
+    run_gathering_at(5908, 10426, None, Some(10429), true, false, SculptureSetup::FullBackpack)
+}
+
+#[test]
+fn review_overweight_sculpture_drops_figurine() -> TestResult {
+    run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::Overweight)
+}
+
+#[test]
+fn review_offered_sculpture_material_is_refused() -> TestResult {
+    run_gathering_at(5942, 10426, None, Some(10429), true, false, SculptureSetup::Offered)
+}
+
 fn run_gathering(
     tool: u16,
     target: u16,
@@ -319,7 +464,7 @@ fn run_gathering(
     yield_item: Option<u16>,
     committed: bool,
 ) -> TestResult {
-    run_gathering_at(tool, target, after, yield_item, committed, true)
+    run_gathering_at(tool, target, after, yield_item, committed, true, SculptureSetup::Base)
 }
 
 fn run_gathering_at(
@@ -329,6 +474,7 @@ fn run_gathering_at(
     yield_item: Option<u16>,
     committed: bool,
     in_sewers: bool,
+    setup: SculptureSetup,
 ) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -337,8 +483,10 @@ fn run_gathering_at(
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || {
-            gathering_scenario(tool, target, after, yield_item, committed, in_sewers)
-                .map_err(|e| e.to_string())
+            gathering_scenario(
+                tool, target, after, yield_item, committed, in_sewers, setup,
+            )
+            .map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "gathering e2e panic")??;
@@ -356,7 +504,41 @@ fn gathering_scenario(
     yield_item: Option<u16>,
     committed: bool,
     in_sewers: bool,
+    setup: SculptureSetup,
 ) -> TestResult {
+    let full_nested = matches!(
+        setup,
+        SculptureSetup::FullBackpackNestedMaterial
+            | SculptureSetup::FullBackpackNestedDropped
+            | SculptureSetup::FullBackpackNestedTerrain
+    );
+    let nested = matches!(
+        setup,
+        SculptureSetup::FullBackpackNestedMaterial
+            | SculptureSetup::NestedMaterial
+            | SculptureSetup::ConfiguredObtain
+            | SculptureSetup::NestedTool
+    );
+    let dropped = matches!(
+        setup,
+        SculptureSetup::Dropped | SculptureSetup::FullBackpackNestedDropped | SculptureSetup::DroppedIceLostAck
+    );
+    let carried = nested
+        || matches!(
+            setup,
+            SculptureSetup::Carried
+                | SculptureSetup::Offered
+                | SculptureSetup::FullBackpackDirectMaterial
+        );
+    let item_target = carried || dropped;
+    let fallback = matches!(
+        setup,
+        SculptureSetup::FullBackpack
+            | SculptureSetup::FullBackpackDirectMaterial
+            | SculptureSetup::Overweight
+            | SculptureSetup::FullBackpackQuiver
+            | SculptureSetup::FullBackpackConfiguredQuiver
+    );
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
@@ -519,8 +701,65 @@ fn gathering_scenario(
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look_fixtures::seed_main_backpack(&harness, &[(rod, 1), (bait_key, 3)]).await?;
+        let supplies = if item_target { (water, 1) } else { (bait_key, 3) };
+        let mut entries = vec![(rod, 1), supplies];
+        match setup {
+            SculptureSetup::FullBackpackNestedMaterial | SculptureSetup::FullBackpackNestedDropped | SculptureSetup::FullBackpackNestedTerrain => {
+                entries.push((bag, 1));
+                // Moving an instance target out of the main backpack frees a slot.
+                entries.resize(20 + usize::from(item_target), ("oteryn:item.tibia.i3031", 1));
+            }
+            SculptureSetup::ObtainBag => entries.extend([(bag, 1), (bag, 1)]),
+            SculptureSetup::FullBackpackQuiver | SculptureSetup::FullBackpackConfiguredQuiver => {
+                entries.push(("oteryn:item.tibia.i35562", 1));
+                entries.resize(20, ("oteryn:item.tibia.i3031", 1));
+            }
+            SculptureSetup::FullBackpack | SculptureSetup::FullBackpackDirectMaterial => entries.resize(20, ("oteryn:item.tibia.i3031", 1)),
+            SculptureSetup::Overweight => entries.resize(10, ("oteryn:item.tibia.i3578", 100)),
+            SculptureSetup::ConfiguredObtain => entries.extend([(bag, 1), (bag, 1)]),
+            SculptureSetup::NestedMaterial | SculptureSetup::NestedTool => entries.push((bag, 1)),
+            _ => {}
+        }
+        let source_handle = if (fallback && !carried)
+            || matches!(setup, SculptureSetup::FullBackpackNestedTerrain | SculptureSetup::FullBackpackDirectMaterial | SculptureSetup::ObtainBag)
+        {
+            u64::try_from(entries.len())? + 1
+        } else {
+            3
+        };
+        let target_handle = if setup == SculptureSetup::FullBackpackDirectMaterial {
+            source_handle - 1
+        } else {
+            2
+        };
+        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
+        if nested {
+            let item = if setup == SculptureSetup::NestedTool { 71 } else { 72 };
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query("WITH moved AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid RETURNING *) INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,placed_transaction_id FROM moved")
+                .bind(id(item).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
+        if full_nested && !dropped {
+            let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(occupied, 20);
+        }
         super::achievement_granters::seed_gathering(&harness).await?;
+        let sculpture = match target_id {
+            10426 => Some(("marblelous", "marble_madness", 5, yield_item == Some(10429))),
+            7441 | 7442 | 7444 | 7445 => Some(("ice_sculptor", "cold_as_ice", 10, after == Some(7446))),
+            _ => None,
+        };
+        if let Some((_, counted, total, _)) = sculpture {
+            super::achievement_granters::seed_progress(
+                &harness,
+                &format!("oteryn:achievement/{counted}"),
+                total - 1,
+            )
+            .await?;
+        }
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -528,6 +767,61 @@ fn gathering_scenario(
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("craft offer selectable")?;
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        let premium = crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+            consumer, Some(clock), Some(activation.clone()), Some(harness.root.clone()),
+        );
+        if matches!(setup, SculptureSetup::ObtainBag | SculptureSetup::ConfiguredObtain | SculptureSetup::FullBackpackConfiguredQuiver) {
+            use oteryn_protocol_oteryn::quick_loot::{
+                QuickLootAction, QuickLootCategory, QuickLootRecipient, QuickLootRequest, encode_quick_loot_request,
+            };
+            harness.root.latch_premium_activation(
+                &activation.activation_id, activation.switch_over_us, activation.switch_over_us + 60_000_000,
+            ).await.map_err(debug)?;
+            owner.runtime.lock().await.bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation,
+                ).map_err(debug)?,
+            ).map_err(debug)?;
+            owner.premium_coordinator = Some(&premium);
+            owner.admit_premium(id(40), admitted.game_session_id);
+            admitted.continuity.selected_capabilities =
+                SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18, 98, 607])
+                    .ok_or("craft and Obtain offers selectable")?;
+            let request = |action, recipient, category| QuickLootRequest {
+                action,
+                corpse: None,
+                selected_item: None,
+                review_filters: false,
+                category,
+                recipient: Some(QuickLootRecipient::Container),
+                recipient_id: Some(id(recipient)),
+                fallback_to_main: false,
+                filter_mode: None,
+                filter_definition_ref: None,
+            };
+            let mut requests = vec![request(
+                QuickLootAction::AssignObtain, 73,
+                (setup == SculptureSetup::ConfiguredObtain).then_some(QuickLootCategory::Decoration),
+            )];
+            if setup != SculptureSetup::FullBackpackConfiguredQuiver {
+                requests.push(request(QuickLootAction::AssignLoot, 74, None));
+            }
+            let commands = requests.iter().map(|request| {
+                Ok((request.action.command_type(), encode_quick_loot_request(request).map_err(debug)?))
+            }).collect::<TestResult<Vec<_>>>()?;
+            let (replies, _) = super::parameter_spell_fixtures::exchange(
+                &owner, &mut admitted, &commands, false, false,
+            ).await?;
+            assert_eq!(replies.len(), commands.len());
+            for ((kind, _), (status, _)) in commands.iter().zip(&replies) {
+                assert_eq!(*status, crate::foundation::CommandStatus::Accepted, "quick-loot command {kind}");
+            }
+        }
         let mut placement = map.base().digest().to_vec();
         let target_pos = crate::map::overlay::TilePos {
             x: start.x + 1,
@@ -544,16 +838,55 @@ fn gathering_scenario(
             expected_revision: 0,
         };
         // The wire helper resolves the current rod handle from the inventory snapshot.
+        if dropped {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            let ground = crate::durability::map_item_mint_audit::map_item_spatial_position(target_pos.x, target_pos.y, target_pos.floor);
+            sqlx::query("WITH moved AS (DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid RETURNING *) INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) SELECT item_instance_id,world_id,encode($2,'hex')::uuid,$3::text::numeric,$4,convert_to('OTERYN_ITEM_LOOP_DROP/v1:fixture','UTF8'),$5,$6,$7,1 FROM moved")
+                .bind(id(72).as_slice()).bind(id(43).as_slice()).bind(fence.scope_ownership_generation.get().to_string())
+                .bind(ground).bind(crate::map::overlay::map_revision(map.base()))
+                .bind(format!("sha256:{}", native.source_digest().iter().map(|b| format!("{b:02x}")).collect::<String>()))
+                .bind(pin.frame_binding().digest().as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let ground = crate::gameplay_transport::loop_move::loop_ground(&owner, map.base(), Some(index))
+                .await.ok_or("ground projection")?;
+            assert!(ground.ground_entry(&id(72)).is_some());
+            if full_nested {
+                let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(occupied, 20);
+            }
+        }
+        let observer = if setup == SculptureSetup::DroppedIceLostAck {
+            let evidence = super::house_transfer_fixtures::RecoverySource::start(&harness).await?;
+            let session = super::boss_rewards_fixtures::privacy::admit_gameplay_peer(
+                &harness, &evidence.evidence, 1,
+            ).await?;
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                harness.root.clone(),
+            ).current_session_at(session).await?.0;
+            let peer_fence = crate::gameplay_transport::item_fence_of(current).ok_or("observer fence")?;
+            let mut runtime = owner.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let peer = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            let at = runtime.read_actor_position(deps.actor).map_err(debug)?.position();
+            runtime.initialize_pinned_test_position(peer, at).map_err(debug)?;
+            Some((peer, peer_fence))
+        } else {
+            None
+        };
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("source")?),
             use_with: None,
-            use_with_map_item: Some(MapUseTarget::Object(target.clone())),
+            use_with_map_item: Some(if item_target {
+                MapUseTarget::Item(std::num::NonZeroU64::new(2).ok_or("target handle")?)
+            } else {
+                MapUseTarget::Object(target.clone())
+            }),
             use_with_position: None,
         };
-        let payload = encode_item_use_intent(&intent).map_err(debug)?;
-
         // A pickup may already be prepared when the tool changes/removes the map item.
-        let mut stale_pickup = if target_id == 7441 {
+        let mut stale_pickup = if target_id == 7441 && !item_target {
             let definition = crate::gameplay_transport::item_look::typed_definition(
                 index,
                 reference(water).ok_or("ice")?,
@@ -602,15 +935,20 @@ fn gathering_scenario(
         );
         let started = std::time::Instant::now();
         let session = admitted.game_session_id;
+        let command_id = admitted.continuity.next_command_id;
         // Resume after a valid prior handle history. The next inventory snapshot issues the
-        // carried tool at the third handle, as in the existing fishing fixture. Command 1
-        // remains the first command; only the server-issued view handles vary.
-        let counter = (0_u64..100_000)
+        // carried tool at the third handle, as in the existing fishing fixture. The carried
+        // sculpture material is issued the second handle, ahead of the tool.
+        let counter = (admitted.continuity.item_view.handle_counter..).take(100_000)
             .find(|counter| {
                 let mut candidate = intent.clone();
                 candidate.target = UseTarget::Item(
-                    std::num::NonZeroU64::new(counter + 3).unwrap_or(std::num::NonZeroU64::MAX),
+                    std::num::NonZeroU64::new(counter + source_handle).unwrap_or(std::num::NonZeroU64::MAX),
                 );
+                if item_target {
+                    candidate.use_with_map_item =
+                        std::num::NonZeroU64::new(counter + target_handle).map(MapUseTarget::Item);
+                }
                 let Ok(actual) = encode_item_use_intent(&candidate) else {
                     return false;
                 };
@@ -618,7 +956,7 @@ fn gathering_scenario(
                 let digest = Sha256::new()
                     .chain_update(b"oteryn.fishing.catch.v1")
                     .chain_update(session.as_bytes())
-                    .chain_update(1_u64.to_be_bytes())
+                    .chain_update(command_id.to_be_bytes())
                     .chain_update(&actual)
                     .finalize();
                 let mut occurrence = [0; 16];
@@ -640,10 +978,17 @@ fn gathering_scenario(
                 let roll = crate::gameplay_transport::item_craft::gathering_roll(
                     native.source_digest(),
                     session,
-                    1,
+                    command_id,
                     &actual,
                 )
                 .unwrap_or(0);
+                // Exercise the wire at a donor-qualified roll outside the old Crystal tiers.
+                match (target_id, after, yield_item) {
+                    (7442 | 7444 | 7445, Some(_), None) => return (10_000..=20_000).contains(&roll),
+                    (10426, None, Some(10429)) => return (1_000..=10_000).contains(&roll),
+                    (10426, None, Some(10428)) => return (10_001..=26_764).contains(&roll),
+                    _ => {}
+                }
                 let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
                     tool, target_id, 10, catch_roll, roll,
                 );
@@ -654,10 +999,89 @@ fn gathering_scenario(
                 }
             })
             .ok_or("deterministic handle history exists")?;
+        let mut intent = intent;
+        if item_target {
+            intent.use_with_map_item =
+                std::num::NonZeroU64::new(counter + target_handle).map(MapUseTarget::Item);
+        }
+        let payload = encode_item_use_intent(&intent).map_err(debug)?;
         admitted.continuity.item_view.handle_counter = counter;
-        let command_id = 1;
-        let (next, result, actual) =
-            exchange(&owner, admitted, command_id, &payload, reference(rod)).await?;
+        let (next, result, actual) = if nested || dropped || setup == SculptureSetup::Offered {
+            use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
+            if setup == SculptureSetup::Offered {
+                let binding = owner.runtime.lock().await.binding();
+                owner.states.player_trades.seed_offered_for_test(binding, session, crate::foundation::GameSessionId::decode(&id(84)).map_err(debug)?, id(72))
+                    .ok_or("offered trade fixture")?;
+            }
+            intent.target = UseTarget::Item(std::num::NonZeroU64::new(counter + source_handle).ok_or("source handle")?);
+            let actual = encode_item_use_intent(&intent).map_err(debug)?;
+            let craft = owner.use_craft(
+                deps.actor,
+                UseCommand { game_session_id: session, command_id, item_fence: Some(fence) },
+                intent.clone(),
+                Some(ItemKey::Instance(id(71))),
+                Some(ItemKey::Instance(id(72))),
+            );
+            let result = if let Some((peer, peer_fence)) = observer {
+                use crate::gameplay_transport::container_view::ContainerObservation;
+                let field = ItemKey::BrowseField {
+                    x: i32::from(target_pos.x),
+                    y: i32::from(target_pos.y),
+                    floor: -i16::from(target_pos.floor),
+                };
+                let first = owner.observe_container(peer, Some(peer_fence), field).await;
+                let Some(ContainerObservation::BrowseField { entries, .. }) = first else {
+                    return Err("second session could not browse dropped ice".into());
+                };
+                assert!(entries.iter().any(|entry| entry.key == ItemKey::Instance(id(72))));
+                assert!(crate::durability::item_craft::lose_ground_sculpture_ack(craft).await.is_none());
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                        .fetch_one(&harness.pool).await?,
+                    1,
+                    "only the acknowledgement was lost",
+                );
+                if owner.root.has_ready_demand() {
+                    owner.root.maintain_ready_once().await.map_err(debug)?;
+                }
+                let observed = owner.observe_container(peer, Some(peer_fence), field).await;
+                let Some(ContainerObservation::BrowseField { entries, .. }) = observed else {
+                    return Err("second session could not browse after lost acknowledgement".into());
+                };
+                assert!(!entries.iter().any(|entry| entry.key == ItemKey::Instance(id(72))));
+                assert!(entries.iter().any(|entry| entry.appearance_id == 7442));
+                let (_, replay, _) = exchange(&owner, admitted, command_id, &actual, None).await?;
+                assert_eq!(replay, UseDisposition::Committed);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            } else {
+                craft.await
+            }.ok_or("sculpture dispatch returned no outcome");
+            if setup == SculptureSetup::Offered {
+                assert_eq!(result?.disposition, UseDisposition::Rejected);
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await?, 0);
+                assert!(!owner.states.player_trades.open(session));
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
+            (admitted, result?.disposition, actual)
+        } else if carried {
+            super::item_craft_fixtures::exchange_carried(
+                &owner,
+                admitted,
+                command_id,
+                &payload,
+                reference(rod),
+                reference(water),
+            )
+            .await?
+        } else {
+            exchange(&owner, admitted, command_id, &payload, reference(rod)).await?
+        };
         let actual_intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
             &[4, 6, 11, 15, 18],
             &actual,
@@ -665,8 +1089,11 @@ fn gathering_scenario(
         .map_err(debug)?;
         assert_eq!(
             actual_intent.target,
-            UseTarget::Item(std::num::NonZeroU64::new(counter + 3).ok_or("issued source handle")?)
+            UseTarget::Item(std::num::NonZeroU64::new(counter + source_handle).ok_or("issued source handle")?)
         );
+        if carried {
+            assert_eq!(actual_intent.use_with_map_item, intent.use_with_map_item);
+        }
         assert_eq!(
             result,
             if committed {
@@ -679,33 +1106,90 @@ fn gathering_scenario(
             sqlx::query_scalar("SELECT state_item_id FROM game_terrain_tool_transforms")
                 .fetch_optional(&harness.pool)
                 .await?;
-        assert_eq!(state, committed.then(|| after.map_or(0, i64::from)));
+        assert_eq!(
+            state,
+            (committed && !item_target).then(|| after.map_or(0, i64::from))
+        );
         let map = owner.bundle_map().ok_or("bundle map")?;
         let tile = crate::map::view::compose_tile(&map.overlay, &map.facts.pinned(), target_pos)
             .map_err(debug)?
             .ok_or("target tile")?;
-        if let Some(after) = after {
-            assert!(tile.entries.iter().any(|e| e.facts.appearance_id == after));
+        if let Some(appearance) = if item_target { Some(target_id) } else { after } {
+            assert!(
+                tile.entries
+                    .iter()
+                    .any(|e| e.facts.appearance_id == appearance)
+            );
         } else {
             assert!(!tile.entries.iter().any(|e| e.source.key()
                 == crate::map::view::MapEntryKey::Base(
                     crate::map::view::placement_key(target_pos, 1).unwrap_or(0)
                 )));
         }
-        let inventory_yield: Option<i64> = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+        let live_yield: Option<i64> = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
             .bind(format!("oteryn:item.tibia.i{}", yield_item.unwrap_or(5878))).fetch_one(&harness.pool).await?;
-        assert_eq!(inventory_yield, yield_item.map(|_| 1));
+        assert_eq!(live_yield, yield_item.map(|_| 1));
+        if carried && let Some(next_stage) = after {
+            let minted: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1",
+            ).bind(format!("oteryn:item.tibia.i{next_stage}")).fetch_one(&harness.pool).await?;
+            assert_eq!(minted, 0, "a carried position has no map tile for its next ice stage");
+        }
+        if full_nested || matches!(setup, SculptureSetup::ObtainBag | SculptureSetup::ConfiguredObtain) {
+            let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(remaining, 0);
+            let nested_outputs: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id)
+                 WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key=$2",
+            )
+            .bind(id(73).as_slice())
+            .bind(format!("oteryn:item.tibia.i{}", yield_item.ok_or("nested figurine")?))
+            .fetch_one(&harness.pool).await?;
+            assert_eq!(nested_outputs, 1, "use the selected nested bag");
+        }
+        if carried && after.is_some() {
+            let state: i16 = sqlx::query_scalar(
+                "SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(72).as_slice())
+            .fetch_one(&harness.pool).await?;
+            assert_eq!(state, 2, "the carried ice stage is consumed");
+        }
+        if fallback {
+            let ground_outputs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1 AND g.spatial_position=$2")
+                .bind(format!("oteryn:item.tibia.i{}", yield_item.ok_or("fallback figurine")?))
+                .bind(crate::durability::map_item_mint_audit::map_item_spatial_position(start.x, start.y, start.floor))
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(ground_outputs, 1);
+        }
+        if let Some(10427..=10429) = yield_item {
+            let text: Option<String> = sqlx::query_scalar("SELECT t.text FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1 AND i.lifecycle=1")
+                .bind(format!("oteryn:item.tibia.i{}", yield_item.unwrap_or_default())).fetch_optional(&harness.pool).await?;
+            let sculptor: String = sqlx::query_scalar(
+                "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(41).as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert!(
+                text.is_some_and(|text| text.contains(&sculptor)),
+                "figurine has the sculptor's name"
+            );
+        }
         let tool_quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(rod).fetch_one(&harness.pool).await?;
         assert_eq!(tool_quantity, 1);
         let bait: i64 = sqlx::query_scalar(
             "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1",
         )
-        .bind(bait_key)
+        .bind(supplies.0)
         .fetch_one(&harness.pool)
         .await?;
         assert_eq!(
             bait,
-            if matches!(tool, 3483 | 9306) && committed {
+            if item_target {
+                0
+            } else if matches!(tool, 3483 | 9306) && committed {
                 2
             } else {
                 3
@@ -736,6 +1220,43 @@ fn gathering_scenario(
             achievement,
             super::achievement_granters::assert_gathering(&harness, earned).await?
         );
+        if let Some((first, counted, total, granted)) = sculpture {
+            let receipt: String =
+                sqlx::query_scalar("SELECT event_id::text FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            let first = format!("oteryn:achievement/{first}");
+            let first_event: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT source_event_id FROM game_account_achievement_grant_requests WHERE achievement_key=$1 AND source_kind='oteryn:item-craft'",
+            )
+            .bind(&first)
+            .fetch_optional(&harness.pool)
+            .await?;
+            assert_eq!(
+                first_event.as_deref(),
+                granted.then_some(receipt.as_bytes()),
+                "{first}"
+            );
+            let facts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind(&first)
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(facts, i64::from(granted), "{first}");
+            let progress = super::achievement_granters::assert_progress(
+                &harness,
+                &format!("oteryn:achievement/{counted}"),
+                total - i64::from(!granted),
+                granted,
+                "oteryn:item-craft",
+            )
+            .await?;
+            assert_eq!(
+                progress.as_ref().map(|(_, event, _)| event.as_slice()),
+                granted.then_some(receipt.as_bytes())
+            );
+        }
         if let Some(candidate) = &mut stale_pickup {
             let permit = owner.spell_lane_permit().await.ok_or("pickup lane")?;
             let outcome = owner

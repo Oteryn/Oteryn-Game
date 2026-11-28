@@ -16,6 +16,43 @@ SHARD = ROOT / "content/world/terrain/terrain-09000-09492.json"
 PLACEMENTS = ROOT / "content/world/placements/index.json"
 
 
+def exclusive_records(records):
+    owned = {}
+    for shard in sorted(SHARD.parent.glob("terrain-*.json")):
+        if shard != SHARD:
+            for record in json.loads(shard.read_bytes())["records"]:
+                key = record["identity"]["key"]
+                if key in owned:
+                    raise ValueError(f"Terrain key already has multiple owners: {key}")
+                owned[key] = record
+    result = []
+    for record in records:
+        key = record["identity"]["key"]
+        if key not in owned:
+            result.append(record)
+        elif record != owned[key]:
+            raise ValueError(f"Conflicting Crystal ground facts for {key}")
+    if len(result) != 477 or not any(r["provenance"]["source_item_id"] == 53066 for r in result):
+        raise ValueError(f"Crystal ground catalogue coverage changed: {len(result)}")
+    return result
+
+
+def write_output(path, document, check):
+    raw = (json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode()
+    if check:
+        if path.read_bytes() != raw:
+            raise ValueError(f"stale Crystal ground: {path}")
+    else:
+        path.write_bytes(raw)
+
+
+def reconcile_overlays(check):
+    # Keep the authored owner only after verifying that the facts are identical.
+    document = json.loads(SHARD.read_bytes())
+    document["records"] = exclusive_records(document["records"])
+    write_output(SHARD, document, check)
+
+
 def regenerate(source, check):
     appearance_bytes = load_source(source, "appearances.dat")
     xml = load_source(source, "items.xml")
@@ -38,12 +75,6 @@ def regenerate(source, check):
     scoped = {
         row["source_item_id"] for row in index["palette"] if row.get("scoped_spawn_ground")
     }
-    existing = {
-        record["identity"]["key"]
-        for shard in SHARD.parent.glob("terrain-*.json")
-        if shard != SHARD
-        for record in json.loads(shard.read_bytes())["records"]
-    }
     records = []
     for row in index["palette"]:
         identifier = row["source_item_id"]
@@ -63,25 +94,23 @@ def regenerate(source, check):
             continue
         record = ground_record(ROOT, artifact, appearance, identifier)
         row.update(key=record["identity"]["key"], provisional=False)
-        if record["identity"]["key"] not in existing:
-            records.append(record)
-    if len(records) != 493 or not any(r["provenance"]["source_item_id"] == 53066 for r in records):
-        raise ValueError(f"Crystal ground catalogue coverage changed: {len(records)}")
+        records.append(record)
     for path, document in (
-        (SHARD, {"family": "Terrain", "records": records}),
+        (SHARD, {"family": "Terrain", "records": exclusive_records(records)}),
         (PLACEMENTS, index),
     ):
-        raw = (json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode()
-        if check:
-            if path.read_bytes() != raw:
-                raise ValueError(f"stale Crystal ground: {path}")
-        else:
-            path.write_bytes(raw)
+        write_output(path, document, check)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", type=Path, help="pinned Crystal data/items directory")
+    parser.add_argument("source", nargs="?", type=Path, help="pinned Crystal data/items directory")
+    parser.add_argument("--reconcile-overlays", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    regenerate(args.source, args.check)
+    if args.reconcile_overlays and args.source is None:
+        reconcile_overlays(args.check)
+    elif args.source is not None and not args.reconcile_overlays:
+        regenerate(args.source, args.check)
+    else:
+        parser.error("provide a source directory or --reconcile-overlays")

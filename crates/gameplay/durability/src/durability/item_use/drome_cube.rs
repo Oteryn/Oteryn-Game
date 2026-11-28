@@ -1,7 +1,8 @@
 //! W09: the Cube reuses the item-use TRANSFORM, its fences and Type 2 audit.
 //! Crystal 201189f8 `data/scripts/actions/items/drome_cube.lua:27-39`.
 
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use crate::durability::db::commit_semantic_read;
+use super::super::db::{begin_semantic_transaction};
 use super::super::item_loop_move::ItemLoopContent;
 use super::super::item_transfer::read_derived_transfer_capacity_centi_oz;
 use super::*;
@@ -125,7 +126,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

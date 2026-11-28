@@ -25,6 +25,8 @@ pub struct ChannelSessionStates {
         std::sync::Mutex<std::collections::BTreeMap<&'static str, usize>>,
     /// Shared activity owner installed by the boss instance composition root.
     pub boss_activity_handoff: super::BossActivityHandoffSlot,
+    /// Pending achievement work from a prior process was drained for this owner.
+    pub(super) boss_achievement_reconciled: std::sync::atomic::AtomicBool,
     /// Shared weak browse containers live only while a connection holds a view.
     pub(super) browse_fields: super::container_view::browse_cache::BrowseFields,
     /// Optional local informational publication; never an admission authority.
@@ -119,6 +121,8 @@ pub struct ChannelSessionStates {
     /// Per-owner simulation clock control for native timer scenarios, never SQL time.
     #[cfg(test)]
     pub(super) test_owner_time: std::sync::atomic::AtomicU64,
+    #[cfg(test)]
+    pub(super) test_daily_boost_parked_trade: std::sync::atomic::AtomicBool,
     pub(super) tibiadrome: super::tibiadrome::Drome,
     pub(super) timed_items: super::timed_item::TimedRuntime,
     /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
@@ -224,6 +228,7 @@ impl ChannelSessionStates {
         self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
         self.grizzly_boss.forget(session);
+        self.quest_callbacks.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
         }

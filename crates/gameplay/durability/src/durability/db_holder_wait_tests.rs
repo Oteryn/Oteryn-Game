@@ -115,7 +115,7 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
                 );
             }
             let owner = PassOwner::checked_out(
-                &slot, waiter, Instant::now(), Instant::now() + DB_PASS_DEADLINE,
+                &slot, waiter, Instant::now(), TokioInstant::now() + DB_PASS_DEADLINE,
             );
             assert!(
                 slot.lock()

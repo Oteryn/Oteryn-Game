@@ -3,6 +3,7 @@ import json
 import unittest
 from pathlib import Path
 from item_detail_source_facts import WEIGHT_FACTS
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -34,7 +35,7 @@ class CompleteBossPolicyTests(unittest.TestCase):
                         physical = expected['semantics']['physical']['value']
                         self.assertEqual(physical['weight'], {'state': 'KNOWN', 'value': 0})
                         physical['weight'] = {'state': 'KNOWN', 'value': weights[key]}
-                    self.assertEqual(native[key], expected)
+                    self.assertEqual(compact_item_record(native[key]), compact_item_record(expected))
                 count += 1
         self.assertEqual(count, 23)
 

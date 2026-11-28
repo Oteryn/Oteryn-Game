@@ -86,6 +86,7 @@ EXTRA_DERIVED = (
     "content/world/terrain/terrain-08751-08793.json",
     "content/world/terrain/terrain-08794-08845.json",
     "content/world/terrain/terrain-08846-08885.json",
+    "content/world/terrain/terrain-09000-09492.json",
     "content/interactions/index.json",
     "content/quests/grizzly-boss-rooms.json",
     "content/quests/last-creep-native.json",
@@ -148,6 +149,11 @@ CHECKS = (
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     [
         "python3",
+        "tools/content-schema/world-authoring/quest_access_bindings.py",
+        "--check",
+    ],
+    [
+        "python3",
         "tools/content-schema/world-object-authoring/spawn_ground.py",
         "--check",
     ],
@@ -161,10 +167,16 @@ CHECKS = (
         "tools/content-schema/world-object-authoring/spawn_map_ground.py",
         "--check",
     ],
+    ["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py", "--check"],
     ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_key_door_bindings.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/qengine_access.py", "--check"],
+    ["python3", "tools/content-schema/quest-authoring/qengine_rewards.py", "--check"],
     [
         "python3",
         "tools/content-migration/refresh_season_creature_inventory.py",
@@ -182,9 +194,21 @@ CHECKS = (
     ["python3", "tools/content-schema/world-object-authoring/alawar_static.py", "--check"],
     [
         "python3",
+        "tools/content-schema/world-object-authoring/crystal_ground.py",
+        "--reconcile-overlays",
+        "--check",
+    ],
+    [
+        "python3",
+        "tools/content-schema/world-object-authoring/blood_vestibule_ground.py",
+        "--check",
+    ],
+    [
+        "python3",
         "tools/content-schema/world-object-authoring/feroxa_static.py",
         "--check",
     ],
+    ["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py", "--check"],
     ["python3", "tools/content-migration/reward_bag_catalogue.py", "--check"],
     ["python3", "tools/content-schema/npc-authoring/convert_placements.py", "--check"],
     [
@@ -208,6 +232,7 @@ CHECKS = (
     ["python3", "tools/content-schema/validate_materialized_game_tree.py"],
     ["python3", "tools/content-schema/test_materialized_authored_props.py"],
     ["python3", "tools/content-census/item_key_references.py"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     *(["python3", tool, "content", "--check"] for tool in AUTHORING_TOOLS),
     ["python3", "tools/content-schema/item-authoring/test_engine_items.py"],
     [
@@ -248,14 +273,11 @@ def refresh_world_metadata() -> None:
         raise SystemExit("World metadata source archive digest differs")
     summary = json.loads(
         (
-            ROOT
-            / "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
+            ROOT / "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
         ).read_bytes()
     )
     expected = next(
-        row["sha256"]
-        for row in summary["source"]["files"]
-        if row["path"] == "data/items/items.xml"
+        row["sha256"] for row in summary["source"]["files"] if row["path"] == "data/items/items.xml"
     )
     with tarfile.open(archive, "r:gz") as stream:
         manifest_raw = stream.extractfile("corpus-manifest.json").read()
@@ -264,8 +286,7 @@ def refresh_world_metadata() -> None:
         rows = [
             row
             for row in json.loads(manifest_raw)["files"]
-            if row["source"] == "crystal-summer"
-            and row["path"] == "data/items/items.xml"
+            if row["source"] == "crystal-summer" and row["path"] == "data/items/items.xml"
         ]
         if len(rows) != 1 or rows[0]["sha256"] != expected:
             raise SystemExit("World metadata requires the exact qualified source XML")
@@ -307,9 +328,7 @@ def quest_donor_feedback_inputs() -> dict[str, str]:
     prefix = "tools/content-schema/quest-authoring/samples/donor-source/"
     inputs = {}
     for descriptor in sources:
-        if not isinstance(descriptor, dict) or not isinstance(
-            descriptor.get("path"), str
-        ):
+        if not isinstance(descriptor, dict) or not isinstance(descriptor.get("path"), str):
             raise ValueError("Quest donor feedback source descriptor is invalid")
         relative = descriptor["path"]
         if not relative.startswith(prefix):
@@ -325,9 +344,7 @@ def quest_donor_feedback_inputs() -> dict[str, str]:
             or not isinstance(digest, str)
             or re.fullmatch(r"[0-9a-f]{64}", digest) is None
         ):
-            raise ValueError(
-                "Quest donor feedback source is invalid or duplicated: " + relative
-            )
+            raise ValueError("Quest donor feedback source is invalid or duplicated: " + relative)
         if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
             raise ValueError("Quest donor feedback digest differs: " + relative)
         inputs[relative] = digest
@@ -352,9 +369,7 @@ def refresh_quest_donor_capture() -> None:
 
 def git(*args: str) -> str:
     """Run git and fail closed: any error stops the script instead of reading as "nothing"."""
-    result = subprocess.run(
-        ["git", *args], cwd=ROOT, capture_output=True, text=True, check=False
-    )
+    result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise SystemExit(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout
@@ -370,8 +385,7 @@ def show(stage: str, path: str) -> str | None:
             for entry in git("ls-files", "-z", "--stage", "--", path).split("\0")
         )
         present = any(
-            name == path and info.split()[2] == stage.strip(":")
-            for info, _, name in entries
+            name == path and info.split()[2] == stage.strip(":") for info, _, name in entries
         )
     return git("show", f"{stage}{path}") if present else None
 
@@ -379,9 +393,9 @@ def show(stage: str, path: str) -> str | None:
 def prey_report_paths() -> set[str]:
     """Only the active authoring date's reports are rewritten by regeneration."""
     try:
-        date = json.loads(
-            (ROOT / "rulesets/prey/difficulty.json").read_text(encoding="utf-8")
-        )["model"]["date"]
+        date = json.loads((ROOT / "rulesets/prey/difficulty.json").read_text(encoding="utf-8"))[
+            "model"
+        ]["date"]
         if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date) is None:
             return set()
     except (OSError, ValueError, KeyError, TypeError):
@@ -409,8 +423,7 @@ def derived_paths() -> set[str]:
         except ValueError:
             continue  # the working-tree copy holds conflict markers
     world = {
-        f"content/world/{locator}"
-        for locator in document_locators(git("show", f"HEAD:{PIN_PATH}"))
+        f"content/world/{locator}" for locator in document_locators(git("show", f"HEAD:{PIN_PATH}"))
     }
     # Include new and removed shards as well as paths still present in the tree.
     world.update(
@@ -424,12 +437,7 @@ def derived_paths() -> set[str]:
         ).splitlines()
     )
     return (
-        managed
-        | world
-        | set(REGISTRY)
-        | set(EXTRA_DERIVED)
-        | prey_report_paths()
-        | {CLIENT_WORLD}
+        managed | world | set(REGISTRY) | set(EXTRA_DERIVED) | prey_report_paths() | {CLIENT_WORLD}
     )
 
 
@@ -452,12 +460,7 @@ def entry_start_agrees(path: str) -> bool:
         return False
     try:
         return (
-            len(
-                {
-                    json.dumps(json.loads(side)["entry_start"], sort_keys=True)
-                    for side in sides
-                }
-            )
+            len({json.dumps(json.loads(side)["entry_start"], sort_keys=True) for side in sides})
             == 1
         )
     except (ValueError, KeyError):
@@ -480,9 +483,7 @@ def spells_manifest_keys() -> dict | None:
     if sides[1] is None or sides[2] is None:
         return None
     try:
-        base, ours, theirs = (
-            json.loads(side) if side is not None else {} for side in sides
-        )
+        base, ours, theirs = (json.loads(side) if side is not None else {} for side in sides)
     except ValueError:
         return None
     if not all(isinstance(side, dict) for side in (base, ours, theirs)):
@@ -525,9 +526,7 @@ def merge_spells_manifest(keys: dict) -> None:
                 "sha256": hashlib.sha256(pinned_file(value).read_bytes()).hexdigest(),
             }
         manifest[key] = value
-    text = json.dumps(
-        manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    )
+    text = json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     (ROOT / SPELLS_MANIFEST).write_text(text + "\n", encoding="utf-8")
 
 
@@ -691,8 +690,7 @@ def bootstrap_item_index() -> None:
     # come from the complete, validated existing shard set, without rewriting it.
     index.update(item_index_fields(ROOT))
     encoded = (
-        json.dumps(index, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        + "\n"
+        json.dumps(index, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode("utf-8")
     if encoded != original:
         path.write_bytes(encoded)
@@ -738,38 +736,6 @@ def literal(length: int, previous: str) -> str:
     return f"{length:_}" if "_" in previous or length >= 10_000 else str(length)
 
 
-def canonicalize_world() -> None:
-    """Serialize installed successors through the same typed writer used by recapture."""
-    with tempfile.TemporaryDirectory() as temp:
-        output = Path(temp) / "world"
-        run(
-            [
-                "cargo",
-                "run",
-                "--locked",
-                "-p",
-                "oteryn-game-server",
-                "--example",
-                "materialize_content_world_project_v2",
-                "--",
-                "--output-root",
-                str(output),
-                "--canonicalize-root",
-                str(WORLD),
-            ]
-        )
-        produced = sorted(
-            p.relative_to(output).as_posix() for p in output.rglob("*") if p.is_file()
-        )
-        expected = sorted(document_locators())
-        if produced != expected:
-            raise SystemExit(
-                f"canonical writer produced {produced}, expected {expected}"
-            )
-        for locator in produced:
-            shutil.copyfile(output / locator, WORLD / locator)
-
-
 def refresh_nomads_window(*, check: bool) -> None:
     profile_path = ROOT / NOMADS_WINDOW
     profile = json.loads(profile_path.read_bytes())
@@ -790,9 +756,7 @@ def refresh_nomads_window(*, check: bool) -> None:
     for target, text in outputs.items():
         if target.read_text(encoding="utf-8") != text:
             if check:
-                raise SystemExit(
-                    f"stale Nomads window evidence: {target.relative_to(ROOT)}"
-                )
+                raise SystemExit(f"stale Nomads window evidence: {target.relative_to(ROOT)}")
             target.write_text(text, encoding="utf-8")
 
 
@@ -803,10 +767,7 @@ def repin_rust_inventory() -> None:
     for locator in document_locators():
         data = (WORLD / locator).read_bytes()
         tree.update(
-            len(locator).to_bytes(8, "big")
-            + locator.encode()
-            + len(data).to_bytes(8, "big")
-            + data
+            len(locator).to_bytes(8, "big") + locator.encode() + len(data).to_bytes(8, "big") + data
         )
         entry = re.compile(
             r'(\(\s*"' + re.escape(locator) + r'",\s*)([\d_]+)(,\s*")[0-9a-f]{64}(")'
@@ -843,18 +804,12 @@ def repin_rust_inventory() -> None:
     # The inert raw intake must retain every normal non-raw batch, including
     # separately qualified source successors. Its historical cohort assertions
     # remain authored tests; only this exact measured extent is generated.
-    raw_test = (
-        ROOT / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
-    )
+    raw_test = ROOT / "apps/game-server/tests/integration_rest/content_item_fx_audio_raw.rs"
     if raw_test.is_file():
-        imports = json.loads((WORLD / "provenance/imports.json").read_bytes())[
-            "batches"
-        ]
+        imports = json.loads((WORLD / "provenance/imports.json").read_bytes())["batches"]
         raw_id = "g4-item-fx-audio295-raw-evidence-r1"
         if sum(batch["batch_id"] == raw_id for batch in imports) != 1:
-            raise SystemExit(
-                "raw import fixture requires exactly one unchanged raw cohort"
-            )
+            raise SystemExit("raw import fixture requires exactly one unchanged raw cohort")
         raw_text, count = re.subn(
             r"assert_eq!\(batches\.len\(\), [\d_]+\);",
             f"assert_eq!(batches.len(), {len(imports) - 1});",
@@ -865,9 +820,7 @@ def repin_rust_inventory() -> None:
         raw_test.write_text(raw_text, encoding="utf-8", newline="\n")
     # Client map loading pins the same index that the canonical World tooling writes.
     client = ROOT / CLIENT_WORLD
-    placement_digest = hashlib.sha256(
-        (WORLD / "placements/index.json").read_bytes()
-    ).hexdigest()
+    placement_digest = hashlib.sha256((WORLD / "placements/index.json").read_bytes()).hexdigest()
     client_text, count = re.subn(
         r'(pub const PLACEMENT_INDEX_SHA256: &str =\s*")[0-9a-f]{64}(";)',
         lambda match: match.group(1) + placement_digest + match.group(2),
@@ -911,43 +864,34 @@ def source_cohort_extent(world: Path) -> dict[str, int | str]:
         or not npc_profiles <= known_profiles
         or not npc_profiles <= known_references
     ):
-        raise SystemExit(
-            "source cohort contains duplicate references or missing NPC profiles"
-        )
+        raise SystemExit("source cohort contains duplicate references or missing NPC profiles")
     return {
         "references": len(records),
         "sources": len(provenance["sources"]),
         "imports": len(imports["batches"]),
         "creatures": sum(row["kind"] == "Creature" for row in records),
         "creature_records": sum(
-            row["kind"] != "Item" and reference_id(row) not in npc_profiles
-            for row in records
+            row["kind"] != "Item" and reference_id(row) not in npc_profiles for row in records
         ),
-        "creature_profiles": sum(
-            profile_id(row) not in npc_profiles for row in profiles
-        ),
+        "creature_profiles": sum(profile_id(row) not in npc_profiles for row in profiles),
         "npc_records": len(npc_profiles),
         "project_revision": project["project_revision"],
     }
 
 
-def refresh_source_cohort_extent() -> None:
-    """Keep strict native source bounds and repository fixtures at the exact cohort."""
-    measured = source_cohort_extent(WORLD)
+def rewrite_source_cohort_field(path: Path, pattern: str, replacement: str) -> None:
+    text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
+    if count != 1:
+        raise SystemExit(f"{path.name}: expected one source-cohort field, found {count}")
+    path.write_text(text, encoding="utf-8", newline="\n")
 
-    def rewrite(path: Path, pattern: str, replacement: str) -> None:
-        text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
-        if count != 1:
-            raise SystemExit(
-                f"{path.name}: expected one source-cohort field, found {count}"
-            )
-        path.write_text(text, encoding="utf-8", newline="\n")
 
-    catalogue = ROOT / "crates/gameplay/content/src/content/npc_catalogue.rs"
+def refresh_source_catalogue_limits(world: Path = WORLD, root: Path = ROOT) -> dict[str, int | str]:
+    """Size the typed writer for the exact staged cohort."""
+    measured = source_cohort_extent(world)
+    catalogue = root / "crates/gameplay/content/src/content/npc_catalogue.rs"
     catalogue_text = catalogue.read_text(encoding="utf-8")
-    catalogue_text = re.sub(
-        r"\bCW2_B1_FULL_ITEM_FAMILY_COUNT,\s*", "", catalogue_text, count=1
-    )
+    catalogue_text = re.sub(r"\bCW2_B1_FULL_ITEM_FAMILY_COUNT,\s*", "", catalogue_text, count=1)
     catalogue_text = re.sub(
         r"            // #1807 monster source mechanics.*?            max_import_records: [^\n]+",
         "            // Generated source-cohort bounds: regenerate_content.py measures the\n            // already admitted normal World package; limit+1 remains rejected.\n            max_reference_records: "
@@ -959,47 +903,48 @@ def refresh_source_cohort_extent() -> None:
         flags=re.DOTALL,
     )
     catalogue.write_text(catalogue_text, encoding="utf-8", newline="\n")
-    rewrite(
+    rewrite_source_cohort_field(
         catalogue,
         r"max_reference_records: [^,\n]+,",
         f"max_reference_records: {measured['references']:_},",
     )
-    rewrite(
-        catalogue,
-        r"max_import_records: [^,\n]+,",
-        f"max_import_records: {measured['sources']:_},",
+    rewrite_source_cohort_field(
+        catalogue, r"max_import_records: [^,\n]+,", f"max_import_records: {measured['sources']:_},"
     )
+    return measured
+
+
+def refresh_source_cohort_extent(world: Path = WORLD, root: Path = ROOT) -> None:
+    """Keep the repository fixtures at the canonicalized source cohort."""
+    measured = refresh_source_catalogue_limits(world, root)
+    pin_test = root / PIN_PATH
     for name, key in (
         ("CREATURES", "creatures"),
         ("CREATURE_RECORDS", "creature_records"),
         ("CREATURE_PROFILES", "creature_profiles"),
         ("NPC_RECORDS", "npc_records"),
     ):
-        rewrite(
-            PIN_TEST,
-            rf"const {name}: usize = [\d_]+;",
-            f"const {name}: usize = {measured[key]:_};",
+        rewrite_source_cohort_field(
+            pin_test, rf"const {name}: usize = [\d_]+;", f"const {name}: usize = {measured[key]:_};"
         )
-    rewrite(
-        PIN_TEST,
-        r"max_import_records: [^,\n]+,",
-        f"max_import_records: {measured['sources']:_},",
+    rewrite_source_cohort_field(
+        pin_test, r"max_import_records: [^,\n]+,", f"max_import_records: {measured['sources']:_},"
     )
-    rewrite(
-        PIN_TEST,
+    rewrite_source_cohort_field(
+        pin_test,
         r"assert_eq!\(project\.imports\(\)\.len\(\), [\d_]+\);",
         f"assert_eq!(project.imports().len(), {measured['imports']});",
     )
-    rewrite(
-        PIN_TEST,
+    rewrite_source_cohort_field(
+        pin_test,
         r"assert_eq!\(v2\.sources\.len\(\), [\d_]+\);",
         f"assert_eq!(v2.sources.len(), {measured['sources']});",
     )
     for path, receiver in (
-        (PIN_TEST, "project"),
-        (ROOT / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue"),
+        (pin_test, "project"),
+        (root / "apps/game-server/tests/content_npc_catalogue.rs", "catalogue"),
     ):
-        rewrite(
+        rewrite_source_cohort_field(
             path,
             rf'({receiver}\.project_revision\(\),\s*")[^"]+("\s*\))',
             rf"\g<1>{measured['project_revision']}\g<2>",
@@ -1035,11 +980,7 @@ def refresh_quest_callback_proof() -> None:
         for descriptor in document["compiler_inputs"]:
             relative = Path(descriptor["path"])
             source = (ROOT / relative).resolve()
-            if (
-                relative.is_absolute()
-                or ".." in relative.parts
-                or not source.is_relative_to(ROOT)
-            ):
+            if relative.is_absolute() or ".." in relative.parts or not source.is_relative_to(ROOT):
                 raise ValueError("source compiler input escapes repository")
             descriptor["sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
     callback_path = "content/quests/world-callbacks.json"
@@ -1052,9 +993,7 @@ def refresh_quest_callback_proof() -> None:
         json.dumps(approval, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
-    receipt["approval"]["sha256"] = hashlib.sha256(
-        approval_path.read_bytes()
-    ).hexdigest()
+    receipt["approval"]["sha256"] = hashlib.sha256(approval_path.read_bytes()).hexdigest()
     receipt_path.write_text(
         json.dumps(receipt, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
@@ -1104,9 +1043,7 @@ def main() -> int:
     if args.native_only:
         run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
         if args.resolve or args.no_stage or args.check:
-            parser.error(
-                "--native-only cannot be combined with --resolve, --no-stage or --check"
-            )
+            parser.error("--native-only cannot be combined with --resolve, --no-stage or --check")
         refresh_starter_attack_profiles()
         run(
             [
@@ -1126,9 +1063,7 @@ def main() -> int:
         run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
         refresh_quest_callback_proof()
         run(["python3", "tools/content-migration/register_spell_families.py"])
-        run(
-            ["python3", "tools/content-migration/qengine_equipment_audit.py", "content"]
-        )
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         # The pin validates the freshly generated identity union against this
         # census owner's exact source inputs and added-key inventory.
         run(["python3", "tools/contracts/refresh_quest_custody_equipment.py"])
@@ -1146,9 +1081,7 @@ def main() -> int:
         for census in ("equipment", "audit_sites", "room_sites"):
             run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
-        run(
-            ["python3", "tools/content-migration/qengine_equipment_audit.py", "content"]
-        )
+        run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
         if not args.skip_checks:
             run(
                 [
@@ -1172,9 +1105,11 @@ def main() -> int:
     if args.no_stage and unresolved_worktree_paths():
         raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve and not args.no_stage else []
+    bootstrap_item_index()
     refresh_starter_attack_profiles()
     run(["python3", "tools/content-schema/quest-authoring/arena_completion.py"])
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_access_bindings.py"])
     run(
         [
             "python3",
@@ -1182,6 +1117,7 @@ def main() -> int:
             "--apply",
         ]
     )
+    run(["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py"])
     run(
         [
             "python3",
@@ -1220,19 +1156,6 @@ def main() -> int:
         ]
     )
     materialize_world()
-    import questpc7_thaian_authoring
-
-    # install completes authoring through the native writer; no pins name staged Python bytes.
-    questpc7_thaian_authoring.install(ROOT)
-    from buddel_travel import install_buddel
-
-    install_buddel(ROOT, WORLD)
-    project_routes(ROOT, WORLD)
-    from regional_npc_prices import install as install_regional_npc_prices
-    install_regional_npc_prices(ROOT, WORLD)
-    from regional_npc_dialogue import install as install_regional_npc_dialogue
-    install_regional_npc_dialogue(ROOT, WORLD)
-    canonicalize_world()
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/world-object-authoring/spawn_ground.py"])
     run(["python3", "tools/content-schema/world-authoring/scoped_spawn_ground.py"])
@@ -1253,19 +1176,19 @@ def main() -> int:
         "build_srx3_w01_prepare_death.py",
     ):
         run(["python3", native + name])
-    run(
-        [
-            "python3",
-            native + "build_srx3_soul_war_death_events.py",
-            "--refresh-native-pin",
-        ]
-    )
+    run(["python3", native + "build_srx3_soul_war_death_events.py", "--refresh-native-pin"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_spawn_ground.py"])
     run(["python3", "tools/content-schema/world-object-authoring/alawar_static.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/blood_vestibule_ground.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/crystal_ground.py", "--reconcile-overlays"])
     run(["python3", "tools/content-schema/world-object-authoring/activity_static.py"])
     run(["python3", "tools/content-schema/world-authoring/quest_startup_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/m01c_key_doors.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_key_door_bindings.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
+    run(["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(
@@ -1291,6 +1214,7 @@ def main() -> int:
     # Callback witnesses pin the final Quest shards and update authored props.
     # Materialize them before refreshing the room provenance.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
+    run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
     run(
         [
@@ -1386,9 +1310,7 @@ def main() -> int:
         }
         changed = [
             path
-            for path in git(
-                "ls-files", "--modified", "--others", "--exclude-standard"
-            ).splitlines()
+            for path in git("ls-files", "--modified", "--others", "--exclude-standard").splitlines()
             if path in derived
         ]
         stage_paths = sorted(set(conflicted) | set(changed))

@@ -252,7 +252,7 @@ impl DurabilityRoot {
                     ConsumeTransformResult {disposition:UseDisposition::Committed,fresh:false,effects,recipe:Some(recipe)}
                 } else {ConsumeTransformResult::refused(UseDisposition::Rejected)}
             });
-            crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+            crate::durability::db::commit_semantic_read(tx, deadline).await?;
             Ok(result)
         })).await
     }
@@ -294,7 +294,7 @@ impl DurabilityRoot {
                     } else {
                         false
                     };
-                    crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -345,7 +345,7 @@ impl DurabilityRoot {
                     let current =
                         house_action_current_in_transaction(&mut tx, &node, context.fence, &context.house)
                             .await?;
-                    crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(current)
                 })
             })
@@ -385,7 +385,7 @@ impl DurabilityRoot {
                         ) => error,
                         _ => DurabilityError::InvalidStoredState,
                     })?;
-                    crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+                    crate::durability::db::commit_semantic_read(tx, deadline).await?;
                     Ok(Some(snapshot))
                 })
             })

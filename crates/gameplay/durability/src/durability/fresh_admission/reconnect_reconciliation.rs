@@ -29,7 +29,7 @@ impl FreshAdmissionStore {
                         super::admission_journal::begin_pass_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut tx).await?;
                     let loss = store.owning_loss_locked(&mut tx, session, epoch).await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(loss)
                 })
             })
@@ -88,7 +88,7 @@ impl FreshAdmissionStore {
                     super::db::lock_admission_relations(&mut tx).await?;
                     let current = store.current_session_locked(&mut tx, session).await?;
                     let history = store.resumed_history_locked(&mut tx, current).await?;
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(history)
                 })
             })
@@ -203,7 +203,7 @@ impl FreshAdmissionStore {
                             });
                         }
                     }
-                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(outcome.map(|outcome| CompleteReconnectCompletionV1 { operation, outcome }))
                 })
             })

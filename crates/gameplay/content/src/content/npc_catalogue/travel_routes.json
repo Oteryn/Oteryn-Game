@@ -49,6 +49,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.brodrosch/cormaya",
+    "keyword": "cormaya",
+    "price": 160,
+    "premium": false,
+    "x": 33311,
+    "y": 31989,
+    "floor": 15,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.brodrosch/gnomprona",
     "keyword": "gnomprona",
     "price": 200,
@@ -1325,6 +1338,24 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.eremo/cormaya",
+    "keyword": "cormaya",
+    "price": 0,
+    "premium": false,
+    "x": 33288,
+    "y": 31956,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "aliases": [
+      "back",
+      "passage",
+      "pemaret"
+    ]
+  },
+  {
     "key": "oteryn:service.travel.ferryman_kamil/meluna",
     "keyword": "meluna",
     "price": 0,
@@ -1459,7 +1490,7 @@
   {
     "key": "oteryn:service.travel.harlow_vengoth/yalahar",
     "keyword": "yalahar",
-    "price": 50,
+    "price": 0,
     "premium": false,
     "x": 32837,
     "y": 31366,

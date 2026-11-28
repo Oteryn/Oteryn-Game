@@ -10,6 +10,16 @@
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/{acolyte,adept,enlightened,novice}_of_the_cult.lua",
+    "imports/canary/items-xml/items.xml#36498,36540,36936,37349",
+    "imports/canary/items-xml/items.xml#4991-4993: Explorer Society Butterfly Hunt",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/raids/orc_sam_backpack.lua:20,66-77",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/novice_of_the_cult.lua:33,98",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/acolyte_of_the_cult.lua:32,97",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/adept_of_the_cult.lua:32,98",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/enlightened_of_the_cult.lua:32,103",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/vermins/cockroach.lua:17-41",
     "imports/canary/items-xml/items.xml#16388-16393",
     "imports/canary/items-xml/items.xml#12686-12703",
     "https://tibia.fandom.com/wiki/Poison_Spider",
@@ -19,8 +29,7 @@
     "https://tibia.fandom.com/wiki/Dead_Roaring_Lion",
     "https://tibia.fandom.com/wiki/Dead_Sibang",
     "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L16278-L16283",
-    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L16372-L16377",
-    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910"
+    "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L16372-L16377"
   ],
   "capacity_projections": [
     {
@@ -118,8 +127,8 @@
       "source_capacity": 50,
       "native_capacity": 48,
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/adept_of_the_cult.lua#L32",
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36692"
+        "imports/canary/items-xml/items.xml#18030",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
       ]
     },
     {
@@ -136,8 +145,8 @@
       "source_capacity": 60,
       "native_capacity": 48,
       "sources": [
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/monster/humans/enlightened_of_the_cult.lua#L32",
-        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L37130"
+        "imports/canary/items-xml/items.xml#18110",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX"
       ]
     },
     {
@@ -241,15 +250,18 @@
     }
   ],
   "loot_creatures": {
+    "oteryn:creature.acolyte_of_the_cult": 18038,
     "oteryn:creature.adept_of_the_cult": 18030,
     "oteryn:creature.animated_moohtant": 20996,
     "oteryn:creature.armadile": 15868,
     "oteryn:creature.behemoth": 5999,
     "oteryn:creature.black_sheep": 5994,
+    "oteryn:creature.blue_butterfly": 4993,
     "oteryn:creature.bonebeast": 6030,
     "oteryn:creature.bride_of_night": 18210,
     "oteryn:creature.bug": 5990,
     "oteryn:creature.cat": 286,
+    "oteryn:creature.cockroach": 7763,
     "oteryn:creature.crazed_beggar": 18070,
     "oteryn:creature.crazed_dwarf": 6007,
     "oteryn:creature.crystal_spider": 7344,
@@ -281,7 +293,9 @@
     "oteryn:creature.merlkin": 6044,
     "oteryn:creature.moohtant": 20996,
     "oteryn:creature.morguthis": 6025,
+    "oteryn:creature.novice_of_the_cult": 18186,
     "oteryn:creature.omruc": 6025,
+    "oteryn:creature.orc_sambackpack": 5966,
     "oteryn:creature.orewalker": 15911,
     "oteryn:creature.pirate_buccaneer": 18190,
     "oteryn:creature.pirate_corsair": 18194,
@@ -289,7 +303,9 @@
     "oteryn:creature.pirate_marauder": 18202,
     "oteryn:creature.poison_spider": 5974,
     "oteryn:creature.priestess": 18210,
+    "oteryn:creature.purple_butterfly": 4992,
     "oteryn:creature.rahemos": 6031,
+    "oteryn:creature.red_butterfly": 4991,
     "oteryn:creature.reflection_of_mawhawk": 21004,
     "oteryn:creature.roaring_lion": 19103,
     "oteryn:creature.rotworm": 5967,

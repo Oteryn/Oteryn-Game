@@ -1,5 +1,6 @@
 //! Santa's permanent source flag uses the existing once-claim MINT owner.
 //! Gift, bag children, once claim, receipt and audit commit in one transaction.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 
 pub const SANTA_PRESENT_CLAIM: &str = "oteryn:reward-claim.santa-claus-present";
@@ -254,7 +255,7 @@ impl DurabilityRoot {
                     } else {
                         None
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(result))
                 })
             })

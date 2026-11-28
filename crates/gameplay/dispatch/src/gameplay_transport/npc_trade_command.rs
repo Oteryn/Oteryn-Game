@@ -216,6 +216,10 @@ pub(super) async fn trade(
         .await;
     match receipt {
         Ok(Ok(Some(receipt))) if answers(&receipt, &intent, mode) => {
+            if receipt.npc_key == crate::durability::quest_state::carlos_trade::NPC {
+                drop(permit);
+                admission.refresh_quest_session(session, false).await;
+            }
             return Ok(SoldUnits {
                 units: receipt.quantity,
                 gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
@@ -242,7 +246,10 @@ pub(super) async fn trade(
     {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
-    let now = unix_ms_now();
+    let wall_now = unix_ms_now();
+    let schedule_now = crate::world_clock::now_utc_ms()
+        .and_then(|now| i64::try_from(now).ok())
+        .unwrap_or(0);
     let (offer, coins, yasir_position) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
@@ -270,7 +277,7 @@ pub(super) async fn trade(
                     oteryn_gameplay_entities::rashid_schedule::trade_available(
                         &offer.npc_key,
                         npc.position,
-                        now,
+                        schedule_now,
                     )
                 });
         if !available {
@@ -503,7 +510,7 @@ pub(super) async fn trade(
         item,
         transaction_id: id(b"oteryn:npc-trade-transaction:v1"),
         event_id: id(b"oteryn:npc-trade-event:v1"),
-        occurred_at_unix_ms: now,
+        occurred_at_unix_ms: wall_now,
         output_item_instance_ids: [
             id(b"oteryn:npc-trade-output-1:v1"),
             id(b"oteryn:npc-trade-output-2:v1"),
@@ -533,6 +540,7 @@ pub(super) async fn trade(
     {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
+    let carlos_sale = crate::durability::quest_state::carlos_trade::is_food_sale(&request);
     let result = if let Some(selection) = hireling {
         admission
             .root
@@ -585,6 +593,7 @@ pub(super) async fn trade(
     // Settlement awaits the return of its semantic pass. Hand the lane back
     // before transport begins its independent post-commit projection.
     drop(hireling_runtime);
+    drop(permit);
     if let Err(NpcTradeError::Unavailable(crate::durability::DurabilityError::RootUnavailable)) =
         result
     {
@@ -596,6 +605,9 @@ pub(super) async fn trade(
         return Err(unknown_trade("npc_trade_commit", error));
     }
     let outcome = step_of(result);
+    if carlos_sale && outcome.is_ok() {
+        admission.refresh_quest_session(session, false).await;
+    }
     if include_equipped && outcome.is_ok() {
         admission
             .states
@@ -615,7 +627,6 @@ pub(super) async fn trade(
             ));
         }
     }
-    drop(permit);
     outcome
 }
 

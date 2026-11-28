@@ -56,7 +56,7 @@ const SLOW_PASS_REPORT: Duration = Duration::from_millis(1_000);
 type HolderOwner = Option<(
     &'static std::panic::Location<'static>,
     Instant,
-    Instant,
+    TokioInstant,
     Option<[u8; 16]>,
 )>;
 
@@ -428,7 +428,7 @@ impl PassOwner {
         slot: &Arc<StdMutex<HolderOwner>>,
         caller: &'static std::panic::Location<'static>,
         issued: Instant,
-        deadline: Instant,
+        deadline: TokioInstant,
     ) -> Self {
         let trace = holder_trace();
         if let Ok(mut owner) = slot.lock() {
@@ -2014,7 +2014,7 @@ impl DurabilityRoot {
         if self.is_ready() {
             return None;
         }
-        owner.map(|(caller, _, deadline, _)| (caller, TokioInstant::from_std(deadline)))
+        owner.map(|(caller, _, deadline, _)| (caller, deadline))
     }
 
     /// A readiness hint for a background retry outside its previous operation grant.
@@ -2111,7 +2111,7 @@ impl DurabilityRoot {
             record_holder_usage(Some(caller), None);
         })?;
         let issued = Instant::now();
-        let deadline = issued + self.pass_deadline();
+        let deadline = TokioInstant::now() + self.pass_deadline();
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
@@ -2141,7 +2141,7 @@ impl DurabilityRoot {
             record_refused_checkout(&self.holder_owner, caller);
         })?;
         let issued = Instant::now();
-        let deadline = issued + self.pass_deadline();
+        let deadline = TokioInstant::now() + self.pass_deadline();
         Ok(IssuedSemanticPass {
             root: self.clone(),
             holder,
@@ -2156,10 +2156,11 @@ impl DurabilityRoot {
     #[track_caller]
     pub fn try_issue_semantic_pass_by(
         &self,
-        deadline: Instant,
+        deadline: TokioInstant,
     ) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let now = Instant::now();
+        let issued = Instant::now();
+        let now = TokioInstant::now();
         if deadline <= now {
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
@@ -2171,13 +2172,13 @@ impl DurabilityRoot {
             root: self.clone(),
             holder,
             deadline,
-            owner: PassOwner::checked_out(&self.holder_owner, caller, now, deadline),
+            owner: PassOwner::checked_out(&self.holder_owner, caller, issued, deadline),
         })
     }
 }
 
 /// The earlier of the ordinary pass deadline from `now` and an outer `budget`.
-fn bounded_pass_deadline(now: Instant, pass: Duration, budget: Instant) -> Instant {
+fn bounded_pass_deadline(now: TokioInstant, pass: Duration, budget: TokioInstant) -> TokioInstant {
     (now + pass).min(budget)
 }
 
@@ -2197,7 +2198,7 @@ where
 pub struct IssuedSemanticPass {
     root: DurabilityRoot,
     holder: PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
     /// When the holder was checked out, and by which call site (NBDIAG-3, NBDIAG-4).
     owner: PassOwner,
 }
@@ -2208,7 +2209,7 @@ impl IssuedSemanticPass {
         T: Send,
         F: for<'a> FnOnce(
                 &'a mut PoolConnection<Postgres>,
-                Instant,
+                TokioInstant,
             )
                 -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
             + Send,
@@ -2234,15 +2235,14 @@ impl IssuedSemanticPass {
         C: Send,
         F: for<'a> FnOnce(
                 &'a mut PoolConnection<Postgres>,
-                Instant,
+                TokioInstant,
                 &'a mut C,
             )
                 -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
             + Send,
     {
-        let remaining = self.deadline.saturating_duration_since(Instant::now());
-        let result = match tokio::time::timeout(
-            remaining,
+        let result = match tokio::time::timeout_at(
+            self.deadline,
             operation(&mut self.holder, self.deadline, context),
         )
         .await
@@ -2275,11 +2275,10 @@ impl IssuedSemanticPass {
             return result;
         }
 
-        match self
-            .holder
-            .return_to_pool_observed_until(self.deadline)
-            .await
-        {
+        // SQLx takes a system-clock deadline, so transfer only the remaining budget.
+        let release_deadline = Instant::now()
+            + self.deadline.saturating_duration_since(TokioInstant::now());
+        match self.holder.return_to_pool_observed_until(release_deadline).await {
             PoolConnectionReturnDisposition::ReturnedToIdle => {
                 self.root.holder_returned.notify_waiters();
                 result
@@ -2305,7 +2304,7 @@ impl IssuedSemanticPass {
 
 pub async fn begin_semantic_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     begin_transaction(holder, deadline, None).await
 }
@@ -2314,7 +2313,7 @@ pub async fn begin_semantic_transaction<'a>(
 /// for admission. The same transaction keeps its ordinary budget on a player turn.
 pub(super) async fn begin_background_sensitive_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let begin = begin_semantic_transaction(holder, deadline);
     if is_background_holder() {
@@ -2331,7 +2330,7 @@ pub(super) fn is_background_holder() -> bool {
 /// Advisory observations use one consistent snapshot and cannot acquire mutation locks.
 pub(super) async fn begin_observation_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     begin_transaction(
         holder,
@@ -2344,7 +2343,7 @@ pub(super) async fn begin_observation_transaction<'a>(
 /// Repeatable observation that can call a native access function taking row locks.
 pub(super) async fn begin_locking_observation_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let mut tx = begin_transaction(
         holder,
@@ -2369,7 +2368,7 @@ pub(super) async fn bound_periodic_lock_wait(
 
 async fn begin_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
     begin_sql: Option<&'static str>,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
     let mut span = oteryn_error_codes::Span::start(
@@ -2383,12 +2382,12 @@ async fn begin_transaction<'a>(
     span.field("attempts", 1_u64);
     let started = Instant::now();
     let result = async {
-        let remaining = deadline.saturating_duration_since(Instant::now());
+        let remaining = deadline.saturating_duration_since(TokioInstant::now());
         if remaining.is_zero() {
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
 
-        let mut transaction = tokio::time::timeout(remaining, async {
+        let mut transaction = tokio::time::timeout_at(deadline, async {
             if let Some(sql) = begin_sql {
                 sqlx::Connection::begin_with(&mut **holder, sql).await
             } else {
@@ -2398,7 +2397,7 @@ async fn begin_transaction<'a>(
             .await
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
 
-        let remaining = deadline.saturating_duration_since(Instant::now());
+        let remaining = deadline.saturating_duration_since(TokioInstant::now());
         if remaining.is_zero() {
             return Err(DurabilityError::RootPassDeadlineExceeded);
         }
@@ -2410,8 +2409,8 @@ async fn begin_transaction<'a>(
         } else {
             &timeout_value
         };
-        tokio::time::timeout(
-            remaining,
+        tokio::time::timeout_at(
+            deadline,
             sqlx::query(
                 "SELECT set_config('transaction_timeout', $1, true), \
                  set_config('statement_timeout', $1, true), \
@@ -2441,15 +2440,15 @@ async fn begin_transaction<'a>(
 /// read as its first statements, bounded by the same deadline settings.
 pub async fn begin_type2_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<Type2Transaction<'a>, DurabilityError> {
     let transaction = begin_semantic_transaction(holder, deadline).await?;
-    let remaining = deadline.saturating_duration_since(Instant::now());
+    let remaining = deadline.saturating_duration_since(TokioInstant::now());
     if remaining.is_zero() {
         return Err(DurabilityError::RootPassDeadlineExceeded);
     }
     Ok(
-        tokio::time::timeout(remaining, Type2Transaction::open(transaction))
+        tokio::time::timeout_at(deadline, Type2Transaction::open(transaction))
             .await
             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??,
     )
@@ -2457,16 +2456,18 @@ pub async fn begin_type2_transaction<'a>(
 
 pub async fn commit_semantic_transaction(
     transaction: Transaction<'_, Postgres>,
-    deadline: Instant,
+    deadline: TokioInstant,
 ) -> Result<(), DurabilityError> {
-    commit_semantic_transaction_by(deadline, || transaction.commit()).await
+    commit_semantic_transaction_by(deadline, || commit_transaction(transaction)).await
 }
 
+/// Finish a pass that did not mutate durable state. This also permits reads that
+/// take locks and therefore cannot use a PostgreSQL READ ONLY transaction.
 pub(super) async fn commit_semantic_read(
     transaction: Transaction<'_, Postgres>,
     deadline: TokioInstant,
 ) -> Result<(), DurabilityError> {
-    match commit_semantic_transaction(transaction, deadline.into_std()).await {
+    match commit_semantic_transaction(transaction, deadline).await {
         Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::CommitTransactionTimeout) => {
             Err(DurabilityError::RootUnavailable)
         }
@@ -2474,20 +2475,48 @@ pub(super) async fn commit_semantic_read(
     }
 }
 
+#[cfg(any(test, feature = "test-support"))]
+tokio::task_local! {
+    static STALL_COMMIT_RESPONSE: std::cell::Cell<bool>;
+}
+
+/// Withhold a successful COMMIT response until the pass deadline cancels it.
+/// The flag reports whether the operation reached the injected stall.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn with_stalled_commit_response<F: Future>(operation: F) -> (F::Output, bool) {
+    STALL_COMMIT_RESPONSE
+        .scope(std::cell::Cell::new(false), async {
+            let result = operation.await;
+            (result, STALL_COMMIT_RESPONSE.with(std::cell::Cell::get))
+        })
+        .await
+}
+
+async fn commit_transaction(transaction: Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
+    transaction.commit().await?;
+    #[cfg(any(test, feature = "test-support"))]
+    if STALL_COMMIT_RESPONSE.try_with(|reached| reached.set(true)).is_ok() {
+        std::future::pending::<()>().await;
+    }
+    Ok(())
+}
+
 async fn commit_semantic_transaction_by<F, Fut>(
-    deadline: Instant,
+    deadline: TokioInstant,
     commit: F,
 ) -> Result<(), DurabilityError>
 where
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<(), sqlx::Error>>,
 {
-    let remaining = deadline.saturating_duration_since(Instant::now());
+    let remaining = deadline.saturating_duration_since(TokioInstant::now());
     if remaining.is_zero() {
         return Err(DurabilityError::RootPassDeadlineExceeded);
     }
 
-    match tokio::time::timeout(remaining, commit()).await {
+    // The outer pass polls its operation before its timer. Using the same
+    // absolute deadline lets the COMMIT classify its own timeout first.
+    match tokio::time::timeout_at(deadline, commit()).await {
         Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => Err(DurabilityError::from_commit_error(error)),
         Err(_) => Err(DurabilityError::CommitOutcomeUnknown),

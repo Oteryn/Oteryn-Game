@@ -125,6 +125,8 @@ impl CastBinding {
 pub struct SavedStrike {
     pub binding: CastBinding,
     pub scheduled: Box<ScheduledStrike>,
+    /// Spiritual Outburst retains the weapon bond selected for its first strike.
+    pub monk_bond: Option<super::native_combat::Element>,
     pub resolved: Option<ResolvedStrike>,
     pub cast_modifiers: super::magnitude_owner::StrikeCastModifiers,
     /// The same occurrence must never reuse an initial hit's durable effect ordinal.

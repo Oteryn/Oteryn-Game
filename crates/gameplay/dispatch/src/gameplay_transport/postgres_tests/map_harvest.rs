@@ -1,10 +1,15 @@
 //! W19: map harvesting uses the production object USE path and one durable map/value commit.
 use super::fixture::{Harness, debug, id, run};
+use super::house_transfer_fixtures::{RecoverySource, prepare_owned_session};
 use super::item_craft_fixtures::exchange;
 use super::{Dependencies, TestResult, prepare_current_session};
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+use crate::foundation::{
+    AuthenticatedTransportRefV1, ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition,
+};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
-use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::connection::{
+    ControlLossResult, FirstEntryOutcome, FreshAdmissionAuthority, ResumeAttempt,
+};
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
@@ -14,6 +19,20 @@ use oteryn_protocol_oteryn::world_object::{
 fn w19_blueberry_harvest_wire_atomic_replay_and_regrowth() -> TestResult {
     run_case(3699, true)
 }
+#[test]
+fn map_harvest_resumes_same_session_after_rollback() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(3699, true, None, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "map harvest resume scenario panicked")??;
+    eprintln!("POSTGRES_CASE_COMPLETED map_harvest_resumes_same_session_after_rollback");
+    Ok(())
+}
+
 #[test]
 fn w19_ice_flower_harvest_wire_yield_replay_and_restart() -> TestResult {
     run_case(13842, true)
@@ -81,7 +100,7 @@ fn run_case_with_source(before: u16, yields: bool, source: Option<ThawingSource>
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(before, yields, source).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(before, yields, source, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "map harvest e2e panic")??;
     eprintln!(
@@ -91,13 +110,25 @@ fn run_case_with_source(before: u16, yields: bool, source: Option<ThawingSource>
     Ok(())
 }
 
-fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestResult {
+fn scenario(
+    before: u16,
+    yields: bool,
+    source: Option<ThawingSource>,
+    resume_after_rollback: bool,
+) -> TestResult {
     run(async move |admin| {
         let started = std::time::Instant::now();
         let harness =
             Harness::create_with_admission_seed(admin, "map_harvest", true, false).await?;
         super::reset();
-        prepare_current_session(&harness).await?;
+        let recovery = if resume_after_rollback {
+            let recovery = RecoverySource::start(&harness).await?;
+            prepare_owned_session(&harness).await?;
+            Some(recovery)
+        } else {
+            prepare_current_session(&harness).await?;
+            None
+        };
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -274,6 +305,9 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
+        if let Some(recovery) = &recovery {
+            owner.evidence = &recovery.evidence;
+        }
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
@@ -292,8 +326,9 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        let supported = [4, 6, 11, 15, 18];
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            SelectedCapabilities::select(owner.offered_capabilities(), &supported)
                 .ok_or("craft offer selectable")?;
         let initial_admitted = admitted;
         assert_eq!(initial_admitted.continuity.next_command_id, 1);
@@ -398,7 +433,9 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
                 .execute(&harness.pool).await?;
             sqlx::query("CREATE TRIGGER test_map_harvest_fail BEFORE INSERT ON game_map_harvest_records FOR EACH ROW EXECUTE FUNCTION test_map_harvest_fail()")
                 .execute(&harness.pool).await?;
-            super::event_object_uncertainty::exchange_uncertain(&owner, admitted, &payload).await?;
+            let retained =
+                super::event_object_uncertainty::exchange_uncertain(&owner, admitted, &payload)
+                    .await?;
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_terrain_tool_receipts")
                     .fetch_one(&harness.pool)
@@ -429,6 +466,37 @@ fn scenario(before: u16, yields: bool, source: Option<ThawingSource>) -> TestRes
             sqlx::query("DROP FUNCTION test_map_harvest_fail()")
                 .execute(&harness.pool)
                 .await?;
+            if resume_after_rollback {
+                assert!(!owner.states.command_ingress.resumable(&retained));
+                assert_eq!(
+                    owner
+                        .lose_control(retained, std::time::Duration::ZERO, None)
+                        .await,
+                    ControlLossResult::Recorded
+                );
+                let token = RecoverySource::token(2)?;
+                let resumed = owner
+                    .resume(ResumeAttempt {
+                        game_session_id: retained.game_session_id,
+                        recovery_material: token.as_bytes(),
+                        transport: AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(debug)?,
+                        last_applied_server_sequence: retained.continuity.server_sequence,
+                        supported_capabilities: &supported,
+                    })
+                    .await
+                    .map_err(|error| format!("pending harvest USE resume: {error:?}"))?;
+                assert_eq!(resumed.game_session_id, retained.game_session_id);
+                assert_eq!(
+                    resumed.continuity.next_command_id,
+                    retained.continuity.next_command_id
+                );
+                assert!(owner.states.command_ingress.resumable(&resumed));
+                assert_eq!(map.facts().pinned().object_revision(key), 0);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
             // A reconstructed owner starts with an empty session command directory.
             // Exercise the real first command again, without synthesizing a high-water mark.
             drop(owner);

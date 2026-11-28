@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 impl DurabilityRoot {
     pub async fn query_guild_bank(
@@ -26,7 +27,7 @@ impl DurabilityRoot {
                     .await;
                     match result {
                         Ok(reply) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            commit_semantic_read(tx, deadline).await?;
                             Ok(Ok(reply))
                         }
                         Err(GuildError::Unavailable(e)) => Err(e),

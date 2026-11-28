@@ -1,4 +1,5 @@
 //! Bind the independently decoded target catalogue and content to the frozen job.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use super::activation::ResetContent;
 use super::bundle_houses::HouseTile;
@@ -37,6 +38,6 @@ pub(super) async fn check(
         let houses: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_house_interior_locations WHERE world_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid)")
             .bind(reset.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if houses { return Err(DurabilityError::InvalidStoredState); }
-        commit_semantic_transaction(tx, deadline).await
+        commit_semantic_read(tx, deadline).await
     })).await
 }

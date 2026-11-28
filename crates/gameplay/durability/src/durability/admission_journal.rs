@@ -18,7 +18,7 @@ use sqlx::postgres::PgRow;
 use sqlx::{Acquire, Postgres, Row, Transaction};
 use std::future::Future;
 use std::pin::Pin;
-use std::time::Instant;
+use tokio::time::Instant;
 
 const PREPARED: i16 = 1;
 const COLLISION_TERMINAL: i16 = 2;
@@ -153,6 +153,16 @@ pub(super) async fn commit_pass_transaction(
 ) -> Result<(), DurabilityError> {
     match deadline {
         Some(deadline) => db::commit_semantic_transaction(transaction, deadline).await,
+        None => transaction.commit().await.map_err(DurabilityError::from),
+    }
+}
+
+pub(super) async fn commit_pass_read(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Option<Instant>,
+) -> Result<(), DurabilityError> {
+    match deadline {
+        Some(deadline) => db::commit_semantic_read(transaction, deadline).await,
         None => transaction.commit().await.map_err(DurabilityError::from),
     }
 }

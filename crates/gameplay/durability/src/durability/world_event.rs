@@ -1,4 +1,5 @@
 //! Immutable reset decision and session-fenced durable announcement observations.
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
 use super::db::{
@@ -263,7 +264,7 @@ impl DurabilityRoot {
                     events
                 }
             } else if expected_epoch == 0 { Vec::new() } else { return Err(DurabilityError::InvalidStoredState); };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(events)
         })).await
     }
@@ -282,7 +283,7 @@ impl DurabilityRoot {
                 if !event_bound { return Err(DurabilityError::InvalidStoredState); }
                 epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(epoch)
         })).await
     }

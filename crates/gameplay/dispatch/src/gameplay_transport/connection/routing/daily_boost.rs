@@ -1,6 +1,6 @@
 use super::super::{AdmittedSession, FreshAdmissionAuthority};
 use super::Dispatch;
-use crate::gameplay_transport::guild_intent::GuildReply;
+use crate::gameplay_transport::daily_boost::DailyBoostReply;
 use oteryn_protocol_oteryn::ClientCommandView;
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -17,11 +17,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             )
             .await
         {
-            GuildReply::Payload(bytes) => {
+            DailyBoostReply::Payload(bytes) => {
                 Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes)
             }
-            GuildReply::Rejected => Dispatch::Unregistered,
-        // The protocol carries a view on success and an empty typed refusal on failure.
-        GuildReply::Unavailable => Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new()),
-    }
+            DailyBoostReply::Busy => Dispatch::Reply(
+                crate::foundation::CommandStatus::Rejected,
+                oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+            ),
+            DailyBoostReply::Rejected => Dispatch::Unregistered,
+            DailyBoostReply::Unavailable => Dispatch::Reply(crate::foundation::CommandStatus::Rejected, Vec::new()),
+        }
 }

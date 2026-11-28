@@ -8,6 +8,7 @@ use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::character_name::CharacterName;
+use crate::durability::db::commit_semantic_read;
 pub use oteryn_gameplay_social_rules::public_channels::{
     ChatRole, HelpAction, HelpMute, HelpRefusal,
 };
@@ -262,7 +263,7 @@ impl DurabilityRoot {
                     }
                     lock_command(&mut tx, &fence, command_id).await?;
                     let result = retained_result(&mut tx, &fence, command_id, &digest).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(match result {
                         Some(result) => HelpReceipt::Retained(result),
                         None => HelpReceipt::Unrecorded,
@@ -364,7 +365,7 @@ impl DurabilityRoot {
                     let now = db_now(&mut tx).await?;
                     let help_wait_seconds =
                         help_mute(&mut tx, character).await?.remaining_seconds(now);
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(PublicChatAccess {
                         role,
                         guild_leader,

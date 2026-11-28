@@ -16,6 +16,9 @@ pub(super) fn catalogue() -> Result<QuestStateCatalogue, String> {
         "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary_retrieved",
         "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/door",
         "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log",
+        "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured",
+        "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet",
+        "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_exit_reached",
     ]
     .into_iter()
     .map(|key| source.track(key).cloned().ok_or_else(|| key.to_owned()))
@@ -23,6 +26,7 @@ pub(super) fn catalogue() -> Result<QuestStateCatalogue, String> {
     let transitions = [
         dream::COMPLETE,
         "oteryn:quest-callback/white-raven-monks-diary",
+        "oteryn:quest-callback/engenc2/nomads-land-window",
     ]
     .into_iter()
     .map(|key| {

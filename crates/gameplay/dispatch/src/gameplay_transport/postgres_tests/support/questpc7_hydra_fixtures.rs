@@ -47,13 +47,11 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mu
  assert_eq!(decode_step_result(&reply).map_err(debug)?,StepDisposition::Moved);
  assert_eq!(value(owner,a,TRACK).await?,1);
  assert_eq!(value(owner,a,KILLS).await?,0);
- assert_eq!(nest(owner,a).await?,UseDisposition::Rejected,"kill quota is authoritative");
+ assert_eq!(nest(owner,a).await?,UseDisposition::Rejected,"the personal native pickup remains mandatory");
  owner.refresh_quest_session(a.game_session_id,false).await;
- let guardian={let runtime=owner.runtime.lock().await;let found:Vec<_>=runtime.positioned_melee_census().map_err(debug)?.into_iter().filter(|(_,p,s)|s.is_none()&&p.position()==MovementLocalPosition{x:33005,y:32665,floor:3}).map(|(actor,_,_)|actor).collect();assert_eq!(found.len(),1,"one native Hydra guardian");found[0]};
- super::questpc7_native_deaths_fixtures::lethal_creature(owner,a,guardian,7000,"oteryn:creature.hydra").await?;
- assert_eq!(value(owner,a,KILLS).await?,1);
- assert_eq!(nest(owner,a).await?,UseDisposition::Rejected,"a kill alone cannot replace personally picking an egg from the native nest");
- assert_eq!(value(owner,a,TRACK).await?,1);
+ let guardian_present=owner.runtime.lock().await.positioned_melee_census().map_err(debug)?
+  .iter().any(|(_,p,s)|s.is_none()&&p.position()==MovementLocalPosition{x:33005,y:32665,floor:3});
+ assert!(guardian_present,"the native Hydra guardian is alive");
  // An unrelated egg cannot substitute for a successful personal native-source pickup.
  let fence=owner.current_quest_fence(a.game_session_id).await.map_err(|()|"fence")?.ok_or("fence")?;
  super::quest_world_callbacks_fixtures::input_item(owner,fence.item_fence(),&oteryn_gameplay_quests::quest::world_callbacks::Offering{position:Position{x:33003,y:32665,floor:-3},item:"oteryn:item.tibia.i4839".into(),count:1},8000,true).await?;
@@ -63,6 +61,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,a:&mu
  let stacks:i64=sqlx::query_scalar("SELECT count(*) FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c JOIN game_item_instances i ON i.item_instance_id=c.item WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i4839'").bind(super::fixture::id(41).as_slice()).bind(owner.world_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;assert_eq!(stacks,1,"the native pickup really merged into the unrelated carried stack");
  assert_eq!(nest(owner,a).await?,UseDisposition::Committed);
  assert_eq!(value(owner,a,TRACK).await?,2);
+ assert_eq!(value(owner,a,KILLS).await?,0,"the Hydra can be evaded");
  assert_eq!(super::questpc7_outfit_items_fixtures::quantity(h,4839).await?,2,"acknowledgement neither consumes nor manufactures eggs");
  let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.hydra_egg_quest'").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;assert!(completed);
  let claims:i64=sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key LIKE '%questpc7-hydra%'").fetch_one(&h.pool).await?;assert_eq!(claims,0,"ordinary native pickup is not a fabricated quest chest");

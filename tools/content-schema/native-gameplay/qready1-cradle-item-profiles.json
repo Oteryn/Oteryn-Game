@@ -2,7 +2,7 @@
   "schema": "OTERYN_QREADY1_CRADLE_ITEM_PROFILES/v1",
   "appearance_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
   "official_membership_sha256": "f37b5d3e1136ebc3edbae1fe7090c4914b1d717bfbf9fd7c8faeeee36b491fe8",
-  "wiki_stats_sha256": "4dd7557ba437421396835dafe7dde3eabfa64ae4d3d797fa3f0f05155f797705",
+  "wiki_stats_sha256": "2f1ab4dc56b5ad26ba89e8da69b544fc8606b49e3d86e3047ae3cb9032840eee",
   "identity_decision": "A12-ITEM-IDENTITY-TIBIA-ID-V1",
   "binding_basis": "EXPLICIT_WIKI_ITEM_ID_CORROBORATED_BY_OFFICIAL_NAMED_APPEARANCE",
   "recipe_scope": "CHOSEN_OTERYN_STABLE_PREPARED_INGREDIENTS",

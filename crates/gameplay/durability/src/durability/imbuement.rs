@@ -147,7 +147,7 @@ impl DurabilityRoot {
                         fence.runtime_scope.world_id(),
                     )
                     .await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(rows)
                 })
             })
@@ -189,7 +189,7 @@ impl DurabilityRoot {
                         fence.runtime_scope.world_id(),
                     )
                     .await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(rows)
                 })
             })
@@ -324,7 +324,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(target)
                 })
             })

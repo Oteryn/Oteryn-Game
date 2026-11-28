@@ -107,6 +107,25 @@ fn source_catalogue_keeps_every_item_family_and_numeric_mount_identity() -> Resu
 }
 
 #[test]
+fn demon_in_green_box_loads_fiend_rider_with_its_existing_mount_grant() -> Result<(), &'static str>
+{
+    let rule = rule("oteryn:item.tibia.i50064").ok_or("demon in a green box")?;
+    assert_eq!(rule.mode, Mode::Direct);
+    let [choice] = rule.choices.as_slice() else {
+        return Err("one Primal Demonosaur outcome");
+    };
+    assert_eq!(choice.grants, ["oteryn:item-grant.mount.232"]);
+    assert_eq!(
+        choice.achievements,
+        [
+            "oteryn:achievement/natural_born_cowboy",
+            "oteryn:achievement/fiend_rider",
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn addon_doll_has_two_independent_draws_and_never_rerolls_an_owned_addon()
 -> Result<(), &'static str> {
     let c = catalogue().ok_or("catalogue")?;

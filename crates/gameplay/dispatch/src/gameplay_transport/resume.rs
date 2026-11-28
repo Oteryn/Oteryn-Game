@@ -239,7 +239,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(Unavailable);
         }
-        if !super::hireling::recover_pending_lamp_ingress(self, &lost).await {
+        if !super::hireling::recover_pending_lamp_ingress(self, &lost).await
+            || tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                self.recover_pending_use_receipt(&lost),
+            )
+            .await
+            .ok()
+            .flatten()
+            .is_none()
+        {
             return Err(Unavailable);
         }
         self.states
@@ -791,7 +800,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             barrier.0.notify_one();
             barrier.1.notified().await;
         }
-        {
+        let reset_cooldowns = {
             let mut runtime = self.runtime.lock().await;
             if house_resume {
                 runtime
@@ -813,11 +822,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // SPELL-D8 §8.2: the Serene initialization evaluation runs in this owner step,
             // before the resumed actor's first command. An actor without spell state has none.
             let mut states = self.states.spell_states.lock().await;
+            states.replace_cooldown_transport(actor, session_id, successor);
             if house_resume {
                 let _ = states.resume_house(&runtime, actor, session_id, self.owner_now());
+                false
             } else {
                 let _ = states.resume(&runtime, actor, session_id, self.owner_now());
+                self.finish_resumed_kooldown_aid(&runtime, &mut states, actor, session_id)
             }
+        };
+        if reset_cooldowns {
+            self.kooldown_aid_notice(session_id);
         }
         self.forget_lost(session_id, lost.continuity.connection_generation);
         // C2: the resumed session's item fence, from a current durable read of the session the

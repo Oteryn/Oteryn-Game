@@ -1,6 +1,7 @@
 //! The existing quest receipt earns one durable Grizzly room visit. Native Channel
 //! ownership controls cleanup; an offline player's return remains pending afterward.
 
+use crate::durability::db::commit_semantic_read;
 use super::super::boss_encounter::{BossClockError, assert_channel_owner};
 use super::super::quest_world_callback::QuestWorldContext;
 use super::super::spell_owner_commit::SpellLanePermit;
@@ -116,7 +117,7 @@ impl DurabilityRoot {
             let row = sqlx::query(sqlx::AssertSqlSafe(query))
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let value = row.as_ref().map(decode).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(value))
         })).await?
     }
@@ -161,7 +162,7 @@ impl DurabilityRoot {
             let row = sqlx::query(sqlx::AssertSqlSafe(query))
                 .bind(session.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let value = row.as_ref().map(decode).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(value))
         })).await?
     }
@@ -191,7 +192,7 @@ impl DurabilityRoot {
                 .bind(generation.get().to_string()).fetch_all(&mut *tx).await?;
             if rows.len() > 30 { return Err(DurabilityError::InvalidStoredState); }
             let values = rows.iter().map(decode).collect::<StoredResult<Vec<_>>>()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(values))
         })).await?
     }

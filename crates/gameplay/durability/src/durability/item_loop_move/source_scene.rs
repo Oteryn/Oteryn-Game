@@ -183,7 +183,7 @@ impl DurabilityRoot {
                     Ok(Some(Err(_))) => SourceSceneReceipt::Conflict,
                     Err(error) => return loop_error(error).map(|_| SourceSceneReceipt::Conflict),
                 };
-                super::super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(receipt)
             }))
             .await

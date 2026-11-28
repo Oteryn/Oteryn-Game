@@ -7,6 +7,7 @@ from pathlib import Path
 
 import hireling_item_profiles as hireling
 from import_cyclopedia_global import apply_profile_weights
+from srx1_profile_updates import MAX_ITEM_PROFILES, compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = "content/items/definitions/spell-native-profiles.json"
@@ -53,8 +54,13 @@ class HirelingItemProfiles(unittest.TestCase):
             # the one virtual GoldPouch movable pair approved in Q15A.
             self.assertEqual(hireling.merge_fact(row["semantics"]["physical"],
                 qualified["semantics"]["physical"], f"{key}:physical"), row["semantics"]["physical"])
-            # Every earlier owner's other facts survive another application.
-            self.assertEqual(hireling.merge_record(row, source), row)
+            # Decode omitted UNKNOWN groups before replaying the source merger.
+            # Every earlier owner's facts must survive another application.
+            decoded = copy.deepcopy(row)
+            for group in hireling.VALUE_GROUPS:
+                decoded["semantics"].setdefault(group, {"state": "UNKNOWN"})
+            replay = hireling.merge_record(decoded, source)
+            self.assertEqual(compact_item_record(replay), compact_item_record(copy.deepcopy(row)), key)
         manifest = json.loads((ROOT / "content/spells.manifest.json").read_bytes())
         self.assertEqual(manifest["item_profiles"]["sha256"], hashlib.sha256(self.raw).hexdigest())
         print(f"HIRELING_NATIVE_PROFILE_CLOSURE items={len(self.overlay['required_ids'])} "
@@ -75,10 +81,7 @@ class HirelingItemProfiles(unittest.TestCase):
         self.assertEqual(self.overlay["catalogue"]["cook_items"], list(range(29408, 29417)))
 
     def test_complete_active_profiles_fit_the_unchanged_native_input_bound(self):
-        # native_gameplay.rs::MAX_ITEM_PROFILES is the existing 16 MiB Item bound.
-        # The former indented
-        # 2,104-record output reached 9,074,560 bytes and could not activate.
-        self.assertLessEqual(len(self.raw), 16 * 1024 * 1024,
+        self.assertLessEqual(len(self.raw), MAX_ITEM_PROFILES,
             "the full active Item closure must activate without widening its resource bound")
         self.assertEqual(len(self.profiles), len(json.loads(self.raw)["records"]),
             "serialization cannot hide duplicate canonical Item profiles")

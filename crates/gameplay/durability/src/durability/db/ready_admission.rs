@@ -74,7 +74,7 @@ impl DurabilityRoot {
                 });
             }
             let issued = if cap_pass {
-                self.try_issue_semantic_pass_by(deadline.into_std())
+                self.try_issue_semantic_pass_by(deadline)
             } else {
                 self.try_issue_semantic_pass()
             };

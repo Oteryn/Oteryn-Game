@@ -454,16 +454,14 @@ impl CheckedBundle {
         Ok(BundleWorld {
             source_bases: Arc::new(source_bases),
             daily: self.daily,
-            map: Arc::new(
-                BundleMap {
-                    entry_start: self.start,
-                    overlay: ChannelOverlay::for_scope(Arc::clone(&self.base), scope),
-                    facts,
-                    floors,
-                    spell_tiles,
-                }
-                .bind_phase_owner()?,
-            ),
+            map: BundleMap {
+                entry_start: self.start,
+                overlay: ChannelOverlay::for_scope(Arc::clone(&self.base), scope),
+                facts,
+                floors,
+                spell_tiles,
+            }
+            .bind_phase_owner()?,
             base: self.base,
             map_revision: self.map_revision,
             start: self.start,
@@ -703,7 +701,7 @@ impl BundleWorld {
             source_bases: Arc::clone(&self.source_bases),
             daily: self.daily.clone(),
             base: Arc::clone(&self.base),
-            map: Arc::new(map),
+            map,
             map_revision: self.map_revision.clone(),
             start: self.start,
             blocked: Arc::clone(&self.blocked),
@@ -888,16 +886,17 @@ pub struct BundleMap {
 }
 
 impl BundleMap {
-    fn bind_phase_owner(self) -> Result<Self, BootRefusal> {
-        if !self
+    fn bind_phase_owner(self) -> Result<Arc<Self>, BootRefusal> {
+        let map = Arc::new(self);
+        if !map
             .spell_tiles
-            .install_phases(self.facts.phase_spell_owner())
+            .install_phases(map.facts.phase_spell_owner(&map))
         {
             return Err(BootRefusal::Load(LoadError::Bundle(
                 oteryn_world_bundle::Error::Format("map phase owner already bound".into()),
             )));
         }
-        Ok(self)
+        Ok(map)
     }
 
     /// Semantic publication only; caller retains the fenced current Channel turn.
@@ -1094,23 +1093,21 @@ impl BundleCollisionData {
             tiles: tile_shapes.into(),
             shapes: self.map.spell_tiles.shapes.clone(),
         });
-        let map = Arc::new(
-            BundleMap {
-                entry_start,
-                overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
-                facts: match exit {
-                    Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
-                    None => self.map.facts.activity_region(bounds),
-                },
-                floors: match exit {
-                    Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
-                    None => self.map.floors.activity_region(bounds),
-                },
-                spell_tiles,
-            }
-            .bind_phase_owner()
-            .ok()?,
-        );
+        let map = BundleMap {
+            entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&base), runtime_scope),
+            facts: match exit {
+                Some(_) => self.map.facts.activity_region_with_exit(bounds, exit),
+                None => self.map.facts.activity_region(bounds),
+            },
+            floors: match exit {
+                Some(_) => self.map.floors.activity_region_with_exit(bounds, exit),
+                None => self.map.floors.activity_region(bounds),
+            },
+            spell_tiles,
+        }
+        .bind_phase_owner()
+        .ok()?;
         let view = Self {
             // The region retains the same source bases qualified from the
             // complete compiled Bundle bytes; clipping never invents geometry.
@@ -1180,17 +1177,15 @@ impl BundleCollisionIndexExt for BundleCollisionIndex {
         {
             return None;
         }
-        let map = Arc::new(
-            BundleMap {
-                entry_start: source.map.entry_start,
-                overlay: ChannelOverlay::for_scope(Arc::clone(&source.base), scope),
-                facts: source.map.facts.activity_copy(bounds),
-                floors: source.map.floors.clone(),
-                spell_tiles: Arc::new(source.map.spell_tiles.fork_without_phases()),
-            }
-            .bind_phase_owner()
-            .ok()?,
-        );
+        let map = BundleMap {
+            entry_start: source.map.entry_start,
+            overlay: ChannelOverlay::for_scope(Arc::clone(&source.base), scope),
+            facts: source.map.facts.activity_copy(bounds),
+            floors: source.map.floors.clone(),
+            spell_tiles: Arc::new(source.map.spell_tiles.fork_without_phases()),
+        }
+        .bind_phase_owner()
+        .ok()?;
         Some(BundleCollisionIndex(Arc::new(BundleCollisionData {
             source_bases: Arc::clone(&source.source_bases),
             scope: source.scope.clone(),
@@ -2925,6 +2920,225 @@ pub mod tests {
             })?;
             let doors = world.facts().doors();
             assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
+            assert!(!world.enterable(DOOR_AT));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_authored_open_key_doors_load_the_donor_family() -> Result<(), Box<dyn Error>> {
+        use crate::map::door::DoorUse;
+        use crate::map::view::MapFacts;
+        let mut mismatches = Vec::new();
+        for &(locked, closed, open) in crate::map::door_registry::KEY_DOORS {
+            let open_key = format!("oteryn:item.tibia.i{open}");
+            let (bytes, load) = bundle_with_items(&open_key, "item:coin");
+            let world = boot(
+                &bytes,
+                &pins(load, 2),
+                WorldId::decode(&id(1))?,
+                ChannelId::decode(&id(2))?,
+                |key| {
+                    let Some(id) = key
+                        .strip_prefix("oteryn:item.tibia.i")
+                        .and_then(|id| id.parse::<u32>().ok())
+                    else {
+                        return items(key);
+                    };
+                    let (solid, projectile) = crate::map::door_registry::closed_collision(id);
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(if id == open { 1 } else { id })?,
+                        solid: Some(id != open && solid),
+                        blocks_projectile: id != open && projectile,
+                        pickupable: false,
+                        door: true,
+                    })
+                },
+            )?;
+            let facts = world.facts();
+            let key = door_key();
+            let closed_pose = facts.doors().toggle(key, 0, false, 0, false);
+            let shown = facts
+                .base_entry(DOOR_AT, 1, 0)
+                .map(|entry| u32::from(entry.appearance_id));
+            if !matches!(closed_pose, Some(DoorUse::Toggled { open: false, .. }))
+                || shown != Some(closed)
+                || crate::map::door_registry::closed_of(open) != Some(closed)
+            {
+                mismatches.push((locked, closed, open, closed_pose, shown));
+            }
+        }
+        assert!(
+            mismatches.is_empty(),
+            "authored open key door mismatches: {mismatches:?}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_open_predicate_doors_require_each_player_to_qualify() -> Result<(), Box<dyn Error>> {
+        use crate::map::floor::{BundleDoors, prepare_bundle_step};
+        use crate::map::view::placement_key;
+        for (closed, open, action) in [(30037, 30039, 1035), (1642, 1643, 7001)] {
+            let closed_key = format!("oteryn:item.tibia.i{closed}");
+            let open_key = format!("oteryn:item.tibia.i{open}");
+            let (bytes, mut load) = bundle_with_items(&closed_key, "item:coin");
+            let mut authored = bundle::read(&bytes)?;
+            let door = authored
+                .sectors
+                .iter_mut()
+                .flat_map(|sector| &mut sector.tiles)
+                .find(|tile| tile.x == 6)
+                .and_then(|tile| tile.items.get_mut(1))
+                .ok_or("fixture closed door")?;
+            door.attrs.action = Some(action);
+            let bytes = oteryn_world_bundle::writer::write(
+                &authored.manifest,
+                &authored.sectors,
+                &authored.spawns,
+            )?;
+            load.digest = bundle::read(&bytes)?.digest;
+            let world_id = WorldId::decode(&id(1))?;
+            let channel = ChannelId::decode(&id(2))?;
+            let world = boot(&bytes, &pins(load, 2), world_id, channel, |key| {
+                if key != closed_key && key != open_key {
+                    return items(key);
+                }
+                let solid = key == closed_key;
+                Some(ItemDefinition {
+                    reference: std::num::NonZeroU32::new(if solid { 1 } else { open })?,
+                    solid: Some(solid),
+                    blocks_projectile: solid,
+                    pickupable: false,
+                    door: true,
+                })
+            })?;
+            let room = crate::content::qualify_native_entry_room(world_id)?;
+            let cells = world.movement_cells(room.movement_cells())?;
+            let pin = ChannelContentPin::from_activation(
+                world_id,
+                1,
+                room.compiled().server_digest(),
+                room.compiled().client_digest(),
+                world.frame_binding_digest(world_id),
+                world.map_revision_digest(),
+                (7, 0, 7),
+            );
+            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                world_id,
+                channel,
+                NodeId::decode(&id(3))?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                2,
+                pin,
+            )?;
+            let session = GameSessionId::decode(&id(4))?;
+            let reserved = runtime.reserve_fresh_session(session)?;
+            let actor = runtime.commit_fresh_session(reserved)?;
+            runtime.initialize_first_entry_position(actor)?;
+            let expected = runtime.read_actor_position(actor)?;
+            let key = placement_key(DOOR_AT, 1).ok_or("door placement")?;
+            assert!(matches!(
+                world.facts().doors().toggle(key, 0, false, 35, true),
+                Some(crate::map::door::DoorUse::Toggled { open: true, .. })
+            ));
+            assert!(
+                matches!(
+                    prepare_bundle_step(
+                        &runtime,
+                        &cells,
+                        actor,
+                        session,
+                        expected,
+                        CardinalStep::West,
+                        false,
+                        &BundleDoors(world.facts()),
+                    ),
+                    Err(MovementError::Blocked)
+                ),
+                "open door {open} lets an unqualified player enter"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_open_level_doors_without_actions_are_walkable_for_monsters()
+    -> Result<(), Box<dyn Error>> {
+        for (appearance, house) in [(30039, 0), (12034, 1)] {
+            let key = format!("oteryn:item.tibia.i{appearance}");
+            let (bytes, load) = bundle_with_house(&key, 0, "item:coin", 1, house);
+            let world_id = WorldId::decode(&id(1))?;
+            let world = boot(
+                &bytes,
+                &pins(load, 2),
+                world_id,
+                ChannelId::decode(&id(2))?,
+                |wanted| {
+                    if wanted != key {
+                        return items(wanted);
+                    }
+                    Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::MIN,
+                        solid: Some(false),
+                        blocks_projectile: false,
+                        pickupable: false,
+                        door: true,
+                    })
+                },
+            )?;
+            let room = crate::content::qualify_native_entry_room(world_id)?;
+            let cells = world.movement_cells(room.movement_cells())?;
+            assert_eq!(
+                cells
+                    .index()
+                    .lookup(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 }),
+                Ok(CollisionClass::Walkable),
+                "authored open appearance {appearance}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn pkmisc_review_authored_open_key_door_closes_to_its_own_family() -> Result<(), Box<dyn Error>>
+    {
+        use crate::map::{door::DoorUse, view::MapFacts};
+        let world_id = WorldId::decode(&id(1))?;
+        let channel_id = ChannelId::decode(&id(2))?;
+        let (controller, _) =
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                world_id, None,
+            );
+        let native = controller
+            .active()
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        let definition = |key: &str| native_item_definition(Some(native), key);
+        let coin = "oteryn:item.tibia.i1000";
+        let coin_id = definition(coin).ok_or("coin definition")?.reference.get() - 1;
+        for (open, closed) in [(44917, 44913), (20445, 20443), (20454, 20452)] {
+            let key = format!("oteryn:item.tibia.i{open}");
+            let id = definition(&key).ok_or("door definition")?.reference.get() - 1;
+            let (bytes, load) = bundle_with_item_ids((&key, id), (coin, coin_id));
+            let world = boot(&bytes, &pins(load, 2), world_id, channel_id, definition)?;
+            assert!(world.enterable(DOOR_AT), "open pose {open}");
+            assert_eq!(
+                world.facts().doors().toggle(door_key(), 0, false, 1, false),
+                Some(DoorUse::Toggled {
+                    revision: 1,
+                    open: false
+                }),
+                "open pose {open}",
+            );
+            let entry = world
+                .facts()
+                .base_entry(DOOR_AT, 1, id)
+                .ok_or("closed key door")?;
+            assert_eq!(entry.appearance_id, closed);
             assert!(!world.enterable(DOOR_AT));
         }
         Ok(())

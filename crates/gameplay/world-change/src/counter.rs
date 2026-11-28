@@ -247,8 +247,10 @@ impl CounterState {
             (CounterKind::TheirMastersVoice, Credit::VoiceMage) if next.stage == 3 => {
                 next.stage = 4;
             }
-            (CounterKind::DemonWars, Credit::Kill(side @ 0..=1)) => {
-                add(&mut next.counts[usize::from(side)], 1)?
+            // The prince lanes preserve their faction's shared count and also
+            // identify the eligible death to the personal achievement owner.
+            (CounterKind::DemonWars, Credit::Kill(lane @ 0..=3)) => {
+                add(&mut next.counts[usize::from(lane % 2)], 1)?
             }
             (CounterKind::FireFeathered, Credit::Kill(0)) if next.stage < 3 => {
                 add(&mut next.counts[0], 1)?;
@@ -488,12 +490,21 @@ pub struct Definition {
     pub key: String,
     pub kind: CounterKind,
     pub sources: Vec<KillSource>,
+    #[serde(default)]
+    pub personal_kill_rewards: Vec<PersonalKillReward>,
 }
 #[derive(Debug, Deserialize)]
 pub struct KillSource {
     pub creature: String,
     pub lane: u8,
     pub area: [i32; 6],
+}
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PersonalKillReward {
+    pub lane: u8,
+    pub achievement: String,
+    pub goal: u32,
 }
 impl Bindings {
     pub fn validate(&self) -> Result<(), CounterError> {
@@ -549,12 +560,20 @@ impl Bindings {
             if definition.kind != CounterKind::ALL[index]
                 || definition.key != definition.kind.key()
                 || definition.sources.len() > 64
+                || (definition.kind != CounterKind::DemonWars
+                    && !definition.personal_kill_rewards.is_empty())
+                || definition.personal_kill_rewards.len() > 2
             {
                 return Err(CounterError::InvalidState);
             }
             for source in &definition.sources {
                 let [x0, x1, y0, y1, z0, z1] = source.area;
-                if source.lane > 2
+                let max_lane = if definition.kind == CounterKind::DemonWars {
+                    3
+                } else {
+                    2
+                };
+                if source.lane > max_lane
                     || source.creature.len() > 128
                     || !source.creature.starts_with("oteryn:creature.")
                     || !(0..=65535).contains(&x0)
@@ -567,6 +586,26 @@ impl Bindings {
                     return Err(CounterError::InvalidState);
                 }
             }
+            for (index, reward) in definition.personal_kill_rewards.iter().enumerate() {
+                if !(2..=3).contains(&reward.lane)
+                    || !(1..=10_000).contains(&reward.goal)
+                    || !reward.achievement.starts_with("oteryn:achievement/")
+                    || definition.personal_kill_rewards[..index]
+                        .iter()
+                        .any(|previous| {
+                            previous.lane == reward.lane
+                                || previous.achievement == reward.achievement
+                        })
+                    || definition
+                        .sources
+                        .iter()
+                        .filter(|source| source.lane == reward.lane)
+                        .count()
+                        != 1
+                {
+                    return Err(CounterError::InvalidState);
+                }
+            }
         }
         Ok(())
     }
@@ -574,6 +613,20 @@ impl Bindings {
         self.definitions
             .iter()
             .any(|d| d.sources.iter().any(|s| s.creature == creature))
+    }
+    pub fn personal_kill_reward(
+        &self,
+        kind: CounterKind,
+        credit: Credit,
+    ) -> Option<&PersonalKillReward> {
+        let Credit::Kill(lane) = credit else {
+            return None;
+        };
+        self.definitions
+            .get(kind.index())?
+            .personal_kill_rewards
+            .iter()
+            .find(|reward| reward.lane == lane)
     }
     pub fn credits(&self, creature: &str, position: (i32, i32, i16)) -> Vec<(CounterKind, Credit)> {
         self.definitions

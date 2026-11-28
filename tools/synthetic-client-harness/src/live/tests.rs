@@ -277,6 +277,34 @@ fn pushed_events_apply_in_order_and_the_vitals_line_shows() {
     let text = render_text(view(), &after);
     assert!(text.contains("hp 90/150 mp 30/55"), "{text}");
     assert!(!render_text(view(), &start).contains("hp"));
+
+    let rescued = after.apply_events(&[SessionEvent::GiftOfLife {
+        cooldowns: AppliedDelta {
+            server_sequence: 45,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_protocol_oteryn::presentation::ActorCooldowns {
+                    server_now_ms: 1,
+                    rtt_ms: None,
+                    entries: Vec::new(),
+                },
+                received_at: std::time::Instant::now(),
+                snapshot: false,
+            },
+        },
+        vitals: AppliedDelta {
+            server_sequence: 46,
+            base_revision: 2,
+            new_revision: 3,
+            value: ActorVitals {
+                mana: 45,
+                ..vitals(30)
+            },
+        },
+    }]);
+    let text = render_text(view(), &rescued);
+    assert!(text.contains("hp 30/150 mp 45/55"), "{text}");
 }
 
 #[test]

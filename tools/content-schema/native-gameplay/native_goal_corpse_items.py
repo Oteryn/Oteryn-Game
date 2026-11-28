@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[3]
 GOALS = 'tools/content-schema/quest-authoring/samples/native-kill-goals.json'
 CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 GROUPS = ('physical', 'stack', 'container', 'temporal')
+BONELORD = 'oteryn:creature.bonelord'
 
 
 def module(name, root):
@@ -40,7 +41,9 @@ def covered_creatures(root):
 def policies(root=ROOT, *, creatures=None):
     # Crystal201189f action_boss.lua:4 requires the fresh Koshei corpse.
     roots = {7535} if creatures is None else set()
-    creatures = covered_creatures(root) if creatures is None else creatures
+    if creatures is None:
+        # MP09 settles a real Bonelord kill through the ordinary corpse owner.
+        creatures = covered_creatures(root) | {BONELORD, 'oteryn:creature.magma_bubble'}
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:
