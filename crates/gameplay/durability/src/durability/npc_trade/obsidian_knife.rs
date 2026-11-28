@@ -1,4 +1,4 @@
-//! Uzgod trades one draconian steel and one obsidian lance for a knife once per character.
+//! Uzgod trades one draconian steel and one obsidian lance for a knife every twenty hours.
 use super::*;
 
 pub(super) const NPC: &str = "oteryn:npc.uzgod";
@@ -43,16 +43,15 @@ pub(super) async fn ready(
     tx: &mut Type2Transaction<'_>,
     character: CharacterId,
 ) -> std::result::Result<bool, DurabilityError> {
-    // Crystal's Uzgod checks and sets a permanent character flag. An existing
-    // committed exchange is equivalent evidence under the Character root lock.
-    let exchanged: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_npc_trades WHERE character_id=encode($1,'hex')::uuid AND side=3 AND npc_key=$2)",
+    // The Character root lock serializes exchanges. The committed trade supplies the clock.
+    let cooling: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_npc_trades WHERE character_id=encode($1,'hex')::uuid AND side=3 AND npc_key=$2 AND committed_at>floor(extract(epoch FROM statement_timestamp())*1000)::bigint-72000000)",
     )
     .bind(character.as_bytes().as_slice())
     .bind(NPC)
     .fetch_one(&mut ***tx)
     .await?;
-    Ok(!exchanged)
+    Ok(!cooling)
 }
 
 pub(super) fn plan(request: &NpcTradeRequest, capacity: usize, entries: &[Entry]) -> Result<Plan> {
