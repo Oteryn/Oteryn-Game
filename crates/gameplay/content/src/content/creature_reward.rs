@@ -1638,9 +1638,8 @@ mod protected_loot_tests {
     pub(super) fn assert_grizzly_body(
         native: &super::super::native_gameplay::NativeGameplayState,
         creature: &str,
-        body: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        assert_eq!(body, "oteryn:item.tibia.i6046");
+        let body = "oteryn:item.tibia.i6046";
         let declared = native
             .creature_profiles()
             .records
@@ -1678,6 +1677,7 @@ mod protected_loot_tests {
             .active()
             .and_then(|generation| generation.native_gameplay())
             .ok_or("qualified native generation")?;
+        assert_grizzly_body(native, "oteryn:creature.the_snapper")?;
         let table = native.reward_table();
         #[derive(Deserialize)]
         struct Expected {
@@ -1690,7 +1690,7 @@ mod protected_loot_tests {
         for (creature, item) in source.admitted {
             let expected = format!("oteryn:item.tibia.i{item}");
             if creature == "oteryn:creature.the_snapper" {
-                assert_grizzly_body(native, &creature, &expected)?;
+                assert_eq!(item, 6046);
                 continue;
             }
             let outcome = table
@@ -2553,6 +2553,7 @@ mod crystal_corpse_tests {
         let native = generation
             .native_gameplay()
             .ok_or("native Crystal corpse fixture")?;
+        super::protected_loot_tests::assert_grizzly_body(native, "oteryn:creature.crocodile")?;
         let expected: Vec<(String, u32)> = serde_json::from_str(include_str!(
             "../../../../../imports/crystalserver/ordinary-corpses/admissions.json"
         ))?;
@@ -2562,7 +2563,7 @@ mod crystal_corpse_tests {
             let creature = format!("oteryn:creature.{name}");
             let body = format!("oteryn:item.tibia.i{item}");
             if name == "crocodile" {
-                super::protected_loot_tests::assert_grizzly_body(native, &creature, &body)?;
+                assert_eq!(item, 6046);
                 continue;
             }
             let row = native.reward_table().row(&creature).or_else(|reason| {
