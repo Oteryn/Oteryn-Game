@@ -167,18 +167,28 @@ fn configured_character_is_only_a_preselect() -> TestResult {
 
 #[test]
 fn native_entry_surfaces_pre_admission_e1051() -> TestResult {
-    let stack = Stack::start(vec![oteryn_session::SESSION_JOIN_UNAVAILABLE_CODE])?;
-    let error = stack.entry(stack.config())?;
-    let message = oteryn_client_ui::localization::with_language(
-        oteryn_client_ui::localization::Language::En,
-        || crate::native_login::error_text(error),
-    );
-    assert_eq!(
-        message,
-        "Your character could not enter the game. Try signing in again."
-    );
-    assert_eq!(stack.admissions.load(Ordering::SeqCst), 1);
-    stack.finish();
+    let join_unavailable = oteryn_session::SESSION_JOIN_UNAVAILABLE_CODE;
+    // E1103 first exercises the same-grant retry path, then E1051 ends the attempt.
+    for refusals in [vec![join_unavailable], vec![1103, join_unavailable]] {
+        let expected_admissions = refusals.len();
+        let stack = Stack::start(refusals)?;
+        let error = stack.entry(stack.config())?;
+        assert_eq!(error, GameplayEntryError::SessionJoinUnavailable);
+        let message = oteryn_client_ui::localization::with_language(
+            oteryn_client_ui::localization::Language::En,
+            || crate::native_login::error_text(error),
+        );
+        assert_eq!(
+            message,
+            "Your character could not enter the game. Try signing in again."
+        );
+        assert_eq!(stack.admissions.load(Ordering::SeqCst), expected_admissions);
+        assert_eq!(
+            super::test_support::count(&stack.requests(), "POST /v1/login"),
+            1
+        );
+        stack.finish();
+    }
     Ok(())
 }
 

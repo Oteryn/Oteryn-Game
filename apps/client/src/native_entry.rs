@@ -39,7 +39,7 @@ use oteryn_platform_client::native_login::{
     NativeLoginGrant, NativeTicket, PublicClass, parse_uuid_v7, secure_random,
 };
 use oteryn_session::{Admission, AdmissionPublicClass, CharacterId};
-use oteryn_session_tcp::connection::CONNECT_DEADLINE;
+use oteryn_session_tcp::connection::{AdmissionRefusalInfo, CONNECT_DEADLINE};
 use oteryn_session_tcp::load_root_certificate;
 use rustls::pki_types::CertificateDer;
 use std::time::Instant;
@@ -135,7 +135,6 @@ pub(crate) async fn enter_observed(
         .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
 
     let mut attempt = NativeAttempt {
-        queue: None,
         refusal: None,
         progress,
         client,
@@ -190,8 +189,7 @@ async fn initial_gateway_login(
 }
 
 struct NativeAttempt<'a> {
-    refusal: Option<GameplayEntryError>,
-    queue: Option<oteryn_session::AdmissionQueue>,
+    refusal: Option<AdmissionRefusalInfo>,
     progress: Option<tokio::sync::watch::Sender<Option<AdmissionWait>>>,
     client: NativeLoginClient,
     ticket: NativeTicket,
@@ -210,11 +208,19 @@ impl AdmissionAttempt for NativeAttempt<'_> {
     type Error = GameplayEntryError;
 
     fn terminal_refusal(&self) -> Option<Self::Error> {
-        self.refusal.clone()
+        let refusal = self.refusal?;
+        if refusal.code == oteryn_session::SESSION_JOIN_UNAVAILABLE_CODE {
+            // E1051 can also follow a committed join. End this attempt so the
+            // player can sign in again without reusing a possibly consumed grant.
+            return Some(GameplayEntryError::SessionJoinUnavailable);
+        }
+        refusal
+            .channel_full
+            .then_some(GameplayEntryError::ChannelFull)
     }
 
     fn queue(&self) -> Option<oteryn_session::AdmissionQueue> {
-        self.queue
+        self.refusal.and_then(|refusal| refusal.queue)
     }
 
     fn waiting(&mut self, wait: AdmissionWait) {
@@ -230,7 +236,6 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         );
         capabilities.extend([615, 616, 617]);
         capabilities.sort_unstable();
-        self.queue = None;
         self.refusal = None;
         let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
         let counted = std::sync::Arc::clone(&traffic);
@@ -257,17 +262,8 @@ impl AdmissionAttempt for NativeAttempt<'_> {
         )
         .await
         .map_err(|refusal| {
-            refusal.map(|refusal| {
-                self.queue = refusal.queue;
-                self.refusal = if refusal.channel_full {
-                    Some(GameplayEntryError::ChannelFull)
-                } else if refusal.code == oteryn_session::SESSION_JOIN_UNAVAILABLE_CODE {
-                    Some(GameplayEntryError::SessionJoinUnavailable)
-                } else {
-                    None
-                };
-                refusal.code
-            })
+            self.refusal = refusal;
+            refusal.map(|refusal| refusal.code)
         })?;
         Ok(AdmittedSession {
             character_id: self.login.character_id.to_owned(),
