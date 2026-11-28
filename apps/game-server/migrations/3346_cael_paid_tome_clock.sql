@@ -22,10 +22,10 @@ DECLARE
             AND p.plan->'state_ops'='[{"track":"oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery","from":{"kind":"elapsed_at_least","seconds":72000},"effect":{"kind":"set_now"}}]'::jsonb,
             false);$declare$,
         $plan$OR (NOT timed_tome AND coalesce(p.plan->'state_ops','[]'::jsonb)<>'[]'::jsonb)$plan$,
-        $receipt$OR CASE WHEN timed_tome THEN NOT game_quest_reward_effects_valid(
+        $receipt$OR (CASE WHEN timed_tome THEN NOT game_quest_reward_effects_valid(
             p.plan,r.track_keys,r.values_before,r.values_after)
         ELSE r.values_before IS DISTINCT FROM r.values_after
-            OR cardinality(r.track_keys)<>jsonb_array_length(p.plan->'storage') END$receipt$
+            OR cardinality(r.track_keys)<>jsonb_array_length(p.plan->'storage') END)$receipt$
     ];
 BEGIN
     FOR i IN 1..cardinality(anchors) LOOP
