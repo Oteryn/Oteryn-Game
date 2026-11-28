@@ -379,7 +379,8 @@ impl DurabilityRoot {
     /// `open_depot` is current owner-observed (town, box) data, not client input
     /// or durable authority. The compositor must check the connection's open
     /// view and locker reach under the mutation lane, retaining that lane through
-    /// this call. Storage independently checks exact Character/World custody.
+    /// this call. For a descendant it must also prove the target's open container
+    /// view within that box. Storage independently checks exact Character/World custody.
     /// It is deliberately excluded from historical request binding: closing a
     /// view must not prevent an exact terminal replay or COMMIT reconciliation.
     /// `ground` is likewise current owner-observed placement DATA, after checking
@@ -567,8 +568,8 @@ async fn carried_text_path(
 /// The current Character root is already locked. Match the existing carried-use
 /// lock order: every ancestor ItemInstance in UUID order, then a fresh custody
 /// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
-/// Depot transfers use the same Character root/item lock order. Only a direct
-/// box entry is admitted: the depot writer does not yet host nested containers.
+/// Depot transfers use the same Character root/item lock order. A depot
+/// descendant shares the box custody of its locked root.
 /// A loop-drop or unchanged map root retains the Ground owner lock and
 /// current scope assignment lock acquired by the Character fence. House edits are carried only.
 async fn lock_carried_text_item(
@@ -637,26 +638,27 @@ async fn lock_carried_text_item(
         }
         return Ok(());
     }
-    let Some((town, box_number)) = open_depot else {
+    let Some((root, (town, box_number))) = path.last().zip(open_depot) else {
         return Err(ItemTextWriteError::NotReachable);
     };
-    if path.len() != 1 || !(1..=oteryn_gameplay_items::depot::DEPOT_BOXES).contains(&box_number) {
+    if !(1..=oteryn_gameplay_items::depot::DEPOT_BOXES).contains(&box_number) {
         return Err(ItemTextWriteError::NotReachable);
     }
     // Separate post-lock statement: a pre-wait location snapshot is not proof
     // of current custody. No depot counter changes when only text changes.
     let in_box: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_item_instances i \
-          JOIN game_item_character_depot_locations d USING (item_instance_id, world_id) \
+          JOIN game_item_character_depot_locations d ON d.item_instance_id=$5::uuid AND d.world_id=i.world_id \
           WHERE i.item_instance_id=encode($1,'hex')::uuid \
             AND i.definition_family=$2 AND i.definition_production_key=$3 AND i.definition_revision_ref=$4 \
-            AND d.character_id=encode($5,'hex')::uuid AND d.world_id=encode($6,'hex')::uuid \
-            AND d.town_id=$7 AND d.box_number=$8)",
+            AND d.character_id=encode($6,'hex')::uuid AND d.world_id=encode($7,'hex')::uuid \
+            AND d.town_id=$8 AND d.box_number=$9)",
     )
     .bind(request.item_instance_id.as_slice())
     .bind(&request.definition.family)
     .bind(&request.definition.production_key)
     .bind(&request.definition.revision_ref)
+    .bind(root)
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(world.as_bytes().as_slice())
     .bind(i32::from(town))
