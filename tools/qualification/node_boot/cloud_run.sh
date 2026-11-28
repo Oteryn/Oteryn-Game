@@ -123,7 +123,7 @@ for group in "$@"; do
   wait "$child_pid" || status=$?
   child_pid=
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
-  grep -E '^SEAM_EVIDENCE e2e_all scenario=W(04|05c|10|13)[.]client status=(PASS|FAIL) seconds=[0-9]+[.]000 evidence=live-capture-replay$' "$log" || true
+  grep -E '^SEAM_EVIDENCE e2e_all scenario=W(01b|04|05c|10|13)[.]client status=(PASS|FAIL) seconds=[0-9]+[.]000 evidence=live-capture-replay$' "$log" || true
   [[ "$status" == 0 ]] || failed=1
 done
 exit "$failed"
