@@ -1626,7 +1626,8 @@ fn scenario_case(
             new_frontier_journey_fixtures::NAME | new_frontier_journey_fixtures::POLISHER_RETRY => Some(8),
             super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
-            "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high" => Some(1000),
+            "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high"
+                | "questpc7-eligibility-make-believe-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
@@ -2050,7 +2051,9 @@ fn scenario_case(
         }
         .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
-        if koshei || alawars_vault || (frontier && !recover_bait) {
+        if koshei || alawars_vault || (frontier && !recover_bait)
+            || name == "questpc7-eligibility-make-believe-high"
+        {
             let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
             owner.quest_log_content = Some(
                 crate::gameplay_transport::quest_log::QuestLogLines::new(journal.content)

@@ -1,14 +1,16 @@
-//! Radiant respawn, combat, and durable kill settlement on the composed owner.
+//! Radiant respawn, combat, and durable kill settlement at the pinned spawn cells.
 use super::fixture::{Harness, debug, id};
 use super::kill_reward_e2e_fixtures::scenario_thread;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
+use crate::content::NativeEntryStart;
 use crate::foundation::{
     CharacterId, CharacterLease, GameSessionId, MovementLocalPosition, WorldId,
 };
 use crate::gameplay_transport::kill_reward::{
     DrainOutcome, KillSink, TakeOutcome, record_creature_kill,
 };
+use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_items::loot_plan::{LootPlanDeathKey, plan_creature_loot};
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
@@ -17,6 +19,9 @@ use std::time::Duration;
 
 #[test]
 fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     scenario_thread::run_async(async |admin| {
         use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
         let _normal_rates = test_clock::set(Schedule::default(), 0);
@@ -47,15 +52,42 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
             "zealot",
         ] {
             let key = format!("oteryn:creature.radiant_{name}");
-            let respawn_ms = declarations
+            // The first authored Templar point has a provisional decoration.
+            // Use the next authored point so the two-cell combat crop resolves.
+            let point = declarations
                 .iter()
                 .filter_map(|shard| shard["records"].as_array())
                 .flatten()
                 .filter_map(|source| source["declaration"]["points"].as_array())
                 .flatten()
-                .find(|point| point["creature"] == key)
-                .and_then(|point| point["respawn_ms"].as_u64())
-                .ok_or_else(|| format!("{key} has no pinned respawn period"))?;
+                .filter(|point| point["creature"] == key)
+                .nth(usize::from(name == "templar"))
+                .ok_or_else(|| format!("{key} has no pinned spawn point"))?;
+            let respawn_ms = point["respawn_ms"].as_u64().ok_or("pinned respawn period")?;
+            let cell = &point["cell"];
+            let target_tile = TilePos {
+                x: u16::try_from(cell["x"].as_u64().ok_or("spawn x")?)?,
+                y: u16::try_from(cell["y"].as_u64().ok_or("spawn y")?)?,
+                floor: -i8::try_from(cell["floor"].as_u64().ok_or("spawn floor")?)?,
+            };
+            let entry_tile = TilePos {
+                x: target_tile.x.checked_sub(1).ok_or("spawn approach x")?,
+                ..target_tile
+            };
+            let bundle = super::source_world_crop::world(entry_tile, target_tile, entry_tile, native)?;
+            assert!(bundle.enterable(entry_tile), "{key}: approach must be walkable");
+            assert!(bundle.enterable(target_tile), "{key}: spawn must be walkable");
+            let local = |cell: TilePos| (i32::from(cell.x), i32::from(cell.y), -i16::from(cell.floor));
+            let player_start = local(entry_tile);
+            let spawn_cell = local(target_tile);
+            let frame = bundle.frame_binding_digest(world);
+            let qualified = pin.qualified_room();
+            let combat_room = qualified.bundle_view(
+                bundle.movement_cells(qualified.movement_cells()).map_err(debug)?,
+                frame,
+                bundle.map_revision_digest(),
+                NativeEntryStart { x: player_start.0, y: player_start.1, floor: player_start.2 },
+            ).ok_or("qualified Radiant combat map")?;
             let h = Harness::create_with_admission_seed(
                 admin.clone(),
                 "summer_radiant_full_run",
@@ -72,32 +104,27 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
-            let room = pin.qualified_room().clone();
-            // Transplant one source point to the open Thalom combat tile. The
-            // bundle compiler's summer_population test covers actual map cells.
-            let player_start = (2, 11, -7);
-            let spawn_cell = (1, 11, -7);
             let mut deps = Dependencies::with_content_and_capacity(
                 ChannelContentPin::from_activation(
                     world,
                     pin.activation_sequence(),
                     active.identity().server_artifact_digest(),
                     active.identity().client_artifact_digest(),
-                    pin.frame_binding().digest(),
-                    room.map_revision_digest(),
+                    frame,
+                    bundle.map_revision_digest(),
                     player_start,
                 ),
-                room,
+                qualified.clone(),
                 crate::spell::cast::v1_spell_book().map_err(debug)?,
                 3, // One player, one creature, and activation headroom.
             )?;
-            deps.combat_room = Some(deps.room.clone());
+            deps.combat_room = Some(combat_room.clone());
             let actor = deps.actor;
             let session = deps.admitted.game_session_id;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(active);
             owner.quest_catalogue = Some(std::sync::Arc::clone(&quest_catalogue));
-            owner.movement_cells = deps.room.movement_cells().into();
+            owner.movement_cells = combat_room.movement_cells().into();
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
                 .bind(id(41).as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)")
@@ -107,7 +134,7 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 .bind(pin.activation_sequence().to_string())
                 .bind(active.identity().server_artifact_digest().as_slice())
                 .bind(active.identity().client_artifact_digest().as_slice())
-                .bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+                .bind(frame.as_slice()).execute(&h.pool).await?;
             let reward = native.reward_table().row(&key).map_err(debug)?;
             let loot_ref = reward.loot_table_ref.as_ref().ok_or("pinned loot table")?;
             // Allocate a deterministic occurrence with a positive roll, preserving the
@@ -242,7 +269,7 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 assert_eq!(
                     attacks.set_target(
                         &runtime,
-                        Some(&deps.room),
+                        Some(&combat_room),
                         actor,
                         session,
                         owner.owner_now(),
@@ -347,6 +374,11 @@ fn summer_population_radiant_spawn_kill_claim_each() -> TestResult {
                 let corpse = {
                     let corpses = deps.runtime.lock().await.visible_corpses();
                     assert_eq!(corpses.len(), 1, "{key} corpse count");
+                    assert_eq!(
+                        corpses[0].position,
+                        MovementLocalPosition { x: spawn_cell.0, y: spawn_cell.1, floor: spawn_cell.2 },
+                        "{key} corpse remains at the source encounter cell",
+                    );
                     assert_eq!(
                         corpses[0].item.production_key,
                         reward
