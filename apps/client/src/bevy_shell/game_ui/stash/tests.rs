@@ -36,8 +36,15 @@ fn reply() -> StashResponse {
 }
 fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
-    link.use_shared_frontend();
     outbox.bevy_stash_initialize(true);
+    let mut app = stash_app(link)?;
+    open_stash(&mut app)?;
+    outbox.bevy_stash_result(&reply());
+    app.update();
+    Ok((app, commands, outbox))
+}
+fn stash_app(link: crate::play::PlayLink) -> Result<App, Box<dyn std::error::Error>> {
+    link.use_shared_frontend();
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -53,6 +60,9 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
+    Ok(app)
+}
+fn open_stash(app: &mut App) -> TestResult {
     let event = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(22)?,
         state: oteryn_input_actions::ButtonState::Pressed,
@@ -62,9 +72,7 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
-    outbox.bevy_stash_result(&reply());
-    app.update();
-    Ok((app, commands, outbox))
+    Ok(())
 }
 fn click(app: &mut App, kind: Kind) -> TestResult {
     let entity = app
@@ -465,5 +473,171 @@ fn reverse_button_requests_opposite_name_and_quantity_orders() -> TestResult {
         outbox.bevy_stash_result(&reply());
         app.update();
     }
+    Ok(())
+}
+
+#[path = "tests/wire.rs"]
+pub(in crate::bevy_shell::game_ui) mod wire;
+
+#[test]
+fn gap_0591_stash_row_actions_and_stow_intents() -> TestResult {
+    let (mut peer, link) = wire::Peer::new(Some(591))?;
+    let mut app = stash_app(link)?;
+    wire::wait(&mut app, |link| !link.stash_panel().carried.is_empty())?;
+    open_stash(&mut app)?;
+    peer.command(79)?;
+    peer.stash(&reply().reply)?;
+    wire::wait(&mut app, |link| !link.stash_panel().rows.is_empty())?;
+
+    click_caption(&mut app, "Add to loot list")?;
+    let bytes = peer.command(6345)?;
+    assert_eq!(
+        stash::decode_stash_row_intent(&bytes).map_err(wire::invalid)?,
+        stash::StashRowIntent {
+            row: [7; 16],
+            action: stash::StashRowAction::LootAdd,
+        }
+    );
+    peer.result(
+        CommandStatus::Accepted,
+        &stash::encode_stash_row_result(std::num::NonZeroU32::MIN),
+    )?;
+    peer.command(79)?;
+    peer.stash(&reply().reply)?;
+    wire::wait(&mut app, |link| !link.stash_panel().pending)?;
+
+    use stash::StashAction;
+    for (caption, action) in [
+        (
+            "Stow amount…",
+            StashAction::StowQuantity {
+                handle: 11.try_into()?,
+                amount: 1,
+            },
+        ),
+        (
+            "Stow all of this type",
+            StashAction::StowMatching(11.try_into()?),
+        ),
+        ("Stow contents", StashAction::StowContents(10.try_into()?)),
+    ] {
+        click_caption(&mut app, caption)?;
+        if matches!(action, StashAction::StowQuantity { .. }) {
+            press(&mut app, KeyCode::Enter);
+        }
+        let bytes = peer.command(79)?;
+        assert_eq!(
+            stash::decode_stash_query(&bytes)
+                .map_err(wire::invalid)?
+                .0
+                .action,
+            action
+        );
+        peer.stash(&reply().reply)?;
+        wire::wait(&mut app, |link| !link.stash_panel().pending)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn gap_0601_stash_container() -> TestResult {
+    use oteryn_protocol_oteryn::container_batch::{Reply, Request};
+    let (mut peer, link) = wire::Peer::new(Some(601))?;
+    let mut app = stash_app(link)?;
+    wire::wait(&mut app, |link| !link.stash_panel().carried.is_empty())?;
+    open_stash(&mut app)?;
+    peer.command(79)?;
+    peer.stash(&reply().reply)?;
+    wire::wait(&mut app, |link| !link.stash_panel().rows.is_empty())?;
+
+    for status in [CommandStatus::Rejected, CommandStatus::Accepted] {
+        click_caption(&mut app, "Preview stash contents")?;
+        assert_eq!(
+            Request::decode(&peer.command(6364)?),
+            Some(Request::Preview {
+                source: 10.try_into()?,
+                recursive: true,
+            })
+        );
+        let quote = peer.result(CommandStatus::Accepted, &Reply::Preview(4).encode())?;
+        wire::wait_text(&mut app, "Stow 4 units")?;
+        click_caption(&mut app, "Stow contents (Enter)")?;
+        assert_eq!(
+            Request::decode(&peer.command(6364)?),
+            Some(Request::Confirm {
+                preview: quote.try_into()?
+            })
+        );
+        let payload = Reply::Committed(4).encode();
+        peer.result(
+            status,
+            if status == CommandStatus::Accepted {
+                &payload
+            } else {
+                &[]
+            },
+        )?;
+        peer.command(79)?;
+        let mut refreshed = reply().reply;
+        refreshed.rows[0].quantity = 36;
+        peer.stash(&refreshed)?;
+        wire::wait(&mut app, |link| {
+            !link.stash_panel().pending && link.stash_panel().rows == refreshed.rows
+        })?;
+        let expected = if status == CommandStatus::Accepted {
+            "Stowed 4 units."
+        } else {
+            "The preview is no longer valid."
+        };
+        wire::wait_text(&mut app, expected)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn stash_legacy_stow_retains_its_wire_bytes() -> TestResult {
+    let (mut peer, link) = wire::Peer::new(None)?;
+    let mut app = stash_app(link)?;
+    wire::wait(&mut app, |link| link.stash_panel().selected)?;
+    open_stash(&mut app)?;
+    peer.command(79)?;
+    peer.stash(&reply().reply)?;
+    wire::wait(&mut app, |link| !link.stash_panel().rows.is_empty())?;
+    assert!(click_caption(&mut app, "Stow amount…").is_err());
+    let panel = app
+        .world()
+        .resource::<State>()
+        .panel
+        .as_ref()
+        .ok_or("stash panel")?;
+    let row = panel
+        .carried
+        .iter()
+        .position(|item| item.handle.get() == 11)
+        .ok_or("stack")?;
+    click(&mut app, Kind::Stow(row))?;
+    assert_eq!(
+        peer.command(79)?,
+        [8, 0, 16, 2, 24, 11, 50, 8, 10, 0, 18, 0, 26, 0, 32, 0]
+    );
+    Ok(())
+}
+
+fn click_caption(app: &mut App, caption: &str) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Control, &Children)>()
+        .iter(app.world())
+        .find(|(_, _, children)| {
+            children.iter().any(|child| {
+                app.world()
+                    .get::<Text>(child)
+                    .is_some_and(|text| text.0 == caption)
+            })
+        })
+        .map(|(entity, _, _)| entity)
+        .ok_or_else(|| format!("control missing: {caption}"))?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
     Ok(())
 }

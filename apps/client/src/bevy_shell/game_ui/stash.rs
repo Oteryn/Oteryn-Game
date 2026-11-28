@@ -1,6 +1,6 @@
 //! Supply stash over the retained panel and its existing command owner.
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;
 mod widgets;
 use super::{
     super::{owner::HostOwner, ui::Skins},
@@ -8,7 +8,12 @@ use super::{
     modal::ModalGuard,
 };
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
-use oteryn_client_ui::stash::{Intent, StashPanel, visible_rows, visible_withdraw};
+use oteryn_client_ui::stash::{
+    Batch, BatchKind, Intent, StashPanel,
+    container_batch::Request,
+    stash::{StashAction, StashRowAction, StashRowIntent},
+    visible_rows, visible_withdraw,
+};
 use oteryn_client_ui_bevy as source;
 #[derive(Component)]
 struct Quantity;
@@ -33,6 +38,12 @@ enum Kind {
     Refresh,
     Row(usize),
     Stow(usize),
+    StowQuantity(usize),
+    StowMatching(usize),
+    StowContents(usize),
+    Preview(usize),
+    ConfirmPreview,
+    RowAction(usize, StashRowAction),
     Confirm,
     Cancel,
 }
@@ -46,6 +57,7 @@ struct Amount {
     row: usize,
     value: u32,
     max: u32,
+    stow: bool,
 }
 #[derive(Resource, Default)]
 struct State {
@@ -57,6 +69,8 @@ struct State {
     dirty: bool,
     filter: Option<Entity>,
     confirm: Option<Entity>,
+    carried_containers: Vec<bool>,
+    row_actions: [bool; 3],
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -82,6 +96,15 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
     let Some(play) = &owner.play else {
         return;
     };
+    let Some(panel) = &state.panel else {
+        return;
+    };
+    if matches!(panel.container_batch, Batch::Quote { .. })
+        && !matches!(kind, Kind::ConfirmPreview | Kind::Cancel | Kind::Close)
+    {
+        return;
+    }
+    let stackable = |appearance| play.view.scene().stackable_flag(appearance);
     match kind {
         Kind::ManageContainers if state.amount.is_none() => {
             if !play.link.quick_loot_panel().selected {
@@ -94,46 +117,99 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
             play.link.stash_close();
             state.amount = None;
         }
-        Kind::Row(row) => {
+        Kind::Row(row) | Kind::StowQuantity(row) => {
             if state.amount.is_some() {
                 return;
             }
-            let Some(panel) = &state.panel else {
-                return;
-            };
             if panel.pending || !panel.selected {
                 return;
             }
-            if let Some(index) = visible_rows(panel).get(row)
-                && let Some(item) = panel.rows.get(*index).filter(|item| item.quantity > 0)
-            {
+            let stow = matches!(kind, Kind::StowQuantity(_));
+            let max = if stow {
+                panel
+                    .carried
+                    .get(row)
+                    .filter(|_| panel.actions_selected)
+                    .map(|item| item.count.get())
+            } else {
+                visible_rows(panel)
+                    .get(row)
+                    .map(|index| panel.rows[*index].quantity)
+            };
+            if let Some(max) = max.filter(|max| *max > 0) {
                 state.amount = Some(Amount {
                     row,
                     value: 1,
-                    max: item.quantity,
+                    max,
+                    stow,
                 });
                 state.dirty = true;
             }
         }
         Kind::Cancel => {
+            play.link.stash_cancel_preview();
             state.amount = None;
             state.confirm = None;
             state.dirty = true;
         }
         Kind::Confirm => {
-            if let Some(amount) = state.amount.take()
-                && let Some(panel) = &state.panel
-                && let Some(intent) = visible_withdraw(panel, amount.row, amount.value)
-            {
-                play.link.stash_request_bound(panel, intent);
+            if let Some(amount) = state.amount.take() {
+                if amount.stow {
+                    if let Some(item) = panel.carried.get(amount.row) {
+                        play.link.stash_stow_action(
+                            panel,
+                            StashAction::StowQuantity {
+                                handle: item.handle,
+                                amount: amount.value,
+                            },
+                            stackable,
+                        );
+                    }
+                } else if let Some(intent) = visible_withdraw(panel, amount.row, amount.value) {
+                    play.link.stash_request_bound(panel, intent);
+                }
                 state.dirty = true;
             }
         }
         Kind::Stow(row) if state.amount.is_none() => {
-            if let Some(panel) = &state.panel {
-                play.link.stash_stow_selected(panel, row, |appearance| {
-                    play.view.scene().stackable_flag(appearance)
-                });
+            play.link.stash_stow_selected(panel, row, stackable);
+        }
+        Kind::StowMatching(row) | Kind::StowContents(row) if state.amount.is_none() => {
+            if let Some(item) = panel.carried.get(row) {
+                let action = if matches!(kind, Kind::StowMatching(_)) {
+                    StashAction::StowMatching(item.handle)
+                } else {
+                    StashAction::StowContents(item.handle)
+                };
+                play.link.stash_stow_action(panel, action, stackable);
+            }
+        }
+        Kind::Preview(row) if state.amount.is_none() => {
+            if let Some(item) = panel.carried.get(row) {
+                play.link.stash_batch_action(
+                    panel,
+                    Request::Preview {
+                        source: item.handle,
+                        recursive: true,
+                    },
+                );
+            }
+        }
+        Kind::ConfirmPreview => {
+            if let Batch::Quote { id, .. } = panel.container_batch {
+                play.link
+                    .stash_batch_action(panel, Request::Confirm { preview: id });
+            }
+        }
+        Kind::RowAction(row, action) if state.amount.is_none() => {
+            if let Some(index) = visible_rows(panel).get(row) {
+                play.link.stash_row_action(
+                    panel,
+                    StashRowIntent {
+                        row: panel.rows[*index].handle,
+                        action,
+                    },
+                );
             }
         }
         Kind::Reverse if state.amount.is_none() => play.link.stash_reverse(),
@@ -265,6 +341,18 @@ fn keyboard(
                     }
                 }
             }
+        } else if state
+            .panel
+            .as_ref()
+            .is_some_and(|panel| matches!(panel.container_batch, Batch::Quote { .. }))
+        {
+            match event.key_code {
+                KeyCode::Enter if !event.repeat => {
+                    perform(&owner, &mut state, Kind::ConfirmPreview)
+                }
+                KeyCode::Escape if !event.repeat => perform(&owner, &mut state, Kind::Cancel),
+                _ => continue,
+            }
         } else if event.key_code == KeyCode::Escape && !event.repeat {
             perform(&owner, &mut state, Kind::Close);
         }
@@ -297,7 +385,35 @@ fn project(
         .as_ref()
         .map(|play| play.link.stash_panel())
         .filter(|panel| panel.open);
-    let changed = state.generation != owner.generation() || panel != state.panel;
+    let (carried_containers, row_actions) = if let (Some(panel), Some(play)) = (&panel, &owner.play)
+    {
+        let views = play.link.container_panel().views;
+        (
+            panel
+                .carried
+                .iter()
+                .map(|item| {
+                    play.view.scene().container_flag(item.appearance_id) == Some(true)
+                        || views.as_ref().is_some_and(|views| {
+                            views.views.iter().any(|view| {
+                                view.browse.is_none() && view.container_handle == item.handle
+                            })
+                        })
+                })
+                .collect::<Vec<_>>(),
+            [
+                play.link.inspection_panel().selected,
+                play.link.market_panel().selected,
+                play.link.quick_loot_panel().selected,
+            ],
+        )
+    } else {
+        (Vec::new(), [false; 3])
+    };
+    let changed = state.generation != owner.generation()
+        || panel != state.panel
+        || carried_containers != state.carried_containers
+        || row_actions != state.row_actions;
     if !changed && !state.dirty {
         return;
     }
@@ -315,6 +431,8 @@ fn project(
     state.generation = owner.generation();
     state.revision = state.revision.wrapping_add(1);
     state.panel = panel;
+    state.carried_containers = carried_containers;
+    state.row_actions = row_actions;
     state.dirty = false;
     if let Some(panel) = &state.panel {
         state.root = Some(widgets::build(

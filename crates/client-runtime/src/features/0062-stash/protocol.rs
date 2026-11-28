@@ -1,4 +1,5 @@
 //! Stash commands sent through the admitted session.
+pub use oteryn_session::item_movement::container_batch;
 pub use oteryn_session::{CommandStatus, ItemHandle, stash};
 use oteryn_session::{Session, SessionError, SessionStream};
 
@@ -39,6 +40,13 @@ pub async fn send<S: SessionStream>(
     if StashCommand::filtered(command.intent, command.filter.clone()).as_ref() != Some(command) {
         return Err(SessionError::CapabilityNotSelected {
             capability: stash::CAPABILITY_STASH_V1,
+        });
+    }
+    if command.intent.action.needs_stash_actions()
+        && !session.is_selected(stash::CAPABILITY_STASH_ACTIONS_V1)
+    {
+        return Err(SessionError::CapabilityNotSelected {
+            capability: stash::CAPABILITY_STASH_ACTIONS_V1,
         });
     }
     let result = session

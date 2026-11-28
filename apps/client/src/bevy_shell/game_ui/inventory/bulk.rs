@@ -1,6 +1,7 @@
 //! Transient destination selection over the retained, ordered container-transfer owner.
 use super::*;
 use bevy::{input_focus::tab_navigation::TabGroup, ui_widgets::ScrollArea};
+use oteryn_client_ui::stash::{Batch, BatchKind, container_batch::Request};
 use oteryn_client_ui_bevy as source;
 use oteryn_session::container_tree::ContainerView;
 #[derive(Resource, Default)]
@@ -14,6 +15,7 @@ struct Selection {
     source: ContainerView,
     destinations: Vec<ContainerView>,
     move_nested: bool,
+    managed: bool,
 }
 #[derive(Component)]
 struct Open {
@@ -23,7 +25,14 @@ struct Open {
 #[derive(Component)]
 struct Choice {
     id: u64,
-    destination: Option<usize>,
+    action: Action,
+}
+#[derive(Clone, Copy)]
+enum Action {
+    Destination(usize),
+    Preview,
+    Confirm(std::num::NonZeroU64),
+    Close,
 }
 #[derive(Component)]
 struct Root;
@@ -127,12 +136,13 @@ fn open(
                 })
         })
         .collect::<Vec<_>>();
-    if destinations.is_empty() {
+    if destinations.is_empty() && !play.link.stash_panel().managed_selected {
         return;
     }
     let Some(id) = picker.next.checked_add(1) else {
         return;
     };
+    play.link.cancel_managed_move();
     picker.next = id;
     picker.pending = Some(Selection {
         id,
@@ -140,6 +150,7 @@ fn open(
         source: button.source.clone(),
         destinations,
         move_nested,
+        managed: false,
     });
 }
 fn choose(
@@ -160,32 +171,63 @@ fn choose(
     }) {
         return;
     }
-    let Some(selection) = picker.pending.take() else {
+    let (Some(selection), Some(play)) = (&mut picker.pending, &owner.play) else {
         return;
     };
-    if let Some(destination) = choice
-        .destination
-        .and_then(|index| selection.destinations.get(index))
-        && let Some(play) = &owner.play
-    {
-        if selection.move_nested {
-            play.link
-                .container_move_all_bound(&selection.source, destination);
-        } else {
-            play.link
-                .container_move_filtered_bound(&selection.source, destination, |item| {
-                    play.view.scene().container_flag(item.appearance_id) == Some(false)
-                });
+    match choice.action {
+        Action::Preview => {
+            if selection.managed {
+                return;
+            }
+            selection.managed = play.link.managed_move_action(
+                &selection.source,
+                Request::Preview {
+                    source: selection.source.container_handle,
+                    recursive: selection.move_nested,
+                },
+            );
+        }
+        Action::Confirm(preview) => {
+            if selection.managed {
+                play.link
+                    .managed_move_action(&selection.source, Request::Confirm { preview });
+            }
+        }
+        Action::Destination(index) => {
+            if selection.managed {
+                return;
+            }
+            if let Some(destination) = selection.destinations.get(index) {
+                if selection.move_nested {
+                    play.link
+                        .container_move_all_bound(&selection.source, destination);
+                } else {
+                    play.link.container_move_filtered_bound(
+                        &selection.source,
+                        destination,
+                        |item| play.view.scene().container_flag(item.appearance_id) == Some(false),
+                    );
+                }
+            }
+            picker.pending = None;
+        }
+        Action::Close => {
+            play.link.cancel_managed_move();
+            picker.pending = None;
         }
     }
 }
 fn escape(
     keys: Res<ButtonInput<KeyCode>>,
+    owner: NonSend<HostOwner>,
     roots: Query<Entity, With<Root>>,
     guard: ModalGuard,
     mut picker: ResMut<Picker>,
 ) {
     if keys.just_pressed(KeyCode::Escape) && roots.iter().any(|entity| guard.allows(entity)) {
+        if let Some(play) = &owner.play {
+            play.link.cancel_managed_move();
+        }
         picker.pending = None;
     }
 }
@@ -195,7 +237,7 @@ fn project(
     skins: Res<Skins>,
     mut picker: ResMut<Picker>,
     roots: Query<Entity, With<Root>>,
-    mut previous: Local<Option<u64>>,
+    mut previous: Local<Option<(u64, Option<Batch>)>>,
 ) {
     if picker
         .pending
@@ -204,11 +246,24 @@ fn project(
     {
         picker.pending = None;
     }
-    let id = picker.pending.as_ref().map(|selection| selection.id);
+    let stash = owner
+        .play
+        .as_ref()
+        .filter(|_| picker.pending.is_some())
+        .map(|play| play.link.stash_panel());
+    let id = picker.pending.as_ref().map(|selection| {
+        (
+            selection.id,
+            stash
+                .as_ref()
+                .filter(|_| selection.managed)
+                .map(|panel| panel.managed_batch.clone()),
+        )
+    });
     if *previous == id {
         return;
     }
-    *previous = id;
+    previous.clone_from(&id);
     for root in &roots {
         commands.entity(root).despawn();
     }
@@ -252,45 +307,91 @@ fn project(
         ))
         .id();
     commands.entity(overlay).add_child(panel);
-    source::dialog_caption(&mut commands, panel, "Move contents to", skins.font.clone());
-    for (index, destination) in selection.destinations.iter().enumerate() {
-        // Same truthful fallback as the existing open-container panels.
-        let caption = format!(
-            "Backpack ({}/{})",
-            destination.entries.len(),
-            destination.capacity
-        );
-        button(
-            &mut commands,
-            &skins,
-            panel,
-            selection.id,
-            Some(index),
-            &caption,
-        );
+    let title = match (selection.managed, selection.move_nested) {
+        (true, true) => "Move contents and nested items",
+        (true, false) => "Move contents",
+        (false, _) => "Move contents to",
+    };
+    source::dialog_caption(&mut commands, panel, title, skins.font.clone());
+    if let Some(batch) = id.and_then(|(_, batch)| batch) {
+        if let Some(description) = batch.description(BatchKind::ManagedMove) {
+            let label = commands
+                .spawn(source::text(
+                    description,
+                    source::font(skins.font.clone(), false),
+                ))
+                .id();
+            commands.entity(panel).add_child(label);
+        }
+        if let Batch::Quote { id, .. } = batch {
+            button(
+                &mut commands,
+                &skins,
+                panel,
+                selection.id,
+                Action::Confirm(id),
+                "Move stacks",
+            );
+        }
+    } else {
+        if stash.as_ref().is_some_and(|panel| panel.managed_selected) {
+            button(
+                &mut commands,
+                &skins,
+                panel,
+                selection.id,
+                Action::Preview,
+                "Preview managed move",
+            );
+        }
+        for (index, destination) in selection.destinations.iter().enumerate() {
+            // Same truthful fallback as the existing open-container panels.
+            let caption = format!(
+                "Backpack ({}/{})",
+                destination.entries.len(),
+                destination.capacity
+            );
+            button(
+                &mut commands,
+                &skins,
+                panel,
+                selection.id,
+                Action::Destination(index),
+                &caption,
+            );
+        }
     }
-    button(&mut commands, &skins, panel, selection.id, None, "Cancel");
+    button(
+        &mut commands,
+        &skins,
+        panel,
+        selection.id,
+        Action::Close,
+        "Close",
+    );
 }
 fn button(
     commands: &mut Commands,
     skins: &Skins,
     parent: Entity,
     id: u64,
-    destination: Option<usize>,
+    action: Action,
     caption: &str,
 ) {
     let button = commands
         .spawn((
             source::button(skins.buttons.clone(), 240.),
-            Choice { id, destination },
+            Choice { id, action },
         ))
         .observe(choose)
         .id();
-    if destination.is_some() {
-        commands
-            .entity(button)
-            .insert(Name::new("inventory.bulk.destination"));
-    }
+    let name = match action {
+        Action::Destination(_) => "inventory.bulk.destination",
+        Action::Preview => "inventory.bulk.managed",
+        Action::Confirm(_) => "inventory.bulk.confirm",
+        Action::Close => "inventory.bulk.close",
+    };
+    commands.entity(button).insert(Name::new(name));
     let caption = commands
         .spawn(source::button_caption(caption, skins.font.clone()))
         .id();

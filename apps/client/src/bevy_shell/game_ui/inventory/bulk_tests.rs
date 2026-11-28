@@ -4,6 +4,8 @@ use crate::{
     play::{PlayLink, play_channel},
 };
 use oteryn_session::container_tree::{ContainerView, ContainerViews};
+mod managed_move;
+
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 type Fixture = (
     App,
@@ -33,7 +35,6 @@ fn views() -> std::result::Result<ContainerViews, Box<dyn std::error::Error>> {
     })
 }
 fn app() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
-    use bevy::asset::AssetPlugin;
     let (link, commands, outbox) = play_channel();
     PlayLink::bevy_items_fixture(
         &outbox,
@@ -42,6 +43,10 @@ fn app() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
         true,
         true,
     );
+    Ok((bulk_app(link)?, commands, outbox))
+}
+fn bulk_app(link: PlayLink) -> std::result::Result<App, Box<dyn std::error::Error>> {
+    use bevy::asset::AssetPlugin;
     let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
@@ -68,7 +73,7 @@ fn app() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
-    Ok((app, commands, outbox))
+    Ok(app)
 }
 fn click(app: &mut App, name: &str) -> Result {
     let entity = app

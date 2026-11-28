@@ -8,6 +8,7 @@ pub enum Intent {
     Previous,
     Next,
     Stow(ItemHandle),
+    StowAction(stash::StashAction),
     Withdraw { row: usize, amount: u32 },
 }
 
@@ -20,7 +21,15 @@ pub fn request_stow(
     handle: ItemHandle,
     stackable: impl FnOnce(u16) -> Option<bool>,
 ) -> Option<StashCommand> {
-    request_with_stackability(panel, Intent::Stow(handle), stackable)
+    request_stow_action(panel, stash::StashAction::Stow(handle), stackable)
+}
+
+pub fn request_stow_action(
+    panel: &mut StashPanel,
+    action: stash::StashAction,
+    stackable: impl FnOnce(u16) -> Option<bool>,
+) -> Option<StashCommand> {
+    request_with_stackability(panel, Intent::StowAction(action), stackable)
 }
 
 fn request_with_stackability(
@@ -31,25 +40,38 @@ fn request_with_stackability(
     if !panel.selected || panel.pending {
         return None;
     }
+    let intent = match intent {
+        Intent::Stow(handle) => Intent::StowAction(stash::StashAction::Stow(handle)),
+        intent => intent,
+    };
     let (page, action) = match intent {
         Intent::Filter => (0, stash::StashAction::Browse),
         Intent::Refresh => (panel.page, stash::StashAction::Browse),
         Intent::Previous if panel.page > 0 => (panel.page - 1, stash::StashAction::Browse),
         Intent::Next if panel.has_more => (panel.page + 1, stash::StashAction::Browse),
-        Intent::Stow(handle) => {
+        Intent::StowAction(action) => {
+            if action.needs_stash_actions() && !panel.actions_selected {
+                return None;
+            }
+            let handle = action.stow_handle()?;
             let Some(item) = panel.carried.iter().find(|item| item.handle == handle) else {
                 panel.feedback = Some(tr!("The item changed; select a carried item again").into());
                 return None;
             };
             // Without appearance facts, only a visible multi-unit stack proves eligibility.
             let eligible = stackable(item.appearance_id).unwrap_or_else(|| item.count.get() > 1);
-            if !eligible {
+            if let stash::StashAction::StowQuantity { amount, .. } = action
+                && !(1..=item.count.get()).contains(&amount)
+            {
+                return None;
+            }
+            if !eligible && !matches!(action, stash::StashAction::StowContents(_)) {
                 panel.outcome = Some(stash::StashOutcome::Unsupported);
                 panel.feedback =
                     Some("Only stackable items can be stowed in the Supply Stash.".into());
                 return None;
             }
-            (panel.page, stash::StashAction::Stow(handle))
+            (panel.page, action)
         }
         Intent::Withdraw { row, amount } => {
             let row = panel.rows.get(row)?.handle;

@@ -2,17 +2,17 @@
   "mechanic": "0602-managed-container-move",
   "kind": "handlers",
   "id": "0602-managed-container-move-confirm",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
     6365
   ],
   "direction": "client_to_server",
-  "reason": "The native preview and confirmation UI is delivered by the client lane.",
   "not_applicable": {
     "state": "The server owns the previewed item set and receipt.",
-    "protocol": "The client does not yet offer capability 602.",
-    "view": "The client has no preview panel for this command.",
-    "input": "The client has no confirmation action for this command.",
-    "settings": "This operation has no client setting."
-  }
+    "settings": "This operation has no client setting.",
+    "view": "The native control uses the existing Bevy window.",
+    "input": "The native window binds input to the displayed server projection."
+  },
+  "capability": 602,
+  "entry": "protocol.rs::managed_move"
 }

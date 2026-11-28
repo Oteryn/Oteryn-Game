@@ -1,5 +1,6 @@
 use crate::play::{Outbox, PlayLink, mailbox::lock};
-use oteryn_session::{CharacterInventory, SessionEvent};
+use oteryn_client_ui::stash::{Batch, container_batch::Request};
+use oteryn_session::{CharacterInventory, SessionEvent, container_tree::ContainerView};
 
 impl Outbox {
     pub(in crate::play) fn inventory_initialize(
@@ -17,7 +18,6 @@ impl Outbox {
         lock(&self.0).container_manual_sort =
             oteryn_client_ui::container_manual_sort::admitted(selected);
     }
-
 
     pub(in crate::play) fn inventory_end(&self) {
         self.equipment_initialize(false);
@@ -38,6 +38,41 @@ impl PlayLink {
     #[must_use]
     pub fn inventory_panel(&self) -> oteryn_client_ui::inventory::InventoryPanel {
         lock(&self.mailbox).inventory.clone()
+    }
+    pub fn managed_move_action(&self, source: &ContainerView, request: Request) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.stash.managed_selected
+            || mailbox.item_movement.pending
+            || mailbox.containers.pending
+            || mailbox.containers.bulk.pending
+            || matches!(request, Request::Preview { source: handle, .. }
+                if handle != source.container_handle || source.browse.is_some()
+                    || mailbox.containers.views.as_ref().is_none_or(|views| !views.views.contains(source)))
+        {
+            return false;
+        }
+        let batch = &mut mailbox.stash.managed_batch;
+        let Some(command) = oteryn_client_ui::stash::managed_move(batch, request) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(crate::combat_input::PlayCommand::Feature(command))
+            .is_err()
+        {
+            *batch = Batch::Unavailable;
+            return false;
+        }
+        true
+    }
+
+    pub fn cancel_managed_move(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let batch = &mut mailbox.stash.managed_batch;
+        // Keep the in-flight slot until its reply. A new preview must not inherit that reply.
+        if *batch != Batch::Waiting {
+            *batch = Batch::Idle;
+        }
     }
 }
 
@@ -66,6 +101,17 @@ macro_rules! dispatch {
     ($command:expr, $session:ident, $outbox:ident, $held:ident, $publish:ident; $($arms:tt)*) => {
         super::feature_0011_world_interaction::protocol::dispatch! {
             $command, $session, $outbox, $held, $publish;
+            Ok(crate::combat_input::PlayCommand::Feature(command))
+                if matches!(command.capability, 591 | 601 | 602) =>
+            {
+                match $outbox.stash_extension(&mut $session, &command).await {
+                    Ok(()) => {
+                        $publish(&mut $session, &$outbox, &mut $held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(crate::combat_input::PlayCommand::MoveContainerContents(requests)) => {
                 $outbox.target_walk_replaced();
                 let result = async {
@@ -111,7 +157,6 @@ impl Outbox {
         ));
     }
 }
-
 
 impl crate::play::mailbox::Mailbox {
     pub(in crate::play) fn inventory_events(&mut self, events: &[SessionEvent]) {

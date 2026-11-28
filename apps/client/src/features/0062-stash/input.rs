@@ -3,7 +3,9 @@ use crate::play::{
     PlayLink,
     mailbox::{Mailbox, lock},
 };
-use oteryn_client_ui::stash::{Intent, request};
+use oteryn_client_ui::stash::{
+    self as ui, Batch, BatchKind, Intent, container_batch::Request, request, stash,
+};
 use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
@@ -45,7 +47,11 @@ impl PlayLink {
             *stock_order = mailbox.stash.sort == Sort::Stock;
             Some(mailbox.stash.sort_edit)
         } else {
-            mailbox.stash.sort = if *stock_order { Sort::Stock } else { Sort::Name };
+            mailbox.stash.sort = if *stock_order {
+                Sort::Stock
+            } else {
+                Sort::Name
+            };
             mailbox.stash.sort_edit = edit;
             None
         }
@@ -57,18 +63,75 @@ impl PlayLink {
         row: usize,
         stackable: impl FnOnce(u16) -> Option<bool>,
     ) {
+        if let Some(item) = expected.carried.get(row) {
+            self.stash_stow_action(expected, stash::StashAction::Stow(item.handle), stackable);
+        }
+    }
+
+    pub fn stash_stow_action(
+        &self,
+        expected: &ui::StashPanel,
+        action: stash::StashAction,
+        stackable: impl FnOnce(u16) -> Option<bool>,
+    ) {
         let mut mailbox = lock(&self.mailbox);
         if &mailbox.stash != expected || !mailbox.stash.open {
             return;
         }
-        if let Some(Intent::Stow(handle)) =
-            oteryn_client_ui::stash::carried_intent(&mailbox.stash, &expected.carried, row)
-            && let Some(command) =
-                oteryn_client_ui::stash::request_stow(&mut mailbox.stash, handle, stackable)
+        if let Some(command) = ui::request_stow_action(&mut mailbox.stash, action, stackable)
             && self.commands.send(PlayCommand::Stash(command)).is_err()
         {
             mailbox.stash.pending = false;
             mailbox.stash.feedback = Some(tr!("The session has ended").into());
+        }
+    }
+
+    pub fn stash_row_action(&self, expected: &ui::StashPanel, intent: stash::StashRowIntent) {
+        let mut mailbox = lock(&self.mailbox);
+        if &mailbox.stash != expected
+            || match intent.action {
+                stash::StashRowAction::Inspect => !mailbox.discovery.inspection.selected,
+                stash::StashRowAction::Market => !mailbox.market.selected,
+                _ => !mailbox.discovery.loot.selected,
+            }
+        {
+            return;
+        }
+        if let Some(command) = ui::row_action(&mut mailbox.stash, intent)
+            && self.commands.send(PlayCommand::Feature(command)).is_err()
+        {
+            mailbox.stash.pending = false;
+            mailbox.stash.feedback = Some(tr!("The session has ended").into());
+        }
+    }
+
+    pub fn stash_batch_action(&self, expected: &ui::StashPanel, request: Request) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.stash;
+        if panel != expected
+            || !panel.open
+            || !panel.container_selected
+            || panel.pending
+            || matches!(request, Request::Preview { source, .. }
+                if !panel.carried.iter().any(|item| item.handle == source))
+        {
+            return;
+        }
+        if let Some(command) =
+            ui::batch_request(&mut panel.container_batch, BatchKind::Stash, request)
+        {
+            panel.pending = self.commands.send(PlayCommand::Feature(command)).is_ok();
+            if !panel.pending {
+                panel.container_batch = Batch::Idle;
+                panel.feedback = Some(tr!("The session has ended").into());
+            }
+        }
+    }
+
+    pub fn stash_cancel_preview(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if matches!(mailbox.stash.container_batch, Batch::Quote { .. }) {
+            mailbox.stash.container_batch = Batch::Idle;
         }
     }
 
@@ -101,7 +164,9 @@ impl PlayLink {
     }
     /// Close presentation without issuing a new gameplay request.
     pub fn stash_close(&self) {
-        lock(&self.mailbox).stash.open = false;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.stash.open = false;
+        mailbox.stash.container_batch = Batch::Idle;
     }
 
     /// Consent applies only to the exact panel that supplied the visible row.

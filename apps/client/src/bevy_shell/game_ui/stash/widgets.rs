@@ -54,7 +54,16 @@ pub(super) fn build(
     commands.entity(overlay).add_child(root);
     source::dialog_caption(commands, root, "Supply Stash — Ctrl+S", skins.font.clone());
     if let Some(amount) = &state.amount {
-        if let Some(index) = visible_rows(panel).get(amount.row) {
+        if amount.stow {
+            if let Some(item) = panel.carried.get(amount.row) {
+                label(
+                    commands,
+                    skins,
+                    root,
+                    format!("Stow item {}", item.item_definition_ref),
+                );
+            }
+        } else if let Some(index) = visible_rows(panel).get(amount.row) {
             label(
                 commands,
                 skins,
@@ -98,8 +107,34 @@ pub(super) fn build(
             root,
             state,
             Kind::Confirm,
-            "Withdraw (Enter)",
+            if amount.stow {
+                "Stow (Enter)"
+            } else {
+                "Withdraw (Enter)"
+            },
             true,
+        );
+        button(
+            commands,
+            skins,
+            root,
+            state,
+            Kind::Cancel,
+            "Cancel (Esc)",
+            true,
+        );
+    } else if matches!(panel.container_batch, Batch::Quote { .. }) {
+        if let Some(description) = panel.container_batch.description(BatchKind::Stash) {
+            label(commands, skins, root, description);
+        }
+        button(
+            commands,
+            skins,
+            root,
+            state,
+            Kind::ConfirmPreview,
+            "Stow contents (Enter)",
+            !panel.pending,
         );
         button(
             commands,
@@ -150,6 +185,23 @@ pub(super) fn build(
         );
         let carried = line(commands, root);
         for (row, item) in panel.carried.iter().enumerate() {
+            if state.carried_containers.get(row) == Some(&true)
+                && (panel.container_selected || panel.actions_selected)
+            {
+                label(
+                    commands,
+                    skins,
+                    carried,
+                    format!("Container {}", item.item_definition_ref),
+                );
+                let (kind, caption) = if panel.container_selected {
+                    (Kind::Preview(row), "Preview stash contents")
+                } else {
+                    (Kind::StowContents(row), "Stow contents")
+                };
+                button(commands, skins, carried, state, kind, caption, enabled);
+                continue;
+            }
             button(
                 commands,
                 skins,
@@ -159,6 +211,28 @@ pub(super) fn build(
                 &format!("Stow item {} × {}", item.item_definition_ref, item.count),
                 enabled,
             );
+            if panel.actions_selected {
+                if item.count.get() > 1 {
+                    button(
+                        commands,
+                        skins,
+                        carried,
+                        state,
+                        Kind::StowQuantity(row),
+                        "Stow amount…",
+                        enabled,
+                    );
+                }
+                button(
+                    commands,
+                    skins,
+                    carried,
+                    state,
+                    Kind::StowMatching(row),
+                    "Stow all of this type",
+                    enabled,
+                );
+            }
         }
         let filters = line(commands, root);
         for (kind, caption) in [
@@ -210,6 +284,35 @@ pub(super) fn build(
                 enabled && row.quantity > 0,
             );
             commands.entity(entity).insert(Row);
+            if panel.actions_selected && row.quantity > 0 {
+                let actions = line(commands, list);
+                for (action, caption, selected) in [
+                    (StashRowAction::Inspect, "Inspect", state.row_actions[0]),
+                    (StashRowAction::Market, "Market", state.row_actions[1]),
+                    (
+                        StashRowAction::LootAdd,
+                        "Add to loot list",
+                        state.row_actions[2],
+                    ),
+                    (
+                        StashRowAction::LootRemove,
+                        "Remove from loot list",
+                        state.row_actions[2],
+                    ),
+                ] {
+                    if selected {
+                        button(
+                            commands,
+                            skins,
+                            actions,
+                            state,
+                            Kind::RowAction(visible, action),
+                            caption,
+                            enabled,
+                        );
+                    }
+                }
+            }
         }
         label(
             commands,
@@ -237,6 +340,11 @@ pub(super) fn build(
     }
     if panel.pending {
         label(commands, skins, root, "Waiting for the server…");
+    }
+    if !matches!(panel.container_batch, Batch::Quote { .. } | Batch::Waiting)
+        && let Some(description) = panel.container_batch.description(BatchKind::Stash)
+    {
+        label(commands, skins, root, description);
     }
     if let Some(feedback) = &panel.feedback {
         label(commands, skins, root, feedback);

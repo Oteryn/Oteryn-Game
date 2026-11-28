@@ -200,6 +200,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
     // Party join and leave notices on domain 57 (576, requires 42 and 92).
     party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
+    stash::CAPABILITY_STASH_ACTIONS_V1,
+    oteryn_protocol_oteryn::container_batch::CAPABILITY_STASH_CONTAINER_V1,
+    oteryn_protocol_oteryn::container_batch::CAPABILITY_MANAGED_CONTAINER_MOVE_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_CROSS_TOWN_DEPOT_V1,
 ];
@@ -327,6 +330,9 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_SOCIAL_CHANNEL_V1,
+    stash::CAPABILITY_STASH_ACTIONS_V1,
+    oteryn_protocol_oteryn::container_batch::CAPABILITY_STASH_CONTAINER_V1,
+    oteryn_protocol_oteryn::container_batch::CAPABILITY_MANAGED_CONTAINER_MOVE_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

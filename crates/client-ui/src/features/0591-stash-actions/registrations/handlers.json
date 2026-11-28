@@ -2,17 +2,17 @@
   "mechanic": "0591-stash-actions",
   "kind": "handlers",
   "id": "0591-stash-actions-wire",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
     6345
   ],
   "direction": "client_to_server",
-  "reason": "Stash row actions and expanded stow intents await client wiring.",
   "not_applicable": {
     "state": "The server owns the command outcome and any durable consequences.",
-    "protocol": "Stash row actions and expanded stow intents await client wiring.",
-    "view": "The client lane owns presentation of this capability.",
-    "input": "The client lane owns input handling for this capability.",
-    "settings": "This capability introduces no client setting."
-  }
+    "settings": "This capability introduces no client setting.",
+    "view": "The native control uses the existing Bevy window.",
+    "input": "The native window binds input to the displayed server projection."
+  },
+  "capability": 591,
+  "entry": "protocol.rs::row_action"
 }
