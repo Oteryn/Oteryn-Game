@@ -35,6 +35,14 @@ fn grizzly_npc_wire_task_xp_crosses_level_50_and_unlocks_live_promotion() -> Tes
 }
 
 #[test]
+fn grizzly_npc_wire_level_up_then_step_rereads_capacity_next_tick() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("grizzly-step-capacity", || scenario(8))
+}
+
+#[test]
 fn cach1_grizzly_npc_wire_awards_confirmed_huntsman_and_elite_hunter() -> TestResult {
     postgres_case(7)
 }

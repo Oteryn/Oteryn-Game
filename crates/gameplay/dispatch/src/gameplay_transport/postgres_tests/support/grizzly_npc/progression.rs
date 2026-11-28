@@ -148,3 +148,41 @@ pub(super) async fn live_level(
     assert_eq!(receipts, (1, 1));
     Ok(())
 }
+
+pub(super) async fn step_capacity(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::connection::regression_grizzly_step_capacity;
+
+    wire::talk(
+        owner,
+        admitted,
+        npc,
+        &[(3, "hi"), (4, "crocodiles"), (5, "yes")],
+    )
+    .await?;
+    seed(
+        h,
+        &[
+            (quest::POINTS_STORAGE, 40),
+            (quest::PROMOTION_STORAGE, 2),
+            (quest::KILL_COUNTER_BASE + 1, 300),
+        ],
+    )
+    .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(std::time::Duration::from_secs(2))
+        .ok_or("NPC clock")?;
+    tokio::time::timeout(
+        std::time::Duration::from_secs(15),
+        regression_grizzly_step_capacity(owner, *admitted, npc),
+    )
+    .await?
+}

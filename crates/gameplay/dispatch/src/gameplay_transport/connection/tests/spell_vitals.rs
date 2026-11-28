@@ -272,6 +272,7 @@ struct FieldVitalsAuthority {
     runtime: RefCell<crate::gameplay_transport::ChannelRuntimeV1>,
     states: RefCell<crate::gameplay_transport::actor_spell::ChannelSpellStates>,
     room: crate::content::QualifiedNativeEntryRoom,
+    chased: Cell<bool>,
 }
 
 impl FreshAdmissionAuthority for FieldVitalsAuthority {
@@ -297,6 +298,43 @@ impl FreshAdmissionAuthority for FieldVitalsAuthority {
             actor,
             session,
         )
+    }
+
+    async fn observe_combat_state(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<ActorCombatState> {
+        Some(ActorCombatState {
+            target: None,
+            modes: FightModes::DEFAULT,
+            in_fight: false,
+        })
+    }
+
+    async fn tick_combat(&self, _: ExactActorRef, _: GameSessionId) -> Option<ActorCombatState> {
+        Some(ActorCombatState {
+            target: Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: [0x77; 16],
+                generation: 1,
+            }),
+            modes: FightModes {
+                chase: ChaseMode::Chase,
+                ..FightModes::DEFAULT
+            },
+            in_fight: true,
+        })
+    }
+
+    async fn chase_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(StepOutcome, Option<std::time::Duration>)> {
+        if self.chased.replace(true) {
+            return None;
+        }
+        Some(self.paced_step(actor, session, StepDirection::East).await)
     }
 
     async fn paced_step(
@@ -352,6 +390,7 @@ fn field_step_dispatch_publishes_committed_vitals_before_cadence() -> Result<(),
                     runtime: RefCell::new(runtime),
                     states: RefCell::new(states),
                     room,
+                    chased: Cell::new(false),
                 };
                 let mut admitted = positioned()?;
                 admitted.game_session_id = session;
@@ -405,5 +444,97 @@ fn field_step_dispatch_publishes_committed_vitals_before_cadence() -> Result<(),
         })?
         .join()
         .map_err(|_| "field STEP dispatch thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn chase_field_step_publishes_committed_health_and_mana() -> Result<(), Box<dyn Error>> {
+    use crate::gameplay_transport::actor_spell::actor_movement::creature_field_step_tests;
+    use oteryn_protocol_oteryn::{actor_spell::decode_actor_vitals, decode_state_delta};
+    use std::time::Duration;
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                tokio::time::pause();
+                let (runtime, mut states, room, actor, session) =
+                    creature_field_step_tests::ready();
+                let victim = states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("field victim")?;
+                victim.restore_saved_vitals(victim.vitals().health, 2);
+                victim.install_equipped_mana_shield(true);
+                let authority = FieldVitalsAuthority {
+                    runtime: RefCell::new(runtime),
+                    states: RefCell::new(states),
+                    room,
+                    chased: Cell::new(false),
+                };
+                let mut admitted = positioned()?;
+                admitted.runtime_actor = Some(actor);
+                admitted.game_session_id = session;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[6, 17],
+                )
+                .ok_or("chase capabilities")?;
+                let (revision, before) = authority
+                    .observe_vitals(actor, session)
+                    .await
+                    .ok_or("initial vitals")?;
+                let (mut server, client) = tokio::io::duplex(1 << 16);
+                let serving = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS);
+                let driving = async {
+                    let mut client = client;
+                    // Let the first combat tick schedule the real chase. Stop before the
+                    // Serene cadence could send the missing delta on the old code.
+                    let update =
+                        tokio::time::timeout(COMBAT_REFRESH + Duration::from_millis(100), async {
+                            loop {
+                                let frame =
+                                    crate::gameplay_transport::tcp_tls::read_frame(&mut client)
+                                        .await?;
+                                let envelope = decode_wire_envelope(&frame)?;
+                                if envelope.message_type() == MessageType::StateDelta {
+                                    let delta = decode_state_delta(envelope.payload())?;
+                                    if delta.domain_id == STATE_DOMAIN_ACTOR_VITALS {
+                                        let value = decode_actor_vitals(delta.payload)
+                                            .map_err(|_| "vitals payload")?;
+                                        return Ok::<_, Box<dyn Error>>((
+                                            delta.base_revision,
+                                            delta.new_revision,
+                                            value,
+                                        ));
+                                    }
+                                }
+                            }
+                        })
+                        .await;
+                    let (after_revision, after) = authority
+                        .observe_vitals(actor, session)
+                        .await
+                        .ok_or("committed vitals")?;
+                    assert!(authority.chased.get(), "combat scheduled a chase step");
+                    assert!(
+                        after.health < before.health && after.mana < before.mana,
+                        "the field hit altered both pools"
+                    );
+                    assert_eq!(
+                        update.map_err(
+                            |_| "chase omitted the field-entry ActorVitals delta before cadence"
+                        )??,
+                        (revision, after_revision, after),
+                    );
+                    client.shutdown().await?;
+                    Ok::<_, Box<dyn Error>>(())
+                };
+                let (_, result) = tokio::join!(serving, driving);
+                result
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "chase field regression panicked")?
         .map_err(Into::into)
 }

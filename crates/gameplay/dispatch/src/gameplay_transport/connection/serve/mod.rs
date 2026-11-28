@@ -21,6 +21,11 @@ mod idle;
 mod inbound;
 mod integrity;
 mod inventory_capacity;
+#[cfg(test)]
+mod inventory_capacity_tests;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use inventory_capacity_tests::regression_grizzly_step_capacity;
+
 mod party_membership;
 mod party_skull;
 mod player_trade;

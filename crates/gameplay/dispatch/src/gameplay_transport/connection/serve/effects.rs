@@ -33,14 +33,8 @@ where
     {
         return Err(ServeEnd::Disconnected);
     }
-    if outcome.disposition == StepDisposition::Moved
-        && session.admitted.continuity.vitals_revision != 0
-        && let Some(current) = authority
-            .observe_movement_vitals(session.actor, session.admitted)
-            .await
-        && current.0 > session.admitted.continuity.vitals_revision
-    {
-        write_vitals(stream, session, current).await?;
+    if outcome.disposition == StepDisposition::Moved {
+        movement_vitals(stream, authority, session).await?;
     }
     refresh_newhaven_inventory(
         stream,
@@ -63,6 +57,24 @@ where
     .is_none()
     {
         return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+pub(super) async fn movement_vitals<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd> {
+    if session.admitted.continuity.vitals_revision != 0
+        && let Some(current) = authority
+            .observe_movement_vitals(session.actor, session.admitted)
+            .await
+    {
+        inventory_capacity::reread_after_vitals(session, &current.1);
+        if current.0 > session.admitted.continuity.vitals_revision {
+            write_vitals(stream, session, current).await?;
+        }
     }
     Ok(())
 }

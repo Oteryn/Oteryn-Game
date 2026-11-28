@@ -35,14 +35,19 @@ where
         .observe_vitals(session.actor, session.admitted.game_session_id)
         .await;
     cooldowns::refresh(stream, authority, session).await?;
-    let Some((to, value)) = current
+    let unsent = current
         .filter(|(observed_revision, _)| {
             *observed_revision > session.admitted.continuity.vitals_revision
         })
         .or(changed.filter(|(observed_revision, _)| {
             *observed_revision > session.admitted.continuity.vitals_revision
-        }))
-    else {
+        }));
+    // A command may have published this revision already. Capacity tracks
+    // observed maxima independently of the ACTOR_VITALS transport cursor.
+    if let Some((_, value)) = unsent.or(current).or(changed) {
+        inventory_capacity::reread_after_vitals(session, &value);
+    }
+    let Some((to, value)) = unsent else {
         return Ok(());
     };
     let Some((delta_sequence, delta)) = vitals_delta(
@@ -60,7 +65,6 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.vitals_revision = to;
-    inventory_capacity::reread_after_vitals(session, &value);
     Ok(())
 }
 
@@ -566,6 +570,9 @@ where
     .is_none()
     {
         return Err(ServeEnd::Disconnected);
+    }
+    if outcome.disposition == StepDisposition::Moved {
+        effects::movement_vitals(stream, authority, session).await?;
     }
     let now = tokio::time::Instant::now();
     session.chase_due = Some(session.pacer.wait_until(now).unwrap_or(now));

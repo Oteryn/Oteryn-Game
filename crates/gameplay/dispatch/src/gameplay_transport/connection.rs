@@ -56,9 +56,11 @@ pub(super) async fn test_use_frame(
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
-#[cfg(test)]
-pub(in crate::gameplay_transport) use serve::regression_routed_step;
 use serve::serve_admitted_actor;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use serve::{
+    regression_grizzly_step_capacity, regression_routed_step,
+};
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;
 #[path = "server_save_countdown_transport.rs"]

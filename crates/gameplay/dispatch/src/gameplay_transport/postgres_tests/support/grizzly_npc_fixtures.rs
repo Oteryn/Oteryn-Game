@@ -133,9 +133,10 @@ pub(super) fn scenario(case: u8) -> TestResult {
             .map_err(debug)?;
         let progression =
             crate::gameplay_transport::SessionProgressionBinding::from_content(policy);
+        let level_up = matches!(case, 4 | 8);
         let level = if reward || case == 7 {
             130
-        } else if case == 4 {
+        } else if level_up {
             49
         } else {
             8
@@ -144,11 +145,11 @@ pub(super) fn scenario(case: u8) -> TestResult {
             .policy
             .thresholds
             .iter()
-            .find(|entry| entry.level == if case == 4 { 50 } else { level })
+            .find(|entry| entry.level == if level_up { 50 } else { level })
             .ok_or("level threshold")?
             .minimum_experience
             .get()
-            - if case == 4 { 800 } else { 0 };
+            - if level_up { 800 } else { 0 };
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
@@ -394,15 +395,20 @@ pub(super) fn scenario(case: u8) -> TestResult {
             );
             assert!(!states.is_dead(deps.actor));
         }
+        let capabilities: &[u32] = if case == 8 {
+            &[3, 4, 6, 16, 508]
+        } else {
+            &[3, 16]
+        };
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                 owner.offered_capabilities(),
-                &[3, 16],
+                capabilities,
             )
             .ok_or("NPC and journal capabilities")?;
         assert_eq!(
             admitted.continuity.selected_capabilities.as_slice(),
-            &[3, 16]
+            capabilities
         );
         wire::talk(&mut owner, &mut admitted, npc, &[(1, "hi"), (2, "yes")]).await?;
         assert_eq!(value(&owner, &authority, quest::JOIN_STORAGE).await?, 1);
@@ -426,7 +432,9 @@ pub(super) fn scenario(case: u8) -> TestResult {
         }
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        if case == 7 {
+        if case == 8 {
+            progression::step_capacity(&mut owner, &mut admitted, npc, &h).await?;
+        } else if case == 7 {
             rank_achievements(&mut owner, &mut admitted, npc, &h, &authority).await?;
         } else if case == 6 {
             wire::talk(
