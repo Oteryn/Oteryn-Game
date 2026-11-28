@@ -134,6 +134,15 @@ impl SnapshotState {
                         .map_err(SessionError::ItemView)?,
                     );
                     state.inventory_revision = domain.revision;
+                    state
+                        .gated_snapshots
+                        .retain(|snapshot| snapshot.domain_id != domain.domain_id);
+                    state.gated_snapshots.push(GatedSnapshot {
+                        domain_id: domain.domain_id,
+                        snapshot_type: domain.snapshot_type,
+                        revision: domain.revision,
+                        payload: domain.payload.to_vec(),
+                    });
                 }
                 (STATE_DOMAIN_OPEN_CONTAINER, item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1)
                     if item_selected =>

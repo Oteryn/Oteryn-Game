@@ -30,25 +30,6 @@ fn visible(inventory: Option<&CharacterInventory>) -> String {
 }
 
 fn fixture() -> Result<(Vec<u8>, u64, String), BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        let expected = std::fs::read_to_string(path.join("c19a-expected.txt"))?;
-        let revision = expected
-            .lines()
-            .find_map(|line| line.strip_prefix("revision="))
-            .ok_or("c19a expected lacks revision")?
-            .parse()?;
-        let body = expected
-            .lines()
-            .filter(|line| !line.starts_with("revision="))
-            .map(|line| format!("{line}\n"))
-            .collect();
-        return Ok((
-            std::fs::read(path.join("c19a-snapshot.bin"))?,
-            revision,
-            body,
-        ));
-    }
     let backpack = ItemEntry {
         appearance_id: 0,
         handle: ItemHandle::new(3).unwrap_or(ItemHandle::MIN),
@@ -99,6 +80,11 @@ fn e2e_c19a_starter_backpack_replay() -> Result<(), BoxError> {
                 return Err(format!("C19a admission: {error:?}; peer={peer_error:?}").into());
             }
         };
+        let captured = session
+            .gated_snapshot(STATE_DOMAIN_CHARACTER_INVENTORY)
+            .ok_or("inventory join snapshot absent")?;
+        assert_eq!(captured.revision, revision);
+        assert_eq!(captured.payload, snapshot);
         let inventory = session.inventory().ok_or("inventory not decoded")?;
         assert!(inventory.main_backpack.is_some());
         assert_eq!(visible(Some(inventory)), expected);
