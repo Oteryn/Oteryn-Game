@@ -209,8 +209,13 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         sqlx::PgConnection::connect(clients.url),
     )
     .await??;
-    if observe_logout_session(&mut durability, session_id.as_bytes()).await? != (1, true, false) {
-        return Err("step=logout-in-protection-zone expected an active session with no control loss".into());
+    const ACTIVE: i16 = 2;
+    const TERMINAL: i16 = 3;
+    let before_logout = observe_logout_session(&mut durability, session_id.as_bytes()).await?;
+    if before_logout != (ACTIVE, true, false) {
+        return Err(format!(
+            "step=logout-in-protection-zone expected an active session with no control loss; observed={before_logout:?}"
+        ).into());
     }
     if !client
         .session_mut()
@@ -224,7 +229,7 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         return Err(format!("step=logout-in-protection-zone observed {accepted:?}").into());
     }
     let released = observe_logout_session(&mut durability, session_id.as_bytes()).await?;
-    if released != (3, false, false) {
+    if released != (TERMINAL, false, false) {
         return Err(format!(
             "step=logout-release expected terminal session without control loss before client drop; observed={released:?}"
         ).into());
