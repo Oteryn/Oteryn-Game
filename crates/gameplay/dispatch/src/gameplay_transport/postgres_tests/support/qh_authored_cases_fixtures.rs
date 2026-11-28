@@ -22,6 +22,7 @@ const SMALL_SAPPHIRE_CHEST: TilePos = TilePos {
     floor: -7,
 };
 pub(super) const TOP_OF_THE_CITY: &str = "authored-qh-top-of-the-city";
+pub(super) const AMBUSH: &str = "authored-qh-jimmy-ambush";
 const IRIANA: Position = Position {
     x: 32849,
     y: 31300,
@@ -75,7 +76,7 @@ pub(super) const fn city_start() -> Position {
 }
 
 pub(super) fn is_city(name: &str) -> bool {
-    name == TOP_OF_THE_CITY || is_dig(name)
+    matches!(name, TOP_OF_THE_CITY | AMBUSH) || is_dig(name)
 }
 
 pub(super) fn is_dig(name: &str) -> bool {
@@ -100,7 +101,7 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
             )),
             "oteryn:quest-callback/authored-small-sapphire-chest",
         ),
-        TOP_OF_THE_CITY | DIG | BARE | WRONG_TOOL | NO_PICK => (
+        TOP_OF_THE_CITY | AMBUSH | DIG | BARE | WRONG_TOOL | NO_PICK => (
             include_str!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/quests/authored-bindings/top_of_the_city_quest.json"
@@ -140,6 +141,11 @@ pub(super) fn world(
             native,
         );
     }
+    if name == AMBUSH {
+        return super::qc_pinned_world::world_near(
+            native, &[(IRIANA.x, IRIANA.y), (JIMMY.x, JIMMY.y), (CELLAR.x, CELLAR.y)],
+        );
+    }
     if name == TOP_OF_THE_CITY {
         return super::qc_pinned_world::world(native);
     }
@@ -174,6 +180,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     match name {
         SMALL_SAPPHIRE => small_sapphire(owner, admitted, h).await,
+        AMBUSH => ambush_from_completed_pursuit(owner, admitted, h).await,
         TOP_OF_THE_CITY => top_of_the_city(owner, admitted, h).await,
         DIG | BARE | WRONG_TOOL | NO_PICK => dig(name, owner, admitted, h).await,
         _ => Err(format!("unknown qh case {name}").into()),
@@ -751,65 +758,7 @@ async fn top_of_the_city(
     city_route::assert_door_does_not_hold_runtime(owner, admitted).await?;
     let jimmy_stop = city_route::enter_jimmy(owner, admitted, deadline).await?;
     city_route::assert_guest_blocked(owner, admitted, h, deadline).await?;
-    framed_talk(
-        owner,
-        admitted,
-        jimmy,
-        "hi",
-        NpcIntentDisposition::Ok,
-        Some("Get him!!"),
-    )
-    .await?;
-    let assassins = owner.states.npc_conversations.jimmy_roster_for_fixture()?;
-    assert_eq!(assassins.len(), 3);
-    framed_talk(
-        owner,
-        admitted,
-        jimmy,
-        "hi",
-        NpcIntentDisposition::Ok,
-        Some("Get him!!"),
-    )
-    .await?;
-    assert_eq!(
-        owner.states.npc_conversations.jimmy_roster_for_fixture()?,
-        assassins
-    );
-    framed_talk(
-        owner,
-        admitted,
-        jimmy,
-        "iriana",
-        NpcIntentDisposition::Rejected,
-        None,
-    )
-    .await?;
-    for (i, assassin) in assassins.into_iter().enumerate() {
-        super::engworldchg_journals_fixtures::kill_actor(
-            owner,
-            admitted,
-            assassin,
-            8000 + u64::try_from(i)?,
-        )
-        .await?;
-        assert_eq!(
-            track(h, ASSASSINS).await?,
-            i64::try_from(i + 1)?
-        );
-    }
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
-    framed_talk(
-        owner,
-        admitted,
-        jimmy,
-        "iriana",
-        NpcIntentDisposition::Ok,
-        None,
-    )
-    .await?;
-    assert_eq!(track(h, CITY_STAGE).await?, 2);
+    jimmy_ambush(owner, admitted, h, jimmy).await?;
     relocate_city(owner, admitted, CELLAR).await?;
     let command = admitted.continuity.next_command_id;
     assert_eq!(
@@ -889,4 +838,93 @@ async fn completion_receipts(h: &Harness) -> TestResult<i64> {
     .bind("oteryn:quest.authored.top_of_the_city_quest")
     .fetch_one(&h.pool)
     .await?)
+}
+
+
+async fn ambush_from_completed_pursuit(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    prepare_city(owner, admitted).await?;
+    super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
+    let [iriana, jimmy] = super::classic_quests_fixtures::install_positions(
+        owner, admitted, ["oteryn:npc.iriana", "oteryn:npc.jimmy"], [IRIANA, JIMMY],
+    ).await?;
+    framed_talk(owner, admitted, iriana, "quest", NpcIntentDisposition::Ok, None).await?;
+    assert_eq!(track(h, CITY_STAGE).await?, 1);
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(PURSUIT.into(), PURSUIT_COMPLETE)], 120,
+    ).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    relocate_city(owner, admitted, city_route::JIMMY_STOP).await?;
+    jimmy_ambush(owner, admitted, h, jimmy).await
+}
+
+async fn jimmy_ambush(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    jimmy: EntityRef,
+) -> TestResult {
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "hi",
+        NpcIntentDisposition::Ok,
+        Some("Get him!!"),
+    )
+    .await?;
+    let assassins = owner.states.npc_conversations.jimmy_roster_for_fixture()?;
+    assert_eq!(assassins.len(), 3);
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "hi",
+        NpcIntentDisposition::Ok,
+        Some("Get him!!"),
+    )
+    .await?;
+    assert_eq!(
+        owner.states.npc_conversations.jimmy_roster_for_fixture()?,
+        assassins
+    );
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "iriana",
+        NpcIntentDisposition::Rejected,
+        None,
+    )
+    .await?;
+    for (i, assassin) in assassins.into_iter().enumerate() {
+        super::engworldchg_journals_fixtures::kill_actor(
+            owner,
+            admitted,
+            assassin,
+            8000 + u64::try_from(i)?,
+        )
+        .await?;
+        assert_eq!(
+            track(h, ASSASSINS).await?,
+            i64::try_from(i + 1)?
+        );
+    }
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    framed_talk(
+        owner,
+        admitted,
+        jimmy,
+        "iriana",
+        NpcIntentDisposition::Ok,
+        None,
+    )
+    .await?;
+    assert_eq!(track(h, CITY_STAGE).await?, 2);
+    Ok(())
 }
