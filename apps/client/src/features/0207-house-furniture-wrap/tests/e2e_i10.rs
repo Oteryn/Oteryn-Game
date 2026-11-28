@@ -13,7 +13,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const PROBES: [(&str, Action, u64, Refusal); 3] = [
     ("wrap", Action::Wrap, 0, Refusal::NotInHouse),
     ("unwrap", Action::Unwrap, 0, Refusal::NotInHouse),
-    ("refusal", Action::Wrap, u64::MAX, Refusal::Stale),
+    ("refusal", Action::Wrap, 1, Refusal::Stale),
 ];
 
 fn hex(text: &str) -> Vec<u8> {
@@ -48,22 +48,25 @@ fn request(action: Action, revision: u64) -> FeatureCommand {
 }
 
 fn apply_reply(command: &FeatureCommand, status: CommandStatus, payload: &[u8]) -> Panel {
+    apply_result(
+        command,
+        GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status,
+            payload: payload.to_vec(),
+        },
+    )
+}
+
+fn apply_result(command: &FeatureCommand, result: GatedCommandResult) -> Panel {
     let mut panel = Panel {
         selected: true,
         pending: true,
         pending_payload: command.payload.clone(),
         ..Panel::default()
     };
-    apply(
-        &mut panel,
-        command,
-        &GatedCommandResult {
-            command_id: 1,
-            server_sequence: 1,
-            status,
-            payload: payload.to_vec(),
-        },
-    );
+    apply(&mut panel, command, &result);
     assert!(!panel.pending && panel.pending_payload.is_empty());
     panel
 }
@@ -73,8 +76,10 @@ fn replay_probes(capture: Option<&Path>) -> TestResult {
         .map(|path| std::fs::read_to_string(path.join("i10-expected.txt")))
         .transpose()?;
     let capture = capture.zip(manifest.as_deref());
+    let mut previous = None;
     for (key, action, revision, refusal) in PROBES {
-        let (command, status_bytes, payload) = if let Some((path, manifest)) = capture {
+        let (command, status_bytes, payload, identifiers) = if let Some((path, manifest)) = capture
+        {
             let command = FeatureCommand {
                 capability: wire::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
                 kind: wire::COMMAND_WRAP,
@@ -87,22 +92,59 @@ fn replay_probes(capture: Option<&Path>) -> TestResult {
                 .find_map(|line| line.strip_prefix(&format!("{key}=")))
                 .ok_or("expected capture line absent")?;
             assert_eq!(hex(line), payload, "{key} capture disagrees");
-            (command, status, payload)
+            let metadata = std::fs::read_to_string(path.join(format!("i10-{key}-exchange.txt")))?;
+            let mut lines = metadata.lines();
+            let session = lines
+                .next()
+                .and_then(|line| line.strip_prefix("session="))
+                .filter(|value| !value.is_empty())
+                .ok_or("missing session")?
+                .to_owned();
+            let command_id = lines
+                .next()
+                .and_then(|line| line.strip_prefix("command_id="))
+                .ok_or("missing command id")?
+                .parse::<u64>()?;
+            let server_sequence = lines
+                .next()
+                .and_then(|line| line.strip_prefix("server_sequence="))
+                .ok_or("missing server sequence")?
+                .parse::<u64>()?;
+            assert!(command_id > 0 && server_sequence > 0 && lines.next().is_none());
+            if let Some((prior_session, prior_command, prior_sequence)) = &previous
+                && prior_session == &session
+            {
+                assert!(command_id > *prior_command && server_sequence > *prior_sequence);
+            }
+            previous = Some((session, command_id, server_sequence));
+            (
+                command,
+                status,
+                payload,
+                Some((command_id, server_sequence)),
+            )
         } else {
             (
                 request(action, revision),
                 (CommandStatus::Rejected as u32).to_be_bytes().to_vec(),
                 Reply::Refused(refusal).encode(),
+                None,
             )
         };
         let decoded = Request::decode(&command.payload)
             .ok_or_else(|| format!("{key}: invalid furniture request"))?;
         // The live row supplies the item, access revision and position from its own setup.
         assert_eq!(decoded.action, action, "{key} request action");
-        assert_eq!(
-            decoded.expected_revision, revision,
-            "{key} request revision"
-        );
+        if key == "refusal" && capture.is_some() {
+            assert!((1..u64::MAX).contains(&decoded.expected_revision));
+            assert_ne!(decoded.item, [0; 16]);
+            assert_ne!(decoded.acl_revision, 0);
+        } else {
+            assert_eq!(
+                decoded.expected_revision, revision,
+                "{key} request revision"
+            );
+        }
         let status = decode_status(&status_bytes)?;
         assert_eq!(status, CommandStatus::Rejected, "{key} command status");
         let reply =
@@ -110,7 +152,18 @@ fn replay_probes(capture: Option<&Path>) -> TestResult {
         if reply != Reply::Refused(refusal) {
             return Err(format!("{key}: expected {refusal:?}, got {reply:?}").into());
         }
-        let panel = apply_reply(&command, status, &payload);
+        let panel = match identifiers {
+            Some((command_id, server_sequence)) => apply_result(
+                &command,
+                GatedCommandResult {
+                    command_id,
+                    server_sequence,
+                    status,
+                    payload,
+                },
+            ),
+            None => apply_reply(&command, status, &payload),
+        };
         assert_eq!(panel.feedback, refusal_feedback(refusal), "{key} feedback");
         assert!(panel.catalogue.is_none());
     }
@@ -125,10 +178,21 @@ fn e2e_i10_rejects_not_in_house_for_the_stale_probe() -> TestResult {
         path.join("i10-expected.txt"),
         "wrap=01\nunwrap=01\nrefusal=01\n",
     )?;
-    for (key, action, revision, _) in PROBES {
+    for (index, (key, action, revision, _)) in PROBES.into_iter().enumerate() {
+        let mut decoded =
+            Request::decode(&request(action, revision).payload).ok_or("invalid request fixture")?;
+        if key == "refusal" {
+            decoded.item = [1; 16];
+            decoded.acl_revision = 1;
+        }
+        let sequence = index + 1;
+        std::fs::write(
+            path.join(format!("i10-{key}-exchange.txt")),
+            format!("session=fixture\ncommand_id={sequence}\nserver_sequence={sequence}\n"),
+        )?;
         std::fs::write(
             path.join(format!("i10-{key}-request.bin")),
-            request(action, revision).payload,
+            decoded.encode(),
         )?;
         std::fs::write(
             path.join(format!("i10-{key}-status.bin")),
