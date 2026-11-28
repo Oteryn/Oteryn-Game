@@ -208,7 +208,10 @@ fn forge_resource_actual_session_requires_confirm_and_displays_receipt_history()
         .map_err(|_| "Forge resources session thread panicked")?
 }
 
-struct G20CapturePeer(Option<GatedCommandResult>);
+struct G20CapturePeer {
+    reply: Option<GatedCommandResult>,
+    paid_commands: Arc<AtomicUsize>,
+}
 
 impl Stepper for G20CapturePeer {
     fn feature_selected(&self, capability: u32) -> bool {
@@ -232,14 +235,15 @@ impl Stepper for G20CapturePeer {
                 selection: wire::Selection::Resource(Operation::DustLimit),
             }),
         );
-        self.0.take().ok_or(SessionError::SessionUnusable)
+        self.reply.take().ok_or(SessionError::SessionUnusable)
     }
 
     async fn server_mechanic(
         &mut self,
         _: &ServerMechanicCommand,
     ) -> Result<ServerMechanicResponse, SessionError> {
-        panic!("a preview must not send a paid Forge command");
+        self.paid_commands.fetch_add(1, Ordering::SeqCst);
+        Err(SessionError::SessionUnusable)
     }
 
     async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
@@ -299,7 +303,12 @@ fn e2e_g20_funded_preview_replay() -> Result<(), Error> {
                 .build()?;
             rt.block_on(async {
                 let (link, rx, outbox) = play_channel();
-                let task = tokio::spawn(run_session(G20CapturePeer(Some(result)), rx, outbox));
+                let paid_commands = Arc::new(AtomicUsize::new(0));
+                let peer = G20CapturePeer {
+                    reply: Some(result),
+                    paid_commands: Arc::clone(&paid_commands),
+                };
+                let task = tokio::spawn(run_session(peer, rx, outbox));
                 wait(&link, |panel| panel.selected && panel.preview.selected).await?;
                 {
                     let mut mailbox = lock(&link.mailbox);
@@ -344,9 +353,10 @@ fn e2e_g20_funded_preview_replay() -> Result<(), Error> {
                 let text = dialog_text(&content, 0);
                 assert!(text.contains("Raise the dust limit?"));
                 assert!(text.contains("Dust: 30 → 5\nDust limit: 100 → 101"));
-                println!("G20_CLIENT_CONFIRM dust=30->5 limit=100->101");
                 drop(link);
                 task.await?;
+                assert_eq!(paid_commands.load(Ordering::SeqCst), 0);
+                println!("G20_CLIENT_CONFIRM dust=30->5 limit=100->101");
                 Ok::<(), Error>(())
             })
         })?

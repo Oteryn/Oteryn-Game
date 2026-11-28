@@ -497,8 +497,7 @@ async fn body(
         character,
         custody,
         &inventory,
-        &page,
-        [first, second],
+        (page.resources, [first, second]),
         5,
     )
     .await?;
@@ -518,8 +517,7 @@ async fn check_quotes(
     character: &[u8; 16],
     custody: &ForgeCustody,
     inventory: &CharacterInventory,
-    page: &wire::Page,
-    [first, second]: [wire::Item; 2],
+    (resources, [first, second]): (wire::Resources, [wire::Item; 2]),
     nonce: u64,
 ) -> TestResult<wire::Resources> {
     macro_rules! read_preview {
@@ -534,11 +532,11 @@ async fn check_quotes(
         wire::Payload::Resource(quote)
             if quote.operation == Operation::SliversToCores
                 && quote.full_resources
-                && quote.before == page.resources
-                && quote.after_dust == page.resources.dust
-                && quote.after_limit == page.resources.dust_limit
+                && quote.before == resources
+                && quote.after_dust == resources.dust
+                && quote.after_limit == resources.dust_limit
                 && quote.after_slivers == 0
-                && page.resources.cores.checked_add(1) == Some(quote.after_cores) => {}
+                && resources.cores.checked_add(1) == Some(quote.after_cores) => {}
         other => return Err(format!("step=resource observed={other:?}").into()),
     }
     let selection = wire::Selection::Pair {
@@ -553,7 +551,7 @@ async fn check_quotes(
             if quote.selection == selection
                 && quote.first == first
                 && quote.second == second
-                && quote.resources == page.resources
+                && quote.resources == resources
                 && quote.cost
                     == (wire::Cost {
                         gold: 25_000,
@@ -566,9 +564,9 @@ async fn check_quotes(
         {
             evidence(&format!(
                 "G20_QUOTES fusion_bank_gold={} slivers_to_core_bank_gold={}",
-                page.resources.bank_gold, page.resources.bank_gold,
+                resources.bank_gold, resources.bank_gold,
             ));
-            Ok(page.resources)
+            Ok(resources)
         }
         other => Err(format!("step=pair observed={other:?}").into()),
     }
@@ -773,8 +771,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             character,
             &funded,
             &inventory,
-            &page,
-            pair,
+            (page.resources, pair),
             4,
         )
         .await?;
@@ -879,9 +876,9 @@ mod tests {
         let first = wire::Page {
             after: 0,
             next: None,
-            items: (1..=3)
+            items: (0..3)
                 .map(|value| wire::Item {
-                    handle: std::num::NonZeroU64::new(value).unwrap(),
+                    handle: std::num::NonZeroU64::MIN.saturating_add(value),
                     definition_ref: 1,
                     appearance: u32::from(SWORD),
                     name: "sword".into(),
@@ -1072,9 +1069,10 @@ mod tests {
 
     #[test]
     fn browse_rejects_drift_in_sword_and_backpack_metadata() {
-        for (appearance, name, container, classification, maximum_tier) in
-            [(SWORD, "sword", false, 1, 1), (2854, "backpack", true, 0, 0)]
-        {
+        for (appearance, name, container, classification, maximum_tier) in [
+            (SWORD, "sword", false, 1, 1),
+            (2854, "backpack", true, 0, 0),
+        ] {
             let expected = wire::Item {
                 handle: std::num::NonZeroU64::MIN,
                 definition_ref: 42,
@@ -1087,13 +1085,34 @@ mod tests {
             };
             assert!(browse_metadata(&expected, appearance, 42));
             for wrong in [
-                wire::Item { name: "wrong".into(), ..expected.clone() },
-                wire::Item { appearance: 1, ..expected.clone() },
-                wire::Item { definition_ref: 1, ..expected.clone() },
-                wire::Item { container: !container, ..expected.clone() },
-                wire::Item { classification: 2, ..expected.clone() },
-                wire::Item { tier: 1, ..expected.clone() },
-                wire::Item { maximum_tier: 2, ..expected.clone() },
+                wire::Item {
+                    name: "wrong".into(),
+                    ..expected.clone()
+                },
+                wire::Item {
+                    appearance: 1,
+                    ..expected.clone()
+                },
+                wire::Item {
+                    definition_ref: 1,
+                    ..expected.clone()
+                },
+                wire::Item {
+                    container: !container,
+                    ..expected.clone()
+                },
+                wire::Item {
+                    classification: 2,
+                    ..expected.clone()
+                },
+                wire::Item {
+                    tier: 1,
+                    ..expected.clone()
+                },
+                wire::Item {
+                    maximum_tier: 2,
+                    ..expected.clone()
+                },
             ] {
                 assert!(!browse_metadata(&wrong, appearance, 42));
             }
