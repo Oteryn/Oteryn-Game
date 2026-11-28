@@ -375,5 +375,26 @@ pub(super) fn encode(
     let Ok(result) = result else {
         return Err(ServeEnd::Disconnected);
     };
+    #[cfg(feature = "qualification-cast-evidence")]
+    if command.command_type
+        == oteryn_protocol_oteryn::condition_status::COMMAND_TYPE_CONDITION_STATUS_QUERY
+        && status == CommandStatus::Accepted
+        && let Some(conditions) =
+            oteryn_protocol_oteryn::condition_status::ConditionStatus::decode(&result_payload)
+    {
+        let poison = conditions
+            .conditions
+            .iter()
+            .find(|condition| condition.icon == 1 && condition.sub_id == 0)
+            .map_or(0, |condition| condition.remaining_ms);
+        super::super::super::operator_event(&format!(
+            "event=qualification_poison_condition session={} command_id={} server_sequence={} poison_remaining_ms={poison}",
+            super::super::super::format_connection_trace(
+                *session.admitted.game_session_id.as_bytes()
+            ),
+            command.command_id,
+            session.sequence
+        ));
+    }
     Ok(result)
 }

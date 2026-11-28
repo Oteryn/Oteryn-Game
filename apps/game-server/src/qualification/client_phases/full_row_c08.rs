@@ -97,6 +97,10 @@ pub(super) async fn poison_status(client: &mut DevClientSession) -> TestResult<b
 }
 
 async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i64>> {
+    Ok(poison_observation(client).await?.1)
+}
+
+async fn poison_observation(client: &mut DevClientSession) -> TestResult<(u64, Option<i64>)> {
     use oteryn_protocol_oteryn::condition_status as wire;
     let reply = client
         .session_mut()
@@ -111,7 +115,30 @@ async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i6
     }
     let status = wire::ConditionStatus::decode(&reply.payload)
         .ok_or("step=poison-status observed=invalid-condition-frame")?;
-    Ok(poison_duration(&status))
+    Ok((reply.server_sequence, poison_duration(&status)))
+}
+
+fn report_condition_receipt(client: &DevClientSession, sequence: u64) -> TestResult {
+    use std::io::BufRead;
+
+    let path = required("NODE_BOOT_CAST_EVIDENCE_LOG")?;
+    let session = format!("session={}", uuid_text(client.join_snapshot().game_session_id.as_bytes()));
+    let sequence = format!("server_sequence={sequence}");
+    for line in std::io::BufReader::new(std::fs::File::open(path)?).lines() {
+        let line = line?;
+        let fields = line.split_whitespace();
+        if line.starts_with("oteryn-game-server ")
+            && fields.clone().any(|field| field == "event=qualification_poison_condition")
+            && fields.clone().any(|field| field == session)
+            && fields.clone().any(|field| field == sequence)
+            && fields.clone().any(|field| field.starts_with("ts="))
+            && fields.clone().any(|field| field.starts_with("trace="))
+        {
+            println!("{line}");
+            return Ok(());
+        }
+    }
+    Err(format!("C08 Server condition trace absent for {session} {sequence}").into())
 }
 
 fn poison_duration(
@@ -124,19 +151,50 @@ fn poison_duration(
         .map(|condition| condition.remaining_ms)
 }
 
-async fn poison(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
+async fn poison(
+    client: &mut DevClientSession,
+    spider: oteryn_dev_client::EntityRef,
+    stage: &str,
+) -> TestResult<(u64, u64)> {
     require_poison_attribution(client)?;
-    client.session_mut().attack_target(None).await?;
-    client.take_events();
+    let session = client.join_snapshot().game_session_id;
+    let hp = client.actor_vitals().map(|vitals| vitals.health);
+    let position = client.world_spatial().actor_position;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    while !poison_status(client).await? {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=poison observed=no-creature-poison-condition".into());
+    let mut first = true;
+    let mut direct_damage_sequence = None;
+    loop {
+        let (sequence, remaining) = poison_observation(client).await?;
+        for event in client.take_events() {
+            if let SessionEvent::AnalyserAttributedFacts(delta) = event
+                && delta.value.iter().any(|fact| {
+                    fact.attacker == Some(spider)
+                        && matches!(
+                            fact.fact,
+                            oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput { .. }
+                        )
+                })
+            {
+                direct_damage_sequence.get_or_insert(delta.server_sequence);
+            }
         }
-        client.take_events();
+        let expired = tokio::time::Instant::now() >= deadline;
+        if first || remaining.is_some() || expired {
+            report_condition_receipt(client, sequence)?;
+            let current_hp = client.actor_vitals().map(|vitals| vitals.health);
+            evidence(&format!(
+                "C08_POISON_EXPOSURE stage={stage} session={session:?} spider={spider:?} position={position:?} server_sequence={sequence} remaining_ms={remaining:?} direct_damage_sequence={direct_damage_sequence:?} hp={hp:?}->{current_hp:?}"
+            ));
+            first = false;
+        }
+        if remaining.is_some() {
+            return wait_poison_tick(client, stage).await;
+        }
+        if expired {
+            return Err(format!("step={stage} observed=no-creature-poison-condition server_sequence={sequence} direct_damage_sequence={direct_damage_sequence:?}").into());
+        }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
-    wait_poison_tick(client, "poison").await
 }
 
 fn require_poison_attribution(client: &DevClientSession) -> TestResult {
@@ -171,7 +229,9 @@ async fn wait_poison_tick(client: &mut DevClientSession, stage: &str) -> TestRes
 
     let after = client.last_server_sequence();
     let before_hp = client.actor_vitals().map(|vitals| vitals.health);
-    let until = tokio::time::Instant::now() + Duration::from_secs(15);
+    let started = tokio::time::Instant::now();
+    let until = started + Duration::from_secs(15);
+    let mut sampled_expected_tick = false;
     let mut observed = Vec::new();
     loop {
         let events = client.take_events();
@@ -190,15 +250,26 @@ async fn wait_poison_tick(client: &mut DevClientSession, stage: &str) -> TestRes
             }
         }
         if let Some(sequence) = poison_tick_sequence(events, after) {
+            evidence(&format!("C08_POISON_TICK stage={stage} session={:?} condition_server_sequence={after} tick_server_sequence={sequence}", client.join_snapshot().game_session_id));
             return Ok((after, sequence));
         }
         if tokio::time::Instant::now() >= until {
             let after_hp = client.actor_vitals().map(|vitals| vitals.health);
             let position = client.world_spatial().actor_position;
-            let remaining = poison_remaining(client).await?;
+            let (sequence, remaining) = poison_observation(client).await?;
+            report_condition_receipt(client, sequence)?;
             return Err(format!(
-                "step={stage} observed=active-icon-without-attributed-tick position={position:?} hp={before_hp:?}->{after_hp:?} remaining_ms={remaining:?} damage_facts={observed:?} need=creature-sourced-periodic-earth-damage"
+                "step={stage} observed=active-icon-without-attributed-tick position={position:?} condition_server_sequence={after} final_condition_server_sequence={sequence} hp={before_hp:?}->{after_hp:?} remaining_ms={remaining:?} damage_facts={observed:?} need=creature-sourced-periodic-earth-damage"
             ).into());
+        }
+        if !sampled_expected_tick && started.elapsed() >= Duration::from_secs(4) {
+            let (sequence, remaining) = poison_observation(client).await?;
+            report_condition_receipt(client, sequence)?;
+            evidence(&format!(
+                "C08_EXPECTED_TICK_SAMPLE stage={stage} session={:?} server_sequence={sequence} poison_remaining_ms={remaining:?}",
+                client.join_snapshot().game_session_id
+            ));
+            sampled_expected_tick = true;
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
@@ -242,8 +313,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if poison_status(&mut client).await? {
         return Err("C08 first exposure started with pre-existing poison".into());
     }
-    travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
-    let damage = poison(&mut client).await?;
+    let spider = travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
+    let damage = poison(&mut client, spider, "first-exposure").await?;
     row.pass(damage);
 
     let before_refusal = client
@@ -281,20 +352,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
     let clean_until = tokio::time::Instant::now() + Duration::from_secs(15);
-    if cast.disposition != SpellCastDisposition::Cast {
-        return Err(format!("step dispel: exana pox reply={cast:?}").into());
-    }
-    let mana_after = client
-        .actor_vitals()
-        .ok_or("step dispel: post-cast vitals absent")?
-        .mana;
+    let Some(committed) = cast.actor_vitals_delta.as_ref().filter(|delta| {
+        cast.status == CommandStatus::Accepted
+            && cast.disposition == SpellCastDisposition::Cast
+            && delta.server_sequence > cast.result_server_sequence
+            && client.actor_vitals() == Some(&delta.value)
+    }) else {
+        return Err(format!("step=dispel observed=no-correlated-cast-receipt reply={cast:?}").into());
+    };
+    let mana_after = committed.value.mana;
     if mana_after.checked_add(mana_cost) != Some(mana) {
         return Err(format!(
             "step dispel: accepted reply missing mana delta {mana}->{mana_after} cost={mana_cost}"
         )
         .into());
     }
-    if poison_status(&mut client).await? || !poison_survived_window(remaining, sampled.elapsed()) {
+    let (cleared_sequence, poison_after_cast) = poison_observation(&mut client).await?;
+    if cleared_sequence <= committed.server_sequence || poison_after_cast.is_some() || !poison_survived_window(remaining, sampled.elapsed()) {
         return Err(format!("step=dispel observed=poison-active-or-natural-expiry-possible remaining_ms={remaining} elapsed={:?}", sampled.elapsed()).into());
     }
     loop {
@@ -317,10 +391,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass((cast.disposition, mana, mana_after));
     row.pass(initial_refusal.result);
     evidence(&format!(
-        "C08_RETREAT_PRESTEP session={:?} cast_server_sequence={} vitals_server_sequence={:?} last_server_sequence={}",
+        "C08_RETREAT_PRESTEP session={:?} cast_server_sequence={} vitals_server_sequence={} cleared_server_sequence={cleared_sequence} last_server_sequence={}",
         client.join_snapshot().game_session_id,
         cast.result_server_sequence,
-        cast.actor_vitals_delta.as_ref().map(|delta| delta.server_sequence),
+        committed.server_sequence,
         client.last_server_sequence()
     ));
 
@@ -349,7 +423,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("C08 second exposure started with pre-existing poison".into());
     }
     let aggressor = travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
-    let second = poison(&mut client).await?;
+    let second = poison(&mut client, aggressor, "second-exposure").await?;
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
         is_logout_rest_tile(world, at)
     })
@@ -367,8 +441,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("C08 combat state absent")?
         .in_fight;
     let sampled = tokio::time::Instant::now();
-    let saved_remaining = poison_remaining(&mut client)
-        .await?
+    let (saved_sequence, saved_remaining) = poison_observation(&mut client).await?;
+    report_condition_receipt(&client, saved_sequence)?;
+    let saved_remaining = saved_remaining
         .filter(|remaining| *remaining > 0)
         .ok_or("step=poison-persistence observed=no-finite-live-poison-at-save")?;
     evidence(&format!(
@@ -388,7 +463,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if client.world_spatial().actor_position != saved_position {
         return Err("step=poison-persistence observed=fresh-admission-position-mismatch".into());
     }
-    let restored = poison_remaining(&mut client).await?
+    let (restored_sequence, restored) = poison_observation(&mut client).await?;
+    report_condition_receipt(&client, restored_sequence)?;
+    let restored = restored
         .ok_or("step=poison-persistence observed=missing-poison-icon-on-fresh-admission need=saved-live-condition")?;
     if !retained_duration(saved_remaining, restored, sampled.elapsed()) {
         return Err(format!("step=poison-persistence remaining-at-save={saved_remaining} restored={restored} elapsed={:?}", sampled.elapsed()).into());
@@ -748,7 +825,9 @@ async fn resumed_poison_tick(
 ) -> TestResult<(u64, u32, u32)> {
     require_poison_attribution(client)?;
     let site = walk_to_poison_site(client, world, "poison-persistence").await?;
-    if !poison_status(client).await? {
+    let (sequence, remaining) = poison_observation(client).await?;
+    report_condition_receipt(client, sequence)?;
+    if remaining.is_none() {
         return Err(
             "step=poison-persistence observed=expired-poison need=active-poison-on-bare-ground"
                 .into(),
@@ -760,7 +839,9 @@ async fn resumed_poison_tick(
         .health;
     client.take_events();
     let after = client.last_server_sequence();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let started = tokio::time::Instant::now();
+    let deadline = started + Duration::from_secs(15);
+    let mut sampled_expected_tick = false;
     let mut damage = None;
     let mut health_loss = None;
     loop {
@@ -801,7 +882,14 @@ async fn resumed_poison_tick(
             return Ok((sequence, before, after));
         }
         if tokio::time::Instant::now() >= deadline {
+            let (sequence, _) = poison_observation(client).await?;
+            report_condition_receipt(client, sequence)?;
             return Err(format!("C08 restored poison did not yield matching unowned Earth damage and HP change: damage={damage:?} health_loss={health_loss:?}").into());
+        }
+        if !sampled_expected_tick && started.elapsed() >= Duration::from_secs(4) {
+            let (sequence, _) = poison_observation(client).await?;
+            report_condition_receipt(client, sequence)?;
+            sampled_expected_tick = true;
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
