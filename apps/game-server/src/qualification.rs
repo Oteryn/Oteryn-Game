@@ -1500,6 +1500,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
                     required("NODE_BOOT_LIGHT_ACCOUNT_ID")?,
                     required("NODE_BOOT_W10_ACCOUNT_ID")?,
                     required("NODE_BOOT_C16C_ACCOUNT_ID")?,
+                    required("NODE_BOOT_C11_ACCOUNT_ID")?,
                 ])
             } else {
                 None

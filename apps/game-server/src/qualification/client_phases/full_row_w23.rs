@@ -6,13 +6,15 @@
 //!    spatial delta, temple teleport, and the town-specific citizenship confirmation from Game.
 //! 2. Log out with the native logout command, obtain a fresh admission, and verify that its
 //!    authoritative initial position is the selected town's temple (durable home-town state).
-//! 3. Walk, using native STEP commands, to the shipped Svargrond citizen tile (unique 9066).
+//! 3. Take the qualification transfer to Svargrond, then walk to its shipped citizen tile (9066).
 //! 4. Step onto that tile without Barbarian Test progress; expect a moved STEP reply and spatial
 //!    delta followed by the exact Game refusal and a teleport to the Svargrond temple
 //!    (Crystal 201189f8 citizen.lua:39-43).
 
 use super::*;
 use oteryn_dev_client::{ChatLine, DevClientSession, SessionEvent};
+
+const THAIS_UNIQUE: u16 = 9057;
 
 const SVARGROND_UNIQUE: u16 = 9066;
 const REFUSAL: &str =
@@ -97,15 +99,21 @@ fn enters_citizen_tile(
         && i32::from(from.y) + dy == i32::from(trigger.y)
 }
 
+fn cardinal_approach(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos, StepDirection) -> bool,
+) -> Option<(Vec<StepDirection>, StepDirection)> {
+    shortest_approach(|direction| route(world, from, |at| goal(at, direction)))
+}
+
 fn approach(
     world: &BundleWorld,
     from: TilePos,
     target: TilePos,
 ) -> Option<(Vec<StepDirection>, StepDirection)> {
-    shortest_approach(|direction| {
-        route(world, from, |at| {
-            enters_citizen_tile(at, direction, target, destination(world, at, direction))
-        })
+    cardinal_approach(world, from, |at, direction| {
+        enters_citizen_tile(at, direction, target, destination(world, at, direction))
     })
 }
 
@@ -116,6 +124,27 @@ fn shortest_approach(
         .into_iter()
         .filter_map(|direction| route_for(direction).map(|path| (path, direction)))
         .min_by_key(|(path, _)| path.len())
+}
+
+/// The town fixture supplies intercity travel. The citizen portal itself is
+/// still reached and triggered by native STEP commands in its real temple.
+async fn travel_to_temple(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    temple: ActorPosition,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let target = tile(temple)?;
+    let (path, direction) = cardinal_approach(world, from, |at, direction| {
+        destination(world, at, direction) == Some(target)
+    })
+    .ok_or_else(|| format!("no qualification transfer from {from:?} to {target:?}"))?;
+    walk(client, world, &path).await?;
+    step_onto(client, direction).await?;
+    if client.world_spatial().actor_position != temple {
+        return Err(format!("qualification transfer did not arrive at {temple:?}").into());
+    }
+    Ok(())
 }
 
 async fn messages_until(
@@ -174,7 +203,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let previous_home = home_town(&mut database, &clients.characters[1]).await?;
     let from = tile(client.world_spatial().actor_position)?;
     let (selected, path, direction) = tiles.iter()
-        .filter(|entry| entry.unique != SVARGROND_UNIQUE && previous_home.and_then(|town| u32::try_from(town).ok()) != Some(entry.town))
+        .filter(|entry| entry.unique == THAIS_UNIQUE && previous_home.and_then(|town| u32::try_from(town).ok()) != Some(entry.town))
         .filter_map(|entry| approach(world, from, entry.at).map(|(path, direction)| (*entry, path, direction)))
         .min_by_key(|(_, path, _)| path.len())
         .ok_or("step=citizenship-route observed=no-walking-route need=reachable-shipped-citizen-tile-for-different-home-town")?;
@@ -209,10 +238,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let svargrond = tiles.iter().find(|entry| entry.unique == SVARGROND_UNIQUE)
         .ok_or("step=svargrond-content observed=unique-9066-absent need=shipped-citizen-tile")?;
-    let from = tile(fresh.world_spatial().actor_position)?;
-    let (path, direction) = approach(world, from, svargrond.at)
-        .ok_or("step=svargrond-route observed=no-walking-route need=legitimate-player-route-to-unique-9066")?;
-    walk(&mut fresh, world, &path).await?;
     let temple = world.base().subareas.town(svargrond.town).and_then(|area| area.temple)
         .ok_or("step=svargrond-refusal observed=temple-absent need=Svargrond-temple")?;
     let temple = ActorPosition {
@@ -220,6 +245,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         y: i32::from(temple.y),
         floor: -i16::from(temple.floor),
     };
+    travel_to_temple(&mut fresh, world, temple).await?;
+    let from = tile(fresh.world_spatial().actor_position)?;
+    let (path, direction) = approach(world, from, svargrond.at)
+        .ok_or("step=svargrond-route observed=no-walking-route need=legitimate-player-route-to-unique-9066")?;
+    walk(&mut fresh, world, &path).await?;
     fresh.take_events();
     let outcome = step_onto(&mut fresh, direction).await?;
     messages_until(&mut fresh, REFUSAL).await?;
@@ -227,6 +257,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=svargrond-refusal observed=position-{:?} need=temple-{temple:?}", fresh.world_spatial().actor_position).into());
     }
     evidence(&format!("W23_CHECK refusal PASS reply={outcome:?} position={temple:?}"));
+    if home_town(&mut database, &clients.characters[1]).await? != home {
+        return Err("Svargrond refusal changed citizenship".into());
+    }
+    travel_to_temple(&mut fresh, world, expected_position).await?;
     let logout = fresh.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=final-logout observed={logout:?} need=accepted").into());

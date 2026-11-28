@@ -73,6 +73,11 @@ fn placed_npcs_open_source_conversations() -> Result<(), String> {
             "hi",
             "Hiho |PLAYERNAME|. I hope you're here to {trade}.",
         ),
+        (
+            "xodet",
+            "hi",
+            "Oh, please come in, |PLAYERNAME| If you need magical equipment such as {runes} or {wands}, just ask me for a {trade}.",
+        ),
         ("zarifan", "hi", "... ... hello...magic... words?"),
         ("zethra", "hi", "Greetings, |PLAYERNAME|."),
         (

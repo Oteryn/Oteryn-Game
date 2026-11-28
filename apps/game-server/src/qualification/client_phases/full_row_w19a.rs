@@ -154,6 +154,15 @@ fn is_messenger_in_talk_range(
             <= npc::TALK_RANGE_TILES
 }
 
+// The shop counter can prevent a wander-proof approach. Use the legal talk
+// range as a fallback and require the live NPC to be in range before TALK.
+fn messenger_approach(
+    mut route_within: impl FnMut(u32) -> Option<Vec<StepDirection>>,
+) -> Option<Vec<StepDirection>> {
+    (npc::TALK_RANGE_TILES - MESSENGER_WANDER_RADIUS..=npc::TALK_RANGE_TILES)
+        .find_map(&mut route_within)
+}
+
 async fn quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -165,17 +174,26 @@ async fn quote(
         .iter()
         .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
         .ok_or("step 2: compiled world has no Messenger of Santa acquisition actor")?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        seller
-            .placements
-            .iter()
-            .any(|p| {
-                p.floor == at.floor
-                    && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)))
-                        + MESSENGER_WANDER_RADIUS <= npc::TALK_RANGE_TILES
-            })
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = messenger_approach(|range| {
+        find_route(
+            from,
+            |at| {
+                seller.placements.iter().any(|p| {
+                    p.floor == at.floor
+                        && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= range
+                })
+            },
+            |at, direction| {
+                let next = destination(world, at, direction)?;
+                // Use the town's horizontal budget even when returning from a
+                // rat hunt whose floors extend beyond the ordinary ±2 window.
+                map_journey::in_town(TilePos { floor: from.floor, ..next }, from).then_some(next)
+            },
+        )
+        .ok()
     })
-    .ok_or("step 2: no player-walk route to Messenger of Santa")?;
+    .ok_or_else(|| format!("step 2: no player-walk route to Messenger of Santa from {from:?}"))?;
     walk(client, world, &path).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     verdict::Harness::global().bounded_wait(deadline, "Messenger in talk range");
@@ -449,6 +467,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn messenger_can_be_approached_from_the_public_street() {
+        let street_distance = 3;
+        assert_eq!(
+            messenger_approach(|range| {
+                (street_distance <= range).then(|| vec![StepDirection::North])
+            }),
+            Some(vec![StepDirection::North])
+        );
+    }
+
 
     #[test]
     fn quote_selects_a_wandering_messenger_within_talk_range() -> TestResult {

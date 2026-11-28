@@ -146,23 +146,35 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
     project_selected(root, Some(selected))
 }
 
-/// The disposable node-boot town bundle includes an automatic floor change for M03.
+/// The disposable node-boot town bundle adds test travel between the real venues.
 pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
-    // Enter from the street to repeat Scorch on the same upper landing and in the
-    // same direction as the stair experiment. Only the floor-change owner differs.
-    const ENTRANCE: LegacyPosition = (32377, 32217, 7);
-    const LANDING: LegacyPosition = (32376, 32219, 6);
-    const PORTAL: &str = "oteryn:item.tibia.i1949";
-
     let mut project = project_regions(root, selected)?;
-    let error = |what| Error::Format(format!("M03 qualification portal: {what}"));
+    // M03: repeat Scorch on the same upper landing as the stair experiment.
+    add_qualification_portal(&mut project, (32377, 32217, 7), (32376, 32219, 6), false)?;
+    if selected.contains(&(125, 121)) {
+        // W23: travel between the temples in the sliced map. Citizenship itself
+        // still requires stepping on each town's authored portal.
+        add_qualification_portal(&mut project, (32367, 32243, 7), (32212, 31132, 7), true)?;
+        add_qualification_portal(&mut project, (32212, 31133, 7), (32369, 32241, 7), true)?;
+    }
+    Ok(project)
+}
+
+fn add_qualification_portal(
+    project: &mut Project,
+    entrance: LegacyPosition,
+    landing: LegacyPosition,
+    protection_zone: bool,
+) -> Result<(), Error> {
+    const PORTAL: &str = "oteryn:item.tibia.i1949";
+    let error = |what| Error::Format(format!("qualification portal at {entrance:?}: {what}"));
     let palette = project.index["palette"]
         .as_array()
         .and_then(|palette| palette.iter().position(|entry| entry["key"] == PORTAL))
         .and_then(|index| u32::try_from(index).ok())
         .ok_or_else(|| error("missing portal palette entry"))?;
     let mut budget = bundle::BUNDLE_BUDGET;
-    for at in [LANDING, ENTRANCE] {
+    for at in [landing, entrance] {
         let (x, y, z) = at;
         let [rx_lo, rx_hi] = (x / 256).to_le_bytes();
         let [ry_lo, ry_hi] = (y / 256).to_le_bytes();
@@ -179,13 +191,13 @@ pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Resul
             .flat_map(|(_, _, tiles)| tiles)
             .find(|tile| (tile.x, tile.y) == (x, y))
             .ok_or_else(|| error("missing tile"))?;
-        if tile.flags & compile::FLAG_PROTECTION_ZONE != 0
+        if (tile.flags & compile::FLAG_PROTECTION_ZONE != 0) != protection_zone
             || tile.house != 0
             || tile.items.is_empty()
         {
-            return Err(error("expected a non-house tile outside protection"));
+            return Err(error("unexpected protection, house or missing ground"));
         }
-        if at == ENTRANCE {
+        if at == entrance {
             if project.families.teleports.contains_key(&at)
                 || tile.items.iter().any(|item| item.attrs.teleport.is_some())
             {
@@ -195,15 +207,15 @@ pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Resul
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
-                    teleport: Some(LANDING),
+                    teleport: Some(landing),
                     ..sector::Attrs::default()
                 },
             });
             *bytes = crate::authored_props::encode(&region)?;
-            project.families.teleports.insert(at, LANDING);
+            project.families.teleports.insert(at, landing);
         }
     }
-    Ok(project)
+    Ok(())
 }
 
 fn project_selected(root: &Path, selected: Option<&[(u16, u16)]>) -> Result<Project, Error> {

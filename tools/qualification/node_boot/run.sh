@@ -17,6 +17,7 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
+readonly C11_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000022
 readonly C16C_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000f
 readonly W10_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000e
 readonly G01_ACCOUNT=01934f10-7c00-7000-8000-000000000021
@@ -27,9 +28,9 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Primal Knight" "Rat Caster" "Returner Reward Player" "House Control Player")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Primal Knight" "Rat Caster" "Returner Reward Player" "House Control Player" "Monk Qualification Player")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -156,10 +157,60 @@ case "$NODE_BOOT_D150_LEGACY" in
     ;;
   *) blocked invalid_d150_mode ;;
 esac
+# Give the journey runner the same parsed range used by the fixture and verifier.
+node_boot_row_selection() { # batch|w19a|w23
+  python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
+import os
+import re
+import struct
+import sys
+
+def env_text(value, default):
+    try:
+        return os.fsencode(value).decode("utf-8")
+    except UnicodeDecodeError:
+        # Rust env::var treats non-Unicode values as unset at this caller.
+        return default
+
+mode, raw_batch, raw_groups = sys.argv[1:]
+batch = env_text(raw_batch, "0:15")
+usize_max = (1 << (8 * struct.calcsize("P"))) - 1
+if batch == "all":
+    start, length = 0, usize_max
+else:
+    # Match Rust's unsigned decimal parser, including one optional leading +.
+    match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+    if not match:
+        sys.exit(0)
+    digits = tuple(part.lstrip("0") or "0" for part in match.groups())
+    if any(len(part) > len(str(usize_max)) for part in digits):
+        sys.exit(0)
+    start, length = map(int, digits)
+    if max(start, length) > usize_max:
+        sys.exit(0)
+
+if mode == "batch":
+    print(batch if batch == "all" else f"{start}:{length}")
+else:
+    groups = env_text(raw_groups, "").strip()
+    if not groups or "rows" in (group.strip() for group in groups.split(",")):
+        # Indices passed to e2e_row_selected in the Rust journeys.
+        rows = ((14, "W23.full"),) if mode == "w23" else ((12, "W19a.full"), (216, "W19a.client"))
+        for index, row in rows:
+            if index >= start and index - start < length:
+                print(row)
+PY_ROW_SELECTION
+}
+
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
-  town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
+  town)
+    WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")"
+    if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 && -n "$(node_boot_row_selection w23)" ]]; then
+      WORLD_REGIONS+=';125,121'
+    fi
+    ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
@@ -175,7 +226,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" "$C11_ACCOUNT_ID")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -362,7 +413,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$W10_ACCOUNT_ID" "$C16C_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" "$C11_ACCOUNT_ID" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -1128,50 +1179,6 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
-# Give the journey runner the same parsed range used by the fixture and verifier.
-node_boot_row_selection() { # batch|w19a
-  python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
-import os
-import re
-import struct
-import sys
-
-def env_text(value, default):
-    try:
-        return os.fsencode(value).decode("utf-8")
-    except UnicodeDecodeError:
-        # Rust env::var treats non-Unicode values as unset at this caller.
-        return default
-
-mode, raw_batch, raw_groups = sys.argv[1:]
-batch = env_text(raw_batch, "0:15")
-usize_max = (1 << (8 * struct.calcsize("P"))) - 1
-if batch == "all":
-    start, length = 0, usize_max
-else:
-    # Match Rust's unsigned decimal parser, including one optional leading +.
-    match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
-    if not match:
-        sys.exit(0)
-    digits = tuple(part.lstrip("0") or "0" for part in match.groups())
-    if any(len(part) > len(str(usize_max)) for part in digits):
-        sys.exit(0)
-    start, length = map(int, digits)
-    if max(start, length) > usize_max:
-        sys.exit(0)
-
-if mode == "batch":
-    print(batch if batch == "all" else f"{start}:{length}")
-else:
-    groups = env_text(raw_groups, "").strip()
-    if not groups or "rows" in (group.strip() for group in groups.split(",")):
-        # Indices passed to e2e_row_selected in the Rust journeys.
-        for index, row in ((12, "W19a.full"), (216, "W19a.client")):
-            if index >= start and index - start < length:
-                print(row)
-PY_ROW_SELECTION
-}
-
 w19a_rows() {
   [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 0
   node_boot_row_selection w19a
@@ -1492,6 +1499,7 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     requested_vocation="$vocation"
     [[ "$account" != "$LIGHT_ACCOUNT_ID" && "$account" != "$C16C_ACCOUNT_ID" ]] || requested_vocation=Sorcerer
     [[ "$account" != "$W10_ACCOUNT_ID" ]] || requested_vocation=Knight
+    [[ "$account" != "$C11_ACCOUNT_ID" ]] || requested_vocation=Monk
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then
       echo "platform intent issue failed for operation $operation"
@@ -1584,7 +1592,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env+=("OTERYN_E2E_ROW_BATCH=$row_batch")
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
     test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_G17_ACCOUNT=$G17_ACCOUNT" "NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
-    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID" "NODE_BOOT_W10_ACCOUNT_ID=$W10_ACCOUNT_ID" "NODE_BOOT_C16C_ACCOUNT_ID=$C16C_ACCOUNT_ID")
+    test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID" "NODE_BOOT_W10_ACCOUNT_ID=$W10_ACCOUNT_ID" "NODE_BOOT_C16C_ACCOUNT_ID=$C16C_ACCOUNT_ID" "NODE_BOOT_C11_ACCOUNT_ID=$C11_ACCOUNT_ID")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then
     # MP01's PvP rows run against the Open PvP World's own node and database.

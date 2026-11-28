@@ -2,7 +2,10 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::process::Command;
 
-use oteryn_world_bundle::{bundle, npc::Direction};
+use oteryn_world_bundle::{
+    bundle::{self, TerrainKind},
+    npc::Direction,
+};
 
 #[test]
 fn w19a_full_step_2_finds_messenger_in_compiled_world() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,7 +42,7 @@ fn w19a_full_step_2_finds_messenger_in_compiled_world() -> Result<(), Box<dyn st
     );
     let bytes = std::fs::read(&bundle_path)?;
     std::fs::remove_file(bundle_path)?;
-    let world = bundle::visit(&bytes, |_, _| Ok(()))?;
+    let world = bundle::read(&bytes)?;
     let seller = world
         .npcs
         .npcs
@@ -53,5 +56,30 @@ fn w19a_full_step_2_finds_messenger_in_compiled_world() -> Result<(), Box<dyn st
     }
     actual.sort_unstable();
     assert_eq!(actual, expected);
+    // The counter is interior. The adjacent public street is in TALK range.
+    let (x, y, floor) = (32356_u16, 32214_u16, -7);
+    assert!(seller.placements.iter().any(|placement| {
+        placement.floor == floor && placement.x.abs_diff(x).max(placement.y.abs_diff(y)) <= 4
+    }));
+    assert!(
+        world
+            .sectors
+            .iter()
+            .filter(|sector| sector.floor == floor)
+            .any(|sector| {
+                sector.tiles.iter().any(|tile| {
+                    tile.x == x
+                        && tile.y == y
+                        && tile.items.iter().any(|item| {
+                            world.manifest.palette[item.palette as usize]
+                                .terrain
+                                .is_some_and(|terrain| {
+                                    terrain.kind == TerrainKind::Ground
+                                        && terrain.walkable == Some(true)
+                                })
+                        })
+                })
+            })
+    );
     Ok(())
 }
