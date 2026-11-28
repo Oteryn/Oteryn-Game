@@ -43,6 +43,14 @@ class S10TravelBankTests(unittest.TestCase):
             global_fare = GLOBAL_FARES.get(source["npc"], {}).get(slug)
             with self.subTest(route=key, source=source["source"]):
                 route = routes.get(key)
+                if source["hold"] == "quest gate" and source["npc"] not in {"chemar", "petros"}:
+                    for keyword in [source["keyword"], *source.get("aliases", [])]:
+                        alias = f"{service}/{canonical_keyword(keyword)}"
+                        self.assertTrue(
+                            alias not in routes or routes[alias]["held"], source["hold"]
+                        )
+                    continue
+                self.assertIsNotNone(route, f"Missing route {key}")
                 if (source["npc"], slug) == ("chemar", "farmine"):
                     self.assertEqual(route["aliases"], ["zao"])
                     self.assertEqual(route["quest_tracks"], [{
@@ -52,14 +60,6 @@ class S10TravelBankTests(unittest.TestCase):
                     }])
                 if (source["npc"], slug) == ("petros", "yalahar"):
                     self.assertEqual(route["yalahar_town_gate"], "darashia")
-                if source["hold"] == "quest gate" and source["npc"] not in {"chemar", "petros"}:
-                    for keyword in [source["keyword"], *source.get("aliases", [])]:
-                        alias = f"{service}/{canonical_keyword(keyword)}"
-                        self.assertTrue(
-                            alias not in routes or routes[alias]["held"], source["hold"]
-                        )
-                    continue
-                self.assertIsNotNone(route, f"Missing route {key}")
                 self.assertTrue(route["native_addition"])
                 self.assertFalse(route.get("use_authored_fare_and_premium", False))
                 self.assertNotIn("premium_override", route)
