@@ -6,7 +6,6 @@
 //! again after relog.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use std::collections::BTreeMap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -28,40 +27,75 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
-    let mut values = BTreeMap::new();
-    for item in &client
-        .inventory()
-        .ok_or("inventory snapshot absent")?
+fn frame_quantity(
+    inventory: &oteryn_dev_client::CharacterInventory,
+    reference: std::num::NonZeroU32,
+) -> u64 {
+    inventory
         .entries
-    {
-        *values.entry(item.item_definition_ref.get()).or_default() += u64::from(item.count.get());
-    }
-    Ok(values)
+        .iter()
+        .filter(|item| item.item_definition_ref == reference)
+        .map(|item| u64::from(item.count.get()))
+        .sum()
 }
 
 fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
-    Ok(*quantities(client)?.get(&reference.get()).unwrap_or(&0))
+    Ok(frame_quantity(
+        client.inventory().ok_or("inventory snapshot absent")?,
+        reference,
+    ))
+}
+
+fn require_after_result(sequence: u64, result: u64) -> TestResult {
+    if sequence <= result {
+        return Err(
+            format!("step=item-effect sequence={sequence} must-follow-result={result}").into(),
+        );
+    }
+    Ok(())
+}
+
+fn verify_inventory_effect(
+    delta: &oteryn_dev_client::AppliedDelta<oteryn_dev_client::CharacterInventory>,
+    result: u64,
+    reference: std::num::NonZeroU32,
+    expected: u64,
+) -> TestResult {
+    require_after_result(delta.server_sequence, result)?;
+    let observed = frame_quantity(&delta.value, reference);
+    if observed != expected {
+        return Err(format!("inventory-delta sequence={} definition={reference} expected={expected} observed={observed}", delta.server_sequence).into());
+    }
+    Ok(())
 }
 
 async fn wait_quantity(
     client: &mut DevClientSession,
+    result: u64,
     reference: std::num::NonZeroU32,
     expected: u64,
-) -> TestResult<u64> {
+) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
+        let mut checked = false;
         for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event
-                && quantity(client, reference)? == expected
-            {
-                return Ok(delta.server_sequence);
+            match event {
+                SessionEvent::Inventory(delta) => {
+                    verify_inventory_effect(&delta, result, reference, expected)?;
+                    checked = true;
+                }
+                SessionEvent::GatedSnapshotReplaced(_) => {
+                    return Err("step=drop observed=replacement-snapshot".into());
+                }
+                _ => {}
             }
+        }
+        if checked {
+            return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "inventory delta timeout definition={reference} expected={expected} observed={}",
-                quantity(client, reference)?
+                "inventory-missing-delta definition={reference} expected={expected}"
             )
             .into());
         }
@@ -127,6 +161,7 @@ fn verify_walk(
     target: TilePos,
     landings: &[(u64, TilePos)],
     opened_sequence: u64,
+    enterable: impl Fn(TilePos) -> bool,
 ) -> TestResult<TilePos> {
     let mut previous_sequence = 0;
     for &(sequence, next) in landings {
@@ -135,6 +170,7 @@ fn verify_walk(
             || current == next
             || current.x.abs_diff(next.x).max(current.y.abs_diff(next.y)) != 1
             || next.floor != target.floor
+            || !enterable(next)
         {
             return Err(format!("step=browse-walk-to invalid-step={current:?}->{next:?} sequence={sequence} opened={opened_sequence}").into());
         }
@@ -162,6 +198,7 @@ fn invalid_open_event(event: &SessionEvent) -> bool {
 
 async fn browse_open(
     client: &mut DevClientSession,
+    world: &BundleWorld,
     at: WorldTilePosition,
     target: TilePos,
     expect_walk: bool,
@@ -192,7 +229,13 @@ async fn browse_open(
         }
     }
     let expected = if expect_walk {
-        verify_walk(start, target, &landings, reply_sequence)?
+        verify_walk(start, target, &landings, reply_sequence, |pos| {
+            world.enterable(pos)
+                && world
+                    .base()
+                    .tile(pos.x, pos.y, pos.floor)
+                    .is_some_and(|tile| tile.walkable())
+        })?
     } else if landings.is_empty()
         && start.floor == target.floor
         && start.x.abs_diff(target.x).max(start.y.abs_diff(target.y)) <= 1
@@ -221,16 +264,27 @@ async fn browse_open(
     {
         return Err("step=browse-open observed=invalid-view-delta-order".into());
     }
-    let view = selected_container_views(client.selected_capabilities(), &delta.payload)
-        .map_err(|error| format!("step=browse-open observed=invalid-view-{error:?}"))?
-        .views
-        .into_iter()
-        .find(|view| {
+    let views = selected_container_views(client.selected_capabilities(), &delta.payload)
+        .map_err(|error| format!("step=browse-open observed=invalid-view-{error:?}"))?;
+    exact_field(views, at)
+}
+
+fn exact_field(
+    views: tree::ContainerViews,
+    at: WorldTilePosition,
+) -> TestResult<tree::ContainerView> {
+    let mut browse_views = views.views.into_iter().filter(|view| view.browse.is_some());
+    let field = browse_views
+        .next()
+        .filter(|view| {
             view.browse
                 .is_some_and(|page| page.position == at && page.index == 0)
         })
         .ok_or("step=browse-open observed=missing-exact-field")?;
-    Ok(view)
+    if browse_views.next().is_some() {
+        return Err("step=browse-open observed=unexpected-extra-browse-view".into());
+    }
+    Ok(field)
 }
 
 fn assert_empty_field(view: &tree::ContainerView) -> TestResult {
@@ -314,7 +368,8 @@ async fn drop_first(
     if moved.outcome != ItemMoveOutcome::Moved {
         return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
     }
-    wait_quantity(client, item.item_definition_ref, debited)
+    let result_sequence = client.last_server_sequence();
+    wait_quantity(client, result_sequence, item.item_definition_ref, debited)
         .await
         .map_err(|error| format!("step=drop {error}"))?;
     Ok((item.item_definition_ref, item.count, before))
@@ -347,10 +402,17 @@ async fn take_entry(
                 SessionEvent::GatedSnapshotReplaced(_) => {
                     return Err("step=take observed=replacement-snapshot".into());
                 }
-                SessionEvent::Inventory(_) => {
-                    credited = quantity(client, entry.item_definition_ref)? == expected
+                SessionEvent::Inventory(delta) => {
+                    verify_inventory_effect(
+                        &delta,
+                        moved.result_server_sequence,
+                        entry.item_definition_ref,
+                        expected,
+                    )?;
+                    credited = true;
                 }
                 SessionEvent::ContainerViews(update) => {
+                    require_after_result(update.server_sequence, moved.result_server_sequence)?;
                     let refreshed = update
                         .value
                         .views
@@ -387,10 +449,42 @@ fn refusal_changed_state(event: &SessionEvent, distant: TilePos) -> bool {
         }
         SessionEvent::WorldSpatial(_)
         | SessionEvent::Inventory(_)
+        | SessionEvent::PartyIcons(_)
+        | SessionEvent::GuildEmblems(_)
+        | SessionEvent::InventoryCapacity(_)
         | SessionEvent::ContainerViews(_)
         | SessionEvent::GatedSnapshotReplaced(_) => true,
         _ => false,
     }
+}
+
+fn authored_wrong_floor(
+    actor: TilePos,
+    exists: impl Fn(TilePos) -> bool,
+) -> TestResult<WorldTilePosition> {
+    use oteryn_protocol_oteryn::world_map::{BOTTOM_FLOOR, TOP_FLOOR};
+    // Keep horizontal distance within browse reach so floor is the only range difference.
+    for floor in TOP_FLOOR as i8..=BOTTOM_FLOOR as i8 {
+        if -floor == actor.floor {
+            continue;
+        }
+        for x in actor.x.saturating_sub(1)..=actor.x.saturating_add(1) {
+            for y in actor.y.saturating_sub(1)..=actor.y.saturating_add(1) {
+                if exists(TilePos {
+                    x,
+                    y,
+                    floor: -floor,
+                }) {
+                    return Ok(WorldTilePosition {
+                        x: i32::from(x),
+                        y: i32::from(y),
+                        floor: i16::from(floor),
+                    });
+                }
+            }
+        }
+    }
+    Err("step=browse-other-floor observed=no-authored-tile-within-horizontal-reach".into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -398,7 +492,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xf1).await?;
     let t0 = tile(client.world_spatial().actor_position)?;
     let at = ground(&client);
-    assert_empty_field(&browse_open(&mut client, at, t0, false).await?)?;
+    assert_empty_field(&browse_open(&mut client, world, at, t0, false).await?)?;
     let (definition, count, before) = drop_first(&mut client).await?;
     let debited = before - u64::from(count.get());
     logout(&mut client).await?;
@@ -419,15 +513,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if distant.floor != t0.floor || distant.x.abs_diff(t0.x).max(distant.y.abs_diff(t0.y)) < 4 {
         return Err("step=walk-away observed=actor-not-distant".into());
     }
-    use oteryn_protocol_oteryn::world_map::{BOTTOM_FLOOR, TOP_FLOOR};
-    let other_floor = WorldTilePosition {
-        floor: if at.floor == BOTTOM_FLOOR {
-            TOP_FLOOR
-        } else {
-            BOTTOM_FLOOR
-        },
-        ..at
-    };
+    let other_floor = authored_wrong_floor(distant, |pos| {
+        world.base().tile(pos.x, pos.y, pos.floor).is_some()
+    })?;
     let inventory_before_refusal = client
         .inventory()
         .cloned()
@@ -470,7 +558,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("step=browse-other-floor observed={refused:?} barrier={barrier:?};needed=TooFar-with-unchanged-position-inventory-and-views").into());
     }
-    let view = browse_open(&mut client, at, t0, true).await?;
+    let view = browse_open(&mut client, world, at, t0, true).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
     let [entry] = view.entries.as_slice() else {
         return Err("step=browse-custody observed=field-does-not-contain-exactly-one-stack".into());
@@ -496,7 +584,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if tile(relogged.world_spatial().actor_position)? != arrived {
         return Err("step=relog observed=walk-to-position-not-restored".into());
     }
-    assert_empty_field(&browse_open(&mut relogged, at, t0, false).await?)?;
+    assert_empty_field(&browse_open(&mut relogged, world, at, t0, false).await?)?;
     logout(&mut relogged).await?;
     Ok(format!(
         "drop-relog={debited};wrong-floor-unchanged;walk-frames-before-open;field-empty-after-pickup-and-relog;pickup-relog={before};position-relog={},{},{};item-entries={}",
@@ -516,14 +604,15 @@ fn browse_audit_rejects_jump_and_late_arrival() -> TestResult {
     };
     let target = TilePos { x: 14, ..start };
     let adjacent = TilePos { x: 13, ..start };
-    assert!(verify_walk(start, target, &[(4, adjacent)], 5).is_err());
+    assert!(verify_walk(start, target, &[(4, adjacent)], 5, |_| true).is_err());
     let steps = [
         (2, TilePos { x: 11, ..start }),
         (3, TilePos { x: 12, ..start }),
         (4, adjacent),
     ];
-    assert!(verify_walk(start, target, &steps, 4).is_err());
-    assert_eq!(verify_walk(start, target, &steps, 5)?, adjacent);
+    assert!(verify_walk(start, target, &steps, 4, |_| true).is_err());
+    assert!(verify_walk(start, target, &steps, 5, |pos| pos != steps[1].1).is_err());
+    assert_eq!(verify_walk(start, target, &steps, 5, |_| true)?, adjacent);
     Ok(())
 }
 
@@ -556,6 +645,19 @@ fn browse_audit_rejects_rejected_status_and_retained_stack() -> TestResult {
             total: 1,
         }),
     };
+    let at = view.browse.ok_or("browse page")?.position;
+    let mut extra = view.clone();
+    extra.view_id = 1;
+    extra.browse.as_mut().ok_or("extra browse page")?.position.x += 1;
+    assert!(
+        exact_field(
+            tree::ContainerViews {
+                views: vec![view.clone(), extra]
+            },
+            at
+        )
+        .is_err()
+    );
     assert!(assert_empty_field(&view).is_err());
     view.entries.clear();
     assert!(assert_empty_field(&view).is_err());
@@ -613,4 +715,80 @@ fn browse_audit_rejects_replacement_delayed_effect_and_first_refusal() {
         distant,
         distant
     ));
+}
+
+#[test]
+fn browse_audit_rejects_absent_wrong_floor_and_unbound_inventory_effects() -> TestResult {
+    use oteryn_dev_client::{AppliedDelta, CharacterInventory};
+
+    let actor = TilePos {
+        x: 10,
+        y: 10,
+        floor: -7,
+    };
+    assert!(authored_wrong_floor(actor, |pos| pos == actor).is_err());
+    let authored = TilePos { floor: -8, ..actor };
+    assert_eq!(authored_wrong_floor(actor, |pos| pos == authored)?.floor, 8);
+
+    let reference = std::num::NonZeroU32::MIN;
+    let bad = AppliedDelta {
+        server_sequence: 12,
+        base_revision: 1,
+        new_revision: 2,
+        value: CharacterInventory::default(),
+    };
+    let mut good = bad.clone();
+    good.server_sequence = 13;
+    good.value
+        .entries
+        .push(oteryn_protocol_oteryn::item_view::ItemEntry {
+            appearance_id: 0,
+            handle: std::num::NonZeroU64::MIN,
+            item_definition_ref: reference,
+            count: reference,
+            sub_type: 0,
+        });
+    assert!(verify_inventory_effect(&bad, 11, reference, 1).is_err());
+    verify_inventory_effect(&good, 11, reference, 1)?;
+    assert!(verify_inventory_effect(&good, 13, reference, 1).is_err());
+    assert!(require_after_result(10, 11).is_err());
+    Ok(())
+}
+
+#[test]
+fn browse_audit_rejects_position_opaque_refusal_frames() {
+    use oteryn_dev_client::AppliedDelta;
+    let actor = TilePos {
+        x: 10,
+        y: 10,
+        floor: -7,
+    };
+    let events = [
+        SessionEvent::PartyIcons(AppliedDelta {
+            server_sequence: 12,
+            base_revision: 1,
+            new_revision: 2,
+            value: Vec::new(),
+        }),
+        SessionEvent::GuildEmblems(AppliedDelta {
+            server_sequence: 13,
+            base_revision: 2,
+            new_revision: 3,
+            value: Vec::new(),
+        }),
+        SessionEvent::InventoryCapacity(AppliedDelta {
+            server_sequence: 14,
+            base_revision: 3,
+            new_revision: 4,
+            value: oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity {
+                capacity: 100,
+                free: 100,
+            },
+        }),
+    ];
+    assert!(
+        events
+            .iter()
+            .all(|event| refusal_changed_state(event, actor))
+    );
 }
