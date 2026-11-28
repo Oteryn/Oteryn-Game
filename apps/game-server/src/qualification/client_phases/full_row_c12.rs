@@ -526,7 +526,7 @@ pub(super) struct CommittedDamage {
     pub(super) committed: u64,
 }
 
-pub(super) fn near_full_group_duration(remaining_ms: u64) -> bool {
+fn near_full_group_duration(remaining_ms: u64) -> bool {
     // The projection clock is sampled after commit. Allow bounded publication latency.
     (1_750..=2_000).contains(&remaining_ms)
 }
@@ -567,7 +567,7 @@ fn c12_rejects_both_deadlines_shortened_by_half_a_second() {
     assert!(!near_full_group_duration(1_500));
 }
 
-fn committed_base_damage(
+pub(super) fn committed_base_damage(
     path: &Path,
     start: u64,
     marker: &str,
@@ -2032,7 +2032,7 @@ async fn prove_authored_hunt(
     if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("C12 authored target clear refused: {cleared:?}").into());
     }
-    wait_combat_target(&mut client, None).await?;
+    wait_combat_target(client, None).await?;
     let rope = TilePos {
         x: 32296,
         y: 32334,
