@@ -336,15 +336,25 @@ async fn credit_one_kill(
     })
     .await
     .map_err(|_| "step=hunt-target exact fixture creature not visible")??;
+    client.take_events();
+    let previous_sequence = client.last_server_sequence();
     let attack = client.session_mut().attack_target(Some(&target)).await?;
-    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-        || client
-            .session_mut()
-            .combat_state()
-            .is_none_or(|state| state.target != Some(target))
+    if attack.status != CommandStatus::Accepted
+        || attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
     {
         return Err(format!("step=hunt-attack target={target:?} observed={attack:?}").into());
     }
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            if client.take_events().iter().any(|event| {
+                matches!(event, oteryn_dev_client::SessionEvent::ActorCombatState(delta)
+                    if delta.server_sequence > previous_sequence && delta.value.target == Some(target))
+            }) {
+                return TestResult::Ok(());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+        }
+    }).await.map_err(|_| format!("step=hunt-target-delta target={target:?} observed={attack:?}"))??;
     let death = committed_hunt_death(
         client,
         clients,
