@@ -147,22 +147,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let spawn = TilePos { x: 33946, y: 32645, floor: -5 };
-    let start = ActorPosition { x: 33945, y: 32645, floor: 5 };
-    if !world.enterable(tile(start)?) || !metadata.spawns.sources.iter().any(|source| {
-        source.floor == spawn.floor && source.points.iter().any(|point| {
-            (point.x, point.y) == (spawn.x, spawn.y)
-                && metadata.spawns.creatures.get(point.creature as usize)
-                    .is_some_and(|entry| entry.key == "oteryn:creature.radiant_acolyte")
-        })
-    }) {
-        return Err("W16 authored Acolyte fixture cells absent or blocked".into());
-    }
-    logout_w16(&mut fresh).await?;
-    drop(fresh);
-    let mut fresh = stage_at(clients, 0xb8, "radiant_acolyte", start).await?;
     for &(suffix, name) in SUMMER_ACTORS {
         let key = format!("oteryn:creature.{suffix}");
+        if let Some((spawn, start)) = population_fixture(suffix) {
+            if !world.enterable(tile(start)?) || !metadata.spawns.sources.iter().any(|source| {
+                source.floor == spawn.floor && source.points.iter().any(|point| {
+                    (point.x, point.y) == (spawn.x, spawn.y)
+                        && metadata.spawns.creatures.get(point.creature as usize)
+                            .is_some_and(|entry| entry.key == key)
+                })
+            }) {
+                return Err(format!("W16 authored {name} fixture cells absent or blocked").into());
+            }
+            logout_w16(&mut fresh).await?;
+            drop(fresh);
+            fresh = stage_at(clients, 0xb8, suffix, start).await?;
+        }
         super::full_row_w22a::travel_to_named_spawn(&mut fresh, world, &metadata.spawns, &key, name)
             .await
             .map_err(|error| format!("step=summer-population-route need={key} observed={error}"))?;
@@ -183,6 +183,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=final-logout observed=refused".into());
     }
     Err("step=summer-boss-encounters observed=no-authored-player-entry need=Maior-Domus,Mimar-Haffar,Phosphorus,Rakesh-Moonfang,The-Moonsnow-Magnolia".into())
+}
+
+fn population_fixture(suffix: &str) -> Option<(TilePos, ActorPosition)> {
+    let (spawn_x, spawn_y, start_x, start_y, floor) = match suffix {
+        "radiant_acolyte" => (33946, 32645, 33945, 32645, 5),
+        "radiant_inquisitor" => (33945, 32646, 33944, 32646, 2),
+        _ => return None,
+    };
+    Some((
+        TilePos { x: spawn_x, y: spawn_y, floor: -floor },
+        ActorPosition { x: start_x, y: start_y, floor: i16::from(floor) },
+    ))
 }
 
 pub(super) fn require_target_walk(
