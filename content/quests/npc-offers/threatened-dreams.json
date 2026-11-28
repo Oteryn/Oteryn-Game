@@ -18,6 +18,32 @@
       "reply": [
         "I can add a warning about the white deer for 5000 gold. Shall I?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.ikassis",
+      "keywords": ["mission"],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Alkestios sent you at a good time. A wolf mother needs help on Cormaya, and I can't cross the sea in this form. Will you help her?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ikassis",
+      "keywords": ["no"],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "reply": ["Then not."]
     }
   ]
 }

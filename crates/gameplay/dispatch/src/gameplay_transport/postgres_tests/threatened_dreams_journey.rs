@@ -1,5 +1,5 @@
-//! The book chapter uses the ordinary NPC, chest and selected carried USE owners.
-use super::classic_quests_fixtures::{install, progress, talk};
+//! The book chapter and wolf handoff use the ordinary NPC, chest and selected carried USE owners.
+use super::classic_quests_fixtures::{install, progress, talk, talk_expecting};
 use super::fixture::{Harness, debug, id, run};
 use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1};
@@ -8,6 +8,7 @@ use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
 use oteryn_gameplay_quests::quest::{threatened_dreams as quest, world_callbacks::Position};
+use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 use super::quest_world_callbacks_fixtures::{input_item, local, wire};
@@ -25,6 +26,7 @@ const TABLE: Position = Position {
     floor: -11,
 };
 const BOOK: &str = "oteryn:item.tibia.i25235";
+const TALISMAN: &str = "oteryn:item.tibia.i25295";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
 const JOURNAL_ANIMALS: &str = "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1";
 
@@ -196,13 +198,23 @@ fn scenario(configured_admin: &str) -> TestResult {
 
             // Give the fixtures a contact tile in the compact test map. The dialogue,
             // quest and chest bindings themselves are loaded from production content.
-            let [alkestios, ahmet] =
-                install(&owner, &admitted, [quest::ALKESTIOS, "oteryn:npc.ahmet"]).await?;
+            let [alkestios, ahmet, ikassis, wolf] = install(
+                &owner,
+                &admitted,
+                [
+                    quest::ALKESTIOS,
+                    "oteryn:npc.ahmet",
+                    "oteryn:npc.ikassis",
+                    "oteryn:npc.ghostly_wolf",
+                ],
+            )
+            .await?;
             assert_eq!(
                 progress(&owner, &admitted, &authority, quest::ANIMALS).await?,
                 0
             );
             assert_eq!(quantity(&h, BOOK).await?, 0);
+            assert_eq!(quantity(&h, TALISMAN).await?, 0);
 
             talk(&mut owner, &admitted, alkestios, 2200, "hi").await?;
             talk(&mut owner, &admitted, alkestios, 2201, "help").await?;
@@ -256,7 +268,9 @@ fn scenario(configured_admin: &str) -> TestResult {
             talk(&mut owner, &admitted, ahmet, 2204, "hi").await?;
             let thieves_offer = talk(&mut owner, &admitted, ahmet, 2205, "mission").await?;
             assert!(
-                thieves_offer.iter().any(|line| line.contains("I was robbed")),
+                thieves_offer
+                    .iter()
+                    .any(|line| line.contains("I was robbed")),
                 "{thieves_offer:?}"
             );
             let offer = talk(&mut owner, &admitted, ahmet, 2206, "book").await?;
@@ -320,6 +334,78 @@ fn scenario(configured_admin: &str) -> TestResult {
                 3
             );
             assert_eq!(quantity(&h, BOOK).await?, 0);
+            talk(&mut owner, &admitted, ikassis, 2300, "hi").await?;
+            let premature = talk(&mut owner, &admitted, ikassis, 2301, "mission").await?;
+            assert!(
+                !premature
+                    .iter()
+                    .any(|line| line.contains("Will you help her?"))
+            );
+            assert_eq!(quantity(&h, TALISMAN).await?, 0);
+
+            talk(&mut owner, &admitted, alkestios, 2303, "hi").await?;
+            talk(&mut owner, &admitted, alkestios, 2304, "mission").await?;
+            talk(&mut owner, &admitted, alkestios, 2305, "yes").await?;
+            assert_eq!(
+                progress(&owner, &admitted, &authority, quest::ANIMALS).await?,
+                4
+            );
+
+            talk(&mut owner, &admitted, ikassis, 2306, "hi").await?;
+            talk(&mut owner, &admitted, ikassis, 2307, "yes").await?;
+            assert_eq!(quantity(&h, TALISMAN).await?, 0);
+            talk(&mut owner, &admitted, ikassis, 2308, "mission").await?;
+            talk(&mut owner, &admitted, ikassis, 2309, "no").await?;
+            talk(&mut owner, &admitted, ikassis, 2310, "yes").await?;
+            assert_eq!(quantity(&h, TALISMAN).await?, 0);
+            let offer = talk(&mut owner, &admitted, ikassis, 2311, "mission").await?;
+            assert!(offer.iter().any(|line| line.contains("Will you help her?")));
+            let accepted = talk(&mut owner, &admitted, ikassis, 2312, "yes").await?;
+            assert!(
+                accepted
+                    .iter()
+                    .any(|line| line.contains("Take this talisman")),
+                "{accepted:?}"
+            );
+            assert_eq!(
+                progress(&owner, &admitted, &authority, quest::ANIMALS).await?,
+                5
+            );
+            assert_eq!(
+                progress(&owner, &admitted, &authority, JOURNAL_ANIMALS).await?,
+                5
+            );
+            assert_eq!(quantity(&h, TALISMAN).await?, 1);
+            let carried =
+                super::paradox_tower_journey_fixtures::carried(&owner, &admitted, &h).await?;
+            assert!(
+                carried
+                    .iter()
+                    .any(|(item, count)| item == TALISMAN && *count == 1)
+            );
+
+            talk(&mut owner, &admitted, ikassis, 2313, "mission").await?;
+            talk_expecting(
+                &mut owner,
+                &admitted,
+                ikassis,
+                2314,
+                "yes",
+                NpcIntentDisposition::Rejected,
+            )
+            .await?;
+            assert_eq!(quantity(&h, TALISMAN).await?, 1);
+            talk(&mut owner, &admitted, wolf, 2315, "hi").await?;
+            talk(&mut owner, &admitted, wolf, 2316, "mission").await?;
+            talk(&mut owner, &admitted, wolf, 2317, "yes").await?;
+            assert_eq!(
+                progress(&owner, &admitted, &authority, quest::ANIMALS).await?,
+                6
+            );
+            assert_eq!(
+                progress(&owner, &admitted, &authority, JOURNAL_ANIMALS).await?,
+                6
+            );
         }
         h.cleanup().await
     })

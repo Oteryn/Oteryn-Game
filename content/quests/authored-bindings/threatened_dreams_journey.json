@@ -74,7 +74,46 @@
               "failure_reply": [
                 "You need 5000 gold and the book with ancient legends."
               ]
-            }
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/threatened-dreams/fae-talisman",
+                "quest": "oteryn:quest.threatened_dreams_quest",
+                "npc": "oteryn:npc.ikassis",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 1,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                    "minimum": 4,
+                    "maximum": 4,
+                    "set": 5
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                    "minimum": 0,
+                    "maximum": 16,
+                    "set": 5
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i25295",
+                  "count": 1
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Take this talisman so you can speak to the wolf. Look for her at night by the weeping stone in southern Cormaya."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf"
+                ]
+              }
+            ]
           }
         },
         {

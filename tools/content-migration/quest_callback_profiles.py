@@ -450,6 +450,8 @@ def _requested_inputs(root, extra_keys=()):
     authored_keys.update(
         f"oteryn:item.tibia.i{number}" for number in (3452, 6093, 6105, 6119, 9843)
     )
+    # Ikassis hands the player the Fae Talisman when starting the wolf mission.
+    authored_keys.add("oteryn:item.tibia.i25295")
     keys.update(authored_keys)
     authored_callbacks = []
     explorer_npc = root / "content/quests/npc-callbacks/explorer-society.json"
