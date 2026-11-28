@@ -40,7 +40,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         budget
             .retry_command_guard(async || {
                 ActivityHandoffOwner::new(self.root.clone())
-                    .note_transfer_input(self.holder, fence, controller.transport)
+                    .note_transfer_input_until(
+                        self.holder,
+                        fence,
+                        controller.transport,
+                        Some(budget.deadline),
+                    )
                     .await
             })
             .await
