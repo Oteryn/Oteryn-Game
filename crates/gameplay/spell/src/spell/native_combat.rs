@@ -519,6 +519,24 @@ fn element(p: &Value, f: &NativeCombatFacts) -> Result<Element, Error> {
     })
 }
 
+pub(super) fn avatar_state(
+    parameters: &Value,
+    stage: u8,
+    expires_ms: u64,
+) -> Result<super::combat_batch::AvatarState, Error> {
+    Ok(super::combat_batch::AvatarState {
+        expires_ms,
+        outfit_look_type: u32n(parameters, "outfit_look_type", stage)?,
+        incoming_reduction_percent: u32n(parameters, "incoming_damage_reduction_percent", stage)?,
+        critical_chance_percent: u32n(parameters, "critical_chance_percent", stage)?,
+        critical_extra_percentage_points: u32n(
+            parameters,
+            "critical_extra_damage_percentage_points",
+            stage,
+        )?,
+    })
+}
+
 pub fn plan(
     key: &str,
     p: &Value,
@@ -528,7 +546,8 @@ pub fn plan(
     gate(p, f)?;
     match key {
         "avatar_state" => {
-            let reduction = u32n(p, "incoming_damage_reduction_percent", f.stage)?;
+            let state = avatar_state(p, f.stage, deadline(f, n(p, "duration_ms", f.stage)?)?)?;
+            let reduction = state.incoming_reduction_percent;
             let incoming = f
                 .incoming_hit
                 .map(|hit| {
@@ -536,23 +555,19 @@ pub fn plan(
                         return fail("incoming hit outside source integer domain");
                     }
                     let removed = ((hit as f64) * f64::from(reduction) / 100.0).ceil();
-                    if !removed.is_finite() || removed > (i64::MAX as f64) {
+                    if !removed.is_finite() || removed > i64::MAX as f64 {
                         return fail("reduction overflow");
                     }
-                    Ok(hit - (removed as i64))
+                    Ok(hit - removed as i64)
                 })
                 .transpose()?;
             Ok(NativeCombatPlan::Avatar(AvatarPlan {
-                expires_ms: deadline(f, n(p, "duration_ms", f.stage)?)?,
-                outfit_look_type: u32n(p, "outfit_look_type", f.stage)?,
+                expires_ms: state.expires_ms,
+                outfit_look_type: state.outfit_look_type,
                 incoming_reduction_percent: reduction,
                 incoming_after_reduction: incoming,
-                critical_chance_percent: u32n(p, "critical_chance_percent", f.stage)?,
-                critical_extra_percentage_points: u32n(
-                    p,
-                    "critical_extra_damage_percentage_points",
-                    f.stage,
-                )?,
+                critical_chance_percent: state.critical_chance_percent,
+                critical_extra_percentage_points: state.critical_extra_percentage_points,
                 cooldown_ms: n(p, "cooldown_ms", f.stage)?,
                 refresh_stats_on_apply_and_expiry: true,
                 replace_deadline: true,

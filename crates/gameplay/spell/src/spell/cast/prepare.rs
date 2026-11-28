@@ -358,6 +358,7 @@ pub fn prepare_ordinary_owner_cast_with_wheel(
         .checked_sub(resolution.soul_spent)
         .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns = resolution.cooldowns.clone();
+    next.note_offensive_spell(spell, now);
     next.revision = next
         .revision
         .checked_add(1)
@@ -567,6 +568,7 @@ fn prepare_native_owner_cast_impl(
         .checked_sub(resolved.common.soul_spent)
         .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns = resolved.common.cooldowns;
+    next.note_offensive_spell(spell, now);
     next.revision = next
         .revision
         .checked_add(1)
@@ -733,6 +735,7 @@ fn prepare_native_callback_owner_cast_core(
         .checked_sub(common.soul_spent)
         .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns = common.cooldowns;
+    next.note_offensive_spell(spell, now);
     next.revision = next
         .revision
         .checked_add(1)

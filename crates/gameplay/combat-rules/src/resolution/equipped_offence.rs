@@ -25,6 +25,7 @@ pub struct EquippedOffence {
     pub boots_tier: u8,
     pub armor_tier: u8,
     pub helmet_tier: u8,
+    pub legs_tier: u8,
     pub reflect_percent: u64,
     /// Physical reflection points; other elements receive only reflectpercentall.
     pub reflect_flat: u32,

@@ -388,23 +388,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
             );
         }
-        if states
-            .get(&runtime, actor, session)?
-            .equipped_offence()
-            .helmet_tier
-            > 0
-        {
-            let outside_protection =
-                qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
-                    == Some(false);
-            self.states.attack.lock().await.tick_momentum(
-                &runtime,
-                &mut states,
-                (actor, session),
-                now,
-                self.spells,
-                outside_protection,
-            );
+        let equipment = states.get(&runtime, actor, session)?.equipped_offence();
+        if equipment.helmet_tier > 0 || equipment.legs_tier > 0 {
+            let mut attack = self.states.attack.lock().await;
+            if equipment.helmet_tier > 0 {
+                let outside_protection =
+                    qualified_protection_zone(&mut runtime, self.movement_cells(), actor)
+                        == Some(false);
+                attack.tick_momentum(
+                    &runtime,
+                    &mut states,
+                    (actor, session),
+                    now,
+                    self.spells,
+                    outside_protection,
+                );
+            }
+            if equipment.legs_tier > 0
+                && let Some(appearances) = self
+                    .active_generation
+                    .and_then(|active| active.native_gameplay())
+                    .and_then(|native| native.spell_appearances())
+            {
+                attack.tick_transcendence(
+                    &runtime,
+                    &mut states,
+                    (actor, session),
+                    now,
+                    self.spells,
+                    appearances,
+                );
+            }
         }
         let state = states.get(&runtime, actor, session)?;
         if !crate::spell::actor_conditions::has_periodic_damage(state) {

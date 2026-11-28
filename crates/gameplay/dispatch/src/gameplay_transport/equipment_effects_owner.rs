@@ -521,7 +521,8 @@ fn equipped_offence_inner(
     if equipment.content_digest != content.source_digest() {
         return None;
     }
-    let (mut armor_tier, mut boots_tier, mut helmet_tier, mut weapon_tier) = (0, 0, 0, 0);
+    let (mut armor_tier, mut boots_tier, mut helmet_tier, mut legs_tier, mut weapon_tier) =
+        (0, 0, 0, 0, 0);
     let mut conversion = None;
     let mut vibrancy = 0;
     let mut sums = [0_i64; 7];
@@ -559,6 +560,9 @@ fn equipped_offence_inner(
         }
         if worn && slot == EquipmentSlot::Head {
             helmet_tier = item.tier;
+        }
+        if worn && slot == EquipmentSlot::Legs {
+            legs_tier = item.tier;
         }
         if item.slot == 6
             && matches!(&semantics.weapon, ReferenceItemField::Known(weapon)
@@ -628,6 +632,7 @@ fn equipped_offence_inner(
     offence.boots_tier = boots_tier;
     offence.armor_tier = armor_tier;
     offence.helmet_tier = helmet_tier;
+    offence.legs_tier = legs_tier;
     Some(offence)
 }
 

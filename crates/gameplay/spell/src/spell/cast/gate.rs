@@ -297,6 +297,7 @@ pub(super) fn cast_resolved(
         .checked_sub(resolution.soul_spent)
         .ok_or(SpellCastDisposition::Rejected)?;
     next.cooldowns = resolution.cooldowns;
+    next.note_offensive_spell(spell, context.now);
     next.revision = next
         .revision
         .checked_add(1)

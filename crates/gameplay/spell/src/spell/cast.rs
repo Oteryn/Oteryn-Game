@@ -10,6 +10,7 @@
 
 use oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle;
 use oteryn_protocol_oteryn::actor_spell::{MAX_SOUL, MAX_VITAL_POOL};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use serde_json::Value;
 
 use super::chain::{ChainCreature, TilePosition};
@@ -119,6 +120,7 @@ pub struct PlayerSpellState {
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
     pub cooldowns: Cooldowns,
+    pub(super) last_offensive_spell_at: Option<SemanticTimeMicros>,
     pub(super) wheel_gift: super::wheel_gift::GiftOfLifeState,
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
@@ -226,6 +228,7 @@ impl PlayerSpellState {
                 soul: facts.max_soul,
                 soul_window: None,
                 cooldowns: Cooldowns::default(),
+                last_offensive_spell_at: None,
                 wheel_gift: Default::default(),
                 revision: 1,
                 monk,

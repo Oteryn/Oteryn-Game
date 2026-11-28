@@ -84,6 +84,99 @@ pub fn supports_condition_change(change: &OwnerCombatChange) -> bool {
         | OwnerCombatChange::CompanionConditions(_) => false,
     }
 }
+const AVATAR_ATTRIBUTES: &str = "spell.avatar.attributes";
+const AVATAR_OUTFIT: &str = "spell.avatar.outfit";
+
+fn apply_avatar(
+    state: &mut PlayerSpellState,
+    avatar: &super::combat_batch::AvatarState,
+    now_ms: u64,
+    appearance: Option<crate::domain::appearance::AppearanceSelection<String>>,
+) -> Result<(), SpellCastDisposition> {
+    let duration_ms = avatar
+        .expires_ms
+        .checked_sub(now_ms)
+        .and_then(|duration| u32::try_from(duration).ok())
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let outfit = definition(
+        AVATAR_OUTFIT,
+        ConditionValues::Outfit {
+            duration_ms,
+            look_type: avatar.outfit_look_type,
+        },
+    )?;
+    let outfit = match appearance {
+        Some(selection) => outfit
+            .with_appearance(selection)
+            .ok_or(SpellCastDisposition::Rejected)?,
+        None => outfit,
+    };
+    apply_definition(
+        state,
+        definition(
+            AVATAR_ATTRIBUTES,
+            ConditionValues::Attributes {
+                duration_ms,
+                critical_chance_percent: avatar.critical_chance_percent,
+                critical_extra_percentage_points: avatar.critical_extra_percentage_points,
+                damage_dealt_percent: 100,
+                incoming_reduction_percent: avatar.incoming_reduction_percent,
+            },
+        )?,
+        now_ms,
+        0,
+    )?;
+    apply_definition(state, outfit, now_ms, 0)
+}
+
+/// A forge activation shares the normal Avatar attributes and outfit with the
+/// vocation's qualified Stage 3 profile. It has no cast payment or Wheel prerequisite.
+pub fn stage_transcendence(
+    state: &PlayerSpellState,
+    book: &super::SpellBook,
+    appearances: &oteryn_gameplay_content::content::native_spell_appearances::CompiledSpellAppearances,
+    now: u64,
+) -> Option<PlayerSpellState> {
+    use oteryn_gameplay_domain::domain::condition::ConflictKey;
+    let avatar_slots = [
+        (ConflictKey::Attributes, AVATAR_ATTRIBUTES),
+        (ConflictKey::Outfit, AVATAR_OUTFIT),
+    ];
+    if avatar_slots.iter().any(|(slot, key)| {
+        state
+            .conditions
+            .active_at(*slot, now)
+            .is_some_and(|instance| instance.definition().key() == *key)
+    }) {
+        return None;
+    }
+    let profile = book.spells.iter().find_map(|spell| {
+        let super::Execution::NativeProfile(profile) = &spell.execution else {
+            return None;
+        };
+        let behavior = &profile.spell()["execution"]["native_behavior"];
+        (spell.vocations.contains(&state.character_facts().vocation)
+            && behavior["key"].as_str() == Some("avatar_state"))
+        .then_some(&behavior["parameters"])
+    })?;
+    let now_ms = now / 1_000;
+    let avatar = super::native_combat::avatar_state(profile, 3, now_ms.checked_add(7_000)?).ok()?;
+    let appearance = appearances.for_look_type(avatar.outfit_look_type)?;
+    let mut next = state.clone();
+    apply_avatar(&mut next, &avatar, now_ms, Some(appearance.selection())).ok()?;
+    // An incompatible longer condition can keep its slot. Never install a half Avatar.
+    if avatar_slots.iter().any(|(slot, key)| {
+        !next
+            .conditions
+            .active_at(*slot, now)
+            .is_some_and(|instance| instance.definition().key() == *key)
+    }) {
+        return None;
+    }
+    next.advance_batch_revision().ok()?;
+    Some(next)
+}
+
 pub fn apply_combat_change(
     state: &mut PlayerSpellState,
     change: &OwnerCombatChange,
@@ -91,41 +184,7 @@ pub fn apply_combat_change(
 ) -> Result<(), SpellCastDisposition> {
     let mut staged = state.clone();
     match change {
-        OwnerCombatChange::Avatar(v) => {
-            let duration_ms = u32::try_from(
-                v.expires_ms
-                    .checked_sub(now_ms)
-                    .ok_or(SpellCastDisposition::Rejected)?,
-            )
-            .map_err(|_| SpellCastDisposition::Rejected)?;
-            apply_definition(
-                &mut staged,
-                definition(
-                    "spell.avatar.attributes",
-                    ConditionValues::Attributes {
-                        duration_ms,
-                        critical_chance_percent: v.critical_chance_percent,
-                        critical_extra_percentage_points: v.critical_extra_percentage_points,
-                        damage_dealt_percent: 100,
-                        incoming_reduction_percent: v.incoming_reduction_percent,
-                    },
-                )?,
-                now_ms,
-                0,
-            )?;
-            apply_definition(
-                &mut staged,
-                definition(
-                    "spell.avatar.outfit",
-                    ConditionValues::Outfit {
-                        duration_ms,
-                        look_type: v.outfit_look_type,
-                    },
-                )?,
-                now_ms,
-                0,
-            )?;
-        }
+        OwnerCombatChange::Avatar(v) => apply_avatar(&mut staged, v, now_ms, None)?,
         OwnerCombatChange::ManaShield(v) => {
             if v.capacity == 0 || v.capacity > staged.facts.max_mana {
                 return rejected();

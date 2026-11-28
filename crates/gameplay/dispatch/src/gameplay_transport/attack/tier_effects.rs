@@ -52,7 +52,23 @@ pub(super) fn ruse(
 const MOMENTUM: [u64; 11] = [0, 200, 405, 620, 845, 1080, 1325, 1580, 1845, 2120, 2405];
 const TIER_CHECK_MICROS: u64 = 2_000_000;
 
-fn periodic_occurrence(
+/// TibiaWiki Transcendence rates, in hundredths of a percent, indexed by legs tier.
+const TRANSCENDENCE: [u64; 11] = [0, 13, 27, 44, 64, 86, 111, 138, 168, 200, 235];
+
+fn take_periodic_check(
+    last_check: &mut Option<SemanticTimeMicros>,
+    now: SemanticTimeMicros,
+) -> bool {
+    if last_check
+        .is_some_and(|previous| now.get().saturating_sub(previous.get()) < TIER_CHECK_MICROS)
+    {
+        return false;
+    }
+    *last_check = Some(now);
+    true
+}
+
+pub(in crate::gameplay_transport) fn periodic_occurrence(
     actor: ExactActorRef,
     session: GameSessionId,
     window: u64,
@@ -103,13 +119,9 @@ impl ChannelAttackStates {
             return;
         };
         let window = now.get() / TIER_CHECK_MICROS;
-        if entry
-            .last_momentum_check
-            .is_some_and(|previous| now.get().saturating_sub(previous.get()) < TIER_CHECK_MICROS)
-        {
+        if !take_periodic_check(&mut entry.last_momentum_check, now) {
             return;
         }
-        entry.last_momentum_check = Some(now);
         let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
         if !tier_proc(
             &MOMENTUM,
@@ -153,6 +165,62 @@ impl ChannelAttackStates {
         }
         let after = state.cooldowns.clone();
         states.record_cooldown_changes(runtime, actor, session, &before, &after, None);
+    }
+}
+
+impl ChannelAttackStates {
+    /// The same periodic spell owner installs the regular Avatar condition successor.
+    pub(in crate::gameplay_transport) fn tick_transcendence(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        (actor, session): (ExactActorRef, GameSessionId),
+        now: SemanticTimeMicros,
+        book: &crate::spell::SpellBook,
+        appearances: &crate::content::native_spell_appearances::CompiledSpellAppearances,
+    ) {
+        if states.has_pending_spell_commit(actor, session)
+            || runtime.assert_actor_spell_unreserved(actor).is_err()
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return;
+        }
+        let Some(state) = states.get(runtime, actor, session) else {
+            return;
+        };
+        let equipment = state.equipped_offence();
+        if equipment.legs_tier == 0 || state.health == 0 {
+            return;
+        }
+        let Some(entry) = self.entry(runtime, actor, session) else {
+            return;
+        };
+        if !take_periodic_check(&mut entry.last_transcendence_check, now) {
+            return;
+        }
+        let recent_spell = state.last_offensive_spell_at().is_some_and(|at| {
+            now.elapsed_since(at)
+                .is_ok_and(|age| age < TIER_CHECK_MICROS)
+        });
+        if !recent_spell && !entry.state.swung_within_interval(now, TIER_CHECK_MICROS) {
+            return;
+        }
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let occurrence = periodic_occurrence(actor, session, now.get() / TIER_CHECK_MICROS);
+        if tier_proc(
+            &TRANSCENDENCE,
+            equipment.legs_tier,
+            equipment.boots_tier,
+            &root,
+            occurrence,
+            "tier_transcendence",
+        ) && let Some(next) =
+            crate::spell::actor_conditions::stage_transcendence(state, book, appearances, now.get())
+        {
+            states.commit(runtime, actor, session, next);
+        }
     }
 }
 

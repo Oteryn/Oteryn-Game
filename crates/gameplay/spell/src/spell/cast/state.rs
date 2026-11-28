@@ -50,6 +50,18 @@ impl PlayerSpellState {
         &self.learned
     }
 
+    /// The paid successor records offensive spells and runes. Refused
+    /// proposals never install this timestamp.
+    pub fn note_offensive_spell(&mut self, spell: &SpellDefinition, now: SemanticTimeMicros) {
+        if spell.aggressive {
+            self.last_offensive_spell_at = Some(now);
+        }
+    }
+
+    pub fn last_offensive_spell_at(&self) -> Option<SemanticTimeMicros> {
+        self.last_offensive_spell_at
+    }
+
     pub fn source_cooldown_deadlines(&self) -> Vec<(String, u64)> {
         self.cooldowns.canonical_deadlines()
     }
