@@ -24,18 +24,18 @@ fn depot_cross_town_wire_reads_and_withdraws_from_existing_town_custody() -> Tes
 }
 
 #[test]
-fn stash_cross_town_wire_enforces_shared_unit_limit_without_losing_items() -> TestResult {
+fn stash_cross_town_wire_stows_only_stackable_items() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario_with_premium(true, false, false, false, false, None, Mode::StashCapacity)
+            scenario_with_premium(true, false, false, false, false, None, Mode::StashEligibility)
                 .map_err(|error| error.to_string())
         })?
         .join()
-        .map_err(|_| "stash capacity thread panicked")?
+        .map_err(|_| "stash eligibility thread panicked")?
         .map_err(Into::into)
 }
 

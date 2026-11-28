@@ -227,9 +227,8 @@ their existing browse and withdrawal rules. The Fandom archive says
 
 ## 6. Depot capacity (amends DEPOT-0 §3)
 
-- The 2026-11-28 lane packet sets a 10,000-unit total for new stows across the
-  Character's World stash. Previously saved balances are retained. Withdrawals
-  can reduce an over-limit balance. The counted depot limit also applies.
+- The 2026-11-28 eligibility amendment retains the existing per-balance ceiling
+  and counted depot capacity described below.
 
 - The counted depot total of a character is its depot entries plus, for each `definition_key`,
   `ceil(q / 100)`, where `q` is the sum of the quantities of that key's balance rows over the

@@ -62,12 +62,11 @@ async fn result(client: &mut DuplexStream, id: u64, deltas: &mut usize) -> TestR
     }
 }
 
-
-pub(super) async fn global_capacity(
+pub(super) async fn stackable_only(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
     pool: &sqlx::PgPool,
-    [first, second, nonstackable]: [ItemHandle; 3],
+    nonstackable: ItemHandle,
     bag: ItemHandle,
 ) -> TestResult {
     use super::container_batch_cases::command;
@@ -92,27 +91,6 @@ pub(super) async fn global_capacity(
     )
     .ok_or("stash actions selection")?;
 
-    // Load a saved balance of a different definition, without issuing 99 setup stows.
-    let mut tx = pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "INSERT INTO game_character_stash_balances(character_id,world_id,definition_key,
-          definition_revision,quantity,last_entry_id)
-         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'oteryn:item.tibia.i3029',
-          'definition-r1',9900,game_character_uuid_v7())",
-    )
-    .bind(id(41).as_slice())
-    .bind(id(42).as_slice())
-    .execute(&mut *tx)
-    .await?;
-    tx.commit().await?;
-    let stow = |handle| StashIntent {
-        page: 0,
-        action: StashAction::Stow(handle),
-    };
-
     exchange(owner, &mut admitted, async |client| {
         let mut deltas = 0;
         let browse = StashIntent {
@@ -124,7 +102,15 @@ pub(super) async fn global_capacity(
             result(client, 1, &mut deltas).await?.outcome,
             StashOutcome::Opened
         );
-        send(client, 2, stow(nonstackable)).await?;
+        send(
+            client,
+            2,
+            StashIntent {
+                action: StashAction::Stow(nonstackable),
+                ..browse
+            },
+        )
+        .await?;
         assert_eq!(
             result(client, 2, &mut deltas).await?.outcome,
             StashOutcome::Unsupported
@@ -133,13 +119,13 @@ pub(super) async fn global_capacity(
             client,
             3,
             StashIntent {
-                action: StashAction::StowMatching(first),
+                action: StashAction::StowMatching(nonstackable),
                 ..browse
             },
         )
         .await?;
         let batch = result(client, 3, &mut deltas).await?;
-        assert_eq!(batch.outcome, StashOutcome::AmountLimit);
+        assert_eq!(batch.outcome, StashOutcome::Unsupported);
         assert!(batch.rows.is_empty());
 
         let command_type = batch_wire::COMMAND_TYPE_STASH_CONTAINER;
@@ -159,72 +145,61 @@ pub(super) async fn global_capacity(
         };
         assert_eq!(
             command(client, 5, command_type, confirm).await?,
-            (CommandStatus::Rejected, None)
+            (
+                CommandStatus::Accepted,
+                Some(batch_wire::Reply::Committed(200))
+            ),
         );
-        let units: i64 =
-            sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_character_stash_balances")
-                .fetch_one(pool)
-                .await?;
-        assert_eq!(units, 9900, "the partial container stow rolls back");
 
         send(client, 6, browse).await?;
-        assert_eq!(
-            result(client, 6, &mut deltas).await?.outcome,
-            StashOutcome::Opened
-        );
-        send(client, 7, stow(first)).await?;
-        let at_capacity = result(client, 7, &mut deltas).await?;
-        assert_eq!(at_capacity.outcome, StashOutcome::Committed);
-        assert_eq!(at_capacity.rows[0].quantity, 100);
+        let local = result(client, 6, &mut deltas).await?;
+        assert_eq!(local.outcome, StashOutcome::Opened);
+        let [row] = local.rows.as_slice() else {
+            return Err("expected one stackable stash balance".into());
+        };
+        assert_eq!(row.quantity, 200);
 
-        step(client, 8, StepDirection::East).await?;
-        read_step(client, 8).await?;
-        send(client, 9, browse).await?;
+        step(client, 7, StepDirection::East).await?;
+        read_step(client, 7).await?;
+        send(client, 8, browse).await?;
         assert_eq!(
-            result(client, 9, &mut deltas).await?.outcome,
+            result(client, 8, &mut deltas).await?.outcome,
             StashOutcome::NoLocker
         );
-        step(client, 10, StepDirection::East).await?;
-        read_step(client, 10).await?;
-        send(client, 11, browse).await?;
-        let other_town = result(client, 11, &mut deltas).await?;
+        step(client, 9, StepDirection::East).await?;
+        read_step(client, 9).await?;
+        send(client, 10, browse).await?;
+        let other_town = result(client, 10, &mut deltas).await?;
         assert_eq!(other_town.outcome, StashOutcome::Opened);
-        assert_eq!(other_town.rows, at_capacity.rows);
+        assert_eq!(other_town.rows, local.rows);
 
-        send(client, 12, stow(second)).await?;
-        let over_capacity = result(client, 12, &mut deltas).await?;
-        assert_eq!(over_capacity.outcome, StashOutcome::AmountLimit);
-        assert_eq!(over_capacity.stowed_quantity, 0);
-        assert_eq!(over_capacity.rows, at_capacity.rows);
-        let withdraw = StashIntent {
-            page: 0,
-            action: StashAction::Withdraw {
-                row: at_capacity.rows[0].handle,
-                amount: 100,
+        send(
+            client,
+            11,
+            StashIntent {
+                action: StashAction::Withdraw {
+                    row: row.handle,
+                    amount: row.quantity,
+                },
+                ..browse
             },
-        };
-        send(client, 13, withdraw).await?;
-        let withdrawn = result(client, 13, &mut deltas).await?;
+        )
+        .await?;
+        let withdrawn = result(client, 11, &mut deltas).await?;
         assert_eq!(withdrawn.outcome, StashOutcome::Committed);
         assert!(withdrawn.rows.is_empty());
-
-        send(client, 14, stow(second)).await?;
-        let reused_room = result(client, 14, &mut deltas).await?;
-        assert_eq!(reused_room.outcome, StashOutcome::Committed);
-        assert_eq!(reused_room.rows[0].quantity, 100);
         Ok(())
     })
     .await?;
-    let units: i64 =
-        sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_character_stash_balances")
-            .fetch_one(pool)
-            .await?;
-    assert_eq!(units, 10_000);
-    let successful: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM game_character_stash_operations WHERE outcome=2")
-            .fetch_one(pool)
-            .await?;
-    assert_eq!(successful, 3);
+
+    let carried_armor: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_container_entries e
+         JOIN game_item_instances i USING (item_instance_id)
+         WHERE i.definition_production_key='oteryn:item.tibia.i811' AND i.lifecycle=1",
+    )
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(carried_armor, 1, "stow actions preserve the armor in the backpack");
     Ok(())
 }
 

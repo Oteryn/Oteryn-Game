@@ -51,8 +51,6 @@ struct Plan {
     lines: Vec<Value>,
 }
 
-const MAX_STASH_TOTAL_UNITS: i64 = 10_000;
-
 // Stored balances may still be withdrawn under their original definition policy.
 // The stow planners also require a stackable definition for newly converted items.
 fn stowable(native: &NativeGameplayState, definition: &TypedDefinitionRef) -> bool {
@@ -506,26 +504,17 @@ async fn check_stow_capacity(
     amount: u32,
 ) -> Result<Result<(), StashOutcome>, DurabilityError> {
     let world = fence.runtime_scope.world_id();
-    let after = before + i64::from(amount);
-    // All stow variants hold the current Character root fence. Earlier lines in a
-    // batch are visible here, and the caller rolls the entire batch back on refusal.
-    let (units, used): (i64, i64) = sqlx::query_as(
-        "SELECT COALESCE(sum(quantity),0)::bigint, COALESCE(sum((quantity+99)/100),0)::bigint
-         FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid
-           AND world_id=encode($2,'hex')::uuid AND quantity>0",
-    )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(world.as_bytes().as_slice())
-    .fetch_one(&mut **tx)
-    .await?;
-    if units > MAX_STASH_TOTAL_UNITS - i64::from(amount) {
-        return Ok(Err(StashOutcome::AmountLimit));
-    }
-    let depot:i64=sqlx::query_scalar("SELECT COALESCE(max(n),0)::bigint FROM (SELECT sum(committed) AS n FROM game_character_depot_box_counters WHERE character_id=encode($1,'hex')::uuid GROUP BY town_id) towns")
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-    if depot + used - (before + 99) / 100 + (after + 99) / 100 > 15_000 {
-        return Ok(Err(StashOutcome::NoRoom));
-    }
+        let after = before + i64::from(amount);
+        if after > i64::from(MAX_STASH_UNITS) {
+            return Ok(Err(StashOutcome::AmountLimit));
+        }
+        let used:i64=sqlx::query_scalar("SELECT COALESCE(sum((quantity+99)/100),0)::bigint FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND quantity>0")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        let depot:i64=sqlx::query_scalar("SELECT COALESCE(max(n),0)::bigint FROM (SELECT sum(committed) AS n FROM game_character_depot_box_counters WHERE character_id=encode($1,'hex')::uuid GROUP BY town_id) towns")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if depot + used - (before + 99) / 100 + (after + 99) / 100 > 15_000 {
+            return Ok(Err(StashOutcome::NoRoom));
+        }
     Ok(Ok(()))
 }
 

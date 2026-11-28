@@ -253,7 +253,7 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
 enum Mode {
     Plain,
     CrossTown,
-    StashCapacity,
+    StashEligibility,
     ManagedContainerMove,
     ManagedArmor,
     StashContainer,
@@ -324,7 +324,7 @@ fn scenario_with_premium(
         Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
     );
     let retrieve = mode == Mode::Retrieve;
-    let two_towns = matches!(mode, Mode::CrossTown | Mode::StashCapacity);
+    let two_towns = matches!(mode, Mode::CrossTown | Mode::StashEligibility);
     let managed = matches!(mode, Mode::ManagedContainerMove | Mode::ManagedArmor);
     let batch = mode == Mode::StashContainer || managed;
     run(async |admin| {
@@ -636,7 +636,7 @@ fn scenario_with_premium(
         } else {
             None
         };
-        let armor = if matches!(mode, Mode::ManagedArmor | Mode::StashCapacity) {
+        let armor = if matches!(mode, Mode::ManagedArmor | Mode::StashEligibility) {
             let reference = index.definition_ref("Item", "oteryn:item.tibia.i811", "definition-r1")
                 .ok_or("armor reference")?;
             let definition = crate::gameplay_transport::item_look::typed_definition(index, reference)
@@ -698,7 +698,7 @@ fn scenario_with_premium(
                             coin_definition.clone()
                         },
                         quantity: if bag || (mail && special_item.is_some()) || mode == Mode::ManagedArmor
-                            || (mode == Mode::StashCapacity && ordinal == 3) {
+                            || (mode == Mode::StashEligibility && ordinal == 3) {
                             1
                         } else if managed {
                             40
@@ -882,13 +882,12 @@ fn scenario_with_premium(
                     cross_town_cases::depot(&owner, admitted, &harness.pool, handle, carried),
                 ).await.map_err(|_| "cross-town depot exchange timed out")??;
             } else {
-                let next = view.table().handle(&ItemKey::Instance(stacks[1])).ok_or("second stack")?;
                 let nonstackable = view.table().handle(&ItemKey::Instance(stacks[2])).ok_or("single item")?;
                 let bag = view.table().handle(&ItemKey::Instance(main_bag.ok_or("main bag")?)).ok_or("main bag handle")?;
                 tokio::time::timeout(
                     std::time::Duration::from_secs(60),
-                    stash_cases::global_capacity(&owner, admitted, &harness.pool, [handle, next, nonstackable], bag),
-                ).await.map_err(|_| "shared stash capacity exchange timed out")??;
+                    stash_cases::stackable_only(&owner, admitted, &harness.pool, nonstackable, bag),
+                ).await.map_err(|_| "cross-town stash eligibility exchange timed out")??;
             }
             drop(owner);
             drop(authority);
