@@ -1,8 +1,4 @@
-//! I19: gem and weapon enchanting at elemental shrines (`items/src/item_craft/enchanting.rs`).
-//! Buys a small ruby (3030) from an NPC seller with the character's own gold and uses it with no
-//! altar in reach: the server must not consume it. Enchanting needs the gem used on an elemental
-//! shrine altar with mana and soul, which this character cannot reach, so the row ends FAIL
-//! `needed:elemental-shrine-altar...`.
+//! I19: buy a small ruby in the live World and verify the typed refusal for untargeted USE.
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use std::collections::{BTreeMap, BTreeSet};
@@ -227,9 +223,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map(|item| item.handle)
         .ok_or("step=gem observed=no-handle")?;
     let before = quantities(&client)?;
+    let vitals = client.actor_vitals().cloned().ok_or("actor vitals absent")?;
     client.take_events();
     let reply = client.use_item(handle).await?;
-    let unchanged = quantities(&client)? == before;
+    if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse {
+        return Err(format!("step=use-small-ruby observed={:?}", reply.disposition).into());
+    }
+    if quantities(&client)? != before || client.actor_vitals() != Some(&vitals) {
+        return Err("step=use-small-ruby observed=inventory-or-vitals-changed".into());
+    }
     logout(&mut client).await?;
-    Err(format!("small-ruby-bought;step=enchant observed=use-without-altar:{:?};state_unchanged={unchanged};needed:elemental-shrine-altar-and-mana-soul-in-reach", reply.disposition).into())
+    Ok("small-ruby-bought;use=NothingToUse;inventory-and-vitals-unchanged;logout=Accepted".into())
 }

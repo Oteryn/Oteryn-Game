@@ -2,6 +2,7 @@
 use super::super::character_last_position::{
     LastPositionKey, LastPositionRecord, LastPositionWrite,
 };
+use super::super::item_loop_move::LoopError;
 use super::*;
 use oteryn_gameplay_items::item_craft::enchanting as rules;
 
@@ -143,18 +144,19 @@ pub(super) async fn write<C: ItemLoopContent>(
     {
         return Ok(UseDisposition::NotPossible);
     }
-    let carried = carried_weight(tx, fence.character_id, *world.as_bytes(), content)
-        .await
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let Some(after_weight) = carried
-        .checked_sub(consumed_weight)
-        .and_then(|w| w.checked_add(output_weight))
-    else {
-        return Ok(UseDisposition::NotPossible);
-    };
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
-    if after_weight > capacity {
-        return Ok(UseDisposition::NotPossible);
+    // Both inputs are carried. Replacing them with a lighter item needs no
+    // capacity from other inventory, whose weight may be unqualified.
+    if let Some(added_weight) = output_weight.checked_sub(consumed_weight).filter(|w| *w > 0) {
+        let carried = match carried_weight(tx, fence.character_id, *world.as_bytes(), content).await {
+            Ok(weight) => weight,
+            Err(LoopError::Refused(_)) => return Ok(UseDisposition::NotPossible),
+            Err(LoopError::Durability(error)) => return Err(error),
+            Err(LoopError::Database(error)) => return Err(error.into()),
+        };
+        let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+        if carried.checked_add(added_weight).is_none_or(|weight| weight > capacity) {
+            return Ok(UseDisposition::NotPossible);
+        }
     }
     let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let released = debits

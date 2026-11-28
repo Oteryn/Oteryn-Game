@@ -162,19 +162,21 @@ fn scenario(weapon: bool) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look_fixtures::seed_main_backpack(
-            &harness,
-            &[
-                (dough, 3),
-                ("oteryn:item.tibia.i3577", 1),
-                ("oteryn:item.tibia.i676", 3),
-                ("oteryn:item.tibia.i3271", 1),
-                ("oteryn:item.tibia.i3447", 73),
-                ("oteryn:item.tibia.i8077", 1),
-                ("oteryn:item.tibia.i9020", 1),
-            ],
-        )
-        .await?;
+        let mut entries = vec![
+            (dough, 3),
+            ("oteryn:item.tibia.i3577", 1),
+            ("oteryn:item.tibia.i676", 3),
+            ("oteryn:item.tibia.i3271", 1),
+            ("oteryn:item.tibia.i3447", 73),
+            ("oteryn:item.tibia.i8077", 1),
+            ("oteryn:item.tibia.i9020", 1),
+        ];
+        if weapon {
+            // Existing custody can outlive its content qualification. The
+            // ground-only fixture has no qualified carried weight and is not a recipe input.
+            entries.push((oven, 1));
+        }
+        super::item_look_fixtures::seed_main_backpack(&harness, &entries).await?;
         // The expiry owner leaves an empty timed row on the worn boots.
         let mut tx = harness.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
@@ -262,6 +264,7 @@ fn scenario(weapon: bool) -> TestResult {
                     &payload,
                     Some(ruby),
                     reference(target),
+                    None,
                 )
                 .await?;
                 admitted = next;
@@ -291,6 +294,7 @@ fn scenario(weapon: bool) -> TestResult {
                     &payload,
                     Some(ruby),
                     reference(target),
+                    Some(reference(output).ok_or("craft output definition")?),
                 )
                 .await?;
                 admitted = next;
@@ -317,7 +321,7 @@ fn scenario(weapon: bool) -> TestResult {
                 }
                 let committed_inventory = inventory().await?;
                 let (next, replay, _) =
-                    exchange(&owner, admitted, command, &actual, None, None).await?;
+                    exchange(&owner, admitted, command, &actual, None, None, None).await?;
                 admitted = next;
                 assert_eq!(replay, UseDisposition::Committed);
                 replay_record(&owner, deps.actor, admitted, command, &actual).await?;
@@ -363,11 +367,25 @@ fn scenario(weapon: bool) -> TestResult {
                     .ok_or("soul")?;
             }
             let before = live().await?;
-            let (next, result, _) =
-                exchange(&owner, admitted, command, &payload, reference(dough), None).await?;
-            assert_eq!(result, UseDisposition::NothingToUse, "legacy shrine");
-            assert_eq!(live().await?, before);
-            assert_eq!(inventory().await?, before_inventory);
+            let bare = encode_item_use_intent(&UseIntent {
+                use_with_map_item: None,
+                ..intent.clone()
+            })
+            .map_err(debug)?;
+            // These definite refusals must succeed even while an unrelated writer holds the lane.
+            let busy_lane = owner.spell_lane.acquire().await.map_err(|_| "busy fixture lane")?;
+            for (name, payload) in [("legacy shrine", &payload), ("untargeted ruby", &bare)] {
+                let (next, result, _) = exchange(
+                    &owner, admitted, command, payload, reference(dough), None, None,
+                )
+                .await?;
+                admitted = next;
+                command += 1;
+                assert_eq!(result, UseDisposition::NothingToUse, "{name}");
+                assert_eq!(live().await?, before, "{name} changed vitals");
+                assert_eq!(inventory().await?, before_inventory, "{name} changed inventory");
+            }
+            drop(busy_lane);
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
                     .fetch_one(&harness.pool)
@@ -377,10 +395,11 @@ fn scenario(weapon: bool) -> TestResult {
 
             let (next, result, _) = exchange(
                 &owner,
-                next,
-                command + 1,
+                admitted,
+                command,
                 &payload,
                 reference("oteryn:item.tibia.i3577"),
+                None,
                 None,
             )
             .await?;
@@ -394,10 +413,11 @@ fn scenario(weapon: bool) -> TestResult {
             let (_, result, _) = exchange(
                 &owner,
                 next,
-                command + 2,
+                command + 1,
                 &encode_item_use_intent(&wrong_target).map_err(debug)?,
                 reference(dough),
                 reference("oteryn:item.tibia.i3271"),
+                None,
             )
             .await?;
             assert_eq!(result, UseDisposition::NothingToUse);
@@ -503,7 +523,11 @@ async fn exchange(
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
     current_target: Option<std::num::NonZeroU32>,
+    expected_output: Option<std::num::NonZeroU32>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
+    use oteryn_protocol_oteryn::item_view::{
+        STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
+    };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
@@ -568,10 +592,11 @@ async fn exchange(
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
         client.shutdown().await?;
+        let mut reply = None;
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client)
                 .await
-                .map_err(|error| format!("result {command_id}: {error}"))?;
+                .map_err(|error| format!("USE {command_id}: result={reply:?}, expected output={expected_output:?}: {error}"))?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
@@ -579,7 +604,26 @@ async fn exchange(
                     let disposition =
                         oteryn_protocol_oteryn::world_object::decode_use_result(result.payload)
                             .map_err(debug)?;
-                    return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    if current_source.is_some() && disposition != UseDisposition::Rejected {
+                        assert_eq!(result.status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+                        assert_eq!(result.error_code, 0);
+                    }
+                    if expected_output.is_none() {
+                        return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
+                    }
+                    assert_eq!(disposition, UseDisposition::Committed, "USE {command_id}");
+                    reply = Some(disposition);
+                }
+            }
+            if let (Some(disposition), Some(expected)) = (reply, expected_output)
+                && envelope.message_type() == crate::foundation::MessageType::StateDelta
+            {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                if delta.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
+                    let inventory = decode_character_inventory(delta.payload).map_err(debug)?;
+                    assert!(inventory.entries.iter().any(|entry| entry.item_definition_ref == expected),
+                        "USE {command_id} inventory delta is missing output {expected}");
+                    return Ok((disposition, actual));
                 }
             }
         }

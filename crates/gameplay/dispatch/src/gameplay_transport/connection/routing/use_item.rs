@@ -30,6 +30,51 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     if decoded.is_ok() && let (Some(ledger), Some(reference)) = (ledger, reference) {
         ledger.remember_use_wire(reference, command.payload)?;
     }
+    // Removed gem actions are definite refusals. They need no unrelated receipt or write lane.
+    if admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_ITEM_USE_V1)
+        && let Ok(intent) = &decoded
+        && let UseTarget::Item(handle) = intent.target
+        && let Some(view) = item_view.as_ref()
+        && let Some(source) = view.resolve(handle)
+        && let Some(definition) = view.backpack_definition(&source)
+        && authority
+            .legacy_gem_use_is_unusable(
+                actor,
+                definition,
+                intent,
+                match intent.use_with_map_item {
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(handle)) => {
+                        view.resolve(handle)
+                    }
+                    _ => None,
+                },
+            )
+            .await
+    {
+        let available = authority
+            .player_trade_item_available(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                Some(source),
+            )
+            .await
+            .unwrap_or(false);
+        return Some(Dispatch::Use(UseOutcome {
+            disposition: if available {
+                oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse
+            } else {
+                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
+            },
+            ..UseOutcome::rejected()
+        }));
+    }
     // A harvest can have sent its durable write before an opaque error or timeout.
     if let Ok(UseIntent {
         target: UseTarget::WorldObject(target),
