@@ -14,9 +14,12 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     Some((session, profile))
 }
 
+const I17C_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000023";
+
 fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
     match profile {
         "explorer" => Some(("knight", 100, false)),
+        "i17c-paladin" if cfg!(feature = "qualification-spawn") => Some(("paladin", 100, false)),
         "knight-underlevel" => Some(("knight", 66, false)),
         "levitate" => Some(("sorcerer", 12, true)),
         "magic-rope" => Some(("sorcerer", 9, true)),
@@ -672,6 +675,16 @@ async fn prepare_build(
         *current.current_character_lease().character_id().as_bytes(),
     )
     .map_err(|error| format!("qualification character: {error:?}"))?;
+    let i17c = profile == "i17c-paladin";
+    if i17c {
+        let record = root
+            .read_current_character(authority, character)
+            .await
+            .map_err(qualification_build::debug)?;
+        if uuid_text(record.account_id.as_bytes()) != I17C_ACCOUNT {
+            return Err("I17c fixture requires its dedicated account".into());
+        }
+    }
     let interpretation = qualification_build::retry_holder(
         Some(root),
         deadline,
@@ -695,7 +708,7 @@ async fn prepare_build(
         root, authority, proof, &current, spec, policy, deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(root, authority, proof, &current, native, deadline, i17c).await
 }
 
 pub(crate) fn fixture_build_spec<'a>(
@@ -743,6 +756,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    i17c: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -817,7 +831,12 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    let items: &[(u32, u32)] = if i17c {
+        &[(3412, 1), (3350, 1), (35848, 1), (3447, 10)]
+    } else {
+        &[(3276, 1), (3003, 1), (3457, 1)]
+    };
+    for (ordinal, &(id, quantity)) in items.iter().enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -827,11 +846,12 @@ async fn prepare_items(
                 .ok_or("qualification Item absent")?
                 .into(),
         };
-        if inventory
-            .equipment
-            .iter()
-            .chain(bag.entries.iter().map(|entry| &entry.item))
-            .any(|existing| existing.definition == definition && existing.quantity == 1)
+        if !i17c
+            && inventory
+                .equipment
+                .iter()
+                .chain(bag.entries.iter().map(|entry| &entry.item))
+                .any(|existing| existing.definition == definition && existing.quantity == 1)
         {
             continue;
         }
@@ -855,7 +875,7 @@ async fn prepare_items(
             },
             source_placement: "oteryn:qualification.node-boot".into(),
             item,
-            quantity: 1,
+            quantity,
             contents: Vec::new(),
             root_text: None,
             root_fluid_subtype: None,
@@ -868,6 +888,37 @@ async fn prepare_items(
             quest_transition: None,
             key_number: None,
         };
+        if i17c && id == 35848 {
+            let weights = FixtureItemContent(native);
+            let request = RewardClaimMintRequest {
+                content_revision: format!(
+                    "sha256:{}",
+                    native
+                        .source_digest()
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                ),
+                ..request
+            };
+            let mut candidate = root
+                .freeze_reward_claim_mint_weighted(authority, proof, fence, request, &weights)
+                .await
+                .map_err(|error| format!("I17c quiver reserve: {error:?}"))?;
+            let (outcome, _) = root
+                .commit_reward_claim_mint_weighted_noticed(
+                    authority,
+                    proof,
+                    fence,
+                    &mut candidate,
+                    None,
+                    &weights,
+                )
+                .await
+                .map_err(|error| format!("I17c quiver commit: {error:?}"))?;
+            fixture_item_committed(outcome, quantity)?;
+            continue;
+        }
         // Reservation replay retains the same CommandRef and frozen semantic intent.
         let mut candidate = qualification_build::retry_holder(
             Some(root),
@@ -891,7 +942,7 @@ async fn prepare_items(
             .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        fixture_item_committed(outcome)?;
+        fixture_item_committed(outcome, quantity)?;
     }
     Ok(())
 }
@@ -937,13 +988,14 @@ impl crate::durability::item_loop_move::ItemLoopContent for FixtureItemContent<'
 
 fn fixture_item_committed(
     outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+    quantity: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::reward_claim_mint::RewardClaimMintOutcome;
     let receipt = match outcome {
         RewardClaimMintOutcome::Committed(receipt)
         | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt,
     };
-    if receipt.quantity != 1 {
+    if receipt.quantity != quantity {
         return Err(format!(
             "qualification Item receipt has quantity {}",
             receipt.quantity
@@ -1445,8 +1497,12 @@ mod tests {
                 placement_ordinal: 0,
             },
         };
-        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone())).is_ok());
-        assert!(fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt)).is_ok());
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone()), 1).is_ok()
+        );
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt), 1).is_ok()
+        );
     }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
