@@ -323,8 +323,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     member_action(&mut member, tf::MemberAction::Cancel { leader: handle }).await?;
     let status = remove(&mut lead).await?;
     expect(status == CommandStatus::Accepted, "leader-remove", status)?;
-    logout(&mut member).await?;
-    logout(&mut lead).await?;
+    logout(&mut member, "member-logout").await?;
+    logout(&mut lead, "leader-logout").await?;
     if accepted == CommandStatus::Accepted && reached && party_gap.is_empty() {
         Ok((
             "PASS",
@@ -379,12 +379,16 @@ fn expect(ok: bool, step: &str, observed: impl std::fmt::Debug) -> TestResult {
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let (result, detail, attempts, timed_out) = logout_retrying_busy(client).await?;
+async fn logout(client: &mut DevClientSession, step: &str) -> TestResult {
+    let reply = client
+        .session_mut()
+        .logout()
+        .await
+        .map_err(|error| format!("step={step};observed={error}"))?;
     expect(
-        result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
-        "logout",
-        (detail, attempts, timed_out),
+        reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted),
+        step,
+        reply,
     )
 }
 
