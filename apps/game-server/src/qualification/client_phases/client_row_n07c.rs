@@ -226,16 +226,19 @@ async fn walk_rat_route(
                 .filter(|entry| &entry.entity.identity != view.own_identity())
                 .filter_map(|entry| tile(entry.position).ok())
                 .collect();
-            path = route_around_occupant(
+            if let Some(detour) = route_around_occupant(
                 from,
                 center,
                 expected,
                 &path,
                 |at| !blocked.contains(&at),
                 |at, direction| destination(world, at, direction),
-            )
-            .ok_or("Rat route has no detour to the original goal")?
-            .into();
+            ) {
+                path = detour.into();
+                continue;
+            }
+            wait_for_rat_route_tile(client, occupant, from, expected, aggressors).await?;
+            path.push_front(direction);
             continue;
         }
         if step.disposition != StepDisposition::Moved
@@ -256,6 +259,35 @@ async fn walk_rat_route(
         drain_aggressors(client, aggressors)?;
     }
     Ok(())
+}
+
+async fn wait_for_rat_route_tile(
+    client: &mut DevClientSession,
+    occupant: EntityRef,
+    from: TilePos,
+    blocked: TilePos,
+    aggressors: &mut Vec<EntityRef>,
+) -> TestResult {
+    for _ in 0..24 {
+        client.service_liveness(Duration::from_millis(250)).await?;
+        drain_aggressors(client, aggressors)?;
+        if tile(client.world_spatial().actor_position)? != from {
+            return Err("Rat route actor moved while waiting for the creature".into());
+        }
+        let view = client.world_entities().ok_or("Rat route entity view missing")?;
+        let position = view.get(&occupant).map(|entry| entry.position);
+        let tile_is_occupied = view.iter().any(|entry| {
+            matches!(entry.kind, EntityKind::Creature | EntityKind::Npc | EntityKind::Player)
+                && tile(entry.position).ok() == Some(blocked)
+        });
+        if !tile_is_occupied {
+            evidence(&format!(
+                "N07C_CREATURE_CLEARED entity={occupant:?} blocked={blocked:?} current={position:?}"
+            ));
+            return Ok(());
+        }
+    }
+    Err(format!("Rat route creature did not clear its tile entity={occupant:?} blocked={blocked:?}").into())
 }
 
 async fn travel_to_rat(
