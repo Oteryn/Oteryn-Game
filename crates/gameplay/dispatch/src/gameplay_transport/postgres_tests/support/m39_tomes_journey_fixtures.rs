@@ -129,6 +129,9 @@ pub(super) async fn exercise(
             prerequisites::apply(owner, admitted, "frontier-finished", 18_005).await?;
         }
         let key = format!("l2-cael-tome-{n}");
+        if n > 1 {
+            elapse_tome_interval(h, owner, admitted).await?;
+        }
         let (result, command) = grant(owner, admitted, cael, &key).await?;
         assert_eq!(result, NpcIntentDisposition::Ok, "Tome {n}");
         assert_eq!(stage(h, COUNTER).await?, Some(n));
@@ -442,5 +445,19 @@ async fn refuse_busy_offer(
     )
     .await?;
     assert_eq!(result, NpcIntentDisposition::Rejected);
+    Ok(())
+}
+
+
+async fn elapse_tome_interval(h: &Harness, owner: &mut ComposedFreshAdmission<'_, '_, '_>, admitted: &AdmittedSession) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    let changed = sqlx::query(
+        "UPDATE game_character_quest_tracks SET value=value-72000 WHERE track_key=$1 AND value>=72000"
+    ).bind("oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery")
+        .execute(&mut *tx).await?;
+    assert_eq!(changed.rows_affected(), 1);
+    tx.commit().await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
     Ok(())
 }

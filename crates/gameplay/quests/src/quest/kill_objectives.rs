@@ -69,9 +69,17 @@ pub struct KillObjective {
 
 impl KillObjective {
     pub fn contains(self, x: i32, y: i32, floor: i16) -> bool {
-        (self.minimum.0..=self.maximum.0).contains(&x)
+        self.in_drillworm_caves(x, y, floor)
+            || (self.minimum.0..=self.maximum.0).contains(&x)
             && (self.minimum.1..=self.maximum.1).contains(&y)
             && (self.minimum.2..=self.maximum.2).contains(&floor)
+    }
+
+    fn in_drillworm_caves(self, x: i32, y: i32, floor: i16) -> bool {
+        self.transition == "oteryn:quest-transition/spike/lower/kill"
+            && floor == 15
+            && (32525..=32698).contains(&x)
+            && (32000..=32082).contains(&y)
     }
 
     fn effects(self) -> Vec<QuestEffect> {
@@ -248,6 +256,15 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
 mod tests {
     use super::*;
     use std::collections::BTreeMap;
+
+    #[test]
+    fn kazordoon_drillworm_deaths_count_only_for_the_lower_hunt() {
+        let lower = party_hunt("oteryn:quest-transition/spike/lower/kill").expect("lower Spike");
+        assert!(lower.contains(32539, 32000, 15));
+        assert!(!lower.contains(32539, 32000, 14));
+        assert!(!lower.contains(32539, 32400, 15));
+        assert!(!SPIKE_HUNTS[1].contains(32539, 32000, 15));
+    }
 
     #[test]
     fn exact_native_tower_floors_and_defender_multiplicity() {

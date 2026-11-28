@@ -2,6 +2,17 @@
   "schema": 1,
   "tracks": [
     {
+      "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+      "quest": "oteryn:quest.the_new_frontier_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Tomes_of_Knowledge_Quest"
+      ]
+    },
+    {
       "writable": true,
       "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/corruption_hole",
       "quest": "oteryn:quest.the_new_frontier_quest",
@@ -314,6 +325,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -375,6 +398,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -428,6 +463,18 @@
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
         }
       ],
       "inventory": [
@@ -485,6 +532,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -534,6 +593,18 @@
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
         }
       ],
       "inventory": [
@@ -588,6 +659,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -636,6 +719,18 @@
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
         }
       ],
       "inventory": [
@@ -688,6 +783,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -738,6 +845,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -786,6 +905,18 @@
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission08",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
         }
       ],
       "inventory": [
@@ -849,6 +980,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -910,6 +1053,18 @@
           "maximum": 2
         }
       ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ],
       "inventory": [
         {
           "item": "oteryn:item.tibia.i10217",
@@ -963,6 +1118,18 @@
           "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
           "minimum": 2,
           "maximum": 2
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/last_tome_delivery",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "set_now"
+          }
         }
       ],
       "inventory": [

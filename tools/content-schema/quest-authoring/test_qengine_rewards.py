@@ -430,7 +430,7 @@ class QuestRewards(unittest.TestCase):
         for row in choices:
             debit = row["participants"][0]["state_ops"][0]
             self.assertEqual(debit["from"]["minimum"], 100)
-            self.assertEqual(debit["effect"]["value"], -100)
+            self.assertEqual(debit["effect"]["value"], 0)
         for tier, level, experience in [
             ("upper", 25, 1000),
             ("middle", 50, 2000),

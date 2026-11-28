@@ -42,7 +42,7 @@ pub(super) async fn exercise(
         )
         .map_err(debug)?,
     );
-    // Sven writes questline, mission and total; the streak remains absent on first entry.
+    // Exercise a character who paid for a round before Sven initialized the streak.
     super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
         h,
         owner,
@@ -168,7 +168,8 @@ pub(super) async fn exercise(
         .iter()
         .find(|c| c.track == mead::TRACKS[2])
         .ok_or("streak receipt")?;
-    assert_eq!((streak.before, streak.after), (-1, 0));
+    let draw = receipt.changes.iter().find(|c| c.track == mead::DRAW).ok_or("draw")?.after;
+    assert_eq!((streak.before, streak.after), (-1, i64::from(draw > 1)));
     assert!(
         (1..=5).contains(
             &receipt

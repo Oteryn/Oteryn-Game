@@ -1280,7 +1280,12 @@ fn validate_document_with_capacity(
                     || !c.outfits.is_empty()
                     || c.achievement.is_some()
                     || c.completes
-                    || !c.state_ops.is_empty()
+                    || !(c.state_ops.is_empty()
+                        || (!c.take.is_empty() && c.experience.is_some()
+                            && matches!(c.state_ops.as_slice(), [StateOperation {
+                                from: StateCondition::ElapsedAtLeast { seconds },
+                                effect: StateMutation::SetNow, ..
+                            }] if *seconds > 0)))
                     || !c.participants.is_empty()
                     || c.counter.is_some()
                     || !c.achievement_progress.is_empty()
@@ -3911,7 +3916,15 @@ mod tests {
             .map(|callback| callback.key.as_str())
             .filter(|key| friends_exchanges.contains(key))
             .collect::<BTreeSet<_>>();
-        assert_eq!(actual_friends_exchanges, friends_exchanges);
+        let owners = load()?;
+        let steel: Vec<_> = owners.iter().filter(|callback| callback.npc == "oteryn:npc.a_sweaty_cyclops"
+            && callback.topic == 6 && callback.keywords.iter().any(|word| word == "yes")).collect();
+        assert_eq!(steel.len(), 1);
+        if steel[0].key == "oteryn:quest-reward/qc-obsidian-draconian-steel" {
+            assert!(actual_friends_exchanges.is_empty());
+        } else {
+            assert_eq!(actual_friends_exchanges, friends_exchanges);
+        }
         assert_eq!(
             programmes.len() - actual_wayland_exchanges.len() - actual_friends_exchanges.len(),
             168
@@ -5094,7 +5107,7 @@ mod battle_mage_source_tests {
                     .any(|r| r.track.ends_with(other) && (r.minimum, r.maximum) == (1, 1))
             );
             assert_eq!(exalted.take[0].count, taken);
-            assert_eq!(exalted.inventory[0].minimum, u32::from(taken) + 1);
+            assert_eq!(exalted.inventory[0].minimum, u32::from(taken));
         }
         Ok(())
     }

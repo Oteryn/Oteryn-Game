@@ -54,7 +54,7 @@
       "inventory": [
         {
           "item": "oteryn:item.tibia.i28792",
-          "minimum": 6,
+          "minimum": 5,
           "maximum": 4294967295
         }
       ],
@@ -68,6 +68,7 @@
       "quest": "oteryn:quest.battle_mage_outfits_quest",
       "npc": "oteryn:npc.dedoras",
       "keywords": [
+        "epaulette",
         "epaulettes"
       ],
       "topic": 3,
@@ -114,7 +115,7 @@
       "inventory": [
         {
           "item": "oteryn:item.tibia.i28793",
-          "minimum": 21,
+          "minimum": 20,
           "maximum": 4294967295
         }
       ],

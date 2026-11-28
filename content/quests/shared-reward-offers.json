@@ -49,27 +49,6 @@
       ],
       "topic": 0,
       "any_topic": true,
-      "next_topic": 4,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Did you bring three bast skirts?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "uth'lokr"
-      ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 6,
       "storage": [
         {
@@ -82,6 +61,28 @@
       ],
       "reply": [
         "Shall I forge your dragon shield into draconian steel?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr",
+        "bast skirt"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring three bast skirts?"
       ]
     },
     {
@@ -1142,7 +1143,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1174,7 +1176,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1206,7 +1209,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1238,7 +1242,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1270,7 +1275,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1302,7 +1308,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1334,7 +1341,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1371,7 +1379,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1408,7 +1417,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1445,7 +1455,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1482,7 +1493,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1519,7 +1531,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1556,7 +1569,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -3036,7 +3050,7 @@
         }
       ],
       "reply": [
-        "Buy the basic outfit reward for 1,000 gold and 100 Spike fame?"
+        "Buy the basic outfit reward for 1,000 gold? You qualify with 100 Spike fame."
       ],
       "failure_reply": [
         "You need more experience or Spike fame."
@@ -3059,7 +3073,7 @@
         }
       ],
       "reply": [
-        "Buy the first outfit reward for 2,000 gold and 100 Spike fame?"
+        "Buy the first outfit reward for 2,000 gold? You qualify with 100 Spike fame."
       ],
       "failure_reply": [
         "You need more experience or Spike fame."
@@ -3082,7 +3096,7 @@
         }
       ],
       "reply": [
-        "Buy the second outfit reward for 3,000 gold and 100 Spike fame?"
+        "Buy the second outfit reward for 3,000 gold? You qualify with 100 Spike fame."
       ],
       "failure_reply": [
         "You need more experience or Spike fame."
@@ -6404,7 +6418,8 @@
     {
       "npc": "oteryn:npc.sven",
       "keywords": [
-        "barbarian"
+        "barbarian",
+        "barbarians"
       ],
       "topic": 0,
       "next_topic": 1,
