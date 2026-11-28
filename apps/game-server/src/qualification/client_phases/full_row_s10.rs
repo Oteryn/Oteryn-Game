@@ -8,9 +8,9 @@
 //! 3. Obtain the fare only by walking to authored rat spawns, fighting, and looting; repeat
 //!    `hi`, destination, `yes`, then assert “Set the sails!”, an inventory delta, and the
 //!    authoritative spatial relocation to the authored arrival.
-//! 4. Walk to today's UTC Rashid placement, say `hi` and `trade`, and assert that the native
+//! 4. Walk to today's Rashid placement, say `hi` and `trade`, and assert that the native
 //!    conversation opens a shop, and assert the compiled native actor has exactly the one
-//!    placement selected by the node's UTC weekday rotation (weekday shop gate).
+//!    placement selected by the node's server-save weekday rotation (weekday shop gate).
 //! 5. Log out, make a fresh admission, and re-check the paid arrival and spent carried money;
 //!    walk back to today's Rashid and re-check that the shop remains available.
 //!
@@ -536,7 +536,8 @@ mod tests {
 
     #[test]
     fn weekday_schedule_matches_the_bundle_npc_floor() {
-        let sunday = oteryn_gameplay_entities::rashid_schedule::destination_at(3 * 86_400_000);
+        let sunday =
+            oteryn_gameplay_entities::rashid_schedule::destination_at(3 * 86_400_000 + 9 * 3_600_000);
         assert_eq!(rashid_bundle_cell(sunday), (32328, 31782, -6));
     }
 
