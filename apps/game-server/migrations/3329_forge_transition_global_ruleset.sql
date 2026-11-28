@@ -1,5 +1,6 @@
 -- Restore the Global Transfer predicates from 3323 after the chest proof
--- replaced the trigger body. CREATE OR REPLACE retains ownership and grants.
+-- replaced the trigger body. The branch may already have the 3323 body.
+-- CREATE OR REPLACE retains ownership and grants.
 DO $migration$
 DECLARE
     definition TEXT := pg_get_functiondef('game_forge_transition_proven()'::regprocedure);
@@ -13,10 +14,11 @@ BEGIN
         ($old$p.gold_spent<>gold$old$, $new$p.gold_spent IS DISTINCT FROM gold$new$)
     ) AS updates(old_text, new_text)
     LOOP
-        IF strpos(definition, patch.old_text) = 0 THEN
+        IF strpos(definition, patch.old_text) > 0 THEN
+            definition := replace(definition, patch.old_text, patch.new_text);
+        ELSIF strpos(definition, patch.new_text) = 0 THEN
             RAISE EXCEPTION 'Forge transition guard is missing its expected definition fragment: %', patch.old_text;
         END IF;
-        definition := replace(definition, patch.old_text, patch.new_text);
     END LOOP;
     EXECUTE definition;
 END;

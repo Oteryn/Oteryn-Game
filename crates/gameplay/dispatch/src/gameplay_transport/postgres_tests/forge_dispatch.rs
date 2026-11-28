@@ -132,7 +132,7 @@ fn scenario() -> TestResult {
                     assert_eq!(status, CommandStatus::Accepted);
                     let first: serde_json::Value = serde_json::from_slice(&result)?;
                     assert_eq!(first["succeeded"], true);
-                    assert_eq!(first["result"]["dust_limit"], 120);
+                    assert_eq!(first["result"]["dust_limit"], 101);
                     assert_eq!(first["result"]["dust"], 75);
                     assert_eq!(
                         send(&mut client, first_command + 1, &dust_limit).await?,
@@ -174,7 +174,7 @@ fn scenario() -> TestResult {
         }
         let before: (i64,i16) = sqlx::query_as("SELECT balance,dust_limit FROM game_character_forge_dust WHERE character_id=encode($1,'hex')::uuid")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
-        assert_eq!(before, (75, 120));
+        assert_eq!(before, (75, 101));
         let mut request = [0; 51];
         request[0] = 7;
         request[1..17].copy_from_slice(&id(95));

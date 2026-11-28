@@ -386,7 +386,7 @@ mod resource_tests {
             (100, 0, 3)
         );
         let limit = resource_quote(before, Operation::DustLimit).ok_or("limit")?;
-        assert_eq!((limit.after_dust, limit.after_limit), (75, 120));
+        assert_eq!((limit.after_dust, limit.after_limit), (75, 101));
         assert!(
             resource_quote(
                 wire::Resources { dust: 0, ..before },
@@ -407,8 +407,8 @@ mod resource_tests {
         assert!(
             resource_quote(
                 wire::Resources {
-                    dust: 4600,
-                    dust_limit: 4600,
+                    dust: 325,
+                    dust_limit: 325,
                     ..before
                 },
                 Operation::DustLimit
