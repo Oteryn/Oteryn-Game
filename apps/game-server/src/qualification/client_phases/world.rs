@@ -3501,6 +3501,15 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    connect_character_recording(clients, tag, index, None).await
+}
+
+async fn connect_character_recording(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    frames: Option<&mut Vec<Vec<u8>>>,
+) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
     let token = if requires_platform_grant(&clients.accounts[index]) {
         platform_row_grant(clients, index).await?
@@ -3521,16 +3530,19 @@ pub(super) async fn connect_character(
         };
         sign_grant(&grant, now_seconds()?)
     };
-    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
-        address: clients.address,
-        server_name: "localhost",
-        root_certificate: clients.certificate,
-        schema_revision: 1,
-        character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
-        admission_material: token.as_bytes(),
-        client_build_id: "oteryn-dev-client/world-qualification",
-        deadline: Duration::from_secs(20),
-    })
+    let client = oteryn_dev_client::connect_session_recording(
+        oteryn_dev_client::JoinRequest {
+            address: clients.address,
+            server_name: "localhost",
+            root_certificate: clients.certificate,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&clients.characters[index])?,
+            admission_material: token.as_bytes(),
+            client_build_id: "oteryn-dev-client/world-qualification",
+            deadline: Duration::from_secs(20),
+        },
+        frames,
+    )
     .await?;
     verdict::Harness::global().progress("admission");
     Ok(client)

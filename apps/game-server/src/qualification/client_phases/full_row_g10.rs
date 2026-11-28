@@ -5,25 +5,21 @@
 //! 3. BOSS_COOLDOWNS twice about one second apart; the server clock must advance.
 //! 4. Log out, re-admit and QuerySelf: the selected title must persist.
 //!
-//! The server-driven parts are judged on real frames. Minimap markers are client-local state
-//! (`apps/client/src/features/local-minimap/state.rs`, `Marker`): no protocol command carries
-//! them and the dev client links no marker store, so a row whose server parts pass cannot prove
-//! the markers and ends FAIL with `needed:` naming the missing local driver (never a claimed
-//! missing client surface).
+//! Replay the original admission frames for both sessions in the native client, and require
+//! the local marker to survive the same World's relog before removing it.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::boss_encounter as boss;
 use oteryn_dev_client::client_runtime::character_info_panel as info;
 use oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse;
 
-const NEEDED: &str = "needed:minimap-marker-add-remove-driver;server-parts=pass";
 const ANALYSER_CAPABILITY: u32 = 10;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
-        Ok(Ok(())) => ("FAIL", NEEDED.to_owned()),
+        Ok(Ok(())) => ("PASS", "server-and-live-minimap-replay".to_owned()),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
         Err(_) => ("FAIL", "step=journey;observed=timeout".to_owned()),
     };
@@ -103,7 +99,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     request_fixture_control(uuid_text(setup_session.as_bytes()), "--profile", "g10-title".into()).await?;
     logout(&mut setup).await?;
     drop(setup);
-    let mut client = connect_character(clients, 0xd1, 0).await?;
+    let mut first_frames = Vec::new();
+    let mut client = connect_character_recording(clients, 0xd1, 0, Some(&mut first_frames)).await?;
+    let first_sequence = client.session_mut().last_server_sequence();
     let session = client.join_snapshot().game_session_id;
     if setup_session == session {
         return Err("step=admission;observed=reused-setup-session".into());
@@ -168,7 +166,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     logout(&mut client).await?;
     drop(client);
-    let mut again = connect_character(clients, 0xd2, 0).await?;
+    let mut second_frames = Vec::new();
+    let mut again = connect_character_recording(clients, 0xd2, 0, Some(&mut second_frames)).await?;
+    let second_sequence = again.session_mut().last_server_sequence();
+    let second_session = again.join_snapshot().game_session_id;
     if again.join_snapshot().game_session_id == session {
         return Err("step=persist;observed=reused-session".into());
     }
@@ -176,7 +177,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if persisted != chosen {
         return Err(format!("step=persist;observed={persisted};need={chosen}").into());
     }
-    logout(&mut again).await
+    logout(&mut again).await?;
+    let root = std::path::PathBuf::from(std::env::var_os("NODE_BOOT_G10_REPLAY_DIR")
+        .ok_or("step=minimap;needed=fresh-replay-directory")?);
+    std::fs::create_dir(&root)?;
+    for (name, frames) in [("entry.frames", first_frames), ("relog.frames", second_frames)] {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new().write(true).create_new(true).open(root.join(name))?;
+        for frame in frames {
+            let length = oteryn_protocol_oteryn::FrameLength::new(u32::try_from(frame.len())?)?;
+            file.write_all(&length.to_prefix())?;
+            file.write_all(&frame)?;
+        }
+    }
+    let executable = std::env::var_os("NODE_BOOT_G10_REPLAY_BIN")
+        .ok_or("step=minimap;needed=native-client-replay-binary")?;
+    let child = tokio::process::Command::new(executable)
+        .args(["g10_replays_live_admissions_and_persists_exact_marker", "--ignored", "--nocapture"])
+        .env("G10_REPLAY_DIR", &root)
+        .env("G10_REPLAY_CHARACTER", uuid_text(&clients.characters[0]))
+        .env("G10_REPLAY_WORLD", uuid_text(&clients.world))
+        .env("G10_REPLAY_ENTRY_SESSION", uuid_text(session.as_bytes()))
+        .env("G10_REPLAY_ENTRY_SEQUENCE", first_sequence.to_string())
+        .env("G10_REPLAY_RELOG_SESSION", uuid_text(second_session.as_bytes()))
+        .env("G10_REPLAY_RELOG_SEQUENCE", second_sequence.to_string())
+        .kill_on_drop(true)
+        .output().await?;
+    let stdout = String::from_utf8(child.stdout)?;
+    let checks: Vec<_> = stdout.lines().filter(|line| line.starts_with("G10_MINIMAP_REPLAY ")).collect();
+    if !child.status.success() || checks.len() != 1 {
+        return Err(format!("step=minimap;observed=replay-failed;stdout={stdout};stderr={}", String::from_utf8_lossy(&child.stderr)).into());
+    }
+    evidence(checks[0]);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -193,8 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn needed_token_has_no_spaces() {
-        assert!(NEEDED.starts_with("needed:") && !NEEDED.contains(' '));
+    fn evidence_token_has_no_spaces() {
         assert_eq!(token("a\nb"), "a-b");
     }
 }

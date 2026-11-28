@@ -162,6 +162,7 @@ impl<S: SessionStream> Session<S> {
                 selected_capabilities: accepted.selected_capabilities,
                 recovery_sequence: Some(accepted.current_server_sequence),
             },
+            None,
         )
         .await?;
         if successor

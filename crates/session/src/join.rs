@@ -17,6 +17,7 @@ impl<S: SessionStream> Session<S> {
         deadline: Duration,
         appearance_items: Option<AppearanceItemDictionary<'_>>,
         mut accepted_fields: JoinAcceptance,
+        mut frames: Option<&mut Vec<Vec<u8>>>,
     ) -> Result<Self, SessionError> {
         let session_generation = accepted_fields.connection_generation;
         let selected_capabilities = accepted_fields.selected_capabilities.clone();
@@ -55,8 +56,17 @@ impl<S: SessionStream> Session<S> {
             return Err(FoundationProtocolError::MalformedEnvelope.into());
         }
 
-        let assembled_body =
-            snapshot_transfer::read_body(&mut stream, deadline, session_generation, &begin).await?;
+        if let Some(frames) = frames.as_deref_mut() {
+            frames.push(begin_frame);
+        }
+        let assembled_body = snapshot_transfer::read_body_recording(
+            &mut stream,
+            deadline,
+            session_generation,
+            &begin,
+            frames,
+        )
+        .await?;
 
         let projected_scope = activity_scope::current_projection(
             &assembled_body,

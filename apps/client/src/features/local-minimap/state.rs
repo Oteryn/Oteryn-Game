@@ -567,6 +567,10 @@ mod play_persistence;
 mod e2e_n07d;
 
 #[cfg(test)]
+#[path = "tests/e2e_g10.rs"]
+mod e2e_g10;
+
+#[cfg(test)]
 #[path = "tests/quest_marks.rs"]
 mod quest_mark_tests;
 

@@ -235,6 +235,14 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `connect_and_join`'s full join, but keeps the admitted connection: see
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
+    connect_session_recording(request, None).await
+}
+
+/// Connect and optionally keep the original server admission frames.
+pub async fn connect_session_recording(
+    request: JoinRequest<'_>,
+    frames: Option<&mut Vec<Vec<u8>>>,
+) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
     let stream = oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
@@ -244,7 +252,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     })
     .await
     .map_err(|error| contextualize_transport(error, started))?;
-    let session = Session::admit(
+    let session = Session::admit_recording(
         stream,
         Admission {
             appearance_items: None,
@@ -255,6 +263,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
             supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
             deadline: request.deadline,
         },
+        frames,
     )
     .await
     .map_err(|error| {

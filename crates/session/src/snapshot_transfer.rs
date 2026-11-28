@@ -7,6 +7,16 @@ pub(super) async fn read_body<S: SessionStream>(
     session_generation: u64,
     begin: &oteryn_protocol_oteryn::SnapshotBeginFields,
 ) -> Result<Vec<u8>, SessionError> {
+    read_body_recording(stream, deadline, session_generation, begin, None).await
+}
+
+pub(super) async fn read_body_recording<S: SessionStream>(
+    stream: &mut S,
+    deadline: Duration,
+    session_generation: u64,
+    begin: &oteryn_protocol_oteryn::SnapshotBeginFields,
+    mut frames: Option<&mut Vec<Vec<u8>>>,
+) -> Result<Vec<u8>, SessionError> {
     // Exactly `begin.chunk_count` `SnapshotChunk` frames, strictly in order: a short transfer
     // (the server stops early) surfaces here as `UnexpectedMessage` (the next frame is
     // `SnapshotCommit` instead) or as a bounded `Timeout`/`Io` (the connection stalls or closes).
@@ -59,6 +69,9 @@ pub(super) async fn read_body<S: SessionStream>(
                 actual: assembled_bytes.saturating_add(chunk_len),
             })?;
         assembled_body.extend_from_slice(chunk_data);
+        if let Some(frames) = frames.as_deref_mut() {
+            frames.push(chunk_frame);
+        }
     }
     if assembled_bytes != begin.total_encoded_bytes {
         return Err(SessionError::AssembledLengthMismatch {
@@ -75,6 +88,7 @@ pub(super) async fn read_body<S: SessionStream>(
         "SnapshotCommit",
         MessageType::SnapshotCommit,
         session_generation,
+        frames,
     )
     .await?;
     if commit_snapshot_id != begin.snapshot_id {

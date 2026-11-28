@@ -49,6 +49,7 @@ pub(super) async fn read_snapshot_marker<S: SessionStream>(
     label: &'static str,
     expected: MessageType,
     session_generation: u64,
+    frames: Option<&mut Vec<Vec<u8>>>,
 ) -> Result<u64, SessionError> {
     let frame = bounded(deadline, label, read_frame(stream)).await?;
     let envelope = decode_wire_envelope(&frame)?;
@@ -66,7 +67,11 @@ pub(super) async fn read_snapshot_marker<S: SessionStream>(
             actual: envelope.connection_generation(),
         });
     }
-    Ok(decode_snapshot_id(envelope.payload())?)
+    let id = decode_snapshot_id(envelope.payload())?;
+    if let Some(frames) = frames {
+        frames.push(frame);
+    }
+    Ok(id)
 }
 
 /// Bounds `future` by `deadline`, mapping an elapsed deadline to `SessionError::Timeout(label)`

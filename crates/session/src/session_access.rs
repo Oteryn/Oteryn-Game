@@ -45,7 +45,18 @@ impl<S: SessionStream> Session<S> {
     /// after every chunk and the matching `SnapshotCommit` have validated - never per chunk, since
     /// a multi-chunk transfer may split a body field at any byte offset. Every frame read is
     /// bounded by `admission.deadline`.
-    pub async fn admit(mut stream: S, admission: Admission<'_>) -> Result<Self, SessionError> {
+    pub async fn admit(stream: S, admission: Admission<'_>) -> Result<Self, SessionError> {
+        Self::admit_recording(stream, admission, None).await
+    }
+
+    /// Record original inbound admission envelopes. The outbound bootstrap and its grant
+    /// are never captured. Publish the recording only after successful admission.
+    #[doc(hidden)]
+    pub async fn admit_recording(
+        mut stream: S,
+        admission: Admission<'_>,
+        mut frames: Option<&mut Vec<Vec<u8>>>,
+    ) -> Result<Self, SessionError> {
         let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
             schema_revision: admission.schema_revision,
             character_id: admission.character_id,
@@ -118,6 +129,9 @@ impl<S: SessionStream> Session<S> {
                 .ok()
                 .flatten()
                 .map(str::to_owned);
+        if let Some(frames) = frames.as_deref_mut() {
+            frames.push(accepted);
+        }
         let mut session = Self::read_join(
             stream,
             admission.deadline,
@@ -131,6 +145,7 @@ impl<S: SessionStream> Session<S> {
                 selected_capabilities: accepted_fields.selected_capabilities,
                 recovery_sequence: None,
             },
+            frames,
         )
         .await?;
         session.bulletin = bulletin;

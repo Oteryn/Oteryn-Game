@@ -1600,6 +1600,15 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       "NODE_BOOT_PVP_SECOND_ACCOUNT_ID=${PVP_ACCOUNT_IDS[1]}")
   fi
   # Row selection, fail-fast and the no-progress watchdog belong to the seam harness.
+  local g10_groups=",${NODE_BOOT_E2E_ONLY:-},"
+  if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 &&
+        ( "$g10_groups" == ,, || "$g10_groups" == *,rows,* ) ]] &&
+     python3 "$GAME_SOURCE/tools/qualification/node_boot/g10_replay.py" selected "${OTERYN_E2E_ROW_BATCH:-}"; then
+    local g10_replay_bin
+    g10_replay_bin="$(cargo +1.100.0 test --locked -p oteryn-client --lib --no-run --message-format=json |
+      python3 "$GAME_SOURCE/tools/qualification/node_boot/g10_replay.py" executable)" || return 1
+    test_env+=("NODE_BOOT_G10_REPLAY_BIN=$g10_replay_bin" "NODE_BOOT_G10_REPLAY_DIR=$WORK/g10-replay")
+  fi
   local knob
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
