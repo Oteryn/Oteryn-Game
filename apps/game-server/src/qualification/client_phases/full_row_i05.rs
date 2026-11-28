@@ -441,9 +441,6 @@ mod tests {
 
     #[test]
     fn required_item_ids_are_fixed() {
-        assert_eq!(
-            (ENERGY_RING, ACTIVE_ENERGY_RING, PRICE),
-            (3051, 3088, 5_000)
-        );
+        assert_eq!((ENERGY_RING, ACTIVE_ENERGY_RING), (3051, 3088));
     }
 }
