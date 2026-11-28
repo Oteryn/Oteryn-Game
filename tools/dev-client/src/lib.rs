@@ -17,6 +17,9 @@
 //! allows, and it is kept out of both production closures (`oteryn-client`, `oteryn-game-server`)
 //! by `workspace-boundaries.toml`.
 
+mod cast_replay;
+pub use cast_replay::replay_live_position_cast;
+
 use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellTarget};
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, StepDirection, WorldSpatialObservation};

@@ -3475,6 +3475,17 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    connect_character_using(clients, tag, index, async |request| {
+        Ok(oteryn_dev_client::connect_session(request).await?)
+    }).await
+}
+
+async fn connect_character_using<T>(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    connect: impl for<'a> AsyncFnOnce(oteryn_dev_client::JoinRequest<'a>) -> TestResult<T>,
+) -> TestResult<T> {
     wait_character_released(clients, index).await?;
     let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
     let (nonce, attempt) = fresh_grant_material(tag)?;
@@ -3491,7 +3502,7 @@ pub(super) async fn connect_character(
         attempt,
     };
     let token = sign_grant(&grant, now_seconds()?);
-    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+    let client = connect(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",
         root_certificate: clients.certificate,

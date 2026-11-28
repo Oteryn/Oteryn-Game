@@ -1,7 +1,7 @@
 //! C18b client verification of a live Death Echo position cast.
 
 use super::*;
-use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, SpellTargetPosition};
+use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTargetPosition};
 
 const SPELL: &str = "exevo mort ora";
 
@@ -10,7 +10,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(capture(clients))).await;
     match result {
         Ok(Ok(())) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=C18b.client status=FAIL evidence=live-cast-verified-strict-replay-missing",
+            "SEAM_EVIDENCE e2e_all scenario=C18b.client status=PASS evidence=original-position-cast-frames-replayed-and-vitals-retained",
         ),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C18b.client status=FAIL evidence={error}"
@@ -51,11 +51,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     .ok_or("C18b.client needs reachable non-PZ tile")?;
     walk(&mut client, world, &path).await?;
     let here = client.world_spatial().actor_position;
-    let target = SpellTarget::Position(SpellTargetPosition {
-        x: here.x.saturating_add(1),
+    let target = SpellTargetPosition {
+        x: here
+            .x
+            .checked_add(3)
+            .ok_or("C18b cursor coordinate overflow")?,
         y: here.y,
         floor: here.floor,
-    });
+    };
 
     let crate::spell::ManaCost::Fixed(mana) = spell.mana else {
         return Err("C18b.client Death Echo must have a fixed mana cost".into());
@@ -72,18 +75,23 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .mana
         .checked_sub(mana)
         .ok_or("C18b.client insufficient fixture mana")?;
-    let cooldowns = client
-        .session_mut()
-        .actor_cooldown_snapshot()
-        .ok_or("C18b.client cooldown snapshot absent")?;
-    if cooldowns
-        .entries
-        .iter()
-        .any(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
-    {
-        return Err("C18b.client fresh fixture has an active cooldown".into());
+    let capture_path = std::env::temp_dir().join(format!(
+        "q-c18b-client-{}.frames",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+    ));
+    let prepare_logout = client.session_mut().logout().await?;
+    if prepare_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(
+            format!("C18b recording preparation logout refused: {prepare_logout:?}").into(),
+        );
     }
-    let outcome = client.cast_spell(index, target, false).await?;
+    drop(client);
+    let (outcome, session) = connect_character_using(clients, 0x19, 1, async |request| {
+        oteryn_dev_client::replay_live_position_cast(request, index, target, before, &capture_path)
+            .await
+            .map_err(|error| error.to_string().into())
+    })
+    .await?;
     if outcome.status != CommandStatus::Accepted
         || outcome.disposition != SpellCastDisposition::Cast
     {
@@ -95,7 +103,6 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if delta.server_sequence <= outcome.result_server_sequence
         || delta.value.mana != expected_mana
         || delta.value.soul != before.soul
-        || client.actor_vitals() != Some(&delta.value)
     {
         return Err(format!(
             "C18b.client cast did not debit mana in the applied vitals: {before:?} -> {:?}",
@@ -103,9 +110,19 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let fresh = connect_character(clients, 0x1a, 1).await?;
+    if fresh.join_snapshot().game_session_id.as_bytes() == &session
+        || fresh.world_spatial().actor_position != here
+        || fresh.actor_vitals() != Some(&delta.value)
+    {
+        return Err("C18b client fresh admission did not retain the exact cast result".into());
+    }
     evidence(&format!(
-        "C18B_CHECK scenario=C18b.client scope=live-cast result_sequence={} mana_before={} mana_after={}",
-        outcome.result_server_sequence, before.mana, delta.value.mana,
+        "C18B_CHECK scenario=C18b.client scope=live-cast-and-replay session={} result_sequence={} mana_before={} mana_after={}",
+        uuid_text(&session),
+        outcome.result_server_sequence,
+        before.mana,
+        delta.value.mana,
     ));
     Ok(())
 }
