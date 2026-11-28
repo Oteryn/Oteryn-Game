@@ -105,6 +105,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if reopen.disposition != ChatDisposition::Ok {
         return Err(format!("step=reopen-world observed {reopen:?}").into());
     }
+    full_row_s04c::wait_for(&mut client, |client| {
+        client.chat_log().is_some_and(|log| log.rooms().contains(ChatRoom::World))
+    }).await?;
     note("reopen-world", reopen.status, reopen.disposition, reopen.wait_seconds, "-");
     let mut muted = None;
     for index in 0..32 {
@@ -114,7 +117,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .await?;
         settle(&mut client).await?;
         match reply.disposition {
-            ChatDisposition::Ok => {}
+            ChatDisposition::Ok => {
+                full_row_s04c::wait_for(&mut client, |client| {
+                    speaker(client, ChatRoom::World, &text).is_some()
+                }).await?;
+            }
             ChatDisposition::Muted if reply.wait_seconds > 0 => {
                 muted = Some((text, reply));
                 break;

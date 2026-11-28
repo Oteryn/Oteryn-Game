@@ -14,7 +14,7 @@
 //!    with a positive wait; require every OK reply to have its exact line delta and the refused
 //!    line to produce none.
 //! 6. Log out and freshly admit the same character. Require a new game session with its
-//!    own room membership. Reopen World and verify that the fresh limiter admits speech.
+//!    own room membership. Reopen World and require the remaining mute to survive.
 
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatRoom, DevClientSession};
@@ -115,6 +115,11 @@ pub(super) async fn require_no_line(client: &mut DevClientSession, room: ChatRoo
 }
 
 async fn open(client: &mut DevClientSession, room: ChatRoom) -> TestResult {
+    let mut expected = client.chat_log().ok_or("missing initial CHAT snapshot")?.rooms();
+    if expected.contains(room) {
+        return Err(format!("open {room:?}: room was already open").into());
+    }
+    expected.insert(room);
     let reply = client.chat(&ChatIntent::OpenRoom(room)).await?;
     if reply.disposition != ChatDisposition::Ok {
         return Err(format!(
@@ -125,9 +130,10 @@ async fn open(client: &mut DevClientSession, room: ChatRoom) -> TestResult {
     wait_for(client, |client| {
         client
             .chat_log()
-            .is_some_and(|log| log.rooms().contains(room))
+            .is_some_and(|log| log.rooms() == expected)
     })
     .await
+    .map_err(|error| format!("open {room:?}: {error}").into())
 }
 
 async fn send_line(client: &mut DevClientSession, room: ChatRoom, text: &str) -> TestResult {
@@ -143,13 +149,47 @@ async fn send_line(client: &mut DevClientSession, room: ChatRoom, text: &str) ->
     wait_for(client, |client| has_line(client, room, text)).await
 }
 
+fn speaker_name(client: &DevClientSession) -> TestResult<String> {
+    let entities = client.world_entities().ok_or("missing speaker entities")?;
+    let name = entities
+        .iter()
+        .find(|entity| entity.entity.identity == *entities.own_identity())
+        .and_then(|entity| entity.display_name.as_ref())
+        .ok_or("missing speaker display name")?;
+    Ok(name.as_str().map_err(|error| format!("invalid speaker name: {error:?}"))?.to_owned())
+}
+
+fn matches_public_line(line: &ChatLine, room: ChatRoom, speaker: &str, text: &str) -> bool {
+    matches!(line, ChatLine::Room { room: seen, speaker_name, text: seen_text }
+        if *seen == room && speaker_name == speaker && seen_text == text)
+}
+
+async fn require_public_delivery(
+    peer: &mut DevClientSession,
+    room: ChatRoom,
+    speaker: &str,
+    text: &str,
+) -> TestResult {
+    wait_for(peer, |peer| peer.chat_log().is_some_and(|log| {
+        log.lines().any(|line| matches_public_line(line, room, speaker, text))
+    }))
+    .await
+    .map_err(|error| format!("subscriber delivery {room:?} {text:?}: {error}").into())
+}
+
 fn same_chat_session(before: &[u8; 16], after: &[u8; 16]) -> bool {
     before == after
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_speaker(clients, "S04c.full", 0xc4, 0).await?;
+    let mut peer = connect_character(clients, 0xc6, 1).await?;
+    let speaker = speaker_name(&client)?;
+    if speaker == speaker_name(&peer)? {
+        return Err("public subscriber must be a distinct character".into());
+    }
     for room in ROOMS {
+        open(&mut peer, room).await?;
         open(&mut client, room).await?;
     }
     for (room, text) in [
@@ -158,7 +198,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         (ChatRoom::Help, "S04c help"),
         (ChatRoom::Advertising, "S04c advertising"),
     ] {
+        if has_line(&peer, room, text) {
+            return Err("subscriber already has the expected public line".into());
+        }
         send_line(&mut client, room, text).await?;
+        require_public_delivery(&mut peer, room, &speaker, text).await?;
     }
 
     let refused_text = "S04c advertising refused";
@@ -172,6 +216,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step 3 advertising refusal: observed reply {reply:?}, line_delta={}; server must return EXHAUSTED with wait and no line", has_line(&client, ChatRoom::Advertising, refused_text)).into());
     }
     require_no_line(&mut client, ChatRoom::Advertising, refused_text).await?;
+    require_no_line(&mut peer, ChatRoom::Advertising, refused_text).await?;
 
     let reply = client.chat(&ChatIntent::CloseRoom(ChatRoom::World)).await?;
     if reply.disposition != ChatDisposition::Ok {
@@ -194,6 +239,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step 4 closed-room refusal: observed reply {reply:?}, line_delta={}; server must return ROOM_NOT_OPEN and no line", has_line(&client, ChatRoom::World, closed_text)).into());
     }
     require_no_line(&mut client, ChatRoom::World, closed_text).await?;
+    require_no_line(&mut peer, ChatRoom::World, closed_text).await?;
     open(&mut client, ChatRoom::World).await?;
 
     let mut muted = None;
@@ -207,7 +253,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .await?;
         match reply.disposition {
             ChatDisposition::Ok => wait_for(&mut client, |client| has_line(client, ChatRoom::World, &text)).await?,
-            ChatDisposition::Muted if reply.wait_seconds > 0 => { muted = Some((text, reply)); break; }
+            ChatDisposition::Muted if reply.wait_seconds == 5 => { muted = Some((text, reply)); break; }
             _ => return Err(format!("step 5 spam attempt {index}: observed reply {reply:?}; server must relay or return MUTED with wait").into()),
         }
     }
@@ -216,6 +262,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 5 muted reply {muted_reply:?}: {error}"), error) })?;
 
+    require_no_line(&mut peer, ChatRoom::World, &muted_text).await?;
+    let scope_text = "S04c mute scope in English";
+    let scope_reply = client.chat(&ChatIntent::Room {
+        room: ChatRoom::English,
+        text: scope_text.into(),
+    }).await?;
+    if scope_reply.disposition != ChatDisposition::Muted
+        || !(1..=5).contains(&scope_reply.wait_seconds)
+    {
+        return Err(format!("step 5 cross-room mute: {scope_reply:?}").into());
+    }
+    require_no_line(&mut peer, ChatRoom::English, scope_text).await?;
     let old_session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -239,7 +297,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     open(&mut client, ChatRoom::World).await?;
-    send_line(&mut client, ChatRoom::World, "S04c fresh-session message").await?;
+    let reply = client.chat(&ChatIntent::Room {
+        room: ChatRoom::World,
+        text: "S04c relog mute probe".into(),
+    }).await?;
+    if reply.disposition != ChatDisposition::Muted || reply.wait_seconds == 0
+        || reply.wait_seconds > muted_reply.wait_seconds
+    {
+        return Err(format!("step 6 durable mute: before relog {muted_reply:?}, after relog {reply:?}").into());
+    }
+    require_no_line(&mut client, ChatRoom::World, "S04c relog mute probe").await?;
+    require_no_line(&mut peer, ChatRoom::World, "S04c relog mute probe").await?;
+    if peer.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("subscriber logout was refused".into());
+    }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -296,4 +369,18 @@ mod tests {
             assert!(ROOMS.contains(&room));
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn public_delivery_requires_the_exact_room_speaker_and_text() {
+    let line = ChatLine::Room {
+        room: ChatRoom::World,
+        speaker_name: "Speaker".into(),
+        text: "Message".into(),
+    };
+    assert!(matches_public_line(&line, ChatRoom::World, "Speaker", "Message"));
+    assert!(!matches_public_line(&line, ChatRoom::World, "Other", "Message"));
+    assert!(!matches_public_line(&line, ChatRoom::English, "Speaker", "Message"));
+    assert!(!matches_public_line(&line, ChatRoom::World, "Speaker", "Other"));
 }
