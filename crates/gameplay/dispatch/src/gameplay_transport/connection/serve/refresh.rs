@@ -757,7 +757,7 @@ where
                     *step = "world_map_write";
                     let (next_sequence, frames) =
                         encode_world_map_frames(session.generation, session.sequence, update)
-                            .ok_or_else(|| ServeEnd::Disconnected)?;
+                            .ok_or(ServeEnd::Disconnected)?;
                     session.sequence = next_sequence;
                     session.admitted.continuity.server_sequence = session.sequence;
                     session.admitted.continuity.world_map_revision = view.revision();
