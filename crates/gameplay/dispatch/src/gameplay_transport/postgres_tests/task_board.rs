@@ -890,28 +890,24 @@ fn scenario_with_bootstrap(
         let selected = full_board(&owner, &mut admitted, 8, 0, "").await?;
         assert_eq!(selected.refusal, 0);
         let bounty = selected.bounty.active.clone().expect("active bounty");
-        let compact = board(&owner, &mut admitted, 0, 0).await?;
-        assert_eq!(
-            compact.tasks.first().map(|task| (task.race.as_str(), task.required)),
-            Some((bounty.race.as_str(), i64::from(bounty.required))),
-            "compact query projects the durable bounty"
+        let legacy = board(&owner, &mut admitted, 0, 0).await?;
+        assert!(
+            legacy.tasks.is_empty(),
+            "legacy query keeps an empty task list while Weekly and Bounty hunts are active"
         );
-        let weekly = selected.weekly.kills.iter().filter(|task| !task.race.is_empty());
-        let projected_weekly: Vec<_> = compact.tasks[1..]
-            .iter()
-            .map(|task| (task.race.as_str(), task.required))
-            .collect();
+        assert_eq!((legacy.refused, legacy.selected, legacy.kills), (false, 0, 0));
         assert_eq!(
-            projected_weekly,
-            weekly.take(wire::MAX_TASKS - 1)
-                .map(|task| (task.race.as_str(), i64::from(task.required)))
-                .collect::<Vec<_>>(),
-            "compact query projects the durable weekly hunt"
+            (u64::try_from(legacy.points)?, u64::try_from(legacy.bounty_points)?),
+            (selected.points, selected.bounty_points),
         );
         for action in [1, 2] {
             let refused = board(&owner, &mut admitted, action, 1).await?;
-            assert_eq!(refused, wire::TaskBoardReply { refused: true, ..compact.clone() });
+            assert_eq!(refused, wire::TaskBoardReply { refused: true, ..legacy.clone() });
         }
+        let full = full_board(&owner, &mut admitted, 4, 0, "").await?;
+        assert!(full.weekly.started && full.weekly.kills.iter().any(|task| !task.race.is_empty()));
+        assert_eq!(full.weekly, selected.weekly);
+        assert_eq!(full.bounty, selected.bounty);
         assert_eq!(
             full_board(&owner, &mut admitted, 9, 0, "").await?.refusal,
             2
