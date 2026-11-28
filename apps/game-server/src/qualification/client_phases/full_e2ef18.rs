@@ -184,6 +184,17 @@ fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleW
     )
 }
 
+fn adjacent_rat(
+    entry: &oteryn_dev_client::WorldSpatialEntity,
+    at: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> bool {
+    entry.kind == EntityKind::Creature
+        && entry.position.floor == at.floor
+        && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) == 1
+        && entry.display_name.as_ref().and_then(|name| name.as_str().ok())
+            .is_some_and(|name| name.eq_ignore_ascii_case("Rat"))
+}
+
 async fn approach_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -201,11 +212,7 @@ async fn approach_rat(
     loop {
         let here = client.world_spatial().actor_position;
         if let Some(target) = client.world_entities().and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == here.floor
-                    && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
-            })
+            entities.iter().find(|entry| adjacent_rat(entry, here))
         }) {
             return Ok(*target);
         }
@@ -329,7 +336,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("non-attackable-refusal", format!("reply={:?}", refusal.disposition));
 
     let mut previous = baseline;
-    let mut exact_xp = None;
+    // Global Rat: 5 base XP. The fresh free-account row starts at level 1
+    // with the Global +100% low-level bonus and no other XP modifiers.
+    const RAT_XP: u64 = 10;
+    if baseline.stats.level != 1 || baseline.stats.stamina_minutes <= 840 {
+        return Err(format!("step=exact-kill-experience expected=level-1-normal-stamina observed={:?}", baseline.stats).into());
+    }
     let mut levelled = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
     while levelled.is_none() {
@@ -340,17 +352,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         let delta = after.stats.experience.checked_sub(previous.stats.experience).ok_or(
             "step=exact-kill-experience observed=experience-regressed need=positive-delta",
         )?;
-        if delta == 0 {
-            return Err("step=exact-kill-experience observed=zero-delta need=creature-experience".into());
+        if delta != RAT_XP {
+            return Err(format!("step=exact-kill-experience target={:?} observed={delta} expected={RAT_XP}", target.entity).into());
         }
-        if let Some(expected) = exact_xp {
-            if delta != expected {
-                return Err(format!("step=exact-kill-experience observed={delta} expected={expected} need=stable-exact-rat-award").into());
-            }
-        } else {
-            exact_xp = Some(delta);
-            row.pass("exact-kill-experience", format!("creature=oteryn:creature.rat delta={delta}"));
-        }
+        row.pass("exact-kill-experience", format!("creature=oteryn:creature.rat target={:?} delta={delta}", target.entity));
         if melee_progress(&baseline.skills, &after.skills) {
             row.pass("melee-skill-progress", format!("before={:?} after={:?}", baseline.skills.skills, after.skills.skills));
         }
@@ -419,6 +424,35 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rat_target_requires_species_adjacency_and_floor() -> TestResult {
+        use oteryn_protocol_oteryn::{entity_names::EntityDisplayName, world_spatial::ActorPosition};
+
+        let at = ActorPosition { x: 100, y: 100, floor: -7 };
+        let mut entity = oteryn_dev_client::WorldSpatialEntity {
+            motion: None,
+            entity: oteryn_dev_client::EntityRef { identity: [1; 16], generation: 1 },
+            position: ActorPosition { x: 101, ..at },
+            kind: EntityKind::Creature,
+            display_name: Some(EntityDisplayName::new("Rat").map_err(|error| format!("{error:?}"))?),
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        assert!(adjacent_rat(&entity, at));
+        assert!(!adjacent_rat(&entity, ActorPosition { floor: -6, ..at }));
+        assert!(!adjacent_rat(&entity, ActorPosition { x: 99, ..at }));
+        entity.display_name = Some(EntityDisplayName::new("rat").map_err(|error| format!("{error:?}"))?);
+        assert!(adjacent_rat(&entity, at));
+        entity.display_name = Some(EntityDisplayName::new("Cave Rat").map_err(|error| format!("{error:?}"))?);
+        assert!(!adjacent_rat(&entity, at));
+        entity.display_name = None;
+        assert!(!adjacent_rat(&entity, at));
+        Ok(())
+    }
 
     #[test]
     fn melee_progress_accepts_only_melee_family_growth() {
