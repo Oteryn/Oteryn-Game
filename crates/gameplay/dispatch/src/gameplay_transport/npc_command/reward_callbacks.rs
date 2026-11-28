@@ -32,9 +32,19 @@ struct Offers {
 pub(super) struct Offer {
     npc: String,
     keywords: Vec<String>,
+    #[serde(default)]
+    msg_contains: bool,
     topic: u16,
     #[serde(default)]
     any_topic: bool,
+    #[serde(default)]
+    preserve_topic: bool,
+    #[serde(default)]
+    open_shop: bool,
+    #[serde(default)]
+    source_dialogue: bool,
+    #[serde(default)]
+    reward_order: Option<RewardOrder>,
     next_topic: u16,
     storage: Vec<Storage>,
     #[serde(default)]
@@ -48,6 +58,23 @@ pub(super) struct Offer {
     requires_premium: Option<bool>,
     #[serde(default)]
     failure_reply: Vec<String>,
+}
+
+#[derive(Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum RewardOrder {
+    Before,
+    Alongside,
+}
+
+impl Offer {
+    fn choice(&self) -> Choice {
+        Choice {
+            transition: None,
+            next_topic: (!self.preserve_topic).then(|| Topic::from(self.next_topic)),
+            reply: self.reply.clone(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -66,6 +93,16 @@ impl NpcConversations {
 pub(super) enum Phase {
     Rewards { skip_opening: Option<&'static str> },
     Offers,
+}
+
+pub(super) fn cledwyn_silver_trade(npc: &str, text: &str) -> bool {
+    use oteryn_gameplay_quests::quest::npc_rules::msg_contains;
+
+    npc == "oteryn:npc.cledwyn"
+        && msg_contains(text, "silver")
+        && !["token", "tokens", "information", "talk"]
+            .iter()
+            .any(|word| msg_contains(text, word))
 }
 
 pub(super) fn alternate_opening(
@@ -148,14 +185,14 @@ pub(super) fn prepare(
     };
     let says_no = raw_text == "no";
     if says_no
-        || (phase == Phase::Offers
-            && !matches!(
-                requests_offer.as_str(),
-                "yes" | "hi" | "hello" | "bye" | "farewell"
-            )
-            && offers
-                .iter()
-                .any(|offer| offer.npc == context.2 && offer.matches_keyword(requests_offer)))
+        || (!matches!(
+            requests_offer.as_str(),
+            "yes" | "hi" | "hello" | "bye" | "farewell"
+        ) && offers.iter().any(|offer| {
+            offer.npc == context.2
+                && (phase == Phase::Offers || offer.reward_order.is_some())
+                && offer.matches_keyword(requests_offer)
+        }))
     {
         let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         sessions
@@ -165,6 +202,11 @@ pub(super) fn prepare(
     }
     let mut failure_reply = Vec::new();
     let mut refused = false;
+    let mut open_shop = false;
+    let mut clear_topic_on_refusal = false;
+    let refusal_topic = |callback: &reward_callbacks::RewardCallback| {
+        callback.clear_topic_on_refusal.then(Topic::default)
+    };
     let step = quest_dialogue::prepare(
         admission,
         actor,
@@ -229,7 +271,42 @@ pub(super) fn prepare(
                         .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
+            let account_matches = |offer: &Offer| {
+                offer.requires_premium.is_none_or(|required| {
+                    let premium = admission
+                        .session_account(command.game_session_id)
+                        .zip(admission.premium_coordinator)
+                        .is_some_and(|(account, owner)| {
+                            owner.view(account).premium_gate().premium_current()
+                        });
+                    premium == required
+                })
+            };
+            let carried_matches = |offer: &Offer| {
+                offer
+                    .inventory
+                    .iter()
+                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+            };
             if let Phase::Rewards { skip_opening } = phase {
+                let earlier = offers.clone().find(|offer| {
+                    offer.reward_order.is_some()
+                        && offer.admits(&context.2, topic.number, &text, catalogue, tracks)
+                        && carried_matches(offer)
+                        && account_matches(offer)
+                });
+                if let Some(offer) = earlier {
+                    if !meets_level(offer.minimum_level) {
+                        return refusal(&offer.failure_reply);
+                    }
+                    if offer.source_dialogue {
+                        return None;
+                    }
+                    if offer.reward_order == Some(RewardOrder::Before) {
+                        open_shop = offer.open_shop;
+                        return Some(offer.choice());
+                    }
+                }
                 let topic = if text == "mission"
                     && matches!(
                         context.2.as_str(),
@@ -239,8 +316,9 @@ pub(super) fn prepare(
                 } else {
                     topic.number
                 };
-                let matching_stage = callbacks.filter(|c| {
-                    c.carried_item.is_none()
+                let mut choice = (|| {
+                    let matching_stage = callbacks.filter(|c| {
+                        c.carried_item.is_none()
                         && c.npc == context.2
                         && c.topic == topic
                         && matches_reward_keyword(c, &text)
@@ -262,108 +340,101 @@ pub(super) fn prepare(
                                     .all(|op| op.advisory_holds(catalogue, tracks))
                         })
                         && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-                });
-                // Both programmes can teach Melchior's single greeting. The
-                // active Appease stage owns it when its transition is eligible.
-                let appease_greeting = context.2 == "oteryn:npc.melchior"
-                    && matching_stage
-                        .clone()
-                        .any(|c| c.key == "oteryn:quest-reward/tibia-tales/appease-learn-greeting");
-                let matching_stage = matching_stage.filter(|c| {
-                    !appease_greeting || c.key != "oteryn:quest-reward/marid-melchior-greeting"
-                });
-                let mut selected = matching_stage.clone().filter(|c| {
-                    c.inventory
-                        .iter()
-                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
-                });
-                if let Some(callback) = selected.next() {
-                    if selected.next().is_some() {
-                        return None;
+                    });
+                    // Both programmes can teach Melchior's single greeting. The
+                    // active Appease stage owns it when its transition is eligible.
+                    let appease_greeting = context.2 == "oteryn:npc.melchior"
+                        && matching_stage.clone().any(|c| {
+                            c.key == "oteryn:quest-reward/tibia-tales/appease-learn-greeting"
+                        });
+                    let matching_stage = matching_stage.filter(|c| {
+                        !appease_greeting || c.key != "oteryn:quest-reward/marid-melchior-greeting"
+                    });
+                    let mut selected = matching_stage.clone().filter(|c| {
+                        c.inventory.iter().all(|rule| {
+                            inventory.is_some_and(|facts| rule.holds(&facts.quantities))
+                        })
+                    });
+                    if let Some(callback) = selected.next() {
+                        if !callback.accepts_npc_match(selected.next().is_some()) {
+                            return None;
+                        }
+                        if !meets_level(callback.minimum_level)
+                            && let Some(mut choice) = refusal(&callback.failure_reply)
+                        {
+                            choice.next_topic = refusal_topic(callback);
+                            return Some(choice);
+                        }
+                        // Without a source refusal line, keep the exact selected
+                        // transition: its locked owner must reject the level gate.
+                        // Falling through would return the ordinary dialogue's Ok.
+                        failure_reply = callback.failure_reply.clone();
+                        clear_topic_on_refusal = callback.clear_topic_on_refusal;
+                        return Some(Choice {
+                            transition: Some(callback.key.clone()),
+                            next_topic: Some(Topic::from(callback.next_topic)),
+                            reply: callback.reply.clone(),
+                        });
                     }
-                    if !meets_level(callback.minimum_level)
-                        && let Some(choice) = refusal(&callback.failure_reply)
+                    // Crystal storkus.lua:121-141 displays 20 minus the saved counter
+                    // for an empty deposit and resets the topic.
+                    if context.2 == storkus::NPC
+                        && topic == storkus::COLLECTION_TOPIC
+                        && let Some(saved) = track_value(storkus::DUST)
+                        && let Some(facts) = inventory
+                        && let Some(payment) = matching_stage
+                            .clone()
+                            .find_map(|callback| callback.take.first())
+                        && facts.quantities.get(&payment.item).copied().unwrap_or(0) == 0
                     {
+                        return Some(Choice {
+                            transition: None,
+                            next_topic: Some(Topic::from(0)),
+                            reply: vec![reward_callbacks::storkus_dust_reply(0, saved)],
+                        });
+                    }
+                    // A later stage with the same keyword cannot hide this stage's
+                    // explicit inventory refusal. Successful branches retain priority.
+                    let mut blocked = matching_stage;
+                    if let Some(callback) = blocked.next()
+                        && callback.accepts_npc_match(blocked.next().is_some())
+                        && let Some(mut choice) = refusal(&callback.failure_reply)
+                    {
+                        choice.next_topic = refusal_topic(callback);
                         return Some(choice);
                     }
-                    // Without a source refusal line, keep the exact selected
-                    // transition: its locked owner must reject the level gate.
-                    // Falling through would return the ordinary dialogue's Ok.
-                    failure_reply = callback.failure_reply.clone();
-                    return Some(Choice {
-                        transition: Some(callback.key.clone()),
-                        next_topic: Some(Topic::from(callback.next_topic)),
-                        reply: callback.reply.clone(),
-                    });
+                    None
+                })();
+                if let Some(offer) = earlier {
+                    if let Some(choice) = &mut choice {
+                        choice.reply.splice(..0, offer.reply.iter().cloned());
+                        failure_reply.splice(..0, offer.reply.iter().cloned());
+                    } else {
+                        choice = Some(offer.choice());
+                    }
                 }
-                // Crystal storkus.lua:121-141 displays 20 minus the saved counter
-                // for an empty deposit and resets the topic.
-                if context.2 == storkus::NPC
-                    && topic == storkus::COLLECTION_TOPIC
-                    && let Some(saved) = track_value(storkus::DUST)
-                    && let Some(facts) = inventory
-                    && let Some(payment) = matching_stage
-                        .clone()
-                        .find_map(|callback| callback.take.first())
-                    && facts.quantities.get(&payment.item).copied().unwrap_or(0) == 0
-                {
-                    return Some(Choice {
-                        transition: None,
-                        next_topic: Some(Topic::from(0)),
-                        reply: vec![reward_callbacks::storkus_dust_reply(0, saved)],
-                    });
-                }
-                // A later stage with the same keyword cannot hide this stage's
-                // explicit inventory refusal. Successful branches retain priority.
-                let mut blocked = matching_stage;
-                if let Some(callback) = blocked.next()
-                    && blocked.next().is_none()
-                    && let Some(choice) = refusal(&callback.failure_reply)
-                {
-                    return Some(choice);
-                }
-                return None;
+                return choice;
             }
             if context.2 == oteryn_gameplay_quests::quest::classic_talk::ROTTIN {
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
-            let account_matches = |offer: &Offer| {
-                offer.requires_premium.is_none_or(|required| {
-                    let premium = admission
-                        .session_account(command.game_session_id)
-                        .zip(admission.premium_coordinator)
-                        .is_some_and(|(account, owner)| {
-                            owner.view(account).premium_gate().premium_current()
-                        });
-                    premium == required
-                })
-            };
-            let carried_matches = |offer: &Offer| {
-                offer
-                    .inventory
-                    .iter()
-                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
-            };
             if let Some(offer) = offers.clone().find(|c| {
-                c.admits(&context.2, topic.number, &text, catalogue, tracks)
+                c.reward_order.is_none()
+                    && c.admits(&context.2, topic.number, &text, catalogue, tracks)
                     && carried_matches(c)
                     && account_matches(c)
             }) {
                 if !meets_level(offer.minimum_level) {
                     return refusal(&offer.failure_reply);
                 }
-                return Some(Choice {
-                    transition: None,
-                    next_topic: Some(Topic::from(offer.next_topic)),
-                    reply: if context.2 == storkus::NPC
-                        && text == "mission"
-                        && offer.next_topic == storkus::COLLECTION_TOPIC
-                    {
-                        storkus::collection_prompt(&offer.reply, inventory?)
-                    } else {
-                        offer.reply.clone()
-                    },
-                });
+                let mut choice = offer.choice();
+                if context.2 == storkus::NPC
+                    && text == "mission"
+                    && offer.next_topic == storkus::COLLECTION_TOPIC
+                {
+                    choice.reply = storkus::collection_prompt(&offer.reply, inventory?);
+                }
+                return Some(choice);
             }
             // Earlier stages may share the terminal reward's keyword. Grizzly's
             // dedicated native dialogue and admitted programmes retain those stages;
@@ -408,11 +479,13 @@ pub(super) fn prepare(
                     && matches_reward_keyword(c, &text)
             });
             let callback = matching.next()?;
-            if let Some(other) = matching.next() {
+            let other = matching.next();
+            if !callback.accepts_npc_match(other.is_some()) {
                 // Eroth uses "mission" both before accepting and for the terminal
                 // report. When neither stage applies, the terminal source owns
                 // the refusal, including on a new connection after completion.
-                if context.2 == "oteryn:npc.eroth"
+                if let Some(other) = other
+                    && context.2 == "oteryn:npc.eroth"
                     && callback.quest == other.quest
                     && matching.next().is_none()
                     && let Some(terminal) = [callback, other].into_iter().find(|c| c.completes)
@@ -426,11 +499,13 @@ pub(super) fn prepare(
                     .inventory
                     .iter()
                     .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities))))
-                && let Some(choice) = refusal(&callback.failure_reply)
+                && let Some(mut choice) = refusal(&callback.failure_reply)
             {
+                choice.next_topic = refusal_topic(callback);
                 return Some(choice);
             }
             failure_reply = callback.failure_reply.clone();
+            clear_topic_on_refusal = callback.clear_topic_on_refusal;
             Some(Choice {
                 transition: Some(callback.key.clone()),
                 next_topic: Some(Topic::from(callback.next_topic)),
@@ -438,7 +513,12 @@ pub(super) fn prepare(
             })
         },
     );
-    step.map(|step| step.with_failure_reply(failure_reply).with_refusal(refused))
+    step.map(|step| {
+        step.with_failure_reply(failure_reply)
+            .with_refusal(refused)
+            .with_quote_retirement(clear_topic_on_refusal)
+            .with_shop_window(open_shop)
+    })
 }
 
 #[cfg(test)]
@@ -467,6 +547,42 @@ fn sterling_marker_offer_and_refusal_follow_the_source_topics() -> Result<(), se
                 && r.maximum == 0
                 && r.preserve)
     );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn regional_hunt_dialogue_earlier_offers_admit_mixed_keywords() -> Result<(), String> {
+    let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("hunt-offers")
+        .map_err(|error| format!("{error:?}"))?;
+    let offers: Offers = serde_json::from_str(include_str!(
+        "../../../../../../content/quests/shared-reward-offers.json"
+    ))
+    .map_err(|error| error.to_string())?;
+    let mut missed = Vec::new();
+    for npc in ["oteryn:npc.lugri", "oteryn:npc.gabel", "oteryn:npc.malor"] {
+        let mut matching = offers
+            .offers
+            .iter()
+            .filter(|offer| offer.npc == npc && offer.topic == 0)
+            .peekable();
+        assert!(matching.peek().is_some(), "missing offers for {npc}");
+        for offer in matching {
+            let tracks = offer
+                .storage
+                .iter()
+                .map(|s| (s.track.clone(), s.minimum))
+                .chain(offer.requires.iter().map(|r| (r.track.clone(), r.minimum)))
+                .collect();
+            for keyword in &offer.keywords {
+                let message = format!("{keyword} task");
+                if !offer.admits(npc, 0, &message, loaded.catalogue(), &tracks) {
+                    missed.push((npc, message));
+                }
+            }
+        }
+    }
+    assert!(missed.is_empty(), "earlier offers missed: {missed:?}");
     Ok(())
 }
 
@@ -562,7 +678,10 @@ fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &st
                 .iter()
                 .any(|word| message_contains(text, word));
     }
-    matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text)
+    callback.matches_keyword(text)
+        || (callback.npc == JORGE
+            && callback.exclude_keywords.is_empty()
+            && matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text))
 }
 
 #[cfg(test)]

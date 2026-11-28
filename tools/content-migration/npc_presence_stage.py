@@ -101,7 +101,7 @@ def npc_bindings() -> list[tuple[str, list[tuple[str, str]]]]:
         for record in json.loads(shard.read_text(encoding='utf-8'))['records']:
             key = record['declaration']['identity']['key']
             bound = sorted({(SOURCES[(b['identity_namespace'], b['source_revision'])], b['external_id'])
-                            for b in record['source_bindings']
+                            for b in record.get('source_bindings', [])
                             if (b['identity_namespace'], b['source_revision']) in SOURCES})
             rows.append((key, bound))
     return sorted(rows)

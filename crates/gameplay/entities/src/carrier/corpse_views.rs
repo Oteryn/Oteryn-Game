@@ -29,6 +29,8 @@ pub(super) struct CorpseItemBinding {
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
     item: RuntimeCorpseItem,
+    ground_position: Option<MovementLocalPosition>,
+    revision: u64,
 }
 
 impl ChannelActorCarrier {
@@ -43,13 +45,16 @@ impl ChannelActorCarrier {
         // the same exact scope, ownership generation and lethal occurrence.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
-            || !self
-                .corpse_projections
-                .iter()
-                .any(|projection| projection.occurrence.actor == actor)
         {
             return Err(CarrierError::CommittedLethalUnavailable);
         }
+        let projection = self
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)
+            .ok_or(CarrierError::CommittedLethalUnavailable)?;
+        let position = projection.position();
+        let revision = projection.position_revision();
         if let Some(bound) = self
             .corpse_item_bindings
             .iter()
@@ -81,6 +86,8 @@ impl ChannelActorCarrier {
             actor,
             minted_item: item.clone(),
             item,
+            ground_position: Some(position),
+            revision,
         });
         Ok(())
     }
@@ -102,8 +109,8 @@ impl ChannelActorCarrier {
                     .find(|binding| binding.actor == actor)?;
                 Some(VisibleRuntimeCorpse {
                     identity: actor.corpse_identity(),
-                    position: projection.position(),
-                    revision: projection.position_revision(),
+                    position: binding.ground_position?,
+                    revision: binding.revision,
                     item: binding.item.clone(),
                 })
             })
@@ -295,15 +302,49 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 
-    /// Forget corpse Item bindings absent from the owner's complete durable live-corpse read.
-    /// The caller holds the Channel's item writer lane through that read and this update, so
-    /// a new MINT cannot race the snapshot. Keep bounded death/projection evidence for reward
-    /// retries; without an Item binding the corpse is neither visible nor usable.
+    /// Relocate a corpse from its durable Ground placement in runtime coordinates.
+    pub fn relocate_corpse_item(
+        &mut self,
+        item_instance_id: [u8; 16],
+        position: MovementLocalPosition,
+    ) -> Result<(), CarrierError> {
+        self.set_corpse_item_ground_position(item_instance_id, Some(position))
+    }
+
+    /// Publish a bound corpse's committed location while the item lane is held.
+    /// A carried corpse has no Ground position. Keep its original MINT binding
+    /// so replaying death settlement cannot show it again.
+    pub fn set_corpse_item_ground_position(
+        &mut self,
+        item_instance_id: [u8; 16],
+        position: Option<MovementLocalPosition>,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if let Some(binding) = self
+            .carrier
+            .corpse_item_bindings
+            .iter_mut()
+            .find(|binding| binding.item.item_instance_id == item_instance_id)
+            && binding.ground_position != position
+        {
+            binding.ground_position = position;
+            binding.revision = binding.revision.saturating_add(1);
+        }
+        Ok(())
+    }
+
+    /// Reconcile visible bindings against the owner's complete durable Ground read.
+    /// The caller holds the Channel's item writer lane through both steps. A
+    /// hidden binding can be carried, so preserve its MINT identity for replay
+    /// and a later drop until the bounded death projection is evicted.
     pub fn retain_live_corpse_items(&mut self, live: &[[u8; 16]]) -> Result<(), CarrierError> {
         self.owner_fence()?;
-        self.carrier
-            .corpse_item_bindings
-            .retain(|binding| live.contains(&binding.item.item_instance_id));
+        for binding in &mut self.carrier.corpse_item_bindings {
+            if binding.ground_position.is_some() && !live.contains(&binding.item.item_instance_id) {
+                binding.ground_position = None;
+                binding.revision = binding.revision.saturating_add(1);
+            }
+        }
         Ok(())
     }
 

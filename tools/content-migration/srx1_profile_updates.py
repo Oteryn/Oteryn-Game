@@ -5,7 +5,9 @@ import hashlib
 import json
 
 PATH = "content/items/definitions/srx1-item-updates.json"
-MAX_ITEM_PROFILES = 16 * 1024 * 1024  # native_gameplay::MAX_ITEM_PROFILES
+MAX_ITEM_PROFILES = 20 * 1024 * 1024  # native_gameplay::MAX_ITEM_PROFILES
+# Keep the historical encoding choice for existing provider pins.
+LEGACY_ITEM_PROFILE_ENCODING_LIMIT = 16 * 1024 * 1024
 
 
 def compact_item_record(row):
@@ -111,6 +113,8 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         json.loads((root / house_decoration_actions.PROFILES).read_bytes()),
     )
     original_document = json.loads(base)
+    # The common source attributes belong in the base for late Item admissions too.
+    house_decoration_actions.apply_top_order(original_document["records"], house_overlay)
     # Qualify both provider versions after the source owners' exact comparisons
     # so updated records cannot restore unknown eligibility.
     eligibility = equipment_eligibility.load_facts(root)
@@ -120,7 +124,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         json.loads(generated[qengine_reward_item_profiles.PROOF])
     )
     # Omit redundant nulls after the exact source comparisons. Rust reads either
-    # representation as Unknown and keeps the composed provider within 16 MiB.
+    # representation as Unknown.
     # The QENGINE, Lion Trial and floor assembly proofs compare complete source rows.
     for profile_document in (original_document, enriched):
         for row in profile_document["records"]:
@@ -151,7 +155,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         ):
             row["attributes"].pop("field_condition", None)
     base = canonical(original_document)
-    if len(base) > MAX_ITEM_PROFILES:
+    if len(base) > LEGACY_ITEM_PROFILE_ENCODING_LIMIT:
         # Preserve the exact profiles while omitting absent optional fields on
         # the same Ground decoration cohort.
         for row in original_document["records"]:
@@ -165,7 +169,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
                 if row.get("production_binding_qualification") is None:
                     row.pop("production_binding_qualification", None)
         base = canonical(original_document)
-    if len(base) > MAX_ITEM_PROFILES:
+    if len(base) > LEGACY_ITEM_PROFILE_ENCODING_LIMIT:
         base = compact_item_provider(original_document, canonical, exact_keys)
     if len(base) > MAX_ITEM_PROFILES:
         raise ValueError("SRX1_ITEM_PROVIDER_SIZE")

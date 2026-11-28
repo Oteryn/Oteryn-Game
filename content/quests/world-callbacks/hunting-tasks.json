@@ -1,0 +1,418 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/hunting-tasks/necromancers/boss-entry",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33046,
+          "y": 32439,
+          "floor": -11
+        },
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 33046,
+            "y": 32439,
+            "floor": -11
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/necromancers/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:333"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 33046,
+                "y": 32439,
+                "floor": -11
+              },
+              "to": {
+                "x": 33028,
+                "y": 32426,
+                "floor": -12
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 33026,
+                "y": 32422,
+                "floor": -12
+              },
+              "creature": "oteryn:creature.necropharus"
+            }
+          ],
+          "room_min": {
+            "x": 33022,
+            "y": 32418,
+            "floor": -12
+          },
+          "room_max": {
+            "x": 33034,
+            "y": 32429,
+            "floor": -12
+          }
+        }
+      },
+      "track_initials": {
+        "oteryn:quest-progress/hunting-tasks/necromancers/phase": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/hunting-tasks/minotaurs/boss-entry",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32450,
+          "y": 31988,
+          "floor": -9
+        },
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32450,
+            "y": 31988,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/minotaurs/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:344"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32450,
+                "y": 31988,
+                "floor": -9
+              },
+              "to": {
+                "x": 32458,
+                "y": 31994,
+                "floor": -9
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32458,
+                "y": 32005,
+                "floor": -9
+              },
+              "creature": "oteryn:creature.the_horned_fox"
+            }
+          ],
+          "room_min": {
+            "x": 32455,
+            "y": 31992,
+            "floor": -9
+          },
+          "room_max": {
+            "x": 32463,
+            "y": 32007,
+            "floor": -9
+          }
+        }
+      },
+      "track_initials": {
+        "oteryn:quest-progress/hunting-tasks/minotaurs/phase": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/hunting-tasks/pirates/boss-entry",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31978,
+          "y": 32853,
+          "floor": -1
+        },
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 31978,
+            "y": 32853,
+            "floor": -1
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/pirates/boss-visits",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:355"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 31978,
+                "y": 32853,
+                "floor": -1
+              },
+              "to": {
+                "x": 31976,
+                "y": 32896,
+                "floor": 0
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 31983,
+                "y": 32897,
+                "floor": 0
+              },
+              "creature": "oteryn:creature.brutus_bloodbeard",
+              "alternatives": [
+                "oteryn:creature.deadeye_devious",
+                "oteryn:creature.lethal_lissy",
+                "oteryn:creature.ron_the_ripper"
+              ]
+            }
+          ],
+          "room_min": {
+            "x": 31974,
+            "y": 32893,
+            "floor": 0
+          },
+          "room_max": {
+            "x": 31986,
+            "y": 32902,
+            "floor": 0
+          }
+        }
+      },
+      "track_initials": {
+        "oteryn:quest-progress/hunting-tasks/pirates/phase": 0,
+        "oteryn:quest-progress/hunting-tasks/pirates/boss-visits": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/hunting-tasks/green-djinns/boss-entry",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32870,
+          "y": 31112,
+          "floor": -4
+        },
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32870,
+            "y": 31112,
+            "floor": -4
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:366"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32870,
+                "y": 31112,
+                "floor": -4
+              },
+              "to": {
+                "x": 32876,
+                "y": 31120,
+                "floor": -8
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32875,
+                "y": 31112,
+                "floor": -8
+              },
+              "creature": "oteryn:creature.merikh_the_slaughterer"
+            }
+          ],
+          "room_min": {
+            "x": 32869,
+            "y": 31110,
+            "floor": -8
+          },
+          "room_max": {
+            "x": 32881,
+            "y": 31122,
+            "floor": -8
+          }
+        }
+      },
+      "track_initials": {
+        "oteryn:quest-progress/hunting-tasks/green-djinns/phase": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/hunting-tasks/blue-djinns/boss-entry",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32815,
+          "y": 31119,
+          "floor": -3
+        },
+        "appearance": 1949,
+        "native": {
+          "position": {
+            "x": 32815,
+            "y": 31119,
+            "floor": -3
+          },
+          "ordinal": 1,
+          "appearance": 1949
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:377"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32815,
+                "y": 31119,
+                "floor": -3
+              },
+              "to": {
+                "x": 32811,
+                "y": 31121,
+                "floor": -2
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32811,
+                "y": 31114,
+                "floor": -2
+              },
+              "creature": "oteryn:creature.fahim_the_wise"
+            }
+          ],
+          "room_min": {
+            "x": 32806,
+            "y": 31113,
+            "floor": -2
+          },
+          "room_max": {
+            "x": 32816,
+            "y": 31123,
+            "floor": -2
+          }
+        }
+      },
+      "track_initials": {
+        "oteryn:quest-progress/hunting-tasks/blue-djinns/phase": 0
+      }
+    }
+  ]
+}

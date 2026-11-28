@@ -143,16 +143,18 @@ pub struct CorpseDecayDeadline {
     pub corpse_item_instance_id: [u8; 16],
     pub definition: super::item_mint::TypedDefinitionRef,
     pub materialized_at_unix_ms: i64,
-    /// None is the source's undecaying terminal, still counted as a live corpse.
+    /// None is a source chain without a terminal removal deadline.
     pub decay_at_unix_ms: Option<i64>,
+    /// Ground relocation uses the Item loop's map coordinates.
+    pub loop_ground_spatial_position: Option<Vec<u8>>,
 }
 
-/// The recovery query's result: every live corpse of the scope (at most
-/// `COMBAT01-CORPSES-PER-SCOPE`), oldest first, with the database clock read
-/// in the same statement so the owner can map each deadline onto its own
-/// monotonic timer clock.
+/// The recovery query's result: live Ground corpses and permanent remains,
+/// oldest first, with the database clock from the same snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CorpseDecaySchedule {
+    /// False when more live roots exist outside this bounded page.
+    pub complete: bool,
     pub database_now_unix_ms: i64,
     pub corpses: Vec<CorpseDecayDeadline>,
 }
@@ -442,6 +444,17 @@ async fn admit(
         }
         RetireCause::ArenaReset(_) => return Ok(Err(DecayRetireError::AuthorityRejected)),
         RetireCause::CorpseDecay => {}
+    }
+    if !step.is_corpse_step() {
+        // The child's frozen event also binds the root's Ground. Use the same
+        // root Item lock as movement, before locking the child as Quick Loot does.
+        sqlx::query(
+            "SELECT 1 FROM game_item_instances \
+             WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR NO KEY UPDATE",
+        )
+        .bind(step.corpse_item_instance_id.as_slice())
+        .execute(&mut **tx)
+        .await?;
     }
     let item = sqlx::query(
         "SELECT world_id::text, definition_family, definition_production_key, \

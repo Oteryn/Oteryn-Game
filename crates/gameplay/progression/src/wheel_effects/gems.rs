@@ -421,6 +421,119 @@ mod tests {
     }
 
     #[test]
+    fn testserver_supreme_modifiers_load_in_vocation_pools_and_project() -> Result<(), Error> {
+        let data = WheelGemData::embedded()?;
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::ZERO,
+            current: true,
+        };
+        let damage = "base_damage_bonus";
+        let critical = "critical_extra_damage";
+        for (id, vocation, target, kind, grades) in [
+            (
+                96,
+                "knight",
+                "Intense Wound Cleansing",
+                "base_healing_bonus",
+                [20, 22, 24, 30],
+            ),
+            (
+                97,
+                "knight",
+                "Intense Wound Cleansing",
+                "cooldown_reduction",
+                [20; 4],
+            ),
+            (98, "paladin", "Divine Barrage", damage, [5, 5, 6, 7]),
+            (99, "paladin", "Divine Barrage", critical, [12, 13, 14, 18]),
+            (100, "paladin", "Ethereal Barrage", damage, [5, 5, 6, 7]),
+            (
+                101,
+                "paladin",
+                "Ethereal Barrage",
+                critical,
+                [12, 13, 14, 18],
+            ),
+            (102, "sorcerer", "Death Echo", damage, [5, 5, 6, 7]),
+            (103, "sorcerer", "Death Echo", critical, [12, 13, 14, 18]),
+            (104, "sorcerer", "Lightning", damage, [10, 11, 12, 15]),
+            (105, "sorcerer", "Lightning", critical, [15, 16, 18, 22]),
+            (106, "druid", "Forked Glacier", damage, [5, 5, 6, 7]),
+            (107, "druid", "Forked Glacier", critical, [12, 13, 14, 18]),
+            (108, "druid", "Forked Thorns", damage, [5, 5, 6, 7]),
+            (109, "druid", "Forked Thorns", critical, [12, 13, 14, 18]),
+            (110, "monk", "Chained Penance", damage, [5, 5, 6, 7]),
+            (111, "monk", "Chained Penance", critical, [12, 13, 14, 18]),
+            (112, "monk", "Thousand Fist Blows", damage, [5, 5, 6, 7]),
+            (
+                113,
+                "monk",
+                "Thousand Fist Blows",
+                critical,
+                [12, 13, 14, 18],
+            ),
+        ] {
+            for (name, pools) in data.gems()["vocations"].as_object().ok_or("vocations")? {
+                assert_eq!(
+                    pools["supreme_mods"]
+                        .as_array()
+                        .ok_or("supreme pool")?
+                        .contains(&serde_json::json!(id)),
+                    name == vocation,
+                    "modifier {id} in {name}"
+                );
+            }
+            let pools = &data.gems()["vocations"][vocation];
+            let basic = |key: &str| -> Result<u16, Error> {
+                Ok(u16::try_from(pools[key][0].as_u64().ok_or("basic pool")?)?)
+            };
+            let mut state = AtelierState {
+                vocation: vocation.into(),
+                grade_ruleset_revision: Some(data.revision().into()),
+                ..Default::default()
+            };
+            state.gems.insert(
+                1,
+                Gem {
+                    id: 1,
+                    quality: GemQuality::Greater,
+                    mods: vec![
+                        basic("basic_mods_position_1")?,
+                        basic("basic_mods_position_2")?,
+                        id,
+                    ],
+                    locked: false,
+                    vessel: true,
+                    slot: Some(0),
+                    ruleset_revision: data.revision().into(),
+                },
+            );
+            for (grade, expected) in (0_u8..4).zip(grades) {
+                state.grades.insert((FragmentKind::Supreme, id), grade);
+                let mut effects = WheelRuntimeEffects::default();
+                effects.sockets.gem_vessel_nodes = 6;
+                effects
+                    .contribute_gems(&state, &data, &allocation)
+                    .ok_or("projection")?;
+                assert_eq!(
+                    effects.gem_value_milli(kind, target),
+                    expected * 1_000,
+                    "modifier {id}, grade {grade}"
+                );
+                if id == 97 {
+                    assert_eq!(
+                        effects.gem_value_milli("momentum_chance", ""),
+                        [0, 330, 660, 1000][usize::from(grade)]
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn every_embedded_effect_is_supported_and_malformed_values_are_refused() -> Result<(), Error> {
         let data = WheelGemData::embedded()?;
         for row in data.gems()["catalogue"]["basic_mods"]

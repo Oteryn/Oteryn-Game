@@ -449,11 +449,13 @@ pub(super) async fn exercise(
     {
         let rank = i64::try_from(index + 1)?;
         let command = first + 8 + u64::try_from(index)? * 6;
+        let plural = if tokens == 1 { "" } else { "s" };
+        let quote = format!("Would ye' give me {tokens} Vampire Lord Token{plural} for rank {rank}?");
         let offer = talk_outcome(owner, admitted, npc, command, "vampire lord token").await?;
         assert_eq!(offer.disposition, NpcIntentDisposition::Ok);
         assert_eq!(
             offer.conversation.ok_or("Storkus exchange offer")?.lines,
-            ["Would ye' like to give me vampire tokens?"]
+            [quote.as_str()]
         );
         assert_eq!(
             talk(owner, admitted, npc, command + 1, "yes").await?,
@@ -496,7 +498,7 @@ pub(super) async fn exercise(
         assert!(
             focus
                 .conversation
-                .is_none_or(|reply| reply.lines != ["Would ye' like to give me vampire tokens?"]),
+                .is_none_or(|reply| reply.lines != [quote.as_str()]),
             "trade opened a token offer for rank {rank}"
         );
         assert_eq!(

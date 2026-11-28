@@ -56,6 +56,17 @@ class ConvertPlacementsTest(unittest.TestCase):
             for source in row["provenance"]:
                 self.assertEqual(source["origin"], "crystal")
                 self.assertEqual(source["revision"], "201189f871d23597b82caf88fd611454a2ddefb8")
+    def test_token_exchange_npcs_have_their_crystal_source_placements(self):
+        expected = {
+            "oteryn:npc.gnomally": {"x": 32795, "y": 31746, "floor": 10},
+            "oteryn:npc.ruprecht": {"x": 31953, "y": 31718, "floor": 7},
+            "oteryn:npc.storkus": {"x": 32589, "y": 31962, "floor": 7},
+        }
+        actual = [row["declaration"] for row in self.records
+                  if row["declaration"]["npc"] in expected]
+        self.assertEqual(len(actual), len(expected))
+        self.assertEqual({row["npc"]: row["cell"] for row in actual}, expected)
+        self.assertTrue(all(row["direction"] == "north" for row in actual))
 
     def test_l1_reward_npcs_use_only_the_global_source_cells(self):
         expected = {
@@ -145,6 +156,39 @@ class ConvertPlacementsTest(unittest.TestCase):
         route, = [row for row in json.loads(routes.read_text())
                   if row["key"] == "oteryn:service.travel.captain_max_calassa/liberty_bay"]
         self.assertEqual((route["x"], route["y"], route["floor"]), (32298, 32896, 6))
+    def test_gnome_daily_contacts_use_the_pinned_crystal_cells(self):
+        expected = {
+            'a_dragon_lord': ((32273, 32629, 14), 3237),
+            'a_drillworm': ((32232, 32684, 13), 3132),
+            'a_lost_basher': ((32171, 32630, 14), 3240),
+            'a_lost_thrower': ((32306, 32546, 14), 3231),
+            'a_vulcongra': ((32132, 32562, 13), 3120),
+            'commander_stone': ((32805, 31798, 10), 2841),
+            'gnomargery': ((32245, 32600, 14), 3234),
+            'gnombold': ((32242, 32598, 11), 2955),
+            'gnomeral': ((32963, 31875, 9), 2669),
+            'gnomilly': ((32242, 32599, 9), 2744),
+            'gnomus': ((33753, 32165, 14), 3204),
+            'klom_stonecutter': ((33773, 32200, 14), 3207),
+        }
+        expected = {f'oteryn:npc.{key}': cell for key, cell in expected.items()}
+        rows = [r['declaration'] for r in self.records if r['declaration']['npc'] in expected]
+        self.assertEqual(len(rows), len(expected))
+        for row in rows:
+            cell, line = expected[row['npc']]
+            self.assertEqual(tuple(row['cell'][part] for part in ('x', 'y', 'floor')), cell)
+            self.assertEqual(row.get('block_solid_contact', False), row['npc'] in {
+                'oteryn:npc.gnomargery', 'oteryn:npc.gnombold', 'oteryn:npc.gnomilly',
+            })
+            branch, regional, mainland = row['provenance']
+            source_path = 'data-global/world/world-npc.xml'
+            self.assertEqual(branch['source_row'], source_path)
+            self.assertEqual(branch['arbitration'][0]['rule'], 'EXPLICIT_PINNED_NATIVE_PLACEMENTS')
+            self.assertEqual(regional['source_row'], f'{source_path}:{line}')
+            self.assertEqual(mainland['source_row'], f'{source_path}:{line}')
+            for source in row['provenance']:
+                self.assertEqual(source['origin'], 'crystal')
+                self.assertEqual(source['revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
 
     def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
         actual = [r['declaration'] for r in self.records

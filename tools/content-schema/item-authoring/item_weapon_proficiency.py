@@ -388,7 +388,7 @@ def wiki_stats() -> tuple[dict, dict[int, dict[str, list[str]]]]:
         item_id = int(record.get("item_id", key.rsplit(".i", 1)[-1]))
         fields = out.setdefault(item_id, {})
         for observation in record["observations"]:
-            for name in ("vocrequired", "secondarytype"):
+            for name in ("vocrequired", "secondarytype", "primarytype"):
                 value = observation["fields"].get(name)
                 if value and value not in fields.setdefault(name, []):
                     fields[name].append(value)
@@ -566,6 +566,19 @@ def build() -> dict:
         item_id = binding["source_id"]
         item_wiki = wiki.get(item_id, {})
         vocation = vocation_evidence(item_wiki, crystal.get(item_id))
+        # Ink Sword's Crystal XML omits its weapon node. TibiaWiki revision 1188273
+        # identifies it as a sword and lists no vocation requirement.
+        if (
+            item_id == 51666
+            and vocation["basis"] == "UNKNOWN"
+            and not item_wiki.get("vocrequired")
+            and single(item_wiki.get("primarytype")) == "Sword Weapons"
+        ):
+            vocation = {
+                "basis": "DERIVED",
+                "source": "tibiawiki",
+                "value": "unrestricted",
+            }
         secondarytype = single(item_wiki.get("secondarytype"))
         evidence = {
             "ammotype": ammotypes.get(item_id),

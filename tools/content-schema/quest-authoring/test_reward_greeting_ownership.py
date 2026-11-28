@@ -19,6 +19,7 @@ CALLBACK_DOCUMENTS = (
     "content/quests/npc-callbacks/l2-ready-stories.json",
     "content/quests/npc-callbacks/l13-outfits.json",
     "content/quests/npc-callbacks/questpc7-programmes.json",
+    "content/quests/npc-callbacks/token-exchanges.json",
 )
 
 

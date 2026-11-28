@@ -27,11 +27,15 @@ class QuestRewards(unittest.TestCase):
             for c in self.callbacks["callbacks"]
             if c["key"] == "oteryn:quest-reward/l10-brotherhood-dread-lord"
         )
-        self.assertEqual(row["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}])
+        self.assertEqual(
+            row["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}]
+        )
         self.assertIsNone(row["give"])
         self.assertEqual(row["achievement"], "oteryn:achievement/dread_lord")
         states = {s["track"].rsplit("/", 1)[-1]: s for s in row["storage"]}
-        self.assertEqual((states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4))
+        self.assertEqual(
+            (states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4)
+        )
         self.assertEqual((states["door"]["minimum"], states["door"]["set"]), (0, 1))
 
     def test_nightmare_lord_protector_exchange_matches_committed_npc_source(self):
@@ -40,13 +44,19 @@ class QuestRewards(unittest.TestCase):
             for callback in self.callbacks["callbacks"]
             if callback["key"] == "oteryn:quest-reward/l10-nightmare-lord-protector"
         )
-        self.assertEqual(row["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}])
+        self.assertEqual(
+            row["take"], [{"item": "oteryn:item.tibia.i6499", "count": 1500}]
+        )
         self.assertIsNone(row["give"])
         self.assertEqual(row["achievement"], "oteryn:achievement/lord_protector")
         states = {state["track"].rsplit("/", 1)[-1]: state for state in row["storage"]}
-        self.assertEqual((states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4))
+        self.assertEqual(
+            (states["outfits"]["minimum"], states["outfits"]["set"]), (3, 4)
+        )
         self.assertEqual((states["door"]["minimum"], states["door"]["set"]), (0, 1))
-        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
+            "offers"
+        ]
         (offer,) = (
             offer
             for offer in offers
@@ -66,7 +76,9 @@ class QuestRewards(unittest.TestCase):
                 name = f"l3-demon-{addon}"
                 self.assertIsNone(rewards[name]["achievement"])
                 complete = rewards[name + "-complete"]
-                self.assertEqual(complete["achievement"], "oteryn:achievement/true_dedication")
+                self.assertEqual(
+                    complete["achievement"], "oteryn:achievement/true_dedication"
+                )
                 self.assertEqual(
                     complete["requires_addons"],
                     [
@@ -79,18 +91,18 @@ class QuestRewards(unittest.TestCase):
                 )
 
     def test_every_outfit_addon_slot_has_a_grant(self):
-        document = self.author['document']
+        document = self.author["document"]
         covered = {
-            (key, row['target']['addon'])
-            for row in document['grant_mappings']
-            if row['target']['kind'] == 'Addon'
-            for key in [row['target']['outfit_key'], *row.get('outfit_aliases', [])]
+            (key, row["target"]["addon"])
+            for row in document["grant_mappings"]
+            if row["target"]["kind"] == "Addon"
+            for key in [row["target"]["outfit_key"], *row.get("outfit_aliases", [])]
         }
         missing = [
-            (outfit['key'], addon)
-            for outfit in document['outfits']
-            for addon in range(1, outfit['addon_count'] + 1)
-            if (outfit['key'], addon) not in covered
+            (outfit["key"], addon)
+            for outfit in document["outfits"]
+            for addon in range(1, outfit["addon_count"] + 1)
+            if (outfit["key"], addon) not in covered
         ]
         self.assertEqual(missing, [])
 
@@ -133,74 +145,119 @@ class QuestRewards(unittest.TestCase):
             q.validate_callbacks(document)
 
     def test_full_source_outfit_population_and_item_acquisition_bindings(self):
-        doc=self.author['document']
-        outfits={r['key']:r for r in doc['outfits']}
-        mappings={r['grant_key']:r for r in doc['grant_mappings']}
-        nx5=json.loads((q.ROOT/'tools/content-schema/cosmetics-authoring/nx5-authoring.json').read_bytes())['document']
-        self.assertEqual(len(outfits),137+len(nx5['outfits']))
-        for row in nx5['outfits']:
-            self.assertEqual(outfits[row['key']],row)
-        packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        self.assertEqual(len(packet['grants']),210)
-        for grant in packet['grants']:
-            mapping=mappings[grant['key']]
-            self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
-            if grant['kind']=='mount':continue
-            outfit=outfits[mapping['target']['outfit_key']]
-            self.assertEqual(sorted([outfit['female']['id'],outfit['male']['id']]),grant['look_types'])
-            if grant['kind']=='addon':self.assertEqual(mapping['target']['addon'],grant['addon'])
-        source_admissions=doc['item_acquisitions']
-        self.assertEqual(len(source_admissions),1)
-        self.assertEqual(source_admissions[0]['item_key'],'oteryn:item.tibia.i6579')
-        self.assertEqual(source_admissions[0]['catalogue_sha256'],q.sha(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json']))
-        self.assertEqual(source_admissions[0]['donor'],next(r['donor'] for r in packet['rules'] if r['item_id']==6579))
-        admission=packet['native_admission']
-        self.assertEqual(len(admission['corrections']),8)
-        self.assertEqual({r['family'] for r in admission['corrections']},{'Dream Warden','Glooth Engineer','Wedding','Jungle Explorer'})
-        capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
-        self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
-        original=json.loads(capture)
+        doc = self.author["document"]
+        outfits = {r["key"]: r for r in doc["outfits"]}
+        mappings = {r["grant_key"]: r for r in doc["grant_mappings"]}
+        nx5 = json.loads(
+            (
+                q.ROOT / "tools/content-schema/cosmetics-authoring/nx5-authoring.json"
+            ).read_bytes()
+        )["document"]
+        self.assertEqual(len(outfits), 137 + len(nx5["outfits"]))
+        for row in nx5["outfits"]:
+            self.assertEqual(outfits[row["key"]], row)
+        packet = json.loads(
+            self.outputs[
+                "tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
+            ]
+        )
+        self.assertEqual(len(packet["grants"]), 210)
+        for grant in packet["grants"]:
+            mapping = mappings[grant["key"]]
+            self.assertEqual(mapping["compatible_provenance"], [packet["provenance"]])
+            if grant["kind"] == "mount":
+                continue
+            outfit = outfits[mapping["target"]["outfit_key"]]
+            self.assertEqual(
+                sorted([outfit["female"]["id"], outfit["male"]["id"]]),
+                grant["look_types"],
+            )
+            if grant["kind"] == "addon":
+                self.assertEqual(mapping["target"]["addon"], grant["addon"])
+        source_admissions = doc["item_acquisitions"]
+        self.assertEqual(len(source_admissions), 1)
+        self.assertEqual(source_admissions[0]["item_key"], "oteryn:item.tibia.i6579")
+        self.assertEqual(
+            source_admissions[0]["catalogue_sha256"],
+            q.sha(
+                self.outputs[
+                    "tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
+                ]
+            ),
+        )
+        self.assertEqual(
+            source_admissions[0]["donor"],
+            next(r["donor"] for r in packet["rules"] if r["item_id"] == 6579),
+        )
+        admission = packet["native_admission"]
+        self.assertEqual(len(admission["corrections"]), 8)
+        self.assertEqual(
+            {r["family"] for r in admission["corrections"]},
+            {"Dream Warden", "Glooth Engineer", "Wedding", "Jungle Explorer"},
+        )
+        capture = (
+            q.ROOT / "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+        ).read_bytes()
+        self.assertEqual(admission["source_packet_sha256"], q.sha(capture))
+        original = json.loads(capture)
         additions = [21897, 40578, 44753, 44754, 48424, 48514, 48515]
-        self.assertEqual([r['item_id'] for r in packet['rules']],
-                         sorted([r['item_id'] for r in original['rules']] + additions))
-        self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
-        old=next(r for r in original['rules'] if r['mode']=='random_outfit')
-        native=next(r for r in packet['rules'] if r['mode']=='random_outfit')
-        self.assertEqual(len(native['choices']),len(old['choices']))
-        wedding=[r for r in native['choices'] if 'Wedding outfit' in r.get('feedback','')]
-        self.assertEqual(len(wedding),2)
-        self.assertTrue(all(r['grants']==['oteryn:item-grant.outfit.328-329.base'] for r in wedding))
-        jungle=outfits['oteryn:outfit.jungle_explorer']
-        self.assertEqual((jungle['female']['id'],jungle['male']['id']),(620,621))
-        self.assertFalse(jungle['starter_female'] or jungle['starter_male'])
-        self.assertTrue(jungle['premium'])
+        self.assertEqual(
+            [r["item_id"] for r in packet["rules"]],
+            sorted([r["item_id"] for r in original["rules"]] + additions),
+        )
+        self.assertEqual(sum(r["item_id"] == 21897 for r in packet["rules"]), 1)
+        old = next(r for r in original["rules"] if r["mode"] == "random_outfit")
+        native = next(r for r in packet["rules"] if r["mode"] == "random_outfit")
+        self.assertEqual(len(native["choices"]), len(old["choices"]))
+        wedding = [
+            r for r in native["choices"] if "Wedding outfit" in r.get("feedback", "")
+        ]
+        self.assertEqual(len(wedding), 2)
+        self.assertTrue(
+            all(
+                r["grants"] == ["oteryn:item-grant.outfit.328-329.base"]
+                for r in wedding
+            )
+        )
+        jungle = outfits["oteryn:outfit.jungle_explorer"]
+        self.assertEqual((jungle["female"]["id"], jungle["male"]["id"]), (620, 621))
+        self.assertFalse(jungle["starter_female"] or jungle["starter_male"])
+        self.assertTrue(jungle["premium"])
 
     def test_task_board_mount_offers_bind_exact_admitted_looks(self):
-        doc = self.author['document']
-        mounts = {row['key']: row['look']['id'] for row in doc['mounts']}
-        grants = {row['grant_key']: row for row in doc['grant_mappings']}
+        doc = self.author["document"]
+        mounts = {row["key"]: row["look"]["id"] for row in doc["mounts"]}
+        grants = {row["grant_key"]: row for row in doc["grant_mappings"]}
         for offer, look in [(6, 1908), (7, 1909), (8, 1910), (9, 1281)]:
             with self.subTest(offer=offer):
-                row = grants[f'oteryn:taskboard/shop/offer-{offer}']
-                self.assertEqual(row['compatible_provenance'], ['task-board-shop-v1'])
-                self.assertEqual(row['target']['kind'], 'Mount')
-                self.assertEqual(mounts[row['target']['mount_key']], look)
+                row = grants[f"oteryn:taskboard/shop/offer-{offer}"]
+                self.assertEqual(row["compatible_provenance"], ["task-board-shop-v1"])
+                self.assertEqual(row["target"]["kind"], "Mount")
+                self.assertEqual(mounts[row["target"]["mount_key"]], look)
 
     def test_pegasus_feather_is_a_direct_mount_source(self):
-        packet = json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        rule = next(row for row in packet['rules'] if row['item_id'] == 48424)
-        self.assertEqual(rule['mode'], 'direct')
-        self.assertFalse(rule['premium'])
-        choice, = rule['choices']
-        self.assertEqual(choice['grants'], ['oteryn:item-grant.mount.227'])
-        self.assertEqual(choice['achievements'], ['oteryn:achievement/i_wanna_fly_away'])
+        packet = json.loads(
+            self.outputs[
+                "tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
+            ]
+        )
+        rule = next(row for row in packet["rules"] if row["item_id"] == 48424)
+        self.assertEqual(rule["mode"], "direct")
+        self.assertFalse(rule["premium"])
+        (choice,) = rule["choices"]
+        self.assertEqual(choice["grants"], ["oteryn:item-grant.mount.227"])
+        self.assertEqual(
+            choice["achievements"], ["oteryn:achievement/i_wanna_fly_away"]
+        )
 
     def test_complete_glider_recipe_preserves_every_source_taming_row(self):
         original = json.loads((q.ROOT / "content/cosmetics/taming.json").read_bytes())
         native = json.loads(self.outputs["content/cosmetics/taming-native.json"])
         self.assertEqual(len(original), 51)
         self.assertEqual(len(native), 51)
-        others = lambda rows: [r for r in rows if r["item_key"] != "oteryn:item.tibia.i21897"]
+        others = lambda rows: [
+            r for r in rows if r["item_key"] != "oteryn:item.tibia.i21897"
+        ]
         self.assertEqual(others(native), others(original))
         expected = copy.deepcopy(
             next(r for r in original if r["item_key"] == "oteryn:item.tibia.i21897")
@@ -214,14 +271,22 @@ class QuestRewards(unittest.TestCase):
             expected,
         )
         packet = json.loads(
-            self.outputs["tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"]
+            self.outputs[
+                "tools/content-schema/native-gameplay/item-cosmetic-actions-native.json"
+            ]
         )
         rule = next(r for r in packet["rules"] if r["item_id"] == 21897)
         self.assertEqual(rule["mode"], "pieces")
-        self.assertEqual(rule["required_items"], [21897, 21898, 21899, 21901, 21902, 21905, 21906])
+        self.assertEqual(
+            rule["required_items"], [21897, 21898, 21899, 21901, 21902, 21905, 21906]
+        )
         self.assertFalse(rule["premium"])
-        physical = json.loads(self.outputs["content/items/definitions/spell-native-profiles.json"])
-        policies = {r["production_definition"]["production_key"]: r for r in physical["records"]}
+        physical = json.loads(
+            self.outputs["content/items/definitions/spell-native-profiles.json"]
+        )
+        policies = {
+            r["production_definition"]["production_key"]: r for r in physical["records"]
+        }
         for item in [21897, 21898, 21899, 21901, 21902, 21905, 21906]:
             policy = policies[f"oteryn:item.tibia.i{item}"]
             self.assertTrue(policy["admission"]["materializable"])
@@ -236,8 +301,12 @@ class QuestRewards(unittest.TestCase):
             rule["choices"][0]["cues"],
             [{"binding": "canary.appearance:effect/magic_green", "effect_id": 15}],
         )
-        grant = next(r for r in packet["grants"] if r["key"] == "oteryn:item-grant.mount.71")
-        mappings = {r["grant_key"]: r for r in self.author["document"]["grant_mappings"]}
+        grant = next(
+            r for r in packet["grants"] if r["key"] == "oteryn:item-grant.mount.71"
+        )
+        mappings = {
+            r["grant_key"]: r for r in self.author["document"]["grant_mappings"]
+        }
         self.assertEqual(grant["mount_id"], 71)
         self.assertEqual(
             mappings[grant["key"]]["target"],
@@ -262,7 +331,8 @@ class QuestRewards(unittest.TestCase):
             )
         packet = json.loads(
             (
-                q.ROOT / "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
+                q.ROOT
+                / "tools/content-schema/native-gameplay/item-cosmetic-actions.json"
             ).read_bytes()
         )
         for grant in packet["grants"]:
@@ -272,8 +342,12 @@ class QuestRewards(unittest.TestCase):
                     mounts[mapping["target"]["mount_key"]]["look"]["id"],
                     grant["look_type"],
                 )
-                self.assertEqual(mapping["compatible_provenance"], [packet["provenance"]])
-        self.assertEqual(mounts["oteryn:content.mount.wind_up_loco"]["look"]["id"], 1459)
+                self.assertEqual(
+                    mapping["compatible_provenance"], [packet["provenance"]]
+                )
+        self.assertEqual(
+            mounts["oteryn:content.mount.wind_up_loco"]["look"]["id"], 1459
+        )
 
     def test_endgame_native_bits_and_completed_parent_contract(self):
         self.assertEqual(len(self.l13_callbacks["callbacks"]), 7)
@@ -361,8 +435,14 @@ class QuestRewards(unittest.TestCase):
             ],
             [1000, 2000, 3000],
         )
-        appearance = json.loads(q.build()["content/cosmetics/outfits/authoring.json"])["document"]
-        dragon = next(o for o in appearance["outfits"] if o["key"] == "oteryn:outfit.dragon_slayer")
+        appearance = json.loads(q.build()["content/cosmetics/outfits/authoring.json"])[
+            "document"
+        ]
+        dragon = next(
+            o
+            for o in appearance["outfits"]
+            if o["key"] == "oteryn:outfit.dragon_slayer"
+        )
         self.assertEqual((dragon["female"]["id"], dragon["male"]["id"]), (1289, 1288))
         self.assertTrue(
             any(
@@ -374,15 +454,20 @@ class QuestRewards(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.outputs = q.build()
-        cls.callbacks = json.loads(cls.outputs["content/quests/shared-reward-callbacks.json"])
+        cls.callbacks = json.loads(
+            cls.outputs["content/quests/shared-reward-callbacks.json"]
+        )
         cls.outfit_completions = json.loads(
             cls.outputs["content/quests/npc-callbacks/outfit-completions.json"]
         )["callbacks"]
-        cls.l13_callbacks = json.loads(cls.outputs["content/quests/npc-callbacks/l13-outfits.json"])
+        cls.l13_callbacks = json.loads(
+            cls.outputs["content/quests/npc-callbacks/l13-outfits.json"]
+        )
         cls.author = json.loads(cls.outputs["content/cosmetics/outfits/authoring.json"])
         cls.schema = json.loads(
             (
-                q.ROOT / "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json"
+                q.ROOT
+                / "tools/content-schema/quest-authoring/shared-reward-callbacks.schema.json"
             ).read_text()
         )
 
@@ -403,16 +488,27 @@ class QuestRewards(unittest.TestCase):
                 self.assertEqual(row["storage"], [])
                 self.assertEqual(row["forbids_outfits"], [row["outfit"]["outfit"]])
             if label in ("issavi", "makeshift"):
-                self.assertEqual(rows[f"l11-{label}-second"]["requires_addons"][0]["addons"], 1)
-        for label, npc in [("dream-warrior", "vanys"), ("dream-warrior-undal", "undal")]:
-            for stage, bit, item, count in [("first", 1, 30169, 5), ("second", 2, 30168, 1)]:
+                self.assertEqual(
+                    rows[f"l11-{label}-second"]["requires_addons"][0]["addons"], 1
+                )
+        for label, npc in [
+            ("dream-warrior", "vanys"),
+            ("dream-warrior-undal", "undal"),
+        ]:
+            for stage, bit, item, count in [
+                ("first", 1, 30169, 5),
+                ("second", 2, 30168, 1),
+            ]:
                 row = rows[f"l11-{label}-{stage}"]
                 self.assertEqual(row["npc"], f"oteryn:npc.{npc}")
                 self.assertEqual(
-                    row["take"], [{"item": f"oteryn:item.tibia.i{item}", "count": count}]
+                    row["take"],
+                    [{"item": f"oteryn:item.tibia.i{item}", "count": count}],
                 )
                 self.assertEqual(row.get("requires_addons", []), [])
-                self.assertEqual(row["requires_outfits"], ["oteryn:outfit.dream_warrior"])
+                self.assertEqual(
+                    row["requires_outfits"], ["oteryn:outfit.dream_warrior"]
+                )
                 self.assertEqual(
                     row["forbids_addons"],
                     [{"outfit": "oteryn:outfit.dream_warrior", "addons": bit}],
@@ -447,7 +543,9 @@ class QuestRewards(unittest.TestCase):
                 self.assertEqual(row["give"]["item"], f"oteryn:item.tibia.i{item}")
                 self.assertEqual(
                     row["take"],
-                    [] if price == 0 else [{"item": "oteryn:item.tibia.i6499", "count": price}],
+                    []
+                    if price == 0
+                    else [{"item": "oteryn:item.tibia.i6499", "count": price}],
                 )
                 self.assertEqual(
                     row["storage"][0]["set"],
@@ -460,7 +558,9 @@ class QuestRewards(unittest.TestCase):
             ]:
                 row = rows[f"l10-{family}-use-{stage}"]
                 self.assertEqual(row["carried_item"], f"oteryn:item.tibia.i{item}")
-                self.assertEqual(row["take"], [{"item": row["carried_item"], "count": 1}])
+                self.assertEqual(
+                    row["take"], [{"item": row["carried_item"], "count": 1}]
+                )
                 self.assertEqual(
                     row["outfit"], {"outfit": "oteryn:outfit." + family, "addons": bit}
                 )
@@ -488,10 +588,14 @@ class QuestRewards(unittest.TestCase):
         source = q.donor_inputs()[q.GOLDEN_NPC_SOURCE]
         prices = q.golden_source_prices(source)
         self.assertEqual(prices, [500_000_000, 250_000_000, 250_000_000])
-        for bit, (suffix, after) in enumerate([("base", 1), ("boots", 2), ("helmet", 4)]):
+        for bit, (suffix, after) in enumerate(
+            [("base", 1), ("boots", 2), ("helmet", 4)]
+        ):
             row = rows["l10-golden-" + suffix]
             self.assertEqual(row["fee"], {"gold": prices[bit], "include_bank": True})
-            self.assertEqual(row["outfit"], {"outfit": "oteryn:outfit.golden", "addons": bit})
+            self.assertEqual(
+                row["outfit"], {"outfit": "oteryn:outfit.golden", "addons": bit}
+            )
             self.assertEqual(
                 [(r["minimum"], r["maximum"], r["set"]) for r in row["storage"]],
                 [(bit, bit, after)],
@@ -502,7 +606,9 @@ class QuestRewards(unittest.TestCase):
         rows = {c["key"].rsplit("/", 1)[-1]: c for c in self.callbacks["callbacks"]}
         trade = rows["l9-afflicted-pouch"]
         self.assertEqual(trade["storage"], [])
-        self.assertEqual(trade["take"], [{"item": "oteryn:item.tibia.i12517", "count": 1}])
+        self.assertEqual(
+            trade["take"], [{"item": "oteryn:item.tibia.i12517", "count": 1}]
+        )
         self.assertEqual(trade["give"]["item"], "oteryn:item.tibia.i12413")
         self.assertEqual(
             trade["achievement_progress"],
@@ -517,7 +623,9 @@ class QuestRewards(unittest.TestCase):
             ),
         ]:
             invalid = copy.deepcopy(self.callbacks)
-            next(c for c in invalid["callbacks"] if c["key"] == trade["key"])[field] = value
+            next(c for c in invalid["callbacks"] if c["key"] == trade["key"])[field] = (
+                value
+            )
             with self.assertRaises((ValueError, ValidationError)):
                 q.validate_callbacks(invalid)
         for family, looks in [
@@ -525,7 +633,9 @@ class QuestRewards(unittest.TestCase):
             ("soil_guardian", "514-516"),
             ("crystal_warlord", "512-513"),
         ]:
-            mappings = {r["grant_key"]: r for r in self.author["document"]["grant_mappings"]}
+            mappings = {
+                r["grant_key"]: r for r in self.author["document"]["grant_mappings"]
+            }
             for addon in (0, 1, 2):
                 key = f"oteryn:item-grant.outfit.{looks}." + (
                     "base" if addon == 0 else f"addon{addon}"
@@ -570,7 +680,9 @@ class QuestRewards(unittest.TestCase):
             [{"outfit": "oteryn:outfit.mage", "addons": 2, "sex": "male"}],
         )
         invalid = copy.deepcopy(self.callbacks)
-        next(c for c in invalid["callbacks"] if c["key"] == hat["key"])["forbids_addons"] = []
+        next(c for c in invalid["callbacks"] if c["key"] == hat["key"])[
+            "forbids_addons"
+        ] = []
         with self.assertRaises(ValueError):
             q.validate_callbacks(invalid)
         for name in ("mask", "claw"):
@@ -580,8 +692,12 @@ class QuestRewards(unittest.TestCase):
         callbacks = {c["key"].split("/")[-1]: c for c in self.callbacks["callbacks"]}
         reward = callbacks["l5-norseman-first-reward"]
         second = callbacks["l5-norseman-second-shards"]
-        phase = next(s["set"] for s in reward["storage"] if s["track"].endswith("/questline"))
-        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])["offers"]
+        phase = next(
+            s["set"] for s in reward["storage"] if s["track"].endswith("/questline")
+        )
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
+            "offers"
+        ]
         reachable = [
             o
             for o in offers
@@ -596,7 +712,9 @@ class QuestRewards(unittest.TestCase):
             "the next source delivery must be reachable without resetting the NPC conversation",
         )
         self.assertEqual(reachable[0]["next_topic"], second["topic"])
-        self.assertTrue(all(s["minimum"] <= phase <= s["maximum"] for s in second["storage"]))
+        self.assertTrue(
+            all(s["minimum"] <= phase <= s["maximum"] for s in second["storage"])
+        )
 
     def test_l7_source_paths_keep_complete_recipes_gifts_and_live_guards(self):
         rows = {c["key"].rsplit("/", 1)[-1]: c for c in self.callbacks["callbacks"]}
@@ -624,11 +742,15 @@ class QuestRewards(unittest.TestCase):
             ("l7-knight-fangs", "ramsays_helmet_door"),
             ("l7-druid-chain-start", "druid_amulet_door"),
         ]:
-            assigned = next(e for e in rows[name]["storage"] if e["track"].endswith(suffix))
+            assigned = next(
+                e for e in rows[name]["storage"] if e["track"].endswith(suffix)
+            )
             self.assertEqual(
                 (assigned["minimum"], assigned["maximum"], assigned["set"]), (-1, 1, 1)
             )
-            declaration = next(t for t in self.callbacks["tracks"] if t["key"] == assigned["track"])
+            declaration = next(
+                t for t in self.callbacks["tracks"] if t["key"] == assigned["track"]
+            )
             self.assertEqual(
                 (declaration["initial"], declaration["quest"]),
                 (0, "oteryn:quest.outfit_and_addon_quests"),
@@ -642,9 +764,13 @@ class QuestRewards(unittest.TestCase):
             rows["knight-sword"]["forbids_addons"],
             [{"outfit": "oteryn:outfit.knight", "addons": 1}],
         )
-        self.assertEqual(rows["l7-assassin-base-start"]["requires_actor_conditions"], ["drunk"])
+        self.assertEqual(
+            rows["l7-assassin-base-start"]["requires_actor_conditions"], ["drunk"]
+        )
         for name in ("second-start", "second"):
-            self.assertEqual(rows["l7-assassin-" + name]["requires_actor_conditions"], ["fire"])
+            self.assertEqual(
+                rows["l7-assassin-" + name]["requires_actor_conditions"], ["fire"]
+            )
         for field, value in [
             ("requires_actor_conditions", ["fire", "fire"]),
             ("requires_actor_conditions", ["invented"]),
@@ -697,13 +823,17 @@ class QuestRewards(unittest.TestCase):
     def test_citizen_rook_timer_and_shared_counter_are_explicit_source_operations(self):
         callbacks = {c["key"].split("/")[-1]: c for c in self.callbacks["callbacks"]}
         start = callbacks["l6-citizen-rook-backpack-start"]
-        self.assertEqual(start["participants"][0]["quest"], "oteryn:quest.outfit_and_addon_quests")
+        self.assertEqual(
+            start["participants"][0]["quest"], "oteryn:quest.outfit_and_addon_quests"
+        )
         self.assertEqual(
             start["participants"][0]["state_ops"][0]["effect"],
             {"kind": "add", "value": 1},
         )
         material = callbacks["l6-citizen-rook-backpack-materials"]
-        self.assertEqual(material["take"], [{"item": "oteryn:item.tibia.i5878", "count": 100}])
+        self.assertEqual(
+            material["take"], [{"item": "oteryn:item.tibia.i5878", "count": 100}]
+        )
         self.assertEqual(material["state_ops"][0]["effect"], {"kind": "set_now"})
         claim = callbacks["l6-citizen-rook-backpack"]
         self.assertEqual(
@@ -788,7 +918,10 @@ class QuestRewards(unittest.TestCase):
                 continue
             for addon in range(row["addon_count"] + 1):
                 self.assertEqual(
-                    sum(m["grant_key"] == f"{row['key']}/quest-grant/{addon}" for m in mappings),
+                    sum(
+                        m["grant_key"] == f"{row['key']}/quest-grant/{addon}"
+                        for m in mappings
+                    ),
                     1,
                 )
 
@@ -819,7 +952,9 @@ class QuestRewards(unittest.TestCase):
             else:
                 for storage in callback["storage"]:
                     storage["set"] = storage["minimum"]
-            with self.assertRaisesRegex(ValueError, "invalid reward callback " + callback["key"]):
+            with self.assertRaisesRegex(
+                ValueError, "invalid reward callback " + callback["key"]
+            ):
                 q.validate_callbacks(bad)
 
     def test_readonly_prerequisites_reject_overlap_duplicates_and_inverted_bounds(self):
@@ -832,7 +967,9 @@ class QuestRewards(unittest.TestCase):
             elif mutation == "duplicate":
                 callback["requires"].append(copy.deepcopy(callback["requires"][0]))
             else:
-                callback["requires"][0]["maximum"] = callback["requires"][0]["minimum"] - 1
+                callback["requires"][0]["maximum"] = (
+                    callback["requires"][0]["minimum"] - 1
+                )
             with self.assertRaises(ValueError, msg=mutation):
                 q.validate_callbacks(bad)
 
@@ -866,9 +1003,13 @@ class QuestRewards(unittest.TestCase):
         low = callbacks["l3-glooth-engineer-first-low"]
         high = callbacks["l3-glooth-engineer-first-high"]
         second = callbacks["l3-glooth-engineer-second"]
-        self.assertEqual((low["requires"][1]["minimum"], low["requires"][1]["maximum"]), (3, 5))
+        self.assertEqual(
+            (low["requires"][1]["minimum"], low["requires"][1]["maximum"]), (3, 5)
+        )
         self.assertEqual(high["requires"][-1]["track"].split("/")[-1], "addon2")
-        self.assertEqual((high["requires"][-1]["minimum"], high["requires"][-1]["maximum"]), (1, 1))
+        self.assertEqual(
+            (high["requires"][-1]["minimum"], high["requires"][-1]["maximum"]), (1, 1)
+        )
         self.assertEqual(second["requires"][1]["minimum"], 6)
         self.assertEqual(second["outfit"]["addons"], 2)
 
@@ -923,8 +1064,12 @@ class QuestRewards(unittest.TestCase):
             ("hooks", 6097, 3, 4),
         ]:
             c = callbacks["l4-pirate-" + name]
-            self.assertEqual(c["take"], [{"item": f"oteryn:item.tibia.i{item}", "count": 100}])
-            self.assertEqual((c["storage"][0]["minimum"], c["storage"][0]["set"]), (before, after))
+            self.assertEqual(
+                c["take"], [{"item": f"oteryn:item.tibia.i{item}", "count": 100}]
+            )
+            self.assertEqual(
+                (c["storage"][0]["minimum"], c["storage"][0]["set"]), (before, after)
+            )
             self.assertEqual(c["quest"], "oteryn:quest.outfit_and_addon_quests")
         self.assertEqual(
             [r["item"] for r in callbacks["l4-pirate-hat"]["take"]],
@@ -955,7 +1100,9 @@ class QuestRewards(unittest.TestCase):
                     "key_number": 3940,
                 },
             )
-            self.assertIn("9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d", sale["sources"][0])
+            self.assertIn(
+                "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d", sale["sources"][0]
+            )
             self.assertEqual(sale.get("repeatable", False), name.endswith("repeat"))
         repeat = sales["fibula-key-repeat"]
         self.assertTrue(all(s["preserve"] for s in repeat["storage"]))
@@ -997,14 +1144,21 @@ class QuestRewards(unittest.TestCase):
         self.assertTrue(key["repeatable"])
         self.assertEqual(
             key["give"],
-            {"item": "oteryn:item.tibia.i2968", "count": 1, "contents": [], "key_number": 3940},
+            {
+                "item": "oteryn:item.tibia.i2968",
+                "count": 1,
+                "contents": [],
+                "key_number": 3940,
+            },
         )
 
     def test_fibula_terminal_requires_original_receipts_and_native_level_without_duplicate_loot(
         self,
     ):
         fibula = json.loads(self.outputs["content/quests/npc-callbacks/fibula.json"])
-        (terminal,) = [c for c in fibula["callbacks"] if c["key"].endswith("/fibula-complete")]
+        (terminal,) = [
+            c for c in fibula["callbacks"] if c["key"].endswith("/fibula-complete")
+        ]
         self.assertTrue(terminal["completes"])
         self.assertEqual(terminal["minimum_level"], 50)
         self.assertEqual(
@@ -1022,6 +1176,68 @@ class QuestRewards(unittest.TestCase):
                 for s in terminal["storage"]
             )
         )
+
+    def test_token_exchange_refusals_clear_the_quote(self):
+        exchange_shard = json.loads(self.outputs[q.token_exchanges.SHARD])
+        vampire = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_CALLBACKS).read_text())
+        callbacks = (
+            self.callbacks["callbacks"]
+            + exchange_shard["callbacks"]
+            + vampire["callbacks"]
+        )
+        exchanges = [
+            callback
+            for callback in callbacks
+            if "-exchange-" in callback["key"]
+            or "/vampire-hunter-rank-" in callback["key"]
+        ]
+        self.assertEqual(len(exchanges), 103)
+        stale = [
+            callback["key"]
+            for callback in exchanges
+            if callback.get("clear_topic_on_refusal") is not True
+        ]
+        self.assertEqual(stale, [])
+
+    def test_token_exchange_keyword_matching_follows_the_donor(self):
+        exchange_shard = json.loads(self.outputs[q.token_exchanges.SHARD])
+        vampire = json.loads((q.ROOT / q.token_exchanges.VAMPIRE_CALLBACKS).read_text())
+        callbacks = self.callbacks["callbacks"] + exchange_shard["callbacks"]
+        for prefix, rows in (
+            ("cledwyn", q.token_exchanges.CLEDWYN),
+            ("gnomally", q.token_exchanges.GNOMALLY),
+            ("jorge", q.token_exchanges.JORGE),
+            ("ruprecht", q.token_exchanges.RUPRECHT),
+        ):
+            for _, _, _, output in rows:
+                key = f"oteryn:quest-reward/{prefix}-exchange-{output}"
+                callback = next(c for c in callbacks if c["key"] == key)
+                with self.subTest(callback=key):
+                    self.assertTrue(callback.get("msg_contains"))
+        for callback in vampire["callbacks"]:
+            with self.subTest(callback=callback["key"]):
+                self.assertTrue(callback.get("msg_contains"))
+
+        offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])[
+            "offers"
+        ]
+        offers += json.loads(self.outputs[q.token_exchanges.VAMPIRE_OFFERS])["offers"]
+        expected = {
+            ("cledwyn", "enchant"),
+            ("gnomally", "equipment"),
+            ("gnomally", "minor"),
+            ("gnomally", "major"),
+            ("ruprecht", "offers"),
+            ("storkus", "vampire lord token"),
+        }
+        migrated = [
+            offer
+            for offer in offers
+            if (offer["npc"].removeprefix("oteryn:npc."), offer["keywords"][0])
+            in expected
+        ]
+        self.assertEqual(len(migrated), 5 + len(vampire["callbacks"]))
+        self.assertTrue(all(offer.get("msg_contains") for offer in migrated))
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         merged = self.callbacks["callbacks"] + self.outfit_completions
@@ -1075,12 +1291,17 @@ class QuestRewards(unittest.TestCase):
             "l1-wayfarer-cape-complete",
             "l1-wayfarer-hat-complete",
         }
-        outfit_keys = {c["key"].rsplit("/", 1)[-1] for c in callbacks if c["outfit"] is not None}
+        outfit_keys = {
+            c["key"].rsplit("/", 1)[-1] for c in callbacks if c["outfit"] is not None
+        }
         self.assertLessEqual(completion_variants, outfit_keys)
         self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 109)
         self.assertEqual(sum(c["outfit"] is None for c in callbacks), 159)
         self.assertTrue(
-            any(len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"]) for c in callbacks)
+            any(
+                len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"])
+                for c in callbacks
+            )
         )
         additional_sources = {
             "oteryn:quest-reward/between-the-lines-phillip-accept": "tibia_fandom:108521:1206800:Pen and Sword/Inkwing",
@@ -1090,7 +1311,9 @@ class QuestRewards(unittest.TestCase):
         }
         for callback in callbacks:
             if callback["key"] in additional_sources:
-                self.assertEqual(callback["sources"], [additional_sources[callback["key"]]])
+                self.assertEqual(
+                    callback["sources"], [additional_sources[callback["key"]]]
+                )
             else:
                 self.assertIn(q.PIN, callback["sources"][0])
 
@@ -1099,9 +1322,13 @@ class QuestRewards(unittest.TestCase):
         for name, side, bit in [("sage", 1, 1), ("villain", 2, 2)]:
             c = callbacks["l1-yalaharian-" + name]
             achievement = "wisdom" if side == 1 else "power"
-            self.assertEqual(c["achievement"], f"oteryn:achievement/yalahari_of_{achievement}")
+            self.assertEqual(
+                c["achievement"], f"oteryn:achievement/yalahari_of_{achievement}"
+            )
             self.assertEqual(c["take"], [])
-            self.assertEqual(c["present"], [{"item": "oteryn:item.tibia.i9041", "count": 1}])
+            self.assertEqual(
+                c["present"], [{"item": "oteryn:item.tibia.i9041", "count": 1}]
+            )
             self.assertEqual(c["outfit"]["addons"], bit)
             self.assertTrue(
                 any(
@@ -1114,10 +1341,14 @@ class QuestRewards(unittest.TestCase):
             )
         for name, item in [("crest", 10199), ("tribal", 10198)]:
             c = callbacks["l1-warmaster-" + name]
-            self.assertEqual(c["take"], [{"item": f"oteryn:item.tibia.i{item}", "count": 1}])
+            self.assertEqual(
+                c["take"], [{"item": f"oteryn:item.tibia.i{item}", "count": 1}]
+            )
             self.assertTrue(
                 any(
-                    s["track"].endswith("/questline") and s["minimum"] == 27 and s["preserve"]
+                    s["track"].endswith("/questline")
+                    and s["minimum"] == 27
+                    and s["preserve"]
                     for s in c["storage"]
                 )
             )
@@ -1130,7 +1361,9 @@ class QuestRewards(unittest.TestCase):
     def test_palimuth_base_completion_does_not_require_his_side(self):
         callbacks = {c["key"].split("/")[-1]: c for c in self.callbacks["callbacks"]}
         palimuth = callbacks["l1-yalaharian-base-palimuth"]
-        self.assertFalse(any(s["track"].endswith("/side_decision") for s in palimuth["storage"]))
+        self.assertFalse(
+            any(s["track"].endswith("/side_decision") for s in palimuth["storage"])
+        )
         yalahari = callbacks["l1-yalaharian-base-yalahari"]
         self.assertTrue(
             any(
@@ -1143,7 +1376,9 @@ class QuestRewards(unittest.TestCase):
         )
         for callback in (palimuth, yalahari):
             for suffix, maximum in (("/door_to_reward", 1), ("/mission10", 4)):
-                state = next(s for s in callback["storage"] if s["track"].endswith(suffix))
+                state = next(
+                    s for s in callback["storage"] if s["track"].endswith(suffix)
+                )
                 self.assertEqual(
                     (state["minimum"], state["maximum"], state["set"]),
                     (-1, maximum, maximum),
@@ -1152,9 +1387,9 @@ class QuestRewards(unittest.TestCase):
     def test_wardrobe_rewards_use_exact_native_source_objects_and_once_guards(self):
         import quest_batch4
 
-        worlds = json.loads(self.outputs["content/quests/shared-outfit-callbacks.json"])[
-            "callbacks"
-        ]
+        worlds = json.loads(
+            self.outputs["content/quests/shared-outfit-callbacks.json"]
+        )["callbacks"]
         self.assertEqual(len(worlds), 2)
         for world, expected in zip(
             worlds,
@@ -1182,7 +1417,9 @@ class QuestRewards(unittest.TestCase):
             sys.path.insert(0, str(q.ROOT / "tools/content-schema/world-authoring"))
             import world_region_codec as codec
 
-            index = json.loads((q.ROOT / "content/world/placements/index.json").read_bytes())
+            index = json.loads(
+                (q.ROOT / "content/world/placements/index.json").read_bytes()
+            )
             region = (
                 q.ROOT
                 / f"content/world/placements/region-z{-z:02}-x{x // 256:03}-y{y // 256:03}.b3"
@@ -1209,7 +1446,9 @@ class QuestRewards(unittest.TestCase):
     def test_accepted_legacy_base_entitlements_keep_their_exact_mapping_and_provenance(
         self,
     ):
-        mappings = {r["grant_key"]: r for r in self.author["document"]["grant_mappings"]}
+        mappings = {
+            r["grant_key"]: r for r in self.author["document"]["grant_mappings"]
+        }
         for path, outfit, provenance in [
             (
                 "soul-war/revenant-base",
@@ -1228,12 +1467,16 @@ class QuestRewards(unittest.TestCase):
                 {"kind": "Outfit", "outfit_key": "oteryn:outfit." + outfit},
             )
             self.assertEqual(row["compatible_provenance"], [provenance])
-        promotion = next(p for p in self.author["promotions"] if p["path"] == "/grant_mappings")
+        promotion = next(
+            p for p in self.author["promotions"] if p["path"] == "/grant_mappings"
+        )
         self.assertEqual(promotion["source_kind"], "OWNER_DECISION")
 
     def test_every_exchange_item_has_native_custody_facts(self):
         rows = json.loads(
-            (q.ROOT / "content/items/definitions/spell-native-profiles.json").read_bytes()
+            (
+                q.ROOT / "content/items/definitions/spell-native-profiles.json"
+            ).read_bytes()
         )["records"]
         native = {r["production_definition"]["production_key"]: r for r in rows}
         for callback in self.callbacks["callbacks"]:
@@ -1246,7 +1489,9 @@ class QuestRewards(unittest.TestCase):
                 self.assertTrue(item["item"] in native, item["item"])
                 row = native[item["item"]]
                 self.assertTrue(row["admission"]["materializable"])
-                self.assertIn("CharacterInventory", row["admission"]["legal_destinations"])
+                self.assertIn(
+                    "CharacterInventory", row["admission"]["legal_destinations"]
+                )
 
 
 if __name__ == "__main__":

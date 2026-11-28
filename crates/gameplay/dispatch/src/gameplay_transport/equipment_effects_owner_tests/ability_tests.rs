@@ -441,7 +441,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // both pinned appearance banks; no original key is removed or relabeled.
     ("SEASON-W18-HOUSE", 1959),
     // Merged main1ae39c7fb adds53 distinct QENGINE reward identities from
-    // QENGINE2 captures 290 source-qualified Items (qengine_reward_item_profiles.IDS).
+    // QENGINE2 captures 351 source-qualified Items (qengine_reward_item_profiles.IDS).
     // Exact nonzero and unknown source speeds are checked below.
     ("QENGINE-REWARDS", 53),
     // W05d:48 canonical seasonal profiles;35 further keys are new after the
@@ -464,6 +464,7 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
 fn expected_qengine_reward_speed(key: &str) -> Option<i32> {
     match key {
         "oteryn:item.tibia.i3456" | "oteryn:item.tibia.i31266" | "oteryn:item.tibia.i31268" => None,
+        "oteryn:item.tibia.i16110" | "oteryn:item.tibia.i16112" => Some(15),
         "oteryn:item.tibia.i19357" => Some(10),
         _ => Some(0),
     }
@@ -509,12 +510,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert!(added_keys.contains(format!("oteryn:item.tibia.i{id}").as_str()));
     }
     // QENGINE2 identities: generated begin
-    assert_eq!(added_keys.len(), 290);
+    assert_eq!(added_keys.len(), 351);
     assert_eq!(
         added_keys,
         std::collections::BTreeSet::from([
             "oteryn:item.tibia.i10198",
             "oteryn:item.tibia.i10199",
+            "oteryn:item.tibia.i10218",
+            "oteryn:item.tibia.i10247",
             "oteryn:item.tibia.i11541",
             "oteryn:item.tibia.i11544",
             "oteryn:item.tibia.i11545",
@@ -555,9 +558,26 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i14023",
             "oteryn:item.tibia.i14682",
             "oteryn:item.tibia.i15698",
+            "oteryn:item.tibia.i15703",
+            "oteryn:item.tibia.i15801",
+            "oteryn:item.tibia.i15802",
+            "oteryn:item.tibia.i16094",
+            "oteryn:item.tibia.i16099",
+            "oteryn:item.tibia.i16101",
             "oteryn:item.tibia.i16103",
+            "oteryn:item.tibia.i16104",
+            "oteryn:item.tibia.i16105",
+            "oteryn:item.tibia.i16106",
+            "oteryn:item.tibia.i16107",
+            "oteryn:item.tibia.i16109",
+            "oteryn:item.tibia.i16110",
+            "oteryn:item.tibia.i16111",
+            "oteryn:item.tibia.i16112",
+            "oteryn:item.tibia.i16116",
             "oteryn:item.tibia.i16128",
             "oteryn:item.tibia.i16129",
+            "oteryn:item.tibia.i16153",
+            "oteryn:item.tibia.i16154",
             "oteryn:item.tibia.i16165",
             "oteryn:item.tibia.i16167",
             "oteryn:item.tibia.i16242",
@@ -609,6 +629,11 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i19154",
             "oteryn:item.tibia.i19155",
             "oteryn:item.tibia.i19156",
+            "oteryn:item.tibia.i19204",
+            "oteryn:item.tibia.i19207",
+            "oteryn:item.tibia.i19214",
+            "oteryn:item.tibia.i19216",
+            "oteryn:item.tibia.i19218",
             "oteryn:item.tibia.i19356",
             "oteryn:item.tibia.i19357",
             "oteryn:item.tibia.i19361",
@@ -663,6 +688,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i25980",
             "oteryn:item.tibia.i25981",
             "oteryn:item.tibia.i25982",
+            "oteryn:item.tibia.i27307",
+            "oteryn:item.tibia.i27308",
             "oteryn:item.tibia.i27565",
             "oteryn:item.tibia.i27654",
             "oteryn:item.tibia.i28792",
@@ -671,17 +698,29 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i28895",
             "oteryn:item.tibia.i28896",
             "oteryn:item.tibia.i28897",
+            "oteryn:item.tibia.i29428",
+            "oteryn:item.tibia.i29429",
             "oteryn:item.tibia.i2973",
             "oteryn:item.tibia.i30168",
             "oteryn:item.tibia.i30169",
             "oteryn:item.tibia.i3029",
+            "oteryn:item.tibia.i30342",
+            "oteryn:item.tibia.i30343",
+            "oteryn:item.tibia.i30344",
+            "oteryn:item.tibia.i30345",
             "oteryn:item.tibia.i3035",
+            "oteryn:item.tibia.i30401",
+            "oteryn:item.tibia.i30402",
+            "oteryn:item.tibia.i30403",
             "oteryn:item.tibia.i3114",
             "oteryn:item.tibia.i3120",
             "oteryn:item.tibia.i31265",
             "oteryn:item.tibia.i31266",
             "oteryn:item.tibia.i31267",
             "oteryn:item.tibia.i31268",
+            "oteryn:item.tibia.i31557",
+            "oteryn:item.tibia.i31616",
+            "oteryn:item.tibia.i31621",
             "oteryn:item.tibia.i3205",
             "oteryn:item.tibia.i3212",
             "oteryn:item.tibia.i3214",
@@ -703,6 +742,9 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i32584",
             "oteryn:item.tibia.i32585",
             "oteryn:item.tibia.i32602",
+            "oteryn:item.tibia.i32621",
+            "oteryn:item.tibia.i32635",
+            "oteryn:item.tibia.i32636",
             "oteryn:item.tibia.i32757",
             "oteryn:item.tibia.i3348",
             "oteryn:item.tibia.i3403",
@@ -729,6 +771,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i37060",
             "oteryn:item.tibia.i3723",
             "oteryn:item.tibia.i3874",
+            "oteryn:item.tibia.i39177",
+            "oteryn:item.tibia.i39178",
+            "oteryn:item.tibia.i39179",
+            "oteryn:item.tibia.i39180",
+            "oteryn:item.tibia.i39181",
+            "oteryn:item.tibia.i39182",
+            "oteryn:item.tibia.i39183",
+            "oteryn:item.tibia.i39184",
+            "oteryn:item.tibia.i39185",
+            "oteryn:item.tibia.i39187",
+            "oteryn:item.tibia.i39188",
+            "oteryn:item.tibia.i39233",
+            "oteryn:item.tibia.i39234",
+            "oteryn:item.tibia.i39235",
             "oteryn:item.tibia.i4055",
             "oteryn:item.tibia.i4080",
             "oteryn:item.tibia.i4081",
@@ -745,6 +801,12 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i4867",
             "oteryn:item.tibia.i4872",
             "oteryn:item.tibia.i4994",
+            "oteryn:item.tibia.i50147",
+            "oteryn:item.tibia.i50148",
+            "oteryn:item.tibia.i50149",
+            "oteryn:item.tibia.i50154",
+            "oteryn:item.tibia.i50155",
+            "oteryn:item.tibia.i50156",
             "oteryn:item.tibia.i5467",
             "oteryn:item.tibia.i5858",
             "oteryn:item.tibia.i5886",
@@ -979,7 +1041,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         .sum::<usize>();
     assert_eq!(later_main_profiles, 2599);
     const QENGINE2_BASE_PROFILES: usize = 53;
-    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 237);
+    assert_eq!(additions.len(), QENGINE2_BASE_PROFILES + 298);
     let baseline = ORIGINAL_PROFILES
         + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
         + QENGINE2_BASE_PROFILES
@@ -1042,7 +1104,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
         ("seasonal-item-profiles.json", 52),
-        ("qengine-reward-item-profiles.json", 290),
+        ("qengine-reward-item-profiles.json", 351),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -1163,6 +1225,16 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
     }
     // END GENERATED SOURCE-QUALIFIED ZERO SPEED
+    // These six raid corpse roots also have source profiles with explicit zero speed.
+    for id in [18265, 18953, 18970, 18974, 18978, 18982] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or("missing raid corpse profile")?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     let diary = profiles
@@ -1187,13 +1259,19 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 record.production_definition.production_key
             );
         } else {
-            if matches!(
+            if record.production_definition.production_key == "oteryn:item.tibia.i31268" {
+                // Jorge's Jade Amulet keeps its equipment facts and unknown speed.
+                assert!(matches!(
+                    record.semantics.equipment,
+                    ReferenceItemField::Known(_)
+                ));
+                assert!(record.admission.materializable);
+            } else if matches!(
                 record.production_definition.production_key.as_str(),
                 "oteryn:item.tibia.i9215"
                     | "oteryn:item.tibia.i9216"
                     | "oteryn:item.tibia.i9217"
                     | "oteryn:item.tibia.i9221"
-                    | "oteryn:item.tibia.i31268"
             ) {
                 // The writing admission and Jorge's Jade Amulet retain their equipment
                 // facts and portable custody while speed remains unqualified.
@@ -1261,6 +1339,26 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214, 9215, 9216, 9217, 9218, 9219, 9220,
                 9221, 9222, 9223, 9224, 9538, 9614, 15276, 15633, 19072, 19073, 19074, 21445,
                 27932, 27933, 27934, 28572, 31266, 31268,
+            ]
+            .map(|id| format!("oteryn:item.tibia.i{id}")),
+        )
+        // The fourth-quarter Crystal corpse capture admits these Items with no
+        // equipment speed fact.
+        .chain(
+            [
+                2127, 4388, 5997, 6009, 6018, 6038, 6045, 6051, 6057, 6061, 6062, 6073, 6076,
+                6301, 6347, 8113, 8744, 8961, 8965, 9092, 10393, 10430, 12325, 12658, 12717,
+                12823, 12834, 13801, 13860, 13979, 13983, 15865, 15907, 16186, 16193, 17421,
+                17622, 18225, 18226, 18242, 18246, 18250, 18261, 18273, 18306, 18937,
+                18961, 19049, 19059, 20058, 20144, 21099,
+                21446, 21977, 22023, 22776, 23553, 23561, 24256, 25071, 25827, 25831, 25866,
+                27521, 27536, 27555, 27633, 27637, 27641, 27722, 28617, 28639, 28664, 28667,
+                28786, 28794, 28802, 30069, 30099, 30159, 31386, 31409, 31413, 31551, 32702,
+                32733, 32737, 32741, 32744, 33977, 33981, 34184, 34185, 34245, 35600, 35686,
+                36434, 36612, 36684, 36688, 36692, 36843, 36963, 39212, 39275, 39279, 39295,
+                39307, 39331, 39712, 42247, 43754, 43762, 43771, 44656, 48349, 48353, 48362,
+                48378, 49120, 49124, 49990, 50002, 51546, 51556, 51572, 51595, 52841, 53119, 54647,
+                54667, 54670,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )

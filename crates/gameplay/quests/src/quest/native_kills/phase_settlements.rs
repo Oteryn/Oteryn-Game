@@ -11,6 +11,7 @@ pub(super) const COUNTERS: &[Counter] = &[Counter {
     track: "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
     gate: "oteryn:quest-progress/quest/u11_40/cults_of_tibia/humans/mission",
     maximum: 2,
+    death_area: None,
     world_change: None,
 }];
 

@@ -3,10 +3,10 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    EncounterDefenders, StagedQuestEncounter,
+    EncounterDefenders, ReservedQuestEncounter, StagedQuestEncounter,
 };
 
-struct PreparedPhase {
+pub(super) struct PreparedPhase {
     phase: Option<super::super::encounter_phases::ActivePhase>,
     actors: Vec<ExactActorRef>,
     roster: Option<EncounterDefenders>,
@@ -17,11 +17,31 @@ struct EncounterCreditPublication {
     prepared: super::super::grizzly_kills::PreparedEncounter,
 }
 
-pub(super) struct StagedSourceBoss<'owner> {
-    native: StagedQuestEncounter<'owner, PreparedPhase>,
-    players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+pub(super) type StagedSourceBoss<'owner> =
+    SourceBossProjection<StagedQuestEncounter<'owner, PreparedPhase>>;
+
+pub(super) struct SourceBossProjection<N> {
+    native: N,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
     visit: Option<EncounterVisit>,
+}
+
+pub(super) struct ReservedSourceBoss {
+    pub(super) native: ReservedQuestEncounter,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+}
+
+impl StagedSourceBoss<'_> {
+    pub(super) fn reserve(self) -> Result<ReservedSourceBoss, UseDisposition> {
+        Ok(ReservedSourceBoss {
+            native: self
+                .native
+                .reserve()
+                .map_err(|_| UseDisposition::Rejected)?,
+            players: self.players,
+        })
+    }
 }
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -200,8 +220,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     )]
     pub(super) async fn deliver_coffin(
         &self,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        mut runtime_guard: tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+        mut spell_guard: tokio::sync::MutexGuard<'_, ChannelSpellStates>,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
@@ -220,6 +240,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return UseDisposition::Rejected;
         };
+        let runtime = &mut *runtime_guard;
+        let states = &mut *spell_guard;
         let content = runtime.content_pin().server_artifact_digest();
         let Some(coffin) = map.facts.reserve_source_boss_lever(key, expected, after) else {
             return UseDisposition::Rejected;
@@ -241,19 +263,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             Some(&mut staged),
         );
-        let Some(mut staged) = staged else {
+        let Some(staged) = staged else {
             return disposition;
         };
         let [count] = staged.native.prepared().actors.as_slice() else {
             return UseDisposition::Rejected;
         };
         let count = *count;
-        // Once this ID is sent to PostgreSQL, an uncertain commit must never
-        // let a different creature inherit it from the original carrier.
-        if staged.native.retain_spawn_generation(count).is_err() {
+        let Ok(held) = staged.reserve() else {
             return UseDisposition::Rejected;
+        };
+        drop(spell_guard);
+        drop(runtime_guard);
+        #[cfg(test)]
+        if let Ok(barrier) =
+            super::court_warlock::PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone)
+        {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
         }
-        let native = &mut staged.native;
         let delivery = self
             .root
             .deliver_vampire_coffin(
@@ -265,7 +293,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 kind,
                 count,
-                move |previous| native.retains_creature(previous),
+                |previous| {
+                    self.runtime.try_lock().map_or(true, |runtime| {
+                        runtime.contains_live_creature(previous)
+                            || runtime.corpse_projection_pinned(previous)
+                    })
+                },
             )
             .await;
         #[cfg(test)]
@@ -281,9 +314,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             delivery
         };
         if matches!(delivery, Ok(true)) {
-            self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
-            UseDisposition::Committed
+            let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
+            let published = held.native.publish(&mut runtime, |runtime| {
+                let mut staged = None;
+                self.quest_encounter(
+                    runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected,
+                    after,
+                    false,
+                    cause,
+                    Some(reservation),
+                    None,
+                    Some(&mut staged),
+                );
+                let Some(staged) = staged else { return false };
+                if staged.players != held.players
+                    || staged.native.prepared().actors.as_slice() != [count]
+                {
+                    return false;
+                }
+                self.publish_staged_encounter(staged, &mut states, map, coffin, Some(reservation));
+                true
+            });
+            drop(held);
+            runtime.reclaim_abandoned_quest_encounter();
+            if published {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            }
         } else {
+            drop(held);
+            self.runtime
+                .lock()
+                .await
+                .reclaim_abandoned_quest_encounter();
             // The payment is durable. A fresh use may recover it after an
             // abandoned delivery, including when its identity write committed.
             if matches!(
@@ -531,10 +602,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Occupied;
             }
-            let Ok(policy) = runtime.companion_policy(&monster.creature) else {
+            let creature = if monster.alternatives.is_empty() {
+                monster.creature.as_str()
+            } else {
+                let QuestCause::Step(step) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                // The server-owned movement occurrence selects one boss consistently on replay.
+                let choice = oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                    *step.game_session_id().as_bytes(),
+                    step.command_id().get(),
+                    *b"PirateBossChoice",
+                    1,
+                    1 + monster.alternatives.len() as u64,
+                );
+                let Some(selected) = choice.and_then(|index| {
+                    std::iter::once(&monster.creature)
+                        .chain(&monster.alternatives)
+                        .nth(index as usize)
+                }) else {
+                    return UseDisposition::Rejected;
+                };
+                selected.as_str()
+            };
+            let Ok(policy) = runtime.companion_policy(creature) else {
                 return UseDisposition::Rejected;
             };
-            monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+            monsters.push((creature, policy.maximum_health, at));
         }
         if preflight {
             let result = if encounter.phase.is_some() {

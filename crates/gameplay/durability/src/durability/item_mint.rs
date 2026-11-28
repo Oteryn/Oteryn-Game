@@ -75,9 +75,8 @@ const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
 pub const CORPSE_MATERIALIZATION_PURPOSE_KEY: &str = "CORPSE_MATERIALIZATION";
 
 /// VSL resource-rows decision §4.1 row 6 / D3 §4.2: the one bound on live
-/// corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`), enforced only
-/// at the corpse's own MINT commit under the per-scope `oteryn:corpse-cap:`
-/// advisory lock -- never re-decided here.
+/// Ground corpse projections per scope (`COMBAT01-CORPSES-PER-SCOPE`). MINT
+/// and carried drops enforce it under the per-scope `oteryn:corpse-cap:` lock.
 pub(super) const COMBAT01_CORPSES_PER_SCOPE_MAX: i64 = 64;
 
 /// Equality on the full tagged cause tuple, parameters `$1..$10`; never a hash.
@@ -2251,39 +2250,35 @@ async fn fence_is_live(
     Ok(assignment.is_some() && prove_current_incarnation(tx, node).await?)
 }
 
-/// D3 §4.2: take the per-scope `oteryn:corpse-cap:` advisory transaction lock
-/// (serializing every concurrent corpse-MINT commit for this exact scope
-/// against each other -- and only them, so no other MINT/TRANSFER/XP writer
-/// of the scope is affected) and recount live corpses currently on Ground for
-/// it. The count is authoritative only inside the same transaction as the
-/// corpse's own insert; an earlier `freeze_item_mint`-time count is advisory
-/// only (§39.4).
-async fn corpse_cap_recount(
+/// Serialize corpse MINT and carried drops that add a body to the same scope.
+pub(super) async fn lock_corpse_cap(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    death: &CreatureDeathKey,
-) -> std::result::Result<i64, DurabilityError> {
+    scope: RuntimeScopeRefV1,
+) -> std::result::Result<(), DurabilityError> {
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended(\
          'oteryn:corpse-cap:' || encode($1,'hex'), 0))",
     )
-    .bind(assignment_scope_key(death.runtime_scope).as_slice())
+    .bind(assignment_scope_key(scope).as_slice())
     .execute(&mut **tx)
     .await?;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_item_ground_locations g \
-           JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
-           JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
-          WHERE g.world_id = encode($1,'hex')::uuid AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid \
-            AND g.instance_id IS NOT DISTINCT FROM encode($4,'hex')::uuid \
-            AND r.loot_purpose_key = $3 AND i.lifecycle = 1",
+    Ok(())
+}
+
+/// A freeze-time count is advisory. Read after the lock in the MINT transaction.
+async fn corpse_cap_recount(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    death: &CreatureDeathKey,
+) -> std::result::Result<i64, DurabilityError> {
+    lock_corpse_cap(tx, death.runtime_scope).await?;
+    Ok(sqlx::query_scalar(
+        "SELECT game_corpse_ground_cap_recount(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
     )
     .bind(death.world_id.as_bytes().as_slice())
     .bind(death.channel_bytes())
-    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
     .bind(death.instance_bytes())
     .fetch_one(&mut **tx)
-    .await?;
-    Ok(count)
+    .await?)
 }
 
 async fn insert_mint(

@@ -9,7 +9,7 @@ from pathlib import Path
 import argparse, hashlib, json, re
 import death_event_source as p
 ROOT=Path(__file__).resolve().parents[3]
-EXPECTED_PARENT_ROWS_SHA256='537937e6c0322cf066a127887995c8692e2bd0bb328e8af967b34c81d20be625'
+EXPECTED_PARENT_ROWS_SHA256='4255390f8b72079b08755e06c92eb4dda4e9ed44d7088c4fd4bb6973d8134e91'
 def canonical(value):return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()
 def sha(raw):return hashlib.sha256(raw).hexdigest()
 def source_bytes(cache,blob):

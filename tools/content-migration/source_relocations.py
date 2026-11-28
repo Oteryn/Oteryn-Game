@@ -47,7 +47,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "e414fa9257ca4470a71567a3e0f1feda5f793620a3fd9e777e7b13bad2ad87c5",
+        "09e3094ce79a98b315ef4dff3bbe5dae1afeb6d3150f972f0c3880e521fa5f61",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -217,12 +217,13 @@ RELOCATIONS = {
         "69bf44d0e7aea723e634f2fba199bdd39b2e5c80a3a64a3d74597d68aafe95aa",
     ),
     # RewardClaim validator gains the bounded multi-item form; Item qualifiers stay unchanged.
+    # Native Item profiles may omit classification capabilities that decode as Unknown.
     (
         "crates/gameplay/content/src/content/reference_playable.rs",
         "f090002566f663b57fae0d37ab0a35e4db1117d8871d8aa021488ad8b90261c2",
     ): (
         "crates/gameplay/content/src/content/reference_playable.rs",
-        "e559f5bdff432d83198bfa4e4d447ec993abcad9ad928a4d86403b8793162593",
+        "b3679f5c39bf3ba56efbd3dd9c1f2bfd85d3b0dbcdd0a0309fd17067ebd2820a",
     ),
     # QMINT3: exact merged geometry footprints and compatibility-only producer
     # changes. Frozen record scopes and current ownership checks remain enforced.

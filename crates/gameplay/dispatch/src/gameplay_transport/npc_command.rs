@@ -80,13 +80,19 @@ mod wrath_sleeping_dragon;
 mod yeo;
 pub(super) use premium_purchase::resume_npc_talk;
 
+#[derive(Clone, Copy)]
+enum TradeWindowSelection {
+    Ordinary,
+    Mordecai(&'static mordecai_shop::Category),
+}
+
 /// What the server holds of one session's NPC state.
 #[derive(Default)]
 struct SessionNpc {
     recent: RecentIntents,
     healing_command: Option<u64>,
-    /// The NPC and optional shop category shown to the session (domain 8).
-    window: Option<(EntityRef, Option<&'static mordecai_shop::Category>)>,
+    /// The NPC and shop selection shown to the session (domain 8).
+    window: Option<(EntityRef, TradeWindowSelection)>,
     /// The exact bounded offer list shown in this window, including its rank filter.
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
     /// Display cache only; the NPC trade writer independently checks quest points.
@@ -427,10 +433,13 @@ impl NpcConversations {
                 .then(|| mordecai_shop::Category::for_message(&npc.key, &intent.text))
                 .flatten();
             let text = ChatText::parse(&intent.text).ok()?;
-            if category.is_none() && !asks_to_trade_for(&npc.key, text.as_str()) {
+            let silver_trade =
+                focused && reward_callbacks::cledwyn_silver_trade(&npc.key, text.as_str());
+            if category.is_none() && !silver_trade && !asks_to_trade_for(&npc.key, text.as_str()) {
                 return None;
             }
             if focused
+                && !silver_trade
                 && chat
                     .npc_talk()
                     .and_then(|book| book.get(&npc.key))
@@ -440,13 +449,16 @@ impl NpcConversations {
             {
                 return None;
             }
-            if let Some(category) = category {
+            let selection = if let Some(category) = category {
                 outcome.conversation = Some(NpcConversation {
                     open: Some((intent.npc_actor, NpcConversationState::Open)),
                     lines: vec![category.reply()],
                 });
-            }
-            self.open_window(chat, runtime, session, intent.npc_actor, items, category)
+                TradeWindowSelection::Mordecai(category)
+            } else {
+                TradeWindowSelection::Ordinary
+            };
+            self.open_window(chat, runtime, session, intent.npc_actor, items, selection)
         })
         .flatten();
         outcome.window = match opened {
@@ -554,7 +566,7 @@ impl NpcConversations {
                     .map(|state| (state.window, state.window_offers.clone()))
             })
             .unwrap_or_default();
-        let Some((_, category)) = shown.filter(|(npc, _)| *npc == intent.npc_actor) else {
+        let Some((_, selection)) = shown.filter(|(npc, _)| *npc == intent.npc_actor) else {
             // No window is open on this NPC: there is nothing to re-project.
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
         };
@@ -562,7 +574,7 @@ impl NpcConversations {
         // is STALE and re-projects the window.
         let stale = || {
             let window = self
-                .open_window(chat, runtime, session, intent.npc_actor, items, category)
+                .open_window(chat, runtime, session, intent.npc_actor, items, selection)
                 .unwrap_or_default();
             if window.open.is_none()
                 && let Ok(mut sessions) = self.sessions.lock()
@@ -976,6 +988,7 @@ pub(super) async fn npc_bank_talk(
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
         .is_some_and(|context| {
             admission.has_pending_paid_confirmation(command, &intent, &context, received_at)
+                || reward_callbacks::cledwyn_silver_trade(&context.2, &intent.text)
                 || admission.has_pending_paid_decline(command, &intent, &context, received_at)
         })
     {

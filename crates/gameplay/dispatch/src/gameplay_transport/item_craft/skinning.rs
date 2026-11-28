@@ -68,6 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             corpse: [0; 16],
             actor_position: [0; 3],
+            actor_map_revision_digest: [0; 32],
         };
         let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         if let Some(result) = self
@@ -140,7 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This identifies the rule shape only; the durable provenance supplies the race.
         let Some(ground) = self
             .root
-            .read_ground_action_source(self.character, fence, corpse)
+            .read_skinning_ground_source(self.character, fence, corpse)
             .await
             .map_err(|_| ())?
         else {
@@ -193,11 +194,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| ())?
                 .position();
             request.actor_position = [position.x, position.y, i32::from(position.floor)];
+            request.actor_map_revision_digest = runtime.content_pin().map_revision_digest();
         }
-        let cell = ground.position();
+        let cell = ground
+            .corpse_action_cell(&request.actor_map_revision_digest)
+            .map_err(|_| ())?;
         let reached = request.actor_position[0].abs_diff(cell.x) <= 1
             && request.actor_position[1].abs_diff(cell.y) <= 1
-            && request.actor_position[2] == i32::from(cell.floor);
+            && request.actor_position[2] == cell.z;
         if fresh_rabbit {
             if reached {
                 self.states.chat.push_quest_feedback(
@@ -243,7 +247,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         result: SkinningOutcome,
     ) -> UseOutcome {
         if result.disposition == UseDisposition::Committed {
-            self.refresh_skinning_projection(fence).await;
+            self.refresh_skinning_projection(fence, result.corpse).await;
         }
         drop(permit);
         if let Some(feet) = result.rabbit_feet {
@@ -264,12 +268,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// Refresh only existing corpse bindings from the complete durable owner snapshot.
+    /// Read the exact committed corpse even when older Ground exceeds the admission cap.
     /// The caller retains its item lane across this read and runtime update, including replay.
-    async fn refresh_skinning_projection(&self, fence: CurrentCharacterItemFence) {
+    async fn refresh_skinning_projection(
+        &self,
+        fence: CurrentCharacterItemFence,
+        item: Option<[u8; 16]>,
+    ) {
         let Ok(schedule) = self
             .root
-            .read_scoped_corpse_decay_schedule(self.character, fence.runtime_scope)
+            .read_corpse_schedule_page(self.character, fence.runtime_scope, item)
             .await
         else {
             return;

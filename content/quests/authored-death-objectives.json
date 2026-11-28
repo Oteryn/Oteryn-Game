@@ -737,8 +737,8 @@
       "key": "oteryn:quest-death/wrath-noble",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "creature": "oteryn:creature.lizard_noble",
-      "stage": "oteryn:quest-progress/chosen/wrath/stage",
-      "stage_value": 5,
+      "stage": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+      "stage_value": 24,
       "counter": "oteryn:quest-progress/chosen/wrath/nobles",
       "required": 6,
       "minimum": {

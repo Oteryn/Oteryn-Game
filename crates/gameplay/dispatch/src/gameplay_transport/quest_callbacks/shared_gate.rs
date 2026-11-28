@@ -1,12 +1,34 @@
 //! One current shared World observation under the existing frozen movement turn.
 use super::*;
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static TIMED_GATE_READ: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
+pub(super) enum GateObservation {
+    Denied,
+    PersonalCompletion,
+    Timed(u64),
+}
+
+impl GateObservation {
+    pub(super) fn allows(self, now: u64) -> bool {
+        match self {
+            Self::Denied => false,
+            Self::PersonalCompletion => true,
+            Self::Timed(deadline) => now < deadline,
+        }
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn admit_shared_switch_gate(
         &self,
         permit: &SpellLanePermit,
-        runtime: &ChannelRuntimeV1,
+        artifact: [u8; 32],
+        placement_context: Vec<u8>,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
@@ -16,24 +38,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         fence: Option<CurrentCharacterGameplayFence>,
         expected: MovementPositionSnapshot,
-    ) -> bool {
+    ) -> GateObservation {
         let Some(gate) = oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key) else {
-            return true;
+            return GateObservation::Denied;
         };
         let (Some(fence), QuestCause::Step(_), Some(native)) = (
             fence,
             cause,
             self.active_generation.and_then(|g| g.native_gameplay()),
         ) else {
-            return false;
+            return GateObservation::Denied;
         };
         let context = QuestWorldContext {
             map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-            content_revision: format!(
-                "sha256:{}",
-                hex(&runtime.content_pin().server_artifact_digest())
-            ),
-            placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            content_revision: format!("sha256:{}", hex(&artifact)),
+            placement_context,
             reset_epoch: self.reset_epoch,
             actor_placement: actor.placement_identity(),
             movement_revision: expected.revision(),
@@ -60,7 +79,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             pending.context.get_or_insert(context).clone()
         } else {
-            return false;
+            return GateObservation::Denied;
         };
         let started = self.owner_now().get();
         let result = self
@@ -80,24 +99,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let decision = match result {
             // The optional flag is a canonical one-way completion fact observed
             // for this actor in the same fenced statement snapshot as the count.
-            Ok(Some(observed)) if observed.personal_completion => Some(true),
+            Ok(Some(observed)) if observed.personal_completion => {
+                Some(GateObservation::PersonalCompletion)
+            }
             Ok(Some(observed)) => {
-                let elapsed = self.owner_now().get().saturating_sub(started);
-                // Anchor the bridge before the RPC, conservatively subtracting all
-                // service time. A possibly expired positive read remains pending.
-                if observed.count >= gate.required
-                    && observed.next_change_unix_ms.is_none_or(|due| {
-                        due.saturating_sub(observed.observed_at_unix_ms)
-                            .saturating_mul(1000)
-                            <= i64::try_from(elapsed).unwrap_or(i64::MAX)
-                    })
-                {
-                    None
+                if observed.count < gate.required {
+                    Some(GateObservation::Denied)
                 } else {
-                    Some(observed.count >= gate.required)
+                    observed
+                        .next_change_unix_ms
+                        .and_then(|due| due.checked_sub(observed.observed_at_unix_ms))
+                        .and_then(|ms| u64::try_from(ms).ok())
+                        .and_then(|ms| ms.checked_mul(1_000))
+                        .and_then(|us| started.checked_add(us))
+                        .filter(|deadline| *deadline > self.owner_now().get())
+                        .map(GateObservation::Timed)
                 }
             }
-            Ok(None) => Some(false),
+            Ok(None) => Some(GateObservation::Denied),
             Err(error) => {
                 #[cfg(test)]
                 eprintln!("SHARED_GATE read error: {error:?}");
@@ -110,9 +129,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
                 records.remove(&session);
             }
+            #[cfg(test)]
+            if matches!(allowed, GateObservation::Timed(_))
+                && let Ok(barrier) = TIMED_GATE_READ.try_with(std::sync::Arc::clone)
+            {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
             allowed
         } else {
-            false
+            GateObservation::Denied
         }
     }
 }

@@ -105,9 +105,9 @@ async fn workshop_unchanged(
     let before = scope_footprint(h).await?;
     let reply = query(owner, admitted).await?;
     assert!(!reply.refused);
-    assert_eq!(reply.grades.len(), 69);
+    assert_eq!(reply.grades.len(), 73);
     assert_eq!(reply.grades.iter().filter(|row| row.kind == 0).count(), 46);
-    assert_eq!(reply.grades.iter().filter(|row| row.kind == 1).count(), 23);
+    assert_eq!(reply.grades.iter().filter(|row| row.kind == 1).count(), 27);
     assert!(
         reply
             .grades

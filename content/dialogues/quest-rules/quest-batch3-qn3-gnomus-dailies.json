@@ -1,0 +1,1008 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.dangerous_depths_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnome_chart_chest",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_a",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_b",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_c",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_d",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_e",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnome_chart_paper",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/old_gate",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/lost_ruin",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/the_gaze",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/outpost",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/bastion",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/broken_tower",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-report",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "value": 72000
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Excellent, you returned with more data! Let me see... hmm. ...",
+        "Well, we need more data on this but first I will have to show this to our grand horticulturist. Thank you for getting this for us!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-cooldown",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "op": "gt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-68"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-repeat",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_measurements",
+          "op": "le"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The heat down here is not the only problem we have but one of our greatest concerns. Not only is it almost unbearable for us, it also seems to be rising. ...",
+        "We need to find out if this is true and what that means for this place - and for us gnomes. You can help us do this by grabbing one of our trignometres and collecting as much as data from the heat in this area as possible. ...",
+        "We'd need at least 5 measurements. Are you willing to do this?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:70-77"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-first",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The heat down here is not the only problem we have but one of our greatest concerns. Not only is it almost unbearable for us, it also seems to be rising. ...",
+        "We need to find out if this is true and what that means for this place - and for us gnomes. You can help us do this by grabbing one of our trignometres and collecting as much as data from the heat in this area as possible. ...",
+        "We'd need at least 5 measurements. Are you willing to do this?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:78-85"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-pending",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "measurements"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+          "op": "lt",
+          "value": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:85-86"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-accept-initial",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnome_chart_chest",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_a",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_b",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_c",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_d",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_e",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "How fortunate! There are some trignometres lying around next to that device behind me. Take one and hold it next to high temperature heat sources. ...",
+        "If you gathered enough data, you will actually smell it from the device. ...",
+        "Return to me with the results afterwards. Best of luck, we count on you!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "ordnance"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/measurements-accept-repeat",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/measurements",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnome_chart_chest",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_a",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_b",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_c",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_d",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/location_e",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "How fortunate! There are some trignometres lying around next to that device behind me. Take one and hold it next to high temperature heat sources. ...",
+        "If you gathered enough data, you will actually smell it from the device. ...",
+        "Return to me with the results afterwards. Best of luck, we count on you!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "ordnance"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-first",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 33
+        }
+      ],
+      "reply": [
+        "While exploring these caves to find places to collect spores and grow mushrooms, we found several strange structures. I am convinced that this system was once home to intelligent beings. ...",
+        "However, the creatures from below are now disturbing our research as well as some particularly pesky dwarves who just would not leave us alone. ...",
+        "As we have our hands full with a lot of things right now, we could need someone to chart the unknown parts of this underground labyrinth ...",
+        "I am especially interested in the scattered dark structures around these parts. Would you do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:193-201"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-cooldown",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+          "op": "gt"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I don't need your help for now. Come back later."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:179-183"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-repeat",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "storage_time",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+          "op": "le"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 33
+        }
+      ],
+      "reply": [
+        "While exploring these caves to find places to collect spores and grow mushrooms, we found several strange structures. I am convinced that this system was once home to intelligent beings. ...",
+        "However, the creatures from below are now disturbing our research as well as some particularly pesky dwarves who just would not leave us alone. ...",
+        "As we have our hands full with a lot of things right now, we could need someone to chart the unknown parts of this underground labyrinth ...",
+        "I am especially interested in the scattered dark structures around these parts. Would you do that?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:184-192"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-report-1",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+          "op": "between",
+          "value": 3,
+          "maximum": 5
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+          "value": 72000
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Thank you very much! With those structures mapped out we will be able to complete the puzzle in no time!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:205-217"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-report-2",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+          "op": "between",
+          "value": 6,
+          "maximum": 6
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_now_plus",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/time_task_charting",
+          "value": 72000
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i27654",
+          "count": 1
+        },
+        {
+          "kind": "add",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/points",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Thank you very much! With those structures mapped out we will be able to complete the puzzle in no time!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:205-217"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-pending",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "charting"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+          "op": "lt",
+          "value": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Come back when you have finished your job."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:201-202"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-accept-initial",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnome_chart_paper",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/old_gate",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/lost_ruin",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/the_gaze",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/outpost",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/bastion",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/broken_tower",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very good. We prepared a lot of maps as the complete mapping of this system will probably take a lot of research. ...",
+        "Take one from the stack here next to me and map as many structures as possible. However, we need at least three locations to make any sense of this ancient layout at all. ...",
+        "If you manage to map one of each structure around these parts - I assume there must be at least two times as many around here - I will hand you a bonus!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ],
+      "topics": [
+        33
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "ordnance"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/dangerous_depths/gnomus/charting-accept-repeat",
+      "quest": "oteryn:quest.dangerous_depths_quest",
+      "npc": "oteryn:npc.gnomus",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/questline",
+          "op": "ge",
+          "value": 1
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/charting_count",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/gnome_chart_paper",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/old_gate",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/lost_ruin",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/the_gaze",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/outpost",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/bastion",
+          "value": 0
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/broken_tower",
+          "value": 0
+        },
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Very good. We prepared a lot of maps as the complete mapping of this system will probably take a lot of research. ...",
+        "Take one from the stack here next to me and map as many structures as possible. However, we need at least three locations to make any sense of this ancient layout at all. ...",
+        "If you manage to map one of each structure around these parts - I assume there must be at least two times as many around here - I will hand you a bonus!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237"
+      ],
+      "topics": [
+        33
+      ],
+      "exclude_keywords": [
+        "measurements",
+        "charting",
+        "ordnance"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/gnomus.lua",
+      "sha256": "04ce96e16bbfd9f6fa6b114b377643b1bb71c3df33f05c2b1e1d0d5e40bdc5a1",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

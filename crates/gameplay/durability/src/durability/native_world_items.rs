@@ -339,7 +339,17 @@ fn qualify_field_class(
 }
 impl DurableCorpseReservation {
     pub fn cell(&self) -> Result<crate::content::LogicalCell, &'static str> {
-        decode_ground_cell(&self.placement.spatial_position)
+        let mut cell = decode_ground_cell(&self.placement.spatial_position)?;
+        let loop_drop = self
+            .placement
+            .corpse_ref
+            .strip_prefix(super::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX);
+        if loop_drop.is_some_and(|receipt| receipt.len() == 16) {
+            // Animate Dead spawns in runtime coordinates even when its exact
+            // removal reservation retains Command 9's bundle position.
+            cell.z = -cell.z;
+        }
+        Ok(cell)
     }
 }
 pub fn decode_ground_cell(bytes: &[u8]) -> Result<crate::content::LogicalCell, &'static str> {
@@ -349,6 +359,20 @@ pub fn decode_ground_cell(bytes: &[u8]) -> Result<crate::content::LogicalCell, &
         y: cell.y,
         z: cell.z,
     })
+}
+
+/// The pinned death owner encodes runtime floors. Loop and legacy Ground rows
+/// store map floors, so their current addresses are converted before reach checks.
+pub(crate) fn decode_corpse_action_cell(
+    position: &[u8],
+    map_revision: &str,
+    native_map_digest: &[u8; 32],
+) -> Result<crate::content::LogicalCell, &'static str> {
+    let mut cell = decode_ground_cell(position)?;
+    if map_revision != super::map_item_mint_audit::map_revision_of(native_map_digest) {
+        cell.z = -cell.z;
+    }
+    Ok(cell)
 }
 
 impl QualifiedRuneDefinition {
@@ -520,4 +544,26 @@ fn qualify_source_chain(
             "field decay chain bound",
         ),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::decode_corpse_action_cell;
+
+    #[test]
+    fn corpse_reach_uses_the_native_death_or_loop_floor_codec() -> Result<(), &'static str> {
+        let map_digest = [13; 32];
+        let native_map = super::super::map_item_mint_audit::map_revision_of(&map_digest);
+        for (map, stored_floor) in [(native_map.as_str(), 7_i16), ("map-1", -7)] {
+            let position = [
+                3_i32.to_be_bytes().as_slice(),
+                4_i32.to_be_bytes().as_slice(),
+                stored_floor.to_be_bytes().as_slice(),
+            ]
+            .concat();
+            let cell = decode_corpse_action_cell(&position, map, &map_digest)?;
+            assert_eq!((cell.x, cell.y, cell.z), (3, 4, 7));
+        }
+        Ok(())
+    }
 }

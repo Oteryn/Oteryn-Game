@@ -96,7 +96,9 @@
           20,
           21,
           22,
-          23
+          23,
+          96,
+          97
         ]
       },
       "paladin": {
@@ -190,7 +192,11 @@
           38,
           39,
           40,
-          41
+          41,
+          98,
+          99,
+          100,
+          101
         ]
       },
       "sorcerer": {
@@ -284,7 +290,11 @@
           55,
           56,
           57,
-          58
+          58,
+          102,
+          103,
+          104,
+          105
         ]
       },
       "druid": {
@@ -378,7 +388,11 @@
           72,
           73,
           74,
-          75
+          75,
+          106,
+          107,
+          108,
+          109
         ]
       },
       "monk": {
@@ -472,7 +486,11 @@
           90,
           91,
           92,
-          93
+          93,
+          110,
+          111,
+          112,
+          113
         ]
       }
     },
@@ -10228,6 +10246,1176 @@
           "icon": {
             "sprite": "supreme_mod",
             "source_index": 93,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 96,
+          "name": "Intense Wound Cleansing",
+          "summary_name": "Intense Wound Cleansing",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+20% Base Healing",
+              "numeric_effects": [
+                {
+                  "kind": "base_healing_bonus",
+                  "value": 20,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+22% Base Healing",
+              "numeric_effects": [
+                {
+                  "kind": "base_healing_bonus",
+                  "value": 22,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+24% Base Healing",
+              "numeric_effects": [
+                {
+                  "kind": "base_healing_bonus",
+                  "value": 24,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+30% Base Healing",
+              "numeric_effects": [
+                {
+                  "kind": "base_healing_bonus",
+                  "value": 30,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Healing",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 96,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 97,
+          "name": "Intense Wound Cleansing",
+          "summary_name": "Intense Wound Cleansing",
+          "format": "Seconds",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "-20s Cooldown",
+              "numeric_effects": [
+                {
+                  "kind": "cooldown_reduction",
+                  "value": 20,
+                  "unit": "seconds",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "-20s Cooldown, +0.33% Momentum",
+              "numeric_effects": [
+                {
+                  "kind": "cooldown_reduction",
+                  "value": 20,
+                  "unit": "seconds",
+                  "target": "Intense Wound Cleansing"
+                },
+                {
+                  "kind": "momentum_chance",
+                  "value": 0.33,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "-20s Cooldown, +0.66% Momentum",
+              "numeric_effects": [
+                {
+                  "kind": "cooldown_reduction",
+                  "value": 20,
+                  "unit": "seconds",
+                  "target": "Intense Wound Cleansing"
+                },
+                {
+                  "kind": "momentum_chance",
+                  "value": 0.66,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "-20s Cooldown, +1% Momentum",
+              "numeric_effects": [
+                {
+                  "kind": "cooldown_reduction",
+                  "value": 20,
+                  "unit": "seconds",
+                  "target": "Intense Wound Cleansing"
+                },
+                {
+                  "kind": "momentum_chance",
+                  "value": 1,
+                  "unit": "percent_points",
+                  "target": "Intense Wound Cleansing"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "s Cooldown",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 97,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 98,
+          "name": "Divine Barrage",
+          "summary_name": "Divine Barrage",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 98,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 99,
+          "name": "Divine Barrage",
+          "summary_name": "Divine Barrage",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Divine Barrage"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 99,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 100,
+          "name": "Ethereal Barrage",
+          "summary_name": "Ethereal Barrage",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 100,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 101,
+          "name": "Ethereal Barrage",
+          "summary_name": "Ethereal Barrage",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Ethereal Barrage"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 101,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 102,
+          "name": "Death Echo",
+          "summary_name": "Death Echo",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 102,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 103,
+          "name": "Death Echo",
+          "summary_name": "Death Echo",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Death Echo"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 103,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 104,
+          "name": "Lightning",
+          "summary_name": "Lightning",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+10% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 10,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+11% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 11,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+12% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+15% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 15,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 104,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 105,
+          "name": "Lightning",
+          "summary_name": "Lightning",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+15% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 15,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+16.5% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 16.5,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+22.5% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 22.5,
+                  "unit": "percent_points",
+                  "target": "Lightning"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 105,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 106,
+          "name": "Forked Glacier",
+          "summary_name": "Forked Glacier",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 106,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 107,
+          "name": "Forked Glacier",
+          "summary_name": "Forked Glacier",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Forked Glacier"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 107,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 108,
+          "name": "Forked Thorns",
+          "summary_name": "Forked Thorns",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 108,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 109,
+          "name": "Forked Thorns",
+          "summary_name": "Forked Thorns",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Forked Thorns"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 109,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 110,
+          "name": "Chained Penance",
+          "summary_name": "Chained Penance",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 110,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 111,
+          "name": "Chained Penance",
+          "summary_name": "Chained Penance",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Chained Penance"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 111,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 112,
+          "name": "Thousand Fist Blows",
+          "summary_name": "Thousand Fist Blows",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+5.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 5.5,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+6% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 6,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+7.5% Base Damage",
+              "numeric_effects": [
+                {
+                  "kind": "base_damage_bonus",
+                  "value": 7.5,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Base Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 112,
+            "verification": "SOURCE_MAPPING_ONLY",
+            "layout": "horizontal_square_cells",
+            "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"
+          }
+        },
+        {
+          "source_id": 113,
+          "name": "Thousand Fist Blows",
+          "summary_name": "Thousand Fist Blows",
+          "format": "PlusPercentWithUpToTwoFloatingpointsFromInt",
+          "grades": [
+            {
+              "grade": 0,
+              "reference_text": "+12% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 12,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            },
+            {
+              "grade": 1,
+              "reference_text": "+13.2% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 13.2,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            },
+            {
+              "grade": 2,
+              "reference_text": "+14.4% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 14.4,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            },
+            {
+              "grade": 3,
+              "reference_text": "+18% Critical Extra Damage",
+              "numeric_effects": [
+                {
+                  "kind": "critical_extra_damage",
+                  "value": 18,
+                  "unit": "percent_points",
+                  "target": "Thousand Fist Blows"
+                }
+              ]
+            }
+          ],
+          "reference_summary": "+ % Critical Extra Damage",
+          "icon": {
+            "sprite": "supreme_mod",
+            "source_index": 113,
             "verification": "SOURCE_MAPPING_ONLY",
             "layout": "horizontal_square_cells",
             "asset_url": "https://static.tibia.com/images/global/common/skillwheel/icons-skillwheel-suprememods.png"

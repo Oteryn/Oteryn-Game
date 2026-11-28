@@ -21,6 +21,8 @@ INDEX = "content/world/placements/index.json"
 SHARD = "content/world/terrain/terrain-08794-08845.json"
 MARKER = "content/world/terrain/index.json"
 NOTE = " Additionally 52 source-qualified spawn grounds bound at the slice 2 cells."
+NPC_SCOPE = "tools/content-schema/npc-authoring/npc_placement_scope.json"
+SLEEPING_DRAGON_CELL = (33242, 31213, 10)
 
 
 def captured_grounds(root=ROOT):
@@ -38,6 +40,20 @@ def captured_grounds(root=ROOT):
         ):
             raise ValueError("Crystal delta ground differs from its spawn capture")
         grounds[cell] = 50815
+    scope_path = root / NPC_SCOPE
+    if scope_path.is_file():
+        overrides = json.loads(scope_path.read_bytes()).get("placement_overrides", {})
+        dragon = overrides.get("oteryn:npc.a_sleeping_dragon", {})
+        if "source_ground" in dragon:
+            (placement,) = dragon["placements"]
+            cell = tuple(placement["position"][axis] for axis in ("x", "y", "z"))
+            if (
+                cell in grounds
+                or cell != SLEEPING_DRAGON_CELL
+                or dragon["source_ground"] != 470
+            ):
+                raise ValueError(f"invalid Sleeping Dragon ground at {cell}")
+            grounds[cell] = dragon["source_ground"]
     return grounds
 
 

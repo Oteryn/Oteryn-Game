@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import quest_corpse_profiles as corpse
+from native_profile_composition import compact_item_profile
 
 UNKNOWN_CLASSIFICATION_ITEMS = {
     f"oteryn:item.tibia.i{number}"
@@ -128,8 +129,18 @@ class CorpseQualification(unittest.TestCase):
                 expected = policy["value"]["capacity"]["value"]
             self.assertTrue(facts[key]["materializable"], key)
             self.assertEqual(facts[key]["container_capacity"], expected, key)
-        for number in (5967, 5999, 6031, 18030, 18038, 18110, 18186, 25814):
-            self.assertTrue(facts[f"oteryn:item.tibia.i{number}"]["ordinary_corpse_only"])
+        for number in (5999, 6031, 18030, 18038, 18110, 18186):
+            key = f"oteryn:item.tibia.i{number}"
+            self.assertTrue(facts[key]["ordinary_corpse_only"], key)
+        creatures = json.loads((corpse.ROOT / corpse.CREATURES).read_bytes())
+        details = {row["profile"]["target"]["key"]: row["profile"]["data"]["profile"]["details"]
+                   for row in creatures["records"]}
+        for creature, number in (("rottie_the_rotworm", 5967), ("raxias", 25814)):
+            key = f"oteryn:item.tibia.i{number}"
+            private = details[f"oteryn:creature.{creature}"]
+            self.assertTrue(private["system_eligibility"]["reward_boss"], creature)
+            self.assertEqual(private["corpse_item"], facts[key]["item"], creature)
+            self.assertNotIn("ordinary_corpse_only", facts[key])
         for key in self.plan.projected_source_capacities:
             self.assertTrue(facts[key]["ordinary_corpse_only"], key)
 

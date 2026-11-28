@@ -33,11 +33,15 @@ mod rafzane_elevator;
 mod reward_door;
 mod rewards;
 mod rotten_flame;
+#[cfg(test)]
+pub(super) use rotten_flame::INTERRUPT_FLAME_VISUAL;
 mod scene;
 mod scene_actors;
 mod scene_items;
 mod serpentine_lever;
 mod shared_gate;
+#[cfg(test)]
+pub(super) use shared_gate::TIMED_GATE_READ;
 mod soul_war_reward;
 mod source_transforms;
 mod timed_encounter;
@@ -107,6 +111,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    source_boss: std::sync::Mutex<Option<court_warlock::PendingSourceBoss>>,
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     scene_item_receipts: scene_items::SceneItemReceipts,
@@ -314,7 +319,7 @@ fn superseded_chest(callback: &Callback, callbacks: &[Callback]) -> bool {
     callbacks.iter().any(|candidate| candidate.key == owner)
 }
 
-fn tile(p: Position) -> TilePos {
+pub(super) fn tile(p: Position) -> TilePos {
     TilePos {
         x: p.x,
         y: p.y,
@@ -328,7 +333,7 @@ fn local(p: Position) -> MovementLocalPosition {
         floor: -i16::from(p.floor),
     }
 }
-fn native(p: MovementLocalPosition) -> Option<TilePos> {
+pub(super) fn native(p: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: p.x.try_into().ok()?,
         y: p.y.try_into().ok()?,
@@ -931,6 +936,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// A debit receipt belongs to the original World occurrence. Keep the
     /// actor and its reservation available until that occurrence is projected.
     pub(super) fn has_pending_paid_quest_callback(&self, session: GameSessionId) -> bool {
+        if self.has_pending_source_boss(session) {
+            return true;
+        }
         self.states
             .quest_callbacks
             .records
@@ -970,7 +978,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .collect::<Vec<_>>(),
             Err(_) => return 1,
         };
-        let mut failed = 0;
+        let mut failed = usize::from(!self.reconcile_source_boss(None).await);
         for session in sessions {
             if !self.settle_paid_quest_callbacks(session).await {
                 failed += 1;
@@ -1120,7 +1128,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_grizzly_boss(session).await {
+        if !self.reconcile_source_boss(Some(session)).await
+            || !self.reconcile_grizzly_boss(session).await
+        {
             return false;
         }
         let session = match self.states.quest_callbacks.records.lock() {
@@ -1184,17 +1194,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, pending.actor, pending.session)
                 .await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
-                return false;
-            }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         &permit,
-                        &mut runtime,
-                        &mut states,
+                        pending.expected,
                         pending.actor,
                         pending.session,
                         map,
@@ -1219,6 +1223,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return false;
                 }
                 if let Some(origin) = pending.origin {
+                    let (mut runtime, mut states) =
+                        self.quest_turn_with(&self.states.spell_states).await;
+                    if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
+                        return false;
+                    }
                     self.refuse_quest_step(
                         optional_pvp,
                         &mut runtime,
@@ -1283,7 +1292,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         target: &WorldObjectTarget,
     ) -> Option<UseOutcome> {
-        self.use_quest_callback_with_tool(actor, command, map, target, None)
+        self.use_quest_callback_with_tool(actor, command, map, target, false, None)
             .await
     }
 
@@ -1293,6 +1302,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         map: &BundleMap,
         target: &WorldObjectTarget,
+        direct: bool,
         selected_tool: Option<([u8; 16], Vec<u8>)>,
     ) -> Option<UseOutcome> {
         if let Some(outcome) = self.use_rafzane_elevator(actor, command, map, target).await {
@@ -1346,6 +1356,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && (!direct || c.effects.direct_use_area.is_some())
                     && !superseded_chest(c, callbacks)
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
@@ -1624,7 +1635,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(at) = native(expected.position()) else {
                 return UseDisposition::Rejected;
             };
-            if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
+            let actor_position = Position { x: at.x, y: at.y, floor: at.floor };
+            let reaches = if callback.effects.direct_use_area.is_some() {
+                callback.admits_direct_use(actor_position)
+            } else {
+                callback.reaches(actor_position, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor })
+            };
+            if !reaches {
                 return UseDisposition::TooFar;
             }
             if !callback.is_read_only() && !self
@@ -1653,8 +1670,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(items) => items,
                 Err(disposition) => return disposition,
             };
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
             if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
                 publication.store(true, std::sync::atomic::Ordering::Relaxed);
             }
@@ -1662,8 +1677,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
-                &mut runtime,
-                &mut states,
+                expected,
                 actor,
                 command.game_session_id,
                 map,
@@ -1680,8 +1694,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scene_items.as_ref().map(|_| &mut scene_publication),
             ))
             .await;
-            drop(states);
-            drop(runtime);
             drop(slot);
             if let (Some(items), Some(scene)) = (scene_items, scene_publication) {
                 return self.commit_scene_items(
@@ -1950,17 +1962,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            if runtime.read_actor_position(actor) != Ok(entered) {
-                return entered;
-            }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         permit,
-                        &mut runtime,
-                        &mut states,
+                        entered,
                         actor,
                         session,
                         map,
@@ -1993,7 +1999,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             false
                         }
                     });
-            if result != UseDisposition::Committed && !unresolved {
+            let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
+            if result != UseDisposition::Committed
+                && !unresolved
+                && runtime.read_actor_position(actor) == Ok(entered)
+            {
                 self.refuse_quest_step(
                     optional_pvp,
                     &mut runtime,
@@ -2014,8 +2024,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-                let mut runtime = self.runtime.lock().await;
-                let mut states = self.states.spell_states.lock().await;
+                let (mut runtime, mut states) =
+                    self.quest_turn_with(&self.states.spell_states).await;
                 if runtime.read_actor_position(actor) == Ok(entered) {
                     self.refuse_quest_step(
                         optional_pvp,

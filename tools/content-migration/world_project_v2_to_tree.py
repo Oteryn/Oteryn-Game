@@ -433,6 +433,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     )
 
     extend_corpse_terminal_reference(item_records, ROOT)
+    from fourth_quarter_corpses import extend_item_references as extend_fourth_quarter_references
+    extend_fourth_quarter_references(ROOT, item_records)
     from qready1_cradle_item_profiles import extend_records as extend_cradle_references
 
     extend_cradle_references(item_records, ROOT)
@@ -478,6 +480,12 @@ def materialize_item_tree(reference, declarations, editor, sources):
     item_records.append(old_paper_definition(ROOT))
     from crystal_ordinary_items import extend_references as extend_door_references
     extend_door_references(item_records, ROOT)
+    from ordinary_corpse_profiles import extend_definitions as extend_corpse_definitions
+    extend_corpse_definitions(ROOT, item_records)
+    from ordinary_corpse_slice2 import extend_references as extend_ordinary_corpse_references
+    extend_ordinary_corpse_references(item_records, ROOT)
+    from ordinary_corpse_cohort import extend_item_references as extend_third_quarter_references
+    extend_third_quarter_references(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
@@ -909,7 +917,7 @@ def main(*, items_only: bool = False) -> int:
     npc_declarations = [
         row for row in declarations["records"] if row.get("kind") == "NPC"
     ]
-    if len(npc_declarations) != 1282:
+    if len(npc_declarations) != 1292:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -1039,7 +1047,7 @@ def main(*, items_only: bool = False) -> int:
     dialogue_declarations = [
         row for row in declarations["records"] if row.get("kind") == "Dialogue"
     ]
-    if len(dialogue_declarations) != 852:
+    if len(dialogue_declarations) != 855:
         raise RuntimeError(
             f"DIALOGUE_SOURCE_COUNT_MISMATCH:{len(dialogue_declarations)}"
         )
@@ -1135,7 +1143,7 @@ def main(*, items_only: bool = False) -> int:
     service_records = [
         row for row in declarations["records"] if row.get("kind") == "Service"
     ]
-    if len(service_records) != 401:
+    if len(service_records) != 402:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

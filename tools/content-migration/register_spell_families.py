@@ -648,6 +648,20 @@ def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]
         return _outputs(root, include_prey=include_prey)
 
 
+def crystal_area_rune_bounds(generated):
+    # Crystal 201189f8 data/scripts/runes/{avalanche,great_fireball}.lua:7-9
+    # invoke the same register_spells.lua:636-644 helper as Light Stone Shower.
+    catalog = json.loads(generated[spell_import.CATALOG])
+    formulas = [row for entry in catalog["bundles"] for row in entry["dependencies"]["formulas"]]
+    donor, = (row for row in formulas if row["identity"]["key"] ==
+              "candidate:formula/spell/rune/light_stone_shower_rune/combat-1")
+    for rune in ("avalanche_rune", "great_fireball_rune"):
+        formula, = (row for row in formulas if row["identity"]["key"] ==
+                    f"candidate:formula/spell/rune/{rune}/combat-1")
+        formula.update(minimum=donor["minimum"], maximum=donor["maximum"])
+    return current_sources.with_catalog(generated, catalog)
+
+
 def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     """Prepare the entire registration before writing any file.
 
@@ -660,6 +674,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     from compose_monster_current_sources import compose
 
     generated = compose(root, baseline, generated)
+    generated = crystal_area_rune_bounds(generated)
     import engenc2_fugue_profile
 
     engenc2_fugue_profile.admit(root, generated, spell_import.canonical_bytes)
@@ -1525,7 +1540,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     )
     import quest_corpse_profiles
 
-    quest_corpse_profiles.admit(
+    quest_corpse_qualification = quest_corpse_profiles.admit(
         root,
         generated,
         spell_import.PROVIDER_DESTINATIONS["item_profiles"],
@@ -1733,7 +1748,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
     import native_goal_corpse_items
 
-    native_goal_corpse_items.admit_native(
+    native_goal_corpse_keys = native_goal_corpse_items.admit_native(
         root,
         generated,
         spell_import.PROVIDER_DESTINATIONS["item_profiles"],
@@ -1790,10 +1805,36 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         provider_order,
         spell_import.canonical_bytes,
     )
-    # Crystal201189f koshei_the_deathless.lua:19 and action_boss.lua:4
-    # select the fresh body, with its full admitted Ground decay chain.
+    import ordinary_corpse_profiles
+    corpse_capacity_projections = quest_corpse_qualification.projected_source_capacities
+    ordinary_corpse_profiles.admit(
+        root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"],
+        NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes,
+        corpse_capacity_projections)
+    corpse_creatures = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    corpse_document = json.loads(generated[corpse_creatures])
+    ordinary_corpse_profiles.bind_creatures(root, corpse_document)
+    generated[corpse_creatures] = spell_import.canonical_bytes(corpse_document)
+    del corpse_document
+    import ordinary_corpse_cohort
+    creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    creatures = json.loads(generated[creature_path])
+    items = json.loads(generated[item_path])
+    ordinary_corpse_cohort.apply(root, creatures, items, provider_order)
+    generated[creature_path] = spell_import.canonical_bytes(creatures)
+    generated[item_path] = spell_import.canonical_bytes(items)
+    # Later admitted creature overlays (for example forge eligibility) change
+    # Creature roots. Bind executable closures only after those policies settle.
+    import fourth_quarter_corpses
+    import ordinary_corpse_slice2
+    from bind_monster_source_definitions import bind_definitions
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
+    ordinary_corpse_slice2.bind_creatures(root, creatures)
+    fourth_quarter_corpses.bind_creatures(root, creatures)
+    # Crystal201189f koshei_the_deathless.lua:19 and action_boss.lua:4
+    # select the fresh body, with its full admitted Ground decay chain.
     koshei = next(
         row
         for row in creatures["records"]
@@ -1809,7 +1850,6 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import cyclopedia_creatures
     cyclopedia_creatures.apply(root, generated)
     crystal_creature_parity.apply_native(root, generated)
-    from bind_monster_source_definitions import bind_definitions
 
     generated = bind_definitions(root, generated)
     presentation_path = spell_import.PROVIDER_DESTINATIONS["presentation_profiles"]
@@ -1916,10 +1956,13 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     } - pre_equipment_keys
     # Loot admissions complete shared rows after the exact equipment sources.
     import loot_slice_one
+
+    ordinary_ids = set(ordinary_corpse_profiles.read(root, 'item-ids'))
+    ordinary_ids.update(map(int, ordinary_corpse_cohort.packet(root)['items']))
     generated[item_path] = spell_import.canonical_bytes(items)
     loot_admissions = loot_slice_one.admit_native(
         root, generated, item_path, starting_loadout_profiles.FRAGMENT,
-        provider_order, spell_import.canonical_bytes,
+        provider_order, spell_import.canonical_bytes, ordinary_ids,
     )
     items = json.loads(generated[item_path])
     import cloot2_item_admissions
@@ -1945,6 +1988,21 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
         del basic["Skill Boost"]
         capture[identifier] = {**row, "basic": basic}
     item_detail_source_facts.apply_capture_stats(existing_items, capture)
+    # Share only native Items admitted by the pinned corpse and source
+    # capture owners. Each ordinary overlay still checks the exact record.
+    ordinary_ids.update(int(key.rsplit(".i", 1)[1]) for key in native_goal_corpse_keys)
+    ordinary_ids.update(int(key.rsplit(".i", 1)[1]) for key in quest_corpse_qualification.records)
+    qengine_packet = json.loads(generated[qengine_reward_item_profiles.PROOF])
+    ordinary_ids.update(int(row["production_binding"]["external_id"])
+                        for row in qengine_packet["records"])
+    ordinary_corpse_slice2.admit_items(
+        root, items, provider_order, ordinary_ids, corpse_capacity_projections, loot_admissions
+    )
+    ordinary_ids.update(int(record['production_binding']['external_id'])
+                        for record in ordinary_corpse_slice2.capture(root)['records'])
+    fourth_quarter_corpses.apply_items(
+        root, items, provider_order, ordinary_ids, corpse_capacity_projections
+    )
     import forge_item_profiles
 
     # Preserve Forge eligibility from the independently admitted loot cohort.

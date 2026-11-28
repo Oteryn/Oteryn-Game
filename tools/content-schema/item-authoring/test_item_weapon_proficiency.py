@@ -131,15 +131,13 @@ class ArtifactTests(unittest.TestCase):
         self.assertEqual(
             by_id[3294]["threshold_evidence"]["vocation"]["basis"], "DERIVED"
         )
-        # ink sword: no evidence in either source stays unknown with a reason
+        # Ink Sword is an unrestricted one-handed sword in the retained wiki record.
         ink = by_id[51666]
-        self.assertEqual(ink["threshold_class"], "unknown")
-        self.assertEqual(ink["threshold_evidence"]["vocation"]["basis"], "UNKNOWN")
+        self.assertEqual(ink["threshold_class"], "standard")
+        self.assertEqual(ink["threshold_evidence"]["vocation"]["basis"], "DERIVED")
         counts = self.document["counts"]["bindings_by_threshold_class"]
         self.assertEqual(sum(counts.values()), iwp.EXPECTED_BINDINGS)
-        self.assertEqual(
-            counts, {"crossbow": 37, "knight": 158, "standard": 470, "unknown": 1}
-        )
+        self.assertEqual(counts, {"crossbow": 37, "knight": 158, "standard": 471})
         for binding in self.document["bindings"]:
             vocation = binding["threshold_evidence"]["vocation"]
             self.assertIn(vocation["basis"], {"PROVEN", "DERIVED", "UNKNOWN"})

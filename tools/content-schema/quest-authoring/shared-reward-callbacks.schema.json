@@ -358,10 +358,26 @@
           "type": "string",
           "maxLength": 128
         },
+        "clear_topic_on_refusal": {
+          "type": "boolean"
+        },
+        "msg_contains": {
+          "type": "boolean"
+        },
         "keywords": {
           "type": "array",
           "minItems": 0,
           "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "exclude_keywords": {
+          "type": "array",
+          "maxItems": 12,
           "uniqueItems": true,
           "items": {
             "type": "string",

@@ -100,6 +100,7 @@ def append(add, state, callbacks, offers, inputs, pin):
             ('marid', 'gabel', 2, 'door_to_efreet_territory')]:
         offer(faction, npc, ['mission'], 1, [s(faction, 'mission03', 0)],
               'Are you prepared to', [requirement(faction, 'mission02', prior)])
+        offers[-1]["msg_contains"] = True
         grant('lamp-mission', faction, npc, ['yes'], [s(faction, 'mission03', 0, 1)],
               'Once you have' if faction == 'efreet' else 'Once you have acquired', topic=1,
               requires=[requirement(faction, 'mission02', prior)])
@@ -112,6 +113,7 @@ def append(add, state, callbacks, offers, inputs, pin):
               [s(faction, 'door_to_lamp', 0, 1)], 'Take the lamp', topic=lamp_topic,
               requires=[requirement(faction, 'mission03', 1)], give=(3231, 1))
         offer(faction, npc, ['mission'], 2, [s(faction, 'mission03', 2)], 'Have you found')
+        offers[-1]["msg_contains"] = True
         grant('finish', faction, npc, ['yes'],
               [s(faction, 'mission03', 2, 3), s(faction, enemy_door, 1)],
               'permission to trade' if faction == 'efreet' else 'welcome to trade', topic=2,

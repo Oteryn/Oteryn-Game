@@ -19,6 +19,8 @@ pub struct QuestWorldToolContext {
 pub(super) struct SelectedQuestTool {
     pub source: [u8; 16],
     pub intent: Vec<u8>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub direct: bool,
 }
 
 impl From<QuestWorldContext> for QuestWorldToolContext {
@@ -71,17 +73,22 @@ impl QuestWorldContext {
             &intent,
         )
         .ok()?;
+        let direct = decoded.use_with_map_item.is_none();
         if matches!(decoded.target, UseTarget::WorldObject(_))
             || decoded.use_with.is_some()
             || decoded.use_with_position.is_some()
-            || !matches!(decoded.use_with_map_item, Some(MapUseTarget::Object(_)))
+            || (!direct && !matches!(decoded.use_with_map_item, Some(MapUseTarget::Object(_))))
         {
             return None;
         }
         Some(QuestWorldToolContext {
             world: self,
             paid_arrivals: Vec::new(),
-            selected_tool: Some(SelectedQuestTool { source, intent }),
+            selected_tool: Some(SelectedQuestTool {
+                source,
+                intent,
+                direct,
+            }),
         })
     }
 }

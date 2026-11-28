@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import elephant_corpse_profiles
+import engclaim_item_profiles
 import galthen_boss_loot
 import import_spell_families as producer
 import item_detail_source_facts as item_details
@@ -16,6 +17,7 @@ import pegasus_feather_item_profile
 import qengine_reward_item_profiles as qengine
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
+from native_profile_composition import compact_item_profile
 from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -111,6 +113,7 @@ class AcceptedOverlayTests(unittest.TestCase):
         # source-qualified reward Item proof alongside the registered SEASON outputs.
         successor_proofs = {
             elephant_corpse_profiles.PROOF,
+            engclaim_item_profiles.TOKEN_BINDINGS,
             pegasus_feather_item_profile.PROOF,
             "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json",
             "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json",
@@ -176,6 +179,30 @@ class AcceptedOverlayTests(unittest.TestCase):
             45,
         )
         self.assertIn(qengine.PROOF, actual)
+        wiki_revisions = {
+            42175: 1162764,
+            44755: 1046708,
+            49272: 1082691,
+            49273: 1082690,
+        }
+        self.assertEqual(
+            json.loads(actual[engclaim_item_profiles.TOKEN_BINDINGS]),
+            [
+                {
+                    "disposition": "EXACT",
+                    "external_id": str(item),
+                    "identity_namespace": "tibiawiki/item_id",
+                    "source_key": "oteryn:source.tibiawiki",
+                    "source_revision": f"fandom-r{revision}",
+                    "target": {
+                        "family": "Item",
+                        "key": f"oteryn:item.tibia.i{item}",
+                        "revision": "definition-r1",
+                    },
+                }
+                for item, revision in wiki_revisions.items()
+            ],
+        )
         self.assertEqual(
             json.loads(actual[item_details.WEIGHT_FACTS]),
             {
@@ -223,8 +250,10 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(
                 by_key[key]["production_binding"], row["production_binding"]
             )
-            expected = compact_item_record(copy.deepcopy(row))
-            registered = compact_item_record(copy.deepcopy(by_key[key]))
+            expected = compact_item_profile(compact_item_record(copy.deepcopy(row)))
+            registered = compact_item_profile(
+                compact_item_record(copy.deepcopy(by_key[key]))
+            )
             self.assertEqual(registered["semantics"], expected["semantics"], key)
             for field, value in expected["attributes"].items():
                 self.assertEqual(registered["attributes"][field], value, (key, field))

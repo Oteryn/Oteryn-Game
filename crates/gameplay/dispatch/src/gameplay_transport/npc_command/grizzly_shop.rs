@@ -55,7 +55,7 @@ impl NpcConversations {
         session: GameSessionId,
         npc: EntityRef,
         items: Option<&ItemDefinitionIndex>,
-        category: Option<&'static mordecai_shop::Category>,
+        selection: TradeWindowSelection,
     ) -> Option<NpcTradeWindow> {
         let (book, items) = (chat.npc_talk()?, items?);
         let visible = runtime.visible_entities();
@@ -77,19 +77,23 @@ impl NpcConversations {
                 ) && super::quest_shop::visible(key, offer, &state.quest_shop_offers)
                     && (key != crate::content::npc_catalogue::grizzly_shop::NPC
                         || state.grizzly_shop_items.contains(&offer.item.key))
-                    && category.is_none_or(|category| category.includes(&offer.item.key))
+                    && !matches!(
+                        selection,
+                        TradeWindowSelection::Mordecai(category)
+                            if !category.includes(&offer.item.key)
+                    )
             })
             .cloned()
             .collect();
         let (shown, sources): (Vec<_>, Vec<_>) = projected(&eligible, items)
             .map(|(shown, source)| (shown, source.clone()))
             .unzip();
-        if shown.is_empty() && category.is_none() {
+        if shown.is_empty() && matches!(selection, TradeWindowSelection::Ordinary) {
             let previous = state.window.take();
             state.window_offers.clear();
             return previous.map(|_| NpcTradeWindow::default());
         }
-        state.window = Some((npc, category));
+        state.window = Some((npc, selection));
         state.window_offers = sources;
         Some(NpcTradeWindow {
             details: Vec::new(),

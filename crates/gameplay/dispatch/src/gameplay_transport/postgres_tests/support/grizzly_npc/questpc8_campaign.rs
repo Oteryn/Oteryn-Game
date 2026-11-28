@@ -1,5 +1,5 @@
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::*;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
 
@@ -51,6 +51,28 @@ pub(super) async fn exercise(
         .map_err(debug)?
         .position();
     let mut command = 2;
+    let (race, _) = crate::content::canonical_bestiary_difficulties(
+        super::super::character_title_sources_fixtures::source_limits(),
+    )?
+    .into_iter()
+    .find(|(race, _)| race.key() == "oteryn:creature.bane_of_light")
+    .ok_or("Bane of Light Bestiary entry")?;
+    assert_eq!(race.kill_thresholds(), [2, 3, 5]);
+    hunt_with_decay(
+        owner,
+        admitted,
+        race.key(),
+        5,
+        command,
+        Some(h),
+        HunterRefresh::OncePerHunt,
+    )
+    .await?;
+    let permit: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/hunting_permit'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(permit, 1);
+
     let initial_experience = experience(h).await?;
     say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
     assert_eq!(experience(h).await?, initial_experience);
@@ -67,13 +89,14 @@ pub(super) async fn exercise(
             );
             let source = quest::task(u8::try_from(task)?).ok_or("native task")?;
             assert_eq!(source.required, if task == 1 { 300 } else { 150 });
+            let hunt_xp = experience(h).await?;
             hunt_with_decay(
                 owner,
                 admitted,
                 source.creatures[0].key.as_str(),
                 u32::try_from(source.required)?,
                 command,
-                None,
+                Some(h),
                 HunterRefresh::OncePerHunt,
             )
             .await?;
@@ -81,6 +104,14 @@ pub(super) async fn exercise(
                 value(owner, authority, quest::KILL_COUNTER_BASE + task).await?,
                 source.required
             );
+            if task == 1 {
+                assert!(experience(h).await? > hunt_xp);
+                if repetition == 0 {
+                    let count: i64 = sqlx::query_scalar("SELECT kill_count FROM game_character_bestiary_progress WHERE character_id=encode($1,'hex')::uuid AND race_key=$2")
+                        .bind(id(41).as_slice()).bind(&source.creatures[0].key).fetch_one(&h.pool).await?;
+                    assert_eq!(count, source.required);
+                }
+            }
             journal_count(owner, admitted, journal, &source.name, source.required).await?;
             let before_xp = experience(h).await?;
             say(owner, admitted, npc, &mut command, &["hi", "tasks"]).await?;
@@ -167,7 +198,7 @@ pub(super) async fn exercise(
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
     let achievements: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 5",
+        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 6",
     )
     .fetch_all(&h.pool)
     .await?;
@@ -175,9 +206,10 @@ pub(super) async fn exercise(
         achievements,
         [
             "oteryn:achievement/blood_red_snapper",
+            "oteryn:achievement/hunting_permit",
             "oteryn:achievement/huntsman",
             "oteryn:achievement/one_less",
-            "oteryn:achievement/rootless_behaviour"
+            "oteryn:achievement/rootless_behaviour",
         ]
     );
     let before_campaign_xp = experience(h).await?;
@@ -393,29 +425,20 @@ async fn hunt_with_decay(
                 .visible_corpses()
                 .into_iter()
                 .find(|corpse| corpse.identity == target.corpse_identity())
-                .map(|corpse| corpse.item.item_instance_id);
+                .map(|corpse| {
+                    if creature == "oteryn:creature.crocodile" {
+                        assert_eq!(corpse.item.production_key, "oteryn:item.tibia.i6046");
+                    }
+                    corpse.item.item_instance_id
+                });
             runtime.remove_encounter_actor(target).map_err(debug)?;
             corpse
         };
         if let Some(h) = decay_fixture {
             let corpse = corpse.ok_or("hunted native corpse")?;
-            // COMBAT01 admits 64 live corpses per scope. This accelerated hunt
-            // must also drive their normal D135 retirement. Age only the fixture
-            // clock anchor, as corpse_decay.rs does; keep all writer guards live.
-            let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica")
-                .execute(&mut *tx)
-                .await?;
-            sqlx::query("UPDATE game_item_mint_receipts SET materialized_at=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-61000 WHERE item_instance_id=encode($1,'hex')::uuid")
-                .bind(corpse.as_slice()).execute(&mut *tx).await?;
-            tx.commit().await?;
-            owner.drain_corpse_deadlines().await;
-            let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
-                .bind(corpse.as_slice()).fetch_one(&h.pool).await?;
-            assert_eq!(
-                live, 0,
-                "the real decay owner must retire the hunted corpse"
-            );
+            // COMBAT01 admits 64 live corpses per scope. Drive the real stage
+            // and retirement owners between these accelerated fixture kills.
+            super::super::corpse_decay_fixtures::retire_hunted_corpse(owner, h, corpse).await?;
         }
     }
     Ok(())
@@ -503,7 +526,10 @@ async fn record_lethal(
     {
         let mut runtime = owner.runtime.lock().await;
         assert!(
-            runtime.cached_world_party(actor, admitted.game_session_id).map_err(debug)?.is_some(),
+            runtime
+                .cached_world_party(actor, admitted.game_session_id)
+                .map_err(debug)?
+                .is_some(),
             "the lethal turn must have the hunter's live party projection"
         );
         let lease = runtime
@@ -599,7 +625,12 @@ async fn defeat_boss(
             .ok_or("spawned native boss")?
             .actor
     };
+    let before_xp = experience(h).await?;
     lethal(owner, admitted, target, &boss.creature_key, *command, 1).await?;
+    if id == 1 {
+        assert!(experience(h).await? > before_xp);
+        assert!(owner.runtime.lock().await.visible_corpses().into_iter().any(|corpse| corpse.identity == target.corpse_identity() && corpse.item.production_key == "oteryn:item.tibia.i6046"));
+    }
     assert_eq!(value(owner, authority, boss.kill_storage).await?, 1);
     let visits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_grizzly_boss_entries WHERE character_id=encode($1,'hex')::uuid").bind(super::id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(visits > 0);

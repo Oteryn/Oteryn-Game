@@ -116,6 +116,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.bound_corpse(identity).map_or(identity, |corpse| corpse.item.item_instance_id)
         });
         let position = runtime.read_actor_position(actor).ok()?.position();
+        let loop_map_revision = self
+            .bundle_map()
+            .map(|map| crate::map::overlay::map_revision(map.overlay.base()));
         let floor = position.floor;
         let cell = [
             position.x.to_be_bytes().as_slice(),
@@ -125,12 +128,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .concat()
         .try_into()
         .ok()?;
-        if matches!(input, QuickLootInput::Managed { .. }) {
-            if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
-                return Some((CommandStatus::Rejected, Vec::new()));
-            }
-            drop(runtime);
+        if matches!(input, QuickLootInput::Managed { .. })
+            && !super::battle_instinct_status::actor_is_current(&runtime, admitted)
+        {
+            return Some((CommandStatus::Rejected, Vec::new()));
         }
+        drop(runtime);
         let premium = self
             .session_premium_gate(admitted.game_session_id)
             .await
@@ -150,6 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         CommandId::new(command.command_id).ok()?,
                     ),
                     cell,
+                    loop_map_revision,
                     premium,
                     input,
                     selected_corpse: corpse,

@@ -536,7 +536,7 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
     }
     // Includes Shard of Corruption from world-monster.xml:190614–190616 and the
     // Crystal 201189f8 Gorga, Clavius, Adlerauge, and Michael the Stalwart points.
-    assert_eq!(checked, 39);
+    assert_eq!(checked, 47);
     Ok(())
 }
 
@@ -686,6 +686,61 @@ fn ancient_tombs_pharaohs_are_realized_at_their_source_spawn_points() -> TestRes
                 .filter(|p| p.creature == key)
                 .collect::<Vec<_>>()
         );
+    }
+    Ok(())
+}
+
+#[test]
+fn crystal_public_quest_bosses_keep_their_fixed_spawn_clocks() -> TestResult {
+    use oteryn_world_bundle_compiler::source;
+
+    let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
+    let bosses = [
+        ("ashmunrah", 33179, 32888, 11, 90),
+        ("black_knight", 32874, 31946, 11, 80),
+        ("boogey", 32749, 31457, 3, 90),
+        ("dirtbeard", 32747, 31460, 5, 90),
+        ("doctor_perhaps", 32749, 31452, 6, 90),
+        ("evil_mastermind", 32752, 31458, 1, 90),
+        ("mephiles", 32760, 31458, 4, 90),
+        ("monstor", 32754, 31459, 2, 90),
+    ];
+    let regions = bosses
+        .iter()
+        .map(|&(_, x, y, _, _)| (x / 256, y / 256))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let project = source::project_regions(root, &regions)?;
+    let (resolver, palette) = source::registry(root, &project)?;
+    let input = Input {
+        regions: &project.regions,
+        palette: &palette,
+        identity: Identity::default(),
+        world: source::world_extent(root)?,
+        build_class: BuildClass::NonProduction,
+        draft_areas: Vec::new(),
+        families: &project.families,
+    };
+    let (table, _) = realize_spawns(&input, &resolver)?;
+    for (name, x, y, floor, seconds) in bosses {
+        let key = format!("oteryn:creature.{name}");
+        let policy = spawn::BossPolicy::Respawn {
+            min_s: seconds,
+            max_s: seconds,
+        };
+        let clocks = table
+            .sources
+            .iter()
+            .flat_map(|source| {
+                source
+                    .points
+                    .iter()
+                    .filter(|p| table.creatures[p.creature as usize].key == key)
+                    .map(|point| (point.x, point.y, source.floor, point.boss_policy))
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(clocks, [(x, y, -floor, Some(policy))], "{key}");
     }
     Ok(())
 }

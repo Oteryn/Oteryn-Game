@@ -167,11 +167,12 @@ CHECKS = (
         "--check",
     ],
     ["python3", "tools/content-schema/world-object-authoring/crystal_delta_ground.py", "--check"],
-    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/last_creep_arena.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/quest_key_door_bindings.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py", "--check"],
     ["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py", "--check"],
+    ["python3", "tools/content-schema/world-object-authoring/crystal_npc_ground.py", "--check"],
+    ["python3", "tools/world-bundle-compiler/convert_spawns.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/last_creep_native.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/native_scene_callbacks.py", "--check"],
     ["python3", "tools/content-schema/quest-authoring/qengine_access.py", "--check"],
@@ -210,6 +211,7 @@ CHECKS = (
         "--available",
         "--check",
     ],
+    ["python3", "tools/content-migration/ordinary_corpse_profiles.py", "--check"],
     ["python3", "tools/content-migration/prey_difficulty.py", "--check"],
     ["python3", "tools/content-migration/test_prey_difficulty.py"],
     [
@@ -1158,6 +1160,7 @@ def main() -> int:
     repin_rust_inventory()
     run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
+    run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
     native = "tools/content-schema/native-gameplay/"

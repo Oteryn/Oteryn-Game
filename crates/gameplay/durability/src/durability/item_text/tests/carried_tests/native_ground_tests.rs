@@ -373,3 +373,170 @@ fn native_revalidates_after_lock(owner: bool) -> TestResult {
         result
     })
 }
+
+struct CorpseLoopContent;
+
+impl crate::durability::item_transfer::ItemWeightLookup for CorpseLoopContent {
+    fn generation_digest(&self) -> [u8; 32] {
+        [1; 32]
+    }
+
+    fn weight_of(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> std::result::Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        use crate::durability::item_loop_move::ItemLoopContent;
+        self.loop_facts(definition)
+            .and_then(|facts| facts.weight)
+            .ok_or(crate::durability::item_transfer::ItemWeightRefused::Unknown)
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for CorpseLoopContent {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        [1; 32]
+    }
+
+    fn loop_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+        let capacity = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i2815" => Some(20),
+            "oteryn:item.tibia.i2983" | "oteryn:item.tibia.i4993" => None,
+            _ => return None,
+        };
+        Some(ItemDefinitionFacts {
+            definition: definition.clone(),
+            weight: Some(20),
+            stack: ItemStackClass::NonStackable,
+            container_capacity: capacity,
+            container_slot_equip_pattern: capacity.is_some(),
+        })
+    }
+}
+
+#[test]
+fn ordinary_plain_corpse_pickup_uses_current_scope_fence_postgres() -> TestResult {
+    check_scope_handoff(
+        "oteryn:item.tibia.i2983",
+        "ordinary_corpse_pickup_handoff",
+        true,
+    )
+}
+
+#[test]
+fn ground_only_butterfly_pickup_is_refused_after_scope_handoff_postgres() -> TestResult {
+    check_scope_handoff("oteryn:item.tibia.i4993", "butterfly_pickup_handoff", false)
+}
+
+fn check_scope_handoff(
+    item_key: &'static str,
+    database: &'static str,
+    portable: bool,
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRefusal, LoopMoveRequest};
+    use crate::durability::item_mint::{
+        CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintOutcome,
+        ItemMintRequest,
+    };
+    use crate::durability::spell_owner_commit::SpellLanePermit;
+    use crate::foundation::ScopeOwnershipGeneration;
+
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    let worker = std::thread::Builder::new().stack_size(64 << 20).spawn(
+        move || -> std::result::Result<(), String> {
+            runtime().map_err(native::debug)?.block_on(async move {
+                let h = Harness::create(admin, database, true).await?;
+                let result = async {
+                    fixture(&h).await?;
+                    let mut fence = native::item_fence()?;
+                    let ground = placement();
+                    let (world, channel) = scope_of(&fence)?;
+                    let definition = TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: item_key.into(),
+                        revision_ref: "definition-r1".into(),
+                    };
+                    let seal = h.recovery.seal_current().map_err(native::debug)?;
+                    let authority = h.root.open_character_authority(&seal).await.map_err(native::debug)?;
+                    let actor = 31337_u32;
+                    let mut corpse_ref = world.as_bytes().to_vec();
+                    corpse_ref.extend_from_slice(channel.as_bytes());
+                    corpse_ref.extend_from_slice(&1_u64.to_be_bytes());
+                    corpse_ref.extend_from_slice(&actor.to_be_bytes());
+                    corpse_ref.extend_from_slice(&1_u64.to_be_bytes());
+                    let mut candidate = h.root.freeze_item_mint(&authority, &h.node, ItemMintRequest {
+                        cause: ItemMintCause::for_test_scope(fence.runtime_scope, fence.scope_ownership_generation,
+                            actor, 1, definition.clone(), CORPSE_MATERIALIZATION_PURPOSE_KEY.into(), 0),
+                        item: definition,
+                        quantity: 1,
+                        ground: GroundPlacement {
+                            spatial_position: ground.spatial_position.clone(),
+                            corpse_ref,
+                            map_revision: ground.map_revision,
+                            content_revision: ground.content_revision.clone(),
+                            native_room_placement_context: ground.placement_context,
+                        },
+                        content_revision: ground.content_revision,
+                        ruleset_revision: "ruleset-1".into(),
+                        sim_revision: "sim-1".into(),
+                    }).await.map_err(native::debug)?;
+                    let permit = candidate.fresh_death_lane_permit().await;
+                    let ItemMintOutcome::Committed(body) = h.root.commit_corpse_mint(
+                        &permit, &authority, &h.node, &mut candidate, native::id(native::CHARACTER),
+                    ).await.map_err(native::debug)? else {
+                        return Err("expected a committed native corpse".into());
+                    };
+                    drop(permit);
+
+                    // Install coherent generation-2 authority while retaining generation-1
+                    // Ground and MINT provenance, as the native-map fixture above does.
+                    let mut tx = h.pool.begin().await?;
+                    for statement in [
+                        "SET LOCAL session_replication_role=replica",
+                        // The TEXT fixture also exercises an over-depth inventory.
+                        // Use its backpack without that unrelated refusal state.
+                        "DELETE FROM game_item_nested_entries",
+                        "UPDATE game_runtime_scope_assignments SET ownership_generation=2",
+                        "UPDATE game_runtime_scope_assignment_receipts r SET ownership_generation=a.ownership_generation FROM game_runtime_scope_assignments a WHERE r.operation_key=a.operation_key",
+                        "UPDATE game_durability_admission_runtime_guards SET ownership_generation=2",
+                        "UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=2",
+                    ] {
+                        sqlx::query(statement).execute(&mut *tx).await?;
+                    }
+                    tx.commit().await?;
+                    assert!(sqlx::query_scalar::<_, bool>("SELECT game_runtime_scope_assignment_history_valid()")
+                        .fetch_one(&h.pool).await?);
+                    fence.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?;
+                    let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?;
+                    let command = carried_request(111, 800, "")?.command;
+                    let outcome = h.root.commit_item_loop_move(
+                        &permit, &authority, &h.node, &fence, command, &CorpseLoopContent,
+                        LoopMoveRequest {
+                            item: body.item_instance_id,
+                            count: None,
+                            pickup_cell: Some(ground.spatial_position),
+                            destination: LoopDestination::MainBackpack,
+                        },
+                    ).await.map_err(native::debug)?;
+                    if portable {
+                        assert!(outcome.is_ok(), "generation 2 pickup returned {outcome:?}");
+                    } else {
+                        assert!(matches!(outcome, Err(LoopMoveRefusal::Rejected)), "{outcome:?}");
+                    }
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }.await;
+                h.cleanup().await?;
+                result
+            }).map_err(native::debug)
+        },
+    )?;
+    worker
+        .join()
+        .map_err(|_| "corpse pickup worker panicked")?
+        .map_err(Into::into)
+}

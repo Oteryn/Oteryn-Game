@@ -48,21 +48,37 @@ mod tests {
     fn workshop_query_lists_all_compatible_modifiers_without_revealed_gems()
     -> Result<(), &'static str> {
         let expected_basic: Vec<u16> = (0..=31).chain(33..=41).chain(44..=48).collect();
-        for (vocation, exclusive_supreme, foreign_supreme) in [
-            ("knight", 23, 41),
-            ("paladin", 41, 58),
-            ("sorcerer", 58, 75),
-            ("druid", 75, 93),
-            ("monk", 93, 23),
+        for (vocation, exclusive_supreme, foreign_supreme, added_supreme) in [
+            ("knight", 23, 41, 96..=97),
+            ("paladin", 41, 58, 98..=101),
+            ("sorcerer", 58, 75, 102..=105),
+            ("druid", 75, 93, 106..=109),
+            ("monk", 93, 23, 110..=113),
         ] {
             let state = AtelierState {
                 vocation: vocation.into(),
                 ..AtelierState::default()
             };
             let rows = grades_for_query(&state).ok_or("compatible Workshop catalogue")?;
-            assert_eq!(rows.len(), 69, "{vocation}");
+            let supreme_count = 23 + added_supreme.clone().count();
+            assert_eq!(
+                rows.len(),
+                expected_basic.len() + supreme_count,
+                "{vocation}"
+            );
             assert!(rows.len() <= MAX_GRADE_ENTRIES);
-            assert_eq!(rows.iter().filter(|row| row.kind == 1).count(), 23);
+            assert_eq!(
+                rows.iter().filter(|row| row.kind == 1).count(),
+                supreme_count
+            );
+            assert_eq!(
+                rows.iter()
+                    .filter(|row| row.kind == 1 && row.mod_id >= 96)
+                    .map(|row| row.mod_id)
+                    .collect::<Vec<_>>(),
+                added_supreme.collect::<Vec<_>>(),
+                "{vocation}"
+            );
             assert_eq!(
                 rows.iter()
                     .filter(|row| row.kind == 0)
@@ -99,7 +115,7 @@ mod tests {
         state.grades.insert((FragmentKind::Basic, 0), 2);
         state.grades.insert((FragmentKind::Supreme, 58), 3);
         let rows = grades_for_query(&state).ok_or("promoted Workshop catalogue")?;
-        assert_eq!(rows.len(), 69);
+        assert_eq!(rows.len(), 73);
         for row in &rows {
             assert_eq!(
                 row.grade,

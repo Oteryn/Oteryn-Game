@@ -4409,7 +4409,8 @@
           "minimum": 5,
           "maximum": 5
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "key": "oteryn:quest-reward/l4-pirate-eye-patches",
@@ -9373,7 +9374,9 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/l9-crystal-warlord-first",
@@ -9403,7 +9406,9 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/l9-gnomish-supply",
@@ -9433,7 +9438,9 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/l9-soil-guardian-base",
@@ -9463,7 +9470,9 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/l9-soil-guardian-first",
@@ -9493,7 +9502,9 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gnomally.lua:75-169:sha256:e598782edbd947acf0de2a13e42b4791536b5b8923d5132841891a77604133b1"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/m36-rock-steady-confirm",

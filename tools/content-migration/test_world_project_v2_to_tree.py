@@ -48,7 +48,7 @@ def test_relation_rows_route_by_owner():
         "main-only relation row routed to Use"
     )
     # A PR Use row whose sealed Use owner is lost falls out of the closed55 and fails closed.
-    dropped = sorted(set(routed))[0]
+    dropped = min(set(routed))
     real_targets = migration.use_relation_targets
     migration.use_relation_targets = lambda: real_targets() - {dropped}
     try:
@@ -60,8 +60,10 @@ def test_relation_rows_route_by_owner():
             assert str(error) == "RELATION_COVERAGE", error
         else:
             raise AssertionError("PR Use row without its sealed owner accepted")
-        with patch("register_spell_families.outputs", side_effect=AssertionError(
-                "invalid ownership reached full content replay")):
+        with patch(
+            "register_spell_families.outputs",
+            side_effect=AssertionError("invalid ownership reached full content replay"),
+        ):
             try:
                 migration.main()
             except migration.ValidationError as error:
@@ -367,9 +369,13 @@ def test_package_tree_contract():
             "Quest" in project["migrated_families"]
             and "Quest" not in project["next_population_families"]
         )
-        assert set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]})
+        assert set(quest_paths).issubset(
+            {row["path"] for row in manifest["managed_files"]}
+        )
 
-    reference = json.loads((ROOT / "content/world/definitions/reference.json").read_text())
+    reference = json.loads(
+        (ROOT / "content/world/definitions/reference.json").read_text()
+    )
     from validate_world_project_v2_to_tree import source_qualified_item_references
 
     expected_items = source_qualified_item_references(reference, ROOT)
@@ -386,6 +392,10 @@ def test_package_tree_contract():
             42851,
             42853,
             43625,
+            35136,
+            35686,
+            48109,
+            49120,
             40016,
             40598,
             40601,
@@ -399,6 +409,9 @@ def test_package_tree_contract():
             39937,
             39938,
             39939,
+            48340,
+            48401,
+            48396,
         )
     ], "only the exact source-qualified reference extensions are admitted"
     # Replaying an extension with a changed semantic fact must refuse, not normalize it.
@@ -428,7 +441,8 @@ def test_package_tree_contract():
             source_qualified_item_references(tampered, ROOT)
         except ValueError as error:
             assert (
-                str(error) == f"QREADY1_CRADLE_REFERENCE_CHANGED:oteryn:item.tibia.i{item}"
+                str(error)
+                == f"QREADY1_CRADLE_REFERENCE_CHANGED:oteryn:item.tibia.i{item}"
             ), error
         else:
             raise AssertionError("changed Cradle reference accepted")
@@ -445,6 +459,19 @@ def test_package_tree_contract():
         assert str(error) == "CRYSTAL_ORDINARY_DOOR_REFERENCE_CHANGED:oteryn:item.tibia.i39934"
     else:
         raise AssertionError("changed Crystal door reference accepted")
+    tampered = copy.deepcopy(reference)
+    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
+    next(
+        row
+        for row in tampered["records"]
+        if row["identity"]["key"] == "oteryn:item.tibia.i35136"
+    )["materializable"] = True
+    try:
+        source_qualified_item_references(tampered, ROOT)
+    except ValueError as error:
+        assert str(error) == "Invalid corpse reference 35136", error
+    else:
+        raise AssertionError("changed source-qualified corpse reference accepted")
     # Match the materializer's source-proven, exact Primal empty-loot admission.
     # Its witness rejects changed identities and every nonempty or unrelated Loot.
     from primal_reference_overlay import apply_reference
@@ -468,7 +495,9 @@ def test_package_tree_contract():
     # The alternate tainted-antler key was a duplicate of the same whole-stack transform.
     conversion_keys = {
         row["identity"]["key"]
-        for row in json.loads((ROOT / "content/craft/recipes.json").read_bytes())["records"]
+        for row in json.loads((ROOT / "content/craft/recipes.json").read_bytes())[
+            "records"
+        ]
     }
     assert "oteryn:item-conversion.tainted-souls-antler-talisman" in conversion_keys
     assert "oteryn:item-conversion.tainted-antler-talisman" not in conversion_keys
@@ -480,9 +509,9 @@ def test_package_tree_contract():
         "Encounter.Raid": json.loads(
             (ROOT / "content/encounters/raids/index.json").read_text()
         )["record_count"],
-        "NPC": 1282,
-        "Dialogue": 852,
-        "Service.Trade": 325,
+        "NPC": 1292,
+        "Dialogue": 855,
+        "Service.Trade": 326,
         "Service.Travel": 57,
         "Service.Bank": 2,
         "Service.Promotion": 7,
@@ -501,7 +530,9 @@ def test_package_tree_contract():
     paths = [row["path"] for row in manifest["managed_files"]]
     assert len(paths) == len(set(paths))
     shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
-    for directory in {(ROOT / path).parent for path in paths if shard_name.search(path)}:
+    for directory in {
+        (ROOT / path).parent for path in paths if shard_name.search(path)
+    }:
         stale = sorted(
             file.relative_to(ROOT).as_posix()
             for file in directory.glob("*.json")
@@ -509,7 +540,9 @@ def test_package_tree_contract():
             and file.relative_to(ROOT).as_posix() not in paths
         )
         assert not stale, stale
-    assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 69
+    assert (
+        sum(path.startswith("content/items/definitions/items-") for path in paths) == 69
+    )
     assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
     assert any(
         path.startswith("content/creatures/definitions/creatures-") for path in paths
@@ -528,15 +561,15 @@ def test_package_tree_contract():
     assert all(not path.startswith("content/world/") for path in paths)
 
     assert manifest["families"]["NPC"] == {
-        "records": 1282,
+        "records": 1292,
         "index": "content/npcs/definitions/index.json",
     }
     assert manifest["families"]["Dialogue"] == {
-        "records": 852,
+        "records": 855,
         "index": "content/dialogues/definitions/index.json",
     }
     assert manifest["families"]["Service.Trade"] == {
-        "records": 325,
+        "records": 326,
         "index": "content/services/trade/index.json",
     }
     assert manifest["families"]["Service.Travel"] == {
@@ -577,7 +610,8 @@ def test_package_tree_contract():
         and "Proficiency" not in project["next_population_families"]
     )
     assert (
-        sum(path.startswith("content/proficiencies/proficiencies-") for path in paths) == 3
+        sum(path.startswith("content/proficiencies/proficiencies-") for path in paths)
+        == 3
     )
     assert (
         "content/proficiencies/index.json" in paths
@@ -647,8 +681,10 @@ INTERNAL_CHECKS = {
 
 
 def check_inventory(*, workflow_checks=False):
-    checks = [Check(name, (sys.executable, str(Path(__file__).resolve()), "--case", name))
-              for name in INTERNAL_CHECKS]
+    checks = [
+        Check(name, (sys.executable, str(Path(__file__).resolve()), "--case", name))
+        for name in INTERNAL_CHECKS
+    ]
 
     def schedule_check(command, *, cwd=None, check=True):
         if not check:
@@ -656,8 +692,9 @@ def check_inventory(*, workflow_checks=False):
         if command[1:4] == ["-m", "unittest", "-v"]:
             # The previous single unittest invocation named these exact modules/classes.
             # Keep each complete module, with its own interpreter and fixture lifetime.
-            checks.extend(Check(name, tuple(command[:4] + [name]), cwd)
-                          for name in command[4:])
+            checks.extend(
+                Check(name, tuple(command[:4] + [name]), cwd) for name in command[4:]
+            )
         else:
             checks.append(Check(Path(command[1]).name, tuple(command), cwd))
 
@@ -674,7 +711,9 @@ def check_inventory(*, workflow_checks=False):
     schedule_check(
         [
             sys.executable,
-            str(ROOT / "tools/content-migration/test_quest_registration_preservation.py"),
+            str(
+                ROOT / "tools/content-migration/test_quest_registration_preservation.py"
+            ),
         ],
         check=True,
     )
@@ -690,6 +729,7 @@ def check_inventory(*, workflow_checks=False):
             "test_authored_npc_item_profiles",
             "test_quest_corpse_profiles",
             "test_boss_reward_yield_profiles",
+            "test_ordinary_loot_weights",
             "test_equipment_source_overlaps",
             "test_equipment_known_speed_pin",
             "test_refresh_equipment_profile_pin",
@@ -771,7 +811,10 @@ def check_inventory(*, workflow_checks=False):
     schedule_check(
         [
             sys.executable,
-            str(ROOT / "tools/content-schema/native-gameplay/test_world_change_item_profiles.py"),
+            str(
+                ROOT
+                / "tools/content-schema/native-gameplay/test_world_change_item_profiles.py"
+            ),
         ],
         check=True,
     )
@@ -794,7 +837,9 @@ def check_inventory(*, workflow_checks=False):
     # StarterKit likewise.
     starter_kit_tool = ROOT / "tools" / "content-schema" / "starter-kit-authoring"
     schedule_check(
-        [sys.executable, "test_starter_kit_authoring.py"], cwd=starter_kit_tool, check=True
+        [sys.executable, "test_starter_kit_authoring.py"],
+        cwd=starter_kit_tool,
+        check=True,
     )
 
     schedule_check(
@@ -832,26 +877,40 @@ def check_inventory(*, workflow_checks=False):
             "tools/content-migration/test_item_external_family_refinement.py",
             "tools/content-migration/test_item_bounded7_navigation.py",
         ):
-            checks.append(Check(Path(relative).name, (sys.executable, str(ROOT / relative))))
+            checks.append(
+                Check(Path(relative).name, (sys.executable, str(ROOT / relative)))
+            )
     return checks
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run every content migration equivalence check.")
+    parser = argparse.ArgumentParser(
+        description="Run every content migration equivalence check."
+    )
     parser.add_argument("--jobs", type=int, choices=range(1, 5), default=2)
     parser.add_argument("--case", choices=INTERNAL_CHECKS, help=argparse.SUPPRESS)
     parser.add_argument("--list-checks", action="store_true")
-    parser.add_argument("--workflow-checks", action="store_true",
-                        help="include the independent outer migration workflow checks in this pool")
+    parser.add_argument(
+        "--workflow-checks",
+        action="store_true",
+        help="include the independent outer migration workflow checks in this pool",
+    )
     args = parser.parse_args()
     if not __debug__:
         parser.error("migration assertions require Python without -O")
     if args.case:
         INTERNAL_CHECKS[args.case]()
     elif args.list_checks:
-        print("\n".join(check.name for check in check_inventory(workflow_checks=args.workflow_checks)))
+        print(
+            "\n".join(
+                check.name
+                for check in check_inventory(workflow_checks=args.workflow_checks)
+            )
+        )
     else:
-        run_checks(check_inventory(workflow_checks=args.workflow_checks), jobs=args.jobs)
+        run_checks(
+            check_inventory(workflow_checks=args.workflow_checks), jobs=args.jobs
+        )
 
 
 if __name__ == "__main__":

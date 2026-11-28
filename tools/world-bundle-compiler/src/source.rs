@@ -72,6 +72,32 @@ pub fn indexed(root: &Path, directory: &str) -> Result<Option<Indexed>, Error> {
     Ok(Some((index, shards)))
 }
 
+/// The authored trade declarations in canonical shard order.
+pub fn trade_records(root: &Path) -> Result<Vec<Value>, Error> {
+    const TRADE_DIRECTORY: &str = "content/services/trade/";
+    let (index, shards) = indexed(root, TRADE_DIRECTORY)?
+        .ok_or_else(|| Error::Format("missing trade family index".into()))?;
+    if index["family"] != "Service.Trade" || shards.is_empty() {
+        return Err(Error::Format("invalid trade family index".into()));
+    }
+    let mut records = Vec::new();
+    for shard in shards {
+        let mut document = json(&shard, TRADE_DIRECTORY)?;
+        if document["family"] != "Service.Trade" {
+            return Err(Error::Format("invalid trade shard family".into()));
+        }
+        records.append(
+            document["records"]
+                .as_array_mut()
+                .ok_or_else(|| Error::Format("trade shard has no records".into()))?,
+        );
+    }
+    if index["record_count"].as_u64() != u64::try_from(records.len()).ok() {
+        return Err(Error::Format("trade family record count mismatch".into()));
+    }
+    Ok(records)
+}
+
 /// The NPC, Dialogue and Service records, the travel routes, the `Npc.Placement` family with
 /// its held list (NPC-PLACE-1 §4) and the catalogue digest (§3.1).
 fn add_npc_families(root: &Path, families: &mut Families) -> Result<(), Error> {

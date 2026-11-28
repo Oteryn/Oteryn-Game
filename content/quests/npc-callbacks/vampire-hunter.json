@@ -67,7 +67,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:143-151:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/vampire-hunter-rank-2",
@@ -111,7 +113,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:152-160:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/vampire-hunter-rank-3",
@@ -155,7 +159,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:161-169:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/vampire-hunter-rank-4",
@@ -199,7 +205,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:170-178:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/vampire-hunter-rank-5",
@@ -243,7 +251,9 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:179-187:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
-      ]
+      ],
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     },
     {
       "key": "oteryn:quest-reward/vampire-hunter-rank-6",
@@ -288,7 +298,7 @@
       },
       "experience": 100000,
       "outfit": null,
-      "achievement": null,
+      "achievement": "oteryn:achievement/razing",
       "reply": [
         "Ye' brought the fifty tokens needed to advance to the last vampire hunter rank. Now that's something. You're razing-amazing! Let me share some of my experience and a little something with ye'!"
       ],
@@ -298,7 +308,9 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/storkus.lua:188-198:sha256:8f1b7eb209871b9a61e561714cf678e92640352cb96c49ac4540d555cbcf03cd"
       ],
-      "completes": true
+      "completes": true,
+      "msg_contains": true,
+      "clear_topic_on_refusal": true
     }
   ]
 }

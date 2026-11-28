@@ -256,6 +256,14 @@ pub(super) async fn seed_saved_progress(
         119,
     )
     .await?;
+    seed_unfinished_state(h, quest, hash).await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    Ok(())
+}
+
+pub(super) async fn seed_unfinished_state(h: &super::fixture::Harness, quest: &str, hash: &str) -> TestResult {
     let mut tx = h.pool.begin().await?;
     // Install the legacy row that would already exist before admission.
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -271,8 +279,5 @@ pub(super) async fn seed_saved_progress(
     .await?;
     assert_eq!(installed.rows_affected(), 1);
     tx.commit().await?;
-    owner
-        .refresh_quest_session(admitted.game_session_id, false)
-        .await;
     Ok(())
 }

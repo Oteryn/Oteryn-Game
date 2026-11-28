@@ -37,6 +37,8 @@ def source_qualified_item_references(reference, root):
     conditional(records, root)
     movement(records, root)
     terminal(records, root)
+    from fourth_quarter_corpses import extend_item_references as extend_fourth_quarter_references
+    extend_fourth_quarter_references(root, records)
     from qready1_cradle_item_profiles import extend_records as cradle
 
     cradle(records, root)
@@ -52,6 +54,12 @@ def source_qualified_item_references(reference, root):
     from crystal_ordinary_items import extend_references as doors
 
     doors(records, root)
+    from ordinary_corpse_profiles import extend_definitions as crystal_corpse_references
+    crystal_corpse_references(root, records)
+    from ordinary_corpse_slice2 import extend_references as ordinary_corpses
+    ordinary_corpses(records, root)
+    from ordinary_corpse_cohort import extend_item_references as extend_third_quarter_references
+    extend_third_quarter_references(records, root)
     return records
 
 
@@ -69,17 +77,17 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 1282
+NPC_COUNT = 1292
 NPC_BINDING_COUNT = 2747
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
 ENCOUNTER_COUNT = 108
 DOCUMENT_COUNT = 1609
-DIALOGUE_COUNT = 852
+DIALOGUE_COUNT = 855
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
 CHARM_COUNT = 25
 # Proficiency likewise (tools/content-schema/proficiency-authoring).
 PROFICIENCY_COUNT = 443
-PROFICIENCY_BINDING_COUNT = 665  # ITEM-ADD-1 plus the admitted appearance-only Snowball
+PROFICIENCY_BINDING_COUNT = 666  # Includes the admitted Snowball and Ink Sword bindings
 # RewardClaim likewise (tools/content-schema/reward-claim-authoring).
 REWARD_CLAIM_COUNT = len(
     json.loads(
@@ -96,7 +104,7 @@ REWARD_CLAIM_COUNT += len(engclaim_native.CASES) + len(nrwicked_native.records()
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
 SERVICE_FAMILY_COUNTS = {
-    "Service.Trade": 325,
+    "Service.Trade": 326,
     "Service.Travel": 57,
     "Service.Bank": 2,
     "Service.Promotion": 7,

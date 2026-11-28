@@ -395,6 +395,8 @@ impl QuestLogContent {
         let mut missions = Vec::new();
         for (position, mission) in quest.missions.iter().enumerate() {
             let value = catalogue.value(facts, &mission.track)?;
+            let value =
+                super::grizzly_adams::regional_tasks::journal_value(&mission.track, value, facts);
             if !(mission.start_value..=mission.end_value).contains(&value) {
                 continue;
             }

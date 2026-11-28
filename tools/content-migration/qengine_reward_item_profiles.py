@@ -125,6 +125,9 @@ IDS |= {9106}
 IDS |= {24966}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
+# Crystal 201189f Spike, Bigfoot and Dangerous Depths daily tools and packages.
+# The retained client/Canary physical rows agree with the donor item weights.
+IDS |= {15703, 15801, 15802, 19204, 19207, 19214, 19216, 19218, 27307, 27308}
 IDS |= qmech_m39.ITEMS
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
@@ -278,7 +281,6 @@ STATIC_IDS = MERCHANT_SCENERY | {
     7181,  # Arito's opened cave entrance.
     8995,
     7845,  # Crystal Brotherhood lever 3047 creates immovable lava.
-    8995,
     8996,
     9527,
     17677,
@@ -376,11 +378,110 @@ RAID_LOOT_IDS = {
     19371,
     19391,
 }
-IDS |= COOKBOOK_IDS | JORGE_REPLICA_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | RAID_LOOT_IDS
+IDS |= (
+    COOKBOOK_IDS
+    | JORGE_REPLICA_IDS
+    | RAID_CORPSE_IDS
+    | WILLI_WASP_DECAY
+    | RAID_LOOT_IDS
+)
+# Wrath Mission 5 provisions use the matching Crystal and Canary physical facts.
+IDS |= {10218, 10247}
 
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
 IDS |= SIDE_IDS
+# Ruprecht's items, existing exchange currencies, and already admitted charged
+# variants retain their native owners. These are the missing portable identities.
+TOKEN_EXCHANGE_ITEMS = {
+    8191,
+    8192,
+    16094,
+    16099,
+    16101,
+    16104,
+    16105,
+    16106,
+    16107,
+    16109,
+    16110,
+    16111,
+    16112,
+    16116,
+    16153,
+    16154,
+    19150,
+    19152,
+    19153,
+    19154,
+    19155,
+    19156,
+    22026,
+    22027,
+    22028,
+    23676,
+    23677,
+    23678,
+    23679,
+    23680,
+    23681,
+    23682,
+    23683,
+    25979,
+    25980,
+    25981,
+    25982,
+    28894,
+    28895,
+    28896,
+    28897,
+    29428,
+    29429,
+    30342,
+    30344,
+    30401,
+    30403,
+    31265,
+    31266,
+    31267,
+    31268,
+    31557,
+    31621,
+    32621,
+    32636,
+    34210,
+    37058,
+    37059,
+    37060,
+    39179,
+    39182,
+    39185,
+    39187,
+    39188,
+    39233,
+    39235,
+    43510,
+    43511,
+    43517,
+}
+# Charged jewelry minted by Cledwyn and its worn views from pinned items.xml.
+CLEDWYN_WORN = {
+    30345: 30344,
+    30343: 30342,
+    31616: 31557,
+    30402: 30403,
+    32635: 32621,
+    50148: 50147,
+    50155: 50154,
+    39178: 39177,
+    39181: 39180,
+    39184: 39183,
+    39234: 39233,
+}
+TOKEN_EXCHANGE_ITEMS.update({50149, 50156})
+TOKEN_EXCHANGE_ITEMS.update(CLEDWYN_WORN)
+TOKEN_EXCHANGE_ITEMS.update(CLEDWYN_WORN.values())
+IDS |= TOKEN_EXCHANGE_ITEMS
 PROOF = "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
 PROFILE = "content/items/definitions/spell-native-profiles.json"
 XML = "imports/canary/items-xml/items.xml"
@@ -391,12 +492,34 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 
 # (Accepted canonical weight, retained source weight).
 CANONICAL_WEIGHTS = {
+    50147: (80, 85),
+    50148: (80, 85),
+    50149: (80, 85),
+    10218: (510, 509),
+    10247: (8000, 7500),
+    32636: (90, 80),
+    39187: (70, 0),
     19361: (150, 850),
     19371: (1700, 170),
     23677: (2700, 200),
+    # Crystal ordinary loot uses this same physical-profile admission path.
+    23729: (10, 0),
+    36706: (100, 30),
     32228: (20, 250),
     34210: (6660, 6659),
 }
+
+
+def qualify_ethereal_decay(semantics):
+    # Crystal 201189f8 data/items/items.xml, id 50148. The timed owner checks
+    # that the DECAY transform agrees with the discharged item's temporal target.
+    targets = semantics["use_transform"]["value"]["targets"]
+    (decay,) = [
+        entry["target"]["value"] for entry in targets if entry["kind"] == "DECAY"
+    ]
+    if decay["key"] not in {"oteryn:item.tibia.i39182", "oteryn:item.tibia.i50149"}:
+        raise ValueError("CLEDWYN_ETHEREAL_DECAY_SOURCE_DRIFT")
+    decay["key"] = "oteryn:item.tibia.i50149"
 
 
 def reconcile_canonical_physical(item_id, definition, record):
@@ -433,7 +556,9 @@ def _source_known_speed(item_id, speed, prior=None):
         return None
     if type(speed) is not int or speed != 0:
         raise ValueError("QENGINE_REWARD_ITEM_KNOWN_SPEED_SOURCE")
-    previous = prior.get("attributes", {}).get("speed_bonus") if prior is not None else None
+    previous = (
+        prior.get("attributes", {}).get("speed_bonus") if prior is not None else None
+    )
     if previous is not None and (type(previous) is not int or previous != speed):
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes.speed_bonus")
     return speed
@@ -458,7 +583,8 @@ def _known_speed_identity(record):
     key = f"oteryn:item.tibia.i{item_id}"
     target = {"family": "Item", "key": key, "revision": "definition-r1"}
     if (
-        definition != {"family": "Item", "production_key": key, "revision_ref": "definition-r1"}
+        definition
+        != {"family": "Item", "production_key": key, "revision_ref": "definition-r1"}
         or binding.get("disposition") != "EXACT"
         or binding.get("external_id") != str(item_id)
         or binding.get("identity_namespace") != "ots/item_server_id"
@@ -478,7 +604,9 @@ def _admitted_known_speed(record, prior):
         for field in ("production_definition", "production_binding"):
             if prior.get(field) != record[field]:
                 raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + field)
-    return _source_known_speed(item_id, record.get("attributes", {}).get("speed_bonus"), prior)
+    return _source_known_speed(
+        item_id, record.get("attributes", {}).get("speed_bonus"), prior
+    )
 
 
 def capture(root=ROOT, ids=None, *, item_ids=None):
@@ -497,7 +625,9 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         raise ValueError("QENGINE_REWARD_ITEM_SOURCE_PIN")
     xml = source.xml_index(xml_raw)
     objects = source.engine_items.load_appearance_objects(client_raw)
-    physical = {r["server_item_id"]: r for r in source.policies(client_raw, xml_raw, selected)}
+    physical = {
+        r["server_item_id"]: r for r in source.policies(client_raw, xml_raw, selected)
+    }
     bindings = source.binding_index(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
@@ -521,29 +651,41 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         | RAID_CORPSE_IDS
         | WILLI_WASP_DECAY
         | MERCHANT_SCENERY
+        | TOKEN_EXCHANGE_ITEMS
         | {4837, 6300}
     )
     for item_id in sorted(selected):
         node = xml[item_id]
         attributes = source.attrs(node)
         flower = lion_flower.admitted(item_id, attributes)
-        temporal_keys = {"charges", "duration", "decayto", "stopduration"} & attributes.keys()
+        temporal_keys = {
+            "charges",
+            "duration",
+            "decayto",
+            "stopduration",
+        } & attributes.keys()
         if item_id == 17678:
             if {key: attributes[key] for key in temporal_keys} != {
                 "duration": "240",
                 "decayto": "17677",
             }:
                 raise ValueError("QENGINE_REWARD_SMASHED_TRUNK_TIMER_DRIFT")
-        elif (
-            not flower
-            and item_id not in timed
-            and temporal_keys
-        ):
+        elif not flower and item_id not in timed and temporal_keys:
             raise ValueError("QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED")
         flags = objects[item_id]["flags"]
         if flags.get("flags.liquidcontainer") or flags.get("flags.liquidpool"):
             raise ValueError("QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED")
-        record = source.profile(item_id, node, objects[item_id], physical[item_id], bindings, None)
+        if item_id == 50148:
+            # Crystal 201189f8 items.xml and Cledwyn's Ethereal Ring exchange
+            # return the discharged Ethereal Ring, 50149, after three hours.
+            node = copy.deepcopy(node)
+            decay = next(row for row in node if row.get("key", "").lower() == "decayto")
+            if decay.get("value") != "39182":
+                raise ValueError("Canary Ethereal Ring expiry changed")
+            decay.set("value", "50149")
+        record = source.profile(
+            item_id, node, objects[item_id], physical[item_id], bindings, None
+        )
         known_speed = _source_known_speed(
             item_id,
             record["attributes"].get("speed_bonus"),
@@ -553,7 +695,9 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         reconcile_canonical_physical(item_id, definition, record)
         if item_id == 6300:
             # The canonical Death Ring has a 450-second equipped budget.
-            record["semantics"]["temporal"] = copy.deepcopy(definition["semantics"]["temporal"])
+            record["semantics"]["temporal"] = copy.deepcopy(
+                definition["semantics"]["temporal"]
+            )
         if item_id in COOKBOOK_IDS:
             # Crystal's explicit cookbook actions grant read-only text. The
             # native literal inscription owner measures up to 4000 characters.
@@ -567,15 +711,32 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                     "write_once_target": {"state": "UNKNOWN"},
                 }
             )
+        if item_id in CLEDWYN_WORN:
+            if int(attributes["transformdeequipto"]) != CLEDWYN_WORN[item_id]:
+                raise ValueError(f"TOKEN_EXCHANGE_DEEQUIP_DRIFT:{item_id}")
+            temporal = record["semantics"]["temporal"]["value"]
+            temporal["consumption_mode"] = source.K("AUTHORITATIVE_ACTIVE_TIME_BUDGET")
+            temporal["stop_duration"] = source.K(True)
+        if item_id == 39187:
+            # The donor mints the equipped variant, whose countdown is
+            # suspended when it transforms to 39186 on unequip.
+            temporal = record["semantics"]["temporal"]["value"]
+            if attributes.get("transformdeequipto") != "39186":
+                raise ValueError("TOKEN_EXCHANGE_ARBOREAL_TRANSFORM_DRIFT")
+            temporal["consumption_mode"] = source.K("AUTHORITATIVE_ACTIVE_TIME_BUDGET")
+            temporal["stop_duration"] = source.K(True)
         if flower:
             record = lion_flower.temporal(record, definition, accepted.known_conflict)
         # These exact Ground-only props and corpse stages have canonical
         # identity-only rows; their physical facts come from the pinned sources.
         ground_only = item_id in ground_only_ids
         identity_only = ground_only or item_id in WILLI_WASP_DECAY
-        semantics = definition.get("semantics") if identity_only else definition["semantics"]
+        semantics = (
+            definition.get("semantics") if identity_only else definition["semantics"]
+        )
         if identity_only and (
-            definition.get("kind") != "Item" or definition["identity"]["family"] != "Item"
+            definition.get("kind") != "Item"
+            or definition["identity"]["family"] != "Item"
         ):
             raise ValueError("QENGINE_REWARD_STATIC_IDENTITY")
         for group in ("physical", "stack", "container", "temporal"):
@@ -583,7 +744,10 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                 semantics[group], record["semantics"][group]
             ):
                 raise ValueError(
-                    "QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:" + group + ":" + str(item_id)
+                    "QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:"
+                    + group
+                    + ":"
+                    + str(item_id)
                 )
         if definition["stack_class"] not in (
             "Unknown",
@@ -595,15 +759,24 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         )
         if record["admission"]["legal_destinations"] != expected_destinations:
             raise ValueError("QENGINE_REWARD_ITEM_DESTINATION_DRIFT")
-        if item_id in STATIC_IDS and record["admission"]["stack_class"] != "NonStackable":
+        if (
+            item_id in STATIC_IDS
+            and record["admission"]["stack_class"] != "NonStackable"
+        ):
             raise ValueError("QENGINE_REWARD_STATIC_STACK_DRIFT")
         if semantics is not None:
-            record["semantics"] = accepted.accepted_first(semantics, record["semantics"])
+            record["semantics"] = accepted.accepted_first(
+                semantics, record["semantics"]
+            )
         prior = admitted.get(f"oteryn:item.tibia.i{item_id}")
-        if prior is not None:
+        # Cledwyn's worn definitions are owned by this capture. Replay their source
+        # facts independently of any previously emitted native profile.
+        if prior is not None and item_id not in CLEDWYN_WORN:
             refined = accepted.accepted_first(prior["semantics"], record["semantics"])
             record["semantics"] = (
-                accepted.accepted_first(semantics, refined) if semantics is not None else refined
+                accepted.accepted_first(semantics, refined)
+                if semantics is not None
+                else refined
             )
             record["attributes"] = accepted.accepted_first(
                 prior["attributes"], record["attributes"]
@@ -616,6 +789,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             record = questpc7_physical_custody_join.observation(
                 prior, record, accepted.accepted_first
             )
+        if item_id == 50148:
+            qualify_ethereal_decay(record["semantics"])
         if known_speed is not None:
             record["attributes"]["speed_bonus"] = known_speed
         records.append(record)
@@ -637,10 +812,14 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         ],
         "scope": "Source-qualified portable quest custody, fixed Ground-only props and exact source corpse timers; no custom use or script activation.",
         "records": [
-            r for r in records if int(r["production_binding"]["external_id"]) in selected_ids
+            r
+            for r in records
+            if int(r["production_binding"]["external_id"]) in selected_ids
         ],
         "custody_promotions": [
-            r for r in records if int(r["production_binding"]["external_id"]) in CUSTODY_PROMOTIONS
+            r
+            for r in records
+            if int(r["production_binding"]["external_id"]) in CUSTODY_PROMOTIONS
         ],
     }
 
@@ -671,9 +850,9 @@ def reconcile(existing, observed):
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + field)
     merged = dict(existing)
     semantics = accepted.accepted_first(existing["semantics"], observed["semantics"])
-    if accepted.known_conflict(existing["semantics"], semantics) or accepted.known_conflict(
-        observed["semantics"], semantics
-    ):
+    if accepted.known_conflict(
+        existing["semantics"], semantics
+    ) or accepted.known_conflict(observed["semantics"], semantics):
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:semantics")
     merged["semantics"] = {
         field: value
@@ -694,16 +873,27 @@ def reconcile(existing, observed):
     optional = {"production_binding_qualification"}
     if existing.keys() - optional != observed.keys() - optional:
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:shape")
-    identity_fields = (existing.keys() | observed.keys()) - {"authoring", "attributes", "semantics"}
+    identity_fields = (existing.keys() | observed.keys()) - {
+        "authoring",
+        "attributes",
+        "semantics",
+    }
     for key in identity_fields:
         if existing.get(key) != observed.get(key):
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + key)
+    from native_profile_composition import compact_item_profile
+
+    # Requalifying a compact provider must preserve its existing encoding.
+    if compact_item_profile(merged) == compact_item_profile(existing):
+        return dict(existing)
     return merged
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     packet = capture(root)
-    generated[PROOF] = (json.dumps(packet, ensure_ascii=False, indent=2) + "\n").encode()
+    generated[PROOF] = (
+        json.dumps(packet, ensure_ascii=False, indent=2) + "\n"
+    ).encode()
     admit_records(
         root,
         generated,
@@ -715,18 +905,25 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     )
 
 
-def admit_records(root, generated, profile_path, manifest_path, order, canonical, records):
+def admit_records(
+    root, generated, profile_path, manifest_path, order, canonical, records
+):
     """Merge qualified physical profiles while preserving existing native owners."""
     document = json.loads(generated[profile_path])
     for existing in document["records"]:
         _known_speed_identity(existing)
-    present = {r["production_definition"]["production_key"]: r for r in document["records"]}
+    present = {
+        r["production_definition"]["production_key"]: r for r in document["records"]
+    }
     for record in records:
         key = record["production_definition"]["production_key"]
         known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
-            if key in CUSTODY_PROMOTION_KEYS and "readable_writeable" in prior["semantics"]:
+            if (
+                key in CUSTODY_PROMOTION_KEYS
+                and "readable_writeable" in prior["semantics"]
+            ):
                 # The text owner retains an unresolved write-once target for these trophies.
                 record = {
                     **record,
@@ -766,7 +963,8 @@ def admit_records(root, generated, profile_path, manifest_path, order, canonical
             document["records"].append(record)
     document["records"].sort(key=order)
     raw = (
-        json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+        json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
     ).encode()
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
@@ -778,7 +976,9 @@ def admit_records(root, generated, profile_path, manifest_path, order, canonical
     if cosmetics_raw is None and (root / "content" / cosmetics).exists():
         cosmetics_raw = (root / "content" / cosmetics).read_bytes()
     if cosmetics_raw is not None:
-        if manifest["schema"] in {f"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v{i}" for i in range(1, 6)}:
+        if manifest["schema"] in {
+            f"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v{i}" for i in range(1, 6)
+        }:
             manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
         manifest["cosmetics"] = {
             "path": cosmetics,

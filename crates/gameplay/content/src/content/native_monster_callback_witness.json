@@ -29644,6 +29644,11 @@
               "invisible",
               "paralyze"
             ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i48401",
+              "revision": "definition-r1"
+            },
             "critical_chance_ppm": 0,
             "death_residue": {
               "fluid_type": "slime",
@@ -29799,6 +29804,11 @@
               "invisible",
               "paralyze"
             ],
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i48396",
+              "revision": "definition-r1"
+            },
             "critical_chance_ppm": 0,
             "death_residue": {
               "fluid_type": "slime",
@@ -48382,7 +48392,7 @@
     }
   ],
   "schema": "OTERYN_NATIVE_MONSTER_CALLBACKS/v1",
-  "source_definitions_sha256": "0b2fe785ebcc9d3cc218ba80cee75e598cc35781b4576cd5511dea7e28456b69",
+  "source_definitions_sha256": "3e86303e358fc634e91f220716766fbb5dc60dbe7574a66476223471504d6fba",
   "source_events": [
     {
       "name": "OutburstCharge",

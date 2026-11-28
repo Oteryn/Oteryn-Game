@@ -191,9 +191,11 @@ fn freeze_at(
         for counter in &snapshot.native_counters {
             if counter.creature == creature
                 && counter.encounter_source.is_none()
-                && counter.death_area.is_none_or(|area| {
-                    death_position.is_some_and(|position| area.contains(position))
-                })
+                && oteryn_gameplay_quests::quest::native_kills::death_position_matches(
+                    &counter.transition,
+                    counter.death_area,
+                    death_position,
+                )
             {
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
@@ -477,19 +479,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// database await holds these guards; a task must be visible before a later death can
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
-        let runtime = self.runtime.lock().await;
-        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session)
-            .await;
-    }
+        let (runtime_guard, attack) = self.quest_turn_with(&self.states.attack).await;
+        let runtime = &*runtime_guard;
 
-    /// Publish capture eligibility while the callback already holds the runtime owner.
-    pub(super) async fn refresh_grizzly_kill_snapshot_in_runtime(
-        &self,
-        runtime: &ChannelRuntimeV1,
-        session: GameSessionId,
-    ) {
         let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(runtime, session);
-        let attack = self.states.attack.lock().await;
         let Ok(mut cache) = attack.kills().1.lock() else {
             return;
         };

@@ -72,7 +72,21 @@ def generate():
 
 if __name__ == "__main__":
     import sys
-    for name, data in generate().items():
+    outputs = generate()
+    if "--wrath" in sys.argv:
+        # Other programmes in the shared registry have independent authors.
+        name = "content/quests/chosen-reward-callbacks.json"
+        document = json.loads((ROOT / name).read_text())
+        prefix = "oteryn:quest-reward/chosen/wrath/"
+        rows = document["callbacks"]
+        owned = {row["key"]: row for row in outputs[name]["callbacks"] if row["key"].startswith(prefix)}
+        for i, row in enumerate(rows):
+            if row["key"] in owned:
+                rows[i] = owned.pop(row["key"])
+        rows.extend(owned.values())
+        greetings = "content/dialogues/quests/chosen-reward-greetings.json"
+        outputs = {name: document, greetings: outputs[greetings]}
+    for name, data in outputs.items():
         raw = json.dumps(data, indent=2) + "\n"
         path = ROOT / name
         if "--check" in sys.argv:

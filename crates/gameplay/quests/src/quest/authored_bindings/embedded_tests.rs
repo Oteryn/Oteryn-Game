@@ -675,7 +675,8 @@ mod main_native_contract {
         // Knightwatch adds the shared tower permit and the diamond lever claim.
         // Main contributes its 44 native tracks, including the two Vampire Hunter tracks.
         // Hairycles' missing-moss reply owns one recovery counter.
-        assert_eq!(before.tracks.len(), 2_237 + 44 + 1);
+        // Train 7a contributes another 44 tracks through the native quest owners.
+        assert_eq!(before.tracks.len(), 2_237 + 44 + 1 + 44);
         for (name, max) in [("rank", 6), ("door", 1)] {
             let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
             assert_eq!(
@@ -741,6 +742,8 @@ mod main_native_contract {
             native_kills::extend(before.clone())?,
         )?)?;
         crate::quest::published_quest_pins::retain_predecessors(&mut expected);
+        crate::quest::published_quest_pins::retain_hunt_and_wrath_predecessors(&mut expected);
+        crate::quest::published_quest_pins::retain_daily_predecessors(&mut expected);
         assert_eq!(expected.tracks, after.tracks);
         assert_eq!(expected.transitions, after.transitions);
         assert_eq!(expected.hashes, after.hashes);
@@ -761,6 +764,13 @@ mod main_native_contract {
         }
         assert_eq!(before.npc_legacy, after.npc_legacy);
         assert_eq!(expected.predecessors, after.predecessors);
+        for (quest, predecessors) in &before.predecessors {
+            let admitted = after.predecessors.get(quest).ok_or(quest)?;
+            assert!(
+                predecessors.iter().all(|prior| admitted.contains(prior)),
+                "{quest}"
+            );
+        }
         assert_eq!(before.authored_bindings, after.authored_bindings);
         assert!(after.native_recipe_evidence.is_some());
         Ok(())

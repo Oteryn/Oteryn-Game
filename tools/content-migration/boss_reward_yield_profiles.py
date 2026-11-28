@@ -241,6 +241,9 @@ def admit(root, generated, destination, manifest_path, order, canonical):
             if item in CLASSIFICATION_ENRICHMENT_IDS:
                 # Only source-proved previously UNKNOWN custody fields may be
                 # completed. Known equipment/rune/fluid bodies remain intact.
+                classification = previous['semantics']['classification']
+                if classification['state'] == 'KNOWN':
+                    classification['value'].setdefault('capabilities', {'state':'UNKNOWN'})
                 def enrich(old, proven):
                     if old == {'state':'UNKNOWN'}:
                         return copy.deepcopy(proven)

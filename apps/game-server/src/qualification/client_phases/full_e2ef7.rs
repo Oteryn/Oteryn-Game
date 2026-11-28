@@ -4519,10 +4519,7 @@ async fn acquire_inner(
     if units(client, reference) >= u64::from(count) {
         return Ok(reference);
     }
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let offers: serde_json::Value = serde_json::from_slice(&fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
+    let offers: serde_json::Value = crate::qualification::authored_trade_catalogue()?;
     let metadata = oteryn_world_bundle::bundle::visit(
         &fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
         |_, _| Ok(()),

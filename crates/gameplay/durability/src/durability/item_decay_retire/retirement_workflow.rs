@@ -484,49 +484,57 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         scope: RuntimeScopeRefV1,
     ) -> Result<CorpseDecaySchedule> {
+        self.read_corpse_schedule_page(authority, scope, None).await
+    }
+
+    /// A receipt replay needs the exact item's custody even in a legacy over-cap scope.
+    pub async fn read_corpse_schedule_page(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        scope: RuntimeScopeRefV1,
+        item: Option<[u8; 16]>,
+    ) -> Result<CorpseDecaySchedule> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let mut tx = super::super::db::begin_observation_transaction(holder, deadline).await?;
+                    super::super::character_authority::observe_recovery_fence(&mut tx, &recovery).await?;
                     let database_now_unix_ms: i64 = sqlx::query_scalar(
                         "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    let rows = sqlx::query(
-                        "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref \
-                           FROM game_item_ground_locations g \
-                           JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
-                           JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
-                          WHERE g.world_id = encode($1,'hex')::uuid \
-                            AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid \
-                            AND g.scope_kind = $5 AND g.instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid \
-                            AND r.loot_purpose_key = $3 AND r.draw_ordinal = 0 \
-                            AND i.lifecycle = 1 \
-                          ORDER BY r.materialized_at, g.item_instance_id \
-                          LIMIT $4",
-                    )
-                    .bind(scope.world_id().as_bytes().as_slice())
-                    .bind(scope.channel_id().map(|id| id.as_bytes().to_vec()))
-                    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
-                    .bind(i64::try_from(COMBAT01_CORPSES_PER_SCOPE + 1).unwrap_or(i64::MAX))
-                    .bind(scope_kind(scope))
-                    .bind(scope.instance_id().map(|id| id.to_vec()))
-                    .fetch_all(&mut *tx)
-                    .await?;
-                    if rows.len() > COMBAT01_CORPSES_PER_SCOPE {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
+                    let mut rows = sqlx::query(
+                            "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref, \
+                                    CASE WHEN game_item_loop_drop_ref(g.corpse_ref) THEN g.spatial_position END AS loop_ground_spatial_position \
+                               FROM game_item_ground_locations g \
+                               JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
+                               JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
+                              WHERE g.world_id = encode($1,'hex')::uuid \
+                                AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid \
+                                AND g.scope_kind = $5 AND g.instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid \
+                                AND r.loot_purpose_key = $3 AND r.draw_ordinal = 0 \
+                                AND i.lifecycle = 1 AND r.transaction_id=i.minted_transaction_id \
+                              AND ($7::bytea IS NULL OR g.item_instance_id=encode($7,'hex')::uuid) \
+                              ORDER BY deadline NULLS LAST, r.materialized_at, g.item_instance_id \
+                              LIMIT $4",
+                        )
+                        .bind(scope.world_id().as_bytes().as_slice())
+                        .bind(scope.channel_id().map(|id| id.as_bytes().to_vec()))
+                        .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+                        .bind(super::super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + 1)
+                        .bind(scope_kind(scope))
+                        .bind(scope.instance_id().map(|id| id.to_vec()))
+                        .bind(item.map(|id| id.to_vec()))
+                        .fetch_all(&mut *tx)
+                        .await?;
+                    let complete = rows.len() <= COMBAT01_CORPSES_PER_SCOPE;
+                    rows.truncate(COMBAT01_CORPSES_PER_SCOPE);
                     let mut corpses = Vec::with_capacity(rows.len());
                     for row in &rows {
-                        let materialized_at_unix_ms: Option<i64> =
-                            row.try_get("materialized_at")?;
-                        let materialized_at_unix_ms =
-                            materialized_at_unix_ms.ok_or(DurabilityError::InvalidStoredState)?;
                         corpses.push(CorpseDecayDeadline {
                             corpse_item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
                             definition: super::super::item_mint::TypedDefinitionRef {
@@ -534,13 +542,16 @@ impl DurabilityRoot {
                                 production_key: row.try_get("definition_production_key")?,
                                 revision_ref: row.try_get("definition_revision_ref")?,
                             },
-                            materialized_at_unix_ms,
+                            materialized_at_unix_ms: row.try_get("materialized_at")?,
                             decay_at_unix_ms: row.try_get("deadline")?,
+                            loop_ground_spatial_position: row.try_get("loop_ground_spatial_position")?,
                         });
                     }
+                    corpses.sort_by_key(|row| (row.materialized_at_unix_ms, row.corpse_item_instance_id));
                     commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(CorpseDecaySchedule {
                         database_now_unix_ms,
+                        complete,
                         corpses,
                     }))
                 })

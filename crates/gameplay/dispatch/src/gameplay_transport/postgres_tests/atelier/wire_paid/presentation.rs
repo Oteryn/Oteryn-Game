@@ -21,7 +21,7 @@ pub(super) async fn check_read(
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     let reply = presentation::Reply::decode(&bytes).ok_or("executed catalogue")?;
     assert_eq!(reply.request, r);
-    assert_eq!(reply.modifiers.len(), 69);
+    assert_eq!(reply.modifiers.len(), 73);
     let capacity = reply
         .modifiers
         .iter()

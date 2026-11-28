@@ -41,7 +41,17 @@ pub(super) fn reference<'a>(quest: &str, source: &'a str) -> Option<&'a str> {
 pub(super) fn legacy_custody(document: &NpcRuleDocument) -> bool {
     let sources = [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:65-68",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:70-77",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:88-97",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:179-183",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:184-192",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:193-201",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:201-202",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:205-217",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:218-237",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:78-85",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:85-86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomus.lua:99-117",
     ];
     document.program_key.is_none()
         && document.quest == QUEST
@@ -61,6 +71,30 @@ pub(super) fn legacy_custody(document: &NpcRuleDocument) -> bool {
             .flat_map(|track| &track.sources)
             .chain(document.rules.iter().flat_map(|rule| &rule.sources))
             .all(|source| sources.contains(&source.as_str()))
+}
+
+pub(super) fn subterranean_custody(document: &NpcRuleDocument) -> bool {
+    const SOURCE: &str =
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/klom_stonecutter.lua:";
+    document.program_key.as_deref()
+        == Some("oteryn:quest-npc-program.dangerous-depths-subterranean-life")
+        && document.quest == QUEST
+        && document.source_files.len() == 1
+        && document.source_files.iter().all(|file| {
+            file.path == "data-global/npc/klom_stonecutter.lua"
+                && file.revision == "201189f871d23597b82caf88fd611454a2ddefb8"
+                && file.sha256 == "80581b78544dd6d62f7fad960365bc9357b51c99989e142765db602f38a9e9b1"
+        })
+        && document
+            .rules
+            .iter()
+            .all(|rule| rule.npc == "oteryn:npc.klom_stonecutter")
+        && document
+            .tracks
+            .iter()
+            .flat_map(|track| &track.sources)
+            .chain(document.rules.iter().flat_map(|rule| &rule.sources))
+            .all(|source| source.starts_with(SOURCE))
 }
 
 #[cfg(test)]

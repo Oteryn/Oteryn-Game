@@ -12,6 +12,8 @@ def append(add, storage, offers, prefix):
     for words,topic,next_topic in [(['outfit','addon'],0,1),(['yes'],1,2)]:
         offers.append({'npc':'oteryn:npc.lugri','keywords':words,'topic':topic,'next_topic':next_topic,
             'storage':states,'reply':['Are you willing to prove your loyalty through these sacrifices?']})
+        if topic == 0:
+            offers[-1]["msg_contains"] = True
     for stage,suffix,words,item in [(1,'shield',['shield','medusa shield'],3436),
             (2,'mail',['mail','dragon scale mail'],3386),(3,'legs',['legs','crown legs'],3382),
             (4,'skull',['ring','ring of the sky'],3006)]:
@@ -20,6 +22,7 @@ def append(add, storage, offers, prefix):
             take=[(item,1)],topic=stage+2,outfit=('wizard',2) if stage==4 else None)
         offers.append({'npc':'oteryn:npc.lugri','keywords':words,'topic':0,'next_topic':stage+2,
             'storage':states,'reply':['Is it your true wish to sacrifice this to Zathroth?']})
+        offers[-1]["msg_contains"] = True
     states=[storage(wizard,5,6)]
     add('l2-wizard-flowers-start','outfit_and_addon_quests','the_queen_of_the_banshees',
         ['yes'],states,topic=10)

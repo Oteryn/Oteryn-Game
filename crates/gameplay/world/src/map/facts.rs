@@ -421,14 +421,15 @@ impl BundleFacts {
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 7845: the lava created by Crystal Brotherhood lever 3047.
         // 13842: W05b Thawing ice flower (Crystal thawing.lua:1).
+        // 15800, 19213 and 19379: repaired crystal, charged pacifier and discharged monolith.
         // 17678 and 17680: Rafzan's smashed trunk and sign, restored by timer.
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
             188, 430, 435, 1025, 1841, 1949, 3145, 3146, 3682, 4851, 4996, 5022, 5858, 6473, 6474,
             7181, 7252, 7845, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186,
             10187, 12187, 12189, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064,
-            14074, 14076, 14077, 14163, 14164, 14255, 17678, 17680, 17939, 21804, 21805, 21812,
-            22059, 22074, 26077, 26087, 26100, 49362,
+            14074, 14076, 14077, 14163, 14164, 14255, 15800, 17678, 17680, 17939, 19213, 19379,
+            21804, 21805, 21812, 22059, 22074, 26077, 26087, 26100, 49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -2028,6 +2029,42 @@ mod tests {
             .ok_or("unplaced closed trap counterpart")?;
         assert!(!open.pickupable);
         assert!(closed.pickupable);
+        Ok(())
+    }
+
+    #[test]
+    fn gnome_daily_callback_replacements_resolve_without_a_base_placement()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, _) = fixture::bundle();
+        let bundle = oteryn_world_bundle::bundle::read(&bytes)?;
+        let items = |key: &str| match key {
+            "oteryn:item.tibia.i15800"
+            | "oteryn:item.tibia.i19213"
+            | "oteryn:item.tibia.i19379" => {
+                let mut definition = fixture::items("item:coin")?;
+                definition.pickupable = false;
+                Some(definition)
+            }
+            _ => fixture::items(key),
+        };
+        let facts =
+            BundleFacts::palette(&bundle.manifest, items).map_err(|error| format!("{error:?}"))?;
+        let key = placement_key(
+            TilePos {
+                x: 7,
+                y: 0,
+                floor: -7,
+            },
+            1,
+        )
+        .ok_or("placement")?;
+        for appearance in [15800, 19213, 19379] {
+            let replacement = facts
+                .quest_callback_replacement(key, appearance)
+                .ok_or_else(|| format!("unplaced quest callback replacement {appearance}"))?;
+            assert_eq!(replacement.appearance_id, appearance);
+            assert!(!replacement.pickupable);
+        }
         Ok(())
     }
 

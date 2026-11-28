@@ -3,11 +3,34 @@
   "offers": [
     {
       "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
+      "keywords": [
+        "mission"
+      ],
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 11,
+          "maximum": 25
+        }
+      ],
+      "reply": [],
+      "preserve_topic": true
+    },
+    {
+      "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
       "keywords": [
         "vampire lord token"
       ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 3,
       "storage": [
         {
@@ -26,16 +49,18 @@
         }
       ],
       "reply": [
-        "Would ye' like to give me vampire tokens?"
+        "Would ye' give me 1 Vampire Lord Token for rank 1?"
       ]
     },
     {
       "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
       "keywords": [
         "vampire lord token"
       ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 4,
       "storage": [
         {
@@ -54,16 +79,18 @@
         }
       ],
       "reply": [
-        "Would ye' like to give me vampire tokens?"
+        "Would ye' give me 4 Vampire Lord Tokens for rank 2?"
       ]
     },
     {
       "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
       "keywords": [
         "vampire lord token"
       ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 5,
       "storage": [
         {
@@ -82,16 +109,18 @@
         }
       ],
       "reply": [
-        "Would ye' like to give me vampire tokens?"
+        "Would ye' give me 5 Vampire Lord Tokens for rank 3?"
       ]
     },
     {
       "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
       "keywords": [
         "vampire lord token"
       ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 6,
       "storage": [
         {
@@ -110,16 +139,18 @@
         }
       ],
       "reply": [
-        "Would ye' like to give me vampire tokens?"
+        "Would ye' give me 10 Vampire Lord Tokens for rank 4?"
       ]
     },
     {
       "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
       "keywords": [
         "vampire lord token"
       ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 7,
       "storage": [
         {
@@ -138,16 +169,18 @@
         }
       ],
       "reply": [
-        "Would ye' like to give me vampire tokens?"
+        "Would ye' give me 30 Vampire Lord Tokens for rank 5?"
       ]
     },
     {
       "npc": "oteryn:npc.storkus",
+      "topic": 0,
+      "msg_contains": true,
+      "any_topic": true,
+      "reward_order": "before",
       "keywords": [
         "vampire lord token"
       ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 8,
       "storage": [
         {
@@ -166,7 +199,7 @@
         }
       ],
       "reply": [
-        "Would ye' like to give me vampire tokens?"
+        "Would ye' give me 50 Vampire Lord Tokens for rank 6?"
       ]
     }
   ]

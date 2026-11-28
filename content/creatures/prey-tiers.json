@@ -6238,8 +6238,8 @@
       "minimum_level": 1,
       "nonexclusive_count": 90,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 74,
-      "runtime_unsettleable_count": 66,
+      "runtime_available_count": 38,
+      "runtime_unsettleable_count": 0,
       "tier": 1
     },
     {
@@ -6253,14 +6253,14 @@
         "Bog Raider",
         "Braindeath"
       ],
-      "expanded_three_slot_capacity": true,
+      "expanded_three_slot_capacity": false,
       "experience_max": 999,
       "experience_min": 100,
       "minimum_level": 50,
       "nonexclusive_count": 162,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 124,
-      "runtime_unsettleable_count": 119,
+      "normal_three_slot_capacity": false,
+      "runtime_available_count": 26,
+      "runtime_unsettleable_count": 0,
       "tier": 2
     },
     {
@@ -6274,14 +6274,14 @@
         "Frost Flower Asura",
         "Moonstone Overseer"
       ],
-      "expanded_three_slot_capacity": true,
+      "expanded_three_slot_capacity": false,
       "experience_max": 4999,
       "experience_min": 1000,
       "minimum_level": 100,
       "nonexclusive_count": 188,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 157,
-      "runtime_unsettleable_count": 156,
+      "normal_three_slot_capacity": false,
+      "runtime_available_count": 10,
+      "runtime_unsettleable_count": 2,
       "tier": 3
     },
     {
@@ -6295,14 +6295,14 @@
         "Brachiodemon",
         "Crypt Construct"
       ],
-      "expanded_three_slot_capacity": true,
+      "expanded_three_slot_capacity": false,
       "experience_max": 19999,
       "experience_min": 5000,
       "minimum_level": 250,
       "nonexclusive_count": 154,
-      "normal_three_slot_capacity": true,
-      "runtime_available_count": 128,
-      "runtime_unsettleable_count": 128,
+      "normal_three_slot_capacity": false,
+      "runtime_available_count": 3,
+      "runtime_unsettleable_count": 2,
       "tier": 4
     },
     {
@@ -6322,8 +6322,8 @@
       "minimum_level": 500,
       "nonexclusive_count": 33,
       "normal_three_slot_capacity": false,
-      "runtime_available_count": 14,
-      "runtime_unsettleable_count": 5,
+      "runtime_available_count": 12,
+      "runtime_unsettleable_count": 0,
       "tier": 5
     }
   ]

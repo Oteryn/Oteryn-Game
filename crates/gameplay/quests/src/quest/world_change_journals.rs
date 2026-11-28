@@ -297,6 +297,7 @@ fn parse(source: &'static str) -> Result<Document, String> {
                 track: counter.track,
                 gate: counter.gate,
                 maximum: counter.maximum,
+                death_area: None,
                 world_change: None,
             });
             events.insert(counter.transition.into());
