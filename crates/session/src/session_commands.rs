@@ -279,6 +279,11 @@ impl<S: SessionStream> Session<S> {
     /// `ACCEPTED` the server has ended the session and closes the transport, so this session
     /// sends nothing further.
     pub async fn logout(&mut self) -> Result<LogoutOutcome, SessionError> {
+        self.logout_with_frame().await.map(|(outcome, _)| outcome)
+    }
+
+    /// Sends logout and returns the original validated response envelope with its outcome.
+    pub async fn logout_with_frame(&mut self) -> Result<(LogoutOutcome, Vec<u8>), SessionError> {
         self.ensure_usable()?;
         if !self.is_selected(logout::CAPABILITY_LOGOUT_V1) {
             return Err(SessionError::CapabilityNotSelected {
@@ -288,17 +293,20 @@ impl<S: SessionStream> Session<S> {
         let outcome = self.exchange_logout().await;
         if matches!(
             outcome,
-            Ok(LogoutOutcome {
-                result: Some(LogoutResult::Accepted),
-                ..
-            })
+            Ok((
+                LogoutOutcome {
+                    result: Some(LogoutResult::Accepted),
+                    ..
+                },
+                _
+            ))
         ) {
             self.unusable = true;
         }
         self.poison_on_error(outcome)
     }
 
-    pub(super) async fn exchange_logout(&mut self) -> Result<LogoutOutcome, SessionError> {
+    async fn exchange_logout(&mut self) -> Result<(LogoutOutcome, Vec<u8>), SessionError> {
         let result = self
             .send_and_read_result(
                 logout::COMMAND_TYPE_LOGOUT_INTENT,
@@ -315,12 +323,15 @@ impl<S: SessionStream> Session<S> {
             result.status,
             decoded.is_none_or(LogoutResult::is_rejected),
         )?;
-        Ok(LogoutOutcome {
-            command_id: result.command_id,
-            status: result.status,
-            result: decoded,
-            result_server_sequence: result.server_sequence,
-        })
+        Ok((
+            LogoutOutcome {
+                command_id: result.command_id,
+                status: result.status,
+                result: decoded,
+                result_server_sequence: result.server_sequence,
+            },
+            result.frame,
+        ))
     }
 
     /// Sends the FND-02 `ClientCommand` type 13 `CHAT_INTENT` (capability 7) and decodes its

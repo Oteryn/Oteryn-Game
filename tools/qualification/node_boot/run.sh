@@ -1880,13 +1880,13 @@ PY_S15B_BATCH
 }
 
 s15b_client_replay() {
-  local started=$SECONDS replay_state=missing-live-capture
+  local started=$SECONDS replay_state=missing-live-capture capture_key
   local replay_test=tests::e2e_s15b::e2e_s15b_in_fight_logout_refusal_keeps_the_session_playing
   if [[ -s "$OTERYN_S15B_CAPTURE_DIR/s15b-expected.txt" ]] &&
-    grep -q '^SEAM_EVIDENCE e2e_capture scenario=S15b.client status=CAPTURED ' "$WORK/stage-seam_stages.log"; then
+    capture_key=$(sed -n 's/^SEAM_EVIDENCE e2e_capture scenario=S15b.client status=CAPTURED evidence=//p' "$WORK/stage-seam_stages.log") && [[ -n "$capture_key" ]]; then
     replay_state=replay-failed
-    if E2E_ALL_CAPTURE_DIR="$OTERYN_S15B_CAPTURE_DIR" cargo +1.100.0 test --locked \
-      -p oteryn-session --lib "$replay_test" -- --exact > "$WORK/s15b-replay.log" 2>&1 &&
+    if OTERYN_S15B_CAPTURE_KEY="$capture_key" E2E_ALL_CAPTURE_DIR="$OTERYN_S15B_CAPTURE_DIR" cargo +1.100.0 test --locked \
+      -p oteryn-session --lib "$replay_test" -- --exact --ignored > "$WORK/s15b-replay.log" 2>&1 &&
       grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$WORK/s15b-replay.log"; then
       cat "$WORK/s15b-replay.log"
       printf 'SEAM_EVIDENCE e2e_all scenario=S15b.client status=PASS seconds=%s evidence=live-logout-replayed\n' "$((SECONDS - started))"

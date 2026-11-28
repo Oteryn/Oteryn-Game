@@ -2,9 +2,7 @@
 //! walks out of town protection, attacks a Rat placed by the qualification spawn fixture,
 //! and sends the native LOGOUT while in
 //! fight; the server refuses it (`InFight`), and logout on a protection tile
-//! is accepted. `Session::logout` decodes the result into `LogoutOutcome` and does not retain the
-//! raw bytes, so the capture records the server-observed outcomes in `s15b-expected.txt`; the
-//! replay encodes them with the production logout encoder. No `.bin` file is written.
+//! is accepted. The capture preserves both original server response envelopes.
 use super::*;
 use oteryn_dev_client::EntityKind;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
@@ -143,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     }
     let refusal_position = client.world_spatial().actor_position;
     let refusal_combat = client.session_mut().combat_state().copied();
-    let refused = client.session_mut().logout().await?;
+    let (refused, refusal_frame) = client.session_mut().logout_with_frame().await?;
     let Some(LogoutResult::InFight { retry_after_ms }) = refused.result else {
         return Err(format!("step=logout-refusal observed {refused:?}, expected InFight").into());
     };
@@ -156,10 +154,6 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     {
         return Err("step=logout-refusal changed position, session, or combat state".into());
     }
-    let mut expected = format!(
-        "logout-refusal\tstatus={:?}\tresult=InFight\tretry_after_ms={retry_after_ms}\n",
-        refused.status
-    );
     let cleared = client.session_mut().attack_target(None).await?;
     if cleared.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step=logout-cleanup could not clear Rat target: {cleared:?}").into());
@@ -190,7 +184,7 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     if saved_position == initial_position {
         return Err("step=logout-cleanup saved position equals the admission position".into());
     }
-    let accepted = client.session_mut().logout().await?;
+    let (accepted, acceptance_frame) = client.session_mut().logout_with_frame().await?;
     if accepted.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout-in-protection-zone observed {accepted:?}").into());
     }
@@ -205,17 +199,28 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     if cleanup.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=relog-cleanup observed {cleanup:?}").into());
     }
-    expected.push_str(&format!(
-        "logout-accepted\tstatus={:?}\tresult=Accepted\n",
-        accepted.status
-    ));
+    let manifest = format!(
+        "{} {} {} {} {} {}\n",
+        uuid_text(session_id.as_bytes()),
+        refused.command_id,
+        refused.result_server_sequence,
+        accepted.command_id,
+        accepted.result_server_sequence,
+        retry_after_ms
+    );
     use std::io::Write as _;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(capture_dir.join("s15b-expected.txt"))?
-        .write_all(expected.as_bytes())?;
-    Ok(format!("refused_retry_after_ms={retry_after_ms}"))
+    for (name, bytes) in [
+        ("s15b-refused.bin", refusal_frame.as_slice()),
+        ("s15b-accepted.bin", acceptance_frame.as_slice()),
+        ("s15b-expected.txt", manifest.as_bytes()),
+    ] {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(capture_dir.join(name))?
+            .write_all(bytes)?;
+    }
+    Ok(manifest.split_whitespace().collect::<Vec<_>>().join(","))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
