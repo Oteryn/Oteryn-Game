@@ -5,7 +5,7 @@
 //!    expect Accepted/Committed plus a newer catalogue/binding showing that exact selection.
 //! 2. Send APPEARANCE_CHANGE for an unearned addon; expect Rejected and no catalogue selection/root-revision change.
 //! 3. Use the outfit and addon items on the dedicated account, then walk beside an authored
-//!    bear and send the slingshot USE-with-creature command.
+//!    bear and send one slingshot USE-with-creature command with a fixture-armed draw.
 //! 4. After a successful tame, select the newly earned mount with APPEARANCE_CHANGE; expect
 //!    Accepted/Committed and an own-actor appearance mapping carrying the new selection revision.
 //! 5. Log out, freshly admit the same character, and re-read the catalogue/binding; expect the
@@ -542,10 +542,27 @@ async fn tame_war_bear(
         use_with_position: None,
     })
     .map_err(|error| format!("taming USE encode: {error:?}"))?;
+    let command_id = client.next_command_id();
+    let armed = request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--taming-draw",
+        command_id.to_string(),
+    )
+    .await
+    .map_err(|error| {
+        format!("step=taming-attempt need=one-use-qualification-draw observed={error}")
+    })?;
+    if armed != "armed" {
+        return Err(format!("step=taming-attempt expected=armed observed={armed}").into());
+    }
+    evidence(&format!(
+        "S06_FIXTURE input=taming-draw value=0 command_id={command_id} status=armed"
+    ));
     let reply = client.session_mut().world_context_use(&payload).await?;
     let (disposition, _) = world_object::decode_use_result_with_gate(&reply.payload)
         .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
-    if reply.status != CommandStatus::Accepted
+    if reply.command_id != command_id
+        || reply.status != CommandStatus::Accepted
         || disposition != world_object::UseDisposition::Committed
     {
         return Err(format!(
