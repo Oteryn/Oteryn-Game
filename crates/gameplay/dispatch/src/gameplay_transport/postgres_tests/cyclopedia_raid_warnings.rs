@@ -5,11 +5,15 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::ProductionKey;
 use crate::durability::raid_schedule::{RaidScheduleCandidate, RaidSchedulerCheck};
-use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, NodeId, ScopeOwnershipGeneration};
+use crate::foundation::{
+    ChannelContentPin, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+};
 use crate::gameplay_transport::ComposedFreshAdmission;
-use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
+    AdmittedSession, FirstEntryOutcome, fresh_capability_selection,
+};
+use crate::gameplay_transport::world_required_capabilities::{
+    BootCapabilityError, BoundRequiredCapabilities, offered_for_scope, with_cyclopedia_offer,
 };
 use oteryn_gameplay_encounter_rules::raid::{CHECK_INTERVAL_MS, RaidCatalogue, RaidPolicy};
 use oteryn_protocol_oteryn::CommandStatus;
@@ -129,16 +133,44 @@ fn scenario() -> TestResult {
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
 
-        let offers = crate::gameplay_transport::cyclopedia::offered(
-            owner.offered_capabilities(),
-            owner.cyclopedia_available(),
-        );
         let base = cyclopedia::CAPABILITY_CYCLOPEDIA_MAP_V1;
         let warnings = wire::CAPABILITY_CYCLOPEDIA_RAID_WARNINGS_V1;
-        let selected =
-            SelectedCapabilities::select(&offers, &[4, 6, base, warnings]).ok_or("selection")?;
+        let scope = RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id);
+        let boot_offers = offered_for_scope(true, Some(generation));
+        let declared = [11, 18, 30, warnings];
+        let unqualified = BoundRequiredCapabilities::for_channel_boot(
+            &declared,
+            scope,
+            1,
+            "policy-1",
+            with_cyclopedia_offer(
+                boot_offers,
+                Some(generation),
+                activation_pin.qualified_room().movement_cells(),
+            ),
+        );
+        assert!(matches!(unqualified, Err(BootCapabilityError::Unoffered(id)) if id == warnings));
+        let bound = BoundRequiredCapabilities::for_channel_boot(
+            &declared,
+            scope,
+            1,
+            "policy-1",
+            with_cyclopedia_offer(boot_offers, Some(generation), &cells),
+        );
+        assert!(
+            bound.is_ok(),
+            "qualified Channel must accept required capability 626: {bound:?}"
+        );
+        let bound = bound.map_err(debug)?;
+        assert!(bound.effective().contains(&base));
+
+        let selected = fresh_capability_selection(&owner, &[4, 6, base, warnings])
+            .await
+            .ok_or("selection")?;
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offers, &[4, 6, base]).ok_or("legacy selection")?;
+            fresh_capability_selection(&owner, &[4, 6, base])
+                .await
+                .ok_or("legacy selection")?;
         assert_eq!(
             exchange(&owner, &mut admitted).await?.0,
             CommandStatus::Rejected,
@@ -230,6 +262,20 @@ fn scenario() -> TestResult {
         assert!(
             read(&owner, &mut admitted).await?.is_empty(),
             "cancelled firing clears the overlay"
+        );
+        // A failed advisory read must reject this query without closing the connection.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE game_character_cyclopedia SET catalogue_digest=$1")
+            .bind([0_u8; 32].as_slice())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        assert_eq!(
+            exchange(&owner, &mut admitted).await?.0,
+            CommandStatus::Rejected
         );
         eprintln!("POSTGRES_EXECUTED cyclopedia_raid_warnings_postgres_dispatch");
         Ok(())

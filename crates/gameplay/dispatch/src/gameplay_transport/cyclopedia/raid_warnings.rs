@@ -40,7 +40,7 @@ pub(super) async fn dispatch(
         return GuildReply::Rejected;
     };
     let Some(catalogue) = CATALOGUE.as_ref() else {
-        return GuildReply::Unavailable;
+        return GuildReply::Rejected;
     };
     let base = map.overlay.base();
     let now_ms = i64::try_from(oteryn_error_codes::unix_ms()).unwrap_or(i64::MAX);
@@ -50,8 +50,7 @@ pub(super) async fn dispatch(
         .await;
     let snapshot = match snapshot {
         Ok(Some(snapshot)) => snapshot,
-        Ok(None) => return GuildReply::Rejected,
-        Err(_) => return GuildReply::Unavailable,
+        Ok(None) | Err(_) => return GuildReply::Rejected,
     };
     let warnings = project(&base.subareas, base.digest(), catalogue, &snapshot, now_ms);
     // A handoff during the database observation cannot publish the old snapshot.
@@ -123,7 +122,16 @@ fn raid_warnings(
         .flat_map(|wave| &wave.entries)
         .filter_map(|entry| selected.areas.get(&entry.area_anchor))
     {
-        subareas.extend(overlapping_subareas(table, area));
+        let mut hits =
+            overlapping_subareas(table, area, area.from.floor..=area.to.floor).peekable();
+        if hits.peek().is_some() {
+            subareas.extend(hits);
+        } else {
+            // Native masks may mark the overworld surface even when the
+            // wave spawns above or below it. Keep exact membership first.
+            let surface = -i16::from(GROUND_FLOOR);
+            subareas.extend(overlapping_subareas(table, area, surface..=surface));
+        }
     }
     let ground: BTreeSet<_> = if lead <= SUBAREA_LEAD_MS && !subareas.is_empty() {
         let start = table.runs.partition_point(|run| run.floor < GROUND_FLOOR);
@@ -169,8 +177,9 @@ fn raid_warnings(
 fn overlapping_subareas<'a>(
     table: &'a Table,
     area: &'a RaidArea,
+    floors: std::ops::RangeInclusive<i16>,
 ) -> impl Iterator<Item = u32> + 'a {
-    (area.from.floor..=area.to.floor).flat_map(move |floor| {
+    floors.flat_map(move |floor| {
         let start = table.runs.partition_point(|run| {
             (i16::from(run.floor), i32::from(run.y)) < (-floor, area.from.y)
         });

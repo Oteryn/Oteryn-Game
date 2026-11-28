@@ -16,7 +16,7 @@ use sha2::{Digest, Sha256};
 #[path = "cyclopedia/atlas.rs"]
 mod atlas;
 #[path = "cyclopedia/content.rs"]
-mod content;
+pub(super) mod content;
 #[path = "cyclopedia/overview.rs"]
 mod overview;
 #[path = "cyclopedia/raid_warnings.rs"]
@@ -73,7 +73,7 @@ impl CyclopediaPremiumGate for Premium<'_> {
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn cyclopedia_content(&self) -> Option<content::AdmittedArea> {
-        content::admit(self)
+        content::admit_entry(self.active_generation, self.movement_cells())
     }
     pub(super) async fn cyclopedia_wire(
         &self,

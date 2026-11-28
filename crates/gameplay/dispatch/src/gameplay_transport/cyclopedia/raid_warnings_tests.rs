@@ -5,10 +5,10 @@ use oteryn_world_bundle::subarea::{Area, Run};
 fn raid_warning_windows_use_full_area_discovery_and_ground_floor_coverage()
 -> Result<(), Box<dyn std::error::Error>> {
     let catalogue = RaidCatalogue::embedded()?;
-    let key = crate::content::ProductionKey::new("raid:libertybay.ferumbras")?;
+    let key = crate::content::ProductionKey::new("raid:edron.feroxa")?;
     let raid = catalogue
         .get(&key)
-        .ok_or("Ferumbras raid")?
+        .ok_or("Feroxa raid")?
         .select([1; 32], [2; 16])?;
     let wave = raid.definition.waves.first().ok_or("first wave")?;
     let spot = raid
@@ -42,6 +42,10 @@ fn raid_warning_windows_use_full_area_discovery_and_ground_floor_coverage()
     };
     let fired_at = 2 * AREA_LEAD_MS;
     let start = fired_at + i64::from(wave.delay_ms);
+    assert!(
+        start - AREA_LEAD_MS - 1 >= fired_at,
+        "the scheduler must have committed the firing before the hour boundary"
+    );
     let region = Warning {
         area: 1,
         subarea: None,
@@ -61,7 +65,7 @@ fn raid_warning_windows_use_full_area_discovery_and_ground_floor_coverage()
         raid_warnings(&map, &raid, fired_at, start - SUBAREA_LEAD_MS, |_| true),
         BTreeSet::from([region])
     );
-    map.runs.push(ground);
+    map.runs = vec![ground];
     map.runs.sort_by_key(|run| (run.floor, run.y, run.begin));
     for (lead, expected) in [
         (AREA_LEAD_MS + 1, BTreeSet::new()),
