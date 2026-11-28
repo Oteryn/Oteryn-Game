@@ -55,7 +55,9 @@ use oteryn_protocol_oteryn::actor_spell_v2::{
     ParameterSpellCastIntent, ParameterSpellCastResult, decode_parameter_spell_cast_result,
     encode_parameter_spell_cast_intent, encode_parameter_spell_cast_result,
 };
-use oteryn_simulation_determinism::SemanticTimeMicros;
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
+};
 #[path = "native_companion_item_cast.rs"]
 mod native_companion_item_cast;
 
@@ -971,6 +973,42 @@ impl PreparedNativeCombatCast {
                     .expect("prevalidated actual timer owner")
                     .install_preflighted(proof);
             }
+        }
+        #[cfg(feature = "qualification-cast-evidence")]
+        if result.applied
+            && let Some(evidence) = self
+                .magnitude
+                .as_deref()
+                .and_then(|owner| owner.harmony_damage_evidence.as_ref())
+            && let Some(health) = result
+                .effects
+                .iter()
+                .find(|effect| {
+                    effect.target == evidence.target && effect.sub_ordinal == evidence.sub_ordinal
+                })
+                .and_then(|effect| effect.health)
+        {
+            let actor = crate::spell::combat_execution::actor_atom(result.caster);
+            let target = crate::spell::combat_execution::actor_atom(evidence.target);
+            let session = result
+                .command
+                .game_session_id()
+                .as_bytes()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            let generation = evidence.target.actor_local_generation();
+            let command = result.command.command_id().get();
+            let denominator = crate::spell::harmony::MULTIPLIER_DENOMINATOR;
+            let committed = health.committed_health_loss().map_or(0, |loss| loss.get());
+            eprintln!(
+                "SEAM_EVIDENCE c12_harmony_damage level=info actor={actor} session={session} command={command} target={target} generation={generation} spell={} pre_harmony_roll={} harmony_charges={} multiplier_numerator={} multiplier_denominator={denominator} rolled_damage={} committed_damage={committed}",
+                evidence.spell,
+                evidence.pre_harmony_roll,
+                evidence.charges,
+                evidence.multiplier_numerator,
+                evidence.rolled_damage,
+            );
         }
         #[cfg(feature = "qualification-cast-evidence")]
         if result.applied
@@ -2044,6 +2082,28 @@ fn timer_preflight(
         .map_err(|_| SpellCastDisposition::Rejected)
 }
 
+fn native_cast_occurrence_bytes(
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+) -> [u8; 16] {
+    nonce(
+        b"oteryn:native-cast-occurrence:v1",
+        actor,
+        session,
+        command,
+        &[],
+    )
+}
+
+fn native_cast_draw(
+    stream: &GameplayDecisionRoot,
+    decision: DecisionOccurrenceId,
+    ordinal: u64,
+) -> Option<u64> {
+    deterministic_decision_u64(stream, decision, "spell.cast.draw", ordinal).ok()
+}
+
 fn nonce(
     tag: &[u8],
     actor: ExactActorRef,
@@ -2849,7 +2909,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         },
                         None=>None,
                     };
-                    let bytes=nonce(b"oteryn:native-cast-occurrence:v1",actor,session,command_id,&[]);
+                    let bytes=native_cast_occurrence_bytes(actor,session,command_id);
                     let hex=|v:[u8;16]|v.iter().map(|b|format!("{b:02x}")).collect::<String>();
                     let revisions=crate::ability::RevisionSet::new("ruleset:spell-native-r20",&format!("content:{}",
                         content.source_digest().iter().map(|b|format!("{b:02x}")).collect::<String>()),
@@ -2857,11 +2917,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|_|DurabilityError::Unavailable)?;
                     let occurrence=AbilityOccurrence::new(&format!("native-cast:{}",hex(bytes)),revisions)
                         .map_err(|_|DurabilityError::Unavailable)?;
-                    let decision=oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(bytes);
-                    let stream=oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content.source_digest());
+                    let decision=DecisionOccurrenceId::from_bytes(bytes);
+                    let stream=GameplayDecisionRoot::from_bytes(content.source_digest());
                     let mut ordinal=0_u64;let mut invalid_draw=false;let mut draw=|minimum,maximum|{
-                        match (oteryn_simulation_determinism::deterministic_decision_u64(&stream,decision,"spell.cast.draw",ordinal),ordinal.checked_add(1)) {
-                            (Ok(value),Some(next))=>{ordinal=next;crate::spell::uniform_draw(value,minimum,maximum)},
+                        match (native_cast_draw(&stream,decision,ordinal),ordinal.checked_add(1)) {
+                            (Some(value),Some(next))=>{ordinal=next;crate::spell::uniform_draw(value,minimum,maximum)},
                             _=>{invalid_draw=true;minimum},
                         }
                     };

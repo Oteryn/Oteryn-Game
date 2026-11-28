@@ -258,6 +258,18 @@ impl Target {
     }
 }
 
+#[cfg(feature = "qualification-cast-evidence")]
+#[derive(Debug)]
+pub struct HarmonyDamageEvidence {
+    pub spell: String,
+    pub target: ExactActorRef,
+    pub sub_ordinal: u16,
+    pub pre_harmony_roll: i64,
+    pub rolled_damage: i64,
+    pub charges: u8,
+    pub multiplier_numerator: u64,
+}
+
 #[derive(Debug)]
 pub struct PreparedMagnitudeOwner {
     pub attributes: MagnitudeOwnedAttributes,
@@ -267,6 +279,8 @@ pub struct PreparedMagnitudeOwner {
     caster: PlayerSpellState,
     #[cfg(feature = "qualification-cast-evidence")]
     base_damage_evidence: Vec<(ExactActorRef, i64, i64, bool, &'static str, u64)>,
+    #[cfg(feature = "qualification-cast-evidence")]
+    pub harmony_damage_evidence: Option<HarmonyDamageEvidence>,
     selected_spell: Option<String>,
     selected_focus_group: bool,
     now_ms: u64,
@@ -928,6 +942,8 @@ impl PreparedMagnitudeOwner {
             caster: caster.clone(),
             #[cfg(feature = "qualification-cast-evidence")]
             base_damage_evidence: Vec::new(),
+            #[cfg(feature = "qualification-cast-evidence")]
+            harmony_damage_evidence: None,
             selected_spell: None,
             selected_focus_group: false,
             now_ms,
@@ -1993,6 +2009,8 @@ mod tests {
                     caster: player(),
                     #[cfg(feature = "qualification-cast-evidence")]
                     base_damage_evidence: Vec::new(),
+                    #[cfg(feature = "qualification-cast-evidence")]
+                    harmony_damage_evidence: None,
                     selected_spell: None,
                     selected_focus_group: false,
                     now_ms: 1,
