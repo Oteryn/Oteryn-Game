@@ -119,6 +119,18 @@ async fn exercise(h: &fixture::Harness) -> fixture::TestResult {
         return Err("the first post-commit tick must admit exactly one Hare firing".into());
     };
     assert_eq!(fired_key.as_str(), key);
+    // With a zero-delay wave the deadline is already due. A retry before
+    // the live Channel starts draining effects must leave the firing runnable.
+    assert!(
+        check_raid_tick(&h.root, &authority, &h.node, &catalogue, &tick, None)
+            .await??
+            .firings
+            .is_empty()
+    );
+    assert_eq!(
+        h.root.due_raid_firings(channel).await?,
+        vec![(*firing, fired_key.clone())],
+    );
     let selected = catalogue
         .get(fired_key)
         .ok_or("Hare")?

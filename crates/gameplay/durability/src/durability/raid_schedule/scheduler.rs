@@ -287,6 +287,14 @@ impl DurabilityRoot {
                         .bind(candidate.firing_id.as_slice()).bind(request.world.as_bytes().as_slice())
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
+                    if matches!(action, RaidAction::PostSaveCheck { .. }) {
+                        // The zero-delay effects are due immediately. Register pending
+                        // live runs now so deadline reconciliation cannot abandon them
+                        // if another scheduler pass arrives before dispatch polls.
+                        sqlx::query("INSERT INTO game_world_raid_channel_runs(firing_id,channel_id,owner_generation,updated_at_ms) SELECT firing_id,channel_id,owner_generation,$2 FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid ORDER BY channel_id")
+                            .bind(candidate.firing_id.as_slice()).bind(request.now_ms)
+                            .execute(&mut *tx).await?;
+                    }
                     if legacy { legacy_running = true; }
                     fired.push((candidate.firing_id, candidate.key));
                 }
