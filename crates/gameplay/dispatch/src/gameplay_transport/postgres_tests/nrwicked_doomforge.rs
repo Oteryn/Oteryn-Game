@@ -594,6 +594,11 @@ async fn two_player_encounter(
         assert_eq!(changed.rows_affected(), 1);
         barrier.1.notify_one();
         using_lever.await
+    } else if matches!(case, Scenario::AdmissionAckLost) {
+        super::quest_world_callbacks_fixtures::with_moving_bystander(
+            owner, h, "LOCK game_source_boss_admissions IN SHARE MODE",
+            std::time::Duration::from_secs(11), async { Ok(use_lever.await) },
+        ).await?
     } else {
         use_lever.await
     };

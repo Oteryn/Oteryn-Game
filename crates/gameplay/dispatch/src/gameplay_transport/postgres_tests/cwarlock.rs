@@ -96,6 +96,14 @@ fn cwarlock_successor_keeps_paid_cooldown_after_publication_postgres() -> TestRe
     scenario(admin, 9)
 }
 
+#[test]
+fn cwarlock_live_owner_resumes_unpublished_party_payment_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, 10)
+}
+
 fn scenario(_admin: String, mode: u8) -> TestResult {
     let started = std::time::Instant::now();
     super::kill_reward_e2e_fixtures::scenario_thread::run("cwarlock", move || {
@@ -366,12 +374,39 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             };
             use std::sync::atomic::Ordering;
             let interrupted = mode == 8;
-            if interrupted {
+            if interrupted || mode == 10 {
                 owner.states.quest_callbacks.interrupt_source_boss_before_projection
                     .store(true, Ordering::Release);
             }
             let before = owner.owner_now().get();
-            let outcome = use_lever(&owner, &admitted, &placement, 0, 4).await;
+            let use_command = use_lever(&owner, &admitted, &placement, 0, 4);
+            let outcome = if mode == 1 {
+                super::quest_world_callbacks_fixtures::with_moving_bystander(
+                    &owner, &h, "LOCK game_source_boss_admissions IN SHARE MODE",
+                    std::time::Duration::ZERO, async { Ok(use_command.await) },
+                ).await?
+            } else {
+                use_command.await
+            };
+            if mode == 10 {
+                use crate::durability::boss_encounter::SourceBossLever;
+                use super::source_boss_handoff_fixtures::{active_cooldowns, assert_paid_receipt};
+                assert_eq!(outcome, UseDisposition::Rejected);
+                let paid = active_cooldowns(&h, SourceBossLever::CourtWarlock).await?;
+                assert_eq!(paid.len(), 1);
+                assert_eq!(crate::map::view::MapFacts::object_revision(world.facts(), key), 0);
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                assert_eq!(use_lever(&owner, &admitted, &placement, 0, 5).await, UseDisposition::Committed);
+                assert_eq!(active_cooldowns(&h, SourceBossLever::CourtWarlock).await?, paid);
+                assert_paid_receipt(&h, &paid[0].1.as_slice().try_into()?).await?;
+                assert_eq!(owner.states.spell_states.lock().await.encounter_phases.active
+                    .lock().map_err(|_| "phases")?.len(), 1);
+                assert_eq!(crate::map::view::MapFacts::object_revision(world.facts(), key), 1);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let began = owner.owner_now().get();
             if interrupted {
                 assert_eq!(outcome, UseDisposition::Rejected);

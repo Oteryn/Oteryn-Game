@@ -15,6 +15,9 @@ pub struct StagedQuestEncounter<'owner, T> {
     output: (Vec<MovementPositionSnapshot>, T),
 }
 
+/// Proof that a single staged spawn generation was retired in the live free list.
+pub struct RetainedEncounterSpawn(ExactActorRef);
+
 /// Compare the original carrier before installing a batch prepared in an earlier turn.
 pub struct DetachedQuestEncounter<T> {
     binding: ScopeRuntimeAssignmentBinding,
@@ -65,7 +68,10 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
 
     /// Keep an identity used by a durable write retired even if staging is dropped.
     /// Only the generation advances in the live carrier; the slot remains vacant.
-    pub fn retain_spawn_generation(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
+    pub fn retain_spawn_generation(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<RetainedEncounterSpawn, CarrierError> {
         let index = self
             .carrier
             .validate_ref(&self.runtime.continuity, actor.0)?;
@@ -77,7 +83,7 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
             return Err(CarrierError::PlanConflict);
         }
         *generation = staged_generation;
-        Ok(())
+        Ok(RetainedEncounterSpawn(actor))
     }
 
     pub fn detach(self) -> DetachedQuestEncounter<T> {
@@ -332,6 +338,7 @@ impl ChannelRuntimeV1 {
         &mut self,
         players: Vec<P>,
         monsters: &[(&str, i64, MovementLocalPosition)],
+        retained: Option<RetainedEncounterSpawn>,
         bind: impl FnOnce(&mut Self, &[ExactActorRef]) -> Result<T, CarrierError>,
     ) -> Result<StagedQuestEncounter<'_, T>, CarrierError> {
         self.stage_quest_entry(
@@ -339,6 +346,7 @@ impl ChannelRuntimeV1 {
             monsters,
             |runtime, actors, _| bind(runtime, actors),
             true,
+            retained,
         )
     }
 
@@ -420,7 +428,7 @@ impl ChannelRuntimeV1 {
         publish: bool,
         deferred_spawns: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
-        let staged = self.stage_quest_entry(players, monsters, bind, deferred_spawns)?;
+        let staged = self.stage_quest_entry(players, monsters, bind, deferred_spawns, None)?;
         if !project() {
             return Err(CarrierError::PlanConflict);
         }
@@ -441,6 +449,7 @@ impl ChannelRuntimeV1 {
             &[MovementPositionSnapshot],
         ) -> Result<T, CarrierError>,
         deferred_spawns: bool,
+        retained: Option<RetainedEncounterSpawn>,
     ) -> Result<StagedQuestEncounter<'_, T>, CarrierError> {
         if players.is_empty()
             || players.len() > 16
@@ -460,6 +469,29 @@ impl ChannelRuntimeV1 {
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
         let before = self.carrier.clone();
         let result = (|| {
+            // Reuse only the exact retired generation in this scratch carrier.
+            // The live vacancy is restored below on success and on error.
+            if let Some(RetainedEncounterSpawn(actor)) = retained {
+                let index = self.carrier.free_head.ok_or(CarrierError::PlanConflict)?;
+                if monsters.len() != 1
+                    || actor.runtime_scope() != self.binding.runtime_scope
+                    || actor.scope_generation() != self.continuity.current_generation
+                    || index.checked_add(1) != Some(actor.actor_local_id())
+                {
+                    return Err(CarrierError::PlanConflict);
+                }
+                let Slot::VacantReusable { generation, .. } =
+                    &mut self.carrier.slots[index as usize]
+                else {
+                    return Err(CarrierError::PlanConflict);
+                };
+                if *generation != actor.actor_local_generation() {
+                    return Err(CarrierError::PlanConflict);
+                }
+                *generation = generation
+                    .checked_sub(1)
+                    .ok_or(CarrierError::PlanConflict)?;
+            }
             let mut actors = Vec::new();
             actors
                 .try_reserve(monsters.len())

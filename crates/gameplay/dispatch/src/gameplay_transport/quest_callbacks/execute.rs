@@ -1921,6 +1921,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         after,
                         cause,
                         lever,
+                        publication,
                     },
                 )
                 .await;

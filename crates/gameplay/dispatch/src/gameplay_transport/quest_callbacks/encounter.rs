@@ -3,7 +3,7 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    DetachedQuestEncounter, EncounterDefenders,
+    DetachedQuestEncounter, EncounterDefenders, RetainedEncounterSpawn,
 };
 
 struct PreparedPhase {
@@ -19,6 +19,7 @@ struct EncounterCreditPublication {
 
 pub(super) struct StagedSourceBoss {
     native: DetachedQuestEncounter<PreparedPhase>,
+    retained_spawn: Option<RetainedEncounterSpawn>,
     players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
     visit: Option<EncounterVisit>,
@@ -113,6 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             reservation,
             projection,
             None,
+            None,
         )
     }
 
@@ -140,6 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             None,
             Some(&mut staged),
+            None,
         );
         staged.ok_or(disposition)
     }
@@ -246,6 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(reservation),
             None,
             Some(&mut staged),
+            None,
         );
         let Some(staged) = staged else {
             return disposition;
@@ -254,6 +258,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseDisposition::Rejected;
         };
         let count = *count;
+        let StagedSourceBoss {
+            players,
+            retained_spawn,
+            ..
+        } = staged;
         drop(states_guard);
         drop(runtime_guard);
         let delivery = self
@@ -289,12 +298,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if matches!(delivery, Ok(true)) {
             let (mut runtime, mut states) = self.callback_guards().await;
+            // The durable delivery row now owns recovery even if this live attempt conflicts.
+            if let Ok(mut records) = self.states.quest_callbacks.records.lock()
+                && records
+                    .get(&session)
+                    .is_some_and(|record| record.cause == cause && record.actor == actor)
+            {
+                records.remove(&session);
+            }
             if !states.current_cooldown_transport(actor, session, fence.connection_generation.get())
+                || !runtime
+                    .bound_attacker_lease(actor, session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
             {
                 return UseDisposition::StaleState;
             }
+            let mut current = None;
+            let disposition = self.quest_encounter(
+                &mut runtime,
+                &mut states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected,
+                after,
+                false,
+                cause,
+                Some(reservation),
+                None,
+                Some(&mut current),
+                retained_spawn,
+            );
+            let Some(current) = current else {
+                return disposition;
+            };
+            if current.players != players || current.native.prepared().actors != [count] {
+                return UseDisposition::StaleState;
+            }
             self.publish_staged_encounter(
-                staged,
+                current,
                 &mut runtime,
                 &mut states,
                 map,
@@ -345,6 +392,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             projection,
             None,
+            None,
         )
     }
 
@@ -365,6 +413,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
         projection: Option<&QuestCallbackProjection>,
         staged_source_boss: Option<&mut Option<StagedSourceBoss>>,
+        retained_spawn: Option<RetainedEncounterSpawn>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -675,7 +724,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
         };
         if let Some(staged) = staged_source_boss {
-            let Ok(mut native) = runtime.stage_quest_encounter_with_phase(proofs, &monsters, bind)
+            let retain_spawn = retained_spawn.is_none()
+                && VampireCoffinKind::for_callback(&callback.key).is_some();
+            let Ok(mut native) =
+                runtime.stage_quest_encounter_with_phase(proofs, &monsters, retained_spawn, bind)
             else {
                 return UseDisposition::Rejected;
             };
@@ -685,15 +737,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     prepared,
                 }
             });
-            if VampireCoffinKind::for_callback(&callback.key).is_some() {
+            let retained_spawn = if retain_spawn {
                 let [count] = native.prepared().actors.as_slice() else {
                     return UseDisposition::Rejected;
                 };
-                if native.retain_spawn_generation(*count).is_err() {
+                let Ok(retained) = native.retain_spawn_generation(*count) else {
                     return UseDisposition::Rejected;
-                }
-            }
+                };
+                Some(retained)
+            } else {
+                None
+            };
             *staged = Some(StagedSourceBoss {
+                retained_spawn,
                 native: native.detach(),
                 players,
                 capture,

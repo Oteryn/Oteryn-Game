@@ -21,6 +21,39 @@ pub(super) async fn while_blocked<T>(
     lock: &'static str,
     operation: impl std::future::Future<Output = TestResult<T>>,
 ) -> TestResult<T> {
+    observe_blocked(owner, h, lock, operation, None).await
+}
+
+/// Exercise a real movement commit while the encounter writer waits on its table lock.
+pub(super) async fn with_moving_bystander<T>(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    lock: &'static str,
+    hold_after_unlock: std::time::Duration,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = crate::foundation::GameSessionId::decode(&id(211)).map_err(debug)?;
+        let reserved = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reserved).map_err(debug)?;
+        runtime.initialize_pinned_test_position(actor, MovementLocalPosition {
+            x: 300, y: 300, floor: 0,
+        }).map_err(debug)?;
+        actor
+    };
+    let result = observe_blocked(owner, h, lock, operation, Some((actor, hold_after_unlock))).await?;
+    assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position().x, 301);
+    Ok(result)
+}
+
+async fn observe_blocked<T>(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    lock: &'static str,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+    bystander: Option<(crate::foundation::ExactActorRef, std::time::Duration)>,
+) -> TestResult<T> {
     let mut blocker = h.pool.begin().await?;
     sqlx::query(lock).execute(&mut *blocker).await?;
     let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *blocker).await?;
@@ -35,8 +68,26 @@ pub(super) async fn while_blocked<T>(
             }
         }).await;
         let available = owner.runtime.try_lock().is_ok() && owner.states.spell_states.try_lock().is_ok();
-        blocker.rollback().await?;
         waited??;
+        if let Some((actor, hold)) = bystander {
+            let mut runtime = owner.runtime.try_lock().map_err(|_| "runtime held during encounter write")?;
+            let context = runtime.encounter_position_context();
+            let (carrier, continuity) = runtime.encounter_parts_mut();
+            let before = carrier.read_position(continuity, actor.0).map_err(debug)?;
+            carrier.compare_commit_position(continuity, before, context, crate::domain::carrier_values::LocalPosition {
+                x: 301, y: 300, floor: 0,
+            }).map_err(debug)?;
+            if hold.is_zero() {
+                drop(runtime);
+                blocker.rollback().await?;
+            } else {
+                blocker.rollback().await?;
+                tokio::time::sleep(hold).await;
+                drop(runtime);
+            }
+        } else {
+            blocker.rollback().await?;
+        }
         assert!(available, "channel owners unavailable while waiting on {lock}");
         Ok::<_, Box<dyn std::error::Error>>(())
     };
