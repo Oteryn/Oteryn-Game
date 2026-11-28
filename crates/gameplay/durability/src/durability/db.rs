@@ -1964,7 +1964,7 @@ impl DurabilityRoot {
         self.holder_owner
             .lock()
             .ok()
-            .and_then(|owner| owner.map(|(caller, issued, _)| (caller, issued.elapsed())))
+            .and_then(|owner| owner.map(|(caller, issued, _, _)| (caller, issued.elapsed())))
     }
 
     #[track_caller]
