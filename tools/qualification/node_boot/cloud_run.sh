@@ -83,14 +83,14 @@ selected_exiva_replay() {
 
 replay_exiva_capture() {
   local log=$1 capture_dir=$2 replay_log=$3 started=$SECONDS
-  local test=exiva_settings::e2e_p17::e2e_p17_replays_exiva_deny_add_and_remove_lists
+  local test=play::tests::feature_0147_exiva_settings::e2e_p17_replays_live_exiva_results
   if grep -q '^SEAM_EVIDENCE e2e_all scenario=P17\.client status=FAIL ' "$log"; then
     return 1
   fi
   local binding
-  binding=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P17\.client status=CAPTURED evidence=([0-9a-f-]{36}(:[0-9]+){4})$/\1/p' "$log")
+  binding=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P17\.client status=CAPTURED evidence=([0-9a-f-]{36}(:[0-9]+){3}:[0-9a-f-]{36}(:[0-9]+){2})$/\1/p' "$log")
   if [[ -n "$binding" && "$binding" != *$'\n'* ]] &&
-    E2E_ALL_CAPTURE_DIR="$capture_dir" E2E_P17_BINDING="$binding" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" E2E_P17_BINDING="$binding" cargo +1.100.0 test --locked -p oteryn-client --lib "$test" -- --exact >"$replay_log" 2>&1 &&
     grep -Fqx "test $test ... ok" "$replay_log"; then
     printf 'SEAM_EVIDENCE e2e_all scenario=P17.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
     return 0

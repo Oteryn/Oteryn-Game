@@ -11,9 +11,6 @@ pub use view::panel_text;
 #[cfg(test)]
 #[path = "tests/e2e_c05.rs"]
 mod e2e_c05;
-#[cfg(test)]
-#[path = "tests/e2e_p17.rs"]
-mod e2e_p17;
 
 #[cfg(test)]
 mod tests {
@@ -32,6 +29,13 @@ mod tests {
         panel.pending = false;
         assert!(panel.apply(&list.encode().ok_or("list")?));
         assert!(panel_text(&panel).contains("Al"));
+        let mut truncated = list.encode().ok_or("list")?;
+        truncated.pop();
+        for malformed in [&[0, 32][..], &truncated] {
+            assert!(!panel.apply(malformed));
+            assert_eq!(panel.list.as_ref(), Some(&list));
+            assert_eq!(panel.error, Some("Exiva request refused; refresh the list"));
+        }
         let mut remove = vec![2];
         remove.extend([3; 16]);
         assert!(request(&mut panel, remove).is_some());

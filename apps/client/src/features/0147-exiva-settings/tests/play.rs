@@ -124,3 +124,117 @@ fn exiva_native_input_runs_edits_and_server_refresh_through_the_session_queue() 
         .join()
         .map_err(|_| "Exiva UI test thread panicked")?
 }
+
+#[test]
+fn e2e_p17_replays_live_exiva_results() -> Result<(), Error> {
+    use oteryn_session::CommandStatus;
+
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let root = std::path::Path::new(&root);
+    let expected = std::fs::read_to_string(root.join("p17-expected.txt"))?;
+    let field = |key: &str| -> Result<&str, Error> {
+        expected
+            .lines()
+            .filter_map(|line| line.split_once('='))
+            .find_map(|(name, value)| (name == key).then_some(value))
+            .ok_or_else(|| format!("expected line {key} absent").into())
+    };
+    let binding = std::env::var("E2E_P17_BINDING")?;
+    assert_eq!(field("binding")?, binding);
+    let fields: Vec<_> = binding.split(':').collect();
+    let [original, deny, allow, refuse, relog, retain, remove] = fields.as_slice() else {
+        return Err("expected two sessions and five server sequences".into());
+    };
+    assert_ne!(original, relog);
+    let (deny, allow, refuse) = (
+        deny.parse::<u64>()?,
+        allow.parse::<u64>()?,
+        refuse.parse::<u64>()?,
+    );
+    let (retain, remove) = (retain.parse::<u64>()?, remove.parse::<u64>()?);
+    assert!(0 < deny && deny < allow && allow < refuse);
+    assert!(0 < retain && retain < remove);
+
+    let result = |name: &str, status, server_sequence| -> Result<GatedCommandResult, Error> {
+        let command_id = field(&format!("{name}_command"))?.parse()?;
+        assert_ne!(command_id, 0);
+        Ok(GatedCommandResult {
+            command_id,
+            status,
+            server_sequence,
+            payload: std::fs::read(root.join(format!("p17-{name}.bin")))?,
+        })
+    };
+    let (id_hex, name) = field("player")?
+        .split_once(' ')
+        .ok_or("missing named entry")?;
+    assert_eq!(id_hex.len(), 32);
+    let mut id = [0; 16];
+    for (index, byte) in id.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&id_hex[index * 2..index * 2 + 2], 16)?;
+    }
+    let listed = PlayerList {
+        modes: 2,
+        players: vec![(id, name.to_owned())],
+    };
+    let (link, _commands, outbox) = play_channel();
+    outbox.exiva_initialize(true);
+    outbox.exiva_result(&result("denied", CommandStatus::Accepted, deny)?);
+    assert_eq!(
+        link.exiva_panel().list,
+        Some(PlayerList {
+            modes: 0,
+            players: vec![]
+        })
+    );
+    assert_eq!(
+        panel_text(&link.exiva_panel()),
+        "Exiva allow list (0/100)\r\n"
+    );
+    outbox.exiva_result(&result("allowed", CommandStatus::Accepted, allow)?);
+    assert_eq!(link.exiva_panel().list.as_ref(), Some(&listed));
+    assert_eq!(
+        panel_text(&link.exiva_panel()),
+        format!("Exiva allow list (1/100)\r\n{name}")
+    );
+    assert_eq!(link.exiva_panel().error, None);
+
+    link.exiva_request(vec![5]);
+    assert!(link.exiva_panel().pending);
+    let status = match field("refused_status")? {
+        "Rejected" => CommandStatus::Rejected,
+        other => return Err(format!("expected Rejected, captured {other}").into()),
+    };
+    let refused = result("refused", status, refuse)?;
+    assert_eq!(refused.payload, [0]);
+    outbox.exiva_result(&refused);
+    let panel = link.exiva_panel();
+    assert_eq!(panel.error, Some("Exiva request refused; refresh the list"));
+    assert!(!panel.pending);
+    assert_eq!(panel.list.as_ref(), Some(&listed));
+
+    let (link, _commands, outbox) = play_channel();
+    outbox.exiva_initialize(true);
+    outbox.exiva_result(&result("retained", CommandStatus::Accepted, retain)?);
+    assert_eq!(
+        link.exiva_panel().list,
+        Some(listed),
+        "relogin lost named permissions"
+    );
+    assert_eq!(link.exiva_panel().error, None);
+    outbox.exiva_result(&result("removed", CommandStatus::Accepted, remove)?);
+    assert_eq!(
+        link.exiva_panel().list,
+        Some(PlayerList {
+            modes: 2,
+            players: vec![]
+        })
+    );
+    assert_eq!(
+        panel_text(&link.exiva_panel()),
+        "Exiva allow list (0/100)\r\n"
+    );
+    Ok(())
+}

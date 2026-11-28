@@ -686,12 +686,13 @@ class CloudRunSummaryTests(unittest.TestCase):
     def test_exiva_replay_requires_capture_and_an_executed_test(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("replay_exiva_capture()"):cloud.index("selected_loyalty_replay()")]
-        capture = 'SEAM_EVIDENCE e2e_capture scenario=P17.client status=CAPTURED evidence=01934f10-7c00-7000-8000-000000000020:1:2:3:4\n'
+        capture = 'SEAM_EVIDENCE e2e_capture scenario=P17.client status=CAPTURED evidence=01934f10-7c00-7000-8000-000000000020:1:2:3:01934f10-7c00-7000-8000-000000000021:1:2\n'
         failure = 'SEAM_EVIDENCE e2e_all scenario=P17.client status=FAIL evidence=row-error\n'
         command = helper + textwrap.dedent(r'''
             cargo() {
               [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
-              [[ "$E2E_P17_BINDING" == 01934f10-7c00-7000-8000-000000000020:1:2:3:4 ]] || return 1
+              [[ "$E2E_P17_BINDING" == 01934f10-7c00-7000-8000-000000000020:1:2:3:01934f10-7c00-7000-8000-000000000021:1:2 ]] || return 1
+              [[ "$5" == oteryn-client && "$7" == play::tests::feature_0147_exiva_settings::e2e_p17_replays_live_exiva_results ]] || return 1
               case "$REPLAY_RESULT" in
                 pass) printf 'test %s ... ok\n' "$7" ;;
                 unmatched) printf 'running 0 tests\n' ;;
@@ -707,7 +708,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (capture, "fail", False),
             ("", "pass", False),
             (capture * 2, "pass", False),
-            (capture.replace(":1:2:3:4", ""), "pass", False),
+            (capture.replace(":1:2:3", ""), "pass", False),
             (capture.replace("e2e_capture", "e2e_all"), "pass", False),
             (failure, "pass", False),
             (capture + failure, "pass", False),
