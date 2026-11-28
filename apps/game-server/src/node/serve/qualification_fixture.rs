@@ -81,7 +81,14 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     let allowed = matches!(
         profile,
-        "g23" | "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
+        "g23"
+            | "explorer"
+            | "knight"
+            | "paladin"
+            | "sorcerer"
+            | "druid"
+            | "monk"
+            | "knight-underlevel"
     );
     #[cfg(feature = "qualification-spawn")]
     let allowed = allowed
@@ -757,8 +764,7 @@ async fn prepare_build(
             &current,
             native,
             deadline,
-            false,
-            Some(item),
+            (false, Some(item)),
         )
         .await;
     }
@@ -879,9 +885,7 @@ async fn prepare_build(
         &current,
         native,
         deadline,
-        profile == "g23",
-        #[cfg(feature = "qualification-spawn")]
-        None,
+        (profile == "g23", None),
     )
     .await
 }
@@ -980,8 +984,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
-    fund_promotion: bool,
-    #[cfg(feature = "qualification-spawn")] named: Option<(u32, u32)>,
+    (fund_promotion, named): (bool, Option<(u32, u32)>),
 ) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "qualification-spawn")]
     use crate::domain::item_definition::ItemStackClass;
@@ -1020,8 +1023,6 @@ async fn prepare_items(
         .await
         .map_err(|error| format!("qualification inventory: {error:?}"))
     };
-    #[cfg(not(feature = "qualification-spawn"))]
-    let named: Option<(u32, u32)> = None;
     let mut inventory = read_inventory().await?;
     if inventory.backpack.is_none() && named.is_none() {
         use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
