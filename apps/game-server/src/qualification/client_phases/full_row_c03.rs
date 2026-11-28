@@ -134,32 +134,19 @@ async fn tab(client: &mut DevClientSession, tab: CharacterTab) -> TestResult<com
         ..Default::default()
     };
     let command = request(&mut panel, Intent::Tab).ok_or("C03 combat page request unavailable")?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        let response = client
-            .session_mut()
-            .gated_command(command.capability, command.kind, &command.payload)
-            .await?;
-        if response.status == CommandStatus::Accepted {
-            let stats = combat::CombatStats::decode(&response.payload)
-                .map_err(|error| format!("tab-{tab:?}-decode:{error:?}"))?;
-            if stats.tab() != tab {
-                return Err(format!("C03 expected {tab:?} but received {:?}", stats.tab()).into());
-            }
-            return Ok(stats);
-        }
-        if !retry_combat_page(response.status, tokio::time::Instant::now() >= deadline) {
-            return Err(format!("character-tab-{tab:?}-status:{:?}; combat snapshot unavailable (attack/cyclopedia.rs:113)", response.status).into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
+    let response = client
+        .session_mut()
+        .gated_command(command.capability, command.kind, &command.payload)
+        .await?;
+    if response.status != CommandStatus::Accepted {
+        return Err(format!("character-tab-{tab:?}-status:{:?}", response.status).into());
     }
-}
-
-fn retry_combat_page(status: CommandStatus, expired: bool) -> bool {
-    // The snapshot owner can reject a read while an equipment refresh or
-    // combat lock is in flight. A closed transport still returns immediately.
-    status == CommandStatus::Rejected && !expired
+    let stats = combat::CombatStats::decode(&response.payload)
+        .map_err(|error| format!("tab-{tab:?}-decode:{error:?}"))?;
+    if stats.tab() != tab {
+        return Err(format!("C03 expected {tab:?} but received {:?}", stats.tab()).into());
+    }
+    Ok(stats)
 }
 
 struct Stats {
@@ -544,17 +531,20 @@ async fn strip(client: &mut DevClientSession) -> TestResult<(Vec<(items::Equipme
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
-    loop {
-        let reply = client.session_mut().logout().await?;
-        if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Ok(());
+    // The active combat constants give an ordinary hit a 60-second fight lock.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while client.session_mut().combat_state().is_none_or(|state| state.in_fight) {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("C03 combat lock did not clear before logout".into());
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("logout reply={:?}", reply.result).into());
-        }
-        client.service_liveness(Duration::from_millis(250)).await?;
+        client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
     }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("logout reply={:?}", reply.result).into());
+    }
+    Ok(())
 }
 
 fn needed(stat: &str, projection: i64) -> String {
@@ -708,7 +698,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 
     // refusal and durability.
     let before_vitals = *client.actor_vitals().ok_or("vitals-absent")?;
+    let before_combat = client.session_mut().combat_state().copied()
+        .ok_or("combat-state-absent-before-self-target")?;
+    let before_inventory = custody(&client)?;
     let refusal = client.session_mut().attack_target(Some(&me)).await?;
+    let refusal_inert = client.actor_vitals() == Some(&before_vitals)
+        && client.session_mut().combat_state() == Some(&before_combat)
+        && custody(&client)? == before_inventory;
     client.service_liveness(Duration::from_millis(300)).await?;
     let self_damage: Vec<_> = client
         .take_events()
@@ -730,10 +726,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         && after.same(&after_restore)
         && after.offence.equipment_revision == after_restore.offence.equipment_revision
         && after.defence.equipment_revision == after_restore.defence.equipment_revision;
-    if refusal.disposition != AttackIntentDisposition::Ok && self_damage.is_empty() && durable {
+    if refusal.disposition == AttackIntentDisposition::TargetNotACreature
+        && refusal_inert && self_damage.is_empty() && durable
+    {
         row.pass("refusal-relog", (refusal, before_vitals.health));
     } else {
-        row.fail("refusal-relog", format!("self-target-reply={refusal:?};self-damage={self_damage:?};durable={durable}"));
+        row.fail("refusal-relog", format!("self-target-reply={refusal:?};self-damage={self_damage:?};inert={refusal_inert};durable={durable}"));
     }
     logout(&mut fresh).await
 }
@@ -867,13 +865,6 @@ mod tests {
             [("admission", "fixture-release closed the connection".to_owned())]
         );
         assert!(!row.passed.contains(&"tabs"));
-    }
-
-    #[test]
-    fn combat_page_retries_rejection_only_before_deadline() {
-        assert!(retry_combat_page(CommandStatus::Rejected, false));
-        assert!(!retry_combat_page(CommandStatus::Rejected, true));
-        assert!(!retry_combat_page(CommandStatus::Accepted, false));
     }
 
     #[test]

@@ -207,8 +207,8 @@ pub async fn prepare_from_owners(
     };
     let elemental = if parameters.get("elemental_stance").is_some() {
         owned
-            .elemental_stance_for_cast(now.get())
-            .map_err(|_| SpellCastDisposition::Rejected)?
+            .elemental_stance(now.get())
+            .ok_or(SpellCastDisposition::Rejected)?
     } else {
         ElementalStance::None
     }; // unconsumed for these recipes
@@ -427,13 +427,12 @@ async fn prepare_spatial(
         )?),
         None => None,
     };
+    if needs_direction && facing.is_none() && aimed.is_none() {
+        return reject();
+    }
     let facing_direction = match aimed {
         Some((_, d)) => d,
-        None => facing.map(direction).unwrap_or(if needs_direction {
-            cast_direction(cast_plans::DEFAULT_PLAYER_SPELL_DIRECTION)
-        } else {
-            Direction::North
-        }),
+        None => facing.map(direction).unwrap_or(Direction::North), // unused by symmetric/self recipes
     };
     let is_delayed = parameters.get("delay_ms").is_some();
     let is_divine_grenade = parameters["spell_name"] == "divine grenade";
@@ -519,14 +518,8 @@ async fn prepare_spatial(
             position
         },
         roster,
-    )?;
-    let has_chain = parameters.get("chain").is_some();
-    let override_chain = has_chain && parameters.get("target_filter").is_some();
-    cast_plans::extend_native_target_tiles(
         &mut candidates,
-        targets.iter().map(|target| target.position),
-        has_chain && !override_chain,
-    );
+    )?;
     let caster_id = u64::from(actor.actor_local_id());
     if saved.is_none() && !bindings.iter().any(|b| b.actor == actor) {
         return reject();
@@ -549,16 +542,7 @@ async fn prepare_spatial(
         }
         paths.insert((sight_origin, *target), sight_steps(sight_origin, *target)?);
     }
-    if override_chain {
-        let pairs = crate::spell::native_combat::override_chain_sight_pairs(
-            parameters, stage, caster_id, position, &targets,
-        )
-        .map_err(|_| SpellCastDisposition::Rejected)?;
-        for (from, to) in pairs {
-            candidates.insert(to);
-            paths.insert((from, to), sight_steps(from, to)?);
-        }
-    } else if has_chain {
+    if parameters.get("chain").is_some() {
         for a in targets
             .iter()
             .map(|t| t.position)
@@ -600,16 +584,17 @@ async fn prepare_spatial(
         }
     }
     for target in &mut targets {
-        target.legal = tiles.get(&target.position).is_some_and(|tile| {
-            cast_plans::target_legal(
-                tile,
-                caster_tile,
-                target.health,
-                spell.aggressive,
-                target.kind == TargetKind::MasterlessMonster,
-                attackable.contains(&target.id),
-            )
-        });
+        let t = tiles
+            .get(&target.position)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        target.legal = cast_plans::target_legal(
+            t,
+            caster_tile,
+            target.health,
+            spell.aggressive,
+            target.kind == TargetKind::MasterlessMonster,
+            attackable.contains(&target.id),
+        );
     }
     let target_position = match intent.target {
         _ if aimed.is_some() => None,
@@ -630,7 +615,7 @@ async fn prepare_spatial(
         target: None,
         line_of_sight_clear: target_position
             .map(|p| p == position || clear_sight.contains(&(position, p))),
-        direction_available: needs_direction || facing.is_some() || aimed.is_some(),
+        direction_available: facing.is_some() || aimed.is_some(),
         wheel_unlocked: (parameters.get("wheel").is_some()
             || spell
                 .authored
@@ -731,6 +716,7 @@ fn collect_targets(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
+    candidates: &mut BTreeSet<TilePosition>,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let mut bindings = Vec::new();
     let mut attackable = BTreeSet::new();
@@ -802,6 +788,7 @@ fn collect_targets(
             maximum_health,
             legal: false,
         });
+        candidates.insert(p);
     }
     Ok(TargetPhase {
         bindings,

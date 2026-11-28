@@ -1075,7 +1075,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "81447cf23cdb45a9fcc298dcf6d98d477dd34fadb0804d09d5cd6db3f9dbea15"
+          "sha256": "cb75cef50125b97c1da9f31cf65c486b4105875176973a6152abc8a66ccb4a65"
         },
         {
           "creates_canonical_identities": false,

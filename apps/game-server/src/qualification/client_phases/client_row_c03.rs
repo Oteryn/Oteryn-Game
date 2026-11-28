@@ -24,7 +24,7 @@ fn evidence_token(value: &str) -> String {
 async fn combat_page(
     client: &mut oteryn_dev_client::DevClientSession,
     tab: wire::CharacterTab,
-) -> TestResult<(Vec<u8>, wire::combat::CombatStats)> {
+) -> TestResult<(CyclopediaCharacterPanel, GatedCommandResult, wire::combat::CombatStats)> {
     let mut panel = CyclopediaCharacterPanel {
         selected: true,
         tab,
@@ -47,53 +47,66 @@ async fn combat_page(
         command_id: result.command_id,
         status: result.status,
         server_sequence: result.server_sequence,
-        payload: result.payload.clone(),
+        payload: result.payload,
     };
-    if !apply_result(&mut panel, &reply) {
-        return Err(format!("C03 client rejected real {tab:?} combat page").into());
+    Ok((panel, reply, stats))
+}
+
+fn replay(
+    directory: &std::path::Path,
+    stats: &wire::combat::CombatStats,
+    mut panel: CyclopediaCharacterPanel,
+    mut reply: GatedCommandResult,
+) -> TestResult {
+    use std::io::Write as _;
+    let tab = stats.tab();
+    let path = directory.join(format!("{tab:?}-{}.bin", reply.server_sequence));
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?
+        .write_all(&reply.payload)?;
+    let captured = std::fs::read(path)?;
+    if captured != reply.payload {
+        return Err(format!("C03 {tab:?} capture differs from the live reply").into());
     }
-    if !panel_text(&panel).contains("Character revision:") {
+    reply.payload = captured;
+    if !apply_result(&mut panel, &reply) {
+        return Err(format!("C03 client rejected captured {tab:?} combat page").into());
+    }
+    let mut expected = format!(
+        "Cyclopedia character — {tab:?}, offset 0, limit 20\r\n{tab:?}\nObserved at: {} ms\nCharacter revision: {}\nEquipment revision: {}",
+        stats.observed_at_unix_ms, stats.character_revision, stats.equipment_revision
+    );
+    use wire::combat::{CombatStat, CombatStatUnit};
+    for key in CombatStat::for_tab(tab) {
+        use std::fmt::Write as _;
+        let shown = match stats.get(*key) {
+            None => "unavailable".to_owned(),
+            Some(value) => match key.unit() {
+                CombatStatUnit::PartsPerMillion => {
+                    let magnitude = value.unsigned_abs();
+                    let sign = if value < 0 { "-" } else { "" };
+                    format!("{sign}{}.{:04}%", magnitude / 10_000, magnitude % 10_000)
+                }
+                CombatStatUnit::Seconds => format!("{value} seconds"),
+                _ => value.to_string(),
+            },
+        };
+        write!(expected, "\n{key:?}: {shown}")?;
+    }
+    if panel_text(&panel) != expected {
         return Err(format!("C03 client panel did not render the {tab:?} page").into());
     }
-    Ok((result.payload, stats))
-}
-
-/// Server-observed numbers, one `Key=value` line per statistic, for the replay test to render.
-fn expected_numbers(stats: &wire::combat::CombatStats) -> String {
-    let mut text = format!(
-        "tab={:?} observed={} character={} equipment={}\n",
-        stats.tab(),
-        stats.observed_at_unix_ms,
-        stats.character_revision,
-        stats.equipment_revision
-    );
-    for key in wire::combat::CombatStat::for_tab(stats.tab()) {
-        match stats.get(*key) {
-            Some(value) => text.push_str(&format!("{key:?}={value}\n")),
-            None => text.push_str(&format!("{key:?}=unavailable\n")),
-        }
-    }
-    text
-}
-
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(std::path::Path::new(&directory).join(name), bytes) {
-        evidence(&format!(
-            "C03_CAPTURE_WRITE_ERROR file={name} error={}",
-            evidence_token(&error.to_string())
-        ));
-    }
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result: TestResult = verdict::observe(async {
         let mut client = connect_world(clients, 0xc3).await?;
-        let (offence, offence_stats) =
+        let (offence_panel, offence, offence_stats) =
             combat_page(&mut client, wire::CharacterTab::Offence).await?;
-        let (defence, defence_stats) =
+        let (defence_panel, defence, defence_stats) =
             combat_page(&mut client, wire::CharacterTab::Defence).await?;
         // Server-owned anchors: Onslaught is always reported on Offence and the Defence skill id
         // is the fixed shielding id, so the numbers the client renders are not placeholders.
@@ -106,17 +119,17 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         if defence_stats.get(wire::combat::CombatStat::DefenceSkillId) != Some(6) {
             return Err("C03 server Defence page lacks the shielding skill id".into());
         }
-        capture("c03-offence.bin", &offence);
-        capture("c03-defence.bin", &defence);
-        capture(
-            "c03-expected.txt",
-            format!(
-                "{}{}",
-                expected_numbers(&offence_stats),
-                expected_numbers(&defence_stats)
-            )
-            .as_bytes(),
-        );
+        let session = client.join_snapshot().game_session_id;
+        let parent = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir);
+        let directory = parent.join(format!("c03-{session:?}"));
+        std::fs::create_dir(&directory)?;
+        if defence.server_sequence <= offence.server_sequence {
+            return Err("C03 Defence reply sequence did not follow Offence".into());
+        }
+        replay(&directory, &offence_stats, offence_panel, offence)?;
+        replay(&directory, &defence_stats, defence_panel, defence)?;
         evidence("e2e_all scenario=C03.client status=PASS payload=cyclopedia-combat-pages");
         Ok(())
     })
