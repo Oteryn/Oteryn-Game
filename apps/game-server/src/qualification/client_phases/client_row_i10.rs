@@ -152,11 +152,15 @@ const DOOR: TilePos = TilePos {
     floor: -7,
 };
 
-async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+pub(super) async fn walk_to(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    target: TilePos,
+) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route_live(client, world, |at| at == ENTRANCE)
+    let path = route_live(client, world, move |at| at == target)
         .await?
-        .ok_or("I10 authored route to Upper Swamp Lane 2 is unavailable")?;
+        .ok_or_else(|| format!("I10 authored route to {target:?} is unavailable"))?;
     let mut at = start;
     // The live target-walk command admits targets within 12 tiles.
     for segment in path.chunks(8) {
@@ -165,7 +169,16 @@ async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> Test
         }
         walk_segment(client, at).await?;
     }
+    Ok(())
+}
+
+pub(super) async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    walk_to(client, world, ENTRANCE).await?;
     transfer_house(client, false, DOOR).await
+}
+
+pub(super) async fn exit_house(client: &mut DevClientSession) -> TestResult {
+    transfer_house(client, true, ENTRANCE).await
 }
 
 fn custody_position(client: &mut DevClientSession) -> TestResult<TilePos> {
@@ -462,7 +475,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if catalogue(&mut client).await? != before_refusal {
         return Err("I10 stale refusal changed the furniture catalogue".into());
     }
-    transfer_house(&mut client, true, ENTRANCE).await?;
+    exit_house(&mut client).await?;
     let prior_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
