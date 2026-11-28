@@ -1,10 +1,17 @@
 //! Forge classification lives in the existing spawn and actor owners.
 use super::*;
+#[cfg(feature = "qualification-spawn")]
+#[path = "forge_population_draw.rs"]
+mod qualification;
 use oteryn_gameplay_domain::domain::echo_warden::EchoVariant;
 use oteryn_gameplay_domain::domain::forge_creature::{
     FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeCreature, ForgeSpawnCandidate,
     INFLUENCED_SIMULTANEOUS_MAX, plan_fiendish_tick,
 };
+#[cfg(feature = "qualification-spawn")]
+pub(super) use qualification::PendingDraw;
+#[cfg(feature = "qualification-spawn")]
+pub use qualification::{ForgePopulationCensus, ForgePopulationDrawRefusal};
 use sha2::{Digest, Sha256};
 
 // Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
@@ -22,11 +29,18 @@ impl ChannelRuntimeV1 {
     }
 
     fn forge_roll(&self, actor: ExactActorRef) -> u64 {
+        self.population_roll(actor, None)
+    }
+
+    fn population_roll(&self, actor: ExactActorRef, seed: Option<u64>) -> u64 {
         let mut hash = Sha256::new();
         hash.update(b"FORGECREATURE/spawn/v1");
         hash.update(self.content.server_artifact_digest());
         hash.update(actor.placement_identity());
         hash.update(actor.actor_local_generation().to_be_bytes());
+        if let Some(seed) = seed {
+            hash.update(seed.to_be_bytes());
+        }
         let bytes: [u8; 32] = hash.finalize().into();
         u64::from_be_bytes(bytes[..8].try_into().unwrap_or_default())
     }
@@ -137,6 +151,16 @@ impl ChannelRuntimeV1 {
         if now < self.forge_next_tick_micros {
             return Ok(());
         }
+        #[cfg(feature = "qualification-spawn")]
+        let mut draw = if fixture.is_none() {
+            self.take_qualification_forge_draw(now)
+        } else {
+            None
+        };
+        #[cfg(feature = "qualification-spawn")]
+        let population_seed = draw.as_ref().map(|draw| draw.seed);
+        #[cfg(not(feature = "qualification-spawn"))]
+        let population_seed = None;
         self.forge_fiends
             .retain(|(_, due)| due.is_none_or(|due| now < due));
         let available = if matches!(fixture, Some((_, ForgeCreature::Influenced(_)))) {
@@ -168,16 +192,22 @@ impl ChannelRuntimeV1 {
                     alive: true,
                 });
                 actors.push((identity, actor));
+                #[cfg(feature = "qualification-spawn")]
+                if eligible && let Some(draw) = &mut draw {
+                    draw.census.eligible.push((identity, actor));
+                }
                 if snapshot.forge == Some(ForgeCreature::Fiendish) {
                     existing.push(identity);
                 }
             }
         }
-        let seed = u64::from_be_bytes(
-            self.content.server_artifact_digest()[..8]
-                .try_into()
-                .unwrap_or_default(),
-        );
+        let seed = population_seed.unwrap_or_else(|| {
+            u64::from_be_bytes(
+                self.content.server_artifact_digest()[..8]
+                    .try_into()
+                    .unwrap_or_default(),
+            )
+        });
         let plan = plan_fiendish_tick(now, seed, &existing, &candidates);
         let mut selected = 0;
         for identity in &plan.selected {
@@ -187,6 +217,10 @@ impl ChannelRuntimeV1 {
             {
                 self.apply_forge_classification(*actor, ForgeCreature::Fiendish)?;
                 self.forge_fiends.push((*actor, None));
+                #[cfg(feature = "qualification-spawn")]
+                if let Some(draw) = &mut draw {
+                    draw.census.selected.push((*actor, ForgeCreature::Fiendish));
+                }
                 selected += 1;
             }
         }
@@ -211,7 +245,7 @@ impl ChannelRuntimeV1 {
             .map(|(_, actor)| {
                 let roll = match fixture {
                     Some((_, ForgeCreature::Influenced(stacks))) => u64::from(stacks - 1),
-                    _ => self.forge_roll(*actor),
+                    _ => self.population_roll(*actor, population_seed),
                 };
                 (roll, *actor)
             })
@@ -224,6 +258,10 @@ impl ChannelRuntimeV1 {
         ) {
             if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
                 self.apply_forge_classification(actor, kind)?;
+                #[cfg(feature = "qualification-spawn")]
+                if let Some(draw) = &mut draw {
+                    draw.census.selected.push((actor, kind));
+                }
             }
         }
         let next_scan = now.saturating_add(POPULATION_TICK_MICROS);
@@ -234,6 +272,10 @@ impl ChannelRuntimeV1 {
             .min()
             .unwrap_or(next_scan)
             .min(next_scan);
+        #[cfg(feature = "qualification-spawn")]
+        if let Some(draw) = draw {
+            let _ = draw.reply.send(Ok(draw.census));
+        }
         Ok(())
     }
 }

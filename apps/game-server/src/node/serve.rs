@@ -12,6 +12,7 @@ mod audit_collector;
 mod channel_boot;
 mod public_house_catalogue;
 mod qualification_fixture;
+pub(crate) mod qualification_forge_population;
 #[cfg(test)]
 #[path = "serve/postgres_tests/readiness.rs"]
 mod readiness_postgres_tests;
@@ -3145,6 +3146,16 @@ async fn control_loop(
                     .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
                     "qualification_damage",
                 ),
+                Some(request) if request.starts_with(qualification_forge_population::PREFIX) => (
+                    Box::pin(qualification_forge_population::draw(
+                        root,
+                        config.qualification_fixture,
+                        spawn.map(|owners| owners.runtime),
+                        &request,
+                    ))
+                    .await,
+                    "qualification_forge_population",
+                ),
                 Some(request) if is_control_spawn(&request) => (
                     Box::pin(qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
@@ -3177,7 +3188,7 @@ async fn control_loop(
             };
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
-                "qualification_damage" => {}
+                "qualification_damage" | "qualification_forge_population" => {}
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
