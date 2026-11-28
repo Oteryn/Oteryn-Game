@@ -102,6 +102,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     const ACCOUNT: &str = "NODE_BOOT_C09_ACCOUNT";
     const MEAT: u32 = 3577;
+    const AXE: u32 = 3276;
     const LEVEL: u32 = 20;
     if !requires_platform_grant(&required(ACCOUNT)?) {
         return Err("C09 dedicated account lacks Platform admission".into());
@@ -109,14 +110,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_character(clients, ACCOUNT).await?;
     let clients = dedicated.clients(clients);
     let character_id = oteryn_protocol_oteryn::CharacterId::decode(&clients.characters[0])?;
-    let meat = provisioning::item_reference(&provisioning::item_index()?, MEAT)?;
+    let index = provisioning::item_index()?;
+    let meat = provisioning::item_reference(&index, MEAT)?;
+    let axe = provisioning::item_reference(&index, AXE)?;
     let mut preparation = connect_character(&clients, 0xc9, 0).await?;
     if quantity(&preparation, meat) != 0 || preparation.inventory().is_none() {
         return Err("C09 initial fixture inventory did not prove zero meat".into());
     }
     character_prep::declare_seeded(
         "C09.client",
-        "level=20,meat=1",
+        "level=20,meat=1,axe=1",
         "inputs for live regeneration",
     );
     let before_session = preparation.join_snapshot().game_session_id;
@@ -127,6 +130,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     character_prep::grant_item(&preparation, MEAT, 1).await?;
+    character_prep::grant_item(&preparation, AXE, 1).await?;
     logout_once(&mut preparation).await?;
     drop(preparation);
     let limit = std::num::NonZeroUsize::MIN.saturating_add(32 * 1024 * 1024 - 1);
@@ -152,6 +156,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     if super::full_row_c09::food_remaining(&mut client, None).await? != 0 {
         return Err("C09 fresh fixture started fed".into());
+    }
+    let axe_equipped = |client: &DevClientSession| {
+        client.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|slot| slot.item.item_definition_ref == axe && slot.item.count.get() == 1)
+        })
+    };
+    if axe_equipped(&client) || quantity(&client, axe) != 1 {
+        return Err("C09 fixture did not supply one unequipped axe".into());
+    }
+    let equip = client.session_mut().equip_item_definition(axe).await?;
+    if equip.status != CommandStatus::Accepted
+        || equip.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+    {
+        return Err(format!("C09 axe equip refused: {equip:?}").into());
+    }
+    let equip_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !axe_equipped(&client) {
+        if tokio::time::Instant::now() >= equip_deadline {
+            return Err("C09 axe equip did not publish equipment".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     verdict::Harness::global().progress("c09-combat");
@@ -183,6 +212,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "c09-combat",
         );
         client_hunt::hunt(&mut client).await.map_err(|error| {
+            let combat = client.session_mut().combat_state().copied();
+            let target = combat.and_then(|state| state.target).and_then(|target| {
+                client.world_entities().and_then(|entities| entities.get(&target))
+            });
+            evidence(&format!(
+                "C09_CLIENT_COMBAT_GAP observed={error} actor={:?} combat={combat:?} target={target:?}",
+                client.world_spatial().actor_position,
+            ));
             verdict::record_error(verdict::IndexedError::as_error(&error));
             verdict::context(format!("C09 combat: {error}"), error)
         })?;
