@@ -15,7 +15,7 @@ fn daily_resting_premium_streak_feeds_vitals_and_soul_owner() -> TestResult {
 }
 
 #[test]
-fn daily_resting_zero_streak_premium_gets_no_resting_regeneration() -> TestResult {
+fn daily_resting_zero_streak_premium_regenerates_soul() -> TestResult {
     scenario_with(true, true)
 }
 
@@ -135,24 +135,17 @@ fn resting_scenario(premium: bool, zero_streak: bool) -> TestResult {
                 .get(&runtime, actor, session)
                 .ok_or("actor")?
                 .vitals();
-            // This unfed level-8 Monk gains 11 HP and 30 MP in 120 seconds outside.
-            // Inside, streak 7 unlocks the same rates for Free and doubles them for Premium.
+            // Resting bonuses depend on Premium and area membership. The durable streak
+            // remains observable even when it contributes no eligibility.
             assert_eq!(
                 (vitals.health, vitals.mana),
-                match (inside, streak, premium) {
-                    (true, 0, _) => (100, 10),
-                    (true, 7, true) => (122, 70),
-                    _ => (111, 40),
-                }
-            );
-            assert_eq!(
-                vitals.soul,
-                if premium && inside && streak == 7 {
-                    6
+                if inside && premium {
+                    (122, 70)
                 } else {
-                    5
+                    (111, 40)
                 }
             );
+            assert_eq!(vitals.soul, if inside && premium { 6 } else { 5 });
             eprintln!(
                 "PG_MARKER daily-resting-real-tick-soul premium={premium} zero_streak={zero_streak} inside={inside} soul={}",
                 vitals.soul

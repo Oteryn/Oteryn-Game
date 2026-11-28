@@ -179,8 +179,27 @@ pub(super) async fn write<C: ItemLoopContent>(
         .and_then(|n| n.checked_add(1))
         .ok_or(DurabilityError::InvalidStoredState)?;
     let (item,transaction,event,occurred):(String,String,String,i64)=sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut ***tx).await?;
+    let digest = native.source_digest();
+    let decay = if rules::source_id(&station.production_key) == Some(8077) {
+        let Some(policy) = native.item_policy(&output.production_key, &output.revision_ref) else {
+            return Ok(UseDisposition::NotPossible);
+        };
+        let qualified = super::super::spell_items_abi::QualifiedItemDefinition::from_native_policy(
+            policy,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let Some(decay) = qualified.decay.filter(|decay| decay.target.as_ref() == Some(station)) else {
+            return Ok(UseDisposition::NotPossible);
+        };
+        Some(json!({
+            "duration_millis": decay.duration_millis,
+            "target": {"family": station.family, "key": station.production_key, "revision": station.revision_ref}
+        }))
+    } else {
+        None
+    };
     let outputs = vec![
-        json!({"item":item,"key":output.production_key,"revision":output.revision_ref,"count":rule.count,"ordinal":ordinal.to_string(),"charges":rule.charges}),
+        json!({"item":item,"key":output.production_key,"revision":output.revision_ref,"count":rule.count,"ordinal":ordinal.to_string(),"charges":rule.charges,"decay":decay}),
     ];
     let recipe = if rule.mana > 0 {
         "oteryn:enchanting.shrine"
@@ -188,6 +207,7 @@ pub(super) async fn write<C: ItemLoopContent>(
         "oteryn:enchanting.weapon"
     };
     let proof = json!({"debits":debits,"cost":cost,
+        "content_digest":digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
         "shrine":request.station.as_ref().and_then(|s|rules::source_id(&s.production_key)),
         "save_sequence":enchanting.save.as_ref().map(|(key,_)|key.write_sequence),
         "lease_generation":fence.character_lease_generation});
@@ -195,7 +215,7 @@ pub(super) async fn write<C: ItemLoopContent>(
         fence,
         request,
         recipe,
-        native.source_digest(),
+        digest,
         &proof,
         &outputs,
         &transaction,
@@ -216,6 +236,10 @@ pub(super) async fn write<C: ItemLoopContent>(
         .bind(&item).bind(world.as_bytes().as_slice()).bind(&output.production_key).bind(&output.revision_ref).bind(i64::from(rule.count)).bind(&transaction).execute(&mut ***tx).await?;
     sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::uuid)")
         .bind(&item).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(ordinal.to_string()).bind(&transaction).execute(&mut ***tx).await?;
+    super::super::spell_item_temporal::schedule_action_item_in_transaction(
+        tx, &transaction, 1, &outputs[0], digest, occurred,
+    )
+    .await?;
     if let Some(charges) = rule.charges {
         sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision) VALUES($1::uuid,$2,1)").bind(&item).bind(i32::from(charges)).execute(&mut ***tx).await?;
     }

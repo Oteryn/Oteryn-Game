@@ -36,17 +36,14 @@ impl WeekdayNpcSpawns {
         runtime: &mut ChannelRuntimeV1,
         unix_ms: i64,
     ) -> Result<(), NpcPlacementError> {
-        // Same UTC day convention as the existing trade-availability owner.
-        let day = match (unix_ms.div_euclid(86_400_000) + 3).rem_euclid(7) {
-            0 => 0,
-            1 => 1,
-            2 => 2,
-            3 => 3,
-            4 => 4,
-            5 => 5,
-            _ => 6,
-        };
-        reconcile(runtime, self.key, self.placements[day], unix_ms)
+        let expected = destination_at(unix_ms).placement;
+        let wanted = self
+            .placements
+            .iter()
+            .flatten()
+            .copied()
+            .find(|placement| *placement == expected);
+        reconcile(runtime, self.key, wanted, unix_ms)
     }
 }
 
