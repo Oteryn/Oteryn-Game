@@ -95,14 +95,12 @@ use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 
-async fn browse_open(
+async fn browse_command(
     client: &mut DevClientSession,
-    at: WorldTilePosition,
-) -> TestResult<(tree::ContainerViewOutcome, Option<tree::ContainerView>)> {
-    client.take_events();
-    let payload =
-        browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
-            .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
+    intent: browse::BrowseFieldIntent,
+) -> TestResult<(tree::ContainerViewOutcome, u64)> {
+    let payload = browse::encode_browse_field_intent(&intent)
+        .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
     let reply = client
         .session_mut()
         .gated_command(
@@ -111,38 +109,151 @@ async fn browse_open(
             &payload,
         )
         .await?;
+    if reply.status != oteryn_protocol_oteryn::CommandStatus::Accepted {
+        return Err(format!("step=browse observed=command-status-{:?}", reply.status).into());
+    }
     let outcome = tree::decode_container_view_result(&reply.payload)
         .map_err(|error| format!("step=browse-reply observed={error:?}"))?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        let events = client.take_events();
-        let update = events.into_iter().find_map(|event| match event {
-            SessionEvent::ContainerViews(update) => Some(update),
-            _ => None,
-        });
-        if let Some(update) = update {
-            if outcome != tree::ContainerViewOutcome::Opened
-                || update.server_sequence <= reply.server_sequence
-            {
-                return Err("step=browse observed=unexpected-view-update".into());
-            }
-            return Ok((
-                outcome,
-                update
-                    .value
-                    .views
-                    .into_iter()
-                    .find(|view| view.browse.is_some()),
-            ));
+    Ok((outcome, reply.server_sequence))
+}
+
+fn verify_walk(
+    mut current: TilePos,
+    target: TilePos,
+    landings: &[(u64, TilePos)],
+    opened_sequence: u64,
+) -> TestResult<TilePos> {
+    let mut previous_sequence = 0;
+    for &(sequence, next) in landings {
+        if sequence <= previous_sequence
+            || sequence >= opened_sequence
+            || current == next
+            || current.x.abs_diff(next.x).max(current.y.abs_diff(next.y)) != 1
+            || next.floor != target.floor
+        {
+            return Err(format!("step=browse-walk-to invalid-step={current:?}->{next:?} sequence={sequence} opened={opened_sequence}").into());
         }
-        if outcome != tree::ContainerViewOutcome::Opened {
-            return Ok((outcome, None));
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=browse observed=opened-without-view-update".into());
-        }
-        client.service_liveness(Duration::from_millis(20)).await?;
+        current = next;
+        previous_sequence = sequence;
     }
+    if landings.is_empty()
+        || current
+            .x
+            .abs_diff(target.x)
+            .max(current.y.abs_diff(target.y))
+            > 1
+    {
+        return Err("step=browse-walk-to observed=no-walk-into-reach-before-opened".into());
+    }
+    Ok(current)
+}
+
+async fn browse_open(
+    client: &mut DevClientSession,
+    at: WorldTilePosition,
+    target: TilePos,
+    expect_walk: bool,
+) -> TestResult<tree::ContainerView> {
+    client.take_events();
+    let start = tile(client.world_spatial().actor_position)?;
+    let (outcome, reply_sequence) =
+        browse_command(client, browse::BrowseFieldIntent::Open { position: at }).await?;
+    if outcome != tree::ContainerViewOutcome::Opened {
+        return Err(format!("step=browse-open observed={outcome:?};needed=Opened").into());
+    }
+    let mut landings = Vec::new();
+    for event in client.take_events() {
+        match event {
+            SessionEvent::WorldSpatial(update) => {
+                landings.push((update.server_sequence, tile(update.value.actor_position)?));
+            }
+            SessionEvent::WorldSpatialEntities(update) => {
+                let position = tile(update.value.actor_position)?;
+                if position != landings.last().map_or(start, |&(_, at)| at) {
+                    landings.push((update.server_sequence, position));
+                }
+            }
+            SessionEvent::GatedSnapshotReplaced(_) | SessionEvent::ContainerViews(_) => {
+                return Err("step=browse-open observed=replacement-or-premature-view".into());
+            }
+            _ => {}
+        }
+    }
+    let expected = if expect_walk {
+        verify_walk(start, target, &landings, reply_sequence)?
+    } else if landings.is_empty()
+        && start.floor == target.floor
+        && start.x.abs_diff(target.x).max(start.y.abs_diff(target.y)) <= 1
+    {
+        start
+    } else {
+        return Err("step=browse-open observed=movement-on-adjacent-open".into());
+    };
+    let delta = client
+        .session_mut()
+        .read_gated_delta(
+            tree::STATE_DOMAIN_CONTAINER_VIEWS,
+            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
+        )
+        .await?;
+    if delta.server_sequence <= reply_sequence
+        || tile(client.world_spatial().actor_position)? != expected
+        || client.take_events().iter().any(|event| {
+            matches!(
+                event,
+                SessionEvent::GatedSnapshotReplaced(_)
+                    | SessionEvent::WorldSpatial(_)
+                    | SessionEvent::ContainerViews(_)
+            )
+        })
+    {
+        return Err("step=browse-open observed=invalid-view-delta-order".into());
+    }
+    let view = selected_container_views(client.selected_capabilities(), &delta.payload)
+        .map_err(|error| format!("step=browse-open observed=invalid-view-{error:?}"))?
+        .views
+        .into_iter()
+        .find(|view| {
+            view.browse
+                .is_some_and(|page| page.position == at && page.index == 0)
+        })
+        .ok_or("step=browse-open observed=missing-exact-field")?;
+    Ok(view)
+}
+
+fn assert_empty_field(view: &tree::ContainerView) -> TestResult {
+    if !view.entries.is_empty() || view.browse.is_none_or(|page| page.total != 0) {
+        return Err("step=browse-custody observed=field-not-empty".into());
+    }
+    Ok(())
+}
+
+async fn walk_once(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = tile(client.world_spatial().actor_position)?;
+        let expected =
+            destination(world, before, direction).ok_or("step=setup-walk missing-landing")?;
+        let receipt = client.step(direction).await?;
+        if receipt.disposition != StepDisposition::Moved
+            || receipt
+                .world_spatial_delta
+                .as_ref()
+                .map(|delta| tile(delta.value.actor_position))
+                .transpose()?
+                != Some(expected)
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "step=setup-walk direction={direction:?} first-receipt={receipt:?}"
+            )
+            .into());
+        }
+    }
+    Ok(())
 }
 
 fn ground(client: &DevClientSession) -> WorldTilePosition {
@@ -212,21 +323,12 @@ async fn take_entry(
     Ok(())
 }
 
-fn has(
-    view: &tree::ContainerView,
-    definition: std::num::NonZeroU32,
-) -> Option<oteryn_protocol_oteryn::item_view::ItemEntry> {
-    view.entries
-        .iter()
-        .find(|entry| entry.item_definition_ref == definition)
-        .copied()
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = open_world(clients).await?;
     let mut client = connect_world(clients, 0xf1).await?;
     let t0 = tile(client.world_spatial().actor_position)?;
     let at = ground(&client);
+    assert_empty_field(&browse_open(&mut client, at, t0, false).await?)?;
     let (definition, count, before) = drop_first(&mut client).await?;
     let debited = before - u64::from(count.get());
     logout(&mut client).await?;
@@ -242,7 +344,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         tile.floor == t0.floor && tile.x.abs_diff(t0.x).max(tile.y.abs_diff(t0.y)) >= 4
     })
     .ok_or("step=walk-away observed=no-route;needed:walkable-tiles-around-the-town-start")?;
-    walk(&mut client, world, &away).await?;
+    walk_once(&mut client, world, &away).await?;
     let distant = tile(client.world_spatial().actor_position)?;
     if distant.floor != t0.floor || distant.x.abs_diff(t0.x).max(distant.y.abs_diff(t0.y)) < 4 {
         return Err("step=walk-away observed=actor-not-distant".into());
@@ -267,48 +369,62 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("step=browse-precondition observed=already-browsing".into());
     }
-    let (refused, view) = browse_open(&mut client, other_floor).await?;
+    client.take_events();
+    let (refused, _) = browse_command(
+        &mut client,
+        browse::BrowseFieldIntent::Open {
+            position: other_floor,
+        },
+    )
+    .await?;
+    // Seek an unopened view as an ordered, read-only barrier. No state-changing request
+    // is sent while draining the refusal's frames.
+    let (barrier, _) = browse_command(
+        &mut client,
+        browse::BrowseFieldIntent::Seek {
+            view_id: 0,
+            index: 0,
+        },
+    )
+    .await?;
+    client.service_liveness(Duration::from_secs(1)).await?;
     if refused != tree::ContainerViewOutcome::TooFar
-        || view.is_some()
+        || barrier != tree::ContainerViewOutcome::Stale
+        || client.take_events().iter().any(|event| match event {
+            SessionEvent::WorldSpatialEntities(update) => {
+                tile(update.value.actor_position).ok() != Some(distant)
+            }
+            SessionEvent::WorldSpatial(_)
+            | SessionEvent::Inventory(_)
+            | SessionEvent::ContainerViews(_)
+            | SessionEvent::GatedSnapshotReplaced(_) => true,
+            _ => false,
+        })
         || tile(client.world_spatial().actor_position)? != distant
         || client.inventory() != Some(&inventory_before_refusal)
         || client.session_mut().container_views() != views_before_refusal.as_ref()
     {
-        return Err(format!(
-            "step=browse-other-floor observed={refused:?};needed=TooFar-with-unchanged-position-inventory-and-views"
-        )
-        .into());
+        return Err(format!("step=browse-other-floor observed={refused:?} barrier={barrier:?};needed=TooFar-with-unchanged-position-inventory-and-views").into());
     }
-    let (opened, view) = browse_open(&mut client, at).await?;
-    let view = view.ok_or_else(|| {
-        format!("step=browse-walk-to observed={opened:?};needed=Opened-with-view")
-    })?;
+    let view = browse_open(&mut client, at, t0, true).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
-    if arrived.floor != t0.floor || arrived.x.abs_diff(t0.x).max(arrived.y.abs_diff(t0.y)) > 1 {
-        return Err("step=browse-walk-to observed=actor-not-adjacent".into());
-    }
-    let page = view
-        .browse
-        .ok_or("step=browse-near observed=no-browse-page")?;
-    if opened != tree::ContainerViewOutcome::Opened || page.position != at {
-        return Err(format!(
-            "step=browse-near observed={opened:?}-{:?};needed=Opened-at-{at:?}",
-            page.position
-        )
-        .into());
-    }
-    let entry =
-        has(&view, definition).ok_or("step=browse-near observed=dropped-item-not-listed")?;
-    if entry.count != count {
-        return Err("step=browse-walk-to observed=dropped-stack-count-mismatch".into());
+    let [entry] = view.entries.as_slice() else {
+        return Err("step=browse-custody observed=field-does-not-contain-exactly-one-stack".into());
+    };
+    if entry.item_definition_ref != definition
+        || entry.count != count
+        || view.browse.is_none_or(|page| page.total != 1)
+    {
+        return Err("step=browse-custody observed=dropped-stack-mismatch".into());
     }
     if quantity(&client, definition)? != debited {
         return Err("step=take observed=backpack-quantity-changed-before-pickup".into());
     }
-    take_entry(&mut client, &entry).await?;
+    take_entry(&mut client, entry).await?;
     if quantity(&client, definition)? != before {
         return Err("step=restore observed=backpack-count-not-restored".into());
     }
+    assert_empty_field(&browse_open(&mut client, at, t0, false).await?)?;
     logout(&mut client).await?;
     let mut relogged = connect_world(clients, 0xf1).await?;
     if quantity(&relogged, definition)? != before {
@@ -317,9 +433,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if tile(relogged.world_spatial().actor_position)? != arrived {
         return Err("step=relog observed=walk-to-position-not-restored".into());
     }
+    assert_empty_field(&browse_open(&mut relogged, at, t0, false).await?)?;
     logout(&mut relogged).await?;
     Ok(format!(
-        "drop-relog={debited};wrong-floor-unchanged;walk-to-opened;pickup-relog={before};position-relog={},{},{};item-entries={}",
+        "drop-relog={debited};wrong-floor-unchanged;walk-frames-before-open;field-empty-after-pickup-and-relog;pickup-relog={before};position-relog={},{},{};item-entries={}",
         arrived.x,
         arrived.y,
         arrived.floor,
