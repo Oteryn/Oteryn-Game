@@ -23,6 +23,7 @@ use oteryn_game_server::durability::runtime_scope_assignment::{
     RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
+use oteryn_game_server::native_admission_source::descriptor::ProducerDescriptor;
 use oteryn_game_server::native_admission_source::restore_notice::{
     self, Ack as RestoreAck, RestoreNotice, RestoreNoticeConfig, RestoreNoticeDescriptor,
 };
@@ -30,6 +31,7 @@ use oteryn_game_server::native_admission_source::scope_assignment::{
     self, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
     ScopeAssignmentDescriptor,
 };
+use oteryn_game_server::native_admission_source::store::{MtlsStoreTransport, StoreClient};
 use oteryn_game_server::node::config::{DatabaseConfig, NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
@@ -563,7 +565,13 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 .map_err(|_| Failure::Input("--restore-point".into()))?;
             let backup_label = arguments.take("backup-label")?;
             let notice_config = arguments.take("notice-config")?;
+            let node_config = arguments.take_optional("node-config");
             arguments.finish()?;
+            let (notice_config, descriptor) = restore_notice_descriptor(&notice_config)?;
+            let store_client = node_config
+                .as_deref()
+                .map(|path| restore_store_client(operator, path, &notice_config))
+                .transpose()?;
             let fence = &operator.config.character;
             let store = CharacterRecoveryStore::open_owned_by(
                 &fence.fence_directory,
@@ -643,15 +651,23 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
             };
             let generation = notice.new_recovery_generation;
             drop(transition);
-            let (config, descriptor) = restore_notice_descriptor(&notice_config)?;
             let mut notice = notice;
-            notice.source_authority = config.source_authority;
-            let report = restore_notice::publish_until_acknowledged(
+            notice.source_authority = notice_config.source_authority;
+            let publish = restore_notice::publish_until_acknowledged(
                 &descriptor,
                 &notice,
                 restore_notice::RetryPolicy::default(),
-            )
-            .await;
+            );
+            let report = if let Some(client) = store_client {
+                tokio::select! {
+                    report = publish => report,
+                    () = oteryn_gameplay_dispatch::gameplay_transport::run_retained_store_reconciliation(
+                        &operator.root, client, generation,
+                    ) => return Err(Failure::Unavailable("Store reconciliation ended".into())),
+                }
+            } else {
+                publish.await
+            };
             match report.result {
                 Ok(RestoreAck::Acknowledged { reopened }) => {
                     event(&format!(
@@ -715,6 +731,60 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
             "character fresh-store|restore|interpretation|bootstrap; keep every node stopped until restore reports acknowledged",
         )),
     }
+}
+
+fn restore_store_client(
+    operator: &Operator,
+    path: &str,
+    notice: &RestoreNoticeConfig,
+) -> Result<StoreClient, Failure> {
+    let service = operator.config.operator.service_uid;
+    let document = read_file(
+        "--node-config",
+        &PathBuf::from(path),
+        FileClass::Trusted,
+        service,
+        oteryn_game_server::node::config::MAX_CONFIG_BYTES,
+    )?;
+    let node = NodeConfig::parse(&document).map_err(|error| Failure::Input(error.to_string()))?;
+    let platform = &node.platform;
+    if platform.endpoint != notice.endpoint || platform.peer_name != notice.peer_name {
+        return Err(Failure::Input(
+            "restore and Store must use the same Platform peer".into(),
+        ));
+    }
+    let read = |label, path: &std::path::Path| {
+        read_file(label, path, FileClass::Secret, service, MAX_PEM_BYTES)
+    };
+    let roots = certificates(&read(
+        "platform.trust_roots_file",
+        &platform.trust_roots_file,
+    )?)
+    .map_err(|_| Failure::Input("platform.trust_roots_file".into()))?;
+    let client = certificates(&read(
+        "platform.client_certificate_file",
+        &platform.client_certificate_file,
+    )?)
+    .map_err(|_| Failure::Input("platform.client_certificate_file".into()))?;
+    let key = PrivateKeyDer::from_pem_slice(&read(
+        "platform.client_key_file",
+        &platform.client_key_file,
+    )?)
+    .map_err(|_| Failure::Input("platform.client_key_file".into()))?;
+    let store = ProducerDescriptor::new(
+        platform.source_authority.clone(),
+        (platform.endpoint.ip().to_string(), platform.endpoint.port()),
+        platform.peer_name.clone(),
+        platform.peer_name.clone(),
+        roots,
+        client,
+        key,
+    )
+    .map_err(|_| Failure::Input("--node-config platform Store identity".into()))?;
+    Ok(StoreClient::new(
+        Box::new(MtlsStoreTransport::new(store)),
+        platform.source_authority.clone(),
+    ))
 }
 
 fn restore_notice_descriptor(

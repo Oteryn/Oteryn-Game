@@ -1,15 +1,39 @@
-//! Names preserved from npcfix's checked retail snapshot; keys and all other facts stay intact.
-//! Evidence: docs/reference/content-prep/npcfix-m38/preserved-display-names.md.
+//! Display names from source snapshots and registered NPC configurations.
+//! Evidence: NPCFIX-M38 and CNPC2 under docs/reference/content-prep.
 use oteryn_game_server::content::{
     ProjectV2CandidateField, ProjectV2CandidateValue, ProjectV2Declaration,
 };
 
 const FIELD: &str = "oteryn:source.npc.display_name";
 const NAMES: &[(&str, &str)] = &[
+    ("oteryn:npc.anaztassja_moroia_init", "Anaztassja Moroia"),
+    ("oteryn:npc.baa_leal", "Baa'Leal"),
+    ("oteryn:npc.bo_ques", "Bo'Ques"),
+    ("oteryn:npc.buddel_helheim", "Buddel"),
+    ("oteryn:npc.buddel_okolnir", "Buddel"),
+    ("oteryn:npc.buddel_raider_camp", "Buddel"),
+    ("oteryn:npc.buddel_tyrsung", "Buddel"),
+    ("oteryn:npc.captain_max_calassa", "Captain Max"),
+    ("oteryn:npc.fa_hradin", "Fa'Hradin"),
     ("oteryn:npc.ferryman_kamil_meluna", "Ferryman Kamil"),
+    ("oteryn:npc.gnomish_operative_catching", "Gnomish Operative"),
+    ("oteryn:npc.gnomish_operative_gt_m_01", "Gnomish Operative"),
+    ("oteryn:npc.gnomish_operative_raiders", "Gnomish Operative"),
+    (
+        "oteryn:npc.gnomish_operative_resonating",
+        "Gnomish Operative",
+    ),
+    ("oteryn:npc.gnomish_operative_volcano", "Gnomish Operative"),
     ("oteryn:npc.harlow_vengoth", "Harlow"),
+    ("oteryn:npc.jack_fate_goroma", "Jack Fate"),
+    ("oteryn:npc.john_bounac", "John"),
     ("oteryn:npc.junkar_mines", "Junkar"),
+    ("oteryn:npc.lesh_the_seer", "Lesh the Seer"),
     ("oteryn:npc.maris_mistrock", "Maris"),
+    ("oteryn:npc.nah_bob", "Nah'Bob"),
+    ("oteryn:npc.one_eyed_joe", "One-Eyed Joe"),
+    ("oteryn:npc.rata_mari", "Rata'Mari"),
+    ("oteryn:npc.sebastian_nargor", "Sebastian"),
 ];
 
 pub(super) fn apply(

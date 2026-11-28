@@ -101,7 +101,7 @@ fn run_scenario_items(
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case, crystal, None, appearances))
+                .block_on(scenario(admin, case, crystal, None, appearances, None))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -115,6 +115,7 @@ async fn scenario(
     crystal: bool,
     current_potion: Option<u32>,
     appearances: bool,
+    food_override: Option<(u32, i32)>,
 ) -> TestResult {
     use item_use_view_refresh_tests::Case;
     let tag = match case {
@@ -142,7 +143,10 @@ async fn scenario(
     let native = active.native_gameplay().expect("native content");
     let index = native.item_index().expect("item index");
     let room = pin.qualified_room().clone();
-    let food_key = if crystal {
+    let override_key = food_override.map(|(id, _)| format!("oteryn:item.tibia.i{id}"));
+    let food_key = if let Some(key) = &override_key {
+        key.as_str()
+    } else if crystal {
         "oteryn:item.tibia.i3578"
     } else {
         "oteryn:item.tibia.i3577"
@@ -398,6 +402,21 @@ async fn scenario(
         ))
     );
     assert_eq!(harness.count("game_item_use_records").await?, 2);
+    if let Some((_, seconds)) = food_override {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states
+            .read_owned_player_state_test_snapshot(&runtime, actor, session)
+            .ok_or("player state")?;
+        let food = state
+            .conditions
+            .get(oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration)
+            .ok_or("food regeneration")?;
+        assert_eq!(
+            food.remaining_duration_ms(food.started_at()),
+            Some(seconds * 1000)
+        );
+    }
     for seed in [100, 110] {
         let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id = encode($1,'hex')::uuid")
             .bind(id(seed).as_slice()).fetch_one(&harness.pool).await?;
@@ -466,8 +485,13 @@ async fn scenario(
             .unspendable
             .push(id(120));
     }
+    // Let the first serving expire before the independent reserved-item test.
+    let serving_seconds = food_override
+        .map(|(_, seconds)| u64::try_from(seconds))
+        .transpose()?
+        .unwrap_or_default();
     owner.clock_origin = std::time::Instant::now()
-        .checked_sub(Duration::from_secs(120))
+        .checked_sub(Duration::from_secs(120 + serving_seconds))
         .expect("clock");
     assert_eq!(
         owner
@@ -554,9 +578,10 @@ async fn drink_from_a_vial(
         Ok(sqlx::query_scalar("SELECT fluid_subtype FROM game_item_fluid_states WHERE item_instance_id = encode($1,'hex')::uuid")
             .bind(id(seed).as_slice()).fetch_optional(&harness.pool).await?)
     };
-    // A later second, so the pours stay inside ITEMUSE0-RL-01.
-    owner.clock_origin = std::time::Instant::now()
-        .checked_sub(Duration::from_secs(240))
+    // Advance from the serving-specific clock so the pours get a fresh rate window.
+    owner.clock_origin = owner
+        .clock_origin
+        .checked_sub(Duration::from_secs(120))
         .expect("clock");
     let owner = &*owner;
     let pour = |command_id, source, target| {
@@ -639,7 +664,7 @@ fn srx1_current_mana_potion_variants_wire_replay_postgres() -> TestResult {
                 .block_on(async {
                     for item in [53162, 53163, 53164] {
                         let started = std::time::Instant::now();
-                        scenario(admin.clone(), None, true, Some(item), false).await?;
+                        scenario(admin.clone(), None, true, Some(item), false, None).await?;
                         eprintln!(
                             "SRX1_PG current_potion={item} wire/replay/flask elapsed={:?}",
                             started.elapsed()
@@ -651,5 +676,26 @@ fn srx1_current_mana_potion_variants_wire_replay_postgres() -> TestResult {
         })?
         .join()
         .map_err(|_| "current potion test panicked")?
+        .map_err(Into::into)
+}
+
+pub(crate) fn run_crystal_ordinary_food_wire(admin: String, id: u32, seconds: i32) -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            postgres_fixture::runtime()
+                .map_err(|error| error.to_string())?
+                .block_on(scenario(
+                    admin,
+                    None,
+                    true,
+                    None,
+                    false,
+                    Some((id, seconds)),
+                ))
+                .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Crystal food dispatch panicked")?
         .map_err(Into::into)
 }

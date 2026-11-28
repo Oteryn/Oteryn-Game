@@ -62,6 +62,7 @@
 //! CommandRef's GameSession is the fenced one and the fenced scope owns the
 //! source Ground. `CharacterRevision` is never read as a fence nor written.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -632,7 +633,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, command).await?;
                     let Some(row) = load_receipt(&mut tx, command).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let stored: Vec<u8> = row.try_get("intent_binding")?;
@@ -640,7 +641,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemTransferError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -667,7 +668,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, command).await?;
                     let Some(row) = load_receipt(&mut tx, command).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let owner = CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
@@ -676,7 +677,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemTransferError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -711,7 +712,7 @@ impl DurabilityRoot {
                         }
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(backpack))
                 })
             })
@@ -769,7 +770,7 @@ impl DurabilityRoot {
                             None => None,
                         }
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(location))
                 })
             })
@@ -811,7 +812,7 @@ impl DurabilityRoot {
                     .fetch_one(&mut *tx)
                     .await?;
                     if !live_corpse {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     }
                     let rows = sqlx::query(
@@ -847,7 +848,7 @@ impl DurabilityRoot {
                             })
                         })
                         .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(entries)))
                 })
             })

@@ -41,36 +41,56 @@ pub(super) async fn assert_quote_scope(
             )
             .ok_or("quote context")?
     };
-    assert!(owner.has_pending_paid_confirmation(command, &intent, &context));
+    assert!(owner.has_pending_paid_confirmation(command, &intent, &context, owner.owner_now()));
     let mut wrong = intent.clone();
     wrong.npc_actor.generation = wrong.npc_actor.generation.wrapping_add(1);
-    assert!(!owner.has_pending_paid_confirmation(command, &wrong, &context));
+    assert!(!owner.has_pending_paid_confirmation(command, &wrong, &context, owner.owner_now()));
     wrong = intent.clone();
     wrong.text = "no".into();
-    assert!(!owner.has_pending_paid_confirmation(command, &wrong, &context));
+    assert!(!owner.has_pending_paid_confirmation(command, &wrong, &context, owner.owner_now()));
     let mut wrong_context = context.clone();
     wrong_context.0 = wrong_context.0.wrapping_add(1);
-    assert!(!owner.has_pending_paid_confirmation(command, &intent, &wrong_context));
+    assert!(!owner.has_pending_paid_confirmation(
+        command,
+        &intent,
+        &wrong_context,
+        owner.owner_now()
+    ));
     wrong_context = context.clone();
     wrong_context.1 = wrong_context.1.wrapping_add(1);
-    assert!(!owner.has_pending_paid_confirmation(command, &intent, &wrong_context));
+    assert!(!owner.has_pending_paid_confirmation(
+        command,
+        &intent,
+        &wrong_context,
+        owner.owner_now()
+    ));
     let mut wrong_command = command;
     wrong_command.item_fence = None;
-    assert!(!owner.has_pending_paid_confirmation(wrong_command, &intent, &context));
+    assert!(!owner.has_pending_paid_confirmation(
+        wrong_command,
+        &intent,
+        &context,
+        owner.owner_now()
+    ));
     let mut wrong_fence = fence;
     wrong_fence.character_lease_generation += 1;
     wrong_command.item_fence = Some(wrong_fence);
-    assert!(!owner.has_pending_paid_confirmation(wrong_command, &intent, &context));
+    assert!(!owner.has_pending_paid_confirmation(
+        wrong_command,
+        &intent,
+        &context,
+        owner.owner_now()
+    ));
     let origin = owner.clock_origin;
     owner.clock_origin = origin
         .checked_sub(std::time::Duration::from_secs(60))
         .ok_or("expired clock")?;
-    assert!(!owner.has_pending_paid_confirmation(command, &intent, &context));
+    assert!(!owner.has_pending_paid_confirmation(command, &intent, &context, owner.owner_now()));
     owner.clock_origin = origin
         .checked_add(std::time::Duration::from_secs(60))
         .ok_or("future clock")?;
-    assert!(!owner.has_pending_paid_confirmation(command, &intent, &context));
+    assert!(!owner.has_pending_paid_confirmation(command, &intent, &context, owner.owner_now()));
     owner.clock_origin = origin;
-    assert!(owner.has_pending_paid_confirmation(command, &intent, &context));
+    assert!(owner.has_pending_paid_confirmation(command, &intent, &context, owner.owner_now()));
     Ok(())
 }

@@ -1,7 +1,10 @@
 //! Qualified creature policy values shared by Content and the actor carrier.
 
 use oteryn_gameplay_domain::domain::{carrier_values::CarrierError, condition::ConditionType};
+use std::collections::BTreeMap;
 use std::sync::Arc;
+
+use super::project::{ProjectV2AuthoringProfileData, ProjectV2SpawnEligibility};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CreatureExactRatio {
@@ -90,6 +93,7 @@ impl CompiledCreaturePolicy {
 pub struct CompiledCreaturePolicies {
     source_digest: [u8; 32],
     policies: Vec<Arc<CompiledCreaturePolicy>>,
+    spawn_eligibility: BTreeMap<String, ProjectV2SpawnEligibility>,
     soul_war_health: Vec<Arc<super::native_soul_war_callbacks::QualifiedSoulWarHealthPolicy>>,
     native_death_events: Vec<Arc<super::native_creature_death_events::QualifiedNativeDeathEvents>>,
     native_health_events: Vec<Arc<super::native_monster_callbacks::QualifiedNativeHealthEvent>>,
@@ -100,6 +104,29 @@ impl CompiledCreaturePolicies {
     }
     pub fn policies(&self) -> &[Arc<CompiledCreaturePolicy>] {
         &self.policies
+    }
+
+    pub fn spawn_eligibility(&self, key: &str) -> Option<ProjectV2SpawnEligibility> {
+        self.spawn_eligibility.get(key).copied()
+    }
+
+    pub(crate) fn bind_spawn_eligibility(
+        &mut self,
+        document: &super::native_gameplay::CreatureProfilesDocument,
+    ) {
+        self.spawn_eligibility = document
+            .records
+            .iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                Some((
+                    record.profile.target.key.clone(),
+                    profile.details.as_ref()?.spawn_eligibility,
+                ))
+            })
+            .collect();
     }
 
     /// Content's already-qualified outer artifact contains these exact decoded records.
@@ -226,6 +253,7 @@ impl CompiledCreaturePolicies {
         Ok(Self {
             source_digest,
             policies,
+            spawn_eligibility: BTreeMap::new(),
             soul_war_health: Vec::new(),
             native_death_events: Vec::new(),
             native_health_events: Vec::new(),

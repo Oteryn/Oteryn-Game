@@ -62,7 +62,7 @@ fn grave_boss_credit_waits_for_private_reward_insert_and_retries_once() -> TestR
 }
 
 #[test]
-fn grave_boss_credit_settles_when_shipped_private_loot_is_refused() -> TestResult {
+fn grave_boss_credit_and_shipped_private_loot_settle_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -146,8 +146,21 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     if case == Case::ShippedCatalogue {
-        assert!(native.reward_table().row(creature).is_err());
-        assert!(native.reward_table().reward_boss_corpse(creature).is_some());
+        let (corpse_key, drops) = match creature {
+            ZELOS => ("oteryn:item.tibia.i31611", 50),
+            SCARLETT => ("oteryn:item.tibia.i31453", 39),
+            _ => return Err("unexpected shipped Grave Danger boss".into()),
+        };
+        let row = native.reward_table().row(creature).map_err(debug)?;
+        assert_eq!(row.loot_table.entries.len(), drops, "{creature}");
+        let corpse = row.corpse_item.as_ref().ok_or("shipped boss corpse")?;
+        assert_eq!(
+            (corpse.family.as_str(), corpse.production_key.as_str(), corpse.revision_ref.as_str()),
+            ("Item", corpse_key, "definition-r1")
+        );
+        let fallback = native.reward_table().reward_boss_corpse(creature)
+            .ok_or("shipped empty corpse fallback")?;
+        assert_eq!(fallback.corpse_item.as_ref(), Some(corpse));
     } else if creature != death_objectives::GRAVE_NICTROS {
         assert!(native.reward_table().row(creature).is_ok());
     }
@@ -221,17 +234,11 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
                 completes: false,
                 experience: None,
                 world_change: None,
-                effects: [
-                    (objective.stage.clone(), objective.stage_value),
-                    (objective.counter.clone(), 0),
-                ]
-                .into_iter()
-                .map(|(track, value)| QuestEffect {
-                    track,
+                effects: vec![QuestEffect {
+                    track: objective.counter.clone(),
                     from: QuestComparison::Any,
-                    effect: QuestEffectKind::Set(value),
-                })
-                .collect(),
+                    effect: QuestEffectKind::Set(0),
+                }],
             })
             .map_err(debug)?,
     ));
@@ -284,8 +291,8 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         "peer progression must be admitted before seeding its quest"
     );
     let session = admitted.game_session_id;
-    let primary = prepare_player(&deps, &owner, session).await?;
-    let other = prepare_player(&deps, &owner, peer).await?;
+    let primary = prepare_player(h, &deps, &owner, session, objective).await?;
+    let other = prepare_player(h, &deps, &owner, peer, objective).await?;
     assert_eq!(progress(h, id(101), objective).await?, (0, -1));
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
@@ -418,18 +425,20 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
     );
     let counts = rewards(h).await?;
     let contributors = 1 + i64::from(peer_credit);
-    if case == Case::ShippedCatalogue || creature == death_objectives::GRAVE_NICTROS {
+    if creature == death_objectives::GRAVE_NICTROS {
         assert_eq!((counts.0, counts.1), (0, 0));
+    } else {
+        let damage_contributors = if case == Case::ChestFault { 1 } else { 2 };
+        assert_eq!(counts, (1, damage_contributors, 1, damage_contributors));
+    }
+    if case == Case::ShippedCatalogue || creature == death_objectives::GRAVE_NICTROS {
         let personal_rewards: bool = sqlx::query_scalar(
             "SELECT personal_rewards FROM game_boss_death_settlements WHERE boss_key=$1",
         )
         .bind(creature)
         .fetch_one(&h.pool)
         .await?;
-        assert!(!personal_rewards);
-    } else {
-        let damage_contributors = if case == Case::ChestFault { 1 } else { 2 };
-        assert_eq!(counts, (1, damage_contributors, 1, damage_contributors));
+        assert_eq!(personal_rewards, case == Case::ShippedCatalogue, "{creature}");
     }
     assert_eq!(credits(h, objective).await?, contributors);
     assert!(!queue.has_session(session));
@@ -500,9 +509,11 @@ fn simulate_idle_think(
 }
 
 async fn prepare_player(
+    h: &Harness,
     deps: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
+    objective: &DeathObjective,
 ) -> TestResult<ExactActorRef> {
     let fence = owner
         .current_quest_fence(session)
@@ -558,10 +569,29 @@ async fn prepare_player(
         )
         .await
         .map_err(debug)?;
-    assert!(
-        matches!(outcome, QuestTransitionOutcome::Committed(_)),
-        "{outcome:?}"
-    );
+    let QuestTransitionOutcome::Committed(receipt) = outcome else {
+        return Err(format!("boss quest setup did not commit: {outcome:?}").into());
+    };
+    // The real passage owns this stage. Import the participant's earlier progress
+    // at the setup revision so this scenario starts at the boss fight.
+    let mut prior = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *prior)
+        .await?;
+    let imported = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+            (character_id, quest_key, track_key, value, committed_character_revision)
+         VALUES (encode($1,'hex')::uuid, $2, $3, $4, $5::text::numeric)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&objective.quest)
+    .bind(&objective.stage)
+    .bind(objective.stage_value)
+    .bind(receipt.committed_character_revision.get().to_string())
+    .execute(&mut *prior)
+    .await?;
+    assert_eq!(imported.rows_affected(), 1);
+    prior.commit().await?;
     owner.admit_quest_session(&admitted).await;
     assert!(owner.refresh_source_party_presence(actor, session).await);
     Ok(actor)

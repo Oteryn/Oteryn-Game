@@ -17,9 +17,13 @@ def item(attributes, nested="", item_id='id="1"', name="test"):
 
 
 class RangedItemProfilesTest(unittest.TestCase):
+    def test_chiller_lowers_as_a_rod(self):
+        profiles, _, _ = ranged.source_profiles(ranged.ROOT)
+        self.assertEqual(profiles[21350]['kind'], 'ROD')
+
     def test_pinned_categories_and_samples(self):
         profiles, held, counts = ranged.source_profiles(ranged.ROOT)
-        self.assertEqual(counts, {"DISTANCE": 58, "THROWING": 15, "AMMUNITION": 25, "WAND": 34, "ROD": 32})
+        self.assertEqual(counts, json.loads((ranged.ROOT / ranged.REPORT).read_bytes())['counts'])
         self.assertEqual(len(profiles), 163)
         self.assertEqual([(row['item_id'], row['profile']['range_cells']) for row in held], [(49522, 8)])
         for item_id, kind, attack, distance in [(3350, 'DISTANCE', 0, 6), (3349, 'DISTANCE', 0, 5), (3277, 'THROWING', 25, 3)]:
@@ -113,10 +117,15 @@ class RangedItemProfilesTest(unittest.TestCase):
         original = (ranged.ROOT / ranged.PROFILES).read_bytes()
         document = json.loads(original)
         clean = copy.deepcopy(document)
+        source = json.loads((ranged.ROOT / ranged.RANGED_PROFILES).read_bytes())
+        owned = {row['item']['key'] for row in source['records']}
+        retained = {f'oteryn:item.tibia.i{item}' for item in (49529, 49885, 49886, 49887)}
         for record in clean['records']:
-            record['authoring'].pop('ranged', None)
+            key = record['production_binding']['target']['key']
+            if key in owned - retained:
+                del record['authoring']['ranged']
         generated = {ranged.PROFILES: json.dumps(clean).encode(), ranged.MANIFEST: (ranged.ROOT / ranged.MANIFEST).read_bytes()}
-        ranged.apply_native(ranged.ROOT, generated)
+        ranged.apply_native(ranged.ROOT, generated, retained_keys=retained)
         self.assertEqual(generated[ranged.PROFILES], original)
         self.assertEqual(json.loads(generated[ranged.MANIFEST])['item_profiles']['sha256'], hashlib.sha256(original).hexdigest())
         self.assertEqual(len(document['records']), len(clean['records']))

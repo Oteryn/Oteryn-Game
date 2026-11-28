@@ -17,6 +17,27 @@ fn map_journey_path_around_wall_and_no_path_through_blocking_item() -> TestResul
 }
 
 #[test]
+fn map_journey_detours_around_occupant_on_a_long_route() -> TestResult {
+    let center = at(1, RADIUS, -7);
+    let from = at(center.x, 0, center.floor);
+    let occupied = at(from.x, 1, from.floor);
+    let goal = at(from.x, RADIUS + 1, from.floor);
+    let landing = |at, direction| {
+        adjacent(at, direction).filter(|next| next.x <= center.x && next.y <= goal.y)
+    };
+    let remaining = VecDeque::from(vec![StepDirection::South; usize::from(RADIUS)]);
+    let detour = route_around_occupant(from, center, occupied, &remaining, |_| true, landing)
+        .ok_or("occupied route needs a detour within the map journey bounds")?;
+    assert_eq!(
+        detour.into_iter().try_fold(from, |at, direction| {
+            landing(at, direction).filter(|next| *next != occupied)
+        }),
+        Some(goal)
+    );
+    Ok(())
+}
+
+#[test]
 fn map_journey_synthetic_bundle_stairs_hole_collision_and_seeded_samples() -> TestResult {
     use crate::map::boot::{
         boot,

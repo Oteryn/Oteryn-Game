@@ -8,13 +8,37 @@ transition once: the pinned path and digest, and the exact current path and dige
 A pin resolves through an entry only when it matches the recorded pinned digest and
 the current file matches the recorded current digest exactly. Any further edit to a
 relocated source therefore fails closed until that edit is reviewed and recorded here.
+Receipts that also require the original byte count can use an exact frozen copy.
 """
 
 from __future__ import annotations
 
+import gzip
 import hashlib
+import json
 import re
 from pathlib import Path
+
+# Successor8 receipts check both the original digest and byte count.
+# Preserve the exact reviewed packets alongside the live promotion.
+FROZEN_COMPRESSED_SOURCES = {
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "1ac9e905907e5a9a60f9de7d7bbf25486435473568e310bad465b20a9e21cef9",
+    ): "tools/content-migration/historical-item-stats-promotion-v2-successor8-v20.json.gz",
+    (
+        "tools/content-schema/item-authoring/lower_wiki_stats_packet.py",
+        "d5b5bb64f372710ea74b49282816b8ea8ed1e151599b7c36ee52f65fe8cb2148",
+    ): "tools/content-migration/historical-lower-wiki-stats-packet.py.gz",
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
+    ): "tools/content-migration/historical-item-stats-promotion-v2.json.gz",
+    (
+        "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
+        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+    ): "tools/content-migration/historical-item-stats-promotion-v2-successor8-v17.json.gz",
+}
 
 # The reviewed spawn map revisions preserve the bound quest placements.
 QUEST_PLAN_PLACEMENT_RELOCATIONS = {
@@ -23,7 +47,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "c5eabc5644d58fdd404fd5f12eed7d51757edcd2ed39345e20c6cecbf196ff18",
+        "e414fa9257ca4470a71567a3e0f1feda5f793620a3fd9e777e7b13bad2ad87c5",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -51,7 +75,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "25000632406f556ca125613aa69a3ed52a6ddca472e4874c2c4b6f1761dd5f94",
     ): (
         "content/world/placements/region-z11-x129-y126.b3",
-        "10e4b1ca595b43df3499715a7910e01718eef5dbf99e9b95e0d0f28e82095af4",
+        "25cfa750b36f8d3c1183df455569c2e594fc179d81317318d1f38958ad3b7ece",
     ),
 }
 
@@ -63,14 +87,21 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+    ),
+    (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+    ): (
+        "tools/content-schema/item-authoring/historical_world_owner_context.py",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -88,7 +119,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -102,7 +133,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -116,7 +147,7 @@ RELOCATIONS = {
         "d0b52da99de9ffff5ab0804ac13f293cc77f9d654b9291a59f56119f47d21575",
     ): (
         "tools/content-schema/item-authoring/check_stack_default_historical_context.py",
-        "0304232dbc524a5088976178acbe2e7a86a1b607cf6c13a7952d084fb73be529",
+        "74fa9c7ab558beecbd64acde45310d345ffbbf1b0c0adb8ed4c52dac703b1c30",
     ),
     (
         "tools/content-schema/item-authoring/test_stack_default_historical_context.py",
@@ -133,14 +164,14 @@ RELOCATIONS = {
         "82cd7cc71421911cfb85f0fac5375bf9a225706793dd5debca91b147b91215ba",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+        "1ac9e905907e5a9a60f9de7d7bbf25486435473568e310bad465b20a9e21cef9",
     ),
     (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
         "f7e73f663dcafae8d757300cd324d7b1f3f1691b0dbc2b11b068f7f861b92684",
     ): (
         "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json",
-        "5ef32cfa01e7a319e4ef056592df1aa66e7fbff30b6d86604f5354316436aa3d",
+        "1ac9e905907e5a9a60f9de7d7bbf25486435473568e310bad465b20a9e21cef9",
     ),
     # Numeric17 reuses the Mantra/Bond compiler's source readers. Their behavior
     # is unchanged by the exact Global overlay check on live Mantra/Bond rows.
@@ -158,21 +189,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "2442cec4dabda2c89593259138ed41e41a6e5edf59ab8bd9abdc2340fb6e7539",
+        "fd6f0d451bac28ba61a5dc079bf233d82fde28703987f375e2e6050cf4a4252a",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
+        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "29c05a9d6a5dbee23213ed047510efc41cbdb2723e38a787da64b8d0c9856502",
+        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
@@ -224,42 +255,42 @@ RELOCATIONS = {
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "8229c3e86315d22bfcb2841d7e024ecafdf63c7110265ccb97da797c41cdffea",
+        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",
@@ -273,21 +304,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
+        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -368,15 +399,73 @@ def read_text(root: Path, path: str) -> str:
     return (Path(root) / current_path(path)).read_text()
 
 
+def historical_wiki_records(records: dict) -> dict:
+    """Recover the dictionary before the 8748 re-key for historical verification."""
+    historical = dict(records)
+    key = "oteryn:item.tibia.i8748"
+    if key in historical:
+        if "8748" in historical:
+            raise ValueError("duplicate Old Piece of Paper snapshot identity")
+        historical["8748"] = historical.pop(key)
+    return historical
+
+
+def historical_wiki_snapshot(data: bytes) -> bytes | None:
+    """Reconstruct the exact bytes preceding the Old Piece of Paper re-key."""
+    try:
+        snapshot = json.loads(data)
+        if (
+            json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        ).encode() != data:
+            return None
+
+        def record_digest(records):
+            return digest(
+                json.dumps(
+                    records, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+                ).encode()
+            )
+
+        if snapshot["snapshot_sha256"] != record_digest(snapshot["records"]):
+            return None
+        records = historical_wiki_records(snapshot["records"])
+        snapshot["records"] = records
+        snapshot["snapshot_sha256"] = record_digest(records)
+        return (
+            json.dumps(snapshot, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+        ).encode()
+    except (KeyError, ValueError):
+        return None
+
+
 def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     """The current bytes of a pinned source, or None when its pin does not hold."""
     relocated = RELOCATIONS.get((path, expected))
     current, current_digest = relocated if relocated else (current_path(path), expected)
+    frozen_digest = expected
+    frozen = FROZEN_COMPRESSED_SOURCES.get((path, expected))
+    if frozen is None and relocated:
+        frozen = FROZEN_COMPRESSED_SOURCES.get(relocated)
+        frozen_digest = current_digest
+    if frozen is not None:
+        archive = Path(root) / frozen
+        if archive.is_file():
+            try:
+                data = gzip.decompress(archive.read_bytes())
+            except (OSError, EOFError):
+                return None
+            return data if digest(data) == frozen_digest else None
     target = Path(root) / current
     if not target.is_file():
         return None
     data = target.read_bytes()
-    return data if digest(data) == current_digest else None
+    if digest(data) == current_digest:
+        return data
+    if current == "imports/tibiawiki/facts/items-stats.json":
+        historical = historical_wiki_snapshot(data)
+        if historical is not None and digest(historical) == current_digest:
+            return data
+    return None
 
 
 def retain_quest_plan_citations(rows: list[dict]) -> list[dict]:

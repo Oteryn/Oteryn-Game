@@ -4,7 +4,7 @@
 
 use super::bundle_npcs::NpcBoot;
 use super::event;
-use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, WorldId};
+use crate::foundation::{ChannelRuntimeV1, MovementFacing, NpcPlacement, NpcPlacements, WorldId};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use sha2::{Digest, Sha256};
@@ -64,6 +64,43 @@ pub(super) fn prepare_map(
     checked.with_daily_map(map_changes(world, changes))
 }
 
+const MAERYN: &str = "oteryn:npc.maeryn";
+
+fn shared_npcs(
+    changes: &DailyWorldChanges,
+) -> impl Iterator<Item = (&'static str, (u16, u16, i8))> {
+    use oteryn_gameplay_world_change::{counter::CounterKind as K, owner::counter_admitted};
+    // Retained NPC anchors for Orockle/Benevola; adjacent admitted Navigator tile
+    // and the audited Seacrest Guardian are explicit native geometry choices.
+    [
+        (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
+        (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
+        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
+        // Explicit native barter station, not an asserted donor Yeo coordinate.
+        (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
+        (
+            K::FireFeathered,
+            "oteryn:npc.guardian_of_the_deep_seas",
+            (33553, 31624, 14),
+        ),
+    ]
+    .into_iter()
+    .filter(move |(kind, _, _)| changes.world_counters && counter_admitted(*kind))
+    .map(|(_, key, at)| (key, at))
+}
+
+/// Keep Maeryn's qualified downstairs contact on ordinary days.
+pub(super) fn retain_bundle_npc(changes: &DailyWorldChanges, npc: &mut NpcPlacements) -> bool {
+    if npc.key == MAERYN {
+        if changes.reset_epoch != 0 && changes.grimvale_full_moon {
+            return false;
+        }
+        npc.placements.retain(|placement| placement.floor == -7);
+        return !npc.placements.is_empty();
+    }
+    changes.reset_epoch == 0 || !shared_npcs(changes).any(|(daily, _)| daily == npc.key)
+}
+
 /// Places the day's NPCs the loaded catalogue admits; one that cannot stand is logged.
 pub(super) fn apply(
     runtime: &mut ChannelRuntimeV1,
@@ -84,25 +121,16 @@ pub(super) fn apply(
             })
         })
         .map(|town| ("oteryn:npc.yasir", town.yasir_position()));
-    use oteryn_gameplay_world_change::{counter::CounterKind as K, owner::counter_admitted};
-    // Retained NPC anchors for Orockle/Benevola; adjacent admitted Navigator tile
-    // and the audited Seacrest Guardian are explicit native geometry choices.
-    let shared_npcs = [
-        (K::HiveBorn, "oteryn:npc.orockle", (33448, 31309, 7)),
-        (K::Overhunting, "oteryn:npc.benevola", (32596, 31745, 7)),
-        (K::Deeplings, "oteryn:npc.navigator", (33638, 31377, 9)),
-        // Explicit native barter station, not an asserted donor Yeo coordinate.
-        (K::FireFeathered, "oteryn:npc.yeo", (33554, 31624, 14)),
-        (
-            K::FireFeathered,
-            "oteryn:npc.guardian_of_the_deep_seas",
-            (33553, 31624, 14),
-        ),
-    ]
-    .into_iter()
-    .filter(|(kind, _, _)| changes.world_counters && counter_admitted(*kind))
-    .map(|(_, key, at)| (key, at));
-    for (key, (x, y, z)) in changes.npcs().chain(trader).chain(shared_npcs) {
+    // TibiaWiki BR Maeryn revid 396987 supplies her upstairs full-moon cell.
+    let maeryn = changes
+        .grimvale_full_moon
+        .then_some((MAERYN, (33332, 31686, 6)));
+    for (key, (x, y, z)) in changes
+        .npcs()
+        .chain(trader)
+        .chain(shared_npcs(changes))
+        .chain(maeryn)
+    {
         if !npc_boot.is_some_and(|boot| boot.admits(key)) {
             continue;
         }
@@ -317,6 +345,62 @@ pub(crate) mod tests {
         assert_eq!(apply(&mut runtime, None, &june, None), 0);
         assert!(npc_keys(&runtime).is_empty());
     }
+
+    #[test]
+    fn maeryn_moves_upstairs_only_during_the_grimvale_full_moon() {
+        let mut admitted = boot(&[MAERYN]);
+        if let NpcBoot::Place { table, .. } = &mut admitted {
+            table.npcs.push(NpcPlacements {
+                key: MAERYN.into(),
+                placements: vec![
+                    NpcPlacement {
+                        x: 33330,
+                        y: 31686,
+                        floor: -7,
+                        direction: MovementFacing::North,
+                    },
+                    NpcPlacement {
+                        x: 33332,
+                        y: 31686,
+                        floor: -6,
+                        direction: MovementFacing::North,
+                    },
+                ],
+            });
+        }
+        for (changes, static_count, expected) in [
+            (
+                super::super::channel_boot::bootstrap_world_changes(),
+                1,
+                (33330, 31686, 7),
+            ),
+            (
+                DailyWorldChanges::roll(41, 1, 12, |_| u64::MAX),
+                1,
+                (33330, 31686, 7),
+            ),
+            (
+                DailyWorldChanges::roll(41, 1, 13, |_| u64::MAX),
+                0,
+                (33332, 31686, 6),
+            ),
+        ] {
+            let mut runtime = channel_runtime();
+            assert_eq!(
+                super::super::bundle_npcs::place(&mut runtime, Some(&admitted), Some(&changes))
+                    .expect("static bundle placement"),
+                static_count
+            );
+            assert_eq!(
+                apply(&mut runtime, Some(&admitted), &changes, None),
+                1 - static_count
+            );
+            assert_eq!(npc_keys(&runtime), ["oteryn:npc.maeryn"]);
+            let position = &runtime.visible_entities().npcs[0].position;
+            assert_eq!((position.x, position.y, position.floor), expected);
+        }
+    }
+
     #[test]
     fn sp02_yasir_requires_a_ship_map() {
         let mut runtime = channel_runtime();
@@ -707,13 +791,14 @@ pub(crate) mod tests {
             ][..]
         };
         let count = points.len();
-        for (position, delay, creature, health, _) in points {
+        for point in points {
+            let position = point.position;
             assert!((33330..=33350).contains(&position.0));
             assert!((31670..=31690).contains(&position.1));
             assert_eq!(position.2, 7);
-            assert!(allowed.contains(&creature.as_str()));
-            assert_eq!(*health, 100);
-            assert_eq!(*delay, 90_000);
+            assert!(allowed.contains(&point.creature.as_str()));
+            assert_eq!(point.initial_health, 100);
+            assert_eq!(point.respawn_ms, 90_000);
         }
         let channel_pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(
                 world(),pin.activation_sequence(),pin.identity().server_artifact_digest(),

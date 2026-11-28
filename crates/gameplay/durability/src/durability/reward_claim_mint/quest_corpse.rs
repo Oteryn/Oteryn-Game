@@ -1,15 +1,17 @@
-//! Read-only corpse sampling joins immutable native race provenance to the tool MINT.
+//! Corpse sampling joins immutable native race provenance to the tool MINT.
 use super::QuestCarriedUse;
 use super::quest_creature::QuestCreatureUseProof;
 use crate::durability::{
     DurabilityError,
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionRequest},
+    spell_owner_commit::SpellLanePermit,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use sqlx::Row;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn record(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
@@ -17,12 +19,14 @@ pub(super) async fn record(
     callback: &RewardCallback,
     carried: &QuestCarriedUse,
     proof: &QuestCreatureUseProof<'_>,
+    permit: &SpellLanePermit,
     native: &NativeGameplayState,
 ) -> Result<bool, DurabilityError> {
     let Some(spec) = &callback.corpse_target else {
         return Ok(true);
     };
-    let Some((corpse, position)) = proof.corpse() else {
+    permit.check_scope(fence.runtime_scope)?;
+    let Some((corpse, position, _)) = proof.corpse() else {
         return Ok(false);
     };
     let Some(species) = &callback.creature_target else {
@@ -42,7 +46,22 @@ pub(super) async fn record(
     let Some(revision) = native.item_index().and_then(|index| index.revision(&key)) else {
         return Ok(false);
     };
-    let row=sqlx::query("SELECT to_jsonb(i) AS item,to_jsonb(g) AS ground,g.spatial_position FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) JOIN game_item_mint_receipts r ON r.transaction_id=p.mint_transaction_id AND r.item_instance_id=i.item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item' AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND p.race_key=$7 AND i.minted_transaction_id=p.mint_transaction_id AND floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-r.occurred_at BETWEEN 0 AND $8 FOR SHARE OF i,g")
+    // Match the Ground writer's lock order and reread custody under both locks.
+    let locked = sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+        .bind(corpse.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+    if locked.is_none() {
+        return Ok(false);
+    }
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
+    )
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
+    let row=sqlx::query("SELECT to_jsonb(i) AS item,to_jsonb(g) AS ground,g.spatial_position FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) JOIN game_item_mint_receipts r ON r.transaction_id=p.mint_transaction_id AND r.item_instance_id=i.item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item' AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND p.race_key=$7 AND i.minted_transaction_id=p.mint_transaction_id AND floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-r.occurred_at BETWEEN 0 AND $8")
         .bind(corpse.as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
         .bind(fence.scope_ownership_generation.get().to_string()).bind(&key).bind(revision).bind(species)
         .bind(i64::from(spec.maximum_age_ms)-1).fetch_optional(&mut **tx).await?;

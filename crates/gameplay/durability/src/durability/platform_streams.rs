@@ -15,6 +15,7 @@ mod security_revocation;
 
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 
 /// A Platform stream and its cursor row in `game_platform_stream_cursors`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,7 +172,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let fresh = revocation_fresh_in_transaction(&mut tx).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(fresh)
                 })
             })
@@ -192,7 +193,7 @@ impl DurabilityRoot {
                     .bind(session.as_bytes().as_slice())
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(revoked)
                 })
             })
@@ -204,7 +205,7 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             let last=sqlx::query_scalar("SELECT floor(extract(epoch FROM advanced_at)*1000)::bigint FROM game_platform_stream_cursors WHERE stream=3")
                 .fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(last)
         })).await
     }
@@ -223,7 +224,7 @@ impl DurabilityRoot {
                     .bind(stream.key())
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(cursor)
                 })
             })

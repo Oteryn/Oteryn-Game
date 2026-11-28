@@ -129,6 +129,7 @@ pub(super) fn scenario_with_creature_charmed(
         elemental_area,
         settings,
         false,
+        None,
         false,
     )
 }
@@ -143,13 +144,29 @@ pub(super) fn analyser_scenario() -> TestResult {
         false,
         (None, None, None),
         true,
+        None,
+        false,
+    )
+}
+
+pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
+    scenario_with_creature_observed(
+        None,
+        false,
+        None,
+        false,
+        false,
+        false,
+        (None, None, None),
+        false,
+        Some(creature),
         false,
     )
 }
 
 pub(super) fn scenario_with_blocked_bounty_read() -> TestResult {
     scenario_with_creature_observed(
-        None, false, None, false, false, false, (None, None, None), false, true,
+        None, false, None, false, false, false, (None, None, None), false, None, true,
     )
 }
 
@@ -166,6 +183,7 @@ fn scenario_with_creature_observed(
     elemental_area: bool,
     settings: KillScenarioSettings<'_>,
     analyser: bool,
+    letter_creature: Option<&str>,
     blocked_bounty_read: bool,
 ) -> TestResult {
     let (charm, boss_policy, daily_target) = settings;
@@ -177,14 +195,18 @@ fn scenario_with_creature_observed(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let w22a_tables = super::scheduled_event_rates_fixtures::table_override()?;
+        let loot_tables = if let Some(creature) = letter_creature {
+            Some(super::dwarf_letter_fixtures::force_letter_roll(creature)?)
+        } else {
+            super::scheduled_event_rates_fixtures::table_override()?
+        };
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
                 world,
                 Some(include_bytes!(
                     "../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
-                w22a_tables.as_deref(),
+                loot_tables.as_deref(),
             );
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -273,6 +295,7 @@ fn scenario_with_creature_observed(
             },
             |name| format!("oteryn:creature.radiant_{name}"),
         );
+        let creature_key = letter_creature.map_or(creature_key, str::to_owned);
         let expected_xp = if daily_target == Some("creature") {
             10
         } else if settle_radiant {
@@ -630,7 +653,7 @@ fn scenario_with_creature_observed(
                             // Level 50 overcomes the rat's defence and armor. A high-level
                             // attacker kills the real Radiant in bounded swings;
                             // its native HP, defence, loot and corpse facts stay unchanged.
-                            level: if settle_radiant {
+                            level: if settle_radiant || letter_creature.is_some() {
                                 1_000_000
                             } else if charm.is_some() {
                                 30
@@ -1107,6 +1130,9 @@ fn scenario_with_creature_observed(
         // ARCH-PROGRESSION-SOURCE-0 §1.5: the session's progression binding, formed by the
         // production admission step from the Character root's stored revisions.
         owner.admit_progression_session(&mut admitted).await;
+        if letter_creature.is_some() {
+            super::item_look_fixtures::seed_main_backpack(&harness, &[]).await?;
+        }
         if analyser {
             admitted.continuity.selected_capabilities =
                 crate::gameplay_transport::capabilities::SelectedCapabilities::select(
@@ -1302,6 +1328,12 @@ fn scenario_with_creature_observed(
             if queued {
                 break;
             }
+            if let Some(creature) = letter_creature {
+                let runtime = owner.runtime.lock().await;
+                if runtime.visible_entities().creatures.is_empty() {
+                    return Err(format!("{creature}: lethal auto-attack queued no Letter reward").into());
+                }
+            }
             swings += 1;
             assert!(swings < 64, "{creature_key} dies to auto-attack swings");
             owner.clock_origin = owner
@@ -1485,6 +1517,15 @@ fn scenario_with_creature_observed(
                 .has_session(session),
             "the settled kill leaves the queue"
         );
+
+        if let Some(creature) = letter_creature {
+            super::dwarf_letter_fixtures::loot_letter(&owner, &admitted, &harness, creature)
+                .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
 
         // XP: exactly one committed receipt for the native amount on the fenced Character.
         assert_eq!(xp_receipts(&harness).await?, 1);

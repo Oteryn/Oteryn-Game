@@ -84,7 +84,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     // #2673 adds the drown-protection item batch without reimport states.
     // E06 adds the client market mint and the Crystal market parity batches, without states.
     // This count is refreshed by the normal repin_rust_inventory source tool.
-    assert_eq!(batches.len(), 36);
+    assert_eq!(batches.len(), 40);
     let cake = batches
         .iter()
         .filter(|batch| batch.batch_id == "seasonal-cake-creature-crystal-201189f-r1")
@@ -99,10 +99,68 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         1,
         "one separately qualified Thaian source batch"
     );
+    let raid_spawn = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "crystal-spawn-creatures-201189f-r1")
+        .collect::<Vec<_>>();
     assert_eq!(
-        batches.len() - cake.len() - thaian.len(),
+        raid_spawn.len(),
+        1,
+        "one Crystal spawn Creature source batch"
+    );
+    let parity: Vec<_> = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "creature-parity-crystal-201189f-r1")
+        .collect();
+    assert_eq!(parity.len(), 1, "one Crystal creature parity source batch");
+    assert_eq!(
+        parity[0].source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/creature-parity-201189f.json"
+        ))
+    );
+    assert!(parity[0].candidates.is_empty());
+    assert!(parity[0].reimport_states.is_empty());
+    let delta_spawn = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "crystal-spawn-delta-creatures-201189f8-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        delta_spawn.len(),
+        1,
+        "one Crystal spawn delta Creature source batch"
+    );
+    let cyclopedia = batches
+        .iter()
+        .filter(|batch| batch.batch_id == "cyclopedia-creatures-crystal-201189f-r1")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        cyclopedia.len(),
+        1,
+        "one separately qualified Cyclopedia source batch"
+    );
+    assert_eq!(
+        cyclopedia[0].source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/cyclopedia-creatures-201189f.json"
+        ))
+    );
+    assert_eq!(
+        batches.len()
+            - cake.len()
+            - thaian.len()
+            - delta_spawn.len()
+            - cyclopedia.len()
+            - parity.len()
+            - raid_spawn.len(),
         34,
         "all historical source batches retained"
+    );
+    assert_eq!(
+        delta_spawn[0].source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/spawn-delta-creatures-201189f8.json"
+        ))
     );
     let cake = cake[0];
     assert_eq!(cake.source_repository, "zimbadev/crystalserver");
@@ -145,6 +203,16 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     );
     assert!(thaian.candidates.is_empty());
     assert!(thaian.reimport_states.is_empty());
+    let raid_spawn = raid_spawn[0];
+    assert_eq!(raid_spawn.source_repository, "zimbadev/crystalserver");
+    assert_eq!(
+        raid_spawn.source_artifact_sha256,
+        world_project_sha256(include_bytes!(
+            "../../../../imports/crystalserver/spawn-delta-creatures-201189f.json"
+        ))
+    );
+    assert!(raid_spawn.candidates.is_empty());
+    assert!(raid_spawn.reimport_states.is_empty());
     assert_eq!(
         batches
             .iter()

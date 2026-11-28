@@ -6,47 +6,100 @@ import authored_quest_item_custody as custody
 import encounter_loot_item_admissions as source
 
 # Crystal 201189f8 enraged_arbaziloth.lua hard-mode equipment.
-ARBAZILOTH_HARD_ITEMS = {f'oteryn:item.tibia.i{i}' for i in (49531, 49532, 49533, 49534, 50189)}
-ITEMS = ARBAZILOTH_HARD_ITEMS | {f'oteryn:item.tibia.i{i}' for i in (
-    2863, 2950, 3019, 3022, 3023, 3024, 3304, 3331, 3334, 3335, 3339, 3432,
-    3573, 5883, 5930, 7396, 8897, 8898, 9615, 10244, 10290, 12482, 12483, 12509,
-)}
+ARBAZILOTH_HARD_ITEMS = {
+    f"oteryn:item.tibia.i{i}" for i in (49531, 49532, 49533, 49534, 50189)
+}
+# Crystal 201189f8 cultist loot includes the quest doll and four Hunter verses.
+CULT_LOOT_ITEMS = {f"oteryn:item.tibia.i{i}" for i in (5810, 6087, 6088, 6089, 6090)}
+ITEMS = ARBAZILOTH_HARD_ITEMS | CULT_LOOT_ITEMS | {
+    f"oteryn:item.tibia.i{i}"
+    for i in (
+        2852,
+        2863,
+        2950,
+        3019,
+        3022,
+        3023,
+        3024,
+        3295,
+        3304,
+        3331,
+        3334,
+        3335,
+        3339,
+        3432,
+        3573,
+        5883,
+        5930,
+        7396,
+        8897,
+        8898,
+        9606,
+        9615,
+        10244,
+        10290,
+        12482,
+        12483,
+        12509,
+    )
+}
 
 
 def admit(root, items, order):
     from build_full_spell_artifact import native_loot_yield_facts
 
     definitions = {}
-    for path in sorted((root / 'content/items/definitions').glob('items-*.json')):
-        for row in json.loads(path.read_bytes())['records']:
-            definition = row['definition']
-            key = definition['identity']['key']
+    for path in sorted((root / "content/items/definitions").glob("items-*.json")):
+        for row in json.loads(path.read_bytes())["records"]:
+            definition = row["definition"]
+            key = definition["identity"]["key"]
             if key in ITEMS:
                 definitions[key] = definition
     if definitions.keys() != ITEMS:
-        raise ValueError('protected loot is missing a canonical Item definition')
+        raise ValueError("protected loot is missing a canonical Item definition")
 
-    existing = {r['production_definition']['production_key']: r for r in items['records']}
-    new = [definition for key, definition in sorted(definitions.items()) if key not in existing]
-    ids = {int(definition['identity']['key'].rsplit('.i', 1)[1]) for definition in new}
+    existing = {
+        r["production_definition"]["production_key"]: r for r in items["records"]
+    }
+    new = [
+        definition
+        for key, definition in sorted(definitions.items())
+        if key not in existing
+    ]
+    incomplete = [
+        existing[key]
+        for key, definition in definitions.items()
+        if key in existing
+        and native_loot_yield_facts(definition["identity"], existing[key]) is None
+    ]
+    ids = {int(definition["identity"]["key"].rsplit(".i", 1)[1]) for definition in new}
+    ids.update(int(profile["production_binding"]["external_id"]) for profile in incomplete)
     observed = source.facts(root, ids, allow_containers=True) if ids else {}
-    xml = (root / 'imports/canary/items-xml/items.xml').read_bytes()
-    for profile in custody.qualify_many(root, new, xml, terminal_expiry=True):
-        key = profile['production_definition']['production_key']
+    xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
+    qualified = custody.qualify_many(root, new, xml, terminal_expiry=True)
+    for profile in [*qualified, *incomplete]:
+        key = profile["production_definition"]["production_key"]
         # The quest importer preserves canonical Unknowns outside its physical
         # scope. Loot also needs the pinned classification and fresh-instance
         # charge/expiry facts, without overwriting known Quest or combat facts.
-        if observed[key]['production_binding'] != profile['production_binding']:
-            raise ValueError(f'protected loot source binding differs: {key}')
-        for group in ('classification', 'charges', 'temporal'):
-            canonical = profile['semantics'][group]
-            proven = observed[key]['semantics'][group]
+        if observed[key]["production_binding"] != profile["production_binding"]:
+            raise ValueError(f"protected loot source binding differs: {key}")
+        groups = ("classification", "charges", "temporal")
+        if key in existing:
+            # A Quest owner can already admit the Item with unresolved loot facts.
+            groups += ("stack", "container")
+        for group in groups:
+            canonical = profile["semantics"][group]
+            proven = observed[key]["semantics"][group]
             if source.accepted.known_conflict(canonical, proven):
-                raise ValueError(f'protected loot canonical {group} differs: {key}')
-            profile['semantics'][group] = source.accepted.accepted_first(canonical, proven)
-        existing[key] = profile
-        items['records'].append(profile)
+                raise ValueError(f"protected loot canonical {group} differs: {key}")
+            profile["semantics"][group] = source.accepted.accepted_first(
+                canonical, proven
+            )
+        if key not in existing:
+            existing[key] = profile
+            items["records"].append(profile)
     for key, definition in definitions.items():
-        if native_loot_yield_facts(definition['identity'], existing[key]) is None:
-            raise ValueError(f'protected loot lacks native custody: {key}')
-    items['records'].sort(key=order)
+        if native_loot_yield_facts(definition["identity"], existing[key]) is None:
+            raise ValueError(f"protected loot lacks native custody: {key}")
+    items["records"].sort(key=order)

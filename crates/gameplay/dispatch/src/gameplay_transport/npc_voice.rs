@@ -15,6 +15,7 @@ use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, ThinkOccurrence};
 use crate::chat::ChatText;
 #[cfg(test)]
 use crate::content::{NpcDataCatalogue, NpcServiceModel};
+use crate::durability::world_event::bank_robbery::{TOWNCRYER, TOWNCRYER_LINE};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementPositionContext};
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 use std::collections::BTreeMap;
@@ -59,6 +60,9 @@ impl NpcVoiceCycle {
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn emit_npc_voices(&self, cycle: &mut NpcVoiceCycle, now_us: u64) {
+        let schedule_now = crate::world_clock::now_utc_ms()
+            .and_then(|now| i64::try_from(now).ok())
+            .unwrap_or(0);
         {
             let mut runtime = self.runtime.lock().await;
             if runtime.owner_fence().is_err() || runtime.pinned_movement_context() != cycle.context
@@ -67,8 +71,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             // Source schedule ownership belongs to this Channel cadence, including quiet NPCs.
             // An occupied arrival cell retries on the next pass without moving any occupant.
-            let rotated =
-                runtime.rotate_rashid_at(super::npc_trade_command::unix_ms_now()) == Ok(true);
+            let rotated = runtime.rotate_rashid_at(schedule_now) == Ok(true);
             let visible = runtime.visible_entities();
             if rotated
                 && let Some(npc) = visible.npcs.iter().find(|npc| {
@@ -161,6 +164,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // Bound each owner critical section; movement may run between chunks.
         for chunk in due.chunks(64) {
             let mut proposals = Vec::new();
+            let mut towncryer = None;
             {
                 let mut runtime = self.runtime.lock().await;
                 if runtime.owner_fence().is_err()
@@ -186,6 +190,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             && let Ok(VoiceThink::Speak(proposal)) =
                                 voice.think(&runtime, occurrence, &root)
                         {
+                            if runtime.npc_key(state.actor) == Some(TOWNCRYER) {
+                                towncryer = Some(proposal.clone());
+                            }
                             self.states.chat.publish_npc_voice(&runtime, &proposal);
                         }
                         if let Some(walk) = state.walk.as_mut()
@@ -199,6 +206,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
             }
+            if let Some(proposal) = towncryer {
+                self.emit_bank_robbery_announcement(cycle, proposal).await;
+            }
             if let Some(book) = cycle.walks.as_ref() {
                 for (identity, proposal) in proposals {
                     if let Some(duration) = self.commit_npc_walk(proposal, book).await
@@ -209,6 +219,40 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             tokio::task::yield_now().await;
+        }
+    }
+
+    async fn emit_bank_robbery_announcement(
+        &self,
+        cycle: &NpcVoiceCycle,
+        mut proposal: NpcVoiceProposal,
+    ) {
+        {
+            let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_err() || runtime.pinned_movement_context() != cycle.context
+            {
+                return;
+            }
+        }
+        let actor = proposal.occurrence.actor;
+        if !self
+            .root
+            .bank_robbery_announcement(
+                self.character,
+                self.holder,
+                actor.runtime_scope(),
+                actor.scope_generation(),
+                self.reset_epoch,
+            )
+            .await
+            .is_ok_and(|active| active)
+        {
+            return;
+        }
+        proposal.line.text = TOWNCRYER_LINE.into();
+        let runtime = self.runtime.lock().await;
+        if runtime.pinned_movement_context() == cycle.context {
+            self.states.chat.publish_npc_voice(&runtime, &proposal);
         }
     }
 }

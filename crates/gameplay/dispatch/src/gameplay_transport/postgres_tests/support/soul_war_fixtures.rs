@@ -20,8 +20,17 @@ pub(super) async fn current(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
 ) -> TestResult<CurrentCharacterGameplayFence> {
-    crate::gameplay_transport::character_gameplay_fence::current(owner, session, false)
-        .await
+    use crate::durability::DurabilityError::{CommitOutcomeUnknown, RootUnavailable};
+    use crate::gameplay_transport::character_gameplay_fence::current_once;
+
+    let read = match current_once(owner, session, false).await {
+        Err(CommitOutcomeUnknown | RootUnavailable) => {
+            owner.root.await_ready().await?;
+            current_once(owner, session, false).await
+        }
+        result => result,
+    };
+    read.map_err(|error| format!("Soul War current fence: {error:?}"))?
         .ok_or_else(|| "Soul War current fence".into())
 }
 

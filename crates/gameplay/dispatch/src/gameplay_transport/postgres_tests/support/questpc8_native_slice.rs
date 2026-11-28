@@ -89,6 +89,11 @@ pub(super) fn world(
                             continue;
                         }
                         for item in &mut tile.items {
+                            if let Some((x, y, z)) = item.attrs.teleport {
+                                // B3 stores legacy depth. The bundle stores its signed floor.
+                                item.attrs.teleport =
+                                    Some((x, y, (-i8::try_from(z)?).to_ne_bytes()[0]));
+                            }
                             item.palette = add(keys
                                 .get(usize::try_from(item.palette)?)
                                 .ok_or("source palette")?)?;

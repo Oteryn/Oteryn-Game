@@ -47,7 +47,7 @@ fn npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres() -> 
                         coordinate_frame: "global-target-2026-09-27".into(), x: 2, y: 11, floor: 7,
                     }, price: 100, premium: false, min_level: None,
                     required_quest_tracks: Vec::new(),
-                }, keyword: "travora".into(), postman: false, carpet: false, held: false,
+                }, keyword: "travora".into(), crystal_callback: false, postman: false, carpet: false, held: false,
                 yalahar_gate: false, yalahar_town_gate: None, quest_gate: None, quest_clear_gate: None,
                 ticket: Some(TravelTicketRequirement { track: track.into(), valid_for_seconds: 86400 }), return_origin: None, world_changes: Vec::new(), partial_quest_callback: None,
             };

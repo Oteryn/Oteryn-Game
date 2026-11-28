@@ -4,7 +4,7 @@ use super::super::{
     character_authority::{ReconciledCharacterAuthority, assert_recovery_fence},
     character_progression::{CharacterProgressionError, CurrentCharacterGameplayFence},
     character_wheel::WheelPremiumGate,
-    db::{begin_semantic_transaction, commit_semantic_transaction},
+    db::{begin_semantic_transaction, commit_semantic_read},
     runtime_scope_assignment::NodeIncarnationProof,
     store::DeliveryReceipt,
 };
@@ -59,7 +59,7 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             let owned: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_prey_expansions WHERE character_id=encode($1,'hex')::uuid)")
                 .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok::<_, DurabilityError>(owned)
         })).await?)
     }
