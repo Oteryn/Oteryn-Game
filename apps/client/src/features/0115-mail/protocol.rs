@@ -1,5 +1,9 @@
+use super::super::feature_0057_cyclopedia_map::input::raid_warnings;
 use crate::play::{Outbox, Stepper, mailbox::lock};
-use oteryn_client_runtime::raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult};
+use oteryn_client_runtime::{
+    cyclopedia_map::raid_warnings::CAPABILITY_CYCLOPEDIA_RAID_WARNINGS_V1,
+    raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult},
+};
 use oteryn_client_ui::mail::{Intent, Panel};
 use oteryn_session::property_services::mail::{self, MailIntent};
 
@@ -11,6 +15,7 @@ pub(in crate::play) struct Panels {
     pub raid_schedule: oteryn_client_ui::raid_schedule::Panel,
     pub container_sort: oteryn_client_ui::container_sort::Panel,
     pub cyclopedia_map: oteryn_client_ui::cyclopedia_map::Panel,
+    pub raid_warning_poll: raid_warnings::Poll,
     pub guild_war: oteryn_client_ui::guild_war::Panel,
     pub party_skull: oteryn_client_ui::party_skull::Panel,
     pub guildhall: oteryn_client_ui::guildhall::Panel,
@@ -66,8 +71,11 @@ impl Outbox {
         };
         shared.properties.cyclopedia_map = oteryn_client_ui::cyclopedia_map::Panel {
             selected: session.feature_selected(57),
+            raid_warnings_selected: session
+                .feature_selected(CAPABILITY_CYCLOPEDIA_RAID_WARNINGS_V1),
             ..Default::default()
         };
+        shared.properties.raid_warning_poll = Default::default();
         shared.properties.timed_item = oteryn_client_ui::timed_item::Panel {
             selected: session.feature_selected(39),
             ..Default::default()
@@ -226,6 +234,9 @@ impl Outbox {
                 command,
                 result,
             ),
+            57 if raid_warnings::is_query(command) => {
+                raid_warnings::apply(&mut shared.properties, result);
+            }
             57 => super::super::feature_0057_cyclopedia_map::protocol::apply(
                 &mut shared.properties.cyclopedia_map,
                 command,

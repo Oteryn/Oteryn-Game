@@ -1,0 +1,7 @@
+{
+  "mechanic": "0626-cyclopedia-raid-warnings",
+  "kind": "panels",
+  "id": "0626-cyclopedia-raid-warnings-panel",
+  "status": "supported",
+  "entry": "protocol.rs::apply"
+}

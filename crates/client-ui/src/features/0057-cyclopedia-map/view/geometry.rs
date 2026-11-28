@@ -5,10 +5,17 @@ pub struct Rect {
     pub bounds: [i32; 4],
     pub color: u8,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WarningLevel {
+    Area,
+    Subarea,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Drawing {
     pub caption: String,
     pub rects: Vec<Rect>,
+    pub raid_warnings: Vec<([i32; 4], WarningLevel)>,
     pub points: Vec<[i32; 2]>,
 }
 pub fn text(panel: &Panel) -> String {
@@ -73,15 +80,34 @@ pub fn project(panel: &Panel) -> Drawing {
             oy + (u32::from(y - min_y) * numerator / denominator) as i32,
         ]
     };
-    if !a.hide_geometry {
+    let warned_area = a
+        .area()
+        .map(|area| {
+            if area.parent == 0 {
+                area.id
+            } else {
+                area.parent
+            }
+        })
+        .filter(|&area| panel.raid_warnings.area_warned(area));
+    if !a.hide_geometry || warned_area.is_some() {
         for run in &a.runs {
             let [x, y] = point(run.begin, run.y);
             let right = ox + (u32::from(run.end - min_x) * numerator / denominator) as i32;
             let bottom = oy + ((u32::from(run.y - min_y) + 1) * numerator / denominator) as i32;
-            draw.rects.push(Rect {
-                bounds: [x, y, (right - x).max(1), (bottom - y).max(1)],
-                color: (run.subarea % 6) as u8,
-            });
+            let bounds = [x, y, (right - x).max(1), (bottom - y).max(1)];
+            if !a.hide_geometry {
+                draw.rects.push(Rect {
+                    bounds,
+                    color: (run.subarea % 6) as u8,
+                });
+            }
+            if let Some(area) = warned_area {
+                draw.raid_warnings.push((bounds, WarningLevel::Area));
+                if panel.raid_warnings.subarea_warned(area, run.subarea) {
+                    draw.raid_warnings.push((bounds, WarningLevel::Subarea));
+                }
+            }
         }
     }
     if !panel.hide_pois {

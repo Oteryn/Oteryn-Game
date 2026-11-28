@@ -13,14 +13,25 @@ use oteryn_client_ui::cyclopedia_map::Panel;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn cyclopedia_atlas_open(&self) {
-        self.cyclopedia_atlas_action(0);
-        lock(&self.mailbox).properties.cyclopedia_map.geometry.open = true;
+        let mut mailbox = lock(&self.mailbox);
+        submit(&mut mailbox, &self.commands, 0);
+        mailbox.properties.cyclopedia_map.geometry.open = true;
+        super::raid_warnings::poll(
+            &mut mailbox.properties,
+            &self.commands,
+            std::time::Instant::now(),
+        );
     }
     pub fn cyclopedia_atlas_action(&self, action: usize) {
         submit(&mut lock(&self.mailbox), &self.commands, action);
     }
     pub fn cyclopedia_atlas_pump(&self) {
         let mut mailbox = lock(&self.mailbox);
+        super::raid_warnings::poll(
+            &mut mailbox.properties,
+            &self.commands,
+            std::time::Instant::now(),
+        );
         let panel = &mut mailbox.properties.cyclopedia_map;
         if panel.pending || !panel.geometry.open || !panel.geometry.auto_load {
             return;

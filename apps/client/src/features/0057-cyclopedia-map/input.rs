@@ -1,5 +1,7 @@
 #[path = "input/atlas.rs"]
 pub(in crate::play) mod atlas;
+#[path = "input/raid_warnings.rs"]
+pub(in crate::play) mod raid_warnings;
 use crate::combat_input::PlayCommand;
 use crate::play::{
     PlayLink,
@@ -66,7 +68,13 @@ impl PlayLink {
             .select_floor(previous);
     }
     pub fn cyclopedia_map_open(&self) {
-        lock(&self.mailbox).properties.cyclopedia_map.open = true;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.properties.cyclopedia_map.open = true;
+        raid_warnings::poll(
+            &mut mailbox.properties,
+            &self.commands,
+            std::time::Instant::now(),
+        );
     }
     pub fn cyclopedia_map_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::cyclopedia_map::open_key(events) {
@@ -96,3 +104,7 @@ pub(in crate::play) fn edit(
 #[cfg(test)]
 #[path = "input/tests/atlas.rs"]
 mod atlas_tests;
+
+#[cfg(test)]
+#[path = "input/tests/raid_warnings.rs"]
+mod raid_warning_tests;

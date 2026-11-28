@@ -6,6 +6,8 @@ pub mod atlas_view;
 pub mod geometry;
 pub use atlas::{atlas_action, atlas_color, atlas_detail};
 mod input;
+#[path = "../0626-cyclopedia-raid-warnings/protocol.rs"]
+pub mod raid_warnings;
 mod state;
 mod view;
 pub use input::open_key;

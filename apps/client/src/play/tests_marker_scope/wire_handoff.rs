@@ -516,3 +516,60 @@ fn party_membership_notice_from_wire_retries_after_activity_scope_discards_queue
         Ok(())
     })
 }
+
+#[test]
+fn raid_warning_round_trip_through_session() -> Result<(), Error> {
+    use oteryn_client_runtime::cyclopedia_map::{self as map, raid_warnings as raid};
+    scenario(async {
+        let caps = &[
+            map::CAPABILITY_CYCLOPEDIA_MAP_V1,
+            raid::CAPABILITY_CYCLOPEDIA_RAID_WARNINGS_V1,
+        ];
+        let (client, mut peer) = tokio::io::duplex(64 * 1024);
+        let (session, joined) = tokio::join!(admit(client, caps), join(&mut peer, caps));
+        joined?;
+        let (link, commands, outbox) = play_channel();
+        let task = tokio::spawn(run_session(session?, commands, outbox));
+        while !link.cyclopedia_map_panel().selected {
+            tokio::task::yield_now().await;
+        }
+        link.cyclopedia_map_open();
+
+        for (sequence, subarea) in [(1, None), (2, Some(109)), (3, None)] {
+            if sequence > 1 {
+                link.cyclopedia_atlas_close();
+                link.cyclopedia_map_open();
+            }
+            let received = read_frame(&mut peer).await?;
+            let command = wire::decode_wire_envelope(&received)?.client_command(1)?;
+            assert_eq!(command.command_type, map::COMMAND_TYPE_CYCLOPEDIA_QUERY);
+            assert_eq!(command.payload, raid::QUERY);
+            let records = [raid::Warning { area: 23, subarea }];
+            let payload = raid::encode(if sequence == 3 { &[] } else { &records })
+                .map_err(|error| format!("{error:?}"))?;
+            write_frame(
+                &mut peer,
+                &wire::encode_command_result(
+                    1,
+                    sequence,
+                    command.command_id,
+                    wire::CommandStatus::Accepted,
+                    &payload,
+                )?,
+            )
+            .await?;
+            loop {
+                let panel = link.cyclopedia_map_panel();
+                if panel.raid_warnings.area_warned(23) == (sequence != 3)
+                    && panel.raid_warnings.subarea_warned(23, 109) == subarea.is_some()
+                {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        }
+        drop(link);
+        task.await?;
+        Ok(())
+    })
+}

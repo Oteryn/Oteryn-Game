@@ -27,6 +27,8 @@ pub struct Panel {
     pub discovery_banner: Option<u64>,
     pub discovery_notice_sequence: u64,
     pub selected: bool,
+    pub raid_warnings_selected: bool,
+    pub raid_warnings: super::raid_warnings::Warnings,
     pub open: bool,
     pub pending: bool,
     pub speed_pending: bool,
@@ -139,6 +141,7 @@ impl Panel {
 impl Panel {
     pub fn invalidate_atlas(&mut self) {
         self.geometry = Default::default();
+        self.raid_warnings = Default::default();
         self.region_atlas = None;
         self.atlas = None;
         self.map = None;

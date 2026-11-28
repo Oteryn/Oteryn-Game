@@ -37,6 +37,11 @@ struct Action {
 /// The donation gold the Donate button sends; the session keeps the last submitted amount.
 #[derive(Component)]
 struct Donation;
+#[derive(Component)]
+struct RaidWarningOverlay;
+const AREA_WARNING_COLOR: Color = Color::srgba(1., 0.62, 0.08, 0.32);
+const SUBAREA_WARNING_COLOR: Color = Color::srgba(1., 0.15, 0.08, 0.55);
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Flag(u8),
@@ -468,6 +473,25 @@ fn project(
             ))
             .id();
         commands.entity(canvas).add_child(cell);
+    }
+    for ([x, y, width, height], level) in drawing.raid_warnings {
+        let color = match level {
+            atlas_view::WarningLevel::Area => AREA_WARNING_COLOR,
+            atlas_view::WarningLevel::Subarea => SUBAREA_WARNING_COLOR,
+        };
+        commands.spawn((
+            ChildOf(canvas),
+            RaidWarningOverlay,
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(x as f32),
+                top: px(y as f32),
+                width: px(width as f32),
+                height: px(height as f32),
+                ..default()
+            },
+            BackgroundColor(color),
+        ));
     }
     if let Some([left, top, right, bottom]) = panel.geometry.bounds {
         let (w, h) = (u32::from(right - left) + 1, u32::from(bottom - top) + 1);

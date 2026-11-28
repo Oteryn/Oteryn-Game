@@ -2,14 +2,23 @@
   "mechanic": "0626-cyclopedia-raid-warnings",
   "kind": "handlers",
   "id": "0626-cyclopedia-raid-warnings-overlay",
-  "status": "unsupported",
-  "reason": "The native Cyclopedia Map must negotiate capability 626, query selector 129 and render the returned area and subarea warnings.",
+  "status": "supported",
   "commands": [],
+  "shared_commands": [
+    72
+  ],
+  "direction": "server_to_client",
+  "capability": 626,
+  "entry": "protocol.rs::apply",
+  "push_messages": [
+    "GatedCommandResult"
+  ],
+  "reducer": "protocol.rs::apply",
+  "test": "tests.rs::raid_warning_reducer_area_subarea_and_clear",
   "not_applicable": {
-    "state": "The server derives the overlay from committed raid plans and character discovery.",
-    "protocol": "The native client has no negotiated handler for this payload.",
-    "view": "The Cyclopedia Map still renders the existing atlas.",
-    "input": "The existing map queries remain available.",
-    "settings": "The warning overlay introduces no independent setting."
+    "state": "The existing Cyclopedia Map panel holds the last confirmed warning snapshot.",
+    "view": "The existing atlas projects the warned area and subarea footprints.",
+    "input": "The Cyclopedia Map queries selector 129 on open and refreshes while visible.",
+    "settings": "The warning overlay has no client setting."
   }
 }

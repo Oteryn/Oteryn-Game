@@ -23,7 +23,10 @@ impl PlayLink {
         panel.geometry.open.then(|| panel.clone())
     }
     pub fn cyclopedia_atlas_close(&self) {
-        lock(&self.mailbox).properties.cyclopedia_map.geometry.open = false;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.properties.cyclopedia_map.geometry.open = false;
+        mailbox.properties.cyclopedia_map.open = false;
+        mailbox.properties.raid_warning_poll.closed();
     }
     pub fn cyclopedia_map_panel(&self) -> oteryn_client_ui::cyclopedia_map::Panel {
         lock(&self.mailbox).properties.cyclopedia_map.clone()
@@ -112,6 +115,9 @@ mod discovery_tests;
 impl crate::play::Outbox {
     pub(crate) fn bevy_cyclopedia_map_selected(&self) {
         lock(&self.0).properties.cyclopedia_map.selected = true;
+    }
+    pub(crate) fn bevy_cyclopedia_raid_warnings_selected(&self) {
+        lock(&self.0).properties.cyclopedia_map.raid_warnings_selected = true;
     }
     pub(crate) fn bevy_cyclopedia_map_reply(
         &self,

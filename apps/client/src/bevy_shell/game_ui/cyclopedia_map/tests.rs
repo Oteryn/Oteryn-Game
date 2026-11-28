@@ -565,3 +565,116 @@ fn area_view_and_separator_change_the_rendered_map_pixels() -> Result<(), Box<dy
     assert!(compared > 0);
     Ok(())
 }
+
+#[test]
+fn cyclopedia_map_renders_raid_warning_overlay() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::{combat_input::PlayCommand, play::Outbox};
+    use oteryn_client_runtime::{
+        cyclopedia_map::{geometry as atlas, raid_warnings as raid},
+        raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult},
+    };
+
+    fn reply(outbox: &Outbox, command: &FeatureCommand, payload: Vec<u8>) {
+        outbox.bevy_cyclopedia_map_reply(
+            command,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload,
+            },
+        );
+    }
+
+    let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_cyclopedia_map_selected();
+    outbox.bevy_cyclopedia_raid_warnings_selected();
+    link.cyclopedia_atlas_open();
+    let PlayCommand::Feature(regions) = commands.try_recv()? else {
+        return Err("expected an atlas area list request".into());
+    };
+    let PlayCommand::Feature(warnings) = commands.try_recv()? else {
+        return Err("expected a raid warning query".into());
+    };
+    assert_eq!(warnings.payload, raid::QUERY);
+    reply(
+        &outbox,
+        &regions,
+        atlas::encode_reply(&atlas::Reply::Areas(atlas::AreaPage {
+            parent: 0,
+            after: 0,
+            next: None,
+            areas: vec![atlas::Area {
+                id: 23,
+                parent: 0,
+                name: "Liberty Bay".into(),
+            }],
+        }))
+        .map_err(|error| format!("{error:?}"))?,
+    );
+    link.cyclopedia_atlas_action(5);
+    let PlayCommand::Feature(geometry) = commands.try_recv()? else {
+        return Err("expected an atlas footprint request".into());
+    };
+    reply(
+        &outbox,
+        &geometry,
+        atlas::encode_reply(&atlas::Reply::Geometry(atlas::GeometryPage {
+            area: 23,
+            floor: 7,
+            page: 0,
+            next: None,
+            total: 2,
+            bounds: [100, 100, 109, 100],
+            runs: vec![
+                atlas::Run {
+                    y: 100,
+                    begin: 100,
+                    end: 105,
+                    subarea: 109,
+                },
+                atlas::Run {
+                    y: 100,
+                    begin: 105,
+                    end: 110,
+                    subarea: 110,
+                },
+            ],
+        }))
+        .map_err(|error| format!("{error:?}"))?,
+    );
+    let mut app = fixture(link)?;
+    let overlays = |app: &mut App| {
+        app.world_mut()
+            .query_filtered::<(&BackgroundColor, &Node), With<RaidWarningOverlay>>()
+            .iter(app.world())
+            .map(|(color, node)| (color.0, node.left, node.width))
+            .collect::<Vec<_>>()
+    };
+    assert!(overlays(&mut app).is_empty());
+
+    let payload = raid::encode(&[raid::Warning {
+        area: 23,
+        subarea: Some(109),
+    }])
+    .map_err(|error| format!("{error:?}"))?;
+    reply(&outbox, &warnings, payload);
+    app.update();
+    let rects = overlays(&mut app);
+    assert_eq!(rects.len(), 3);
+    assert!(rects.contains(&(AREA_WARNING_COLOR, px(16.), px(300.))));
+    assert!(rects.contains(&(AREA_WARNING_COLOR, px(316.), px(300.))));
+    assert!(rects.contains(&(SUBAREA_WARNING_COLOR, px(16.), px(300.))));
+
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("missing play session")?
+        .link
+        .cyclopedia_atlas_close();
+    app.update();
+    assert!(overlays(&mut app).is_empty());
+    Ok(())
+}

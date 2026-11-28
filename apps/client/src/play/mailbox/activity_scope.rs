@@ -133,6 +133,7 @@ impl Mailbox {
         self.properties.container_sort.pending = Default::default();
         self.properties.cyclopedia_map.pending = Default::default();
         self.properties.cyclopedia_map.invalidate_atlas();
+        self.properties.raid_warning_poll = Default::default();
         self.properties.guild_war.pending = Default::default();
         self.properties.party_skull.pending = Default::default();
         self.properties.guildhall.pending = Default::default();
