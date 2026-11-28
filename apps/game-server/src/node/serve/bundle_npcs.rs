@@ -1324,7 +1324,7 @@ pub(crate) mod tests {
             for voice_first in [false, true] {
                 let mut scheduled = TimedNpcSpawns::from_boot(Some(&boot));
                 let mut runtime = channel_runtime_with(8);
-                let mut tick = |runtime: &mut ChannelRuntimeV1, now| {
+                let mut tick = |runtime: &mut ChannelRuntimeV1, now: i64| {
                     scheduled
                         .tick(runtime, u64::try_from(now).map_err(|e| e.to_string())?)
                         .ok_or("world clock")?
