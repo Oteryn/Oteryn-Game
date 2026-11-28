@@ -107,7 +107,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let persisted = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
     unchanged_rewards(&before, &reward_state(clients).await?)?;
     if persisted.status != CommandStatus::Accepted || persisted.payload != query.payload {
-        return Err("daily wall differed after relog".into());
+        return Err(format!(
+            "daily wall differed after relog: before_status={:?} before_payload={:02x?} relog_status={:?} relog_payload={:02x?}",
+            query.status, query.payload, persisted.status, persisted.payload
+        ).into());
     }
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(LogoutResult::Accepted) {
