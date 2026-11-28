@@ -1,7 +1,7 @@
 {
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
   "kind": "static_content",
-  "notes": "W05d rate-event schedule, the content form of Crystal data/XML/events.xml:1-17 (zimbadev/crystalserver@201189f8): events 'Eexample 1' and 'Eexample 2' with their exp/loot/spawn/skill rates. Not admitted: bosslootrate, description, colors and details (no Oteryn consumer) and 'Double Fiendish Weekend' (events.xml:18-22, fiendishrate only; no fiendish system consumer).",
+  "notes": "Dated Global hunting weekends from the Fandom wikitext archive: https://tibia.fandom.com/wiki/Rapid_Respawn_Events (2026-08-04), https://tibia.fandom.com/wiki/Double_Experience_and_Skill_Events (2026-10-30), https://tibia.fandom.com/wiki/Double_Loot_Events (2024-09-28). Includes the listed 2026 windows and the latest listed Double Loot weekend. The 10:00 CET/CEST server-save boundary (https://tibia.fandom.com/wiki/Server_Save) is encoded in UTC, with the last second before the closing save as the inclusive end. Add future announcements as dated windows.",
   "owner": "Encounter",
   "path": "content/encounters/event-schedule/",
   "population_state": "POPULATED",

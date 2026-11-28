@@ -122,6 +122,7 @@ struct SourceRates {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ScheduledEvent {
+    name: String,
     start_unix: i64,
     end_unix: i64,
     rates: EventRates,
@@ -174,6 +175,7 @@ impl Schedule {
             }
             let rate = |rate: Option<u32>| rate.unwrap_or(NEUTRAL_RATE);
             events.push(ScheduledEvent {
+                name: event.name,
                 start_unix,
                 end_unix,
                 rates: EventRates {
@@ -236,6 +238,14 @@ impl Schedule {
             .collect()
     }
 
+    /// The names and rates of the events active at a UTC second, in source order.
+    fn active_events_at(&self, unix_seconds: i64) -> impl Iterator<Item = (&str, EventRates)> {
+        self.events
+            .iter()
+            .filter(move |event| (event.start_unix..=event.end_unix).contains(&unix_seconds))
+            .map(|event| (event.name.as_str(), event.rates))
+    }
+
     /// The compounded rates at a UTC instant; both window edges are inclusive.
     /// SV10: Crystal ff7ede59 `src/game/scheduling/events_scheduler.hpp:67-110` multiplies
     /// overlapping percentages; two 200% schedules therefore yield 400%, not 300%.
@@ -244,15 +254,13 @@ impl Schedule {
             u32::try_from(u64::from(schedule) * u64::from(rate) / u64::from(NEUTRAL_RATE))
                 .unwrap_or(u32::MAX)
         };
-        self.events
-            .iter()
-            .filter(|event| (event.start_unix..=event.end_unix).contains(&unix_seconds))
-            .fold(EventRates::default(), |active, event| EventRates {
-                experience: compound(active.experience, event.rates.experience),
-                loot: compound(active.loot, event.rates.loot),
-                boss_loot: compound(active.boss_loot, event.rates.boss_loot),
-                spawn: compound(active.spawn, event.rates.spawn),
-                skill: compound(active.skill, event.rates.skill),
+        self.active_events_at(unix_seconds)
+            .fold(EventRates::default(), |active, (_, rates)| EventRates {
+                experience: compound(active.experience, rates.experience),
+                loot: compound(active.loot, rates.loot),
+                boss_loot: compound(active.boss_loot, rates.boss_loot),
+                spawn: compound(active.spawn, rates.spawn),
+                skill: compound(active.skill, rates.skill),
             })
     }
 }
@@ -391,6 +399,72 @@ pub mod test_clock {
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn global_hunting_weekends_resolve_at_server_save() {
+        // The source lists local server-save dates. Check both CET and CEST,
+        // including the June weekend with Rapid Respawn and Double Skill together.
+        for (start, end, save_hour, expected) in [
+            (
+                "02/06/2026",
+                "02/09/2026",
+                9,
+                EventRates {
+                    spawn: 500,
+                    ..EventRates::default()
+                },
+            ),
+            (
+                "06/05/2026",
+                "06/08/2026",
+                8,
+                EventRates {
+                    spawn: 500,
+                    skill: 200,
+                    ..EventRates::default()
+                },
+            ),
+            (
+                "11/20/2026",
+                "11/23/2026",
+                9,
+                EventRates {
+                    experience: 200,
+                    skill: 200,
+                    ..EventRates::default()
+                },
+            ),
+            (
+                "10/04/2024",
+                "10/07/2024",
+                8,
+                EventRates {
+                    loot: 200,
+                    ..EventRates::default()
+                },
+            ),
+        ] {
+            let time = format!("{save_hour:02}:00:00");
+            let start = utc_instant(start, &time).expect("start at server save");
+            let end = utc_instant(end, &time).expect("end at server save");
+            assert_eq!(rates_at(start - 1), EventRates::default());
+            assert_eq!(rates_at(start), expected);
+            assert_eq!(rates_at(end - 1), expected);
+            assert_eq!(rates_at(end), EventRates::default());
+        }
+    }
+
+    #[test]
+    fn global_june_weekend_lists_both_active_events() {
+        let start = utc_instant("06/05/2026", "08:00:00").expect("start at server save");
+        let schedule = content_schedule();
+        assert!(schedule.active_events_at(start - 1).next().is_none());
+        let active: Vec<_> = schedule
+            .active_events_at(start)
+            .map(|(name, _)| name)
+            .collect();
+        assert_eq!(active, ["Rapid Respawn", "Double Skill"]);
+    }
 
     #[test]
     fn w05d_annual_calendar_retains_holiday_sources_for_production() -> Result<(), ScheduleError> {
