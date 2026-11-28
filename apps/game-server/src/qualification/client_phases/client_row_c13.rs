@@ -24,7 +24,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .await;
     match result.unwrap_or_else(|_| Err("C13.client journey timeout".into())) {
         Ok(()) => evidence(
-            "e2e_all scenario=C13.client status=PASS evidence=observer-summon-enter-and-owner-end-leave",
+            "e2e_all scenario=C13.client status=FAIL evidence=original-frame-replay-required-live-assertions-passed",
         ),
         Err(error) => evidence(&format!(
             "e2e_all scenario=C13.client status=FAIL evidence={error}"
