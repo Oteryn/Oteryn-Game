@@ -189,6 +189,7 @@ async fn toggle(
         }
         client.service_liveness(Duration::from_millis(25)).await?;
     };
+    verdict::Harness::global().progress("m05-map-transition");
     let frames = client.session_mut().finish_world_map_capture();
     let mut files = Vec::new();
     for (index, frame) in frames.iter().enumerate() {
@@ -251,6 +252,7 @@ fn replay(captures: Vec<Capture>) -> TestResult {
             .into());
         }
     }
+    verdict::Harness::global().progress("m05-replay");
     evidence("M05_REPLAY status=PASS transitions=4");
     Ok(())
 }
@@ -347,6 +349,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             if result.disposition != StepDisposition::Moved || after != landing || after == before {
                 return Err(format!("M05 {family} STEP {direction:?} from={before:?} expected={landing:?} actual={after:?} disposition={:?}", result.disposition).into());
             }
+            verdict::Harness::global().progress("m05-verified-walk");
             client.take_events();
         }
         let at = tile(client.world_spatial().actor_position)?;
@@ -440,6 +443,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             "M05_RELOG family={family} position={at:?} door={:?}",
             close.expected
         ));
+        verdict::Harness::global().progress("m05-verified-relog");
         captured.extend([open, close]);
     }
     replay(captured)

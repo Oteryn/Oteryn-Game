@@ -1143,7 +1143,13 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    let mut log_first_entry_logout = |attempt, reply: &str| {
+        evidence(&format!(
+            "world_fixture role=core phase=first_entry_logout attempt={attempt} {reply}"
+        ));
+    };
+    let (result, logout, attempts, busy_timed_out) =
+        logout_retrying_busy_observed(&mut client, Some(&mut log_first_entry_logout)).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
