@@ -3,7 +3,7 @@
 pub(super) mod bank_robbery;
 pub(super) mod world_changes;
 use super::serve::{PROCESS, emit};
-use crate::durability::DurabilityRoot;
+use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::raid_schedule::{
     CalendarRaidScheduleCandidate, CalendarRaidTiming, LuaRaidScheduleCandidate,
