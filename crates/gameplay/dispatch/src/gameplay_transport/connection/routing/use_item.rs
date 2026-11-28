@@ -23,6 +23,18 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    // Spatial handles keep their key for the session. A live spatial handle
+    // cannot name the carried source of a receipt-backed USE.
+    let spatial_open = match &decoded {
+        Ok(UseIntent {
+            target: UseTarget::Item(handle),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        }) => item_view.as_ref().and_then(|view| view.resolve(*handle))
+            .filter(|key| matches!(key, ItemKey::Entity(_))),
+        _ => None,
+    };
     // W09: a committed Cube may have consumed the last source unit. Its original
     // command still resolves from a receipt even when the view handle no longer exists.
     // Preserve the same timeout/unknown close used by receipt-backed Item actions.
@@ -50,7 +62,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     {
         return Some(Dispatch::Use(outcome));
     }
-    if admitted
+    if spatial_open.is_none()
+        && admitted
         .continuity
         .selected_capabilities
         .contains(CAPABILITY_ITEM_USE_V1)
@@ -114,6 +127,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         {
             return Some(Dispatch::Use(UseOutcome::rejected()));
         }
+    }
+    if let Some(key) = spatial_open {
+        return open_item_handle(authority, actor, admitted, command.command_id,
+            item_view, container_views, Some(key)).await;
     }
     if let Ok(intent) = &decoded
         && intent.use_with.is_none()
@@ -496,86 +513,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 use_with_position: None,
             }) => {
                 let key = item_view.as_ref().and_then(|view| view.resolve(handle));
-                // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
-                // and one out of reach is TOO_FAR; anything else takes the corpse path.
-                let container = match (key, &*container_views) {
-                    (Some(key), Some(_)) => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
-                    _ => None,
-                };
-                let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
-                let container = container.filter(|observation| {
-                    matches!(
-                        observation,
-                        ContainerObservation::Container { .. } | ContainerObservation::TooFar
-                    )
-                });
-                // BAGS-USE-1: a carried entry of an open view can be used under capability
-                // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.
-                let consumable = container.is_none()
-                    && matches!(key, Some(ItemKey::Instance(_)))
-                    && admitted
-                        .continuity
-                        .selected_capabilities
-                        .contains(CAPABILITY_ITEM_USE_V1)
-                    && item_view
-                        .as_ref()
-                        .zip(key)
-                        .is_some_and(|(view, key)| view.is_backpack_entry(&key)
-                            || (carried_entry && !view.is_main_backpack(&key)
-                                && view.equipped_slot(&key).is_none()));
-                let observation = match key.filter(|_| container.is_none() && !consumable) {
-                    Some(key) => authority.observe_item_target(actor, key).await,
-                    None => None,
-                };
-                match (item_view.as_mut(), key, observation) {
-                    (_, Some(key), _) if consumable => {
-                        let outcome = tokio::time::timeout(
-                            std::time::Duration::from_secs(10),
-                            authority.use_item_completion(
-                                actor,
-                                UseCommand {
-                                    game_session_id: admitted.game_session_id,
-                                    command_id: command.command_id,
-                                    item_fence: admitted.item_fence,
-                                },
-                                key,
-                            ),
-                        ).await.ok().flatten()?;
-                        if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
-                        Dispatch::Use(outcome)
-                    },
-                    (Some(view), Some(key), _) if container.is_some() => {
-                        let views = container_views.as_mut()?;
-                        let opened = views.apply(view, PendingOpen::new_view(key), container);
-                        admitted.continuity.item_view = view.continuity();
-                        let Ok((outcome, delta)) = opened else {
-                            return None;
-                        };
-                        Dispatch::UseItem(
-                            match outcome {
-                                ContainerViewOutcome::Opened => OpenDecision::Open,
-                                ContainerViewOutcome::TooFar => OpenDecision::TooFar,
-                                ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
-                                    OpenDecision::StaleState
-                                }
-                                ContainerViewOutcome::NotAContainer
-                                | ContainerViewOutcome::TooManyViews => {
-                                    OpenDecision::NothingToUse
-                                }
-                            },
-                            delta,
-                        )
-                    }
-                    (Some(view), Some(key), Some(observation)) => {
-                        let opened = view.open(key, observation);
-                        admitted.continuity.item_view = view.continuity();
-                        let Ok((decision, delta)) = opened else {
-                            return None;
-                        };
-                        Dispatch::UseItem(decision, delta)
-                    }
-                    _ => Dispatch::UseItem(OpenDecision::StaleState, None),
-                }
+                open_item_handle(authority, actor, admitted, command.command_id,
+                    item_view, container_views, key).await?
             }
             Ok(UseIntent {
                 target: UseTarget::WorldObject(target),
@@ -597,6 +536,93 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
             Err(_) => Dispatch::Use(UseOutcome::rejected()),
         }
+    })
+}
+
+async fn open_item_handle<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    command_id: u64,
+    item_view: &mut Option<SessionItemView>,
+    container_views: &mut Option<ContainerViewState>,
+    key: Option<ItemKey>,
+) -> Option<Dispatch> {
+    // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
+    // and one out of reach is TOO_FAR; anything else takes the corpse path.
+    let container = match (key, &*container_views) {
+        (Some(key), Some(_)) => authority.observe_container_with_house_capacity(actor, admitted.item_fence, key, admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2)).await,
+        _ => None,
+    };
+    let carried_entry = matches!(container, Some(ContainerObservation::NotAContainer));
+    let container = container.filter(|observation| {
+        matches!(
+            observation,
+            ContainerObservation::Container { .. } | ContainerObservation::TooFar
+        )
+    });
+    // BAGS-USE-1: a carried entry of an open view can be used under capability
+    // 15. The owner revalidates custody before PREPARE; equipped sources fail closed.
+    let consumable = container.is_none()
+        && matches!(key, Some(ItemKey::Instance(_)))
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_ITEM_USE_V1)
+        && item_view
+            .as_ref()
+            .zip(key)
+            .is_some_and(|(view, key)| view.is_backpack_entry(&key)
+                || (carried_entry && !view.is_main_backpack(&key)
+                    && view.equipped_slot(&key).is_none()));
+    let observation = match key.filter(|_| container.is_none() && !consumable) {
+        Some(key) => authority.observe_item_target(actor, key).await,
+        None => None,
+    };
+    Some(match (item_view.as_mut(), key, observation) {
+        (_, Some(key), _) if consumable => {
+            let outcome = tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                authority.use_item_completion(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    key,
+                ),
+            ).await.ok().flatten()?;
+            if authority.item_use_pending(actor, admitted.game_session_id).await { return None; }
+            Dispatch::Use(outcome)
+        },
+        (Some(view), Some(key), _) if container.is_some() => {
+            let views = container_views.as_mut()?;
+            let opened = views.apply(view, PendingOpen::new_view(key), container);
+            admitted.continuity.item_view = view.continuity();
+            let (outcome, delta) = opened.ok()?;
+            Dispatch::UseItem(
+                match outcome {
+                    ContainerViewOutcome::Opened => OpenDecision::Open,
+                    ContainerViewOutcome::TooFar => OpenDecision::TooFar,
+                    ContainerViewOutcome::Stale | ContainerViewOutcome::Closed => {
+                        OpenDecision::StaleState
+                    }
+                    ContainerViewOutcome::NotAContainer
+                    | ContainerViewOutcome::TooManyViews => {
+                        OpenDecision::NothingToUse
+                    }
+                },
+                delta,
+            )
+        }
+        (Some(view), Some(key), Some(observation)) => {
+            let opened = view.open(key, observation);
+            admitted.continuity.item_view = view.continuity();
+            let (decision, delta) = opened.ok()?;
+            Dispatch::UseItem(decision, delta)
+        }
+        _ => Dispatch::UseItem(OpenDecision::StaleState, None),
     })
 }
 

@@ -2644,9 +2644,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Some((runtime, states, objects)),
             parameter_output,
             native_health_observations,
+            "acquire_authority",
         );
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let (owner,access,writer,guards,parameter_output,native_health_observations)=ctx;
+            let (owner,access,writer,guards,parameter_output,native_health_observations,stage)=ctx;
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
@@ -2658,6 +2659,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let mut tx=item_tx::begin_spell_owner_transaction(holder,deadline).await?;
             let authority=item_tx::assert_spell_item_authority_in_transaction(&mut tx,permit,owner.root,owner.character,
                 owner.holder,&item_fence,command,content.source_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
+            *stage="prepare_and_validate";
             // S (§1.1): the guarded span, through the staged installation and the verdict.
             let verdict={
                 let (runtime,states,objects)=match guards.as_mut(){
@@ -2861,6 +2863,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         owner.owner_now().get(),reconnect.as_ref())
                 } else { Err(Error::SnapshotChanged) }).map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))
             };
+            *stage="apply";
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
@@ -2923,6 +2926,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     return Err(error);
                 }
             };
+            *stage="commit";
             let committed=match items{
                 SpellItemTransactionOutcome::Applied(items)=>{
                     let staged=async{
@@ -2996,6 +3000,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let receipt=receipt.as_ref().map(|r|match r{
                 crate::durability::character_build::BuildCommitOutcome::Committed(r)|
                 crate::durability::character_build::BuildCommitOutcome::AlreadyCommitted(r)=>r});
+            *stage="install";
             // Re-read current real equipment/account projections after joined training may have
             // advanced the root. The original formula roll is retained, never evaluated again.
             // The post-commit transaction holds only the lane; its rollback releases read locks
@@ -3078,7 +3083,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
-        let (_, _, writer, guards, _, _) = context;
+        let (_, _, writer, guards, _, _, stage) = context;
         drop(guards);
         let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
@@ -3095,7 +3100,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
-            Err(_) => NativeCastDispatch::Pending,
+            Err(error) => {
+                super::super::operator_event(&format!(
+                    "event=native_cast_pass_failed command_id={command_id} stage={stage} error={error:?}"
+                ));
+                NativeCastDispatch::Pending
+            }
         }
     }
 }

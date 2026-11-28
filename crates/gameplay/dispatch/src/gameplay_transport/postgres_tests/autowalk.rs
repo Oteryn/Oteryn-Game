@@ -20,7 +20,12 @@ use oteryn_protocol_oteryn::item_view::{
     ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
     encode_item_move_intent_for,
 };
-use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_use_intent};
+use oteryn_protocol_oteryn::world_object::{
+    UseDisposition, UseIntent, UseTarget, encode_item_use_intent, encode_use_intent,
+};
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    EntityDetail, decode_world_spatial_entities_snapshot_with_item_handles,
+};
 use oteryn_protocol_oteryn::{
     MessageType, decode_command_result, decode_snapshot_chunk,
     decode_state_delta, decode_wire_envelope,
@@ -269,7 +274,7 @@ fn scenario(target_move: bool) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice())
             .bind(active.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
-        // Seed a real carried backpack; the map coin is minted only by command 9 below.
+        // Seed a real carried backpack; the map coin is minted only by the pickup below.
         seed_backpack(&h, &owner, fence).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -389,6 +394,7 @@ fn scenario(target_move: bool) -> TestResult {
                         authority,
                         admitted,
                         world.base().digest(),
+                        corpse_identity,
                     )
                     .await
                 }
@@ -397,7 +403,11 @@ fn scenario(target_move: bool) -> TestResult {
             client.shutdown().await?;
             result
         };
-        let server_flow = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS);
+        let server_flow = async {
+            let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
+            server.shutdown().await?;
+            Ok::<_, std::io::Error>(end)
+        };
         // The wire owner and the independent pickup are different holder retry owners,
         // even though this fixture polls both futures on one task.
         let (end, result) = join_two(
@@ -405,6 +415,7 @@ fn scenario(target_move: bool) -> TestResult {
             crate::durability::DurabilityRoot::with_holder_owner(client_flow),
         )
         .await;
+        let end = end?;
         drop(independent_pickup);
         result?;
         assert!(
@@ -599,15 +610,31 @@ async fn client_scenario(
     pickup_authority: &ReconciledCharacterAuthority<'_, '_>,
     admitted: AdmittedSession,
     digest: [u8; 32],
+    corpse_identity: [u8; 16],
 ) -> TestResult {
     let mut coin = None;
     let mut disappearing = None;
+    let mut corpse = None;
     loop {
         let frame = read(client).await?;
         let envelope = decode_wire_envelope(&frame)?;
         if envelope.message_type() == MessageType::SnapshotChunk {
             for domain in decode_snapshot_chunk(envelope.payload())?.1 {
-                if domain.domain_id == 17 {
+                if domain.domain_id == 1 {
+                    let snapshot =
+                        decode_world_spatial_entities_snapshot_with_item_handles(domain.payload)
+                            .map_err(debug)?;
+                    corpse = snapshot.entities.iter().find_map(|entity| {
+                        if entity.entity.identity != corpse_identity {
+                            return None;
+                        }
+                        match entity.detail {
+                            EntityDetail::Object { item_handle, .. }
+                            | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+                            _ => None,
+                        }
+                    });
+                } else if domain.domain_id == 17 {
                     let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
                         domain.payload,
                     )
@@ -643,15 +670,39 @@ async fn client_scenario(
             break;
         }
     }
+    // The runtime corpse has no durable contents. While a separate owner holds the
+    // root, its read-only USE must send a typed reply and leave the next command in order.
+    let held = AdmissionRetryBudget::for_command(owner.root)
+        .retry_durability("corpse_use_fixture_holder", || {
+            std::future::ready(owner.root.try_issue_semantic_pass())
+        })
+        .await?;
+    let payload = encode_item_use_intent(&UseIntent {
+        target: UseTarget::Item(corpse.ok_or("corpse item handle")?),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    })
+    .map_err(debug)?;
+    send(client, 1, 2, &payload).await?;
+    let (opened, steps) = result(client, 1)
+        .await
+        .map_err(|err| format!("corpse USE must reply while the holder is busy: {err}"))?;
+    assert_eq!(steps, 0);
+    assert_eq!(
+        oteryn_protocol_oteryn::world_object::decode_use_result(&opened).map_err(debug)?,
+        UseDisposition::StaleState
+    );
+    drop(held);
     // Far USE walks around a wall and toggles the real map door.
     send(
         client,
-        1,
+        2,
         2,
         &encode_use_intent(&object(digest, pos(6, 1), 0)?).map_err(debug)?,
     )
     .await?;
-    let (used, steps) = result(client, 1).await?;
+    let (used, steps) = result(client, 2).await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&used).map_err(debug)?,
         UseDisposition::Committed
@@ -666,8 +717,8 @@ async fn client_scenario(
         MOVE_SELECTION,
     )
     .map_err(debug)?;
-    send(client, 2, 9, &payload).await?;
-    let (moved, steps) = result(client, 2).await?;
+    send(client, 3, 9, &payload).await?;
+    let (moved, steps) = result(client, 3).await?;
     assert_eq!(
         oteryn_protocol_oteryn::item_view::decode_item_move_result_for(&moved, MOVE_SELECTION)
             .map_err(debug)?,
@@ -678,7 +729,7 @@ async fn client_scenario(
     // ordinary one-step buffer after the pending USE receives its terminal refusal.
     send(
         client,
-        3,
+        4,
         2,
         &encode_use_intent(&object(digest, pos(6, 1), 1)?).map_err(debug)?,
     )
@@ -702,20 +753,20 @@ async fn client_scenario(
     }
     send(
         client,
-        4,
+        5,
         1,
         &oteryn_protocol_oteryn::world_spatial::encode_step_intent(
             oteryn_protocol_oteryn::world_spatial::StepDirection::West,
         ),
     )
     .await?;
-    let (cancelled, extra) = result(client, 3).await?;
+    let (cancelled, extra) = result(client, 4).await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&cancelled).map_err(debug)?,
         UseDisposition::TooFar
     );
     assert_eq!(extra, 0, "no queued step after client input");
-    let _ = result(client, 4).await?;
+    let _ = result(client, 5).await?;
     loop {
         let frame = read(client).await?;
         let envelope = decode_wire_envelope(&frame)?;
@@ -728,12 +779,12 @@ async fn client_scenario(
     // An unreachable target refuses without moving.
     send(
         client,
-        5,
+        6,
         2,
         &encode_use_intent(&object(digest, pos(12, 1), 0)?).map_err(debug)?,
     )
     .await?;
-    let (refused, steps) = result(client, 5).await?;
+    let (refused, steps) = result(client, 6).await?;
     assert_eq!(steps, 0);
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&refused).map_err(debug)?,
@@ -761,7 +812,7 @@ async fn client_scenario(
     // Teleport/forced relocation invalidates the position revision before the next step.
     send(
         client,
-        6,
+        7,
         2,
         &encode_use_intent(&object(digest, pos(6, 1), 1)?).map_err(debug)?,
     )
@@ -785,7 +836,7 @@ async fn client_scenario(
     )
     .await?;
     place(owner, admitted, before_relocation).await?;
-    let cancelled = result_at_rest(client, 6, before_relocation).await?;
+    let cancelled = result_at_rest(client, 7, before_relocation).await?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&cancelled).map_err(debug)?,
         UseDisposition::TooFar
@@ -811,11 +862,11 @@ async fn client_scenario(
         MOVE_SELECTION,
     )
     .map_err(debug)?;
-    send(client, 7, 9, &payload).await?;
+    send(client, 8, 9, &payload).await?;
     first_step(client).await?;
-    send(client, 7, 9, &payload).await?; // same pending CommandId never starts a second action
+    send(client, 8, 9, &payload).await?; // same pending CommandId never starts a second action
     pick_origin(owner, pickup_root, pickup_authority, admitted, pos(7, 5)).await?;
-    let (stale, steps) = result(client, 7).await?;
+    let (stale, steps) = result(client, 8).await?;
     assert!(steps > 0, "a duplicate does not cancel the pending walk");
     assert_eq!(
         oteryn_protocol_oteryn::item_view::decode_item_move_result_for(&stale, MOVE_SELECTION)
@@ -825,7 +876,7 @@ async fn client_scenario(
     // Death cancels a queue even when the position itself has not changed.
     send(
         client,
-        8,
+        9,
         2,
         &encode_use_intent(&object(digest, pos(1, 6), 0)?).map_err(debug)?,
     )
@@ -852,7 +903,7 @@ async fn client_scenario(
             cell,
         },
     ));
-    let (dead, steps) = result(client, 8).await?;
+    let (dead, steps) = result(client, 9).await?;
     assert_eq!(steps, 0);
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&dead).map_err(debug)?,

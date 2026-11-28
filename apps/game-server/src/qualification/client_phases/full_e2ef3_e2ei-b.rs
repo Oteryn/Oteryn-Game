@@ -96,6 +96,25 @@ pub(super) async fn run(
     let mut logged_out = false;
     let result = documents(&mut client, clients, world, &mut action, &mut logged_out).await;
     report(I04, started, action, result.as_ref().err().map(Box::as_ref));
+    if result.as_ref().is_err_and(|error| {
+        matches!(
+            verdict::classify(error.as_ref()),
+            verdict::Cause::Transport { .. }
+        )
+    }) {
+        // Keep I04's recorded failure and give the independent hunt rows a live fixture.
+        drop(client);
+        reset_core_fixture_position(clients, position(TOWN)).await?;
+        let fresh = connect_world(clients, 0xb6).await?;
+        let actual = tile(fresh.world_spatial().actor_position)?;
+        if actual != TOWN {
+            return Err(
+                format!("inventory recovery expected {TOWN:?}, arrived at {actual:?}").into(),
+            );
+        }
+        evidence("E2EF3_OBSERVATION after=I04 transport=readmitted position=Thais");
+        return Ok(fresh);
+    }
     if logged_out {
         result?;
     }

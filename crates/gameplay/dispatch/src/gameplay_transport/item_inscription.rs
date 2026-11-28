@@ -1,11 +1,12 @@
 //! ITEM_INSCRIPTION_READ_V1: the stored text of one carried item for the writing window.
 //! Custody is the MAIL text writer's, proven under the same session item fence; the read may
 //! reconcile the carried death tree but never writes the item text.
-use super::{ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey};
 use crate::content::ReferenceItemField::Known;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::domain::item_definition::TypedDefinitionRef;
-use crate::durability::item_use::CarriedItemText;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::item_use::{CarriedItemText, ItemUseError};
 use crate::durability::mail_text_policy::NativeGameplayMailTextPolicyExt;
 use oteryn_protocol_oteryn::item_inscription::{
     CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1, CAPABILITY_ITEM_INSCRIPTION_READ_V1,
@@ -56,6 +57,25 @@ pub(super) fn reply(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn read_carried_inscription(
+        &self,
+        retry: &AdmissionRetryBudget<'_>,
+        fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
+        item: [u8; 16],
+    ) -> Result<Option<(TypedDefinitionRef, CarriedItemText)>, ItemUseError> {
+        retry
+            .retry_holder(
+                "carried_inscription",
+                || self.root.read_carried_item_text(self.character, self.holder, fence, house_origin, item),
+                |error| match error {
+                    ItemUseError::Unavailable(source) => Some(source),
+                    _ => None,
+                },
+            )
+            .await
+    }
+
     pub(super) async fn item_inscription_wire(
         &self,
         admitted: AdmittedSession,
@@ -79,15 +99,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         };
         let native = self.active_generation?.native_gameplay()?;
+        let retry = AdmissionRetryBudget::for_command(self.root);
         let (definition, inscription) = self
-            .root
-            .read_carried_item_text(
-                self.character,
-                self.holder,
-                fence,
-                self.resident_origin(admitted).await,
-                item,
-            )
+            .read_carried_inscription(&retry, fence, self.resident_origin(admitted).await, item)
             .await
             .ok()??;
         let CarriedItemText {

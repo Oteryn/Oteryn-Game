@@ -252,22 +252,26 @@ pub(super) async fn buy_from_gorn(
     } else {
         expected.insert(coin.get(), after);
     }
-    let response = npc_shop::buy(
-        client.session_mut(),
-        &npc::NpcTradeIntent {
-            npc_actor: target,
-            catalogue_revision: window.open.ok_or("Gorn trade window closed")?.1,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if response != npc::NpcIntentDisposition::Ok {
-        return Err(
-            format!("Gorn buy definition={item}: reply={response:?} carried_gold={before} price={unit_price}").into(),
-        );
+    let catalogue_revision = window.open.ok_or("Gorn trade window closed")?.1;
+    // The shop's direct trade accepts one non-stackable item per command.
+    for purchased in 0..quantity {
+        let response = npc_shop::buy(
+            client.session_mut(),
+            &npc::NpcTradeIntent {
+                npc_actor: target,
+                catalogue_revision,
+                offer_index: u32::try_from(offer_index)?,
+                side: offer.side,
+                quantity: 1,
+                expected_unit_price: offer.unit_price,
+            },
+        )
+        .await?;
+        if response != npc::NpcIntentDisposition::Ok {
+            return Err(format!(
+                "Gorn buy definition={item}: reply={response:?} purchased={purchased}/{quantity} starting_gold={before} price={unit_price}"
+            ).into());
+        }
     }
     wait(client, Duration::from_secs(5), |client| {
         (quantities(client).ok()? == expected).then_some(())
@@ -320,7 +324,7 @@ async fn wait<T>(
     }
 }
 
-const WOLF_BLOCKED_LANDING: TilePos = TilePos {
+pub(super) const WOLF_BLOCKED_LANDING: TilePos = TilePos {
     x: 32428,
     y: 32158,
     floor: -7,

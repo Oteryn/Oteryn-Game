@@ -312,29 +312,31 @@ async fn observe_once(
             });
             continue;
         };
-        let fence = read_result(
-            observation_fence(admission, target_session, true)
-                .await,
-            failure,
-            "fence",
-        )?;
-        if target_session == session && fence != own_fence {
-            return note_none(None, "revision");
-        }
-        if fence.runtime_scope != own_fence.runtime_scope
-            || fence.scope_ownership_generation != own_fence.scope_ownership_generation
-        {
-            return note_none(None, "fence");
-        }
-        let current = match house::read_state(admission, fence, content.earned_grant_keys()).await {
-            // Another player between its durable death and the respawn placement has no
-            // observable appearance yet: it gets no binding, as a hidden player does, and
-            // the observer's projection is not lost to it.
-            Err(ReadFailure::RespawnPending) if target_session != session => {
-                skipped.push(entity);
-                continue;
+        let peer;
+        let (fence, current) = if target_session == session {
+            // Use the same durable revision for the catalogue and the observer's
+            // binding. The final fenced read still checks it against the store.
+            (own_fence, &own)
+        } else {
+            let fence = read_result(
+                observation_fence(admission, target_session, true).await,
+                failure,
+                "fence",
+            )?;
+            if fence.runtime_scope != own_fence.runtime_scope
+                || fence.scope_ownership_generation != own_fence.scope_ownership_generation
+            {
+                return note_none(None, "fence");
             }
-            result => read_state_result(result, failure)?,
+            peer = match house::read_state(admission, fence, content.earned_grant_keys()).await {
+                // A peer waiting for respawn placement has no observable appearance yet.
+                Err(ReadFailure::RespawnPending) => {
+                    skipped.push(entity);
+                    continue;
+                }
+                result => read_state_result(result, failure)?,
+            };
+            (fence, &peer)
         };
         let in_house = runtime.house_actor_state(*actor, target_session).is_ok();
         let player = if in_house {
@@ -354,7 +356,7 @@ async fn observe_once(
                 "visibility reason=player_state_missing",
             )?
         };
-        let (base, selection_revision) = super::catalogue::base(&content, &current);
+        let (base, selection_revision) = super::catalogue::base(&content, current);
         let mut look = wire::Look::Outfit {
             look_type: note_none(content.look_type(&base.outfit_key, current.sex), "content")?,
             colours: base.colours,
@@ -438,7 +440,7 @@ async fn observe_once(
             }
             result => read_state_result(result, failure)?,
         };
-        if reread != current {
+        if &reread != current {
             return note_none(None, "revision");
         }
         bindings.push(wire::Binding {

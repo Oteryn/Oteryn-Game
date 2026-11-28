@@ -2,18 +2,42 @@
 //! stored text under the session's item fence, refusals for anything outside that custody.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::durability::DurabilityRoot;
 use crate::gameplay_transport::{
     capabilities::SelectedCapabilities, connection::FreshAdmissionAuthority, item_view::ItemKey,
 };
 use oteryn_protocol_oteryn::item_inscription::Reply;
 use oteryn_protocol_oteryn::mail::{MailIntent, MailOutcome, encode_intent};
+use std::future::Future;
 
 #[test]
 fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres() -> TestResult {
+    inscription_scenario(false)
+}
+
+#[test]
+fn mail_text_receipt_probe_waits_for_busy_holder_postgres() -> TestResult {
+    inscription_scenario(true)
+}
+
+async fn complete_after_holder_turn<T: std::fmt::Debug>(
+    root: &DurabilityRoot,
+    name: &str,
+    read: impl Future<Output = T>,
+) -> TestResult<T> {
+    let held = root.try_issue_background_semantic_pass()?;
+    let mut read = std::pin::pin!(DurabilityRoot::with_holder_owner(read));
+    let first = std::future::poll_fn(|cx| std::task::Poll::Ready(read.as_mut().poll(cx))).await;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    assert!(first.is_pending(), "{name} must wait for the holder: {first:?}");
+    Ok(read.await)
+}
+
+fn inscription_scenario(hold_during_mail: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    std::thread::Builder::new().stack_size(64<<20).spawn(|| {
+    std::thread::Builder::new().stack_size(64<<20).spawn(move || {
         run(async |admin| {
             let h=Harness::create_with_admission_seed(admin,"item_inscription",true,false).await?;
             super::reset();prepare_current_session(&h).await?;
@@ -48,13 +72,32 @@ fn item_inscription_read_returns_carried_text_and_refuses_foreign_items_postgres
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,&[4,6,115,511]).ok_or("inscription offer")?;
             assert!(admitted.continuity.selected_capabilities.contains(511));
             assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:String::new(),max_length:1_999,writable:true,writer_name:None,written_at_unix_ms:None})));
+            if !hold_during_mail {
+                let blank = Some(Some(Reply { text: String::new(), max_length: 1_023, writable: true, writer_name: None, written_at_unix_ms: None }));
+                assert_eq!(read(admitted, id(71)).await, blank);
+                assert_eq!(complete_after_holder_turn(&h.root, "carried inscription", read(admitted, id(71))).await?, blank);
+            }
             let payload=encode_intent(&MailIntent::WriteText{item_handle:1,text:"One inscription: żółw 🐢".into()}).map_err(debug)?;
             assert_eq!(owner.mail_command(deps.actor,admitted,1,&payload,Some(ItemKey::Instance(id(72))),None).await,Some(MailOutcome::TextWritten));
             assert_eq!(read(admitted,id(72)).await,Some(Some(Reply{text:"One inscription: żółw 🐢".into(),max_length:1_999,writable:true,writer_name:None,written_at_unix_ms:None})),"the owned item's stored text");
-            assert_eq!(owner.mail_command(deps.actor,admitted,2,&payload,Some(ItemKey::Instance(id(71))),None).await,Some(MailOutcome::TextWritten));
+            let write_once = owner.mail_command(deps.actor,admitted,2,&payload,Some(ItemKey::Instance(id(71))),None);
+            let outcome = if hold_during_mail {
+                complete_after_holder_turn(&h.root, "MAIL write-once source probe", write_once).await?
+            } else {
+                write_once.await
+            };
+            assert_eq!(outcome,Some(MailOutcome::TextWritten));
             let sealed=read(admitted,id(71)).await.flatten().ok_or("sealed document")?;
             assert_eq!(sealed.text,"One inscription: żółw 🐢");
             assert!(!sealed.writable,"the write-once target only shows its text");
+            if hold_during_mail {
+                let replay = owner.mail_command(deps.actor,admitted,2,&payload,Some(ItemKey::Instance(id(71))),None);
+                assert_eq!(complete_after_holder_turn(&h.root, "MAIL write-once replay", replay).await?, Some(MailOutcome::TextWritten));
+                let rewrite = encode_intent(&MailIntent::WriteText { item_handle: 1, text: "Forbidden rewrite".into() }).map_err(debug)?;
+                let refused = owner.mail_command(deps.actor, admitted, 3, &rewrite, Some(ItemKey::Instance(id(71))), None);
+                assert_eq!(complete_after_holder_turn(&h.root, "MAIL sealed document refusal", refused).await?, Some(MailOutcome::NotWritable));
+                assert_eq!(read(admitted,id(71)).await, Some(Some(sealed)));
+            }
             sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Foreign Reader' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid").bind(id(90).as_slice()).bind(id(41).as_slice()).execute(&h.pool).await?;
             super::item_look_fixtures::seed_character_backpack(&h,90,98,&[("oteryn:item.tibia.i3505",1)]).await?;
             let foreign_count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id<>encode($2,'hex')::uuid").bind(id(99).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;

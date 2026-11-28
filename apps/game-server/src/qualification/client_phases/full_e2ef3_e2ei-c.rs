@@ -1,4 +1,5 @@
 //! I06/I07 use the served spawn table for travel and the live client for all assertions.
+use super::full_e2ef3_e2ei_d::WOLF_BLOCKED_LANDING;
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::{
@@ -21,6 +22,13 @@ const WOLF_TILE: TilePos = TilePos {
     y: 32158,
     floor: -7,
 };
+// A walkable road west of the wolf spawn. The existing 120-second hunt
+// budget cannot cover the 223 cardinal steps from Thais to a Rat approach.
+const RAT_HUNT_START: TilePos = TilePos {
+    x: 32414,
+    y: 32158,
+    floor: -7,
+};
 const RAT: &str = "oteryn:creature.rat";
 
 pub(super) struct Hunt<'a> {
@@ -39,7 +47,7 @@ fn nearby(a: TilePos, b: TilePos) -> bool {
 }
 
 fn hunt_landing_available(at: TilePos, occupied: &BTreeSet<TilePos>) -> bool {
-    route_available(at) && at != WOLF_TILE && !occupied.contains(&at)
+    route_available(at) && at != WOLF_TILE && at != WOLF_BLOCKED_LANDING && !occupied.contains(&at)
 }
 
 fn spawn_route(
@@ -417,6 +425,7 @@ async fn relog(
     client: &mut Option<DevClientSession>,
     clients: &SeamClients<'_>,
     tag: u8,
+    fixture_position: Option<TilePos>,
 ) -> TestResult {
     let live = client.as_mut().ok_or("connection closed")?;
     let old = live.join_snapshot().game_session_id;
@@ -437,12 +446,29 @@ async fn relog(
         }
     }
     drop(client.take());
+    if let Some(at) = fixture_position {
+        super::reset_core_fixture_position(
+            clients,
+            ActorPosition {
+                x: i32::from(at.x),
+                y: i32::from(at.y),
+                floor: -i16::from(at.floor),
+            },
+        )
+        .await?;
+    }
     *client = Some(connect_world(clients, tag).await?);
-    if client
-        .as_ref()
-        .is_some_and(|fresh| fresh.join_snapshot().game_session_id == old)
-    {
+    let fresh = client.as_ref().ok_or("fresh inventory admission")?;
+    if fresh.join_snapshot().game_session_id == old {
         return Err(format!("fresh admission reused session {old:?}").into());
+    }
+    if let Some(expected) = fixture_position {
+        let actual = tile(fresh.world_spatial().actor_position)?;
+        if actual != expected {
+            return Err(
+                format!("rat hunt fixture expected {expected:?}, arrived at {actual:?}").into(),
+            );
+        }
     }
     Ok(())
 }
@@ -453,13 +479,66 @@ fn loot_deadline() -> Instant {
     deadline
 }
 
+/// Bind the durable MINT to the exact corpse seen by the client before its Ground row is removed.
+async fn corpse_materialization(
+    clients: &SeamClients<'_>,
+    corpse: &Corpse,
+) -> TestResult<Option<(String, i64)>> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let scope = [
+        clients.world.as_slice(),
+        clients.channel.as_slice(),
+        &clients.scope_generation.to_be_bytes(),
+    ]
+    .concat();
+    Ok(sqlx::query_as(
+        "SELECT m.item_instance_id::text, m.materialized_at
+         FROM game_item_mint_receipts m JOIN game_item_ground_locations g USING (item_instance_id)
+         WHERE m.loot_purpose_key='CORPSE_MATERIALIZATION' AND m.draw_ordinal=0
+         AND m.loot_table_production_key='oteryn:item.tibia.i5964'
+         AND octet_length(g.corpse_ref)=52 AND substring(g.corpse_ref FROM 1 FOR 40)=$1
+         AND substring(sha256(convert_to('oteryn:runtime-corpse-placement:v1','UTF8')
+             || g.corpse_ref) FROM 1 FOR 16)=$2",
+    )
+    .bind(scope)
+    .bind(corpse.entity.entity.identity.as_slice())
+    .fetch_optional(&mut database)
+    .await?)
+}
+
+async fn corpse_retirement(
+    clients: &SeamClients<'_>,
+    materialization: Option<(String, i64)>,
+) -> TestResult<Option<(i64, i64, i64)>> {
+    let Some((item, materialized_at)) = materialization else {
+        return Ok(None);
+    };
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let retirement: Option<(i64, i64)> = sqlx::query_as(
+        "SELECT deadline, committed_at FROM game_item_decay_retire_receipts
+         WHERE item_instance_id=$1::text::uuid AND corpse_item_instance_id=item_instance_id
+         AND cause_kind='CORPSE_DECAY'",
+    )
+    .bind(item)
+    .fetch_optional(&mut database)
+    .await?;
+    Ok(retirement.map(|(deadline, retired_at)| (materialized_at, deadline, retired_at)))
+}
+
 fn verify_corpse_retirement_timing(
     step: &mut &'static str,
     leave_sequence: u64,
     stale_use: UseDisposition,
+    timing: Option<(i64, i64, i64)>,
 ) -> TestResult {
     *step = "verify-server-corpse-retirement-timing";
-    Err(format!("SERVER-GAP missing server timestamps for rat corpse materialization and retirement; leave-sequence={leave_sequence}; stale-use={stale_use:?}; 60s fallback at 1357_instance_corpse_mint.sql:164; enter/leave projection at world_spatial_entities.rs:188").into())
+    let Some((materialized_at, deadline, retired_at)) = timing else {
+        return Err(format!("SERVER-GAP missing server timestamps for rat corpse materialization and retirement; leave-sequence={leave_sequence}; stale-use={stale_use:?}; 60s fallback at 1357_instance_corpse_mint.sql:164; enter/leave projection at world_spatial_entities.rs:188").into());
+    };
+    if materialized_at.checked_add(60_000) != Some(deadline) || retired_at < deadline {
+        return Err(format!("rat corpse 60s fallback timing: materialized-at={materialized_at} deadline={deadline} retired-at={retired_at} leave-sequence={leave_sequence} stale-use={stale_use:?}").into());
+    }
+    Ok(())
 }
 
 async fn decay(
@@ -469,10 +548,15 @@ async fn decay(
     step: &mut &'static str,
     town: TilePos,
 ) -> TestResult {
+    *step = "stage-rat-hunt";
+    let live = client.as_mut().ok_or("connection closed")?;
+    travel(live, hunt.world, |at| at == town).await?;
+    relog(client, clients, 0xc5, Some(RAT_HUNT_START)).await?;
     let live = client.as_mut().ok_or("connection closed")?;
     let corpse = hunt
         .lootable(live, step, "kill", "leave-loot", loot_deadline())
         .await?;
+    let materialization = corpse_materialization(clients, &corpse).await?;
     let before = quantities(live)?;
     let at = tile(corpse.entity.position)?;
     let stationary = live.world_spatial().actor_position;
@@ -534,7 +618,7 @@ async fn decay(
     }
     *step = "relogin-retirement";
     travel(live, hunt.world, |cell| cell == town).await?;
-    relog(client, clients, 0xc6).await?;
+    relog(client, clients, 0xc6, None).await?;
     let fresh = client.as_mut().ok_or("fresh connection absent")?;
     travel(fresh, hunt.world, |cell| nearby(cell, at)).await?;
     if fresh
@@ -553,7 +637,8 @@ async fn decay(
         )
         .into());
     }
-    verify_corpse_retirement_timing(step, leave_sequence, stale_use.disposition)
+    let timing = corpse_retirement(clients, materialization).await?;
+    verify_corpse_retirement_timing(step, leave_sequence, stale_use.disposition, timing)
 }
 
 fn request(action: Action) -> loot::QuickLootRequest {
@@ -611,9 +696,10 @@ async fn filter(
     Ok(())
 }
 
-async fn loot_all(
+async fn loot_entries(
     client: &mut DevClientSession,
     corpse: &mut Corpse,
+    action: Action,
     admits: impl Fn(&ItemEntry) -> bool,
 ) -> TestResult {
     let mut expected = backpack(client).await?;
@@ -622,7 +708,14 @@ async fn loot_all(
         *expected.entry(entry.item_definition_ref.get()).or_default() +=
             u64::from(entry.count.get());
     }
-    let (status, result) = quick(client, request(Action::LootAll)).await?;
+    let (status, result) = quick(
+        client,
+        loot::QuickLootRequest {
+            corpse: (action == Action::Click).then_some(corpse.entity.entity.identity),
+            ..request(action)
+        },
+    )
+    .await?;
     let unique = result
         .items
         .iter()
@@ -634,7 +727,7 @@ async fn loot_all(
         || result.items.iter().filter(|entry| entry.accepted).count() != taking
     {
         return Err(format!(
-            "LootAll {status:?} {result:?};expected picked={taking};corpse={:?}",
+            "{action:?} {status:?} {result:?};expected picked={taking};corpse={:?}",
             corpse.entries
         )
         .into());
@@ -643,7 +736,7 @@ async fn loot_all(
     // Explicitly reopen to refresh the corpse even when a command's delta only carries inventory.
     let used = client.use_item(corpse.handle).await?;
     if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
-        return Err(format!("LootAll corpse refresh USE reply={used:?}").into());
+        return Err(format!("{action:?} corpse refresh USE reply={used:?}").into());
     }
     settle(client, |client| {
         Ok(client.open_container().is_some_and(|open| {
@@ -653,7 +746,9 @@ async fn loot_all(
     .await?;
     let observed = backpack(client).await?;
     if observed != expected {
-        return Err(format!("LootAll backpack expected={expected:?};observed={observed:?}").into());
+        return Err(
+            format!("{action:?} backpack expected={expected:?};observed={observed:?}").into(),
+        );
     }
     Ok(())
 }
@@ -757,15 +852,20 @@ async fn loot_policy(
     town: TilePos,
 ) -> TestResult {
     let live = client.as_mut().ok_or("connection closed")?;
+    let deadline = loot_deadline();
     let mut corpse = hunt
-        .lootable(live, step, "loot-all", "loot-all", loot_deadline())
+        .lootable(live, step, "loot-all", "loot-all", deadline)
         .await?;
     *step = "manual-click";
     let before = quantities(live)?;
+    let non_corpse = *live
+        .world_entities()
+        .ok_or("Click needs the served own-actor identity")?
+        .own_identity();
     let (status, reply) = quick(
         live,
         loot::QuickLootRequest {
-            corpse: Some(corpse.entity.entity.identity),
+            corpse: Some(non_corpse),
             ..request(Action::Click)
         },
     )
@@ -790,8 +890,12 @@ async fn loot_policy(
     }
     evidence(&format!(
         "I07 negative Click spatial={:?} status={status:?} reply={reply:?}",
-        corpse.entity.entity.identity
+        non_corpse
     ));
+    loot_entries(live, &mut corpse, Action::Click, |_| true).await?;
+    corpse = hunt
+        .lootable(live, step, "loot-all", "loot-all", deadline)
+        .await?;
     *step = "accept-skip-filters";
     filter(live, Action::FilterClear, Filter::Skip, None).await?;
     let refs: std::collections::BTreeSet<_> = corpse
@@ -802,9 +906,9 @@ async fn loot_policy(
     for reference in refs {
         filter(live, Action::FilterAdd, Filter::Skip, Some(reference)).await?;
     }
-    loot_all(live, &mut corpse, |_| false).await?;
+    loot_entries(live, &mut corpse, Action::LootAll, |_| false).await?;
     filter(live, Action::FilterClear, Filter::Accept, None).await?;
-    loot_all(live, &mut corpse, |_| false).await?;
+    loot_entries(live, &mut corpse, Action::LootAll, |_| false).await?;
     let reference = corpse
         .entries
         .first()
@@ -813,7 +917,7 @@ async fn loot_policy(
         .get();
     filter(live, Action::FilterAdd, Filter::Accept, Some(reference)).await?;
     *step = "loot-all";
-    loot_all(live, &mut corpse, |entry| {
+    loot_entries(live, &mut corpse, Action::LootAll, |entry| {
         entry.item_definition_ref.get() == reference
     })
     .await?;
@@ -823,12 +927,12 @@ async fn loot_policy(
     filter(live, Action::FilterClear, Filter::Accept, None).await?;
     filter(live, Action::FilterClear, Filter::Skip, None).await?;
     if !corpse.entries.is_empty() {
-        loot_all(live, &mut corpse, |_| true).await?;
+        loot_entries(live, &mut corpse, Action::LootAll, |_| true).await?;
     }
     filter(live, Action::FilterSelect, Filter::Accept, None).await?;
     let saved = backpack(live).await?;
     travel(live, hunt.world, |at| at == town).await?;
-    relog(client, clients, 0xc7).await?;
+    relog(client, clients, 0xc7, None).await?;
     let fresh = client.as_mut().ok_or("fresh connection absent")?;
     if quantities(fresh)? != saved {
         return Err(format!(
@@ -846,9 +950,9 @@ async fn loot_policy(
             loot_deadline(),
         )
         .await?;
-    loot_all(fresh, &mut corpse, |_| false).await?;
+    loot_entries(fresh, &mut corpse, Action::LootAll, |_| false).await?;
     filter(fresh, Action::FilterSelect, Filter::Skip, None).await?;
-    loot_all(fresh, &mut corpse, |_| true).await?;
+    loot_entries(fresh, &mut corpse, Action::LootAll, |_| true).await?;
     Ok(())
 }
 
@@ -1093,7 +1197,7 @@ async fn quiver(
         return Err(format!("quiver credit expected={expected:?};observed={observed:?}").into());
     }
     travel(live, hunt.world, |at| at == town).await?;
-    relog(client, clients, 0xc8).await?;
+    relog(client, clients, 0xc8, None).await?;
     let fresh = client.as_mut().ok_or("fresh connection absent")?;
     let handle = equipped_quiver(fresh, quiver).ok_or("quiver absent after admission")?;
     let actual = totals(&container(fresh, handle).await?);
@@ -1195,9 +1299,13 @@ pub(super) async fn run(
     let started = Instant::now();
     let mut step = "loot-all";
     let policy = loot_policy(&mut client, clients, &hunt, &mut step, town).await;
+    let policy_failure = policy
+        .as_ref()
+        .err()
+        .map(|error| (step, verdict::classify(error.as_ref())));
     let policy = policy.map_or_else(
         |error| format!("{step}={error}"),
-        |()| "loot-all,accept-skip-filters,relogin-policy-custody=verified".into(),
+        |()| "manual-click,loot-all,accept-skip-filters,relogin-policy-custody=verified".into(),
     );
 
     let category = async {
@@ -1212,24 +1320,38 @@ pub(super) async fn run(
         }
         Ok::<_, Box<dyn std::error::Error>>("Gold/MainContainer assignment accepted; distinct container requires a durable recipient UUID")
     }.await;
+    let category_failure = category
+        .as_ref()
+        .err()
+        .map(|error| ("category-routing", verdict::classify(error.as_ref())));
     let category = category.map_or_else(|error| error.to_string(), str::to_owned);
-    let ammunition = quiver(&mut client, clients, &hunt, &metadata.npcs, town)
-        .await
-        .map_or_else(
-            |error| error.to_string(),
-            |()| "NPC buy, ammunition credit, and fresh custody verified".into(),
-        );
+    let ammunition = quiver(&mut client, clients, &hunt, &metadata.npcs, town).await;
+    let ammunition_failure = ammunition
+        .as_ref()
+        .err()
+        .map(|error| ("quiver-ammunition", verdict::classify(error.as_ref())));
+    let ammunition = ammunition.map_or_else(
+        |error| error.to_string(),
+        |()| "NPC buy, ammunition credit, and fresh custody verified".into(),
+    );
 
     let observed = format!(
-        "Click needs a bound corpse UUID (item_ref_admission.rs:150, item_quick_loot.rs:197); \
-        {policy}; category-routing={category} (item_quick_loot.rs:170); \
+        "{policy}; category-routing={category} (item_quick_loot.rs:170); \
         gold-pouch=23721 requires Inbox custody and durable recipient UUID (item_quick_loot.rs:88); \
         no served NPC buy offer or starter Inbox acquisition; quiver-ammunition={ammunition}"
     );
-    let cause = verdict::Cause::Precondition {
-        name: "quick-loot-client-corpse-uuid".into(),
-    };
-    result(I07, started, "", Some(("manual-click", &observed, &cause)));
+    let (failed_step, cause) = policy_failure
+        .or(category_failure)
+        .or(ammunition_failure)
+        .unwrap_or_else(|| {
+            (
+                "gold-pouch",
+                verdict::Cause::Precondition {
+                    name: "quick-loot-gold-pouch-acquisition".into(),
+                },
+            )
+        });
+    result(I07, started, "", Some((failed_step, &observed, &cause)));
 
     let mut client = client.ok_or("E2EF3 connection closed during fresh admission")?;
     travel(&mut client, world, |at| at == TOWN)
@@ -1244,7 +1366,7 @@ pub(super) async fn run(
 #[test]
 fn rat_retirement_requires_server_timestamps() {
     let mut step = "relogin-retirement";
-    let result = verify_corpse_retirement_timing(&mut step, 17, UseDisposition::StaleState);
+    let result = verify_corpse_retirement_timing(&mut step, 17, UseDisposition::StaleState, None);
     assert_eq!(step, "verify-server-corpse-retirement-timing");
     assert!(result.is_err_and(|error| {
         let error = error.to_string();
@@ -1253,6 +1375,22 @@ fn rat_retirement_requires_server_timestamps() {
             && error.contains("stale-use=StaleState")
             && error.contains("60s fallback")
     }));
+}
+
+#[test]
+fn rat_retirement_requires_the_exact_server_deadline() -> TestResult {
+    let mut step = "relogin-retirement";
+    let verify = |step: &mut &'static str, materialized_at, deadline, retired_at| {
+        verify_corpse_retirement_timing(
+            step,
+            17,
+            UseDisposition::StaleState,
+            Some((materialized_at, deadline, retired_at)),
+        )
+    };
+    assert!(verify(&mut step, 1000, 61_000, 60_999).is_err());
+    assert!(verify(&mut step, 1000, 61_001, 61_001).is_err());
+    verify(&mut step, 1000, 61_000, 61_037)
 }
 
 #[test]

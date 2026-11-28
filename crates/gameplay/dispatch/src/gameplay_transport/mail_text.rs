@@ -3,7 +3,7 @@ use crate::durability::item_text::{ItemTextWriteError, ItemTextWriteRequest};
 use crate::durability::mail_text_policy::NativeGameplayMailTextPolicyExt;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::gameplay_transport::{
-    ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey,
+    AdmissionRetryBudget, ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey,
 };
 use oteryn_protocol_oteryn::mail::MailOutcome;
 
@@ -21,9 +21,20 @@ pub(super) async fn execute(
         return Some(MailOutcome::Rejected);
     };
     let command = CommandRef::new(admitted.game_session_id, command);
-    match owner
-        .root
-        .read_write_once_source(owner.character, command, fence.character_id, item)
+    let retry = AdmissionRetryBudget::for_command(owner.root);
+    match retry
+        .retry_holder(
+            "mail_write_once_source",
+            || {
+                owner.root.read_write_once_source(
+                    owner.character,
+                    command,
+                    fence.character_id,
+                    item,
+                )
+            },
+            text_durability_error,
+        )
         .await
     {
         Ok(Some(definition)) => {
@@ -34,9 +45,16 @@ pub(super) async fn execute(
                 text,
             };
             let binding = request.freeze_receipt_binding(fence.character_id);
-            return match owner
-                .root
-                .reconcile_item_text_rewrite(owner.character, &binding)
+            return match retry
+                .retry_holder(
+                    "mail_write_receipt",
+                    || {
+                        owner
+                            .root
+                            .reconcile_item_text_rewrite(owner.character, &binding)
+                    },
+                    text_durability_error,
+                )
                 .await
             {
                 Ok(Some(_)) => Some(MailOutcome::TextWritten),
@@ -89,8 +107,7 @@ pub(super) async fn execute(
         native
     };
     let definition = owner
-        .root
-        .read_carried_item_text(owner.character, owner.holder, fence, house_origin, item)
+        .read_carried_inscription(&retry, fence, house_origin, item)
         .await
         .ok()?
         .map(|(definition, _)| definition);
@@ -138,6 +155,15 @@ pub(super) async fn execute(
     match result {
         Ok(_) => Some(MailOutcome::TextWritten),
         Err(error) => refusal(error),
+    }
+}
+
+fn text_durability_error(
+    error: &ItemTextWriteError,
+) -> Option<&crate::durability::DurabilityError> {
+    match error {
+        ItemTextWriteError::Unavailable(source) => Some(source),
+        _ => None,
     }
 }
 
