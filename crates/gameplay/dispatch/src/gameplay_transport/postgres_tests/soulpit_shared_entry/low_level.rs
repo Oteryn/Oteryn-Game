@@ -1,13 +1,13 @@
 use super::*;
 
 #[test]
-fn soulpit_shared_entry_uses_current_trusted_gm_group_not_forged_hint_postgres() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+fn s7_soulpit_core_entry_accepts_level_one_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
-    super::super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-gm-level", || {
+    };
+    super::super::kill_reward_e2e_fixtures::scenario_thread::run("soulpit-low-level", || {
         run(async |admin| {
-            let h = Harness::create_with_admission_seed(admin, "soulpit_gm_level", false, false)
+            let h = Harness::create_with_admission_seed(admin, "soulpit_low_level", false, false)
                 .await?;
             super::super::reset();
             let evidence = prepare_source(&h).await?;
@@ -17,7 +17,7 @@ fn soulpit_shared_entry_uses_current_trusted_gm_group_not_forged_hint_postgres()
             .bind(admitted.destination.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
                 level, 1,
-                "trusted GM entry must preserve the real low level"
+                "ordinary Core-funded entry must preserve the starting level"
             );
             h.cleanup().await
         })

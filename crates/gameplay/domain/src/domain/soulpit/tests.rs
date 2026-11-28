@@ -1,30 +1,14 @@
 use super::*;
 
-fn participant(slot: u8, level: u32) -> EntryParticipant {
-    EntryParticipant {
-        slot,
-        level,
-        game_master: false,
-    }
-}
-
 #[test]
-fn entry_accepts_one_to_five_players_and_checks_every_level() {
-    assert_eq!(validate_entry(0, &[participant(0, 8)], false, 1), Ok(()));
-    let mut party: Vec<_> = (0..5).map(|slot| participant(slot, 8)).collect();
-    assert_eq!(validate_entry(0, &party, false, 1), Ok(()));
-    party[3].level = 7;
-    assert_eq!(
-        validate_entry(0, &party, false, 1),
-        Err(SoulpitError::LevelTooLow)
-    );
-    party[3].game_master = true;
-    assert_eq!(validate_entry(0, &party, false, 1), Ok(()));
+fn entry_accepts_one_to_five_players() {
+    assert_eq!(validate_entry(0, &[0], false, 1), Ok(()));
+    assert_eq!(validate_entry(0, &[0, 1, 2, 3, 4], false, 1), Ok(()));
 }
 
 #[test]
 fn entry_refuses_busy_arena_missing_core_and_invalid_participants() {
-    let party = [participant(0, 8)];
+    let party = [0];
     assert_eq!(
         validate_entry(0, &party, true, 1),
         Err(SoulpitError::ArenaOccupied)
@@ -46,15 +30,15 @@ fn entry_refuses_busy_arena_missing_core_and_invalid_participants() {
         Err(SoulpitError::NotOnEntryTile)
     );
     assert_eq!(
-        validate_entry(0, &[participant(0, 8); 2], false, 1),
+        validate_entry(0, &[0; 2], false, 1),
         Err(SoulpitError::InvalidParticipants)
     );
     assert_eq!(
-        validate_entry(0, &[participant(0, 8); 6], false, 1),
+        validate_entry(0, &[0; 6], false, 1),
         Err(SoulpitError::InvalidParticipants)
     );
     assert_eq!(
-        validate_entry(0, &[participant(0, 8), participant(5, 8)], false, 1),
+        validate_entry(0, &[0, 5], false, 1),
         Err(SoulpitError::InvalidParticipants)
     );
 }
