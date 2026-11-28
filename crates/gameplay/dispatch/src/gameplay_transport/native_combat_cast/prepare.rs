@@ -497,10 +497,13 @@ async fn prepare_spatial(
         .map(|plan| monk_equipment::geometry(plan, origin, facing_direction))
         .transpose()?
         .unwrap_or_default();
-    let mut candidates = if equipment_plan.is_some() {
-        equipment_geometry.iter().flatten().copied().collect()
-    } else {
-        area_candidates(geometry_parameters, origin, facing_direction)?
+    let wheel_footprint =
+        wheel_combat_footprint(spell, parameters, stage, position, origin, facing_direction)?;
+    let fixed_footprint = wheel_footprint.is_some();
+    let mut candidates = match wheel_footprint {
+        Some(tiles) => tiles,
+        None if equipment_plan.is_some() => equipment_geometry.iter().flatten().copied().collect(),
+        None => area_candidates(geometry_parameters, origin, facing_direction)?,
     };
     candidates.insert(position);
     candidates.insert(origin);
@@ -517,6 +520,7 @@ async fn prepare_spatial(
             position
         },
         roster,
+        fixed_footprint,
         &mut candidates,
     )?;
     let caster_id = u64::from(actor.actor_local_id());
@@ -705,6 +709,28 @@ struct TargetPhase {
     targets: Vec<NativeTargetFact>,
 }
 
+fn wheel_combat_footprint(
+    spell: &SpellDefinition,
+    parameters: &Value,
+    stage: u8,
+    caster: TilePosition,
+    origin: TilePosition,
+    facing: Direction,
+) -> Result<Option<BTreeSet<TilePosition>>, SpellCastDisposition> {
+    if matches!(
+        &spell.execution,
+        Execution::NativeProfile(profile)
+            if profile.spell()["execution"]["native_behavior"]["key"] == "wheel_combat"
+                && parameters.get("chain").is_none()
+    ) {
+        crate::spell::native_combat::wheel_area_footprint(parameters, stage, caster, origin, facing)
+            .map(Some)
+            .map_err(|_| SpellCastDisposition::Rejected)
+    } else {
+        Ok(None)
+    }
+}
+
 fn collect_targets(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
@@ -714,6 +740,7 @@ fn collect_targets(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
+    fixed_footprint: bool,
     candidates: &mut BTreeSet<TilePosition>,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let mut bindings = Vec::new();
@@ -724,6 +751,7 @@ fn collect_targets(
         if p.floor != position.floor
             || p.x.abs_diff(position.x) > MAX_SIGHT_DISTANCE
             || p.y.abs_diff(position.y) > MAX_SIGHT_DISTANCE
+            || (fixed_footprint && !candidates.contains(&p))
         {
             continue;
         }

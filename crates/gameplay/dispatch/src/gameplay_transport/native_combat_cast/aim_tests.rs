@@ -44,6 +44,32 @@ fn cursor(x: i32, y: i32) -> SpellTarget {
 }
 
 #[test]
+fn native_energy_beam_uses_only_its_stage_footprint() -> Result<(), &'static str> {
+    let spell = source("candidate:spell/energy_beam");
+    let Execution::NativeProfile(profile) = &spell.execution else {
+        return Err("Energy Beam must use its native recipe");
+    };
+    let parameters = &profile.spell()["execution"]["native_behavior"]["parameters"];
+    let caster = at(100, 100);
+    let origin = at(101, 100);
+    let footprint = |stage| {
+        wheel_combat_footprint(&spell, parameters, stage, caster, origin, Direction::East)
+            .unwrap()
+            .unwrap()
+    };
+    assert_eq!(footprint(0), (101..=105).map(|x| at(x, 100)).collect());
+    let enhanced = footprint(1);
+    assert_eq!(
+        enhanced,
+        (101..=107)
+            .flat_map(|x| (99..=101).map(move |y| at(x, y)))
+            .collect()
+    );
+    assert!(!enhanced.contains(&at(120, 112)));
+    Ok(())
+}
+
+#[test]
 fn native_waves_and_beams_accept_target_and_cursor_aim() {
     for (key, native) in [
         ("candidate:spell/energy_beam", "wheel_combat"),

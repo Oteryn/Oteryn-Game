@@ -153,6 +153,27 @@ fn scenario() -> TestResult {
         let before: String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(owner.current_quest_fence(session).await.map_err(|_|"fence")?.ok_or("live")?.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
         sqlx::query("UPDATE game_world_reset_active SET reset_epoch=2 WHERE world_id=encode($1,'hex')::uuid").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
         h.root.world_changes(world, 2).await?.ok_or("next day")?;
+        {
+            use crate::durability::DurabilityRoot;
+            let held = h.root.try_issue_background_semantic_pass()?;
+            let mut list = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                owner.observe_quest_log(d.actor, session, None)
+            ));
+            let first_poll = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(list.as_mut(), cx))
+            })
+            .await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(
+                first_poll.is_pending(),
+                "the save-scoped quest List must wait for the holder: {first_poll:?}"
+            );
+            let QuestLogObservation::Changed(reply) = list.await else {
+                return Err("fresh List remained unavailable after the holder returned".into());
+            };
+            assert!(reply.version > first.version);
+            assert_eq!(reply.copy.track_value(TRACK), Some(0));
+        }
         let observation = owner
             .observe_quest_log(d.actor, session, Some(first.version))
             .await;

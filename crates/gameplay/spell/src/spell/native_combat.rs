@@ -321,7 +321,11 @@ fn tile(origin: TilePosition, dx: i32, dy: i32) -> Result<TilePosition, Error> {
         floor: origin.floor,
     })
 }
-fn area(a: &Value, f: &NativeCombatFacts) -> Result<AreaPlan, Error> {
+fn area_geometry(
+    a: &Value,
+    area_origin: TilePosition,
+    direction: Direction,
+) -> Result<BTreeSet<TilePosition>, Error> {
     let directional = field(a, "directional")?
         .as_bool()
         .ok_or_else(|| Error("invalid direction flag".into()))?;
@@ -329,7 +333,7 @@ fn area(a: &Value, f: &NativeCombatFacts) -> Result<AreaPlan, Error> {
     let (matrix, turn) = if !directional {
         (field(a, "orthogonal")?, 0)
     } else {
-        match (f.direction, diagonal) {
+        match (direction, diagonal) {
             (Direction::NorthWest, Some(m)) => (m, 0),
             (Direction::NorthEast, Some(m)) => (m, 1),
             (Direction::SouthEast, Some(m)) => (m, 2),
@@ -375,19 +379,27 @@ fn area(a: &Value, f: &NativeCombatFacts) -> Result<AreaPlan, Error> {
         }
     }
     let (cx, cy) = origin.ok_or_else(|| Error("missing area origin".into()))?;
-    let mut central = BTreeSet::new();
-    let mut geometry = BTreeSet::new();
-    for (x, y) in active {
-        let (dx, dy) = rotate(x - cx, y - cy, turn);
-        let position = tile(f.area_origin, dx, dy)?;
-        geometry.insert(position);
-        if !f.floor_change_tiles.contains(&position) && sight(f, f.area_sight_origin, position) {
-            central.insert(position);
-        }
-    }
+    active
+        .into_iter()
+        .map(|(x, y)| {
+            let (dx, dy) = rotate(x - cx, y - cy, turn);
+            tile(area_origin, dx, dy)
+        })
+        .collect()
+}
+
+fn area(a: &Value, f: &NativeCombatFacts) -> Result<AreaPlan, Error> {
+    let geometry = area_geometry(a, f.area_origin, f.direction)?;
+    let central_tiles = geometry
+        .iter()
+        .copied()
+        .filter(|position| {
+            !f.floor_change_tiles.contains(position) && sight(f, f.area_sight_origin, *position)
+        })
+        .collect();
     Ok(AreaPlan {
         origin: f.area_origin,
-        central_tiles: central,
+        central_tiles,
         central_geometry_tiles: geometry,
         side_tiles: BTreeSet::new(),
     })
@@ -709,6 +721,88 @@ pub fn plan(
     }
 }
 
+fn wheel_area(parameters: &Value, stage: u8) -> Result<&Value, Error> {
+    let enhanced = u64::from(stage) >= n(parameters, "enhanced_area_from_stage", stage)?;
+    field(
+        parameters,
+        if enhanced {
+            "enhanced_area"
+        } else {
+            "base_area"
+        },
+    )
+}
+
+fn beam_side_tiles(
+    parameters: &Value,
+    area: &Value,
+    stage: u8,
+    caster_position: TilePosition,
+    direction: Direction,
+    central: &BTreeSet<TilePosition>,
+) -> Result<BTreeSet<TilePosition>, Error> {
+    let Some(beam) = parameters.get("beam_mastery").filter(|_| stage > 0) else {
+        return Ok(BTreeSet::new());
+    };
+    let direction = if area.get("diagonal").is_some_and(Value::is_array) {
+        direction
+    } else {
+        match direction {
+            Direction::NorthWest | Direction::SouthWest => Direction::West,
+            Direction::NorthEast | Direction::SouthEast => Direction::East,
+            d => d,
+        }
+    };
+    let offsets = field(field(beam, "side_offsets_by_direction")?, direction.key())?
+        .as_array()
+        .ok_or_else(|| Error("invalid beam offsets".into()))?;
+    let mut sides = BTreeSet::new();
+    for position in central {
+        for offset in offsets {
+            let pair = offset
+                .as_array()
+                .filter(|a| a.len() == 2)
+                .ok_or_else(|| Error("invalid side offset".into()))?;
+            let dx = pair[0]
+                .as_i64()
+                .and_then(|v| i32::try_from(v).ok())
+                .ok_or_else(|| Error("invalid side dx".into()))?;
+            let dy = pair[1]
+                .as_i64()
+                .and_then(|v| i32::try_from(v).ok())
+                .ok_or_else(|| Error("invalid side dy".into()))?;
+            let side = tile(*position, dx, dy)?;
+            if side != caster_position && !central.contains(&side) {
+                sides.insert(side);
+            }
+        }
+    }
+    Ok(sides)
+}
+
+/// The tiles a non-chain Wheel combat recipe can affect at this cast stage.
+/// The dispatch owner still proves floor changes, line of sight and target legality.
+pub fn wheel_area_footprint(
+    parameters: &Value,
+    stage: u8,
+    caster_position: TilePosition,
+    origin: TilePosition,
+    direction: Direction,
+) -> Result<BTreeSet<TilePosition>, Error> {
+    let area = wheel_area(parameters, stage)?;
+    let mut central = area_geometry(area, origin, direction)?;
+    let sides = beam_side_tiles(
+        parameters,
+        area,
+        stage,
+        caster_position,
+        direction,
+        &central,
+    )?;
+    central.extend(sides);
+    Ok(central)
+}
+
 fn combat(
     p: &Value,
     f: &NativeCombatFacts,
@@ -720,66 +814,19 @@ fn combat(
     if let Some(spec) = p.get("chain") {
         selected = chain(spec, p, f, |_| true)?;
     } else {
-        let enhanced = u64::from(f.stage) >= n(p, "enhanced_area_from_stage", f.stage)?;
-        let mut a = area(
-            field(
-                p,
-                if enhanced {
-                    "enhanced_area"
-                } else {
-                    "base_area"
-                },
-            )?,
-            f,
-        )?;
-        if let Some(beam) = p.get("beam_mastery").filter(|_| f.stage > 0) {
-            let direction = if field(
-                p,
-                if enhanced {
-                    "enhanced_area"
-                } else {
-                    "base_area"
-                },
-            )?
-            .get("diagonal")
-            .is_some_and(Value::is_array)
-            {
-                f.direction
-            } else {
-                match f.direction {
-                    Direction::NorthWest | Direction::SouthWest => Direction::West,
-                    Direction::NorthEast | Direction::SouthEast => Direction::East,
-                    d => d,
-                }
-            };
-            let offsets = field(field(beam, "side_offsets_by_direction")?, direction.key())?
-                .as_array()
-                .ok_or_else(|| Error("invalid beam offsets".into()))?;
-            for position in &a.central_geometry_tiles {
-                for offset in offsets {
-                    let pair = offset
-                        .as_array()
-                        .filter(|a| a.len() == 2)
-                        .ok_or_else(|| Error("invalid side offset".into()))?;
-                    let dx = pair[0]
-                        .as_i64()
-                        .and_then(|v| i32::try_from(v).ok())
-                        .ok_or_else(|| Error("invalid side dx".into()))?;
-                    let dy = pair[1]
-                        .as_i64()
-                        .and_then(|v| i32::try_from(v).ok())
-                        .ok_or_else(|| Error("invalid side dy".into()))?;
-                    let side = tile(*position, dx, dy)?;
-                    if side != f.caster_position
-                        && !a.central_geometry_tiles.contains(&side)
-                        && !f.floor_change_tiles.contains(&side)
-                        && sight(f, f.area_sight_origin, side)
-                    {
-                        a.side_tiles.insert(side);
-                    }
-                }
-            }
-        }
+        let area_spec = wheel_area(p, f.stage)?;
+        let mut a = area(area_spec, f)?;
+        a.side_tiles = beam_side_tiles(
+            p,
+            area_spec,
+            f.stage,
+            f.caster_position,
+            f.direction,
+            &a.central_geometry_tiles,
+        )?
+        .into_iter()
+        .filter(|side| !f.floor_change_tiles.contains(side) && sight(f, f.area_sight_origin, *side))
+        .collect();
         selected = f
             .targets
             .iter()
