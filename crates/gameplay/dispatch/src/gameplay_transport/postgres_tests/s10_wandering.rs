@@ -281,7 +281,7 @@ async fn verify_voice_and_walk(
                 }) = owner.states.chat.next(deps.admitted.game_session_id)
                 {
                     assert_eq!(speaker.identity, npc.placement_identity());
-                    assert_eq!(speaker.generation, npc.actor_local_generation());
+                    assert_eq!(speaker.generation.get(), npc.actor_local_generation());
                     assert_eq!(speaker_name, "Maria");
                     assert_eq!(text, expected);
                     heard = true;
