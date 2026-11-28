@@ -368,22 +368,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     expect_friends(&mut a, "accepted-view-inviter", a_main, a_friend).await?;
     expect_friends(&mut b, "accepted-view-invitee", b_main, b_friend).await?;
 
-    // Profile access uses character VIP consent, independently of account friendship.
-    let (add, _) = friends(&mut b, vip::Operation::Add, 0, &name_a).await?;
-    let (query, view) = friends(&mut a, vip::Operation::Query, 0, "").await?;
-    let invitation = &view["consents"][0];
-    if add != 1 || query != 1 || invitation["name"].as_str() != Some(name_b.as_str()) {
+    // Account friendship must be sufficient for the Social profile route.
+    // Verify the peer cannot fall through to character VIP authorization.
+    let (query, view) = friends(&mut b, vip::Operation::Query, 0, "").await?;
+    if query != 1
+        || !view["entries"].as_array().is_some_and(|entries| {
+            entries
+                .iter()
+                .all(|entry| entry["name"].as_str().is_some_and(|name| name != name_a))
+        })
+    {
         return Err(format!(
-            "step=profile-consent-invite observed=add:{add},query:{query},invite:{invitation}"
+            "step=friend-profile-without-vip observed=code:{query},entries:{}",
+            view["entries"]
         )
         .into());
-    }
-    let handle = invitation["handle"]
-        .as_u64()
-        .ok_or("step=profile-consent-invite observed=no-handle")?;
-    let (accept, _) = friends(&mut a, vip::Operation::Accept, handle, "").await?;
-    if accept != 1 {
-        return Err(format!("step=profile-consent-accept observed=code:{accept};needed=1").into());
     }
 
     let badge = oteryn_protocol_oteryn::cyclopedia_character::Badge::FledgelingHero as u8;
