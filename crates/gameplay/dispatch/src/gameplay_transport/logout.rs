@@ -404,7 +404,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let Ok(current) = budget
             .retry_durability("terminal_session", async || {
-                store.current_session(session).await
+                store.try_current_session(session).await
             })
             .await
         else {

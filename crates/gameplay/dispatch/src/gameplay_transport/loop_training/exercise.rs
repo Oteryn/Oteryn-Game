@@ -381,7 +381,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Resolve session authority last: the revision/build reads above are
         // historical evidence and cannot authorize a successor connection.
         let fresh = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session(run.fence.game_session_id)
+            .try_current_session(run.fence.game_session_id)
             .await
             .ok()?;
         if fresh.session_state() == crate::foundation::GameSessionState::Terminal

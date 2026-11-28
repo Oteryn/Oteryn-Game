@@ -334,7 +334,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let store =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone());
         let Ok(current) = budget
-            .retry_durability("prey_checkpoint_session", || store.current_session(session))
+            .retry_durability("prey_checkpoint_session", || store.try_current_session(session))
             .await
         else {
             return false;

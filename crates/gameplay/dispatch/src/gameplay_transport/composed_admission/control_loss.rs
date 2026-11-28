@@ -64,7 +64,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> UnendedSettle {
         let Ok(current) = AdmissionRetryBudget::for_command(self.root)
             .retry_durability("logout_settle", async || {
-                store.current_session(hold.session).await
+                store.try_current_session(hold.session).await
             })
             .await
         else {
@@ -122,7 +122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let store = FreshAdmissionStore::from_root(self.root.clone());
                 let current = AdmissionRetryBudget::for_command(self.root)
                     .retry_durability("retire_session", async || {
-                        store.current_session(session).await
+                        store.try_current_session(session).await
                     })
                     .await;
                 let current_scope = current.as_ref().ok().map(|s| s.current_runtime_scope());
