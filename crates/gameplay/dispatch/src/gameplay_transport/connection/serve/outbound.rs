@@ -121,6 +121,13 @@ where
     if write_frame(stream, &result).await.is_err() {
         return Err(ServeEnd::Disconnected);
     }
+    if let Dispatch::Reply(status, payload) = &dispatch
+        && routing::quick_loot::stale_move(command.command_type, *status, payload)
+    {
+        // A known stale move committed no effects. Periodic observation still
+        // publishes independent state changes on its usual cadence.
+        return Ok(());
+    }
     // Native movement can commit an activity return and retire this actor.
     // Send its command result first; the serve loop then crosses the existing
     // scope barrier before observing any destination-owned state.
