@@ -1,0 +1,393 @@
+{
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "routes": [
+    {
+      "npc": "chemar",
+      "keyword": "farmine",
+      "price": 60,
+      "destination": [
+        32983,
+        31539,
+        1
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:106",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "quest gate",
+      "aliases": [
+        "zao"
+      ],
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:106-112",
+      "map_hold": "NpcPlacement"
+    },
+    {
+      "npc": "chemar",
+      "keyword": "edron",
+      "price": 60,
+      "destination": [
+        33193,
+        31784,
+        3
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:114",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:82-97"
+    },
+    {
+      "npc": "chemar",
+      "keyword": "svargrond",
+      "price": 60,
+      "destination": [
+        32253,
+        31097,
+        4
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:115",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:82-97",
+      "map_hold": "BlockSolid"
+    },
+    {
+      "npc": "chemar",
+      "keyword": "femor hills",
+      "price": 60,
+      "destination": [
+        32536,
+        31837,
+        4
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:116",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:82-97"
+    },
+    {
+      "npc": "chemar",
+      "keyword": "kazordoon",
+      "price": 80,
+      "destination": [
+        32588,
+        31941,
+        0
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:118",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:82-97"
+    },
+    {
+      "npc": "chemar",
+      "keyword": "issavi",
+      "price": 100,
+      "destination": [
+        33957,
+        31515,
+        0
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:120",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:82-97"
+    },
+    {
+      "npc": "chemar",
+      "keyword": "marapur",
+      "price": 70,
+      "destination": [
+        33805,
+        32767,
+        2
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/chemar.lua:121",
+      "terms_source": "data-global/npc/chemar.lua:88",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": true,
+      "transport_source": "data-global/npc/chemar.lua:30",
+      "hold_source": "data-global/npc/chemar.lua:82-97",
+      "map_hold": "BlockSolid"
+    },
+    {
+      "npc": "petros",
+      "keyword": "venore",
+      "price": 180,
+      "destination": [
+        32954,
+        32022,
+        6
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:96",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:72-87"
+    },
+    {
+      "npc": "petros",
+      "keyword": "port hope",
+      "price": 50,
+      "destination": [
+        32527,
+        32784,
+        6
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:97",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:72-87"
+    },
+    {
+      "npc": "petros",
+      "keyword": "liberty bay",
+      "price": 140,
+      "destination": [
+        32285,
+        32892,
+        6
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:98",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:72-87"
+    },
+    {
+      "npc": "petros",
+      "keyword": "ankrahmun",
+      "price": 150,
+      "destination": [
+        33092,
+        32883,
+        6
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:99",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:72-87"
+    },
+    {
+      "npc": "petros",
+      "keyword": "yalahar",
+      "price": 210,
+      "destination": [
+        32816,
+        31272,
+        6
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:100",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "quest gate",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:100-102"
+    },
+    {
+      "npc": "petros",
+      "keyword": "gray island",
+      "price": 160,
+      "destination": [
+        33196,
+        31984,
+        7
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:103",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:72-87"
+    },
+    {
+      "npc": "petros",
+      "keyword": "krailos",
+      "price": 200,
+      "destination": [
+        33493,
+        31712,
+        6
+      ],
+      "premium": false,
+      "min_level": null,
+      "postman": true,
+      "source": "data-global/npc/petros.lua:104",
+      "terms_source": "data-global/npc/petros.lua:78",
+      "hold": "Scarab Cheese inventory restriction",
+      "carpet": false,
+      "hold_source": "data-global/npc/petros.lua:72-87"
+    }
+  ],
+  "bankers": [
+    {
+      "npc": "adrian",
+      "source": "data-global/npc/adrian.lua:79"
+    },
+    {
+      "npc": "atur",
+      "source": "data-global/npc/atur.lua:68"
+    },
+    {
+      "npc": "ebenizer",
+      "source": "data-global/npc/ebenizer.lua:68"
+    },
+    {
+      "npc": "eighty",
+      "source": "data-global/npc/eighty.lua:63"
+    },
+    {
+      "npc": "elgar",
+      "source": "data-global/npc/elgar.lua:73"
+    },
+    {
+      "npc": "eva",
+      "source": "data-global/npc/eva.lua:68"
+    },
+    {
+      "npc": "ferks",
+      "source": "data-global/npc/ferks.lua:68"
+    },
+    {
+      "npc": "finarfin",
+      "source": "data-global/npc/finarfin.lua:63"
+    },
+    {
+      "npc": "flavius",
+      "source": "data-global/npc/flavius.lua:73"
+    },
+    {
+      "npc": "gnomillion",
+      "source": "data-global/npc/gnomillion.lua:68"
+    },
+    {
+      "npc": "hireling",
+      "source": "data-global/npc/hireling.lua:2424"
+    },
+    {
+      "npc": "jefrey",
+      "source": "data-global/npc/jefrey.lua:68"
+    },
+    {
+      "npc": "jessica",
+      "source": "data-global/npc/jessica.lua:68"
+    },
+    {
+      "npc": "kaya",
+      "source": "data-global/npc/kaya.lua:68"
+    },
+    {
+      "npc": "kepar",
+      "source": "data-global/npc/kepar.lua:68"
+    },
+    {
+      "npc": "lokur",
+      "source": "data-global/npc/lokur.lua:67"
+    },
+    {
+      "npc": "murim",
+      "source": "data-global/npc/murim.lua:72"
+    },
+    {
+      "npc": "muzir",
+      "source": "data-global/npc/muzir.lua:68"
+    },
+    {
+      "npc": "naji",
+      "source": "data-global/npc/naji.lua:68"
+    },
+    {
+      "npc": "paulie",
+      "source": "data-global/npc/paulie.lua:162"
+    },
+    {
+      "npc": "plunderpurse",
+      "source": "data-global/npc/plunderpurse.lua:161"
+    },
+    {
+      "npc": "raffael",
+      "source": "data-global/npc/raffael.lua:68"
+    },
+    {
+      "npc": "rokyn",
+      "source": "data-global/npc/rokyn.lua:67"
+    },
+    {
+      "npc": "siestaar",
+      "source": "data-global/npc/siestaar.lua:68"
+    },
+    {
+      "npc": "sissek",
+      "source": "data-global/npc/sissek.lua:63"
+    },
+    {
+      "npc": "suzy",
+      "source": "data-global/npc/suzy.lua:68"
+    },
+    {
+      "npc": "tesha",
+      "source": "data-global/npc/tesha.lua:68"
+    },
+    {
+      "npc": "virgil",
+      "source": "data-global/npc/virgil.lua:68"
+    },
+    {
+      "npc": "wentworth",
+      "source": "data-global/npc/wentworth.lua:170"
+    },
+    {
+      "npc": "znozel",
+      "source": "data-global/npc/znozel.lua:63"
+    }
+  ]
+}

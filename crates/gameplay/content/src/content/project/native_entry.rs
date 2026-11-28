@@ -718,6 +718,19 @@ impl NativeEntryMovementCells {
         &self.scope
     }
 
+    /// Supply House placement metadata for an authored bundle test fixture.
+    #[cfg(feature = "test-support")]
+    pub fn with_bundle_house_for_test(
+        mut self,
+        house: super::ProjectV2DefinitionRef,
+        cells: std::collections::BTreeSet<crate::content::LogicalCell>,
+        entry: crate::content::LogicalCell,
+    ) -> Self {
+        self.house_tiles =
+            super::QualifiedHouseTiles::for_bundle_test(self.scope.clone(), house, cells, entry);
+        self
+    }
+
     /// The movement cells of a Channel booted from a world bundle (MAP-CUTOVER-1a): the bundle
     /// index and the bundle's own spell tiles (BUNDLE-TILES-1) under `scope`. House absence
     /// is derived only from the bundle index's complete, matching-scope marker evidence.

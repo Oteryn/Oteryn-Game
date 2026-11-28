@@ -138,13 +138,13 @@ def prepare(root, intent):
         binding = {'source_key': SOURCE, 'source_revision': intent_hash,
                    'identity_namespace': NAMESPACE, 'external_id': str(identifier),
                    'target': copy.deepcopy(identity), 'disposition': 'EXACT'}
+        # The composed Rust provider omits unknown field_replaceable before checking this digest.
         row = {
             'authoring': {'item': copy.deepcopy(identity)},
             'semantics': result_semantics,
             'attributes': {'speed_bonus': 0, 'blocks_movement': flags.get('flags.unpass', False),
                            'blocks_projectile': flags.get('flags.unsight', False),
-                           'immovable_block_solid': False, 'has_height': flags.get('flags.height', False),
-                           'field_replaceable': None, 'field_condition': None, 'rune_consumption': None},
+                           'immovable_block_solid': False, 'has_height': flags.get('flags.height', False)},
             'admission': {'materializable': True, 'stack_class': 'NonStackable',
                           'legal_destinations': ['CharacterInventory', 'Ground']},
             'production_definition': {'family': 'Item', 'production_key': key, 'revision_ref': identity['revision']},

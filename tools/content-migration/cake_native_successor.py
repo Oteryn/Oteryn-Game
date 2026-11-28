@@ -7,7 +7,6 @@ from pathlib import Path
 
 from bind_monster_source_definitions import CREATURES
 from import_spell_families import canonical_bytes
-import cake_creature_admission as admission
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
@@ -24,8 +23,9 @@ def source_profile(row):
     result = copy.deepcopy(row)
     if result['target']['family'] == 'Creature':
         profile = result['data']['profile']
-        if profile.get('immunities') == []:
-            del profile['immunities']
+        for field in ('abilities', 'immunities', 'resistances'):
+            if profile.get(field) == []:
+                del profile[field]
         if profile['details'].get('reference_level') is None:
             profile['details'].pop('reference_level', None)
     return result
@@ -90,6 +90,8 @@ def qualify(rows, declarations, reference, packet, item_bindings):
     item_map = {int(b['external_id']): b['target']['key'] for b in item_bindings['bindings']
                 if b['disposition'] == 'EXACT' and b['external_id'].isdecimal()
                 and b['target']['family'] == 'Item' and identity(b['target']) in accepted_items}
+    import cake_creature_admission as admission
+
     bundle = admission.complete_bundle()
     expected = admission.stage_bundle(bundle, item_map)
     if (packet.get('crystal_commit') != admission.PIN or packet.get('bundle') != bundle
@@ -141,7 +143,8 @@ def loot_successor(root, creatures, native_item_profiles=None):
         raise ValueError('CAKE_NATIVE_CANONICAL_LOOT_MISMATCH')
     from build_full_spell_artifact import loot_tables, LIMITS
     raw = loot_tables(creatures, root / 'content/creatures/definitions',
-                      root / 'content/loot', root / 'content/items/definitions', native_item_profiles)
+                      root / 'content/loot', root / 'content/items/definitions', native_item_profiles,
+                      qualify_carried_yields=native_item_profiles is not None)
     if len(raw) > LIMITS['loot_tables']:
         raise ValueError('CAKE_NATIVE_LOOT_BYTE_BOUND')
     return raw

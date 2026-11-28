@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 PHASE = 'oteryn:quest-progress/fibula/supplement'
+DONATIONS = 'oteryn:quest-progress/fibula/simon-donations'
 
 
 def append(callbacks, offers, inputs):
@@ -67,3 +68,41 @@ def append(callbacks, offers, inputs):
     ]:
         offers.append(dict(npc='oteryn:npc.dermot',keywords=['expedition'],topic=0,next_topic=topic,
             storage=[dict(track=PHASE,minimum=phase,maximum=phase,set=phase,preserve=True)],reply=[reply]))
+
+def append_simon(callbacks, offers, tracks, inputs):
+    path = 'data-global/npc/simon_the_beggar.lua'
+    text = inputs[path].decode()
+    fragments = ('MsgContains(message, "help")', 'removeMoneyBank(100)',
+                 'removeMoneyBank(500)', 'removeMoneyBank(200)',
+                 'player:addItem(2968, 1)', 'key:setActionId(3940)')
+    if not all(fragment in text for fragment in fragments):
+        raise ValueError('Fibula Simon key sale source changed')
+    source = ('crystal:201189f871d23597b82caf88fd611454a2ddefb8:'
+              f'{path}:237-290:sha256:7ad2665ab2a053412536f0dd15762c98fb07122f0db20e020180fecd89003e74')
+    quest = 'oteryn:quest.deeper_fibula_quest'
+    npc = 'oteryn:npc.simon_the_beggar'
+    prompt = 'Could you spare 100 gold?'
+    tracks.append(dict(key=DONATIONS, quest=quest, initial=0, min=0, max=2,
+                       writable=True, sources=[source]))
+
+    def stage(minimum, maximum, value):
+        return dict(track=DONATIONS, minimum=minimum, maximum=maximum, set=value)
+
+    def reward(name, keyword, topic, next_topic, storage, reply, **terms):
+        callbacks.append(dict(key=f'oteryn:quest-reward/fibula-simon-{name}',
+            quest=quest, npc=npc, keywords=[keyword], topic=topic, next_topic=next_topic,
+            storage=storage, take=[], outfit=None, achievement=None,
+            give=terms.pop('give', None), reply=[reply], sources=[source], **terms))
+
+    offers.append(dict(npc=npc, keywords=['help'], topic=0, next_topic=9,
+                       storage=[{**stage(0,0,0), 'preserve':True}], reply=[prompt]))
+    reward('restart', 'help', 0, 9, [stage(1,2,0)], prompt)
+    reward('first-donation', 'yes', 9, 10, [stage(0,0,1)],
+           'Thank you. Could you spare another 500 gold for a tip?',
+           fee=dict(gold=100, include_bank=True))
+    reward('second-donation', 'yes', 10, 11, [stage(1,1,2)],
+           'I have a key from Dermot. Would you buy it for 200 gold?',
+           fee=dict(gold=500, include_bank=True))
+    reward('key', 'yes', 11, 0, [{**stage(2,2,2), 'preserve':True}],
+           'The dungeon key is yours.', fee=dict(gold=200, include_bank=True), repeatable=True,
+           give=dict(item='oteryn:item.tibia.i2968', count=1, contents=[], key_number=3940))

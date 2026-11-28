@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/qd-steal-from-thieves-oasis-box",
+      "quest": "oteryn:quest.steal_from_thieves_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33131,
+          "y": 32661,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": 19910,
+        "appearance": 2473
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qd/steal_from_thieves/state",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/qd/steal_from_thieves/bag-recovered",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "The box is empty.",
+      "success_message": "You found Ahmet's bag.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i235",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_steal_from_thieves.lua:1-22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:(33131,32661,7)",
+        "https://tibia.fandom.com/index.php?curid=22844&oldid=1057227"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/qd/steal_from_thieves/bag-recovered": 0
+      }
+    }
+  ]
+}

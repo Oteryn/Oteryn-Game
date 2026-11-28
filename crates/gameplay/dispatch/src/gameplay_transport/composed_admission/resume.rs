@@ -69,18 +69,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // DEFLAKE-2: a step refused on a busy durability holder before the resume wrote
         // anything is repeated from fresh reads within the root recovery window.
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-        let transferred = self
-            .recover_transferred_house(
-                &budget,
-                connection::ResumeAttempt {
-                    game_session_id: attempt.game_session_id,
-                    recovery_material: attempt.recovery_material,
-                    transport: attempt.transport,
-                    last_applied_server_sequence: attempt.last_applied_server_sequence,
-                    supported_capabilities: attempt.supported_capabilities,
-                },
-            )
+        // Read the committed receipt before any resume write. Its input
+        // marker also resolves an ambiguous first-input acknowledgement.
+        let candidate = budget
+            .retry_unavailable(async || {
+                self.root
+                    .house_transfer_recovery(attempt.game_session_id)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
             .await?;
+        let retained_house_input = candidate
+            .as_ref()
+            .filter(|receipt| receipt.ack.session == *attempt.game_session_id.as_bytes())
+            .map(|receipt| !receipt.started);
+        let transferred = match candidate {
+            Some(candidate) => self.recover_transferred_house(candidate, &attempt).await?,
+            None => None,
+        };
         let recovered_transfer = transferred.is_some();
         let mut admitted = if let Some(admitted) = transferred {
             admitted
@@ -106,6 +112,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        if let Some(pending) = retained_house_input {
+            admitted.continuity.house_input_pending = Some(pending);
+        }
         // NBGRANT: only the final spell repair was pending on this positioned actor.
         // Complete it under the new controller's current fence before making it playable;
         // other refused entry participants retain their own refusal and are never promoted.
@@ -160,6 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = self.restore_house_admission_views(&admitted, None).await;
         } else {
             self.admit_quest_session(&admitted).await;
+            self.finish_recovered_terrain_use(&admitted).await;
         }
     }
 }

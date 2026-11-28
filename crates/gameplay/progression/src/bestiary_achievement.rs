@@ -29,12 +29,37 @@ const KILLS: [(&str, u32, &str); 1] = [(
     "oteryn:achievement/trail_of_the_ape_god",
 )];
 
+// TibiaWiki 62850/845107, 62456/845032 and 62459/845061 specify 300 defeats
+// of each species. Crystal 201189f8 has the definitions but no award producer.
+const DEEPLING_DEFEATS: [(&str, &str); 3] = [
+    (
+        "oteryn:creature.deepling_guard",
+        "oteryn:achievement/guardian_downfall",
+    ),
+    (
+        "oteryn:creature.deepling_spellsinger",
+        "oteryn:achievement/death_song",
+    ),
+    (
+        "oteryn:creature.deepling_warrior",
+        "oteryn:achievement/depth_dwellers",
+    ),
+];
+
+/// These achievements count committed defeats, including when Bestiary grants bonus credit.
+pub fn deepling_defeats(race_key: &str) -> Option<crate::item_use_achievement::Counted> {
+    DEEPLING_DEFEATS.iter().find_map(|&(race, key)| {
+        (race == race_key).then_some(crate::item_use_achievement::Counted { key, total: 300 })
+    })
+}
+
 /// Every key a kill can earn, for the catalogue check.
 pub fn all_keys() -> impl Iterator<Item = &'static str> {
     COMPLETIONS
         .iter()
         .map(|(_, _, key)| *key)
         .chain(KILLS.iter().map(|(_, _, key)| *key))
+        .chain(DEEPLING_DEFEATS.iter().map(|(_, key)| *key))
 }
 
 /// The keys earned by holding `kill_count` kills of `race_key`.

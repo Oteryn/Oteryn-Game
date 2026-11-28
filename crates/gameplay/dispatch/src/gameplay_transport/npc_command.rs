@@ -14,6 +14,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 
+use oteryn_gameplay_npc::npc_talk::asks_to_trade_for;
 use oteryn_protocol_oteryn::npc_service::{
     NpcConversation, NpcConversationState, NpcIntentDisposition, NpcTalkIntent, NpcTradeIntent,
     NpcTradeWindow, TALK_RANGE_TILES,
@@ -35,6 +36,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod bank_robbery;
 #[path = "benevola.rs"]
 mod benevola;
 mod cake;
@@ -65,6 +67,7 @@ mod premium_purchase;
 mod quest_dialogue;
 mod quest_shop;
 pub(super) mod reward_callbacks;
+pub use reward_callbacks::validate_quest_reward_offers;
 mod reward_facts;
 mod seasonal;
 mod service_context;
@@ -97,6 +100,9 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    robbery: Option<crate::durability::world_event::bank_robbery::RecognizedBag>,
+    #[cfg(test)]
+    interrupt_robbery_after_commit: Option<u64>,
     exchange: Option<coin_exchange::Pending>,
     benevola: Option<benevola::Pending>,
     yeo: Option<yeo::Pending>,
@@ -261,12 +267,20 @@ impl NpcConversations {
     }
 
     pub fn bank_reply(intent: &NpcTalkIntent, line: String) -> NpcTalkOutcome {
+        Self::reply_with_state(intent, line, NpcConversationState::Open)
+    }
+
+    pub(super) fn reply_with_state(
+        intent: &NpcTalkIntent,
+        line: String,
+        state: NpcConversationState,
+    ) -> NpcTalkOutcome {
         NpcTalkOutcome {
             unknown: false,
             inventory_changed: false,
             disposition: NpcIntentDisposition::Ok,
             conversation: Some(NpcConversation {
-                open: Some((intent.npc_actor, NpcConversationState::Open)),
+                open: Some((intent.npc_actor, state)),
                 lines: vec![line],
             }),
             window: None,
@@ -321,7 +335,7 @@ impl NpcConversations {
     }
 
     /// The closed window to send when the session was shown one for an NPC it no longer talks to.
-    fn close_window(
+    pub(super) fn close_window(
         &self,
         session: GameSessionId,
         talking_to: Option<[u8; 16]>,
@@ -336,6 +350,31 @@ impl NpcConversations {
                 state.window_offers.clear();
                 NpcTradeWindow::default()
             })
+    }
+
+    fn rate_refusal(
+        &self,
+        chat: &ChatRuntime,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Option<NpcTalkOutcome> {
+        let disposition = match self.sessions.lock() {
+            Ok(mut sessions) => {
+                let recent = &mut sessions.entry(session).or_default().recent;
+                if oteryn_gameplay_npc::npc_command::admit_talk(recent, now) {
+                    return None;
+                }
+                NpcIntentDisposition::RateLimited
+            }
+            Err(_) => NpcIntentDisposition::Rejected,
+        };
+        Some(NpcTalkOutcome {
+            window: self.close_window(
+                session,
+                chat.engaged(session).map(|npc| npc.placement_identity()),
+            ),
+            ..NpcTalkOutcome::only(disposition)
+        })
     }
 
     /// One talk intent of the admitted `actor`, under the runtime lock the caller holds. `items`
@@ -354,9 +393,31 @@ impl NpcConversations {
         now: SemanticTimeMicros,
         items: Option<&ItemDefinitionIndex>,
     ) -> NpcTalkOutcome {
+        if let Some(refusal) = self.rate_refusal(chat, session, now) {
+            return refusal;
+        }
+        self.talk_admitted(chat, runtime, actor, session, intent, items)
+    }
+
+    fn talk_admitted(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTalkIntent,
+        items: Option<&ItemDefinitionIndex>,
+    ) -> NpcTalkOutcome {
         let prior_focus = chat.engaged(session);
-        let mut outcome = self.converse(chat, runtime, actor, session, intent, now);
+        let mut outcome = self.converse(chat, runtime, actor, session, intent);
         let talking_to = chat.engaged(session);
+        if prior_focus.is_some()
+            && prior_focus != talking_to
+            && let Ok(mut sessions) = self.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+        {
+            state.quest_dialogue.restart_topic();
+        }
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity))
         .then(|| {
@@ -366,9 +427,7 @@ impl NpcConversations {
                 .then(|| mordecai_shop::Category::for_message(&npc.key, &intent.text))
                 .flatten();
             let text = ChatText::parse(&intent.text).ok()?;
-            if category.is_none()
-                && !oteryn_gameplay_npc::npc_talk::asks_to_trade_for(&npc.key, text.as_str())
-            {
+            if category.is_none() && !asks_to_trade_for(&npc.key, text.as_str()) {
                 return None;
             }
             if focused
@@ -587,16 +646,8 @@ impl NpcConversations {
         actor: ExactActorRef,
         session: GameSessionId,
         intent: &NpcTalkIntent,
-        now: SemanticTimeMicros,
     ) -> NpcTalkOutcome {
         use NpcIntentDisposition as Disposition;
-        let Ok(mut sessions) = self.sessions.lock() else {
-            return NpcTalkOutcome::only(Disposition::Rejected);
-        };
-        let recent = &mut sessions.entry(session).or_default().recent;
-        if !oteryn_gameplay_npc::npc_command::admit_talk(recent, now) {
-            return NpcTalkOutcome::only(Disposition::RateLimited);
-        }
 
         let (Some(book), Ok(text)) = (chat.npc_talk(), ChatText::parse(&intent.text)) else {
             return NpcTalkOutcome::only(Disposition::Rejected);
@@ -651,6 +702,9 @@ impl NpcConversations {
             }
             // Dialogue-backed Oressa does not need a generated-reply book entry.
             // Rate, exact generation, present actor and range were checked by this owner.
+            let Ok(mut sessions) = self.sessions.lock() else {
+                return NpcTalkOutcome::only(Disposition::Rejected);
+            };
             return super::vocation_choice::dawnport_choice_dialogue(
                 &mut sessions.entry(session).or_default().vocation,
                 chat,
@@ -700,10 +754,11 @@ impl NpcConversations {
             position: there,
             entry,
         }];
+        let female = chat.female_npc_speaker(session);
         let Some((reply, had, engaged)) = chat.converse(session, |engaged| {
             let prior = *engaged;
             let had = prior.is_some();
-            let reply = talk(at, &text, &npcs, engaged);
+            let reply = talk(at, &text, &npcs, engaged, female);
             if reply.is_none() {
                 // Only the NPC this command names was offered to the rule, so a command it does not
                 // answer must not end a conversation held with another NPC.
@@ -729,25 +784,28 @@ impl NpcConversations {
             disposition: Disposition::Ok,
             conversation: Some(NpcConversation {
                 open,
-                // Native conditional greetings may open focus without literal text.
-                // Empty lines are invalid on domain 7; an empty line list is valid.
-                lines: if reply.text.is_empty() {
-                    Vec::new()
-                } else {
-                    vec![reply.text]
-                },
+                lines: reply.into_lines().collect(),
             }),
             window: None,
         }
     }
 }
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ROBBERY_DIALOGUE_OBSERVED: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
+}
+
 /// Command 7 Bank integration: native retained command first, then the current NPC owner's
-/// conversation, and finally the native Bank writer. No talk text is persisted.
+/// conversation, and finally the native settlement owner.
 pub(super) async fn npc_bank_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: super::connection::UseCommand,
     intent: NpcTalkIntent,
+    received_at: SemanticTimeMicros,
 ) -> NpcTalkOutcome {
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
@@ -767,7 +825,19 @@ pub(super) async fn npc_bank_talk(
     if let Some(outcome) = hireling_services::resume(admission, command, &intent).await {
         return outcome;
     }
+    if let Some(outcome) = bank_robbery::replay(admission, actor, command, Some(&intent)).await {
+        return outcome;
+    }
     let session = command.game_session_id;
+    let conversations = &admission.states.npc_conversations;
+    // Reconciliation has precedence. Fresh talk spends its allowance at receipt time,
+    // before any advisory inventory or appearance read.
+    if let Some(refusal) = conversations.rate_refusal(&admission.states.chat, session, received_at)
+    {
+        conversations.cancel_bank(session);
+        bank_robbery::clear(admission, session);
+        return refusal;
+    }
     let yes = intent.text.trim_matches(' ').eq_ignore_ascii_case("yes");
     let unknown = || NpcTalkOutcome {
         unknown: true,
@@ -797,6 +867,8 @@ pub(super) async fn npc_bank_talk(
     };
     let source_appearance = catalogue::appearance(admission, actor, command, &intent).await;
     let source_inventory = catalogue::inventory(admission, actor, command, &intent).await;
+    let blank_scroll_available =
+        quest_shop::blank_scroll_available(admission, actor, command, &intent).await;
     let mut runtime = admission.runtime.lock().await;
     let points = admission
         .states
@@ -830,15 +902,14 @@ pub(super) async fn npc_bank_talk(
         .npc_conversations
         .refresh_quest_shop_context(
             session,
-            quest_shop::eligible_items(admission, session, native),
+            quest_shop::eligible_items(admission, session, native, blank_scroll_available),
         );
-    let ordinary = admission.states.npc_conversations.talk_in(
+    let ordinary = conversations.talk_admitted(
         &admission.states.chat,
         &runtime,
         actor,
         session,
         &intent,
-        admission.owner_now(),
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
     if ordinary.disposition != NpcIntentDisposition::Ok {
@@ -853,13 +924,60 @@ pub(super) async fn npc_bank_talk(
     {
         state.quest_dialogue.restart_topic();
     }
-    // A live route quote owns its confirmation before any quest adapter runs.
-    // The paid owner repeats this exact scope/expiry check before departure.
+    if let Some(context) = conversations
+        .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+        .filter(|context| bank_robbery::interested(&context.2))
+    {
+        drop(runtime);
+        let robbery = bank_robbery::talk(
+            admission,
+            command,
+            &intent,
+            context.clone(),
+            _trade_permit.as_ref(),
+            native,
+        )
+        .await;
+        #[cfg(test)]
+        if robbery.is_some()
+            && let Ok((observed, displaced)) = ROBBERY_DIALOGUE_OBSERVED.try_with(Clone::clone)
+        {
+            observed.notify_one();
+            displaced.notified().await;
+        }
+        runtime = admission.runtime.lock().await;
+        // The robbery lookup ran without the runtime lock. Qualify the reply
+        // again before publishing its Open state.
+        if conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            != Some(context)
+        {
+            bank_robbery::clear(admission, session);
+            if let Some(mut outcome) = robbery
+                && (outcome.unknown || outcome.inventory_changed)
+            {
+                if let Some(conversation) = outcome.conversation.as_mut() {
+                    conversation.open = None;
+                }
+                return outcome;
+            }
+            return rejected();
+        }
+        if let Some(outcome) = robbery {
+            return outcome;
+        }
+    } else {
+        bank_robbery::clear(admission, session);
+    }
+    // A live route quote owns its answer before any quest adapter runs.
+    // The paid owner repeats this exact scope and expiry check.
     if admission
         .states
         .npc_conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
-        .is_some_and(|context| admission.has_pending_paid_confirmation(command, &intent, &context))
+        .is_some_and(|context| {
+            admission.has_pending_paid_confirmation(command, &intent, &context, received_at)
+                || admission.has_pending_paid_decline(command, &intent, &context, received_at)
+        })
     {
         return ordinary;
     }
@@ -919,17 +1037,38 @@ pub(super) async fn npc_bank_talk(
     }
     // Eligible reward callbacks own their exact keyword before dedicated NPC
     // dialogue; ineligible stages remain with that dialogue's native owner.
-    let inventory = if reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime) {
-        let context = admission.states.npc_conversations.current_npc(
-            &admission.states.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-        );
+    let needs_inventory =
+        reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime);
+    let context =
+        conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent);
+    let alternate_opening = context
+        .as_ref()
+        .zip(admission.quest_catalogue.as_deref())
+        .and_then(|(context, catalogue)| {
+            reward_callbacks::alternate_opening(
+                catalogue,
+                &context.2,
+                &intent.text.trim().to_ascii_lowercase(),
+            )
+        });
+    let (inventory, skip_opening) = if needs_inventory || alternate_opening.is_some() {
         drop(runtime);
-        let Some(facts) = reward_facts::read(admission, command).await else {
-            return rejected();
+        let inventory = if needs_inventory {
+            let Some(facts) = reward_facts::read(admission, command).await else {
+                return rejected();
+            };
+            Some(facts)
+        } else {
+            None
+        };
+        // The Premium shortcuts and Crystal's confirmation sequences share
+        // their opening keywords. The chosen callback still proves its gate in the writer.
+        let skip_opening = if alternate_opening.is_some()
+            && reward_callbacks::prefer_source_start(admission, session).await
+        {
+            alternate_opening
+        } else {
+            None
         };
         runtime = admission.runtime.lock().await;
         if !runtime
@@ -953,9 +1092,9 @@ pub(super) async fn npc_bank_talk(
         {
             return rejected();
         }
-        Some(facts)
+        (inventory, skip_opening)
     } else {
-        None
+        (None, None)
     };
     if let Some(step) = reward_callbacks::prepare(
         admission,
@@ -964,7 +1103,7 @@ pub(super) async fn npc_bank_talk(
         &intent,
         &runtime,
         inventory.as_ref(),
-        reward_callbacks::Phase::Rewards,
+        reward_callbacks::Phase::Rewards { skip_opening },
     ) {
         drop(runtime);
         drop(_trade_permit);
@@ -1107,7 +1246,14 @@ pub(super) async fn npc_bank_talk(
         .current_bank(&admission.states.chat, &runtime, actor, session, &intent)
     else {
         admission.states.npc_conversations.cancel_bank(session);
-        if reward_callbacks::unhandled_confirmation(admission, actor, command, &intent, &runtime) {
+        if reward_callbacks::unhandled_confirmation(
+            admission,
+            actor,
+            command,
+            &intent,
+            &runtime,
+            received_at,
+        ) {
             return rejected();
         }
         return ordinary;
@@ -1178,6 +1324,7 @@ pub(super) async fn npc_bank_talk(
         {
             Ok(()) => {}
             Err(BankError::Unavailable(_)) => return unknown(),
+            Err(BankError::Suspended) => return reply(bank_robbery::clue(&npc_key).into()),
             Err(_) => return rejected(),
         }
         drop(runtime);
@@ -1197,6 +1344,9 @@ pub(super) async fn npc_bank_talk(
                     completion.recipient_name,
                 )
                 .await
+            }
+            Err(BankError::SuspendedConfirmation { npc_key, .. }) => {
+                reply(bank_robbery::clue(&npc_key).into())
             }
             _ => unknown(),
         };
@@ -1265,18 +1415,20 @@ pub(super) async fn npc_bank_talk(
     } else {
         admission
             .root
-            .preview_npc_bank(
+            .preview_named_npc_bank(
                 admission.character,
                 admission.holder,
                 fence,
                 coins.clone(),
                 recipient,
+                npc_key.clone(),
             )
             .await
     };
     let preview = match preview_result {
         Ok(preview) => preview,
         Err(BankError::Unavailable(_)) => return unknown(),
+        Err(BankError::Suspended) => return reply(bank_robbery::clue(&npc_key).into()),
         Err(_) => return rejected(),
     };
     runtime = admission.runtime.lock().await;
@@ -1388,6 +1540,38 @@ pub(super) async fn resume_bank_talk(
         }
         // An accepted original pending command cannot be abandoned or sequenced as a new
         // command because current ownership is temporarily unavailable or storage is unknown.
+        Err(crate::durability::bank::BankError::SuspendedConfirmation {
+            npc_key,
+            npc_identity,
+            npc_generation,
+        }) => {
+            let intent = NpcTalkIntent {
+                npc_actor: EntityRef {
+                    identity: npc_identity,
+                    generation: npc_generation,
+                },
+                text: String::new(),
+            };
+            let runtime = admission.runtime.lock().await;
+            let mut reply =
+                NpcConversations::bank_reply(&intent, bank_robbery::clue(&npc_key).into());
+            if !admission
+                .states
+                .npc_conversations
+                .current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                )
+                .is_some_and(|(_, _, key)| key == npc_key)
+                && let Some(conversation) = reply.conversation.as_mut()
+            {
+                conversation.open = None;
+            }
+            Some(reply)
+        }
         Err(_) => Some(held_bank_outcome()),
     }
 }

@@ -439,7 +439,7 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
         let mut conn = h.pool.acquire().await?;
         let mut tx = begin_projection(
             &mut conn,
-            Instant::now() + std::time::Duration::from_secs(2),
+            tokio::time::Instant::now() + std::time::Duration::from_secs(2),
         )
         .await?;
         assert_eq!(
@@ -466,7 +466,7 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
         assert_eq!(page(h, 1, None, 1, 0).await?.rows.len(), 2);
         let mut stale = begin_projection(
             &mut conn,
-            Instant::now() + std::time::Duration::from_secs(2),
+            tokio::time::Instant::now() + std::time::Duration::from_secs(2),
         )
         .await?;
         let winner = h

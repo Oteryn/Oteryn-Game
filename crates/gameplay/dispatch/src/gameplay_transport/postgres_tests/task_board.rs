@@ -29,11 +29,6 @@ use crate::gameplay_transport::kill_reward::DrainOutcome;
 use crate::gameplay_transport::{ComposedFreshAdmission, character_gameplay_fence};
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 
-#[path = "task_board/elite_case.rs"]
-mod elite_case;
-#[path = "task_board/scenarios.rs"]
-mod scenarios;
-use scenarios::*;
 #[path = "task_board/capacity_case.rs"]
 mod capacity_case;
 #[path = "task_board/cosmetic_cases.rs"]
@@ -42,13 +37,20 @@ mod cosmetic_cases;
 mod currency_case;
 #[path = "task_board/depot_case.rs"]
 mod depot_case;
+#[path = "task_board/elite_case.rs"]
+mod elite_case;
+#[path = "task_board/outfit_catalogues.rs"]
+mod outfit_catalogues;
 #[path = "task_board/progression_case.rs"]
 mod progression_case;
 #[path = "task_board/rollback_cases.rs"]
 mod rollback_cases;
+#[path = "task_board/scenarios.rs"]
+mod scenarios;
 #[path = "task_board/token_case.rs"]
 mod token_case;
 use rollback_cases::{RollbackFault, assert_unavailable};
+use scenarios::*;
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 2,
@@ -211,13 +213,33 @@ fn task_board_elite_real_dispatch_rarity_combat_xp_and_premium_dust() -> TestRes
 }
 
 fn scenario_with_mode(fault: Option<RollbackFault>, elite_case_enabled: bool) -> TestResult {
-    scenario_with_bootstrap(fault, elite_case_enabled, false, None)
+    scenario_with_bootstrap(fault, elite_case_enabled, BootstrapCase::Standard, None, false)
 }
 
 #[test]
 fn task_board_control_epoch_initializer_allows_live_query_postgres() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-control-epoch", || {
-        scenario_with_bootstrap(None, false, true, None)
+        scenario_with_bootstrap(None, false, BootstrapCase::ControlEpoch, None, false)
+    })
+}
+
+#[test]
+fn coutfit_task_board_production_cosmetics_purchase_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-production-cosmetics", || {
+        scenario_with_bootstrap(None, false, BootstrapCase::ProductionCosmetics, None, false)
+    })
+}
+
+#[test]
+fn task_board_production_mount_offers_purchase_and_unlock() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-mounts", || {
+        scenario_with_bootstrap(None, false, BootstrapCase::ProductionMounts, None, false)
     })
 }
 
@@ -231,7 +253,7 @@ enum BoardUpdateCase {
 fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-canonical-delivery", || {
-        scenario_with_bootstrap(None, false, false, Some(BoardUpdateCase::CanonicalDelivery))
+        scenario_with_bootstrap(None, false, BootstrapCase::Standard, Some(BoardUpdateCase::CanonicalDelivery), false)
     })
 }
 
@@ -239,16 +261,46 @@ fn task_board_canonical_delivery_uses_active_catalogue_in_dispatch() -> TestResu
 fn task_board_daily_bounty_claim_is_fenced_replayable_and_once_per_reset_in_dispatch() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-daily-bounty", || {
-        scenario_with_bootstrap(None, false, false, Some(BoardUpdateCase::DailyBounty))
+        scenario_with_bootstrap(None, false, BootstrapCase::Standard, Some(BoardUpdateCase::DailyBounty), false)
     })
+}
+
+#[test]
+fn task_board_stock_falconer_and_feral_trapper_outfits_debit_and_unlock() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-stock-outfits", || {
+        scenario_with_bootstrap(None, false, BootstrapCase::Standard, None, true)
+    })
+}
+
+#[test]
+fn task_board_postgres_stock_cosmetic_achievement_awards() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("task-board-cosmetic-awards", || {
+        scenario_with_bootstrap(None, false, BootstrapCase::StockCosmeticAwards, None, false)
+    })
+}
+
+#[derive(PartialEq, Eq)]
+enum BootstrapCase {
+    Standard,
+    ControlEpoch,
+    ProductionCosmetics,
+    ProductionMounts,
+    StockCosmeticAwards,
 }
 
 #[allow(clippy::too_many_lines)]
 fn scenario_with_bootstrap(
     fault: Option<RollbackFault>,
     elite_case_enabled: bool,
-    control_epoch_case: bool,
+    case: BootstrapCase,
     update_case: Option<BoardUpdateCase>,
+    stock_outfits: bool,
 ) -> TestResult {
     run(async move |admin| {
         let tag = match update_case {
@@ -267,14 +319,18 @@ fn scenario_with_bootstrap(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let cosmetics = cosmetic_cases::cosmetics_packet()?;
+        let cosmetics = (!stock_outfits
+            && !matches!(case, BootstrapCase::StockCosmeticAwards
+                | BootstrapCase::ProductionCosmetics | BootstrapCase::ProductionMounts))
+            .then(cosmetic_cases::cosmetics_packet)
+            .transpose()?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::cosmetics_fixture::activated_with_optional_cosmetics(
                 world,
                 Some(include_bytes!(
                     "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
-                Some(&cosmetics),
+                cosmetics.as_deref(),
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
@@ -495,7 +551,7 @@ fn scenario_with_bootstrap(
         admitted.item_fence = Some(current.item_fence());
         admitted.first_entry = FirstEntryOutcome::Positioned;
 
-        if control_epoch_case {
+        if case == BootstrapCase::ControlEpoch {
             // Execute the same Control initializer as login_local, against its
             // recorded activation. Runtime queries still cannot invent a calendar.
             let sql =
@@ -609,12 +665,34 @@ fn scenario_with_bootstrap(
             return Ok(());
         }
 
-        let command_id = admitted.continuity.next_command_id;
-        let (status, payload) = super::guild_wire_fixtures::exchange_with_holder_pressure(
-            &owner, &mut admitted, command_id, wire::COMMAND_TYPE_TASK_BOARD, &request(0, 0), true,
-        ).await?;
-        assert_eq!(status, CommandStatus::Accepted);
-        let legacy = wire::decode_task_board_reply(&payload).map_err(debug)?;
+        if case == BootstrapCase::ProductionCosmetics {
+            let result = cosmetic_cases::production_case(&owner, &harness, &mut admitted).await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
+
+        if case == BootstrapCase::ProductionMounts {
+            progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+            assert_eq!(full_board(&owner, &mut admitted, 5, 0, "").await?.refusal, 0);
+            cosmetic_cases::production_mounts(&owner, &harness, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        if case == BootstrapCase::StockCosmeticAwards {
+            cosmetic_cases::stock_achievement_case(&owner, &harness, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+
+        let legacy = board(&owner, &mut admitted, 0, 0).await?;
         assert!(!legacy.refused);
         assert!(
             legacy.tasks.is_empty(),
@@ -832,6 +910,15 @@ fn scenario_with_bootstrap(
             .find(|task| !task.race.is_empty())
             .expect("generated kill")
             .clone();
+        use super::achievement_granters::{assert_progress, seed_progress};
+        const VERMINBANE: &str = "oteryn:achievement/verminbane";
+        const ERRAND_RUNNER: &str = "oteryn:achievement/errand_runner";
+        const WORKHORSE: &str = "oteryn:achievement/workhorse";
+        const PEST_CONTROL: &str = "oteryn:achievement/pest_control";
+        const SOURCE: &str = "oteryn:task-board";
+        for (key, progress) in [(VERMINBANE, 99), (ERRAND_RUNNER, 98), (WORKHORSE, 498), (PEST_CONTROL, 9_999)] {
+            seed_progress(&harness, key, progress).await?;
+        }
         let before_completion = experience(&harness).await?;
         for count in task.current..task.required {
             let fence = owner
@@ -870,6 +957,9 @@ fn scenario_with_bootstrap(
             completed.points, 0,
             "weekly points settle at the owner period boundary"
         );
+        assert_progress(&harness, VERMINBANE, 100, true, SOURCE).await?;
+        assert_progress(&harness, ERRAND_RUNNER, 99, false, SOURCE).await?;
+        assert_progress(&harness, WORKHORSE, 499, false, SOURCE).await?;
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: real_kill_credit_and_completion_xp");
 
         progression_case::fixture_vocation(
@@ -923,6 +1013,7 @@ fn scenario_with_bootstrap(
                 .state,
             3
         );
+        let bounty_grant = assert_progress(&harness, PEST_CONTROL, 10_000, true, SOURCE).await?;
         let before_claim = experience(&harness).await?;
         let claim_id = admitted.continuity.next_command_id;
         let claimed = full_board(&owner, &mut admitted, 9, 0, "").await?;
@@ -949,6 +1040,7 @@ fn scenario_with_bootstrap(
             full_board(&owner, &mut admitted, 9, 0, "").await?.refusal,
             2
         );
+        assert_eq!(assert_progress(&harness, PEST_CONTROL, 10_000, true, SOURCE).await?, bounty_grant);
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: bounty_select_complete_claim_once");
 
         if fault == Some(RollbackFault::TokenLedger) {
@@ -1015,6 +1107,9 @@ fn scenario_with_bootstrap(
             harness.cleanup().await?;
             return Ok(());
         }
+        assert_progress(&harness, ERRAND_RUNNER, 100, true, SOURCE).await?;
+        assert_progress(&harness, WORKHORSE, 500, true, SOURCE).await?;
+        assert_progress(&harness, VERMINBANE, 100, true, SOURCE).await?;
         let accrued = full_board(&owner, &mut admitted, 4, 0, "").await?;
         assert!(accrued.weekly.pending_points > 0 && accrued.weekly.pending_soulseals > 0);
         let refused_start_id = admitted.continuity.next_command_id;
@@ -1054,7 +1149,12 @@ fn scenario_with_bootstrap(
             return Ok(());
         }
         let cosmetic_fault = fault == Some(RollbackFault::CosmeticGrant);
-        cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        if stock_outfits {
+            let previous_balance = 340_000 - i64::try_from(accrued.weekly.pending_points)?;
+            fixture_track(&harness, task_board::POINTS, previous_balance).await?;
+        } else {
+            cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        }
         if cosmetic_fault {
             drop(owner);
             drop(authority);
@@ -1075,6 +1175,17 @@ fn scenario_with_bootstrap(
             reset.soulseals,
             before_reset.soulseals + before_reset.weekly.pending_soulseals
         );
+        if stock_outfits {
+            assert!(before_reset.weekly.pending_points > 0);
+            assert_eq!(reset.points, 340_000, "the settled week funds the final purchase");
+            cosmetic_cases::stock_outfit_purchases(&owner, &harness, &mut admitted, reset.points)
+                .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         let settled_points = reset.points;
         let again = full_board(&owner, &mut admitted, 4, 0, "").await?;
         assert_eq!(
@@ -1219,6 +1330,7 @@ fn scenario_with_bootstrap(
         currency_case::currency_boundaries(&owner, &harness, &mut admitted).await?;
         token_case::bigint_boundary(&owner, &harness, &mut admitted).await?;
         progression_case::pending_experience_case(&owner, &harness, &admitted).await?;
+        progression_case::higher_tier_achievement_cases(&owner, &harness, &admitted).await?;
         drop(owner);
         drop(authority);
         drop(seal);

@@ -52,6 +52,10 @@
       "status": "HELD",
       "evidence": [
         {
+          "path": "content/encounters/mini-world-changes/index.json",
+          "locator": "bank_robbery"
+        },
+        {
           "path": "content/quests/definitions/quests-00200-00299.json",
           "locator": "oteryn:quest.authored.bank_robbery_mini_world_change"
         },
@@ -82,9 +86,9 @@
           "url": "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154"
         }
       ],
-      "reason": "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1.",
+      "reason": "The native World occurrence, spawn, loot and save lifecycle are bound. Banker suspension, announcements and recovery are pending.",
       "missing_facts": [
-        "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1."
+        "Banker suspension, announcements and fenced bag recovery are pending."
       ]
     },
     {

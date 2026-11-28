@@ -77,7 +77,15 @@ where
     let frame = oteryn_session::read_frame(stream).await.ok()?;
     let envelope = decode_wire_envelope(&frame).ok()?;
     let offered = envelope.client_bootstrap().ok()?.supported_capabilities;
-    for capability in [7, 92, 134, 615, 616, 617] {
+    for capability in [
+        7,
+        92,
+        134,
+        615,
+        616,
+        617,
+        oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+    ] {
         assert!(
             offered.contains(&capability),
             "missing native capability {capability}"

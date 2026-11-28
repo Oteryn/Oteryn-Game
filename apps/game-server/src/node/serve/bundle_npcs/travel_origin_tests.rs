@@ -128,7 +128,7 @@ fn check_reference_travel_origins() -> Result<(), Box<dyn std::error::Error>> {
     )
     .map_err(|error| error.to_string())?;
     let mut runtime = channel_runtime_with(bundle.npcs.written);
-    place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
+    place(&mut runtime, boot.as_ref(), None).map_err(|error| error.to_string())?;
     let actors = runtime.visible_entities();
     let absent: Vec<_> = origins
         .iter()

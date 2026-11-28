@@ -191,7 +191,7 @@ def test_closed_weapon_metadata_admission():
     print("ok test_closed_weapon_metadata_admission")
 
 
-def test_document_roundtrip_negatives(declarations, sources):
+def assert_document_roundtrip_negatives(declarations, sources):
     import validate_world_project_v2_to_tree as validator
 
     docs = [row for row in declarations["records"] if row.get("kind") == "Document"]
@@ -392,6 +392,13 @@ def test_package_tree_contract():
             40603,
             48227,
             49362,
+            8748,
+            39934,
+            39935,
+            39936,
+            39937,
+            39938,
+            39939,
         )
     ], "only the exact source-qualified reference extensions are admitted"
     # Replaying an extension with a changed semantic fact must refuse, not normalize it.
@@ -425,6 +432,19 @@ def test_package_tree_contract():
             ), error
         else:
             raise AssertionError("changed Cradle reference accepted")
+    tampered = copy.deepcopy(reference)
+    tampered["records"].extend(copy.deepcopy(expected_items[len(legacy_items) :]))
+    next(
+        row
+        for row in tampered["records"]
+        if row["identity"]["key"] == "oteryn:item.tibia.i39934"
+    )["materializable"] = True
+    try:
+        source_qualified_item_references(tampered, ROOT)
+    except ValueError as error:
+        assert str(error) == "CRYSTAL_ORDINARY_DOOR_REFERENCE_CHANGED:oteryn:item.tibia.i39934"
+    else:
+        raise AssertionError("changed Crystal door reference accepted")
     # Match the materializer's source-proven, exact Primal empty-loot admission.
     # Its witness rejects changed identities and every nonempty or unrelated Loot.
     from primal_reference_overlay import apply_reference
@@ -443,7 +463,7 @@ def test_package_tree_contract():
         family: sum(row["identity"]["family"] == family for row in reference["records"])
         for family in creature_families
     }
-    assert family_counts['Creature'] == 1_865
+    assert family_counts['Creature'] == 1_893
     # One Crystal 201189f8 star-herb handler extends the frozen129 conversion cohort.
     # The alternate tainted-antler key was a duplicate of the same whole-stack transform.
     conversion_keys = {
@@ -461,8 +481,8 @@ def test_package_tree_contract():
             (ROOT / "content/encounters/raids/index.json").read_text()
         )["record_count"],
         "NPC": 1282,
-        "Dialogue": 836,
-        "Service.Trade": 324,
+        "Dialogue": 852,
+        "Service.Trade": 325,
         "Service.Travel": 57,
         "Service.Bank": 2,
         "Service.Promotion": 7,
@@ -475,7 +495,7 @@ def test_package_tree_contract():
         "item_conversion": 130,
         **{family: value["records"] for family, value in quest_families.items()},
     }
-    assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_865, "Encounter": 108, "NPC": 2747}
+    assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1_909, "Encounter": 108, "NPC": 2747}
     assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
     paths = [row["path"] for row in manifest["managed_files"]]
@@ -512,11 +532,11 @@ def test_package_tree_contract():
         "index": "content/npcs/definitions/index.json",
     }
     assert manifest["families"]["Dialogue"] == {
-        "records": 836,
+        "records": 852,
         "index": "content/dialogues/definitions/index.json",
     }
     assert manifest["families"]["Service.Trade"] == {
-        "records": 324,
+        "records": 325,
         "index": "content/services/trade/index.json",
     }
     assert manifest["families"]["Service.Travel"] == {
@@ -611,7 +631,7 @@ def test_package_tree_contract():
 
 
 def test_document_contract():
-    test_document_roundtrip_negatives(
+    assert_document_roundtrip_negatives(
         json.loads((ROOT / "content/world/definitions/declarations.json").read_text()),
         json.loads((ROOT / "content/world/provenance/sources.json").read_text()),
     )

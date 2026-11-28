@@ -19,7 +19,8 @@ fn quest_world_callbacks_qcb3_real_dispatch_actions() -> TestResult {
                     floor: -6,
                 },
                 false,
-            )?;
+            )
+            .map_err(|error| format!("{name}: {error}"))?;
         }
         Ok(())
     })

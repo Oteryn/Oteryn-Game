@@ -40,6 +40,32 @@ fn forge_creature_postgres_real_dispatch_foreign_contributor_gets_full_dust() ->
 }
 
 #[test]
+fn fiendish_slivers_postgres_survive_reduced_loot() -> TestResult {
+    party_xp::run(Case::ForgeReducedLoot)
+}
+
+#[test]
+fn fiendish_slivers_postgres_are_awarded_once_during_double_loot() -> TestResult {
+    party_xp::run(Case::ForgeDoubleLoot)
+}
+
+#[test]
+fn fiendish_sliver_postgres_keeps_one_cause_when_duplex_expires_before_task_board_retry() -> TestResult {
+    party_xp::run(Case::ForgeDuplexRetry)
+}
+
+#[test]
+fn fiendish_slivers_postgres_survive_boosted_rat_at_exhausted_stamina() -> TestResult {
+    party_xp::run(Case::ForgeBoostedExhausted)
+}
+
+#[test]
+fn fiendish_slivers_postgres_survive_boosted_rat_at_exhausted_stamina_during_double_loot()
+-> TestResult {
+    party_xp::run(Case::ForgeBoostedExhaustedDoubleLoot)
+}
+
+#[test]
 fn elite_dust_real_party_shared_off_excludes_non_damaging_member() -> TestResult {
     party_xp::run(Case::EliteNoShared)
 }

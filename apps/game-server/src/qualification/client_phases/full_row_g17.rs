@@ -1,5 +1,5 @@
 //! G17 returner reward query and claim (capability 182, commands 6124 and 6125).
-//! 1. Admit the node-boot character; query the returner state (6124).
+//! 1. Admit and log out a dedicated character, then age its terminal history in the disposable database.
 //! 2. With no entitlement (state 0) a claim for an unknown identity must be refused and leave
 //!    the inventory and the state unchanged; the row then fails naming the precondition,
 //!    because an entitlement needs twelve months of inactivity evidence no player route makes.
@@ -7,13 +7,14 @@
 //!    that identity, the same session then reads state 2, a second claim is disposition 2, and
 //!    the durable claim receipt joined to its minted item instance must exist (read-only SQL).
 //!    The reward is delivered to the reward inbox, not the backpack, so the inventory is not the
-//!    evidence. After logout and a fresh admission the receipt must still exist and the
-//!    entitlement must not be offered again (state 2 is tied to the source session).
+//!    evidence. After logout and a fresh admission, require state 0 and the same exact
+//!    reward item instance in the recipient’s inbox (state 2 is tied to the source session).
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::daily_reward::{self as daily, returner};
+use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -77,10 +78,9 @@ async fn accepted(
 }
 
 async fn finish(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, _, _) = logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
     }
     Ok(())
 }
@@ -105,33 +105,62 @@ fn claim_reply_matches(payload: &[u8], disposition: u8, id: Option<[u8; 16]>) ->
     payload == expected.as_slice()
 }
 
-/// Whether the durable claim receipt for `offer` joins a minted item instance (read-only).
-async fn receipt_exists(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<bool> {
+struct ClaimedReward {
+    offer: [u8; 16],
+    item_instance: String,
+}
+
+/// Read the unique claim and verify the exact item and its recipient's inbox location.
+async fn claimed_item(clients: &SeamClients<'_>, offer: &[u8; 16]) -> TestResult<Option<String>> {
     use sqlx::Connection;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let count: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_returner_reward_claims c \
-         JOIN game_item_instances i ON i.item_instance_id = c.item_instance_id \
+    let claim: Option<(String, bool)> = sqlx::query_as(
+        "SELECT c.item_instance_id::text,
+                EXISTS (
+                    SELECT 1 FROM game_item_instances i
+                    JOIN game_item_character_inbox_locations l USING (item_instance_id, world_id)
+                    WHERE i.item_instance_id = c.item_instance_id
+                      AND i.minted_transaction_id = c.offer_id
+                      AND i.definition_family = 'Item'
+                      AND i.definition_production_key = 'oteryn:item.tibia.i266'
+                      AND i.definition_revision_ref = 'definition-r1'
+                      AND i.quantity = 1
+                      AND l.character_id = e.character_id
+                      AND l.world_id = e.world_id
+                )
+         FROM game_returner_reward_claims c
+         JOIN game_returner_reward_entitlements e USING (offer_id)
          WHERE c.offer_id = encode($1, 'hex')::uuid",
     )
     .bind(offer.as_slice())
-    .fetch_one(&mut database)
+    .fetch_optional(&mut database)
     .await?;
     database.close().await?;
-    Ok(count == 1)
+    match claim {
+        None => Ok(None),
+        Some((id, true)) => Ok(Some(id)),
+        Some((_, false)) => Err("step=claim observed=wrong-inbox-reward".into()),
+    }
 }
 
-async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
+async fn body(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<ClaimedReward> {
     let initial = state(client).await?;
     let inventory = client.inventory().cloned();
     match (initial.state, initial.id) {
         (1, Some(id)) => {
-            let (status, _) = send(client, CAPABILITY, returner::CLAIM, &BOGUS).await?;
+            if claimed_item(clients, &id).await?.is_some() {
+                return Err("step=pre-claim observed=existing-claim".into());
+            }
+            let (status, reply) = send(client, CAPABILITY, returner::CLAIM, &BOGUS).await?;
             let still_available = state(client).await?;
             if status != CommandStatus::Rejected
+                || !claim_reply_matches(&reply, 3, None)
                 || still_available.state != 1
                 || still_available.id != Some(id)
-                || receipt_exists(clients, &id).await?
+                || claimed_item(clients, &id).await?.is_some()
                 || client.inventory().cloned() != inventory
             {
                 return Err("step=bogus-claim observed=entitlement-or-inventory-changed".into());
@@ -148,23 +177,31 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
                 return Err(format!("step=claim observed=reply:{reply:?}").into());
             }
             let after = state(client).await?;
-            if after.state != 2 {
+            if after.state != 2 || after.id != Some(id) {
                 return Err(format!("step=claim observed=state:{}", after.state).into());
             }
+            let item_instance = claimed_item(clients, &id)
+                .await?
+                .ok_or("step=claim observed=no-claim-receipt-with-item")?;
             let replay = accepted(client, CAPABILITY, returner::CLAIM, &id).await?;
             if !claim_reply_matches(&replay, 2, None) {
                 return Err(format!("step=claim-replay observed=reply:{replay:?}").into());
             }
-            if !receipt_exists(clients, &id).await? {
-                return Err("step=claim observed=no-claim-receipt-with-item".into());
+            if claimed_item(clients, &id).await?.as_ref() != Some(&item_instance) {
+                return Err("step=claim-replay observed=inbox-reward-changed".into());
             }
-            Ok(id)
+            Ok(ClaimedReward {
+                offer: id,
+                item_instance,
+            })
         }
         (0, _) => {
-            let (status, _) = send(client, CAPABILITY, returner::CLAIM, &BOGUS).await?;
+            let (status, reply) = send(client, CAPABILITY, returner::CLAIM, &BOGUS).await?;
             let after = state(client).await?;
-            if status == CommandStatus::Accepted
+            if status != CommandStatus::Rejected
+                || !claim_reply_matches(&reply, 3, None)
                 || after.state != 0
+                || after.id.is_some()
                 || client.inventory().cloned() != inventory
             {
                 return Err(format!(
@@ -185,21 +222,26 @@ async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestR
 async fn verify(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
-    data: &[u8; 16],
+    data: &ClaimedReward,
 ) -> TestResult {
     let after = state(client).await?;
-    if after.state == 1 {
-        return Err("step=relog observed=claimed-entitlement-offered-again".into());
+    if after.state != 0 || after.id.is_some() {
+        return Err("step=relog observed=unexpected-returner-state".into());
     }
-    if !receipt_exists(clients, data).await? {
-        return Err("step=relog observed=no-claim-receipt-with-item".into());
+    if claimed_item(clients, &data.offer).await?.as_ref() != Some(&data.item_instance) {
+        return Err("step=relog observed=inbox-reward-changed".into());
     }
     Ok(())
 }
 
 /// Age the dedicated character's real terminal predecessor, keeping admission and end
-/// evidence from the normal session owner. This transaction changes timestamps only.
-async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResult {
+/// evidence from the normal session owner. The next admission follows this session even
+/// if this session itself has a training predecessor from a previous qualification run.
+async fn seed_history(
+    clients: &SeamClients<'_>,
+    session: &[u8; 16],
+    pending: Option<[u8; 16]>,
+) -> TestResult {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let mut tx = sqlx::Connection::begin(&mut database).await?;
     sqlx::raw_sql(
@@ -210,6 +252,35 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
     )
     .execute(&mut *tx)
     .await?;
+    if let Some(offer) = pending {
+        // A retained offer can belong to an earlier session. Reset it so the claim
+        // session creates its own offer and can still prove the state-2 transition.
+        sqlx::query(
+            "ALTER TABLE game_returner_reward_entitlements DISABLE TRIGGER returner_entitlement_immutable",
+        )
+        .execute(&mut *tx)
+        .await?;
+        let removed = sqlx::query(
+            "DELETE FROM game_returner_reward_entitlements e
+             WHERE e.offer_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid
+               AND e.world_id=encode($3,'hex')::uuid AND e.account_id=$4::text::uuid
+               AND NOT EXISTS (SELECT 1 FROM game_returner_reward_claims c WHERE c.offer_id=e.offer_id)",
+        )
+        .bind(offer.as_slice())
+        .bind(clients.characters[0].as_slice())
+        .bind(clients.world.as_slice())
+        .bind(&clients.accounts[0])
+        .execute(&mut *tx)
+        .await?;
+        if removed.rows_affected() != 1 {
+            return Err("G17 expected one unclaimed fixture entitlement to reset".into());
+        }
+        sqlx::query(
+            "ALTER TABLE game_returner_reward_entitlements ENABLE TRIGGER returner_entitlement_immutable",
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
     let updated = sqlx::query(
         "WITH predecessor AS (
             UPDATE game_durability_reconnect_sessions
@@ -217,7 +288,7 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
                 extract(epoch FROM (clock_timestamp() - interval '13 months 1 day'))::bigint*1000000
             WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid
               AND world_id=encode($3,'hex')::uuid AND account_id=$4::text::uuid
-              AND session_state=3 AND training_predecessor_session IS NULL
+              AND session_state=3
             RETURNING game_session_id,character_id,training_created_at_us
          )
          UPDATE game_character_session_ends e
@@ -243,17 +314,28 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
     Ok(())
 }
 
+pub(crate) fn setup_pending(initial: returner::Reply) -> TestResult<Option<[u8; 16]>> {
+    match (initial.state, initial.id) {
+        (0, None) => Ok(None),
+        (1, Some(id)) => Ok(Some(id)),
+        _ => Err("G17 setup expected no entitlement or an unclaimed entitlement".into()),
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G17_ACCOUNT").await?;
-    let clients = &dedicated.clients(clients);
+    let accounts = [required("NODE_BOOT_G17_ACCOUNT")?];
+    let characters = [full_row_g01::fixture_character(clients, &accounts[0]).await?];
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let mut predecessor = connect_character(clients, 0x7c, 0).await?;
     let previous = *predecessor.join_snapshot().game_session_id.as_bytes();
-    if state(&mut predecessor).await?.state != 0 {
-        return Err("G17 unused account already reads a returner entitlement".into());
-    }
+    let pending = setup_pending(state(&mut predecessor).await?)?;
     finish(&mut predecessor).await?;
     drop(predecessor);
-    seed_history(clients, &previous).await?;
+    seed_history(clients, &previous, pending).await?;
     let mut client = connect_character(clients, 0x7c, 0).await?;
     let outcome = verdict::observe(body(&mut client, clients)).await;
     let closed = verdict::observe(finish(&mut client)).await;
@@ -287,6 +369,7 @@ mod tests {
         assert!(claim_reply_matches(&claimed, 1, Some(BOGUS)));
         assert!(!claim_reply_matches(&claimed, 2, None));
         assert!(claim_reply_matches(&[0x08, 2], 2, None));
+        assert!(claim_reply_matches(&[0x08, 3], 3, None));
         assert!(!claim_reply_matches(&[0x08, 3], 1, Some(BOGUS)));
     }
 

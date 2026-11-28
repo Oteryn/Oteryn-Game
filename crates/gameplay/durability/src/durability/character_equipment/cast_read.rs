@@ -16,6 +16,28 @@ impl CastEquipmentReader {
         read_raw_cast_facts_in_transaction(tx, &self.authority).await
     }
 
+    /// Read the projectile owner in this cast transaction when the held
+    /// weapon uses ammunition. Container identities come from the locked read.
+    pub async fn read_facts_with_quiver<C: super::super::item_loop_move::ItemLoopContent>(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        content: &C,
+        needs_ammunition: impl FnOnce(&EquipmentSnapshot) -> bool,
+    ) -> Result<(RawCastDurableFacts, Vec<EquippedItem>)> {
+        let facts = self.read_facts(tx).await?;
+        if facts.equipment.content_digest != content.loop_content_digest() {
+            return Err(rejected("cast quiver content"));
+        }
+        let ammunition = if needs_ammunition(&facts.equipment) {
+            read_quiver_entries(tx, &self.authority.world, &facts.equipment, content)
+                .await
+                .map_err(EquipmentError::from)?
+        } else {
+            Vec::new()
+        };
+        Ok((facts, ammunition))
+    }
+
     pub async fn read_wheel(
         &self,
         tx: &mut Transaction<'_, Postgres>,

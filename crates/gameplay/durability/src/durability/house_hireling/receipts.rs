@@ -98,7 +98,7 @@ impl super::super::DurabilityRoot {
         digest: [u8; 32],
     ) -> Result<HirelingReceiptRead, DurabilityError> {
         use super::super::character_authority::assert_recovery_fence;
-        use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+        use super::super::db::{begin_semantic_transaction, commit_semantic_read};
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -108,7 +108,7 @@ impl super::super::DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let result = read_state(&mut tx, &current, command, &digest).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

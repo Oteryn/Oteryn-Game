@@ -1,4 +1,5 @@
 //! Read-only advisory view over the exact Forge custody/rule readers; no reservation or rolls.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::domain::{currency::Coin, item_definition::ItemDefinitionFacts};
 use oteryn_gameplay_content::content::{ReferenceItemField, item_ref::ItemDefinitionIndex};
@@ -134,7 +135,7 @@ impl DurabilityRoot {
                     let (cost,success_percent,target_tier)=quote.preview();
                     Some(ForgePreviewQuote {cost:Cost {gold:cost.gold,dust:cost.dust,cores:cost.cores},target_tier,success_percent,protection_percent:if matches!(selection.operation,ForgeOperation::Fusion {protect:true,..}){oteryn_gameplay_items::forge::FORGE_PROTECTION_PERCENT}else{0}})
                 });
-                commit_semantic_transaction(tx,deadline).await?;
+                commit_semantic_read(tx,deadline).await?;
                 Ok(Ok(ForgePreviewSnapshot {items,resources,quote}))
             })
         }).await?

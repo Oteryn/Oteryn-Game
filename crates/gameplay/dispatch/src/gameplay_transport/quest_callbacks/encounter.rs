@@ -21,6 +21,7 @@ pub(super) struct StagedSourceBoss<'owner> {
     native: StagedQuestEncounter<'owner, PreparedPhase>,
     players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
+    visit: Option<EncounterVisit>,
 }
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -150,6 +151,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &BundleMap,
         lever: crate::map::facts::SourceBossLeverProjection,
     ) {
+        self.publish_staged_encounter(staged, states, map, lever, None);
+    }
+
+    fn publish_staged_encounter(
+        &self,
+        staged: StagedSourceBoss<'_>,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        lever: crate::map::facts::SourceBossLeverProjection,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
+    ) {
         let (runtime, (snapshots, prepared)) = staged.native.publish();
         if let (Some(capture), Some(roster)) = (staged.capture, prepared.roster) {
             capture
@@ -166,8 +178,123 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .push(phase);
         }
+        if let Some(mut visit) = staged.visit {
+            visit.creatures.clone_from(&prepared.actors);
+            self.states
+                .quest_callbacks
+                .encounters
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(visit);
+        }
+        if let Some(reservation) = reservation {
+            reservation.publish_staged(runtime, prepared.actors);
+        }
         lever.publish();
         self.project_encounter_movements(runtime, states, map, staged.players, snapshots);
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the spawn retains the exact world and Character proofs"
+    )]
+    pub(super) async fn deliver_coffin(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        cause: QuestCause,
+        permit: &SpellLanePermit,
+        fence: Option<CurrentCharacterGameplayFence>,
+        reservation: Option<&mut personal_encounter::Reservation<'_>>,
+        kind: VampireCoffinKind,
+    ) -> UseDisposition {
+        let (Some(fence), QuestCause::Use(command), Some(reservation)) =
+            (fence, cause, reservation)
+        else {
+            return UseDisposition::Rejected;
+        };
+        let content = runtime.content_pin().server_artifact_digest();
+        let Some(coffin) = map.facts.reserve_source_boss_lever(key, expected, after) else {
+            return UseDisposition::Rejected;
+        };
+        let mut staged = None;
+        let disposition = self.quest_encounter(
+            runtime,
+            states,
+            actor,
+            session,
+            map,
+            callback,
+            key,
+            expected,
+            after,
+            false,
+            cause,
+            Some(reservation),
+            None,
+            Some(&mut staged),
+        );
+        let Some(mut staged) = staged else {
+            return disposition;
+        };
+        let [count] = staged.native.prepared().actors.as_slice() else {
+            return UseDisposition::Rejected;
+        };
+        let count = *count;
+        // Once this ID is sent to PostgreSQL, an uncertain commit must never
+        // let a different creature inherit it from the original carrier.
+        if staged.native.retain_spawn_generation(count).is_err() {
+            return UseDisposition::Rejected;
+        }
+        let native = &mut staged.native;
+        let delivery = self
+            .root
+            .deliver_vampire_coffin(
+                self.character,
+                self.holder,
+                permit,
+                fence.item_fence(),
+                command,
+                content,
+                kind,
+                count,
+                move |previous| native.retains_creature(previous),
+            )
+            .await;
+        #[cfg(test)]
+        let delivery = if matches!(delivery, Ok(true))
+            && self
+                .states
+                .quest_callbacks
+                .lose_coffin_delivery_ack
+                .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            Err(crate::durability::DurabilityError::CommitOutcomeUnknown)
+        } else {
+            delivery
+        };
+        if matches!(delivery, Ok(true)) {
+            self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
+            UseDisposition::Committed
+        } else {
+            // The payment is durable. A fresh use may recover it after an
+            // abandoned delivery, including when its identity write committed.
+            if matches!(
+                delivery,
+                Ok(false) | Err(crate::durability::DurabilityError::CommitOutcomeUnknown)
+            ) && let Ok(mut pending) = self.states.quest_callbacks.records.lock()
+            {
+                pending.remove(&session);
+            }
+            UseDisposition::Rejected
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -224,7 +351,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
-        if staged_source_boss.is_some() && (encounter.phase.is_none() || encounter.timing.is_some())
+        if staged_source_boss.is_some()
+            && (encounter.timing.is_some()
+                || (encounter.phase.is_none()
+                    && VampireCoffinKind::for_callback(&callback.key).is_none()))
         {
             return UseDisposition::Rejected;
         }
@@ -536,6 +666,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 native,
                 players,
                 capture,
+                visit: visits.as_ref().map(|_| EncounterVisit {
+                    room: encounter.clone(),
+                    participants: party,
+                    creatures: Vec::new(),
+                }),
             });
             return UseDisposition::Committed;
         }

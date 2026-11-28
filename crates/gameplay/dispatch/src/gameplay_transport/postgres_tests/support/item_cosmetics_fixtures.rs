@@ -88,6 +88,7 @@ pub(super) fn scenario(
             "oteryn:item.tibia.i16252"
         }
         Some(positive::Case::ProductionMount) => "oteryn:item.tibia.i23538",
+        Some(positive::Case::Pegasus) => "oteryn:item.tibia.i48424",
         _ if afflicted => "oteryn:item.tibia.i12551",
         _ => "oteryn:item.tibia.i6579",
     };
@@ -116,6 +117,7 @@ pub(super) fn scenario(
                     | positive::Case::ProductionParts
                     | positive::Case::ProductionOtOnly
                     | positive::Case::ProductionMount
+                    | positive::Case::Pegasus
             )
         );
         let cosmetic_packet = if ot_only.is_some() {
@@ -189,7 +191,7 @@ pub(super) fn scenario(
                 "this case deliberately has no acquisition admission"
             );
         }
-        if !matches!(case, Some(positive::Case::Glider { .. })) {
+        if !matches!(case, Some(positive::Case::Glider { .. } | positive::Case::Pegasus)) {
             assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
         }
         if ot_only.is_some() {
@@ -302,7 +304,7 @@ pub(super) fn scenario(
             Some(harness.root.clone()),
         );
         let mut owner = deps.owner(&harness, &authority);
-        if case.is_some() {
+        if case.is_some_and(|case| !matches!(case, positive::Case::Pegasus)) {
             owner.premium_coordinator = Some(&coordinator);
             owner.admit_premium(id(40), deps.admitted.game_session_id);
             assert!(
@@ -363,6 +365,7 @@ pub(super) fn scenario(
                 ("oteryn:item.tibia.i16254", 1),
                 (key, 1),
             ],
+            Some(positive::Case::Pegasus) => vec![(key, 1); 2],
             _ => vec![(key, 1)],
         };
         if afflicted {

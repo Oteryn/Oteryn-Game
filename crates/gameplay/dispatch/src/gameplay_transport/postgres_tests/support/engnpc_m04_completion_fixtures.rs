@@ -459,7 +459,11 @@ async fn real_terminal_commands(
         }
         let [actor] = super::classic_quests_fixtures::install(owner, admitted, [&npc_key]).await?;
         let command = 9800 + index as u64 * 10;
-        super::classic_quests_fixtures::talk(owner, admitted, actor, command, "hi").await?;
+        let greeting = match npc {
+            "malor" | "gabel" => "djanni'hah",
+            _ => "hi",
+        };
+        super::classic_quests_fixtures::talk(owner, admitted, actor, command, greeting).await?;
         if !prompt.is_empty() {
             super::classic_quests_fixtures::talk(owner, admitted, actor, command + 1, prompt).await?;
         }

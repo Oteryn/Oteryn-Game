@@ -1,4 +1,5 @@
 //! Read rich achievement facts under the existing Character visibility boundary.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::account_achievement::EarnedAchievement;
 const FACTS_SQL: &str = "SELECT a.achievement_key,q.earned_at FROM game_character_roots r JOIN game_account_achievements a ON a.account_id=r.account_id JOIN game_account_achievement_grant_requests q ON q.account_id=a.account_id AND q.achievement_key=a.achievement_key AND q.source_kind=a.source_kind AND q.source_event_id=a.source_event_id WHERE r.character_id=encode($1,'hex')::uuid ORDER BY a.achievement_key LIMIT 16385";
@@ -29,7 +30,7 @@ impl DurabilityRoot {
             let facts = rows.iter().map(|row| Ok(EarnedAchievement {
                 achievement_key: row.try_get("achievement_key")?, earned_at_unix_ms: row.try_get("earned_at")?,
             })).collect::<Result<Vec<_>, sqlx::Error>>()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok((name, facts)))
         })).await?
     }

@@ -30,6 +30,7 @@ committed output make no Rust-side claim.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import math
@@ -40,7 +41,8 @@ import validate_item
 from engine_items import convert_item, load_engine_sources
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_OUTPUT = ROOT / "samples" / "promotion-crystal-ff7ede5.json"
+# The original sample is an immutable input to the published naming proofs.
+DEFAULT_OUTPUT = ROOT / "samples" / "promotion-crystal-current-ff7ede5.json.gz"
 COMPILER_PATH = "tools/content-schema/item-authoring/lower_promotion_packet.py"
 
 SCHEMA = "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1"
@@ -452,6 +454,8 @@ def main():
     sources = load_engine_sources("crystal", args.source)
     packet, skipped = build_packet(sources)
     candidate_bytes = canonical_bytes(packet)
+    if args.out.suffix == ".gz":
+        candidate_bytes = gzip.compress(candidate_bytes, mtime=0)
 
     if args.check:
         if not args.out.is_file():
