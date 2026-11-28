@@ -455,7 +455,7 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-async fn food_remaining(
+pub(super) async fn food_remaining(
     client: &mut DevClientSession,
     after_result: Option<u64>,
 ) -> TestResult<i32> {

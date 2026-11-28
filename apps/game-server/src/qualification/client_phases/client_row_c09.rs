@@ -1,4 +1,4 @@
-//! C09 client replay capture: create real HP/mana deficits, purchase and consume real food, then
+//! C09 client replay capture: create real HP/mana deficits, consume fixture food, then
 //! capture the ACTOR_VITALS payload applied by `crates/session/src/domain_dispatch.rs` through
 //! `Session::apply_domain_delta` and exposed by `Session::actor_vitals` in `session_access.rs`.
 use super::*;
@@ -7,13 +7,14 @@ use oteryn_protocol_oteryn::actor_spell::ActorVitals;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    let started = std::time::Instant::now();
     let result =
-        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+        verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
             .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
-            "e2e_all scenario=C09.client status=FAIL evidence={}",
-            super::full_row_c02::PLATFORM_ADMISSION_GAP
+            "e2e_all scenario=C09.client status=PASS seconds={:.3} evidence=live-consumption-durable-debit-original-frame-replay",
+            started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=C09.client status=FAIL evidence={error}"
@@ -33,20 +34,8 @@ fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> u64 {
     })
 }
 
-async fn acquire_meat(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-) -> TestResult<std::num::NonZeroU32> {
-    let index = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&index, 3577)?;
-    if quantity(client, reference) == 0 {
-        super::full_row_c09::buy_meat(client, world, reference, 1).await?;
-    }
-    Ok(reference)
-}
-
 async fn replay_capture(
-    clients: &SeamClients<'_>,
+    character_id: oteryn_protocol_oteryn::CharacterId,
     capture: &oteryn_dev_client::InboundCapture,
     session_id: &oteryn_protocol_oteryn::GameSessionId,
     sequences: (u64, u64, u64),
@@ -78,7 +67,7 @@ async fn replay_capture(
         Admission {
             appearance_items: None,
             schema_revision: 1,
-            character_id: oteryn_protocol_oteryn::CharacterId::decode(&clients.characters[1])?,
+            character_id,
             admission_material: b"offline-c09-replay",
             client_build_id: "oteryn-dev-client/c09-replay",
             supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
@@ -111,15 +100,88 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    const ACCOUNT: &str = "NODE_BOOT_C09_ACCOUNT";
+    const MEAT: u32 = 3577;
+    const LEVEL: u32 = 20;
+    if !requires_platform_grant(&required(ACCOUNT)?) {
+        return Err("C09 dedicated account lacks Platform admission".into());
+    }
+    let dedicated = character_prep::dedicated_character(clients, ACCOUNT).await?;
+    let clients = dedicated.clients(clients);
+    let character_id = oteryn_protocol_oteryn::CharacterId::decode(&clients.characters[0])?;
+    let meat = provisioning::item_reference(&provisioning::item_index()?, MEAT)?;
+    let mut preparation = connect_character(&clients, 0xc9, 0).await?;
+    if quantity(&preparation, meat) != 0 || preparation.inventory().is_none() {
+        return Err("C09 initial fixture inventory did not prove zero meat".into());
+    }
+    character_prep::declare_seeded(
+        "C09.client",
+        "level=20,meat=1",
+        "inputs for live regeneration",
+    );
+    let before_session = preparation.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(before_session.as_bytes()),
+        "--profile",
+        "c09-sorcerer".into(),
+    )
+    .await?;
+    character_prep::grant_item(&preparation, MEAT, 1).await?;
+    logout_once(&mut preparation).await?;
+    drop(preparation);
     let limit = std::num::NonZeroUsize::MIN.saturating_add(32 * 1024 * 1024 - 1);
     let (mut client, capture) =
-        connect_character_with_capture(clients, 0xc9, 1, Some(limit)).await?;
+        connect_character_with_capture(&clients, 0xc9, 0, Some(limit)).await?;
     let capture = capture.ok_or("C09 capture disabled")?;
-    let meat = acquire_meat(&mut client, world).await?;
+    let actual = client.actor_vitals().ok_or("C09 seeded vitals absent")?;
+    let (hp, mp, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        LEVEL,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("C09 seeded maxima absent")?;
+    let food_session = client.join_snapshot().game_session_id;
+    if food_session == before_session
+        || quantity(&client, meat) != 1
+        || (actual.max_health, actual.max_mana) != (hp, mp)
+    {
+        return Err(
+            "C09 fresh fixture admission did not prove level-derived vitals and one meat".into(),
+        );
+    }
+    if super::full_row_c09::food_remaining(&mut client, None).await? != 0 {
+        return Err("C09 fresh fixture started fed".into());
+    }
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    verdict::Harness::global().progress("c09-combat");
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let reply = client.session_mut().set_fight_modes(&modes).await?;
+    if reply.status != CommandStatus::Accepted || reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("C09 chase mode refused: {reply:?}").into());
+    }
+    let mode_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.modes != modes)
+    {
+        if tokio::time::Instant::now() >= mode_deadline {
+            return Err("C09 chase mode state delta missing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
     let full = *client.actor_vitals().ok_or("C09 initial vitals absent")?;
-    super::full_row_c09::spend_mana(&mut client).await?;
     for _ in 0..3 {
+        verdict::Harness::global().bounded_wait(
+            tokio::time::Instant::now() + Duration::from_secs(125),
+            "c09-combat",
+        );
         client_hunt::hunt(&mut client).await.map_err(|error| {
             verdict::record_error(verdict::IndexedError::as_error(&error));
             verdict::context(format!("C09 combat: {error}"), error)
@@ -131,6 +193,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             break;
         }
     }
+    super::full_row_c09::spend_mana(&mut client).await?;
     let before = *client.actor_vitals().ok_or("deficit vitals absent")?;
     if before.health >= full.health || before.mana >= full.mana {
         return Err(format!("HP/mana deficits missing full={full:?} before={before:?}").into());
@@ -145,6 +208,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .map(|item| item.handle)
         .ok_or("meat handle absent")?;
+    let before_meat = quantity(&client, meat);
     let baseline = client.last_server_sequence();
     let use_reply = client.use_item(handle).await?;
     if use_reply.status != CommandStatus::Accepted
@@ -161,10 +225,52 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 && delta.value.health > before.health
                 && delta.value.mana > before.mana
             {
+                if before_meat.checked_sub(1) != Some(quantity(&client, meat)) {
+                    return Err("C09 captured regeneration without exactly one meat debit".into());
+                }
+                let remaining = super::full_row_c09::food_remaining(
+                    &mut client,
+                    Some(use_reply.result_server_sequence),
+                )
+                .await?;
+                if !(1..=180_000).contains(&remaining) {
+                    return Err(format!("C09 invalid live meat credit {remaining}").into());
+                }
+                let lock_deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+                loop {
+                    let combat = client
+                        .session_mut()
+                        .combat_state()
+                        .ok_or("C09 combat state absent")?;
+                    if !combat.in_fight && combat.target.is_none() {
+                        break;
+                    }
+                    if tokio::time::Instant::now() >= lock_deadline {
+                        return Err("C09 combat lock did not clear before one-shot logout".into());
+                    }
+                    client.service_liveness(Duration::from_millis(50)).await?;
+                    client.take_events();
+                }
+                logout_once(&mut client).await?;
+                drop(client);
+                let mut fresh = connect_character(&clients, 0xca, 0).await?;
+                if fresh.join_snapshot().game_session_id == food_session
+                    || fresh.inventory().is_none()
+                    || quantity(&fresh, meat) != 0
+                {
+                    return Err("C09 fresh session did not retain the exact meat debit".into());
+                }
+                let restored = super::full_row_c09::food_remaining(&mut fresh, None).await?;
+                if !(1..=remaining).contains(&restored) {
+                    return Err(
+                        format!("C09 durable food credit invalid {remaining}->{restored}").into(),
+                    );
+                }
+                logout_once(&mut fresh).await?;
                 replay_capture(
-                    clients,
+                    character_id,
                     &capture,
-                    &client.join_snapshot().game_session_id,
+                    &food_session,
                     (
                         baseline,
                         use_reply.result_server_sequence,
@@ -184,6 +290,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     }
+}
+
+async fn logout_once(client: &mut DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C09 logout first request refused: {reply:?}").into());
+    }
+    Ok(())
 }
 
 #[test]
