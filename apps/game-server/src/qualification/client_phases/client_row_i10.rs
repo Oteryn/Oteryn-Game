@@ -168,9 +168,29 @@ async fn enter_house(client: &mut DevClientSession, world: &BundleWorld) -> Test
     transfer_house(client, false, DOOR).await
 }
 
+fn custody_position(client: &mut DevClientSession) -> TestResult<TilePos> {
+    use oteryn_dev_client::client_runtime::house_transfer as transfer;
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+    if let Some(scope) = client
+        .session_mut()
+        .gated_snapshot(transfer::STATE_DOMAIN_HOUSE_SCOPE)
+    {
+        let ack = transfer::decode_house_transfer_ack(&scope.payload)
+            .map_err(|error| format!("I10 invalid house custody snapshot: {error:?}"))?;
+        let [x, y, floor] = ack.position;
+        return tile(ActorPosition {
+            x,
+            y,
+            floor: i16::try_from(floor)?,
+        });
+    }
+    tile(client.world_spatial().actor_position)
+}
+
 async fn transfer_house(client: &mut DevClientSession, exit: bool, to: TilePos) -> TestResult {
     use oteryn_dev_client::client_runtime::house_transfer as transfer;
-    let before = tile(client.world_spatial().actor_position)?;
+    let before = custody_position(client)?;
+    let source_session = client.join_snapshot().game_session_id;
     evidence(&format!(
         "I10_CHECK step=house-transfer-request exit={exit} from={before:?} destination={to:?}"
     ));
@@ -197,7 +217,8 @@ async fn transfer_house(client: &mut DevClientSession, exit: bool, to: TilePos) 
     if reply.status != CommandStatus::Accepted
         || ack.house.as_deref() != expected_house
         || before == to
-        || tile(client.world_spatial().actor_position)? != to
+        || client.join_snapshot().game_session_id == source_session
+        || custody_position(client)? != to
     {
         return Err(format!("step=house-entry status={:?} ack={ack:?}", reply.status).into());
     }
@@ -305,7 +326,7 @@ async fn capture_refusal(
 ) -> TestResult<String> {
     use std::io::Write as _;
     let session = client.join_snapshot().game_session_id;
-    let position = client.world_spatial().actor_position;
+    let position = custody_position(client)?;
     let inventory = client
         .inventory()
         .cloned()
@@ -328,7 +349,7 @@ async fn capture_refusal(
         .into());
     }
     if client.join_snapshot().game_session_id != session
-        || client.world_spatial().actor_position != position
+        || custody_position(client)? != position
         || client.inventory() != Some(&inventory)
     {
         return Err(format!("I10 {key}: refusal changed session, position or inventory").into());
