@@ -530,6 +530,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         .find(|entry| entry.entity == target)
         .ok_or("C18a health capture lacks the exact Rat generation")?;
     assert_eq!(entry.kind, wire::EntityKind::Creature);
+    assert_eq!(entry.position, rat_tile);
     assert!(
         matches!(entry.detail, wire::EntityDetail::Actor { health_percent, .. }
         | wire::EntityDetail::ActorWithIcons { health_percent, .. } if health_percent == proof.after)

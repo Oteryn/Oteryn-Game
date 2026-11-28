@@ -368,7 +368,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     let cast_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let aim_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     let mut precast_frame = None;
-    let (rat_position, health_before, combat_before) = loop {
+    let (precast_rat_position, health_before, combat_before) = loop {
         if let Some(frame) = collect_events(&mut client, None, clock_before.as_mut())?.combat {
             precast_frame = Some(frame);
         }
@@ -467,7 +467,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     let mut health = None;
     let mut damage = None;
-    let (health_sequence, health_after, damage_sequence, damage_value) = loop {
+    let (health_sequence, health_after, rat_position, damage_sequence, damage_value) = loop {
         for event in client.take_events() {
             observation.record(&event);
             match event {
@@ -485,7 +485,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
                     {
                         if let Some((_, health_percent)) = actor_state(entry.detail)
                             && health_percent != health_before
-                            && health.replace((delta.server_sequence, health_percent)).is_some()
+                            && health.replace((delta.server_sequence, health_percent, entry.position)).is_some()
                         {
                             return Err("C18a observed multiple Rat health changes".into());
                         }
@@ -494,50 +494,36 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
                 SessionEvent::Presentation(batch)
                     if batch.server_sequence > result_server_sequence =>
                 {
-                    let impact = oteryn_dev_client::qualification_scorch_impact(
-                        &batch.value,
-                        here,
-                        caster,
-                        rat_position,
-                        target,
-                        spell.get(),
-                    );
-                    let impact = match impact {
-                        Ok(impact) => impact,
-                        Err(error) => {
-                            let sequence = batch.server_sequence;
-                            let raw = received_state_payload(&exchange.inbound, sequence,
-                                presentation::STATE_DOMAIN_WORLD_PRESENTATION,
-                                presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1).await;
-                            let wire = raw.as_ref().map(|payload| {
-                                presentation::decode_presentation_batch(payload)
-                            });
-                            evidence(&format!(
-                                "c18a_scorch_rejected command={command_id} reply={result_server_sequence} frame={sequence} expected_origin={here:?} expected_rat={rat_position:?} error={error} raw_payload={raw:?} wire={wire:?} applied={:?}",
-                                batch.value
-                            ));
-                            return Err(error.into());
-                        }
-                    };
-                    if let Some(value) = impact
-                        && damage.replace((batch.server_sequence, value)).is_some()
-                    {
+                    let is_cast = batch.value.iter().any(|event| matches!(
+                        event.kind,
+                        presentation::PresentationEventKind::SpellWords { caster: actor, spell: index, .. }
+                            if actor == caster && index == spell.get()
+                    ));
+                    if is_cast && damage.replace((batch.server_sequence, batch.value)).is_some() {
                         return Err("C18a observed multiple Scorch decisions for one cast".into());
                     }
                 }
                 _ => {}
             }
         }
-        if let (Some((sequence, remaining)), Some((damage_sequence, value))) = (health, damage) {
+        if let (Some((sequence, remaining, rat_position)), Some((damage_sequence, events))) =
+            (health, damage.as_ref())
+        {
+            let value = oteryn_dev_client::qualification_scorch_impact(
+                events, here, caster, rat_position, target, spell.get(),
+            )
+            .map_err(|error| format!(
+                "C18a Scorch impact mismatch: command={command_id} reply={result_server_sequence} damage_frame={damage_sequence} health_frame={sequence} pre_cast_rat={precast_rat_position:?} hit_rat={rat_position:?}: {error}"
+            ))?
+            .ok_or("C18a Scorch decision has no matching caster and origin")?;
             let loss = u64::from(health_before).checked_sub(u64::from(remaining));
-            if remaining == 0 || loss != value.checked_mul(100).map(|percent| percent / RAT_MAX_HP)
-            {
+            if remaining == 0 || loss != value.checked_mul(100).map(|percent| percent / RAT_MAX_HP) {
                 return Err(format!("C18a fire damage {value} disagrees with Rat health {health_before} -> {remaining}").into());
             }
-            break (sequence, remaining, damage_sequence, value);
+            break (sequence, remaining, rat_position, *damage_sequence, value);
         }
         if tokio::time::Instant::now() >= deadline {
-            log_damage_diagnostic(&mut client, target, result_server_sequence, damage).await;
+            log_damage_diagnostic(&mut client, target, result_server_sequence, None).await;
             return Err(format!(
                 "C18a missing correlated Scorch damage: command={} reply_sequence={} target={target:?} before={health_before} health={health:?} damage={damage:?}",
                 command_id, result_server_sequence
