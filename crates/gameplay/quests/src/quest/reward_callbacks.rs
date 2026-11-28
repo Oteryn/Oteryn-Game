@@ -3552,11 +3552,13 @@ mod tests {
                     .filter(|row| {
                         row.storage.iter().all(|gate| {
                             let value = progress.get(&gate.track).copied().or_else(|| {
-                                loaded.catalogue().track(&gate.track).map(|track| track.initial)
+                                loaded
+                                    .catalogue()
+                                    .track(&gate.track)
+                                    .map(|track| track.initial)
                             });
                             value.is_some_and(|v| (gate.minimum..=gate.maximum).contains(&v))
-                        })
-                            && row.inventory.iter().all(|rule| rule.holds(&held))
+                        }) && row.inventory.iter().all(|rule| rule.holds(&held))
                             && row
                                 .state_ops
                                 .iter()
