@@ -2,7 +2,7 @@
 use super::*;
 use crate::map::boot::BundleWorld;
 use crate::map::overlay::TilePos;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
 #[path = "full_e2ef3.rs"]
@@ -514,6 +514,24 @@ fn route_around_occupant(
     .ok()
 }
 
+fn detour_to_actor_approach(
+    from: TilePos,
+    center: TilePos,
+    approaches: &BTreeSet<TilePos>,
+    available: impl Fn(TilePos) -> bool,
+    landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
+) -> Option<Vec<StepDirection>> {
+    find_route(
+        from,
+        |at| approaches.contains(&at) && available(at),
+        |at, direction| {
+            let next = landing(at, direction)?;
+            (map_journey::in_town(next, center) && available(next)).then_some(next)
+        },
+    )
+    .ok()
+}
+
 fn find_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
@@ -561,6 +579,16 @@ fn destination_with_teleports(
     direction: StepDirection,
     allow_teleport: bool,
 ) -> Option<TilePos> {
+    destination_with_floor_table(world, world.floors(), from, direction, allow_teleport)
+}
+
+fn destination_with_floor_table(
+    world: &BundleWorld,
+    floors: &crate::map::floor::FloorTable,
+    from: TilePos,
+    direction: StepDirection,
+    allow_teleport: bool,
+) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
     use crate::movement::CardinalStep;
     let direction = match direction {
@@ -589,7 +617,7 @@ fn destination_with_teleports(
         None => Ground::Absent,
     };
     let next = resolve_landing(
-        world.floors(),
+        floors,
         ground,
         |_| allow_teleport,
         (i32::from(from.x), i32::from(from.y), -i32::from(from.floor)),
@@ -821,7 +849,7 @@ async fn walk_with_landings(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
-    walk_with_landing_budget(client, path, landing, None, None).await
+    walk_with_landing_budget(client, path, landing, None, None, None).await
 }
 
 async fn walk_with_landing_budget(
@@ -830,6 +858,7 @@ async fn walk_with_landing_budget(
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     step_budget: Option<Duration>,
     detour_center: Option<TilePos>,
+    actor_approaches: Option<&BTreeSet<TilePos>>,
 ) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
@@ -874,19 +903,20 @@ async fn walk_with_landing_budget(
             && outcome.world_spatial_delta.is_none()
             && client.world_spatial().actor_position == before
             && let Some(refused) = expected
-            && !path.is_empty()
+            && (!path.is_empty() || actor_approaches.is_some())
             && blocked.len() < 8
             && blocked.insert(refused)
         {
             let visible_blockers = full_e2ef3::occupied_tiles(client);
-            if let Some(detour) = route_around_occupant(
-                from,
-                detour_center.unwrap_or(from),
-                refused,
-                &path,
-                |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
-                &landing,
-            ) {
+            let available = |at| !blocked.contains(&at) && !visible_blockers.contains(&at);
+            let center = detour_center.unwrap_or(from);
+            let detour = match actor_approaches {
+                Some(approaches) => {
+                    detour_to_actor_approach(from, center, approaches, available, &landing)
+                }
+                None => route_around_occupant(from, center, refused, &path, available, &landing),
+            };
+            if let Some(detour) = detour {
                 evidence(&format!(
                     "town_route detour from={from:?} refused={refused:?}"
                 ));
@@ -3361,6 +3391,7 @@ async fn profile_journey(
     // before admission so the peer can keep acknowledging probes during the journey.
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let model = map_journey::MapModel::load(world, bytes, &root)?;
+    let probes = model.samples(TOWN, 1)?;
     let client = connect_character(clients, 0x6e, 0).await?;
     let mut client = provisioning::provision(client, clients, 0).await?;
     let pz = if world
@@ -3390,26 +3421,46 @@ async fn profile_journey(
     })
     .ok_or("PZ comparison has no return route")?;
     walk(&mut client, world, &back).await?;
-    let map = map_journey::run(&mut client, world, &model).await;
+    let map = map_journey::run(&mut client, world, &model, probes).await;
     let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
         Ok(()) => client_combat_journey::combat_journey(&mut client).await,
         Err(error) => Err(error),
     };
     let spells = client_spell_journey::spell_journey(&mut client, pz).await;
-    // Combat may still hold the logout/PZ lock. Settle it outside the temple
-    // before restoring the peer that main's trade/party phases use.
+    // Leave the hunt before settling logout. A fresh creature hit refreshes
+    // the fight lock even while the client is only servicing liveness.
+    let from = tile(client.world_spatial().actor_position)?;
+    let occupied = full_e2ef3::occupied_tiles(&client);
+    let shelter = route_avoiding(
+        world,
+        from,
+        |at| is_logout_rest_tile(world, at),
+        |at| !occupied.contains(&at),
+    )
+    .ok_or("profile combat has no walking route to a logout protection tile")?;
+    walk(&mut client, world, &shelter).await?;
+    let protected = tile(client.world_spatial().actor_position)?;
+    if !is_logout_rest_tile(world, protected) {
+        return Err("profile combat route did not reach logout protection".into());
+    }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
+        use oteryn_protocol_oteryn::logout::LogoutResult;
         let logout = client.session_mut().logout().await?;
-        if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
+        let delay = match logout.result {
+            Some(LogoutResult::Accepted) => break,
+            Some(LogoutResult::InFight { retry_after_ms }) => {
+                Duration::from_millis(u64::from(retry_after_ms))
+            }
+            Some(LogoutResult::Busy) => Duration::from_millis(100),
+            _ => return Err(format!("profile logout refused in protection: {logout:?}").into()),
+        };
+        if tokio::time::Instant::now() + delay >= deadline {
             return Err(
-                format!("profile combat lock did not settle before logout: {logout:?}").into(),
+                format!("profile combat lock did not settle in protection: {logout:?}").into(),
             );
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
+        client.service_liveness(delay).await?;
         client.take_events();
     }
     drop(client);
@@ -3435,11 +3486,10 @@ async fn connect_world(
     connect_character(clients, tag, 1).await
 }
 
-/// The movement journey uses this same fixture. Its last save is incidental to
-/// the inventory rows, which always start at the configured town entrance.
+/// Stage the released core fixture at the starting position for its next journey.
 async fn reset_core_fixture_position(
     clients: &SeamClients<'_>,
-    town_position: ActorPosition,
+    position: ActorPosition,
 ) -> TestResult {
     let index = 1;
     wait_character_released(clients, index).await?;
@@ -3484,14 +3534,14 @@ async fn reset_core_fixture_position(
     )
     .bind(clients.characters[index].as_slice())
     .bind(clients.world.as_slice())
-    .bind(town_position.x)
-    .bind(town_position.y)
-    .bind(town_position.floor)
+    .bind(position.x)
+    .bind(position.y)
+    .bind(position.floor)
     .fetch_optional(&mut database)
     .await?;
     database.close().await?;
     evidence(&format!(
-        "world_fixture role=core phase=position_reset previous={previous:?} town={TOWN:?}"
+        "world_fixture role=core phase=position_reset previous={previous:?} position={position:?}"
     ));
     Ok(())
 }

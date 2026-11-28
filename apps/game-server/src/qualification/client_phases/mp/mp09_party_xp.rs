@@ -55,15 +55,22 @@ pub(super) async fn run(
     mp01_profiles_confirmed: bool,
 ) -> TestResult {
     let started = std::time::Instant::now();
-    let profiles =
-        prepare_mp09_profiles(mp01_profiles_confirmed, profile_roles(core, packets)).await;
+    let profiles: TestResult<String> = async {
+        let profiles =
+            prepare_mp09_profiles(mp01_profiles_confirmed, profile_roles(core, packets)).await?;
+        // Finish the underlevel fixture's provisioning admissions and durable release
+        // before the three eligible peers start their own foreground reads.
+        provision_role(core, packets, (core, 1, "knight-underlevel")).await?;
+        Ok(profiles)
+    }
+    .await;
     let (mut bots, setup) = match profiles {
         Ok(profiles) => {
             let (bots, setup) = bots::connect_bots(&[
                 (core, 0, None),
                 (packets, 0, None),
                 (packets, 1, None),
-                (core, 1, Some("knight-underlevel")),
+                (core, 1, None),
             ])
             .await;
             (
@@ -309,17 +316,23 @@ async fn profile_roles(core: &SeamClients<'_>, packets: &SeamClients<'_>) -> Tes
         (packets, 0, "druid"),
         (packets, 1, "paladin"),
     ] {
-        let (mut alone, setup) = bots::connect_bots(&[(pair, index, Some(profile))]).await;
-        let released = bots::release_all(&mut alone, core, packets).await;
-        if let Err(error) = setup {
-            return Err(
-                format!("provision role={profile} error={error};release={released:?}").into(),
-            );
-        }
-        released?;
+        provision_role(core, packets, (pair, index, profile)).await?;
         confirmed.push(profile);
     }
     Ok(format!("profiles and items confirmed={confirmed:?}"))
+}
+
+async fn provision_role(
+    core: &SeamClients<'_>,
+    packets: &SeamClients<'_>,
+    (pair, index, profile): (&SeamClients<'_>, usize, &str),
+) -> TestResult {
+    let (mut alone, setup) = bots::connect_bots(&[(pair, index, Some(profile))]).await;
+    let released = bots::release_all(&mut alone, core, packets).await;
+    if let Err(error) = setup {
+        return Err(format!("provision role={profile} error={error};release={released:?}").into());
+    }
+    released
 }
 
 fn native_three_vocation_share(pool: u64) -> u64 {

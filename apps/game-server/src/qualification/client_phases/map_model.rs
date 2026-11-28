@@ -22,16 +22,21 @@ struct MapTile {
     rope_spot: bool,
     rope_ordinal: Option<u8>,
     shovel_ordinal: Option<u8>,
-    shovel_target: bool,
+    shovel_floor_mask: u8,
     hole: bool,
     teleport: Option<TilePos>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct Sample {
+pub(super) struct Sample {
     kind: &'static str,
     position: TilePos,
     content: Option<String>,
+}
+
+enum ShovelExit {
+    Walk(Vec<StepDirection>),
+    Rope(Vec<StepDirection>),
 }
 
 pub(super) struct MapModel<'a> {
@@ -94,7 +99,7 @@ impl<'a> MapModel<'a> {
                 let mut rope_spot = false;
                 let mut rope_ordinal = None;
                 let mut shovel_ordinal = None;
-                let mut shovel_target = false;
+                let mut shovel_floor_mask = 0;
                 let mut hole = false;
                 let mut door = world.facts().doors().at(position);
                 for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate()
@@ -123,13 +128,16 @@ impl<'a> MapModel<'a> {
                                 oteryn_world_bundle::Error::Limit("map tool ordinal".into())
                             })?);
                         }
-                        if shovel_bindings.iter().any(|binding| {
+                        if let Some(binding) = shovel_bindings.iter().find(|binding| {
                             binding.target == id && binding.required_action == item.attrs.action
                         }) {
-                            shovel_target = true;
                             shovel_ordinal = Some(u8::try_from(ordinal).map_err(|_| {
                                 oteryn_world_bundle::Error::Limit("map tool ordinal".into())
                             })?);
+                            shovel_floor_mask = crate::map::floor::palette_mask(
+                                oteryn_world_bundle::bundle::Family::Item,
+                                &format!("oteryn:item.tibia.i{}", binding.transformed),
+                            );
                         }
                         hole |= shovel_bindings
                             .iter()
@@ -152,7 +160,7 @@ impl<'a> MapModel<'a> {
                         rope_spot,
                         rope_ordinal,
                         shovel_ordinal,
-                        shovel_target,
+                        shovel_floor_mask,
                         hole,
                         teleport: world.floors().teleport(position),
                     },
@@ -188,7 +196,7 @@ impl<'a> MapModel<'a> {
             if facts.rope_spot {
                 add("rope_spot", None);
             }
-            if facts.shovel_target {
+            if facts.shovel_ordinal.is_some() {
                 add("shovel_hole", None);
             }
             if let Some(field) = &facts.field {
@@ -278,12 +286,24 @@ impl<'a> MapModel<'a> {
         to: TilePos,
         bounds: Option<TilePos>,
     ) -> Option<Vec<StepDirection>> {
+        self.path_avoiding(from, to, bounds, None)
+    }
+
+    fn path_avoiding(
+        &self,
+        from: TilePos,
+        to: TilePos,
+        bounds: Option<TilePos>,
+        excluded: Option<TilePos>,
+    ) -> Option<Vec<StepDirection>> {
         search(
             from,
             to,
             |at, direction| {
                 let destination = self.destination(at, direction)?;
-                if bounds.is_some_and(|center| !in_town(destination, center)) {
+                if excluded == Some(destination)
+                    || bounds.is_some_and(|center| !in_town(destination, center))
+                {
                     return None;
                 }
                 Some(destination)
@@ -296,20 +316,26 @@ impl<'a> MapModel<'a> {
         &self,
         sample: &Sample,
         at: TilePos,
+        direction: StepDirection,
         landing: Option<TilePos>,
-        returnable: Option<&BTreeSet<TilePos>>,
+        returnable: Option<(&BTreeSet<TilePos>, TilePos)>,
     ) -> bool {
         let Some(origin) = self.tiles.get(&at).filter(|facts| facts.walkable) else {
             return false;
         };
-        // Tool probes can change the route graph by roping up or opening a hole.
-        if let Some(returnable) = returnable
-            && !matches!(sample.kind, "rope_spot" | "shovel_hole")
-            && (!returnable.contains(&at)
+        if let Some((returnable, bounds)) = returnable {
+            if sample.kind == "shovel_hole" {
+                return returnable.contains(&at)
+                    && self.shovel_landing(at, direction, sample.position).is_some_and(|landed| {
+                        self.shovel_exit(landed, sample.position, bounds, returnable).is_some()
+                    });
+            }
+            if sample.kind != "rope_spot" && (!returnable.contains(&at)
                 || (!matches!(sample.kind, "npc" | "monster_spawn")
                     && landing.is_some_and(|landed| !returnable.contains(&landed))))
-        {
-            return false;
+            {
+                return false;
+            }
         }
         match sample.kind {
             "stairs_up" => landing.is_some_and(|landed| landed.floor > at.floor),
@@ -326,6 +352,38 @@ impl<'a> MapModel<'a> {
                 .is_some_and(|target| target.protection_zone != origin.protection_zone),
             _ => true,
         }
+    }
+
+    fn shovel_landing(
+        &self,
+        at: TilePos,
+        direction: StepDirection,
+        hole: TilePos,
+    ) -> Option<TilePos> {
+        let mask = self.tiles.get(&hole)?.shovel_floor_mask;
+        let mut floors = self.world.floors().clone();
+        floors.add(hole, mask);
+        destination_with_floor_table(self.world, &floors, at, direction, true)
+            .filter(|landed| landed.floor < hole.floor)
+    }
+
+    fn shovel_exit(
+        &self,
+        landed: TilePos,
+        hole: TilePos,
+        bounds: TilePos,
+        returnable: &BTreeSet<TilePos>,
+    ) -> Option<ShovelExit> {
+        if let Some(path) = self.path_avoiding(landed, bounds, Some(bounds), Some(hole)) {
+            return Some(ShovelExit::Walk(path));
+        }
+        if !self.tiles.get(&landed)?.rope_spot || !self.rope_lands_on_return_route(landed, returnable) {
+            return None;
+        }
+        approach_steps(landed)
+            .filter_map(|(approach, _)| self.path(landed, approach, Some(bounds)))
+            .min_by_key(Vec::len)
+            .map(ShovelExit::Rope)
     }
 
     fn rope_lands_on_return_route(&self, spot: TilePos, returnable: &BTreeSet<TilePos>) -> bool {
@@ -354,7 +412,7 @@ impl<'a> MapModel<'a> {
         })
     }
 
-    fn samples(&self, start: TilePos, seed: u64) -> TestResult<(Vec<Sample>, BTreeSet<TilePos>)> {
+    pub(super) fn samples(&self, start: TilePos, seed: u64) -> TestResult<(Vec<Sample>, BTreeSet<TilePos>)> {
         let (reachable, returnable) = town_reachability(start, |at, direction| {
             self.destination(at, direction)
         });
@@ -394,6 +452,7 @@ impl<'a> MapModel<'a> {
                             && self.approach_allowed(
                                 sample,
                                 at,
+                                direction,
                                 self.destination(at, direction),
                                 returnable,
                             )
@@ -402,11 +461,11 @@ impl<'a> MapModel<'a> {
                 let (selected, alternatives) = group.split_at_mut(count);
                 for sample in selected {
                     if has_eligible_approach(sample, None)
-                        && !has_eligible_approach(sample, Some(&returnable))
+                        && !has_eligible_approach(sample, Some((&returnable, start)))
                     {
                         let replacement = alternatives
                             .iter_mut()
-                            .find(|alternative| has_eligible_approach(alternative, Some(&returnable)))
+                            .find(|alternative| has_eligible_approach(alternative, Some((&returnable, start))))
                             .ok_or_else(|| {
                                 format!("map journey needs {count} returnable {kind} samples")
                             })?;

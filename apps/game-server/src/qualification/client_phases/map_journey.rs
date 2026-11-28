@@ -5,10 +5,13 @@ pub(super) async fn run(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     model: &MapModel<'_>,
+    (samples, returnable): (Vec<Sample>, BTreeSet<TilePos>),
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
+    if start != TOWN {
+        return Err(format!("map journey expected to begin at {TOWN:?}, got {start:?}").into());
+    }
     let mut totals: BTreeMap<&str, [usize; 3]> = BTreeMap::new();
-    let (samples, returnable) = model.samples(start, 1)?;
     for sample in samples {
         let result = check(client, model, &sample, start, &returnable).await;
         let (index, reason) = match result {
@@ -38,7 +41,7 @@ pub(super) async fn run(
         let back = model
             .path(here, start, Some(start))
             .ok_or("map journey has no return route")?;
-        walk_map_route(client, world, &back, start).await
+        walk_map_route(client, world, &back, start, None).await
     }
     .await;
     let (index, reason) = match restore {
@@ -71,6 +74,7 @@ async fn walk_map_route(
     world: &BundleWorld,
     path: &[StepDirection],
     bounds: TilePos,
+    actor_approaches: Option<&BTreeSet<TilePos>>,
 ) -> TestResult {
     walk_with_landing_budget(
         client,
@@ -78,6 +82,7 @@ async fn walk_map_route(
         |at, direction| destination(world, at, direction),
         None,
         Some(bounds),
+        actor_approaches,
     )
     .await
 }
@@ -109,7 +114,7 @@ async fn check(
     let mut approaches = Vec::new();
     for (at, direction) in approach_steps(target) {
         let landing = model.destination(at, direction);
-        if !model.approach_allowed(sample, at, landing, Some(returnable)) {
+        if !model.approach_allowed(sample, at, direction, landing, Some((returnable, bounds))) {
             continue;
         }
         // An automatic transition can make an apparently adjacent tile unstandable.
@@ -126,8 +131,16 @@ async fn check(
             format!("rope spot {target:?} lacks a walking return from every landing").into(),
         );
     }
-    walk_map_route(client, model.world, path, bounds).await?;
-    if tile(client.world_spatial().actor_position)? != *at {
+    // An actor observation can use any of the already reachable adjacent cells.
+    // The actor may have wandered onto the first approach before we get there.
+    let actor_approaches = matches!(sample.kind, "npc" | "monster_spawn")
+        .then(|| approaches.iter().map(|(_, at, _, _)| *at).collect());
+    walk_map_route(client, model.world, path, bounds, actor_approaches.as_ref()).await?;
+    let reached = tile(client.world_spatial().actor_position)?;
+    if !actor_approaches
+        .as_ref()
+        .map_or(reached == *at, |approaches| approaches.contains(&reached))
+    {
         return Err("map approach did not end at predicted position".into());
     }
     if sample.kind == "pz_border" {
@@ -148,85 +161,46 @@ async fn check(
         client.take_events();
         return Ok(None);
     }
-    if tool_probe {
-        use oteryn_protocol_oteryn::world_object::*;
-        let index = provisioning::item_index()?;
-        let reference = provisioning::item_reference(&index, if rope { 3003 } else { 3457 })?;
-        let source = client
-            .inventory()
-            .and_then(|inventory| {
-                inventory
-                    .entries
-                    .iter()
-                    .find(|item| item.item_definition_ref == reference)
-            })
-            .ok_or("provisioned map tool missing from inventory")?
-            .handle;
-        let facts = &model.tiles[&target];
-        let ordinal = if rope {
-            facts.rope_ordinal
-        } else {
-            facts.shovel_ordinal
+    if rope {
+        rope_home(client, model, target, bounds, None).await?;
+        return Ok(None);
+    }
+    if sample.kind == "shovel_hole" {
+        let expected = model
+            .shovel_landing(*at, *direction, target)
+            .ok_or("shovel probe has no compiled lower-floor landing")?;
+        let exit = model
+            .shovel_exit(expected, target, bounds, returnable)
+            .ok_or("shovel landing has no ordinary route to town")?;
+        use_map_tool(
+            client,
+            model,
+            target,
+            model.tiles[&target].shovel_ordinal,
+            3457,
+        )
+        .await?;
+        if tile(client.world_spatial().actor_position)? != *at {
+            return Err("shovel use moved the character before stepping".into());
         }
-        .ok_or("map tool target ordinal missing")?;
-        let key = crate::map::view::placement_key(target, ordinal)
-            .ok_or("map tool target placement missing")?;
-        let mut placement = model.world.base().digest().to_vec();
-        placement.extend_from_slice(&key.to_be_bytes());
-        let intent = UseIntent {
-            target: UseTarget::Item(source),
-            use_with: None,
-            use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
-                placement,
-                expected_revision: 0,
-            })),
-            use_with_position: None,
-        };
-        let payload = encode_item_use_intent(&intent)
-            .map_err(|error| format!("map tool encode: {error:?}"))?;
-        let before = tile(client.world_spatial().actor_position)?;
-        let response = client.session_mut().world_context_use(&payload).await?;
-        if response.status != CommandStatus::Accepted
-            || decode_use_result(&response.payload)
-                .map_err(|error| format!("map tool result: {error:?}"))?
-                != UseDisposition::Committed
+        let result = client.step_retrying(*direction).await?;
+        let landed = tile(client.world_spatial().actor_position)?;
+        if result.disposition != StepDisposition::Moved
+            || result.world_spatial_delta.is_none()
+            || landed != expected
         {
-            return Err(format!("map tool use did not commit: {response:?}").into());
-        }
-        if rope {
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-            loop {
-                let landed = tile(client.world_spatial().actor_position)?;
-                if landed.floor == target.floor + 1
-                    && landed.x.abs_diff(target.x).max(landed.y.abs_diff(target.y)) == 1
-                {
-                    break;
-                }
-                if tokio::time::Instant::now() >= deadline {
-                    return Err("rope did not publish an adjacent upstairs landing".into());
-                }
-                client.service_liveness(Duration::from_millis(50)).await?;
-                client.take_events();
-            }
-            let landed = tile(client.world_spatial().actor_position)?;
-            let back = model.path(landed, bounds, Some(bounds)).ok_or_else(|| {
-                format!("rope landing {landed:?} has no walking return to {bounds:?}")
-            })?;
-            walk_map_route(client, model.world, &back, bounds).await?;
-        } else {
-            if tile(client.world_spatial().actor_position)? != before {
-                return Err("shovel use moved the character before stepping".into());
-            }
-            let result = client.step_retrying(*direction).await?;
-            let landed = tile(client.world_spatial().actor_position)?;
-            if result.disposition != StepDisposition::Moved
-                || result.world_spatial_delta.is_none()
-                || landed.floor >= target.floor
-            {
-                return Err("opened shovel hole did not produce a lower-floor step".into());
-            }
+            return Err(format!("opened shovel hole expected lower landing {expected:?}, arrived at {landed:?}: {result:?}").into());
         }
         client.take_events();
+        match exit {
+            ShovelExit::Walk(path) => {
+                walk_map_route(client, model.world, &path, bounds, None).await?
+            }
+            ShovelExit::Rope(path) => {
+                walk_map_route(client, model.world, &path, bounds, None).await?;
+                rope_home(client, model, landed, bounds, Some(target)).await?;
+            }
+        }
         return Ok(None);
     }
     if matches!(sample.kind, "npc" | "monster_spawn") {
@@ -271,6 +245,90 @@ async fn check(
             .await?;
     }
     Ok(None)
+}
+
+async fn use_map_tool(
+    client: &mut oteryn_dev_client::DevClientSession,
+    model: &MapModel<'_>,
+    target: TilePos,
+    ordinal: Option<u8>,
+    tool: u32,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::*;
+    let index = provisioning::item_index()?;
+    let reference = provisioning::item_reference(&index, tool)?;
+    let source = client
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|item| item.item_definition_ref == reference)
+        })
+        .ok_or("provisioned map tool missing from inventory")?
+        .handle;
+    let key =
+        crate::map::view::placement_key(target, ordinal.ok_or("map tool target ordinal missing")?)
+            .ok_or("map tool target placement missing")?;
+    let mut placement = model.world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let intent = UseIntent {
+        target: UseTarget::Item(source),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        })),
+        use_with_position: None,
+    };
+    let payload =
+        encode_item_use_intent(&intent).map_err(|error| format!("map tool encode: {error:?}"))?;
+    let response = client.session_mut().world_context_use(&payload).await?;
+    if response.status != CommandStatus::Accepted
+        || decode_use_result(&response.payload)
+            .map_err(|error| format!("map tool result: {error:?}"))?
+            != UseDisposition::Committed
+    {
+        return Err(format!("map tool use did not commit: {response:?}").into());
+    }
+    Ok(())
+}
+
+async fn rope_home(
+    client: &mut oteryn_dev_client::DevClientSession,
+    model: &MapModel<'_>,
+    target: TilePos,
+    bounds: TilePos,
+    opened_hole: Option<TilePos>,
+) -> TestResult {
+    use_map_tool(
+        client,
+        model,
+        target,
+        model.tiles[&target].rope_ordinal,
+        3003,
+    )
+    .await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let landed = loop {
+        let landed = tile(client.world_spatial().actor_position)?;
+        if landed.floor == target.floor + 1
+            && landed.x.abs_diff(target.x).max(landed.y.abs_diff(target.y)) == 1
+        {
+            break landed;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("rope did not publish an adjacent upstairs landing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    };
+    let back = model
+        .path_avoiding(landed, bounds, Some(bounds), opened_hole)
+        .ok_or_else(|| format!("rope landing {landed:?} has no walking return to {bounds:?}"))?;
+    walk_map_route(client, model.world, &back, bounds, None).await?;
+    client.take_events();
+    Ok(())
 }
 
 #[cfg(test)]

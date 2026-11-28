@@ -54,6 +54,29 @@ fn map_journey_detours_around_occupant_on_a_long_route() -> TestResult {
 }
 
 #[test]
+fn map_journey_detours_from_a_blocked_actor_approach() -> TestResult {
+    let from = at(0, 1, -7);
+    let occupied = at(1, 1, -7);
+    let actor = at(2, 1, -7);
+    let alternative = at(2, 0, -7);
+    let approaches = BTreeSet::from([occupied, alternative]);
+    let landing = |at, direction| {
+        adjacent(at, direction).filter(|next| next.x <= actor.x && next.y <= actor.y)
+    };
+    let available = |at| at != occupied && at != actor;
+    let detour = detour_to_actor_approach(from, from, &approaches, available, landing)
+        .ok_or("another adjacent observation tile is reachable")?;
+    assert_eq!(
+        detour.into_iter().try_fold(from, |at, direction| {
+            landing(at, direction).filter(|next| available(*next))
+        }),
+        Some(alternative)
+    );
+    assert!(detour_to_actor_approach(from, from, &approaches, |_| false, landing).is_none());
+    Ok(())
+}
+
+#[test]
 fn map_journey_synthetic_bundle_stairs_hole_collision_and_seeded_samples() -> TestResult {
     use crate::map::boot::{
         boot,
