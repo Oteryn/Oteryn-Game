@@ -94,8 +94,8 @@ async fn seed_level(
 
 async fn expect_account_levels(clients: &SeamClients<'_>, expected: &[i64]) -> TestResult {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let levels: Vec<i64> = sqlx::query_scalar(
-        "SELECT COALESCE(p.level, 1)
+    let levels: Vec<Option<i64>> = sqlx::query_scalar(
+        "SELECT p.level
          FROM game_character_roots r
          LEFT JOIN game_character_progression_state p USING (character_id)
          WHERE r.account_id=$1::uuid ORDER BY 1 LIMIT 3",
@@ -103,7 +103,11 @@ async fn expect_account_levels(clients: &SeamClients<'_>, expected: &[i64]) -> T
     .bind(&clients.accounts[0])
     .fetch_all(&mut database)
     .await?;
-    expect(levels == expected, "account-levels", (expected, &levels))
+    expect(
+        levels.iter().copied().eq(expected.iter().copied().map(Some)),
+        "account-levels",
+        (expected, &levels),
+    )
 }
 
 async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
@@ -134,6 +138,8 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
 
     let before = stored_badges(clients).await?;
     expect(before.is_empty(), "badge-pre-admission", &before)?;
+    let mut peer_at_birth = connect_character(peer_clients, 0xc0, 0).await?;
+    logout(peer_clients, &mut peer_at_birth).await?;
     let mut client = connect_character(clients, 0xc1, 0).await?;
     let unqualified = reply_badges(&mut client).await?;
     expect(
