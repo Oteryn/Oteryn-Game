@@ -1,7 +1,6 @@
 //! CHARINFO durable title facts. Writes are fenced by the existing reconciled
 //! Character authority and never copy the native facts used for qualification.
 
-use crate::durability::db::commit_semantic_read;
 use super::DurabilityRoot;
 use super::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority, assert_recovery_fence,
@@ -367,7 +366,7 @@ impl DurabilityRoot {
             for field in ["achievements", "appearances", "inventory", "depot", "stash", "inboxes"] { bytes.extend_from_slice(&row.try_get::<i64,_>(field)?.to_le_bytes()); }
             bytes.extend_from_slice(&(deaths.len() as u16).to_le_bytes());
             bytes.extend_from_slice(&(kills.len() as u16).to_le_bytes());
-            commit_semantic_read(tx, deadline).await?;
+            super::db::commit_semantic_read(tx, deadline).await?;
             Ok(Ok(bytes))
         })).await?
     }
@@ -436,7 +435,7 @@ impl DurabilityRoot {
             let qualified = qualified_selection(selected, facts, now_unix_ms)
                 .filter(|title| earned.iter().any(|(earned, _)| earned == title));
             if !requalify_self {
-                commit_semantic_read(tx, deadline).await?;
+                super::db::commit_semantic_read(tx, deadline).await?;
                 return Ok(Ok(CharacterTitleState { earned, selected: qualified, revision }));
             }
             if selected.is_some() && qualified.is_none() {
