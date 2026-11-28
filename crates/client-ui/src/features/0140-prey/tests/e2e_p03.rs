@@ -59,12 +59,9 @@ fn fixture() -> Result<Captured, Error> {
         query: encode(&reply(0, before.clone()))?,
         reroll: encode(&reply(0, after.clone()))?,
         reroll_current: encode(&reply(0, after.clone()))?,
-        refused: encode(&reply(prey::STATUS_NOT_OFFERED, after.clone()))?,
+        refused: Vec::new(),
         refused_current: encode(&reply(0, after))?,
-        expected: format!(
-            "slot=1\nstate_before=1\ncreatures_before=oteryn:creature.rat|oteryn:creature.wolf\nfree_reroll_before=100\nreroll_status=0\nstate_after=1\ncreatures_after=oteryn:creature.bear|oteryn:creature.deer|oteryn:creature.pig\nfree_reroll_after=200\nwildcards=4\nrefusal_status={}\n",
-            prey::STATUS_NOT_OFFERED
-        ),
+        expected: "slot=1\nstate_before=1\ncreatures_before=oteryn:creature.rat|oteryn:creature.wolf\nfree_reroll_before=100\nreroll_status=0\nstate_after=1\ncreatures_after=oteryn:creature.bear|oteryn:creature.deer|oteryn:creature.pig\nfree_reroll_after=200\nwildcards=4\nrefusal_status=Rejected\n".to_owned(),
     })
 }
 
@@ -109,19 +106,6 @@ fn answer(
         status,
         payload: payload.to_vec(),
         current: current.map(<[u8]>::to_vec),
-    }
-}
-
-/// The text the player must see for a Prey refusal status, stated independently of the reducer.
-fn refusal_text(status: u8) -> &'static str {
-    match status {
-        8 => "This creature’s loot is unavailable for Prey.",
-        9 => "No complete list of unoffered creatures is available today. No gold was charged.",
-        10 => "This difficulty is unavailable at your current level.",
-        11 => "This creature has not been offered to you today.",
-        12 => "This creature is already in another Prey slot.",
-        13 => "Prey List Expansion is already owned.",
-        _ => "The server refused this Prey action.",
     }
 }
 
@@ -187,8 +171,8 @@ fn e2e_p03_replays_query_reroll_and_refusal() -> Result<(), Error> {
     }
 
     // A refused SelectAny reports the refusal and leaves the slot exactly as it was.
-    let refusal: u8 = value(expected, "refusal_status")?.parse()?;
-    assert_ne!(refusal, 0);
+    assert_eq!(value(expected, "refusal_status")?, "Rejected");
+    assert!(captured.refused.is_empty());
     let select = request(
         &mut panel,
         Intent::SelectAny {
@@ -203,10 +187,13 @@ fn e2e_p03_replays_query_reroll_and_refusal() -> Result<(), Error> {
             select,
             &captured.refused,
             Some(&captured.refused_current),
-            CommandStatus::Accepted,
+            CommandStatus::Rejected,
         ),
     );
-    assert_eq!(panel.feedback, Some(refusal_text(refusal)));
+    assert_eq!(
+        panel.feedback,
+        Some("The server refused this action; refresh the list before trying again.")
+    );
     assert_eq!(panel.slot(number), Some(&rerolled));
 
     // An undecodable Query reply neither updates the slots nor clears them.

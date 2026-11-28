@@ -13,7 +13,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -23,10 +25,7 @@ async fn send(
     name: &str,
 ) -> TestResult<(prey::PreyResponse, wire::Reply, Option<wire::Reply>)> {
     let response = prey::send(client.session_mut(), &request).await?;
-    if !matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if response.status != CommandStatus::Accepted {
         return Err(format!("{request:?} status={:?}", response.status).into());
     }
     capture(&format!("p03-{name}.bin"), &response.payload);
@@ -55,7 +54,10 @@ fn slot(reply: &wire::Reply, number: u8) -> TestResult<&wire::Slot> {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x23).await?;
-    if !client.selected_capabilities().contains(&wire::CAPABILITY_PREY_V1) {
+    if !client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_PREY_V1)
+    {
         return Err("admission omitted Prey capability 140".into());
     }
     let (_, initial, _) = send(&mut client, wire::Request::Query, "query").await?;
@@ -74,21 +76,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .await?;
     let current = current.ok_or("reroll returned no current state")?;
     let after = slot(&current, before.slot)?.clone();
-    let (_, refusal, refused_current) = send(
-        &mut client,
-        wire::Request::SelectAny {
+    if initial.status != 0
+        || reroll.status != 0
+        || current.status != 0
+        || after.state != 1
+        || after.creatures.is_empty()
+        || after.creatures == before.creatures
+        || after.free_reroll_at <= before.free_reroll_at
+        || current.wildcard_balance != initial.wildcard_balance
+    {
+        return Err(format!("unexpected free ListReroll outcome: {current:?}").into());
+    }
+    let refusal = prey::send(
+        client.session_mut(),
+        &wire::Request::SelectAny {
             slot: before.slot,
             creature: NOT_A_CREATURE.into(),
         },
-        "refused",
     )
     .await?;
-    let refused_current = refused_current.ok_or("refusal returned no current state")?;
-    if refusal.status == 0 || slot(&refused_current, before.slot)? != &after {
-        return Err(format!("non-offered SelectAny was not refused: {refusal:?}").into());
+    let refused_current = refusal
+        .current
+        .as_deref()
+        .ok_or("refusal returned no current state")?;
+    if refusal.status != CommandStatus::Rejected
+        || !refusal.payload.is_empty()
+        || wire::decode_reply(refused_current).map_err(|error| format!("{error:?}"))? != current
+    {
+        return Err(format!("unexpected SelectAny refusal: {refusal:?}").into());
     }
+    capture("p03-refused.bin", &refusal.payload);
+    capture("p03-refused-current.bin", refused_current);
     let expected = format!(
-        "slot={}\nstate_before={}\ncreatures_before={}\nfree_reroll_before={}\nreroll_status={}\nstate_after={}\ncreatures_after={}\nfree_reroll_after={}\nwildcards={}\nrefusal_status={}\n",
+        "slot={}\nstate_before={}\ncreatures_before={}\nfree_reroll_before={}\nreroll_status={}\nstate_after={}\ncreatures_after={}\nfree_reroll_after={}\nwildcards={}\nrefusal_status=Rejected\n",
         before.slot,
         before.state,
         before.creatures.join("|"),
@@ -97,15 +117,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         after.state,
         after.creatures.join("|"),
         after.free_reroll_at,
-        current.wildcard_balance,
-        refusal.status
+        current.wildcard_balance
     );
     capture("p03-expected.txt", expected.as_bytes());
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P03.client status=CAPTURED evidence={expected}"
         )),

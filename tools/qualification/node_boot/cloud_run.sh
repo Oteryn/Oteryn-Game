@@ -117,11 +117,29 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  capture_env=()
+  if [[ "$group" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 158:1 ]]; then
+    mkdir "$work_dir/$index-captures" || blocked capture_directory_unavailable
+    capture_env=("E2E_ALL_CAPTURE_DIR=$work_dir/$index-captures")
+  fi
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if (( ${#capture_env[@]} )); then
+    replay_started=$SECONDS
+    if [[ "$status" == 0 ]] &&
+      [[ "$(grep -c '^SEAM_EVIDENCE e2e_all scenario=P03.client status=CAPTURED ' "$log")" == 1 ]] &&
+      env "${capture_env[@]}" cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
+        prey::e2e_p03::e2e_p03_replays_query_reroll_and_refusal -- --exact > "$work_dir/$index-replay.log" 2>&1 &&
+      grep -q '^test result: ok\. 1 passed; 0 failed;' "$work_dir/$index-replay.log"; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=P03.client status=PASS seconds=%s.000 evidence=live-capture-replayed\n' "$((SECONDS - replay_started))" >> "$log"
+    else
+      status=1
+      printf 'SEAM_EVIDENCE e2e_all scenario=P03.client status=FAIL seconds=%s.000 evidence=live-capture-or-replay-failed\nNODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged\n' "$((SECONDS - replay_started))" >> "$log"
+    fi
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done
