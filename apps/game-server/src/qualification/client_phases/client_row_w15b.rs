@@ -88,6 +88,27 @@ async fn list_session<S: oteryn_dev_client::native_session::SessionStream>(
     })
 }
 
+// This isolated character starts with no displayed quests. Global's displayed
+// Quest Log omits the Battle Axe Quest, including after its chest is claimed.
+fn check_baseline(entries: &[journal::QuestListEntry]) -> TestResult {
+    if !entries.is_empty() {
+        return Err(
+            format!("W15b expected an empty fixture Quest Log, observed {entries:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+fn check_relog_refusal(disposition: UseDisposition, unchanged: bool) -> TestResult {
+    if disposition != UseDisposition::NothingToUse || !unchanged {
+        return Err(format!(
+            "W15b relogged chest use disposition={disposition:?} unchanged={unchanged}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 #[derive(Clone)]
 struct Chest {
     at: TilePos,
@@ -179,6 +200,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<R
     let before_units = units(&client)?;
     let before_payload = inventory_payload(&client)?;
     let before = list(&mut client).await?;
+    check_baseline(&before.entries)?;
     let chest = quest_chests(world)?
         .into_iter()
         .find(|chest| chest.at == BATTLE_AXE_CHEST && chest.claim == BATTLE_AXE_CLAIM)
@@ -253,28 +275,31 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<R
     })
 }
 
-async fn capture_and_replay(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
-    use oteryn_dev_client::native_session::{Admission, Session, capture_inbound};
+fn persist_capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult<Vec<u8>> {
     use std::io::Write as _;
-    let root =
-        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("W15b live capture directory missing")?;
-    let (expected, bytes) = capture_inbound(journey(clients, world)).await;
-    let expected = expected?;
-    let path = Path::new(&root).join("w15b-server.wire");
+    let path = root.join(name);
     let mut capture = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(&path)?;
-    capture.write_all(&bytes)?;
+    capture.write_all(bytes)?;
     drop(capture);
-    let recorded = std::fs::read(&path)?;
+    let recorded = std::fs::read(path)?;
     if recorded != bytes || recorded.is_empty() {
         return Err("W15b capture changed between recording and replay".into());
     }
-    let stream = tokio::io::join(recorded.as_slice(), tokio::io::sink());
-    let mut session = Session::admit(
-        stream,
-        Admission {
+    Ok(recorded)
+}
+
+async fn capture_and_replay(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
+    use oteryn_dev_client::native_session::{Admission, Session, capture_inbound};
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("W15b live capture directory missing")?;
+    let (expected, bytes) = capture_inbound(journey(clients, world)).await;
+    let expected = expected?;
+    let recorded = persist_capture(Path::new(&root), "w15b-server.wire", &bytes)?;
+    let replay_admission = || -> TestResult<Admission<'static>> {
+        Ok(Admission {
             appearance_items: None,
             schema_revision: 1,
             character_id: crate::foundation::CharacterId::decode(&clients.characters[0])?,
@@ -282,15 +307,17 @@ async fn capture_and_replay(clients: &SeamClients<'_>, world: &BundleWorld) -> T
             client_build_id: "oteryn-dev-client/w15b-replay",
             supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
             deadline: Duration::from_secs(5),
-        },
-    )
-    .await?;
+        })
+    };
+    let stream = tokio::io::join(recorded.as_slice(), tokio::io::sink());
+    let mut session = Session::admit(stream, replay_admission()?).await?;
     if session.join_snapshot().game_session_id != expected.session_id
         || session.inventory() != Some(&expected.before_inventory)
     {
         return Err("W15b replay admission identity or inventory mismatch".into());
     }
     let before = list_session(&mut session).await?;
+    check_baseline(&before.entries)?;
     let first = session.use_object(&expected.placement, 0).await?;
     let after = list_session(&mut session).await?;
     let second = session.use_object(&expected.placement, 0).await?;
@@ -309,19 +336,67 @@ async fn capture_and_replay(clients: &SeamClients<'_>, world: &BundleWorld) -> T
             "W15b replay diverged from live inventory, journal, refusal or sequence".into(),
         );
     }
-    let mut fresh = connect_character(clients, 0x89, 0).await?;
-    if fresh.join_snapshot().game_session_id == expected.session_id
-        || super::full_row_w15b::custody(&fresh)? != expected.awarded
-        || list(&mut fresh).await?.entries != expected.after.entries
+    let (relog, relog_bytes) = capture_inbound(async {
+        let mut fresh = connect_character(clients, 0x89, 0).await?;
+        if fresh.join_snapshot().game_session_id == expected.session_id
+            || super::full_row_w15b::custody(&fresh)? != expected.awarded
+        {
+            return Err("W15b fresh admission did not restore the exact reward".into());
+        }
+        let inventory = fresh.inventory().ok_or("missing relog inventory")?.clone();
+        let before = list(&mut fresh).await?;
+        if before.entries != expected.after.entries {
+            return Err("W15b fresh admission changed the Quest Log".into());
+        }
+        let reply = fresh
+            .session_mut()
+            .use_object(&expected.placement, 0)
+            .await?;
+        let after = list(&mut fresh).await?;
+        check_relog_refusal(
+            reply.disposition,
+            fresh.inventory() == Some(&inventory) && after.entries == before.entries,
+        )?;
+        let logout = fresh.session_mut().logout().await?;
+        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("step=relogin-logout refused: {logout:?}").into());
+        }
+        TestResult::Ok((
+            fresh.join_snapshot().game_session_id,
+            fresh.last_server_sequence(),
+            inventory,
+            before,
+            after,
+        ))
+    })
+    .await;
+    let (relog_id, relog_sequence, inventory, relog_before, relog_after) = relog?;
+    let relog_wire = persist_capture(Path::new(&root), "w15b-relog.wire", &relog_bytes)?;
+    let mut session = Session::admit(
+        tokio::io::join(relog_wire.as_slice(), tokio::io::sink()),
+        replay_admission()?,
+    )
+    .await?;
+    if session.join_snapshot().game_session_id != relog_id
+        || session.inventory() != Some(&inventory)
     {
-        return Err("W15b fresh admission did not restore the exact reward and quest list".into());
+        return Err("W15b relog replay admission identity or inventory mismatch".into());
     }
-    let fresh_logout = fresh.session_mut().logout().await?;
-    if fresh_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=relogin-logout refused: {fresh_logout:?}").into());
+    let before = list_session(&mut session).await?;
+    let reply = session.use_object(&expected.placement, 0).await?;
+    let after = list_session(&mut session).await?;
+    check_relog_refusal(
+        reply.disposition,
+        session.inventory() == Some(&inventory) && before == relog_before && after == relog_after,
+    )?;
+    let logout = session.logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        || session.last_server_sequence() != relog_sequence
+    {
+        return Err("W15b relog replay logout or terminal sequence mismatch".into());
     }
     Ok(format!(
-        "claim={} replay_sequence={}",
+        "claim={} replay_sequence={} relog_replay_sequence={relog_sequence}",
         super::full_row_w15b::BATTLE_AXE_CLAIM,
         expected.sequence
     ))
@@ -344,5 +419,27 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=W15b.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_polluted_login_baseline_even_if_the_list_never_changes() {
+        assert!(check_baseline(&[]).is_ok());
+        let polluted = [journal::QuestListEntry {
+            quest_index: 1,
+            completed: true,
+        }];
+        assert!(check_baseline(&polluted).is_err());
+    }
+
+    #[test]
+    fn rejects_a_reset_claim_even_if_the_original_axe_survived() {
+        assert!(check_relog_refusal(UseDisposition::Committed, true).is_err());
+        assert!(check_relog_refusal(UseDisposition::NothingToUse, false).is_err());
+        assert!(check_relog_refusal(UseDisposition::NothingToUse, true).is_ok());
     }
 }
