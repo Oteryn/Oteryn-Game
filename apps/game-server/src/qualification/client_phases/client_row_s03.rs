@@ -113,6 +113,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if query(&mut founder, &wire::GuildQuery::Own).await?.1 != wire::GuildQueryResult::Own(None) {
         return Err("S03 founder already has a guild".into());
     }
+    if query(&mut invitee, &wire::GuildQuery::Own).await?.1 != wire::GuildQueryResult::Own(None) {
+        return Err("S03 invitee already belongs to a guild".into());
+    }
     if query(&mut invitee, &wire::GuildQuery::Invitations).await?.1
         != wire::GuildQueryResult::Invitations(Vec::new())
     {
@@ -126,7 +129,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if found.code != 1 {
+    if found.code != 1 || found.revision != Some(1) {
         return Err(format!("Found refused: {found:?}").into());
     }
     capture(&capture_root, "s03-found.bin", &found_bytes)?;
@@ -137,7 +140,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if summary.name != GUILD_NAME
         || summary.guild != found.guild
         || summary.own_rank != 1
-        || summary.ranks.len() != 3
+        || summary.state != 1
+        || summary.revision != 1
+        || summary.ranks != ["Leader", "Vice Leader", "Member"]
     {
         return Err(format!("own summary mismatch: {summary:?}").into());
     }
@@ -172,7 +177,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("roster member {} is not the founder", member.name).into());
     }
     capture(&capture_root, "s03-roster.bin", &roster_bytes)?;
-    let (_, invite) = intent(
+    let (invite_bytes, invite) = intent(
         &mut founder,
         &wire::GuildIntent::Invite {
             guild: found.guild,
@@ -180,9 +185,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if invite.code != 1 {
+    if invite.code != 1 || invite.guild != found.guild || invite.revision != Some(2) {
         return Err(format!("Invite refused: {invite:?}").into());
     }
+    capture(&capture_root, "s03-invite.bin", &invite_bytes)?;
+    let (invitee_own_bytes, invitee_own) = query(&mut invitee, &wire::GuildQuery::Own).await?;
+    if invitee_own != wire::GuildQueryResult::Own(None) {
+        return Err("S03 invitation created invitee membership".into());
+    }
+    capture(&capture_root, "s03-invitee-own.bin", &invitee_own_bytes)?;
     let (invitations_bytes, invitations) =
         query(&mut invitee, &wire::GuildQuery::Invitations).await?;
     let wire::GuildQueryResult::Invitations(list) = invitations else {
@@ -205,7 +216,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let (_, own_after_invite) = query(&mut founder, &wire::GuildQuery::Own).await?;
     if !matches!(&own_after_invite, wire::GuildQueryResult::Own(Some(current))
         if current.guild == summary.guild && current.name == summary.name
-            && current.own_rank == summary.own_rank && current.ranks == summary.ranks)
+            && current.own_rank == summary.own_rank && current.ranks == summary.ranks
+            && current.state == summary.state && current.revision == 2)
     {
         return Err("S03 founding state changed when sending the invitation".into());
     }
@@ -217,12 +229,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if founder.join_snapshot().game_session_id == founder_session
         || invitee.join_snapshot().game_session_id == invitee_session
         || query(&mut founder, &wire::GuildQuery::Own).await?.1 != own_after_invite
+        || query(&mut invitee, &wire::GuildQuery::Own).await?.1 != wire::GuildQueryResult::Own(None)
         || query(&mut invitee, &wire::GuildQuery::Invitations).await?.1
             != wire::GuildQueryResult::Invitations(vec![invitation.clone()])
     {
         return Err("S03 guild or invitation did not persist across fresh login".into());
     }
-    let (_, persisted_roster) = query(
+    let (persisted_roster_bytes, persisted_roster) = query(
         &mut founder,
         &wire::GuildQuery::Roster {
             guild: found.guild,
@@ -234,17 +247,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         guild,
         members,
         next,
-        ..
+        revision,
     } = persisted_roster
     else {
         return Err("S03 relogged roster has the wrong shape".into());
     };
-    if guild != found.guild || next.is_some() || members.as_slice() != [member.clone()] {
+    if guild != found.guild
+        || revision != 2
+        || next.is_some()
+        || members.as_slice() != [member.clone()]
+    {
         return Err("S03 exact founder roster did not persist across fresh login".into());
     }
     logout(&mut founder).await?;
     logout(&mut invitee).await?;
 
+    capture(
+        &capture_root,
+        "s03-persisted-roster.bin",
+        &persisted_roster_bytes,
+    )?;
     let replay = required("NODE_BOOT_S03_REPLAY_BIN")?;
     let replay_root = capture_root.clone();
     let output = tokio::task::spawn_blocking(move || {

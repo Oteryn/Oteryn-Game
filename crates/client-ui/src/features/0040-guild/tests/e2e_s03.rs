@@ -11,6 +11,9 @@ struct Replay {
     own: Vec<u8>,
     roster: Vec<u8>,
     invitations: Vec<u8>,
+    invite: Vec<u8>,
+    invitee_own: Vec<u8>,
+    persisted_roster: Vec<u8>,
     expected: String,
 }
 
@@ -27,10 +30,17 @@ fn load() -> Result<Replay, Error> {
             found: std::fs::read(root.join("s03-found.bin"))?,
             own: std::fs::read(root.join("s03-own.bin"))?,
             roster: std::fs::read(root.join("s03-roster.bin"))?,
+            invite: std::fs::read(root.join("s03-invite.bin"))?,
+            invitee_own: std::fs::read(root.join("s03-invitee-own.bin"))?,
+            persisted_roster: std::fs::read(root.join("s03-persisted-roster.bin"))?,
             invitations: std::fs::read(root.join("s03-invitations.bin"))?,
             expected: std::fs::read_to_string(root.join("s03-expected.txt"))?,
         });
     }
+    fixture()
+}
+
+fn fixture() -> Result<Replay, Error> {
     let uuid7 = |fill: u8| {
         let mut id = [fill; 16];
         id[6] = 0x70;
@@ -70,6 +80,23 @@ fn load() -> Result<Replay, Error> {
             next: None,
         })
         .map_err(|e| format!("roster {e:?}"))?,
+        persisted_roster: guild::encode_guild_query_result(&guild::GuildQueryResult::Roster {
+            guild: id,
+            revision: 2,
+            members: vec![guild::GuildMember { channel: None,
+                character: uuid7(8),
+                name: "Aurelia".into(),
+                level: 1,
+                title: "Leader".into(),
+            }],
+            next: None,
+        })
+        .map_err(|e| format!("roster {e:?}"))?,
+        invite: guild::encode_guild_intent_result(&guild::GuildIntentResult {
+            code: 1, guild: id, revision: Some(2),
+        }).map_err(|e| format!("invite {e:?}"))?,
+        invitee_own: guild::encode_guild_query_result(&guild::GuildQueryResult::Own(None))
+            .map_err(|e| format!("invitee own {e:?}"))?,
         invitations: guild::encode_guild_query_result(&guild::GuildQueryResult::Invitations(
             vec![guild::GuildInvitation {
                 guild: id,
@@ -91,7 +118,13 @@ fn query(bytes: &[u8]) -> Result<GuildReply, Error> {
 
 #[test]
 fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
-    let replay = load()?;
+    verify(&load()?, request)
+}
+
+fn verify(
+    replay: &Replay,
+    request: impl Fn(&mut GuildPanel, Intent) -> Option<GuildCommand>,
+) -> Result<(), Error> {
     let name = value(&replay.expected, "guild_name")?;
     let founder = value(&replay.expected, "founder")?;
     let rank_count: usize = value(&replay.expected, "rank_count")?.parse()?;
@@ -110,6 +143,8 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     );
     let result = guild::decode_guild_intent_result(&replay.found).map_err(|e| format!("{e:?}"))?;
     assert_eq!(result.code, 1);
+    assert_eq!(result.revision, Some(1));
+    let guild_id = result.guild;
     apply_result(
         &mut panel,
         &GuildReply::Intent {
@@ -120,10 +155,17 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     assert!(!panel.pending);
     assert_eq!(panel.feedback.as_deref(), Some("Guild action accepted"));
 
-    assert!(request(&mut panel, Intent::RefreshOwn).is_some());
+    assert_eq!(
+        request(&mut panel, Intent::RefreshOwn),
+        Some(GuildCommand::Query(guild::GuildQuery::Own))
+    );
     apply_result(&mut panel, &query(&replay.own)?);
     let own = panel.own.as_ref().ok_or("own guild absent")?;
     assert_eq!(own.name, name);
+    assert_eq!(own.guild, guild_id);
+    assert_eq!(own.state, 1);
+    assert_eq!(own.revision, 1);
+    assert_eq!(own.ranks, ["Leader", "Vice Leader", "Member"]);
     assert_eq!(own.ranks.len(), rank_count);
     assert_eq!(own.own_rank, own_rank);
     assert_eq!(
@@ -137,7 +179,14 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     );
     assert_eq!(panel.feedback, None);
 
-    assert!(request(&mut panel, Intent::RefreshRoster).is_some());
+    let roster_query = GuildCommand::Query(guild::GuildQuery::Roster {
+        guild: guild_id,
+        after: None,
+    });
+    assert_eq!(
+        request(&mut panel, Intent::RefreshRoster),
+        Some(roster_query.clone())
+    );
     apply_result(&mut panel, &query(&replay.roster)?);
     let [member] = panel.roster.as_slice() else {
         return Err("expected one roster member".into());
@@ -154,17 +203,82 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     assert!(panel_text(&panel).lines().any(|line| line == roster_text));
     assert!(panel_text(&panel).lines().any(|l| l == "Roster (1):"));
 
+    let invitee_name = value(&replay.expected, "invitee")?;
+    assert_eq!(
+        request(&mut panel, Intent::Invite(invitee_name.into())),
+        Some(GuildCommand::Intent(guild::GuildIntent::Invite {
+            guild: guild_id,
+            name: invitee_name.into()
+        }))
+    );
+    let invite_result =
+        guild::decode_guild_intent_result(&replay.invite).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        invite_result,
+        guild::GuildIntentResult {
+            code: 1,
+            guild: guild_id,
+            revision: Some(2)
+        }
+    );
+    apply_result(
+        &mut panel,
+        &GuildReply::Intent {
+            status: CommandStatus::Accepted,
+            result: Some(invite_result),
+        },
+    );
+    assert_eq!(panel.feedback.as_deref(), Some("Guild action accepted"));
+    assert_eq!(
+        request(&mut panel, Intent::RefreshRoster),
+        Some(roster_query)
+    );
+    let persisted = query(&replay.persisted_roster)?;
+    let GuildReply::Query {
+        result:
+            Some(guild::GuildQueryResult::Roster {
+                guild,
+                revision,
+                members,
+                next,
+            }),
+        ..
+    } = &persisted
+    else {
+        return Err("relogged roster has the wrong shape".into());
+    };
+    assert_eq!((*guild, *revision, *next), (guild_id, 2, None));
+    assert_eq!(members, &panel.roster);
+    apply_result(&mut panel, &persisted);
+
     // The invitee sees the pending invitation and no guild.
     let mut invitee = GuildPanel {
         selected: true,
         ..GuildPanel::default()
     };
-    assert!(request(&mut invitee, Intent::RefreshInvitations).is_some());
+    assert_eq!(
+        request(&mut invitee, Intent::RefreshOwn),
+        Some(GuildCommand::Query(guild::GuildQuery::Own))
+    );
+    let own_reply = query(&replay.invitee_own)?;
+    assert!(matches!(
+        own_reply,
+        GuildReply::Query {
+            result: Some(guild::GuildQueryResult::Own(None)),
+            ..
+        }
+    ));
+    apply_result(&mut invitee, &own_reply);
+    assert_eq!(
+        request(&mut invitee, Intent::RefreshInvitations),
+        Some(GuildCommand::Query(guild::GuildQuery::Invitations))
+    );
     apply_result(&mut invitee, &query(&replay.invitations)?);
     let [invitation] = invitee.invitations.as_slice() else {
         return Err("expected one invitation".into());
     };
     assert_eq!(invitation.name, name);
+    assert_eq!(invitation.guild, guild_id);
     let text = panel_text(&invitee);
     assert!(text.lines().next() == Some("No guild"));
     assert!(text.lines().any(|l| l == "Invitations (1):"));
@@ -172,7 +286,10 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
 
     // A refused query leaves the shown guild, roster and invitations untouched.
     let before = panel.clone();
-    assert!(request(&mut panel, Intent::RefreshOwn).is_some());
+    assert_eq!(
+        request(&mut panel, Intent::RefreshOwn),
+        Some(GuildCommand::Query(guild::GuildQuery::Own))
+    );
     apply_result(
         &mut panel,
         &GuildReply::Query {
@@ -187,5 +304,87 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     assert_eq!((&panel.own, &panel.roster), (&before.own, &before.roster));
     // A truncated reply cannot be decoded and never reaches the panel.
     assert!(guild::decode_guild_query_result(&replay.own[..replay.own.len() - 2]).is_err());
+    Ok(())
+}
+
+#[test]
+fn rejects_audited_false_positives() -> Result<(), Error> {
+    let rejected = |case, replay: &Replay| {
+        assert!(
+            std::panic::catch_unwind(|| verify(replay, request))
+                .map_or(true, |result| result.is_err()),
+            "accepted {case}"
+        );
+    };
+    let mut replay = fixture()?;
+    let guild::GuildQueryResult::Own(Some(mut summary)) =
+        guild::decode_guild_query_result(&replay.own).map_err(|e| format!("{e:?}"))?
+    else {
+        return Err("fixture lacks founder summary".into());
+    };
+    summary.state = 2;
+    replay.own =
+        guild::encode_guild_query_result(&guild::GuildQueryResult::Own(Some(summary.clone())))
+            .map_err(|e| format!("{e:?}"))?;
+    rejected("active founding state", &replay);
+    summary.state = 1;
+    summary.ranks[1] = "Wrong Rank".into();
+    replay.own =
+        guild::encode_guild_query_result(&guild::GuildQueryResult::Own(Some(summary.clone())))
+            .map_err(|e| format!("{e:?}"))?;
+    rejected("wrong rank names", &replay);
+    replay = fixture()?;
+    replay.invitee_own =
+        guild::encode_guild_query_result(&guild::GuildQueryResult::Own(Some(summary)))
+            .map_err(|e| format!("{e:?}"))?;
+    rejected("invitee membership", &replay);
+
+    for (case, wrong_guild) in [
+        ("wrong Invite revision", false),
+        ("wrong Invite guild", true),
+    ] {
+        let mut replay = fixture()?;
+        let mut receipt =
+            guild::decode_guild_intent_result(&replay.invite).map_err(|e| format!("{e:?}"))?;
+        if wrong_guild {
+            receipt.guild[0] ^= 1
+        } else {
+            receipt.revision = Some(1)
+        }
+        replay.invite =
+            guild::encode_guild_intent_result(&receipt).map_err(|e| format!("{e:?}"))?;
+        rejected(case, &replay);
+    }
+    replay = fixture()?;
+    replay.persisted_roster = replay.roster.clone();
+    rejected("stale relog roster revision", &replay);
+
+    let replay = fixture()?;
+    for wrong in [
+        Intent::RefreshOwn,
+        Intent::RefreshRoster,
+        Intent::RefreshInvitations,
+        Intent::Invite("Berenike".into()),
+    ] {
+        let checked = std::panic::catch_unwind(|| {
+            verify(&replay, |panel, intent| {
+                if intent == wrong {
+                    let _ = request(panel, intent);
+                    let query = if wrong == Intent::RefreshOwn {
+                        guild::GuildQuery::Invitations
+                    } else {
+                        guild::GuildQuery::Own
+                    };
+                    Some(GuildCommand::Query(query))
+                } else {
+                    request(panel, intent)
+                }
+            })
+        });
+        assert!(
+            checked.map_or(true, |result| result.is_err()),
+            "accepted wrong command for {wrong:?}"
+        );
+    }
     Ok(())
 }
