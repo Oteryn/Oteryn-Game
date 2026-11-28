@@ -990,6 +990,17 @@ impl ChannelActorCarrier {
                 },
             }
         }
+        if let Slot::CreatureOccupied { spell_combat, .. } = &self.slots[index]
+            && let Some(oberon) = spell_combat.oberon
+        {
+            let limited = oberon.limit_damage(
+                damage_phase_health,
+                spell_combat.maximum_health,
+                actual_damage,
+            );
+            source_damage_canceled |= actual_damage > 0 && limited == 0;
+            actual_damage = limited;
+        }
         let next = damage_phase_health
             .checked_sub(actual_damage)
             .ok_or(CarrierError::DamageOverflow)?

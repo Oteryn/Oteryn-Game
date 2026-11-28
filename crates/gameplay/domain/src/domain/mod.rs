@@ -29,6 +29,7 @@ pub mod mana_shield;
 pub mod map_position;
 pub mod market;
 pub mod melee_definition;
+pub mod oberon;
 pub mod power_score;
 pub mod premium;
 pub mod progression;

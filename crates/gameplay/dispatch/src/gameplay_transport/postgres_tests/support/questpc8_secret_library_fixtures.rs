@@ -217,6 +217,7 @@ pub(super) async fn exercise(
         .await;
     assert_eq!(actors.len(), 1);
     let target = actors[0];
+    exercise_oberon_debates(owner, admitted, target).await?;
     use crate::gameplay_transport::kill_reward::DrainOutcome;
     if past_oberon_objective {
         let mut tx = h.pool.begin().await?;
@@ -392,6 +393,197 @@ pub(super) async fn exercise(
     );
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_secret_library_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
+    Ok(())
+}
+
+async fn exercise_oberon_debates(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    boss: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use super::srx3_native_source_cast_fixtures::{
+        NativeOwnerClock, next_native_melee_deadline, settle_monster_melee_at_until,
+    };
+    use crate::foundation::OwnerDamageCommand;
+    use oteryn_gameplay_encounters::bosses::source_callbacks::oberon_think::{
+        OBERON_KEY, OBERON_LIVES, OBERON_SUMMONS,
+    };
+    use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntent, ChatSpeechMode};
+
+    const OBERON_DEBATE: [(&str, &str); 9] = [
+        (
+            "You appear like a worm among men!",
+            "How appropriate, you look like something worms already got the better of!",
+        ),
+        (
+            "The world will suffer for its idle laziness!",
+            "Are you ever going to fight or do you prefer talking!",
+        ),
+        (
+            "People fall at my feet when they see me coming!",
+            "Even before they smell your breath?",
+        ),
+        (
+            "This will be the end of mortal men!",
+            "Then let me show you the concept of mortality before it!",
+        ),
+        (
+            "I will remove you from this plane of existence!",
+            "Too bad you barely exist at all!",
+        ),
+        (
+            "Dragons will soon rule this world, I am their herald!",
+            "Excuse me but I still do not get the message!",
+        ),
+        (
+            "The true virtues of chivalry are my belief!",
+            "Dare strike up a Minnesang and you will receive your last accolade!",
+        ),
+        (
+            "I lead the most honourable and formidable following of knights!",
+            "Then why are we fighting alone right now?",
+        ),
+        ("ULTAH SALID'AR, ESDO LO!", "SEHWO ASIMO, TOLIDO ESD"),
+    ];
+
+    let speaker = admitted.runtime_actor.ok_or("Oberon challenger")?;
+    let session = admitted.game_session_id;
+    let facts = &owner.bundle_map().ok_or("native Oberon room")?.facts;
+    let clock = NativeOwnerClock::new(owner);
+    let mut now = owner.owner_now().get();
+    owner
+        .states
+        .chat
+        .admit_as(session, "Challenger", Some(id(41)), owner.owner_now());
+    let maximum = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(boss)
+        .map_err(debug)?
+        .maximum_health;
+    // Fandom describes approximately 3,000 HP out of 30,000.
+    let red = maximum / 10;
+    let strike = async |occurrence: &str, damage| -> TestResult<i64> {
+        let mut binding = occurrence.as_bytes().to_vec();
+        binding.push(0);
+        let mut runtime = owner.runtime.lock().await;
+        let result = runtime
+            .borrow_exact_actor_commit_at(owner.owner_now().get() / 1000)
+            .commit_damage(
+                boss,
+                OwnerDamageCommand {
+                    target: OBERON_KEY.as_bytes(),
+                    occurrence: occurrence.as_bytes(),
+                    binding: &binding,
+                    damage,
+                },
+            )
+            .map_err(debug)?;
+        Ok(result.health_after)
+    };
+    let mut taunts = std::collections::BTreeSet::new();
+    for phase in 1..=OBERON_LIVES {
+        if phase == 1 {
+            let mut runtime = owner.runtime.lock().await;
+            runtime.set_test_creature_health(boss, red).map_err(debug)?;
+        } else {
+            assert_eq!(
+                strike(&format!("oberon-enter-red-{phase}"), maximum).await?,
+                red,
+                "lethal burst must stop at red HP until the pending debate starts"
+            );
+        }
+        let cursor = facts
+            .movement_speech_since(0)
+            .last()
+            .map_or(0, |entry| entry.0);
+        let mut healed = false;
+        for _ in 0..6 {
+            now = next_native_melee_deadline(owner).await?.max(now + 1);
+            healed = settle_monster_melee_at_until(owner, now, async || {
+                owner.runtime.lock().await.live_creature_health(boss) == Some(maximum as u64)
+            })
+            .await?;
+            if healed {
+                break;
+            }
+        }
+        assert!(
+            healed,
+            "reserved native think must heal Oberon from red HP to full"
+        );
+        let (taunt, answer) = OBERON_DEBATE
+            .into_iter()
+            .find(|(taunt, _)| {
+                facts
+                    .movement_speech_since(cursor)
+                    .iter()
+                    .any(|(_, line)| line.speaker == boss && line.text == *taunt)
+            })
+            .ok_or("native think must publish Oberon's taunt")?;
+        assert!(taunts.insert(taunt), "each phase must ask a new question");
+        {
+            let runtime = owner.runtime.lock().await;
+            let summons = runtime
+                .visible_entities()
+                .creatures
+                .into_iter()
+                .filter(|entry| {
+                    OBERON_SUMMONS.iter().any(|key| {
+                        runtime.matches_live_creature_identity(entry.actor, key.as_bytes())
+                    })
+                })
+                .count();
+            assert_eq!(summons, usize::from(phase), "one Falcon per debate");
+        }
+        assert_eq!(
+            strike(&format!("oberon-immune-{phase}"), maximum).await?,
+            maximum
+        );
+        clock.set(now);
+        if phase == 1 {
+            let wrong = ChatIntent::Say {
+                mode: ChatSpeechMode::Say,
+                text: "Wrong answer".into(),
+            };
+            assert_eq!(
+                owner
+                    .chat_speak(speaker, session, 1, &wrong)
+                    .await
+                    .disposition,
+                ChatDisposition::Ok
+            );
+            assert!(
+                facts
+                    .movement_speech_since(cursor)
+                    .iter()
+                    .any(|(_, line)| line.speaker == boss && line.text == "HAHAHAHA!")
+            );
+            assert_eq!(strike("oberon-after-wrong-answer", maximum).await?, maximum);
+        }
+        let correct = ChatIntent::Say {
+            mode: ChatSpeechMode::Say,
+            text: answer.into(),
+        };
+        assert_eq!(
+            owner
+                .chat_speak(speaker, session, u64::from(phase) + 1, &correct)
+                .await
+                .disposition,
+            ChatDisposition::Ok
+        );
+        assert!(
+            facts
+                .movement_speech_since(cursor)
+                .iter()
+                .any(|(_, line)| line.speaker == boss && line.text == "GRRRAAANNGH!")
+        );
+        assert_eq!(
+            strike(&format!("oberon-vulnerable-{phase}"), 1).await?,
+            maximum - 1
+        );
+    }
     Ok(())
 }
 

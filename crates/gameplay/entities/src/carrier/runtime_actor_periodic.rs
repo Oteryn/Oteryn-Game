@@ -242,8 +242,10 @@ impl ChannelRuntimeV1 {
         else {
             return Err(CarrierError::NotCreature);
         };
-        let soulpit = match &self.carrier.slots[index] {
-            Slot::CreatureOccupied { spell_combat, .. } => spell_combat.soulpit,
+        let (soulpit, oberon) = match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { spell_combat, .. } => {
+                (spell_combat.soulpit, spell_combat.oberon)
+            }
             _ => return Err(CarrierError::NotCreature),
         };
         let ordinal = committed.next_ordinal;
@@ -432,6 +434,9 @@ impl ChannelRuntimeV1 {
                     } else {
                         damage
                     };
+                    let damage = oberon.map_or(damage, |phase| {
+                        phase.limit_damage(health_after, before.maximum_health, damage)
+                    });
                     let applied = damage.min(health_after).max(0);
                     had_damage |= applied > 0;
                     if applied > 0 {
@@ -501,6 +506,9 @@ impl ChannelRuntimeV1 {
                     } else {
                         damage
                     };
+                    let damage = oberon.map_or(damage, |phase| {
+                        phase.limit_damage(health_after, before.maximum_health, damage)
+                    });
                     had_damage |= damage > 0;
                     if damage > 0 {
                         after.conditions.remove_type(

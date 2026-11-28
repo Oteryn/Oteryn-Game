@@ -931,6 +931,9 @@ impl ChannelRuntimeV1 {
                 Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)
             };
         }
+        if definition_key == oteryn_gameplay_domain::domain::oberon::OBERON_KEY {
+            spell_combat.oberon = Some(Default::default());
+        }
         *companion = Some(Box::new(state));
         spell_combat.soul_war_health = health_callback;
         spell_combat.mirror_births = mirror_births;

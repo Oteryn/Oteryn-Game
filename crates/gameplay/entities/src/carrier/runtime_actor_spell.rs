@@ -150,6 +150,7 @@ pub struct ActorCombatState {
     pub maximum_health: i64,
     pub echo: Option<oteryn_gameplay_domain::domain::echo_warden::EchoVariant>,
     pub soulpit: Option<super::soulpit::SoulpitCreatureTag>,
+    pub(super) oberon: Option<oteryn_gameplay_domain::domain::oberon::OberonThinkOwner>,
     pub(super) arbaziloth_shields: Option<super::arbaziloth::ShieldSequence>,
     /// Additive source reflection on the exact Soul War monster incarnation.
     pub soul_war_reflection: u32,

@@ -148,6 +148,7 @@ mod native_summon_reconciliation_tests;
 pub mod npc_actor;
 
 mod native_hits;
+mod oberon;
 mod owner_views;
 pub use native_hits::CommittedNativeHit;
 

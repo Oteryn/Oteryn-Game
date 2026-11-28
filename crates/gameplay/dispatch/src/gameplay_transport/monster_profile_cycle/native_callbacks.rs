@@ -7,6 +7,7 @@ mod death_items;
 mod eruption;
 mod gaz;
 mod malice_heal;
+pub(in crate::gameplay_transport) mod oberon;
 mod omrafir;
 mod outburst_cast;
 mod outburst_entry;
@@ -156,7 +157,8 @@ impl NativeCallbackState {
         self.omrafir
             .think(active, runtime, room, native, map, ai, occurrences, now)
             .await?;
-        self.gaz.think(runtime, room, native, occurrences, now)
+        self.gaz.think(runtime, room, native, occurrences, now)?;
+        oberon::think(runtime, room, native, map, occurrences).await
     }
     #[allow(
         clippy::too_many_arguments,
