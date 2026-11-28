@@ -7,33 +7,22 @@ use oteryn_protocol_oteryn::{DomainSnapshot, actor_spell, item_view};
 type TestError = Box<dyn std::error::Error>;
 
 #[test]
-fn c06_real_payloads_replay_into_client_inventory_and_vitals() -> Result<(), TestError> {
-    let (inventory_payload, vitals_payload, expected) =
-        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            let path = std::path::Path::new(&path);
-            (
-                std::fs::read(path.join("c06-inventory.bin"))?,
-                std::fs::read(path.join("c06-vitals.bin"))?,
-                std::fs::read_to_string(path.join("c06-expected.txt"))?,
-            )
-        } else {
-            let inventory = item_view::CharacterInventory::default();
-            let vitals = actor_spell::ActorVitals {
-                health: 145,
-                max_health: 150,
-                mana: 30,
-                max_mana: 55,
-                soul: 7,
-                harmony: 0,
-                serene: false,
-            };
-            (
-                item_view::encode_character_inventory(&inventory)
-                    .map_err(|error| format!("{error:?}"))?,
-                actor_spell::encode_actor_vitals(&vitals).map_err(|error| format!("{error:?}"))?,
-                "145 150 30 55 7 0\n".into(),
-            )
-        };
+fn c06_snapshot_decoder_rejects_malformed_vitals_atomically() -> Result<(), TestError> {
+    let inventory = item_view::CharacterInventory::default();
+    let vitals = actor_spell::ActorVitals {
+        health: 145,
+        max_health: 150,
+        mana: 30,
+        max_mana: 55,
+        soul: 7,
+        harmony: 0,
+        serene: false,
+    };
+    let inventory_payload =
+        item_view::encode_character_inventory(&inventory).map_err(|error| format!("{error:?}"))?;
+    let vitals_payload =
+        actor_spell::encode_actor_vitals(&vitals).map_err(|error| format!("{error:?}"))?;
+    let expected = "145 150 30 55 7 0";
     let body = snapshot_body(&inventory_payload, &vitals_payload)?;
     let state = SnapshotState::decode(&body, 41, &[4], None, None)?;
     let values = expected

@@ -13,6 +13,7 @@ category = "session"
 release-role = "production"
 
 [features]
+qualification-replay = []
 test-support = []
 
 [dependencies]

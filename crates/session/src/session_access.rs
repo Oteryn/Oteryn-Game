@@ -209,6 +209,42 @@ impl<S: SessionStream> Session<S> {
         Ok(delta)
     }
 
+    #[cfg(feature = "qualification-replay")]
+    /// The original, fully validated join snapshot body and server sequence.
+    pub fn qualification_join_body(&self) -> (u64, &[u8]) {
+        (
+            self.qualification_join_body.1,
+            &self.qualification_join_body.2,
+        )
+    }
+
+    #[cfg(feature = "qualification-replay")]
+    /// Replay the original body using this admission's negotiated capabilities.
+    pub fn qualification_replay_join_inventory_and_vitals(
+        &self,
+        session: GameSessionId,
+        sequence: u64,
+        body: &[u8],
+    ) -> Result<(CharacterInventory, actor_spell::ActorVitals), SessionError> {
+        if session != self.qualification_join_body.0
+            || session != self.join_snapshot.game_session_id
+            || (sequence, body) != self.qualification_join_body()
+        {
+            return Err(SessionError::SessionUnusable);
+        }
+        let decoded = snapshot_state::SnapshotState::decode(
+            body,
+            sequence,
+            &self.selected_capabilities,
+            None,
+            None,
+        )?;
+        decoded
+            .inventory
+            .zip(decoded.actor_vitals)
+            .ok_or(SessionError::SessionUnusable)
+    }
+
     pub fn join_snapshot(&self) -> &JoinSnapshot {
         &self.join_snapshot
     }

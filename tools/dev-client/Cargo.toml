@@ -11,6 +11,9 @@ publish.workspace = true
 category = "tool"
 release-role = "tool-only"
 
+[features]
+qualification-replay = ["oteryn-session/qualification-replay"]
+
 [dependencies]
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
 oteryn-client-ui = { version = "=0.1.0", path = "../../crates/client-ui" }

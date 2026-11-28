@@ -200,6 +200,12 @@ impl<S: SessionStream> Session<S> {
             duplicates: Vec::new(),
             last_probe_id: 0,
             selected_capabilities,
+            #[cfg(feature = "qualification-replay")]
+            qualification_join_body: (
+                accepted_fields.game_session_id,
+                begin.target_server_sequence,
+                assembled_body,
+            ),
             gated_snapshots,
             gated_revisions,
             events,

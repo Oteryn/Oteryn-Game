@@ -394,6 +394,8 @@ pub struct Session<S> {
     duplicates: Vec<DuplicateOutcome>,
     last_probe_id: u64,
     selected_capabilities: Vec<u32>,
+    #[cfg(feature = "qualification-replay")]
+    qualification_join_body: (GameSessionId, u64, Vec<u8>),
     gated_snapshots: Vec<GatedSnapshot>,
     gated_revisions: Vec<(u32, u64)>,
     events: Vec<SessionEvent>,
