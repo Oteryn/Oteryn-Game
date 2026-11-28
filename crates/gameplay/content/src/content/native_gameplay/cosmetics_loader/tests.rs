@@ -5,6 +5,7 @@ use super::*;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
+mod catalogue_reconciliation;
 mod outfit_alias_tests;
 
 type TestResult<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
