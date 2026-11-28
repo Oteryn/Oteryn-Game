@@ -4,6 +4,7 @@
 use super::client_row_p20::{capture, hex, talk};
 use super::*;
 
+use crate::map::view::{MapFacts, placement_key};
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::npc_service as wire;
 
@@ -14,7 +15,7 @@ const FERRIES: [(&str, &str, TilePos, u64); 3] = [
         TilePos {
             x: 33175,
             y: 31764,
-            floor: 6,
+            floor: -6,
         },
         160,
     ),
@@ -24,7 +25,7 @@ const FERRIES: [(&str, &str, TilePos, u64); 3] = [
         TilePos {
             x: 33288,
             y: 31956,
-            floor: 6,
+            floor: -6,
         },
         20,
     ),
@@ -34,7 +35,7 @@ const FERRIES: [(&str, &str, TilePos, u64); 3] = [
         TilePos {
             x: 33314,
             y: 31883,
-            floor: 7,
+            floor: -7,
         },
         0,
     ),
@@ -59,11 +60,36 @@ async fn approach(
     };
     let path = route(world, tile(client.world_spatial().actor_position)?, near)
         .ok_or_else(|| format!("P16 {key} unreachable"))?;
+    walk_p16(client, world, &path).await?;
+    client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .find(|actor| {
+            actor.kind == EntityKind::Npc
+                && npc.placements.iter().any(|p| {
+                    tile(actor.position).ok()
+                        == Some(TilePos {
+                            x: p.x,
+                            y: p.y,
+                            floor: p.floor,
+                        })
+                })
+        })
+        .map(|actor| actor.entity)
+        .ok_or_else(|| format!("P16 {key} not visible").into())
+}
+
+async fn walk_p16(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
     for direction in path {
         let before = client.world_spatial().actor_position;
         let expected =
-            destination(world, tile(before)?, direction).ok_or("planned step has no landing")?;
-        let mut result = client.step(direction).await?;
+            destination(world, tile(before)?, *direction).ok_or("planned step has no landing")?;
+        let mut result = client.step(*direction).await?;
         if result.disposition == StepDisposition::Blocked
             && client.world_spatial().actor_position == before
         {
@@ -98,7 +124,7 @@ async fn approach(
             evidence(&format!(
                 "P16 travel_blocker_cleared creature={blocker:?} landing={expected:?}"
             ));
-            result = client.step(direction).await?;
+            result = client.step(*direction).await?;
         }
         if result.disposition != StepDisposition::Moved
             || result.world_spatial_delta.is_none()
@@ -110,23 +136,74 @@ async fn approach(
         }
         verdict::Harness::global().progress("walk");
     }
-    client
-        .world_entities()
-        .into_iter()
-        .flat_map(|entities| entities.iter())
-        .find(|actor| {
-            actor.kind == EntityKind::Npc
-                && npc.placements.iter().any(|p| {
-                    tile(actor.position).ok()
-                        == Some(TilePos {
-                            x: p.x,
-                            y: p.y,
-                            floor: p.floor,
-                        })
-                })
+    Ok(())
+}
+
+async fn board_thais_ship(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    const LADDER: TilePos = TilePos {
+        x: 32321,
+        y: 32220,
+        floor: -7,
+    };
+    const DECK: TilePos = TilePos {
+        x: 32321,
+        y: 32221,
+        floor: -6,
+    };
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at.floor == LADDER.floor && at.x.abs_diff(LADDER.x).max(at.y.abs_diff(LADDER.y)) <= 1
+    })
+    .ok_or("P16 authored Thais boarding ladder unreachable")?;
+    walk_p16(client, world, &path).await?;
+    let ladder = world
+        .base()
+        .tile(LADDER.x, LADDER.y, LADDER.floor)
+        .ok_or("P16 Thais boarding ladder tile absent")?;
+    let (ordinal, _) = ladder
+        .ids()
+        .iter()
+        .zip(ladder.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .enumerate()
+        .find(|(ordinal, (id, _))| {
+            u8::try_from(*ordinal)
+                .ok()
+                .and_then(|ordinal| world.facts().base_entry(LADDER, ordinal, **id))
+                .is_some_and(|facts| facts.appearance_id == 1948)
         })
-        .map(|actor| actor.entity)
-        .ok_or_else(|| format!("P16 {key} not visible").into())
+        .ok_or("P16 authored Thais boarding ladder missing from tile")?;
+    let key =
+        placement_key(LADDER, u8::try_from(ordinal)?).ok_or("P16 ladder placement key absent")?;
+    let mut target = world.base().digest().to_vec();
+    target.extend_from_slice(&key.to_be_bytes());
+    let before = tile(client.world_spatial().actor_position)?;
+    let result = client
+        .use_object(&target, world.facts().object_revision(key))
+        .await?;
+    if result.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
+        return Err(
+            format!("P16 Thais boarding ladder refused from={before:?} result={result:?}").into(),
+        );
+    }
+    tokio::time::timeout(Duration::from_secs(3), async {
+        while tile(client.world_spatial().actor_position)? == before {
+            client.service_liveness(Duration::from_millis(25)).await?;
+        }
+        TestResult::Ok(())
+    })
+    .await
+    .map_err(|_| "P16 boarding ladder did not move the actor")??;
+    let after = tile(client.world_spatial().actor_position)?;
+    if after != DECK {
+        return Err(format!(
+            "P16 Thais boarding ladder from={before:?} observed={after:?} expected={DECK:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "P16 boarded ladder={LADDER:?} from={before:?} deck={after:?}"
+    ));
+    Ok(())
 }
 
 fn gold(client: &DevClientSession, coins: &[(std::num::NonZeroU32, u64)]) -> TestResult<u64> {
@@ -253,6 +330,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P16 ferry funding missing after fresh admission".into());
     }
+    board_thais_ship(&mut client, world).await?;
     for (key, keyword, arrival, fare) in FERRIES {
         let npc = approach(&mut client, world, &metadata.npcs, key).await?;
         sail(&mut client, npc, keyword, arrival, fare, &coins).await?;
