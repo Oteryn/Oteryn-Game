@@ -1528,6 +1528,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn legacy_gem_use_is_unusable(
+        &self,
+        actor: ExactActorRef,
+        source_definition: std::num::NonZeroU32,
+        intent: &oteryn_protocol_oteryn::world_object::UseIntent,
+        target: Option<item_view::ItemKey>,
+    ) -> bool {
+        self.is_legacy_gem_use(actor, source_definition, intent, target)
+            .await
+    }
+
     async fn use_craft(
         &self,
         actor: ExactActorRef,

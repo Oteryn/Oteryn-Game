@@ -50,6 +50,45 @@ fn finish(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn is_legacy_gem_use(
+        &self,
+        actor: ExactActorRef,
+        source: std::num::NonZeroU32,
+        intent: &UseIntent,
+        target: Option<ItemKey>,
+    ) -> bool {
+        if intent.use_with.is_some() || intent.use_with_position.is_some() {
+            return false;
+        }
+        let runtime = self.runtime.lock().await;
+        let Some(index) = pinned_index(&runtime, self.active_generation) else {
+            return false;
+        };
+        let Some((key, _)) = index.definition_at(source) else {
+            return false;
+        };
+        if !rules::source_id(key).is_some_and(|id| rules::GEMS.contains(&id)) {
+            return false;
+        }
+        let Some(map_target) = &intent.use_with_map_item else {
+            return true;
+        };
+        if runtime.read_actor_position(actor).is_err() {
+            return false;
+        }
+        let Some(map) = self.bundle_map() else {
+            return false;
+        };
+        let facts = map.facts.pinned();
+        let map = super::super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &facts,
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        legacy_shrine(&map, index, map_target, target)
+    }
+
     /// Outer None declines a different source; inner None closes an uncertain acknowledgement.
     #[allow(
         clippy::too_many_lines,
@@ -171,25 +210,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     content_generation: at.content_generation,
                     reset_epoch: self.reset_epoch,
                 };
-                let resolved = match &intent.use_with_map_item {
-                    Some(MapUseTarget::Object(object)) => {
-                        super::super::world_map::resolve_map_target(&map, object, |_| None::<()>)
-                            .ok()
-                            .map(|t| (t.pos, MapEntryKey::Base(t.placement_key)))
-                    }
-                    Some(MapUseTarget::Item(_)) => target
-                        .and_then(|key| super::super::world_map::resolve_map_handle(&map, key).ok())
-                        .and_then(|t| match t {
-                            super::super::world_map::MapHandleTarget::Base {
-                                pos,
-                                placement_key,
-                                ..
-                            } => Some((pos, MapEntryKey::Base(placement_key))),
-                            _ => None,
-                        }),
-                    None => None,
-                };
-                let Some((pos, key)) = resolved else {
+                let Some((pos, key)) = intent
+                    .use_with_map_item
+                    .as_ref()
+                    .and_then(|intent_target| base_map_target(&map, intent_target, target))
+                else {
                     return outcome(UseDisposition::StaleState);
                 };
                 if i16::from(pos.floor) != at.at.floor
@@ -348,5 +373,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 window.install();
             }
         }
+    }
+}
+
+fn legacy_shrine<F: MapFacts>(
+    map: &super::super::world_map::MapViewSource<'_, F>,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+    intent_target: &MapUseTarget,
+    target: Option<ItemKey>,
+) -> bool {
+    base_map_target(map, intent_target, target)
+        .and_then(|(pos, key)| {
+            let tile = view::compose_tile(map.overlay, map.facts, pos).ok()??;
+            let entry = tile
+                .entries
+                .iter()
+                .find(|entry| entry.source.key() == key)?;
+            let MapDefinition::Item(reference) = entry.facts.definition else {
+                return None;
+            };
+            let (key, _) = index.definition_at(reference)?;
+            rules::source_id(key)
+        })
+        .is_some_and(|id| (146..=161).contains(&id))
+}
+
+fn base_map_target<F: MapFacts>(
+    map: &super::super::world_map::MapViewSource<'_, F>,
+    intent_target: &MapUseTarget,
+    target: Option<ItemKey>,
+) -> Option<(crate::map::overlay::TilePos, MapEntryKey)> {
+    use super::super::world_map::{MapHandleTarget, resolve_map_handle, resolve_map_target};
+    match intent_target {
+        MapUseTarget::Object(object) => resolve_map_target(map, object, |_| None::<()>)
+            .ok()
+            .map(|resolved| (resolved.pos, MapEntryKey::Base(resolved.placement_key))),
+        MapUseTarget::Item(_) => target
+            .and_then(|key| resolve_map_handle(map, key).ok())
+            .and_then(|resolved| match resolved {
+                MapHandleTarget::Base {
+                    pos, placement_key, ..
+                } => Some((pos, MapEntryKey::Base(placement_key))),
+                _ => None,
+            }),
     }
 }

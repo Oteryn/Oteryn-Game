@@ -952,6 +952,17 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    /// Recognize removed gem uses from the current backpack and map observations.
+    fn legacy_gem_use_is_unusable(
+        &self,
+        _actor: ExactActorRef,
+        _source_definition: std::num::NonZeroU32,
+        _intent: &UseIntent,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// CRAFT-1: use-with a map cooking station. Replay resolves before current handles.
     fn use_craft(
         &self,
