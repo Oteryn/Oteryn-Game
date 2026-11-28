@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 umask 077
 
-readonly GAME_ADMISSION_SHA=cf5c5f35476559450b6bbaf87dce519f7eead9d0
+# Protected main ancestor shared by both sides of the staging promotion.
+readonly GAME_ADMISSION_SHA=e2750951e28276080d371be43c23f584d8ece34d
 readonly PLATFORM_SHA=623435ec1b907d6d9770b767806c90300252a71c
 readonly TOPOLOGY_REVISION=wp5-s3a-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
@@ -25,24 +26,24 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD)" != "$PLATFORM_SHA" ]]; then
   echo 'S3_RESULT=BLOCKED reason=platform_revision_mismatch'
   exit 2
 fi
-if ! git merge-base --is-ancestor "$GAME_ADMISSION_SHA" HEAD; then
+GAME_SHA="$(git rev-parse HEAD)"
+if ! git merge-base --is-ancestor "$GAME_ADMISSION_SHA" "$GAME_SHA"; then
   echo 'S3_RESULT=BLOCKED reason=game_admission_not_ancestor'
   exit 2
 fi
-for path in apps/game-server/src/admission_evidence.rs apps/game-server/src/native_admission_source/mod.rs apps/game-server/src/native_admission_source/descriptor.rs apps/game-server/src/native_admission_source/http1_mtls.rs; do
-  current_path="$path"
-  if [[ "$path" == apps/game-server/src/admission_evidence.rs ]]; then
-    current_path=crates/gameplay/admission-evidence/src/lib.rs
-  elif [[ "$path" == apps/game-server/src/native_admission_source/mod.rs ]]; then
-    current_path=crates/gameplay/native-admission-source/src/lib.rs
-  elif [[ "$path" == apps/game-server/src/native_admission_source/* ]]; then
-    current_path="crates/gameplay/native-admission-source/src/${path##*/}"
-  fi
-  [[ "$(git rev-parse "$GAME_ADMISSION_SHA:$path")" == "$(git rev-parse "HEAD:$current_path")" ]] || {
+for path in crates/gameplay/admission-evidence/src/lib.rs \
+  crates/gameplay/native-admission-source/src/{lib,descriptor,http1_mtls}.rs; do
+  if ! baseline_blob="$(git rev-parse --verify --quiet "$GAME_ADMISSION_SHA:$path")" || \
+    ! candidate_blob="$(git rev-parse --verify --quiet "$GAME_SHA:$path")" || \
+    [[ "$baseline_blob" != "$candidate_blob" ]]; then
     echo "S3_RESULT=BLOCKED reason=protected_game_source_moved path=$path"
     exit 2
-  }
+  fi
 done
+echo "S3_EVIDENCE pins game_admission=$GAME_ADMISSION_SHA game=$GAME_SHA platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION"
+if [[ "${1:-}" == --check-pins ]]; then
+  exit 0
+fi
 
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/wp5-s3a.XXXXXX")"
 WP5_PKI="$WORK/pki"
@@ -101,7 +102,6 @@ make_leaf client oteryn-game-native-evidence client-ca clientAuth
 make_leaf wrong-client wrong-root-client wrong-ca clientAuth
 make_leaf wrong-identity wrong-game-identity client-ca clientAuth
 find "$WP5_PKI" -type f -name '*.key' -exec chmod 600 {} +
-evidence "pins game_admission=$GAME_ADMISSION_SHA platform=$PLATFORM_SHA topology=$TOPOLOGY_REVISION"
 
 compose config --quiet
 compose pull --quiet db nginx

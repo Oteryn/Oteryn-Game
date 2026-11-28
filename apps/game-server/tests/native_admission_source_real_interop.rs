@@ -12,8 +12,6 @@ use std::{
     thread,
 };
 
-const ADMISSION_GAME_MAIN: &str = "cf5c5f35476559450b6bbaf87dce519f7eead9d0";
-const PLATFORM_SOURCE: &str = "623435ec1b907d6d9770b767806c90300252a71c";
 const EXPECTED_AUTHORITY: &str = "platform";
 
 fn required(name: &str) -> Result<String, io::Error> {
@@ -89,8 +87,17 @@ async fn query_one(
 
 #[test]
 fn qualification_pins_are_closed() {
-    assert_eq!(ADMISSION_GAME_MAIN.len(), 40);
-    assert_eq!(PLATFORM_SOURCE.len(), 40);
+    let runner = include_str!("../../../tools/qualification/wp5_s3a/run.sh");
+    for prefix in ["readonly GAME_ADMISSION_SHA=", "readonly PLATFORM_SHA="] {
+        assert!(runner.lines().any(|line| {
+            line.strip_prefix(prefix).is_some_and(|sha| {
+                sha.len() == 40
+                    && sha
+                        .bytes()
+                        .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+            })
+        }));
+    }
     assert_eq!(native_admission_source::PIPELINE_SLOTS, 2);
     assert_eq!(native_admission_source::QUEUED_REQUESTS, 8);
 }
