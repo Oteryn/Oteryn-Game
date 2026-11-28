@@ -167,58 +167,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .filter(|(_, entry)| in_view(entry.position))
         .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
-        .map(|(kind, entry)| world_spatial::ChannelEntity {
-            source_icons: source_icons(
-                &runtime,
-                kind,
-                entry.actor,
+        .map(|(kind, entry)| {
+            let player_state = if kind == VisibleKind::Player {
                 census.as_ref().and_then(|members| {
                     let (_, _, session) =
                         members.iter().find(|(actor, _, _)| *actor == entry.actor)?;
-                    states
-                        .get(&runtime, entry.actor, (*session)?)?
-                        .soul_war_torment_icon_count()
+                    states.get(&runtime, entry.actor, (*session)?)
+                })
+            } else {
+                None
+            };
+            let health = match kind {
+                VisibleKind::Player => player_state.map(|state| {
+                    let vitals = state.vitals();
+                    (i64::from(vitals.health), i64::from(vitals.max_health))
                 }),
-            ),
-            motion: runtime.actor_motion(entry.actor).map(
-                |(translation_revision, step_duration_ms, mount_look_type, _)| {
-                    oteryn_protocol_oteryn::actor_motion::ActorMotion {
-                        translation_revision,
-                        step_duration_ms,
-                        mount_look_type,
-                        prewalk_ms: [0; 8],
-                    }
+                VisibleKind::Creature => runtime
+                    .creature_combat_facts(entry.actor, now.get() / 1_000)
+                    .ok()
+                    .map(|facts| (facts.health, facts.maximum_health)),
+                _ => None,
+            };
+            let health_percent = health
+                .filter(|(_, maximum)| *maximum > 0)
+                .and_then(|(current, maximum)| {
+                    let percent = i128::from(current) * 100 / i128::from(maximum);
+                    u8::try_from(percent.clamp(i128::from(current > 0), 100)).ok()
+                })
+                .unwrap_or(100);
+            world_spatial::ChannelEntity {
+                source_icons: source_icons(
+                    &runtime,
+                    kind,
+                    entry.actor,
+                    player_state.and_then(|state| state.soul_war_torment_icon_count()),
+                ),
+                motion: runtime.actor_motion(entry.actor).map(
+                    |(translation_revision, step_duration_ms, mount_look_type, _)| {
+                        oteryn_protocol_oteryn::actor_motion::ActorMotion {
+                            translation_revision,
+                            step_duration_ms,
+                            mount_look_type,
+                            prewalk_ms: [0; 8],
+                        }
+                    },
+                ),
+                display_name: None,
+                health_percent,
+                direction: match runtime
+                    .read_actor_position(entry.actor)
+                    .ok()
+                    .and_then(|at| at.facing())
+                {
+                    Some(crate::foundation::MovementFacing::North) => StepDirection::North,
+                    Some(crate::foundation::MovementFacing::East) => StepDirection::East,
+                    Some(crate::foundation::MovementFacing::West) => StepDirection::West,
+                    Some(crate::foundation::MovementFacing::South) | None => StepDirection::South,
                 },
-            ),
-            display_name: None,
-            health_percent: runtime
-                .companion_snapshot(entry.actor)
-                .ok()
-                .map_or(100, |s| {
-                    u8::try_from(
-                        (i128::from(s.health) * 100 / i128::from(s.maximum_health)).clamp(1, 100),
-                    )
-                    .unwrap_or(100)
-                }),
-            direction: match runtime
-                .read_actor_position(entry.actor)
-                .ok()
-                .and_then(|at| at.facing())
-            {
-                Some(crate::foundation::MovementFacing::North) => StepDirection::North,
-                Some(crate::foundation::MovementFacing::East) => StepDirection::East,
-                Some(crate::foundation::MovementFacing::West) => StepDirection::West,
-                Some(crate::foundation::MovementFacing::South) | None => StepDirection::South,
-            },
-            kind,
-            identity: entry.actor.placement_identity(),
-            generation: entry.generation,
-            position: ActorPosition {
-                x: entry.position.x,
-                y: entry.position.y,
-                floor: entry.position.floor,
-            },
-            revision: entry.revision,
+                kind,
+                identity: entry.actor.placement_identity(),
+                generation: entry.generation,
+                position: ActorPosition {
+                    x: entry.position.x,
+                    y: entry.position.y,
+                    floor: entry.position.floor,
+                },
+                revision: entry.revision,
+            }
         })
         .chain(item_ref_admission::visible_corpses(
             &runtime,
