@@ -554,21 +554,19 @@ async fn leave_combat(client: &mut DevClientSession, world: &BundleWorld) -> Tes
         .map(|entry| entry.entity)
         .collect();
     let path = route(world, here, |at| {
-        at.floor == here.floor && u32::from(at.x) + 25 <= u32::from(here.x)
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
     })
-    .ok_or("step=leave-combat;observed=no-westward-retreat")?;
+    .ok_or("step=leave-combat;observed=no-reachable-protection-zone")?;
+    expect(!path.is_empty(), "retreat-pre-state", here)?;
     evidence(&format!(
         "p22d retreat from={here:?} creatures={creatures:?} steps={}",
         path.len()
     ));
-    let retreated = walk_path(client, world, path, |client| {
-        let position = tile(client.world_spatial().actor_position).ok()?;
-        let view = client.world_entities()?;
-        (u32::from(position.x) + 15 <= u32::from(here.x)
-            && creatures.iter().all(|entity| view.get(entity).is_none()))
-        .then_some(position)
-    })
-    .await?;
+    walk_path::<()>(client, world, path, |_| None).await?;
+    let safe = tile(client.world_spatial().actor_position)?;
     let view = client
         .world_entities()
         .ok_or("step=leave-combat;observed=no-entities")?;
@@ -577,7 +575,15 @@ async fn leave_combat(client: &mut DevClientSession, world: &BundleWorld) -> Tes
         .filter_map(|entity| view.get(entity))
         .map(|entry| (entry.entity, entry.position))
         .collect();
-    expect(retreated.is_some(), "leave-combat", remaining)?;
+    expect(
+        remaining.is_empty()
+            && world
+                .base()
+                .tile(safe.x, safe.y, safe.floor)
+                .is_some_and(|tile| tile.protection_zone()),
+        "leave-combat",
+        (safe, remaining),
+    )?;
     // PvE combat can remain locked for up to 60 seconds after the last hit.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     verdict::Harness::global().bounded_wait(deadline, "p22d-combat-lock");
