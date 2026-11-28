@@ -189,6 +189,24 @@ impl ChannelSpellStates {
             facts,
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
         );
+        #[cfg(feature = "qualification-cast-evidence")]
+        if let Some(receipt) = &receipt {
+            for tick in &receipt.ticks {
+                if let TickKind::Damage {
+                    element: DotElement::Poison,
+                    amount,
+                    refused: false,
+                } = tick.kind
+                    && let Some(source) = tick.provenance.source.as_deref()
+                {
+                    crate::gameplay_transport::operator_event(&format!(
+                        "event=qualification_poison_tick session={} source={source} due_us={} amount={amount}",
+                        crate::gameplay_transport::format_connection_trace(*session.as_bytes()),
+                        tick.due
+                    ));
+                }
+            }
+        }
         Some(receipt.and_then(|r| {
             self.get(runtime, actor, session)
                 .map(|s| (r.revision, s.vitals()))

@@ -100,7 +100,7 @@ async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i6
     Ok(poison_observation(client).await?.1)
 }
 
-async fn poison_observation(client: &mut DevClientSession) -> TestResult<(u64, Option<i64>)> {
+pub(super) async fn poison_observation(client: &mut DevClientSession) -> TestResult<(u64, Option<i64>)> {
     use oteryn_protocol_oteryn::condition_status as wire;
     let reply = client
         .session_mut()
@@ -118,7 +118,7 @@ async fn poison_observation(client: &mut DevClientSession) -> TestResult<(u64, O
     Ok((reply.server_sequence, poison_duration(&status)))
 }
 
-fn report_condition_receipt(client: &DevClientSession, sequence: u64) -> TestResult {
+pub(super) fn report_condition_receipt(client: &DevClientSession, sequence: u64) -> TestResult<u64> {
     use std::io::BufRead;
 
     let path = required("NODE_BOOT_CAST_EVIDENCE_LOG")?;
@@ -135,7 +135,9 @@ fn report_condition_receipt(client: &DevClientSession, sequence: u64) -> TestRes
             && fields.clone().any(|field| field.starts_with("trace="))
         {
             println!("{line}");
-            return Ok(());
+            let timestamp = fields.clone().find_map(|field| field.strip_prefix("ts="))
+                .ok_or("C08 Server condition timestamp absent")?;
+            return Ok(timestamp.parse()?);
         }
     }
     Err(format!("C08 Server condition trace absent for {session} {sequence}").into())
@@ -213,7 +215,7 @@ fn require_poison_attribution(client: &DevClientSession) -> TestResult {
     Ok(())
 }
 
-fn poison_tick_sequence(events: Vec<SessionEvent>, after: u64) -> Option<u64> {
+pub(super) fn poison_tick_sequence(events: Vec<SessionEvent>, after: u64) -> Option<u64> {
     events.into_iter().find_map(|event| match event {
         SessionEvent::AnalyserAttributedFacts(delta)
             if delta.server_sequence > after && delta.value.iter().any(poison_tick_fact) =>
@@ -571,28 +573,28 @@ pub(super) async fn travel_to_poison_spider(
     walk_c08(client, world, &path).await?;
 
     let here = client.world_spatial().actor_position;
-    let spider = client
-        .world_entities()
-        .ok_or("C08 visible entities absent")?
-        .iter()
-        .filter(|actor| {
-            actor.kind == oteryn_dev_client::EntityKind::Creature
-                && actor.position.floor == here.floor
-                && actor
-                    .display_name
-                    .as_ref()
-                    .and_then(|name| name.as_str().ok())
-                    .is_some_and(|name| name.eq_ignore_ascii_case("Poison Spider"))
-        })
-        .min_by_key(|actor| {
-            actor
-                .position
-                .x
-                .abs_diff(here.x)
-                .max(actor.position.y.abs_diff(here.y))
-        })
-        .ok_or("C08 authored spawn has no visible Poison Spider")?
-        .entity;
+    let origin = spatial_basis::current(client)?.position(SPAWN);
+    let answer = request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--inspect-spawn",
+        format!("{} {} {}", origin.x, origin.y, origin.floor),
+    )
+    .await?;
+    let fields: Vec<_> = answer.split_ascii_whitespace().collect();
+    let ["spawn_origin", identity, generation] = fields.as_slice() else {
+        return Err("C08 invalid spawn-origin receipt".into());
+    };
+    let spider = oteryn_dev_client::EntityRef {
+        identity: crate::node::operator_files::hex_bytes(identity)
+            .map_err(|_| "C08 invalid authored-spawn identity")?,
+        generation: generation.parse()?,
+    };
+    if !client.world_entities().and_then(|entities| entities.get(&spider)).is_some_and(|actor| {
+        actor.kind == oteryn_dev_client::EntityKind::Creature
+            && actor.display_name.as_ref().and_then(|name| name.as_str().ok()) == Some("Poison Spider")
+    }) {
+        return Err("C08 authored spawn identity is not a visible Poison Spider".into());
+    }
     // Let this exact aggressive creature close the distance over the wire.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     loop {
@@ -734,7 +736,7 @@ fn creature_can_interfere(client: &DevClientSession, at: ActorPosition) -> bool 
     })
 }
 
-fn require_isolated_poison_site(
+pub(super) fn require_isolated_poison_site(
     client: &mut DevClientSession,
     site: ActorPosition,
     stage: &str,
@@ -754,7 +756,7 @@ fn require_isolated_poison_site(
     Ok(())
 }
 
-async fn walk_to_dispel_site(
+pub(super) async fn walk_to_dispel_site(
     client: &mut DevClientSession,
     world: &BundleWorld,
 ) -> TestResult<ActorPosition> {
