@@ -15,6 +15,7 @@ release-role = "production"
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
+jiff = { version = "0.2", default-features = false, features = ["std"] }
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }

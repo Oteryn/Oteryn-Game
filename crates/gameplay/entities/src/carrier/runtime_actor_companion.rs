@@ -836,6 +836,21 @@ impl ChannelRuntimeV1 {
         {
             return Ok(Arc::clone(exact));
         }
+        // The active production registration uses the canonical creature slug.
+        // Legacy source profiles can share its display name under different keys.
+        let slug = name_or_key
+            .split(|ch: char| !ch.is_ascii_alphanumeric())
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join("_")
+            .to_ascii_lowercase();
+        let registered_key = format!("oteryn:creature.{slug}");
+        if let Some(registered) = table.policies().iter().find(|policy| {
+            policy.definition_key == registered_key
+                && policy.display_name.eq_ignore_ascii_case(name_or_key)
+        }) {
+            return Ok(Arc::clone(registered));
+        }
         let mut matches = table
             .policies()
             .iter()
