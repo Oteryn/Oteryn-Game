@@ -209,7 +209,7 @@ async fn general_stats_payload(client: &mut DevClientSession) -> TestResult<Vec<
     Ok(result.payload)
 }
 
-async fn level(client: &mut DevClientSession) -> TestResult<u32> {
+pub(super) async fn level(client: &mut DevClientSession) -> TestResult<u32> {
     let payload = general_stats_payload(client).await?;
     level_from_stats(&payload, general_stats::selected(client))
 }

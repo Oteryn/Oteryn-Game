@@ -255,18 +255,72 @@ pub(super) async fn prepare_caster(
     );
     let mut initial = connect_character(clients, tag, 1).await?;
     let session = initial.join_snapshot().game_session_id;
-    request_fixture_control(
+    let before = full_e2ef5::level(&mut initial).await?;
+    if before != 1 {
+        return Err(format!(
+            "step=fixture expected level-1 caster before grant, observed {before}"
+        )
+        .into());
+    }
+    let receipt = request_fixture_control(
         uuid_text(session.as_bytes()),
         "--profile",
         "s13-party".into(),
     )
     .await?;
+    evidence(&format!(
+        "S13C_FIXTURE profile=s13-party level_before={before} target_level=32 receipt={receipt:?}"
+    ));
     character_prep::grant_premium(&initial).await?;
     logout(&mut initial).await?;
     drop(initial);
-    let caster = connect_character(clients, tag, 1).await?;
+    let mut caster = connect_character(clients, tag, 1).await?;
     if caster.join_snapshot().game_session_id == session {
         return Err("seeded caster reused its previous session".into());
+    }
+    let level = full_e2ef5::level(&mut caster).await?;
+    let vocation = full_e2ef5::current_vocation(&mut caster).await?;
+    let vitals = caster
+        .actor_vitals()
+        .ok_or("fixture caster vitals absent")?;
+    evidence(&format!(
+        "S13C_FIXTURE session={} level={level} vocation={vocation:?} max_health={} max_mana={}",
+        uuid_text(caster.join_snapshot().game_session_id.as_bytes()),
+        vitals.max_health,
+        vitals.max_mana
+    ));
+    if level != 32
+        || vocation != crate::spell::Vocation::Sorcerer
+        || vitals.max_health != 305
+        || vitals.max_mana != 810
+    {
+        return Err("step=fixture seeded caster did not serve level-32 Sorcerer stats".into());
+    }
+    use oteryn_protocol_oteryn::{character_info, premium_overview};
+    let reply = caster
+        .session_mut()
+        .gated_command(
+            character_info::CAPABILITY_CHARACTER_INFO_V1,
+            character_info::COMMAND_TYPE_CHARACTER_INFO,
+            &[premium_overview::OPERATION],
+        )
+        .await?;
+    let overview = premium_overview::Overview::decode(&reply.payload)
+        .ok_or("S13c fixture Premium overview malformed")?;
+    evidence(&format!(
+        "S13C_FIXTURE premium_status={:?} premium_state={:?} authority_revision={} observed_at_us={} valid_for_us={} sequence={}",
+        reply.status,
+        overview.state,
+        overview.authority_revision,
+        overview.observed_at_us,
+        overview.valid_for_us,
+        reply.server_sequence,
+    ));
+    if reply.status != CommandStatus::Accepted
+        || overview.state != premium_overview::State::Active
+        || overview.valid_for_us == 0
+    {
+        return Err("step=fixture caster did not serve current Premium".into());
     }
     Ok(caster)
 }
