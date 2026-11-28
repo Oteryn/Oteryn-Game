@@ -923,7 +923,7 @@ pub(crate) mod tests {
         })();
         std::fs::remove_dir_all(work)?;
         let mut runtime = channel_runtime_with(4096);
-        place(&mut runtime, prepared?.as_ref()).map_err(|error| format!("{error:?}"))?;
+        place(&mut runtime, prepared?.as_ref(), None).map_err(|error| format!("{error:?}"))?;
         let visible = runtime.visible_entities();
         for (key, expected) in [
             ("oteryn:npc.king_tibianus", (32311, 32172, 6)),
