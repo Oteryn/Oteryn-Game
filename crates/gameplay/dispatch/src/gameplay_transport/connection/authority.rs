@@ -1241,6 +1241,26 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(Err(crate::durability::DurabilityError::Unavailable))
     }
 
+    /// Subscribe to committed changes that need an independent party icon refresh.
+    fn party_icon_updates(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> Option<tokio::sync::watch::Receiver<()>> {
+        None
+    }
+
+    fn observe_party_icons_for_push(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<
+        Output = Result<
+            Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+            crate::durability::DurabilityError,
+        >,
+    > {
+        self.observe_party_icons(admitted)
+    }
+
     /// GUILD-EMBLEM-1: every positioned player's guild emblem relative to this session's
     /// character under capability 509. Unavailable reads produce no update.
     fn observe_guild_emblems(

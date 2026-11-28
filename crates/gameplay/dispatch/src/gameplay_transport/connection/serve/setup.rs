@@ -8,6 +8,7 @@ struct LiveSetup {
     items: snapshot::ItemSnapshot,
     sessions: snapshot::SessionSnapshot,
     world: snapshot::WorldSnapshot,
+    party_icon_updates: Option<tokio::sync::watch::Receiver<()>>,
 }
 
 /// Why the join did not complete: before its snapshot reached the transport, while writing it,
@@ -71,6 +72,12 @@ where
 {
     let generation = admitted.continuity.connection_generation;
     let revision = admitted.continuity.spatial_revision;
+    let party_icon_updates = admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1)
+        .then(|| authority.party_icon_updates(*admitted))
+        .flatten();
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
     // that its objects carry their item handles under capability 4.
     let mut payloads = Vec::new();
@@ -278,6 +285,7 @@ where
             items,
             sessions,
             world,
+            party_icon_updates,
         },
     )
     .await
@@ -308,6 +316,7 @@ async fn live<A: FreshAdmissionAuthority>(
         items,
         sessions,
         world,
+        party_icon_updates,
     } = setup;
     let snapshot::InitialSnapshot {
         cooldowns,
@@ -527,6 +536,8 @@ async fn live<A: FreshAdmissionAuthority>(
         achievement_notices,
         party_view,
         party_icons: Vec::new(),
+        party_icon_updates,
+        party_icons_retry_at: None,
         guild_emblems: Vec::new(),
         inventory_capacity: None,
         inventory_capacity_refresh_at: None,

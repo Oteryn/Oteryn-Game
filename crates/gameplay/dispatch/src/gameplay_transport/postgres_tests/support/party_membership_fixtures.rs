@@ -658,10 +658,9 @@ async fn scenario(
     if reference_level {
         super::monster_reference_level_fixtures::check(&owner, &admitted).await?;
     }
-    let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(characters[1])]).await?;
-    assert_eq!(result[0].members.len(), 3);
-    assert_eq!(result[1].disposition, PartyDisposition::Ok);
     if partyskull {
+        super::party_leadership_push::check(h, &owner, &mut admitted, &targets, characters[1])
+            .await?;
         super::party_skull_fixtures::check(
             &owner,
             &mut admitted[2],
@@ -670,6 +669,10 @@ async fn scenario(
             &[2, 2, 2],
         )
         .await?;
+    } else {
+        let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(characters[1])]).await?;
+        assert_eq!(result[0].members.len(), 3);
+        assert_eq!(result[1].disposition, PartyDisposition::Ok);
     }
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(third_character)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::NotLeader);

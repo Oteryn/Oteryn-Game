@@ -303,6 +303,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    fn party_icon_updates(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<tokio::sync::watch::Receiver<()>> {
+        self.states
+            .party_icon_updates
+            .subscribe(*admitted.item_fence?.character_id.as_bytes())
+    }
+
+    async fn observe_party_icons_for_push(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<
+        Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+        crate::durability::DurabilityError,
+    > {
+        self.observe_party_skull_for_push(admitted).await
+    }
+
     async fn observe_guild_emblems(
         &self,
         admitted: connection::AdmittedSession,

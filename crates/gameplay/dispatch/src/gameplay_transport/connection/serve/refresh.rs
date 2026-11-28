@@ -724,7 +724,7 @@ where
             session.revision = to_revision;
             session.admitted.continuity.spatial_revision = session.revision;
             *step = "party_skull";
-            party_skull::refresh(stream, authority, session).await?;
+            party_skull::refresh(stream, authority, session, false).await?;
             inventory_capacity::refresh(stream, authority, session).await?;
             guild_emblem::refresh(stream, authority, session).await?;
             // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
@@ -762,7 +762,7 @@ where
             // The discarded candidate leaves the last published interest set valid.
             // Party roles can change independently while an appearance read is busy.
             *step = "party_skull";
-            party_skull::refresh(stream, authority, session).await?;
+            party_skull::refresh(stream, authority, session, false).await?;
         }
         // A pending respawn fences the dead Character's appearance only until its
         // placement; the next refresh observes it again.

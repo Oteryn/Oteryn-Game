@@ -5,6 +5,30 @@ use crate::foundation::PartySnapshot;
 use oteryn_protocol_oteryn::{party_skull::PartyIcon, world_spatial_entities::EntityRef};
 use sqlx::Row;
 use std::collections::BTreeMap;
+use tokio::sync::watch;
+
+/// Transient hints keyed by the durable members who need a fresh scoped observation.
+/// A subscription lives with the serving connection.
+#[derive(Default)]
+pub(super) struct PartyIconUpdates(std::sync::Mutex<BTreeMap<[u8; 16], watch::Sender<()>>>);
+
+impl PartyIconUpdates {
+    pub(super) fn subscribe(&self, character: [u8; 16]) -> Option<watch::Receiver<()>> {
+        let mut recipients = self.0.lock().ok()?;
+        recipients.retain(|_, sender| sender.receiver_count() != 0);
+        Some(recipients.entry(character).or_default().subscribe())
+    }
+
+    pub(super) fn publish(&self, source: &PartySnapshot) {
+        if let Ok(recipients) = self.0.lock() {
+            for member in &source.members {
+                if let Some(recipient) = recipients.get(&member.character) {
+                    recipient.send_replace(());
+                }
+            }
+        }
+    }
+}
 
 fn shield(
     same: bool,
@@ -75,6 +99,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
     ) -> Result<Vec<PartyIcon>, DurabilityError> {
+        self.read_party_skull(admitted, false).await
+    }
+
+    pub(super) async fn observe_party_skull_for_push(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Vec<PartyIcon>, DurabilityError> {
+        self.read_party_skull(admitted, true).await
+    }
+
+    async fn read_party_skull(
+        &self,
+        admitted: AdmittedSession,
+        push: bool,
+    ) -> Result<Vec<PartyIcon>, DurabilityError> {
         use oteryn_protocol_oteryn::party_skull::CAPABILITY_PARTY_SKULL_V1;
         if !admitted
             .continuity
@@ -98,8 +137,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(DurabilityError::Unavailable);
         }
-        let permit = self.try_spell_lane_permit().await?;
-        let runtime = self.runtime.lock().await;
+        let (permit, runtime) = if push {
+            let permit = self
+                .spell_lane
+                .try_acquire_for_observation()
+                .ok_or(DurabilityError::RootUnavailable)?;
+            let runtime = self
+                .runtime
+                .try_lock()
+                .map_err(|_| DurabilityError::RootUnavailable)?;
+            (permit, runtime)
+        } else {
+            (
+                self.try_spell_lane_permit().await?,
+                self.runtime.lock().await,
+            )
+        };
         runtime
             .assert_actor_spell_unreserved(actor)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -119,8 +172,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(DurabilityError::Unavailable);
         }
-        let states = self.states.spell_states.lock().await;
-        let attack = self.states.attack.lock().await;
+        let (states, attack) = if push {
+            let states = self
+                .states
+                .spell_states
+                .try_lock()
+                .map_err(|_| DurabilityError::RootUnavailable)?;
+            let attack = self
+                .states
+                .attack
+                .try_lock()
+                .map_err(|_| DurabilityError::RootUnavailable)?;
+            (states, attack)
+        } else {
+            (
+                self.states.spell_states.lock().await,
+                self.states.attack.lock().await,
+            )
+        };
         let pass = self.root.try_issue_semantic_pass()?;
         let mut context = (self, &*runtime, &*states, &*attack, &permit);
         let result = pass.run_with_context(&mut context, move |holder, deadline, ctx| {

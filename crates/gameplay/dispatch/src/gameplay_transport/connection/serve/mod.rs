@@ -129,6 +129,8 @@ struct ServeState {
     stash_container_pending: Option<routing::stash_container::Pending>,
     stash_revision: u64,
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
+    party_icon_updates: Option<tokio::sync::watch::Receiver<()>>,
+    party_icons_retry_at: Option<tokio::time::Instant>,
     /// GUILD-EMBLEM-1: the emblems last sent on this connection under capability 509.
     guild_emblems: Vec<oteryn_protocol_oteryn::guild_emblem::GuildEmblem>,
     /// INVCAP-1: the capacity last sent on this connection under capability 508.
