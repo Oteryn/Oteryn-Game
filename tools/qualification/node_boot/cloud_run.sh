@@ -130,8 +130,8 @@ for group in "$@"; do
   child_pid=
   if (( ${#row_env[@]} )); then
     if ! grep -q '^SEAM_EVIDENCE e2e_all scenario=E07.client status=FAIL ' "$log"; then
-      binding=$(sed -nE 's/^SEAM_EVIDENCE e2e_all scenario=E07[.]client status=CAPTURED evidence=(session=[[:xdigit:]-]+ sequences=[0-9,]+) .*/\1/p' "$log")
-      if [[ -n "$binding" && $(grep -c '^SEAM_EVIDENCE e2e_all scenario=E07.client status=CAPTURED ' "$log") == 1 ]] &&
+      binding=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=E07[.]client status=CAPTURED evidence=(session=[[:xdigit:]-]+ sequences=[0-9,]+) .*/\1/p' "$log")
+      if [[ -n "$binding" && $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=E07.client status=CAPTURED ' "$log") == 1 ]] &&
         env "${row_env[@]}" NODE_BOOT_E07_CAPTURE_BINDING="$binding" cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
           e07_real_server_payloads_replay_into_stash_panel -- --nocapture > "$work_dir/$index-e07-replay.log" 2>&1 &&
         grep -Eq '^test result: ok\. 1 passed; 0 failed;' "$work_dir/$index-e07-replay.log"; then
