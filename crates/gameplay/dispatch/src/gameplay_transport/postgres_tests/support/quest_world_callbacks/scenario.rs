@@ -3636,6 +3636,7 @@ fn scenario_case(
             super::super::questpc8_colours_opening_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-wrath-opening" {
             if let Some(pin) = match variant {
+                "pre-zlak-save" => Some("1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
                 "train-save" => Some("542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
                 "published-save" => Some("6eaae3ce74eaedd8e8bd32d9714a148691090c7db9ba5be350f4f7bf6584c7b6"),
                 _ => None,

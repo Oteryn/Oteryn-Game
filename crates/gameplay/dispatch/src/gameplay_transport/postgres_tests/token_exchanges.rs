@@ -50,7 +50,7 @@ fn authored_wrath_opening_retains_unfinished_save_pins() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    for scenario in ["authored-wrath-opening#published-save", "authored-wrath-opening#train-save"] {
+    for scenario in ["authored-wrath-opening#published-save", "authored-wrath-opening#train-save", "authored-wrath-opening#pre-zlak-save"] {
         super::kill_reward_e2e_fixtures::scenario_thread::run(scenario, move || {
             super::quest_world_callbacks_fixtures::scenario(scenario, Position { x: 33354, y: 31410, floor: -8 }, false)
         })?;

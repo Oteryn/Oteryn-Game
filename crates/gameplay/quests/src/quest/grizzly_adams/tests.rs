@@ -719,14 +719,55 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
     use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
     let catalogue = lowered.catalogue();
     let npc = "oteryn:npc.lugri";
-    state.insert(
-        "oteryn:quest-progress/hunting-tasks/necromancers/phase".into(),
-        3,
-    );
-    state.insert(
-        "oteryn:quest-progress/hunting-tasks/minotaurs/phase".into(),
-        3,
-    );
+    let check_mission =
+        |state: &GrizzlyState, task: &str, expected: &str, done: bool| -> Result<(), String> {
+            let track = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+            let slot = quest
+                .missions
+                .iter()
+                .position(|mission| mission.track == track)
+                .ok_or("declared mission")?;
+            let line = loaded
+                .content
+                .line(&Facts(state.clone()), index)
+                .ok_or("missing listed quest")?;
+            let projected = line
+                .missions
+                .iter()
+                .find(|mission| mission.index as usize == slot)
+                .ok_or("missing mission")?;
+            assert_eq!((projected.text.as_str(), projected.done), (expected, done));
+            Ok(())
+        };
+    let reports = crate::quest::reward_callbacks::offered_for(catalogue)?;
+    let entries = crate::quest::world_callbacks::load()?;
+    for (task, directions, after_entry, done) in [
+        (
+            "necromancers",
+            "If you dare, you can try finding and fighting Necropharus in his Halls of Sacrifice, deep under Drefia. Note that this will be the only time you're allowed to enter his room, so be well prepared.",
+            "You faced Necropharus. Go back to Lugri if you like.",
+            false,
+        ),
+        (
+            "minotaurs",
+            "Budrik found the hideout of The Horned Fox! You have a single chance of bringing him down. Go for it.",
+            "You have slain 5000 minotaurs and fought The Horned Fox for Budrik and the whole dwarven kind.",
+            true,
+        ),
+    ] {
+        let report = reports
+            .iter()
+            .find(|cb| cb.key == format!("oteryn:quest-reward/hunting-tasks/{task}/report"))
+            .ok_or("hunt report")?;
+        state.insert(report.storage[0].track.clone(), report.storage[0].set);
+        check_mission(&state, task, directions, false)?;
+        let entry = entries
+            .iter()
+            .find(|cb| cb.key == format!("oteryn:quest-callback/hunting-tasks/{task}/boss-entry"))
+            .ok_or("boss entry")?;
+        state.insert(entry.storage[0].track.clone(), entry.storage[0].set);
+        check_mission(&state, task, after_entry, done)?;
+    }
     let programme = NpcRuleCatalog::runtime()
         .map_err(|e| e.to_string())?
         .admitted_for_npc(npc, catalogue)
@@ -766,6 +807,12 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
             .into_iter()
             .map(|change| (change.key, change.after)),
     );
+    check_mission(
+        &state,
+        "necromancers",
+        "Hunted 0/1000. Report to Lugri after the hunt.",
+        false,
+    )?;
     let death =
         "oteryn:quest-transition/native-kills/hunting-tasks/necromancers-repeat/necromancer";
     assert!(
@@ -781,6 +828,31 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
             .into_iter()
             .map(|change| (change.track, change.after)),
     );
+    check_mission(
+        &state,
+        "necromancers",
+        "Hunted 1/1000. Report to Lugri after the hunt.",
+        false,
+    )?;
+    let report = reports
+        .iter()
+        .find(|cb| cb.key == "oteryn:quest-reward/hunting-tasks/necromancers-repeat/report")
+        .ok_or("repeat report")?;
+    let quota = &report.storage[1];
+    state.insert(quota.track.clone(), quota.minimum);
+    check_mission(
+        &state,
+        "necromancers",
+        "Hunted 1000/1000. Report to Lugri after the hunt.",
+        false,
+    )?;
+    state.insert(report.storage[0].track.clone(), report.storage[0].set);
+    check_mission(
+        &state,
+        "necromancers",
+        "You've finished this task - for now. If you want to kill the different necromancers and priestesses again for an experience and money bonus, talk to Lugri about this task.",
+        true,
+    )?;
     let line = loaded
         .content
         .line(&Facts(state), index)
@@ -792,27 +864,6 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
         .ok_or("missing Apes")?;
     assert!(mission.text.contains("1/300"));
     assert!(mission.text.contains("kongra: 1"));
-    for (task, expected, done) in [
-        (
-            "necromancers",
-            "Hunted 1/1000. Report to Lugri after the hunt.",
-            false,
-        ),
-        ("minotaurs", "You reported this hunt to Budrik.", true),
-    ] {
-        let track = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
-        let slot = quest
-            .missions
-            .iter()
-            .position(|mission| mission.track == track)
-            .ok_or("declared mission")?;
-        let projected = line
-            .missions
-            .iter()
-            .find(|mission| mission.index as usize == slot)
-            .ok_or("missing mission")?;
-        assert_eq!((projected.text.as_str(), projected.done), (expected, done));
-    }
     assert!(!mission.done);
     Ok(())
 }
