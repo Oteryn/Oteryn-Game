@@ -5,8 +5,165 @@
 //! browse view. The item is picked up and the original backpack quantity is verified
 //! again after relog.
 use super::*;
-use oteryn_dev_client::{CharacterInventory, DevClientSession, SessionEvent};
+use oteryn_dev_client::{
+    CharacterInventory, SessionEvent,
+    native_session::{Admission, Session},
+};
 use oteryn_protocol_oteryn::item_view::ItemEntry;
+use oteryn_protocol_oteryn::world_spatial_entities::{
+    EntityFields, decode_world_spatial_entities_delta_with_sidecar,
+};
+use oteryn_protocol_oteryn::{FrameLength, MessageType, decode_state_delta, decode_wire_envelope};
+use std::{
+    io,
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task::{Context, Poll},
+};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+
+type BrowseSession = Session<ObservedStream>;
+
+#[derive(Default)]
+struct SpatialFrames {
+    fields: Option<EntityFields>,
+    positions: std::collections::BTreeMap<u64, ActorPosition>,
+}
+
+impl SpatialFrames {
+    fn observe(&mut self, bytes: &[u8]) {
+        let Some(fields) = self.fields else { return };
+        let Ok(frame) = decode_wire_envelope(bytes) else {
+            return;
+        };
+        if frame.message_type() != MessageType::StateDelta {
+            return;
+        }
+        let Ok(delta) = decode_state_delta(frame.payload()) else {
+            return;
+        };
+        if delta.domain_id
+            != oteryn_protocol_oteryn::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+        {
+            return;
+        }
+        if let Ok((delta, _, Some(_))) =
+            decode_world_spatial_entities_delta_with_sidecar(delta.payload, fields)
+        {
+            self.positions
+                .insert(frame.server_sequence(), delta.actor_position);
+        }
+    }
+}
+
+/// Read-only observation of the same TLS bytes that the session validates and applies.
+struct ObservedStream {
+    stream: tokio_rustls::client::TlsStream<TcpStream>,
+    pending: Vec<u8>,
+    observed: Arc<Mutex<SpatialFrames>>,
+}
+
+impl AsyncRead for ObservedStream {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        let start = buf.filled().len();
+        std::task::ready!(Pin::new(&mut self.stream).poll_read(cx, buf))?;
+        self.pending.extend_from_slice(&buf.filled()[start..]);
+        while self.pending.len() >= 4 {
+            let length = FrameLength::from_prefix(&self.pending[..4])
+                .map_err(io::Error::other)?
+                .get() as usize
+                + 4;
+            if self.pending.len() < length {
+                break;
+            }
+            self.observed
+                .lock()
+                .map_err(|_| io::Error::other("browse observer lock poisoned"))?
+                .observe(&self.pending[4..length]);
+            self.pending.drain(..length);
+        }
+        Poll::Ready(Ok(()))
+    }
+}
+
+impl AsyncWrite for ObservedStream {
+    fn poll_write(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.stream).poll_write(cx, buf)
+    }
+
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.stream).poll_flush(cx)
+    }
+
+    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.stream).poll_shutdown(cx)
+    }
+}
+
+async fn connect_browse(
+    clients: &SeamClients<'_>,
+) -> TestResult<(BrowseSession, Arc<Mutex<SpatialFrames>>)> {
+    let index = 1;
+    wait_character_released(clients, index).await?;
+    let account = &clients.accounts[index];
+    let character = &clients.characters[index];
+    let token = if requires_platform_grant(account) {
+        platform_row_grant(clients, index).await?
+    } else {
+        let generation = platform_generation(clients.descriptor, account).await?;
+        let (nonce, attempt) = fresh_grant_material(0xf1)?;
+        sign_grant(
+            &Grant {
+                signing: clients.signing,
+                key_id: clients.key_id,
+                account_id: account,
+                character_id: *character,
+                world_id: clients.world,
+                channel_id: clients.channel,
+                security_generation: generation,
+                scope_generation: clients.scope_generation,
+                nonce,
+                attempt,
+            },
+            now_seconds()?,
+        )
+    };
+    let deadline = Duration::from_secs(20);
+    let tcp = tokio::time::timeout(deadline, TcpStream::connect(clients.address)).await??;
+    let stream = tokio::time::timeout(
+        deadline,
+        connector(clients.certificate, &EXACT)?.connect(ServerName::try_from("localhost")?, tcp),
+    )
+    .await??;
+    let observed = Arc::new(Mutex::new(SpatialFrames::default()));
+    let session = Session::admit(
+        ObservedStream {
+            stream,
+            pending: Vec::new(),
+            observed: Arc::clone(&observed),
+        },
+        Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(character)?,
+            admission_material: token.as_bytes(),
+            client_build_id: "oteryn-dev-client/world-qualification",
+            supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+            deadline,
+        },
+    )
+    .await?;
+    verdict::Harness::global().progress("admission");
+    Ok((session, observed))
+}
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -28,7 +185,7 @@ fn token(value: &str) -> String {
     value.split_whitespace().collect::<Vec<_>>().join("-")
 }
 
-fn inventory(client: &DevClientSession) -> TestResult<&CharacterInventory> {
+fn inventory(client: &BrowseSession) -> TestResult<&CharacterInventory> {
     client
         .inventory()
         .ok_or_else(|| "inventory snapshot absent".into())
@@ -81,7 +238,7 @@ fn verify_inventory_effect(
 }
 
 async fn wait_inventory(
-    client: &mut DevClientSession,
+    client: &mut BrowseSession,
     result: u64,
     expected: &CharacterInventory,
 ) -> TestResult {
@@ -110,9 +267,8 @@ async fn wait_inventory(
     }
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+async fn logout(client: &mut BrowseSession) -> TestResult {
+    if client.logout().await?.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("logout refused".into());
     }
@@ -137,13 +293,12 @@ use oteryn_protocol_oteryn::container_tree as tree;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 
 async fn browse_command(
-    client: &mut DevClientSession,
+    client: &mut BrowseSession,
     intent: browse::BrowseFieldIntent,
 ) -> TestResult<(tree::ContainerViewOutcome, u64)> {
     let payload = browse::encode_browse_field_intent(&intent)
         .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
     let reply = client
-        .session_mut()
         .gated_command(
             browse::CAPABILITY_BROWSE_FIELD_V1,
             browse::COMMAND_TYPE_BROWSE_FIELD_INTENT,
@@ -200,6 +355,34 @@ fn ordinary_landing(floor_change: bool, teleport: bool) -> bool {
     !floor_change && !teleport
 }
 
+fn sidecar_sequence(event: &SessionEvent) -> Option<u64> {
+    match event {
+        SessionEvent::PartyIcons(delta) => Some(delta.server_sequence),
+        SessionEvent::GuildEmblems(delta) => Some(delta.server_sequence),
+        SessionEvent::InventoryCapacity(delta) => Some(delta.server_sequence),
+        _ => None,
+    }
+}
+
+fn check_sidecar_position(
+    positions: &mut std::collections::BTreeMap<u64, ActorPosition>,
+    sequence: u64,
+    expected: TilePos,
+) -> TestResult {
+    let position = tile(
+        positions
+            .remove(&sequence)
+            .ok_or("step=browse missing-wire-sidecar-position")?,
+    )?;
+    if position != expected {
+        return Err(format!(
+            "step=browse observed=sidecar-moved-actor sequence={sequence} position={position:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
 fn invalid_open_event(event: &SessionEvent) -> bool {
     matches!(
         event,
@@ -212,7 +395,8 @@ fn invalid_open_event(event: &SessionEvent) -> bool {
 }
 
 async fn browse_open(
-    client: &mut DevClientSession,
+    client: &mut BrowseSession,
+    observed: &Mutex<SpatialFrames>,
     world: &BundleWorld,
     at: WorldTilePosition,
     target: TilePos,
@@ -220,11 +404,22 @@ async fn browse_open(
 ) -> TestResult<tree::ContainerView> {
     client.take_events();
     let start = tile(client.world_spatial().actor_position)?;
+    observed
+        .lock()
+        .map_err(|_| "browse observer lock poisoned")?
+        .fields = Some(EntityFields::selected(client.selected_capabilities()));
     let (outcome, reply_sequence) =
         browse_command(client, browse::BrowseFieldIntent::Open { position: at }).await?;
     if outcome != tree::ContainerViewOutcome::Opened {
         return Err(format!("step=browse-open observed={outcome:?};needed=Opened").into());
     }
+    let mut positions = {
+        let mut frames = observed
+            .lock()
+            .map_err(|_| "browse observer lock poisoned")?;
+        frames.fields = None;
+        std::mem::take(&mut frames.positions)
+    };
     let mut landings = Vec::new();
     for event in client.take_events() {
         match event {
@@ -237,11 +432,23 @@ async fn browse_open(
                     landings.push((update.server_sequence, position));
                 }
             }
+            event if sidecar_sequence(&event).is_some() => {
+                let sequence =
+                    sidecar_sequence(&event).ok_or("step=browse missing-sidecar-sequence")?;
+                check_sidecar_position(
+                    &mut positions,
+                    sequence,
+                    landings.last().map_or(start, |&(_, at)| at),
+                )?;
+            }
             event if invalid_open_event(&event) => {
                 return Err("step=browse-open observed=replacement-or-premature-view".into());
             }
             _ => {}
         }
+    }
+    if !positions.is_empty() {
+        return Err("step=browse observed=unpaired-wire-sidecar".into());
     }
     let expected = if expect_walk {
         verify_walk(start, target, &landings, reply_sequence, |pos| {
@@ -265,7 +472,6 @@ async fn browse_open(
         return Err("step=browse-open observed=movement-on-adjacent-open".into());
     };
     let delta = client
-        .session_mut()
         .read_gated_delta(
             tree::STATE_DOMAIN_CONTAINER_VIEWS,
             tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
@@ -323,7 +529,7 @@ fn verify_setup_step(
 }
 
 async fn walk_once(
-    client: &mut DevClientSession,
+    client: &mut BrowseSession,
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
@@ -351,7 +557,7 @@ async fn walk_once(
     Ok(())
 }
 
-fn ground(client: &DevClientSession) -> WorldTilePosition {
+fn ground(client: &BrowseSession) -> WorldTilePosition {
     let at = client.world_spatial().actor_position;
     WorldTilePosition {
         x: at.x,
@@ -362,14 +568,13 @@ fn ground(client: &DevClientSession) -> WorldTilePosition {
 
 /// Drops the first backpack entry and verifies the entire resulting inventory.
 async fn drop_first(
-    client: &mut DevClientSession,
+    client: &mut BrowseSession,
     item: ItemEntry,
     expected: &CharacterInventory,
 ) -> TestResult {
     let at = ground(client);
     client.take_events();
     let moved = client
-        .session_mut()
         .move_item_counted(MoveRequest {
             source: item.handle,
             destination: ItemMoveDestination::Ground(at),
@@ -388,7 +593,7 @@ async fn drop_first(
 
 /// Moves a browse entry into the main backpack and waits for the inventory credit.
 async fn take_entry(
-    client: &mut DevClientSession,
+    client: &mut BrowseSession,
     entry: &oteryn_protocol_oteryn::item_view::ItemEntry,
     field: &tree::ContainerView,
     expected: &CharacterInventory,
@@ -526,7 +731,7 @@ fn authored_wrong_floor(
     Err("step=browse-other-floor observed=no-authored-tile-within-horizontal-reach".into())
 }
 
-async fn unopened_view_barrier(client: &mut DevClientSession) -> TestResult {
+async fn unopened_view_barrier(client: &mut BrowseSession) -> TestResult {
     let (outcome, _) = browse_command(
         client,
         browse::BrowseFieldIntent::Seek {
@@ -543,10 +748,10 @@ async fn unopened_view_barrier(client: &mut DevClientSession) -> TestResult {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = open_world(clients).await?;
-    let mut client = connect_world(clients, 0xf1).await?;
+    let (mut client, observed) = connect_browse(clients).await?;
     let t0 = tile(client.world_spatial().actor_position)?;
     let at = ground(&client);
-    assert_empty_field(&browse_open(&mut client, world, at, t0, false).await?)?;
+    assert_empty_field(&browse_open(&mut client, &observed, world, at, t0, false).await?)?;
     let initial = inventory(&client)?.clone();
     let mut after_drop = initial.clone();
     if after_drop.entries.is_empty() {
@@ -563,7 +768,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     drop_first(&mut client, dropped, &after_drop).await?;
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xf1).await?;
+    let (mut client, observed) = connect_browse(clients).await?;
     if persisted_inventory(inventory(&client)?) != persisted_inventory(&after_drop) {
         return Err("step=drop-relog observed=wrong-backpack-or-equipment".into());
     }
@@ -593,14 +798,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         world.base().tile(pos.x, pos.y, pos.floor).is_some()
     })?;
     let map_before_refusal = client
-        .session_mut()
         .world_map_snapshot()
         .ok_or("step=browse-precondition observed=no-map-snapshot")?;
     let inventory_before_refusal = client
         .inventory()
         .cloned()
         .ok_or("step=browse-precondition observed=no-inventory-snapshot")?;
-    let views_before_refusal = client.session_mut().container_views().cloned();
+    let views_before_refusal = client.container_views().cloned();
     if views_before_refusal
         .as_ref()
         .is_some_and(|views| views.views.iter().any(|view| view.browse.is_some()))
@@ -640,12 +844,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refused != tree::ContainerViewOutcome::TooFar
         || tile(client.world_spatial().actor_position)? != distant
         || client.inventory() != Some(&inventory_before_refusal)
-        || client.session_mut().container_views() != views_before_refusal.as_ref()
-        || client.session_mut().world_map_snapshot().as_ref() != Some(&map_before_refusal)
+        || client.container_views() != views_before_refusal.as_ref()
+        || client.world_map_snapshot().as_ref() != Some(&map_before_refusal)
     {
         return Err(format!("step=browse-other-floor observed={refused:?};needed=TooFar-with-unchanged-position-inventory-views-and-map").into());
     }
-    let view = browse_open(&mut client, world, at, t0, true).await?;
+    let view = browse_open(&mut client, &observed, world, at, t0, true).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
     let [entry] = view.entries.as_slice() else {
         return Err("step=browse-custody observed=field-does-not-contain-exactly-one-stack".into());
@@ -665,14 +869,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("step=restore observed=wrong-backpack-or-equipment".into());
     }
     logout(&mut client).await?;
-    let mut relogged = connect_world(clients, 0xf1).await?;
+    let (mut relogged, observed) = connect_browse(clients).await?;
     if persisted_inventory(inventory(&relogged)?) != persisted_inventory(&initial) {
         return Err("step=pickup-relog observed=wrong-backpack-or-equipment".into());
     }
     if tile(relogged.world_spatial().actor_position)? != arrived {
         return Err("step=relog observed=walk-to-position-not-restored".into());
     }
-    assert_empty_field(&browse_open(&mut relogged, world, at, t0, false).await?)?;
+    assert_empty_field(&browse_open(&mut relogged, &observed, world, at, t0, false).await?)?;
     logout(&mut relogged).await?;
     Ok(format!(
         "drop-relog=exact-inventory;wrong-floor-unchanged;walk-frames-before-open;field-empty-after-pickup-and-relog;pickup-relog=exact-inventory;position-relog={},{},{};item-entries={}",
@@ -1006,4 +1210,45 @@ fn browse_audit_rejects_position_opaque_refusal_frames() {
         assert!(map_changes_state(&baseline, &delta));
     }
     assert!(refusal_changed_state(&overlay, actor));
+}
+
+#[test]
+fn browse_audit_rejects_hidden_sidecar_excursions() -> TestResult {
+    use oteryn_protocol_oteryn::{
+        encode_state_delta,
+        inventory_capacity::InventoryCapacity,
+        world_spatial_entities::{DeltaSidecar, encode_world_spatial_entities_sidecar_delta},
+    };
+    let at = ActorPosition {
+        x: 10,
+        y: 10,
+        floor: 7,
+    };
+    for (capability, sidecar) in [
+        (134, DeltaSidecar::PartyIcons(Vec::new())),
+        (
+            508,
+            DeltaSidecar::InventoryCapacity(InventoryCapacity {
+                capacity: 100,
+                free: 100,
+            }),
+        ),
+        (509, DeltaSidecar::GuildEmblems(Vec::new())),
+    ] {
+        let mut observer = SpatialFrames {
+            fields: Some(EntityFields::selected(&[6, capability])),
+            ..SpatialFrames::default()
+        };
+        for (sequence, position) in [(12, ActorPosition { x: 11, ..at }), (13, at)] {
+            let payload = encode_world_spatial_entities_sidecar_delta([0; 32], position, &sidecar)
+                .map_err(|error| format!("{error:?}"))?;
+            let frame = encode_state_delta(1, sequence, 1, sequence - 1, sequence, 2, &payload)?;
+            observer.observe(&frame);
+        }
+        assert_eq!(observer.positions.len(), 2);
+        assert!(check_sidecar_position(&mut observer.positions, 12, tile(at)?).is_err());
+        check_sidecar_position(&mut observer.positions, 13, tile(at)?)?;
+        assert!(check_sidecar_position(&mut observer.positions, 13, tile(at)?).is_err());
+    }
+    Ok(())
 }
