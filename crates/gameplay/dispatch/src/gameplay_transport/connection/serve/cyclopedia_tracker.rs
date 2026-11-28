@@ -11,6 +11,35 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     let selected = session
         .selected_capabilities
         .domain_selected(wire::STATE_DOMAIN_CYCLOPEDIA_TRACKER);
+    if selected && session.cyclopedia_tracker_revision == 0 {
+        let Some(payload) = authority
+            .cyclopedia_tracker_join(session.admitted)
+            .await
+            .map_err(|()| ServeEnd::Disconnected)?
+        else {
+            return Ok(());
+        };
+        let sequence = session
+            .sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let domain = DomainSnapshot {
+            domain_id: wire::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
+            revision: 1,
+            snapshot_type: wire::SNAPSHOT_TYPE_CYCLOPEDIA_TRACKER_V1,
+            payload: &payload,
+        };
+        for frame in encode_snapshot(session.generation, sequence, sequence, &[domain])
+            .map_err(|_| ServeEnd::Disconnected)?
+        {
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+        }
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+        session.cyclopedia_tracker_revision = 1;
+    }
     for tracker in authority
         .cyclopedia_tracker_refresh(session.admitted, selected)
         .await

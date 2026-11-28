@@ -30,6 +30,24 @@ pub trait FreshAdmissionAuthority {
         async { false }
     }
 
+    #[doc(hidden)]
+    fn settle_unpublished_join(
+        &self,
+        pending: &UnpublishedJoin,
+        ended: AdmittedSession,
+    ) -> impl Future<Output = Result<AdmittedSession, ()>> {
+        let _ = pending;
+        async move { Ok(ended) }
+    }
+
+    fn deferred_appearance(
+        &self,
+        _empty_outfit: bool,
+        _entities: &[WireEntityRef],
+    ) -> Option<super::super::appearance_change::observation::Observation> {
+        None
+    }
+
     /// One bounded cadence body; production retains its root's fairness grant across passes.
     fn background_operation<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
         future

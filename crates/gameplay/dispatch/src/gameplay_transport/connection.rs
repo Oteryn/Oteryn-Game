@@ -6,7 +6,9 @@ pub(super) mod appearance_change;
 mod authority;
 pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
+pub(super) mod join_recovery;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
+use join_recovery::{UnpublishedJoin, join_published, join_requires_recovery};
 mod moved_step;
 mod routing;
 #[cfg(test)]
@@ -164,7 +166,7 @@ use super::item_view::{
 pub use super::logout::LogoutReply;
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
-use super::tcp_tls::{FrameReader, read_frame, write_frame};
+use super::tcp_tls::{FrameReader, read_frame, write_frame, write_frame_with_progress};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
@@ -816,11 +818,55 @@ pub use test_support::serve_connection;
     clippy::result_large_err,
     reason = "one terminal end per connection; boxing would only add an allocation"
 )]
+#[cfg(test)]
 pub async fn admit_frame<S, A, I>(
     stream: &mut S,
     frame: &[u8],
     authority: &A,
     identifiers: &I,
+) -> Result<AdmittedSession, ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    let deadline =
+        tokio::time::Instant::now() + crate::durability::DurabilityRoot::MAX_BOOT_PASS_DEADLINE;
+    admit_frame_inner(stream, frame, authority, identifiers, deadline).await
+}
+
+#[allow(
+    clippy::result_large_err,
+    reason = "the terminal outcome carries the existing admitted connection for loss recovery"
+)]
+pub(super) async fn admit_frame_by<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+    deadline: tokio::time::Instant,
+) -> Result<AdmittedSession, ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    crate::durability::with_holder_deadline(deadline, async {
+        admit_frame_inner(stream, frame, authority, identifiers, deadline).await
+    })
+    .await
+}
+
+#[allow(
+    clippy::result_large_err,
+    reason = "the terminal outcome carries the existing admitted connection for loss recovery"
+)]
+async fn admit_frame_inner<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+    deadline: tokio::time::Instant,
 ) -> Result<AdmittedSession, ConnectionEnd>
 where
     S: AsyncWrite + Unpin,
@@ -842,22 +888,30 @@ where
             let Some(transport) = identifiers.transport_ref() else {
                 return Err(ConnectionEnd::ResumeUnavailable);
             };
-            let resumed = authority
-                .resume(ResumeAttempt {
+            let resumed = join_stage(
+                Some(deadline),
+                authority.resume(ResumeAttempt {
                     game_session_id: resume.game_session_id,
                     recovery_material: resume.reconnect_material,
                     transport,
                     last_applied_server_sequence: resume.last_applied_server_sequence,
                     supported_capabilities: resume.supported_capabilities,
-                })
-                .await;
+                }),
+            )
+            .await
+            .unwrap_or(Err(AdmissionRefusal::Unavailable));
+            if resumed.is_err()
+                && let Some(committed) = join_recovery::committed_join()
+            {
+                return Err(join_unavailable(stream, committed, 0).await);
+            }
             let resumed = match resumed {
                 Ok(resumed) => resumed,
                 // ADMIT0 §4: the owner reached this only after authenticating the recovery
                 // credential, so the typed refusal may be revealed. One frame, then close.
                 Err(AdmissionRefusal::RecoveryCapabilityRequired) => {
-                    let _ = tokio::time::timeout(
-                        ADMISSION_REFUSAL_WRITE_BOUND,
+                    let _ = tokio::time::timeout_at(
+                        deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                         send_error(
                             stream,
                             FoundationProtocolError::RecoveryCapabilityRequired,
@@ -875,6 +929,9 @@ where
                     return Err(ConnectionEnd::ResumeUnavailable);
                 }
             };
+            if tokio::time::Instant::now() >= deadline {
+                return Err(join_unavailable(stream, resumed, 0).await);
+            }
             let continuity = resumed.continuity;
             // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
             // refuses a resume that cannot keep it before committing; this never acknowledges one.
@@ -886,7 +943,9 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let Ok(activity_scope) = authority.activity_scope_snapshot(resumed).await else {
+            let Ok(Ok(activity_scope)) =
+                tokio::time::timeout_at(deadline, authority.activity_scope_snapshot(resumed)).await
+            else {
                 super::operator_event(&format!(
                     "event=resume_bootstrap_failed phase=activity_scope code={}",
                     FoundationProtocolError::SessionJoinUnavailable.code()
@@ -903,11 +962,11 @@ where
             }) else {
                 return Err(join_unavailable(stream, resumed, 0).await);
             };
-            write_frame(stream, &accepted)
-                .await
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            write_join_frame(stream, &accepted, resumed, 0, deadline).await?;
             let generation = continuity.connection_generation;
-            let Ok(house_ack) = authority.house_scope_ack(resumed).await else {
+            let Ok(Ok(house_ack)) =
+                tokio::time::timeout_at(deadline, authority.house_scope_ack(resumed)).await
+            else {
                 return Err(join_unavailable(stream, resumed, generation).await);
             };
             if let Some((command, payload)) = house_ack {
@@ -929,9 +988,7 @@ where
                 }) else {
                     return Err(join_unavailable(stream, resumed, generation).await);
                 };
-                write_frame(stream, &ack)
-                    .await
-                    .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                write_join_frame(stream, &ack, resumed, generation, deadline).await?;
                 let mut resumed = resumed;
                 resumed.continuity.server_sequence += 1;
                 return Ok(resumed);
@@ -964,13 +1021,17 @@ where
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
     // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
-    let Some(selected) =
-        fresh_capability_selection(authority, bootstrap.supported_capabilities).await
+    let Some(Some(selected)) = join_stage(
+        Some(deadline),
+        fresh_capability_selection(authority, bootstrap.supported_capabilities),
+    )
+    .await
     else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
         ));
     };
+    join_recovery::retain_fresh_selection(selected);
     if selected.contains(oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1) {
         enable_connection_trace();
     }
@@ -983,15 +1044,21 @@ where
         transport,
         supported_capabilities: bootstrap.supported_capabilities,
     };
-    let mut admitted = match authority.admit(attempt).await {
+    let outcome = join_stage(Some(deadline), authority.admit(attempt))
+        .await
+        .unwrap_or(Err(AdmissionRefusal::Unavailable));
+    let mut admitted = match outcome {
         Ok(admitted) => admitted,
         Err(refusal) => {
+            if let Some(committed) = join_recovery::committed_join() {
+                return Err(join_unavailable(stream, committed, 0).await);
+            }
             report_admission_refusal(refusal);
             if let AdmissionRefusal::Classified(error) = refusal {
                 // N8: exactly one ProtocolError at generation 0, then close. A slow or
                 // failed peer write changes nothing: the refusal already stands.
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
+                let _ = tokio::time::timeout_at(
+                    deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                     send_error(stream, error, 0),
                 )
                 .await;
@@ -1000,8 +1067,8 @@ where
                 && status.lock == oteryn_protocol_oteryn::channel_switch::SwitchLock::ChannelFull
             {
                 let frame = oteryn_protocol_oteryn::admission_queue::encode_channel_full();
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
+                let _ = tokio::time::timeout_at(
+                    deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                     write_frame(stream, &frame),
                 )
                 .await;
@@ -1010,8 +1077,8 @@ where
                 && let Ok(frame) =
                     oteryn_protocol_oteryn::admission_queue::encode_queue_refusal(queue)
             {
-                let _ = tokio::time::timeout(
-                    ADMISSION_REFUSAL_WRITE_BOUND,
+                let _ = tokio::time::timeout_at(
+                    deadline.min(tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND),
                     write_frame(stream, &frame),
                 )
                 .await;
@@ -1019,6 +1086,9 @@ where
             return Err(ConnectionEnd::AdmissionRefused(refusal));
         }
     };
+    if join_requires_recovery() || tokio::time::Instant::now() >= deadline {
+        return Err(join_unavailable(stream, admitted, 0).await);
+    }
     admitted.continuity.selected_capabilities = selected;
     // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
     admitted.continuity.achievement_notice_revision = selected
@@ -1042,15 +1112,14 @@ where
     }) else {
         return Err(join_unavailable(stream, admitted, 0).await);
     };
-    let accepted = if let Some(document) = authority.client_bulletin().await {
-        oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
-            .unwrap_or(accepted)
-    } else {
-        accepted
-    };
-    write_frame(stream, &accepted)
-        .await
-        .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
+    let accepted =
+        if let Some(Some(document)) = join_optional_stage(authority.client_bulletin()).await {
+            oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
+                .unwrap_or(accepted)
+        } else {
+            accepted
+        };
+    write_join_frame(stream, &accepted, admitted, 0, deadline).await?;
     Ok(admitted)
 }
 
@@ -1282,6 +1351,7 @@ fn world_weather_delta(
     Some((delta_sequence, frame, new_revision))
 }
 
+#[cfg(test)]
 pub async fn serve_admitted<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
@@ -1292,9 +1362,33 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    serve_admitted_by(stream, admitted, authority, policy, None).await
+}
+
+pub(super) async fn serve_admitted_by<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+    deadline: Option<tokio::time::Instant>,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     #[cfg(test)]
     super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
-    let end = Box::pin(serve_admitted_actor(stream, admitted, authority, policy)).await;
+    let end = Box::pin(serve_admitted_actor(
+        stream, admitted, authority, policy, deadline,
+    ))
+    .await;
+    if deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+        && join_recovery::JOIN_RECOVERY
+            .try_with(|join| !join.published())
+            .unwrap_or(false)
+    {
+        return end;
+    }
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
         | ConnectionEnd::AdmittedThenDisconnected(current)
@@ -1655,13 +1749,75 @@ async fn close_admitted<S: AsyncWrite + Unpin>(
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "the terminal outcome carries the existing admitted connection for loss recovery"
+)]
+async fn write_join_frame<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    frame: &[u8],
+    admitted: AdmittedSession,
+    generation: u64,
+    deadline: tokio::time::Instant,
+) -> Result<(), ConnectionEnd> {
+    if tokio::time::Instant::now() >= deadline {
+        return Err(join_unavailable(stream, admitted, generation).await);
+    }
+    let mut started = false;
+    match tokio::time::timeout_at(
+        deadline,
+        write_frame_with_progress(stream, frame, &mut started),
+    )
+    .await
+    {
+        Ok(Ok(())) => Ok(()),
+        Err(_) if !started => Err(join_unavailable(stream, admitted, generation).await),
+        Ok(Err(_)) | Err(_) => Err(ConnectionEnd::AdmittedThenDisconnected(admitted)),
+    }
+}
+
+/// Reserve the greater part of the remaining shared budget for required
+/// admission work. A ready optional observation still gets an immediate poll.
+pub(super) async fn join_optional_stage<T>(stage: impl Future<Output = T>) -> Option<T> {
+    let Some(deadline) = crate::durability::holder_deadline() else {
+        return Some(stage.await);
+    };
+    let now = tokio::time::Instant::now();
+    let allowance =
+        (deadline.saturating_duration_since(now) / 8).min(std::time::Duration::from_millis(200));
+    join_stage(Some(now + allowance), stage).await
+}
+
+pub(super) async fn join_stage<T>(
+    deadline: Option<tokio::time::Instant>,
+    stage: impl Future<Output = T>,
+) -> Option<T> {
+    if let Some(deadline) = deadline {
+        if tokio::time::Instant::now() >= deadline {
+            return None;
+        }
+        tokio::time::timeout_at(
+            deadline,
+            crate::durability::with_holder_deadline(deadline, stage),
+        )
+        .await
+        .ok()
+    } else {
+        Some(stage.await)
+    }
+}
+
 /// FND-04C §4.1 (owner 2026-11-10): an admitted or resumed session whose join could not be
 /// prepared or sent reports `SESSION_JOIN_UNAVAILABLE` once before the transport closes, at
 /// `generation` (0 before the client was told it was admitted). A slow or failed write changes
 /// nothing: the end stays the same.
 async fn send_join_unavailable<S: AsyncWrite + Unpin>(stream: &mut S, generation: u64) {
-    let _ = tokio::time::timeout(
-        ADMISSION_REFUSAL_WRITE_BOUND,
+    let ordinary = tokio::time::Instant::now() + ADMISSION_REFUSAL_WRITE_BOUND;
+    let deadline = join_recovery::join_deadline()
+        .or_else(crate::durability::holder_deadline)
+        .map_or(ordinary, |deadline| ordinary.min(deadline));
+    let _ = tokio::time::timeout_at(
+        deadline,
         send_error(
             stream,
             FoundationProtocolError::SessionJoinUnavailable,

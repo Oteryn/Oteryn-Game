@@ -38,20 +38,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (mut channel, sources) = Box::pin(self.named_entity_sources(observer, forecasts))
             .await
             .ok_or(AdmissionRefusal::Rejected)?;
-        // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
-        // contention during periodic observation, even when the cached name is still absent.
+        // Carry the authenticated observer's actual name through initial
+        // publication. Unnamed peers can wait for the next visibility batch.
+        let join_name = super::connection::join_recovery::join_name(observer);
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
             .map_err(|_| AdmissionRefusal::Rejected)?;
+        let optional = super::AdmissionRetryBudget::for_optional_read(self.root);
+        let joining = crate::durability::holder_deadline().is_some();
         for (entity, source) in sources {
+            let own = entity.identity == channel.observer;
             let name = match source {
                 Source::Name(name) => name,
+                Source::Player(_) if own && join_name.is_some() => {
+                    join_name.ok_or(AdmissionRefusal::Rejected)?
+                }
                 Source::Player(session) => {
                     let name = match self.states.chat.speaker_name(session) {
                         Some(name) => name,
                         None => {
-                            Box::pin(self.chat_speaker_name_with_budget(session, &retry))
-                                .await?
-                                .0
+                            let read = self.chat_speaker_name_with_budget(
+                                session,
+                                if joining && !own { &optional } else { &retry },
+                            );
+                            let (result, contended) =
+                                Box::pin(crate::durability::with_holder_contention(read)).await;
+                            match result {
+                                Ok((name, _, _)) => name,
+                                Err(AdmissionRefusal::Unavailable)
+                                    if joining && !own && contended =>
+                                {
+                                    continue;
+                                }
+                                Err(error) => return Err(error),
+                            }
                         }
                     };
                     EntityDisplayName::new(&name).map_err(|_| AdmissionRefusal::Rejected)?
@@ -69,6 +88,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok_or(AdmissionRefusal::Rejected)?;
             entry.display_name = Some(name);
         }
+        // The first interest pass selected the actors we actually named. Do not
+        // let a deferred peer promote an out-of-range unnamed actor into the batch.
+        SessionVisibility::default().defer_unnamed_actors(&mut channel);
         Ok(channel)
     }
 

@@ -188,7 +188,10 @@ impl SessionAppearance {
                     .ok_or(Unavailable)?,
             );
         }
-        let update = if delta.enter.is_empty() && delta.update.is_empty() && delta.leave.is_empty()
+        let update = if !moved
+            && delta.enter.is_empty()
+            && delta.update.is_empty()
+            && delta.leave.is_empty()
         {
             VisibilityUpdate::Unchanged
         } else {

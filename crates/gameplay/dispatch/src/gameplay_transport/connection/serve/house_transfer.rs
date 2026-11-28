@@ -96,40 +96,52 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     }
 }
 
+pub(super) struct Join<'a> {
+    pub(super) policy: LivenessPolicy,
+    pub(super) integrity: &'a mut integrity::Integrity,
+    pub(super) require_session_binding: bool,
+    pub(super) deadline: Option<tokio::time::Instant>,
+    pub(super) repaired_io: Option<spell_repair::RepairedIo>,
+}
+
 /// House custody uses the same command ingress and framing, with no Channel
 /// snapshot, combat cadence or Channel mutations while the House owns the slot.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "the same transport carries its activity session fence into House ingress"
-)]
 pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     mut admitted: AdmittedSession,
     authority: &A,
     root_authority: &'a A,
     server_messages: &mut Option<ServerMessageConnection<'a, A>>,
-    policy: LivenessPolicy,
-    integrity: &mut integrity::Integrity,
-    require_session_binding: bool,
+    join: Join<'_>,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
-    let run = async {
+    let Join {
+        policy,
+        integrity,
+        require_session_binding,
+        deadline: join_deadline,
+        repaired_io,
+    } = join;
+    let generation = admitted.continuity.connection_generation;
+    let selected = admitted.continuity.selected_capabilities;
+    let mut staged = admitted;
+    let mut snapshot_started = false;
+    let bootstrap = async {
         let (_, projection) = authority
-            .house_scope_ack(admitted)
+            .house_scope_ack(staged)
             .await
             .map_err(|_| ServeEnd::Disconnected)?
             .ok_or(ServeEnd::Disconnected)?;
-        let sequence = admitted
+        let sequence = staged
             .continuity
             .server_sequence
             .checked_add(1)
             .ok_or(ServeEnd::Disconnected)?;
-        let actor = admitted.runtime_actor.ok_or(ServeEnd::Disconnected)?;
-        let selected = admitted.continuity.selected_capabilities;
+        let actor = staged.runtime_actor.ok_or(ServeEnd::Disconnected)?;
         let (mut services, mut item_domains) =
-            house_hireling::State::prepare(authority, actor, &mut admitted).await?;
+            house_hireling::State::prepare(authority, actor, &mut staged).await?;
         super::cooldowns::snapshot(
             authority,
-            &admitted,
+            &staged,
             services.cooldowns.as_mut(),
             &mut item_domains,
         )?;
@@ -142,7 +154,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         if selected.contains(CAPABILITY_ZONES_NOLOGOUT_V1) {
             domains.push(DomainSnapshot {
                 domain_id: STATE_DOMAIN_SERVER_MESSAGES,
-                revision: admitted.continuity.server_message_revision,
+                revision: staged.continuity.server_message_revision,
                 snapshot_type: 1,
                 payload: SERVER_MESSAGES_EMPTY_SNAPSHOT,
             });
@@ -155,48 +167,66 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         }));
         services.appearance_domain(&mut domains);
         let snapshot = encode_single_chunk_snapshot(
-            admitted.continuity.connection_generation,
+            staged.continuity.connection_generation,
             sequence,
             sequence,
             &domains,
         )
         .map_err(|_| ServeEnd::Disconnected)?;
         for frame in snapshot {
-            write_frame(stream, &frame)
+            write_frame_with_progress(stream, &frame, &mut snapshot_started)
                 .await
                 .map_err(|_| ServeEnd::Disconnected)?;
         }
-        admitted.continuity.server_sequence = sequence;
-        zones_nologout_transport::delivered(&mut admitted);
+        join_published();
+        staged.continuity.server_sequence = sequence;
+        zones_nologout_transport::delivered(&mut staged);
         // A retained idle owner survives a House handoff or transport retry.
         // Only a genuinely fresh recovered actor needs its initial clock value.
-        if admitted.continuity.gameplay_idle.last_activity().is_none() {
-            admitted
+        if staged.continuity.gameplay_idle.last_activity().is_none() {
+            staged
                 .continuity
                 .gameplay_idle
                 .activity(authority.gameplay_idle_now());
         }
-        authority.observe_gameplay_idle(admitted);
+        authority.observe_gameplay_idle(staged);
         if server_messages.is_none() {
             *server_messages = Some(
-                ServerMessageConnection::join(root_authority, admitted)
+                ServerMessageConnection::join(root_authority, staged)
                     .ok_or(ServeEnd::Disconnected)?,
             );
         }
-        let mut commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
+        let commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
             authority.session_commands(),
-            &admitted,
+            &staged,
         )
         .ok_or(ServeEnd::Disconnected)?;
-        let generation = admitted.continuity.connection_generation;
-        let mut queue = house_hireling::step::Queue::default();
+        Ok::<_, ServeEnd>((services, commands))
+    };
+    let (mut services, mut commands) = match join_stage(join_deadline, bootstrap).await {
+        Some(Ok(ready)) => {
+            admitted = staged;
+            ready
+        }
+        Some(Err(_)) | None if join_deadline.is_some() && !snapshot_started => {
+            return Err(Box::new(
+                join_unavailable(stream, admitted, generation).await,
+            ));
+        }
+        Some(Err(end)) => return Err(Box::new(end.finish(admitted))),
+        None => return Err(Box::new(ServeEnd::Disconnected.finish(admitted))),
+    };
+    let run = async {
         let mut podium = None::<PodiumWalk>;
-        let mut liveness = Liveness::new(policy);
-        let mut cadence = tokio::time::interval_at(
-            tokio::time::Instant::now() + policy.interval,
-            policy.interval,
-        );
-        cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let (frames, mut liveness, mut cadence) = repaired_io.unwrap_or_else(|| {
+            let mut cadence = tokio::time::interval_at(
+                tokio::time::Instant::now() + policy.interval,
+                policy.interval,
+            );
+            cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            (FrameReader::default(), Liveness::new(policy), cadence)
+        });
+        let mut queue = house_hireling::step::Queue::with_frames(frames);
         let mut service_cadence = tokio::time::interval_at(
             tokio::time::Instant::now() + std::time::Duration::from_secs(1),
             std::time::Duration::from_secs(1),

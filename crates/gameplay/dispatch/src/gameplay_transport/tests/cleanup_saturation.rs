@@ -31,6 +31,7 @@ impl RetryAuthority {
 
     fn lost(&self) -> LostControl {
         LostControl {
+            pending_join: None,
             session: self.session,
             wait: Duration::from_millis(17),
             reset: None,

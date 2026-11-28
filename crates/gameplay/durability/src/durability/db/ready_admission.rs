@@ -8,9 +8,17 @@ impl DurabilityRoot {
     /// Recover or wait for the holder before issuing work. A previous successful
     /// pass can retire its connection during cleanup. Maintenance remains the
     /// only connector, and the issued pass keeps its ordinary independent budget.
-    pub async fn issue_ready_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
+    #[track_caller]
+    pub fn issue_ready_semantic_pass(&self) -> impl Future<Output = Result<IssuedSemanticPass, DurabilityError>> {
+        self.issue_ready_semantic_pass_at(std::panic::Location::caller())
+    }
+
+    async fn issue_ready_semantic_pass_at(
+        &self, caller: super::Site,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
         let _foreground = self.foreground_demand()?;
-        let deadline = tokio::time::Instant::now() + ROOT_RECOVERY_WINDOW;
+        let ordinary = tokio::time::Instant::now() + ROOT_RECOVERY_WINDOW;
+        let deadline = super::holder_deadline().map_or(ordinary, |deadline| ordinary.min(deadline));
         // From the first refusal on, a returned holder goes to this owner before owners
         // refused later (see `HolderWaiter`).
         let mut waiter = None;
@@ -22,7 +30,7 @@ impl DurabilityRoot {
                 self.request_ready();
                 return Err(DurabilityError::RootUnavailable);
             }
-            match self.try_issue_semantic_pass() {
+            match self.try_issue_semantic_pass_at(caller) {
                 Ok(pass) => return Ok(pass),
                 Err(DurabilityError::RootUnavailable) => {}
                 Err(error) => return Err(error),

@@ -52,6 +52,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         let owner = scoped.as_ref().unwrap_or(self);
         let admitted = owner.resume_session_for_scope(attempt).await?;
+        if crate::durability::holder_deadline()
+            .is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+        {
+            return Ok(admitted);
+        }
         self.activity_runtimes
             .remember(admitted)
             .map_err(|_| AdmissionRefusal::Unavailable)?;
@@ -115,14 +120,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(pending) = retained_house_input {
             admitted.continuity.house_input_pending = Some(pending);
         }
-        // NBGRANT: only the final spell repair was pending on this positioned actor.
-        // Complete it under the new controller's current fence before making it playable;
-        // other refused entry participants retain their own refusal and are never promoted.
-        if self.repair_pending_spell_entry(admitted).await {
-            admitted.first_entry = FirstEntryOutcome::Reconciled;
+        let mut finished = admitted;
+        let finish = async {
+            // NBGRANT: only the final spell repair was pending on this positioned actor.
+            // Complete it under the new controller's current fence before making it playable;
+            // other refused entry participants retain their own refusal and are never promoted.
+            if self.repair_pending_spell_entry(finished).await {
+                finished.first_entry = FirstEntryOutcome::Reconciled;
+            }
+            self.finish_resumed_session(finished, recovered_transfer)
+                .await;
+        };
+        if let Some(deadline) = crate::durability::holder_deadline() {
+            let _ = tokio::time::timeout_at(deadline, finish).await;
+        } else {
+            finish.await;
         }
-        self.finish_resumed_session(admitted, recovered_transfer)
-            .await;
+        admitted = finished;
         Ok(admitted)
     }
 

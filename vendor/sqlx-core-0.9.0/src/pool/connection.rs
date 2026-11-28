@@ -32,6 +32,7 @@ fn redacted_release_failure_class(error: &Error) -> &'static str {
 pub struct PoolConnection<DB: Database> {
     live: Option<Live<DB>>,
     close_on_drop: bool,
+    checkout_guard: Option<Box<dyn Send + Sync>>,
     pub(crate) pool: Arc<PoolInner<DB>>,
 }
 
@@ -98,6 +99,19 @@ impl<DB: Database> AsMut<DB::Connection> for PoolConnection<DB> {
 }
 
 impl<DB: Database> PoolConnection<DB> {
+    /// Keep application checkout ownership alive through pool cleanup, including
+    /// cleanup executed by a cancelled caller's drop path.
+    ///
+    /// Upstream SQLx 0.9 has no per-connection attachment that lives through the
+    /// return-to-pool or close-on-drop cleanup future. Pool hooks have no caller
+    /// identity and cannot observe cancellation of the caller that drops a checkout.
+    /// Propose a generic PoolConnection attachment API upstream, then remove this
+    /// hook when that API is available.
+    #[doc(hidden)]
+    pub fn oteryn_track_checkout(&mut self, guard: impl Send + Sync + 'static) {
+        self.checkout_guard = Some(Box::new(guard));
+    }
+
     /// Close this connection, allowing the pool to open a replacement.
     ///
     /// Equivalent to calling [`.detach()`] then [`.close()`], but the connection permit is retained
@@ -106,6 +120,7 @@ impl<DB: Database> PoolConnection<DB> {
     /// [`.detach()`]: PoolConnection::detach
     /// [`.close()`]: Connection::close
     pub async fn close(mut self) -> Result<(), Error> {
+        let _checkout = self.checkout_guard.take();
         let floating = self.take_live().float(self.pool.clone());
         floating.inner.raw.close().await
     }
@@ -201,10 +216,13 @@ impl<DB: Database> PoolConnection<DB> {
         // returned future cannot make the pool believe the holder is idle.
         let floating: Option<Floating<DB, Live<DB>>> =
             self.live.take().map(|live| live.float(self.pool.clone()));
-        let had_live = floating.is_some();
+        let cleanup = (floating, self.checkout_guard.take());
         let pool = self.pool.clone();
 
         async move {
+            let cleanup = cleanup;
+            let (floating, checkout) = cleanup;
+            let had_live = floating.is_some();
             let returned = match (floating, deadline) {
                 (Some(floating), Some(deadline)) => {
                     Box::pin(floating.return_to_pool_until(deadline)).await
@@ -215,6 +233,7 @@ impl<DB: Database> PoolConnection<DB> {
                     .ok_or("unbounded_return_retired"),
                 (None, _) => Err("no_evidence"),
             };
+            drop(checkout);
             if returned.is_err() {
                 Box::pin(pool.min_connections_maintenance(None)).await;
             }
@@ -235,9 +254,12 @@ impl<DB: Database> PoolConnection<DB> {
         // Type hints seem to be broken by `Option` combinators in IntelliJ Rust right now (6/22).
         let floating = self.live.take().map(|live| live.float(self.pool.clone()));
 
+        let cleanup = (floating, self.checkout_guard.take());
         let pool = self.pool.clone();
 
         async move {
+            let cleanup = cleanup;
+            let (floating, checkout) = cleanup;
             if let Some(floating) = floating {
                 // Don't hold the connection forever if it hangs while trying to close
                 crate::rt::timeout(CLOSE_ON_DROP_TIMEOUT, floating.close())
@@ -245,6 +267,7 @@ impl<DB: Database> PoolConnection<DB> {
                     .ok();
             }
 
+            drop(checkout);
             pool.min_connections_maintenance(None).await;
         }
     }
@@ -278,7 +301,10 @@ impl<DB: Database> Drop for PoolConnection<DB> {
         }
 
         // We still need to spawn a task to maintain `min_connections`.
-        if self.live.is_some() || self.pool.options.min_connections > 0 {
+        if self.live.is_some() && self.checkout_guard.is_some() {
+            let deadline = Instant::now() + self.pool.options.acquire_timeout.min(CLOSE_ON_DROP_TIMEOUT);
+            crate::rt::spawn(self.return_to_pool_observed_until(deadline));
+        } else if self.live.is_some() || self.pool.options.min_connections > 0 {
             crate::rt::spawn(self.return_to_pool());
         }
     }
@@ -335,6 +361,7 @@ impl<DB: Database> Floating<DB, Live<DB>> {
         PoolConnection {
             live: Some(inner),
             close_on_drop: false,
+            checkout_guard: None,
             pool,
         }
     }

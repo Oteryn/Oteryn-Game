@@ -56,6 +56,7 @@ pub(crate) async fn cycle(
         crate::gameplay_transport::listener::control_loss_lifecycle(
             owner,
             crate::gameplay_transport::listener::LostControl {
+                pending_join: None,
                 session: admitted,
                 wait: Duration::ZERO,
                 reset: Some(reset),

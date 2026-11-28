@@ -106,6 +106,15 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     writer: &mut W,
     body: &[u8],
 ) -> io::Result<()> {
+    write_frame_with_progress(writer, body, &mut false).await
+}
+
+/// Mark the first accepted byte, before awaiting the rest of the frame or its flush.
+pub(super) async fn write_frame_with_progress<W: AsyncWrite + Unpin>(
+    writer: &mut W,
+    body: &[u8],
+    started: &mut bool,
+) -> io::Result<()> {
     let length = u32::try_from(body.len()).map_err(|_| {
         io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -114,7 +123,13 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     })?;
     let length = crate::foundation::FrameLength::new(length)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
-    writer.write_all(&length.to_prefix()).await?;
+    let prefix = length.to_prefix();
+    let written = writer.write(&prefix).await?;
+    if written == 0 {
+        return Err(io::ErrorKind::WriteZero.into());
+    }
+    *started = true;
+    writer.write_all(&prefix[written..]).await?;
     writer.write_all(body).await?;
     writer.flush().await
 }

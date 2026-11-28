@@ -20,10 +20,11 @@ where
     {
         return Ok(());
     }
-    let Some(state) = authority
-        .observe_expert_modes(session.actor, session.admitted.game_session_id)
-        .await
-    else {
+    // Combat already ran. An optional refresh gets no retry turn on this cadence.
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(25);
+    let observation =
+        authority.observe_expert_modes(session.actor, session.admitted.game_session_id);
+    let Ok(Some(state)) = tokio::time::timeout_at(deadline, observation).await else {
         return Ok(());
     };
     let combat = &mut session.admitted.continuity.combat;

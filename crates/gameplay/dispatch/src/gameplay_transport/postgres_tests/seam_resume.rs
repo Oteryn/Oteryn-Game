@@ -17,15 +17,23 @@ use tokio::io::AsyncReadExt;
 
 #[test]
 fn seam_second_same_session_resume_has_deterministic_frames_with_busy_holder() -> TestResult {
-    resume_frames(false)
+    resume_frames(false, false)
 }
 
 #[test]
 fn seam_resume_waits_for_durable_loss_runtime_publication() -> TestResult {
-    resume_frames(true)
+    resume_frames(true, false)
 }
 
-fn resume_frames(delay_loss_publication: bool) -> TestResult {
+#[test]
+fn busy_holder_resume_loss_publication_stays_inside_join_deadline_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    resume_frames(true, true)
+}
+
+fn resume_frames(delay_loss_publication: bool, expire_before_publication: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -141,6 +149,22 @@ fn resume_frames(delay_loss_publication: bool) -> TestResult {
                                     .map_err(debug)?
                                     .contains_key(&admitted.game_session_id)
                             );
+                            if expire_before_publication {
+                                let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+                                let still_waiting = crate::durability::with_holder_deadline(deadline, owner.resume(
+                                    ResumeAttempt {
+                                        game_session_id: attempt.game_session_id,
+                                        recovery_material: attempt.recovery_material,
+                                        transport: attempt.transport,
+                                        last_applied_server_sequence: attempt.last_applied_server_sequence,
+                                        supported_capabilities: attempt.supported_capabilities,
+                                    },
+                                ));
+                                let result = tokio::time::timeout_at(deadline + Duration::from_millis(250), still_waiting).await?;
+                                assert!(matches!(result, Err(crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)));
+                                barrier.1.notify_one();
+                                return owner.resume(attempt).await.map_err(debug);
+                            }
                             let mut resume = std::pin::pin!(owner.resume(attempt));
                             // Hold the exact publication gap open: admission must remain pending,
                             // rather than permanently reject a durably reconnectable session.

@@ -320,13 +320,6 @@ pub(super) async fn take_corpse_entry(
 ) -> Result<ItemTransferOutcome, GroundPickupError> {
     use crate::interaction_chest_use::entry_chest;
     let rejected = || GroundPickupError::Transfer(ItemTransferError::AuthorityRejected);
-    // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the TRANSFER is a
-    // key-33 writer. `None` is retryable with no side effect while the lane is fenced.
-    let Some(permit) = admission.spell_lane_permit().await else {
-        return Err(GroundPickupError::Transfer(ItemTransferError::Unavailable(
-            crate::durability::DurabilityError::Unavailable,
-        )));
-    };
     if !admission
         .states
         .player_trades
@@ -334,7 +327,7 @@ pub(super) async fn take_corpse_entry(
     {
         return Err(rejected());
     }
-    let (corpse, entry_id, native) = {
+    let (corpse_id, entry_id, native) = {
         let runtime = admission.runtime.lock().await;
         let dead = admission.states.spell_states.lock().await.is_dead(actor);
         let (corpse, entry_id) = corpse_for_take(&runtime, dead, corpse, entry)?;
@@ -350,7 +343,7 @@ pub(super) async fn take_corpse_entry(
         .map_err(|_| GroundPickupError::Transfer(ItemTransferError::InvalidInput))?;
     let contents = admission
         .root
-        .read_corpse_contents(admission.character, corpse)
+        .read_corpse_contents(admission.character, corpse_id)
         .await?
         .ok_or(GroundPickupError::SourceMismatch)?;
     let source = contents
@@ -370,6 +363,54 @@ pub(super) async fn take_corpse_entry(
         ),
         None => None,
     };
+    // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the TRANSFER is a
+    // key-33 writer. `None` is retryable with no side effect while the lane is fenced.
+    let Some(permit) = admission.spell_lane_permit().await else {
+        return Err(GroundPickupError::Transfer(ItemTransferError::Unavailable(
+            crate::durability::DurabilityError::Unavailable,
+        )));
+    };
+    // The backpack wait holds no spell lane. Re-prove the original handle and
+    // content under the original owner order before freezing the transfer.
+    {
+        let mut runtime = admission.runtime.lock().await;
+        let dead = admission.states.spell_states.lock().await.is_dead(actor);
+        if corpse_for_take(&runtime, dead, corpse, entry)? != (corpse_id, entry_id)
+            || pinned_index(&runtime, admission.active_generation).is_none()
+            || !admission
+                .states
+                .player_trades
+                .physical(command.game_session_id, None)
+        {
+            return Err(rejected());
+        }
+        let ItemKey::Entity(identity) = corpse else {
+            return Err(rejected());
+        };
+        let target = runtime
+            .bound_corpse(identity)
+            .ok_or_else(rejected)?
+            .position;
+        let own = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .map_err(|_| rejected())?
+            .position();
+        if !super::item_view::corpse_open::within_reach(
+            ActorPosition {
+                x: own.x,
+                y: own.y,
+                floor: own.floor,
+            },
+            ActorPosition {
+                x: target.x,
+                y: target.y,
+                floor: target.floor,
+            },
+        ) {
+            return Err(GroundPickupError::SourceMismatch);
+        }
+    }
     let request = ItemTransferRequest {
         command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
         source_item_instance_id: entry_id,

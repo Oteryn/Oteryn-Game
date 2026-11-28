@@ -101,7 +101,6 @@ fn slow_and_stuck_lines_name_the_caller_and_held_time() {
 #[test]
 fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<(), std::io::Error> {
     let runtime = current_thread()?;
-    let slot = Arc::new(StdMutex::new(None));
     let waiter = site();
     let lines = oteryn_error_codes::capture(|| {
         runtime.block_on(with_holder_trace(TRACE, async {
@@ -114,11 +113,9 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
                     Instant::now() - Duration::from_millis(600),
                 );
             }
-            let owner = PassOwner::checked_out(&slot, waiter, Instant::now());
-            assert!(
-                slot.lock()
-                    .is_ok_and(|held| held.is_some_and(|(_, _, trace)| trace == Some(TRACE)))
-            );
+            record_checkout(waiter, Instant::now(), holder_trace());
+            let owner = PassOwner::new(waiter, Instant::now());
+            assert_eq!(owner.trace, Some(TRACE));
             drop(owner);
         }));
     });

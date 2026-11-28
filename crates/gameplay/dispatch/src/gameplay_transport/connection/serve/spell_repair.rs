@@ -8,12 +8,15 @@ enum PendingSpellEvent {
     Frame(std::io::Result<Vec<u8>>),
 }
 
+pub(super) type RepairedIo = (FrameReader, Liveness, tokio::time::Interval);
+
 pub(super) async fn wait<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
-) -> Result<(FrameReader, Liveness, tokio::time::Interval), ServeEnd>
+    join_deadline: Option<tokio::time::Instant>,
+) -> Result<RepairedIo, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -27,8 +30,10 @@ where
     );
     cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     // Retain the existing refused-actor bound, including retries and wire writes.
-    let deadline =
+    let liveness_deadline =
         tokio::time::Instant::now() + policy.interval.saturating_mul(policy.missed_limit);
+    let deadline = join_deadline.map_or(liveness_deadline, |join| join.min(liveness_deadline));
+    let mut partial_probe = false;
     let waiting = async {
         let repair = authority.repair_pending_spells(*admitted);
         let mut repair = std::pin::pin!(repair);
@@ -59,8 +64,13 @@ where
                     };
                     let probe = encode_liveness_probe(generation, id)
                         .map_err(|_| ServeEnd::Disconnected)?;
-                    match tokio::time::timeout(policy.interval, write_frame(stream, &probe)).await {
-                        Ok(Ok(())) => {}
+                    match tokio::time::timeout(
+                        policy.interval,
+                        write_frame_with_progress(stream, &probe, &mut partial_probe),
+                    )
+                    .await
+                    {
+                        Ok(Ok(())) => partial_probe = false,
                         Ok(Err(_)) => return Err(ServeEnd::Disconnected),
                         Err(_) => return Err(ServeEnd::ControlLost("spell_repair_probe_timeout")),
                     }
@@ -82,7 +92,25 @@ where
             }
         }
     };
-    match tokio::time::timeout_at(deadline, waiting).await {
+    let result = match join_deadline {
+        Some(join) => {
+            tokio::time::timeout_at(
+                deadline,
+                crate::durability::with_holder_deadline(join, waiting),
+            )
+            .await
+        }
+        None => tokio::time::timeout_at(deadline, waiting).await,
+    };
+    if join_deadline
+        .is_some_and(|join| join <= liveness_deadline && tokio::time::Instant::now() >= join)
+    {
+        if !partial_probe {
+            send_join_unavailable(stream, generation).await;
+        }
+        return Err(ServeEnd::Disconnected);
+    }
+    match result {
         Ok(Ok(())) => {
             admitted.first_entry = FirstEntryOutcome::Reconciled;
             // Preserve outstanding probe IDs and partial frame bytes across promotion.

@@ -457,11 +457,7 @@ async fn place(
         placement,
     )?);
     drop(runtime);
-    let acquire_holder = async || {
-        acquire_spawn_holder(root, budget.work_deadline)
-            .await
-            .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))
-    };
+    let acquire_holder = async || acquire_spawn_holder(root, budget.work_deadline).await;
     let mut holder = acquire_holder().await?;
     let eligible = spawn_transaction(&mut holder, budget, true, async |tx| {
         let plan = plan
@@ -536,19 +532,41 @@ async fn place(
 async fn acquire_spawn_holder(
     root: &DurabilityRoot,
     deadline: tokio::time::Instant,
-) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, DurabilityError> {
+) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, wild_spawn::SpawnRefusal> {
+    let fence =
+        |error| wild_spawn::SpawnRefusal::Fence(format!("qualification spawn holder: {error:?}"));
     let mut waiting = None;
+    let mut owner = None;
     loop {
         if tokio::time::Instant::now() >= deadline {
-            return Err(DurabilityError::RootUnavailable);
+            return Err(owner.map_or_else(
+                || fence(DurabilityError::RootUnavailable),
+                wild_spawn::SpawnRefusal::HolderBusy,
+            ));
         }
-        match root.try_acquire_ready() {
+        let (acquired, contended) =
+            oteryn_gameplay_durability::durability::with_holder_contention(async {
+                root.try_acquire_ready()
+            })
+            .await;
+        match acquired {
+            Ok(holder) => return Ok(holder),
+            Err(DurabilityError::RootUnavailable) if contended => {
+                owner = Some(
+                    root.holder_owner_description()
+                        .unwrap_or_else(|| "holder returned during checkout retry".into()),
+                );
+            }
             Err(DurabilityError::RootUnavailable) => {}
-            outcome => return outcome,
+
+            Err(error) => return Err(fence(error)),
         }
         // Hold priority and a FIFO turn only while retrying the checkout.
         if waiting.is_none() {
-            waiting = Some((root.foreground_demand()?, root.holder_waiter()));
+            waiting = Some((
+                root.foreground_demand().map_err(fence)?,
+                root.holder_waiter(),
+            ));
         }
         let now = tokio::time::Instant::now();
         let latest = (now + Duration::from_millis(250)).min(deadline);

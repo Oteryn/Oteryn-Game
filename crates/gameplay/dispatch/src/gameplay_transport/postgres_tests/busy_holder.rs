@@ -114,6 +114,45 @@ fn trade_open_retains_foreground_demand_until_its_name_reads_complete_postgres()
     })
 }
 
+#[test]
+fn busy_cyclopedia_tracker_rejects_missing_or_replaced_item_fence_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("tracker-busy-keeps-required-fence", move || {
+        crate::bestiary_postgres_harness::runtime()?.block_on(async move {
+            let h = Harness::create_with_admission_seed(admin, "tracker_required_fence", true, false).await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let owner = deps.owner(&h, &authority);
+            let mut admitted = deps.admitted;
+            admitted.item_fence = None;
+            let mut held = h.root.try_acquire_ready()?;
+            assert_eq!(owner.cyclopedia_tracker_join(admitted).await, Err(()));
+            let store = FreshAdmissionStore::from_root(h.root.clone());
+            assert_eq!(held.return_to_pool_observed_until(
+                std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE
+            ).await, sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle);
+            let current = crate::gameplay_transport::item_fence_of(
+                store.current_session(admitted.game_session_id).await?,
+            ).ok_or("current item fence")?;
+            admitted.item_fence = Some(crate::durability::item_transfer::CurrentCharacterItemFence {
+                character_lease_generation: current.character_lease_generation.checked_add(1).ok_or("lease overflow")?,
+                ..current
+            });
+            assert_eq!(owner.cyclopedia_tracker_join(admitted).await, Err(()));
+            admitted.item_fence = Some(current);
+            assert!(owner.cyclopedia_tracker_join(admitted).await.map_err(|()| "valid tracker fence")?.is_some());
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
 /// Every step refreshes the session's PvP locks from durable state first; a step that met a
 /// background pass on the holder was rejected (the node-boot use-wire `step_blocked` stage).
 #[test]

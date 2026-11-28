@@ -170,6 +170,15 @@ pub(in crate::gameplay_transport::connection::serve) struct Queue {
 }
 
 impl Queue {
+    pub(in crate::gameplay_transport::connection::serve) fn with_frames(
+        frames: FrameReader,
+    ) -> Self {
+        Self {
+            frames,
+            ..Self::default()
+        }
+    }
+
     pub(in crate::gameplay_transport::connection::serve) fn set_podium_due(
         &mut self,
         due: Option<tokio::time::Instant>,

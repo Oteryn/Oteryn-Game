@@ -10,12 +10,10 @@ struct LiveSetup {
     world: snapshot::WorldSnapshot,
 }
 
-/// Why the join did not complete: before its snapshot reached the transport, while writing it,
-/// or after the client already holds it.
+/// Why the join did not complete before its snapshot reached the transport.
 enum JoinFailure {
     Unprepared(ServeEnd),
     Transport,
-    Delivered(ServeEnd),
 }
 
 impl From<ServeEnd> for JoinFailure {
@@ -41,18 +39,40 @@ where
     A: FreshAdmissionAuthority,
 {
     let generation = admitted.continuity.connection_generation;
-    match join(
-        stream, admitted, authority, policy, actor, baseline, integrity,
-    )
-    .await
-    {
-        Ok(state) => Ok(state),
+    let revision = admitted.continuity.spatial_revision;
+    let mut staged = *admitted;
+    let mut snapshot_started = false;
+    let setup = join(
+        stream,
+        &mut staged,
+        authority,
+        actor,
+        baseline,
+        integrity,
+        &mut snapshot_started,
+    );
+    let result = match crate::durability::holder_deadline() {
+        Some(deadline) => match tokio::time::timeout_at(deadline, setup).await {
+            Ok(result) => result,
+            Err(_) => Err(JoinFailure::Unprepared(ServeEnd::Disconnected)),
+        },
+        None => setup.await,
+    };
+    match result {
+        Ok(setup) => {
+            *admitted = staged;
+            live(
+                authority, admitted, policy, actor, generation, revision, setup,
+            )
+            .await
+        }
         Err(JoinFailure::Unprepared(end)) => {
-            send_join_unavailable(stream, generation).await;
+            if !snapshot_started {
+                send_join_unavailable(stream, generation).await;
+            }
             Err(end)
         }
         Err(JoinFailure::Transport) => Err(ServeEnd::Disconnected),
-        Err(JoinFailure::Delivered(end)) => Err(end),
     }
 }
 
@@ -60,11 +80,11 @@ async fn join<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,
     authority: &A,
-    policy: LivenessPolicy,
     actor: ExactActorRef,
     baseline: WorldSpatialObservation,
     integrity: integrity::Integrity,
-) -> Result<ServeState, JoinFailure>
+    snapshot_started: &mut bool,
+) -> Result<LiveSetup, JoinFailure>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
@@ -240,10 +260,14 @@ where
     };
     record_join_progress("snapshot_write", admitted.first_entry);
     for frame in &snapshot {
-        if write_frame(stream, frame).await.is_err() {
+        if write_frame_with_progress(stream, frame, snapshot_started)
+            .await
+            .is_err()
+        {
             return Err(JoinFailure::Transport);
         }
     }
+    join_published();
     record_join_progress("snapshot_flushed", admitted.first_entry);
     zones_nologout_transport::delivered(admitted);
     if let Some(trade) = payloads
@@ -265,23 +289,13 @@ where
     if let Some((revision, state)) = &sessions.combat_sent {
         admitted.continuity.combat.snapshot_sent(*revision, *state);
     }
-    live(
-        authority,
-        admitted,
-        policy,
-        actor,
-        generation,
-        revision,
-        LiveSetup {
-            integrity,
-            initial,
-            items,
-            sessions,
-            world,
-        },
-    )
-    .await
-    .map_err(JoinFailure::Delivered)
+    Ok(LiveSetup {
+        integrity,
+        initial,
+        items,
+        sessions,
+        world,
+    })
 }
 
 /// Logs the failed join phase with the code the client is sent.
@@ -310,6 +324,7 @@ async fn live<A: FreshAdmissionAuthority>(
         world,
     } = setup;
     let snapshot::InitialSnapshot {
+        tracker_revision,
         cooldowns,
         spell_catalog,
         overlay_served,
@@ -533,7 +548,7 @@ async fn live<A: FreshAdmissionAuthority>(
         inventory_capacity_vitals_max: vitals_max,
         team_finder_view: Default::default(),
         market_revision: 1,
-        cyclopedia_tracker_revision: 1,
+        cyclopedia_tracker_revision: tracker_revision,
         item_view,
         visibility,
         appearances,

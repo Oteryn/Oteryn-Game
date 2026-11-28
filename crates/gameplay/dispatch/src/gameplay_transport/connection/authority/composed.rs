@@ -186,6 +186,61 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
         self.boss_activity_wire(admitted, id, kind, payload).await
     }
+    fn deferred_appearance(
+        &self,
+        empty_outfit: bool,
+        entities: &[super::WireEntityRef],
+    ) -> Option<crate::gameplay_transport::appearance_change::observation::Observation> {
+        use crate::domain::appearance::Sex;
+        use oteryn_protocol_oteryn::appearance as wire;
+
+        let (context, content) = self.appearance_context()?;
+        let look = if empty_outfit {
+            wire::Look::EmptyOutfit
+        } else {
+            let fallback = content.fallback(Sex::Female);
+            wire::Look::Outfit {
+                look_type: content.look_type(&fallback.outfit_key, Sex::Female)?,
+                colours: fallback.colours,
+                addons: fallback.addons,
+            }
+        };
+        Some(
+            crate::gameplay_transport::appearance_change::observation::Observation {
+                catalogue: wire::Catalogue {
+                    context,
+                    root_revision: 1,
+                    selected: None,
+                    palette: content.palette().to_vec(),
+                    outfits: Vec::new(),
+                    mounts: Vec::new(),
+                },
+                bindings: entities
+                    .iter()
+                    .map(|&entity| wire::Binding {
+                        context,
+                        appearance_ref: 1,
+                        entity,
+                        root_revision: 1,
+                        condition_revision: 0,
+                        owner_time_us: 0,
+                        look: look.clone(),
+                        selection_revision: None,
+                        forge_stacks: None,
+                    })
+                    .collect(),
+                skipped: Vec::new(),
+            },
+        )
+    }
+
+    async fn settle_unpublished_join(
+        &self,
+        pending: &super::UnpublishedJoin,
+        ended: AdmittedSession,
+    ) -> Result<AdmittedSession, ()> {
+        self.reconcile_unpublished_join(pending, ended).await
+    }
     async fn settle_activity_connection(
         &self,
         admitted: AdmittedSession,

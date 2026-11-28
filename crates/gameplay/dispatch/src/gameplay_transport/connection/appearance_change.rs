@@ -164,15 +164,23 @@ impl SessionAppearance {
         if self.selected {
             self.select_hirelings(channel);
             let mut players = self.players(&snapshot.entities);
+            use super::super::appearance_change::observation::ObservationError;
+            let projected = authority
+                .appearance_observation_projected_result(
+                    actor,
+                    admitted.game_session_id,
+                    self.empty_outfit,
+                    players.clone(),
+                )
+                .await;
             let observation = note_none(
-                authority
-                    .appearance_observation_projected(
-                        actor,
-                        admitted.game_session_id,
-                        self.empty_outfit,
-                        players.clone(),
-                    )
-                    .await,
+                match projected {
+                    Ok(observation) => Some(observation),
+                    Err(ObservationError::HolderBusy) => {
+                        authority.deferred_appearance(self.empty_outfit, &players)
+                    }
+                    Err(_) => None,
+                },
                 "observation",
             )?;
             players.retain(|entity| !observation.skipped.contains(entity));

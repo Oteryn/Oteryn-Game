@@ -258,7 +258,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if current.session_state() == GameSessionState::Terminal {
             return TrainingSave::FencedOut;
         }
-        let mut slot = self.revision_sequencer.acquire(item.character_id).await;
         let Ok(Ok(root)) = budget
             .retry_durability("stamina_character", async || {
                 match self
@@ -274,6 +273,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::Unknown;
         };
+        let mut slot = self.revision_sequencer.acquire(item.character_id).await;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
@@ -328,6 +328,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         slot.observe_loop_training();
+        drop(slot);
         match outcome {
             Ok(_) => {}
             Err(
@@ -390,7 +391,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if current.session_state() == GameSessionState::Terminal {
             return TrainingSave::FencedOut;
         }
-        let mut slot = self.revision_sequencer.acquire(item.character_id).await;
         let Ok(Ok(root)) = budget
             .retry_durability("stamina_character", async || {
                 match self
@@ -406,6 +406,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::Unknown;
         };
+        let mut slot = self.revision_sequencer.acquire(item.character_id).await;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
@@ -460,6 +461,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         slot.observe_loop_training();
+        drop(slot);
         match outcome {
             Ok(_) => {}
             Err(
@@ -489,6 +491,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         pending: (BuildOccurrence, u16, u16),
         gain: bool,
     ) -> Result<TrainingSave, DurabilityError> {
+        let _slot = self.revision_sequencer.acquire(item.character_id).await;
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if runtime.owner_fence().is_err()
@@ -513,8 +516,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(TrainingSave::Unknown);
         }
-        // This attempt never repeats a write. A busy read returns through both
-        // guards before the outer budget waits, then re-proves this exact pending tuple.
+        // This single ready-only pass revalidates the exact fence while
+        // the pending tuple is locked. A miss drops every guard before retry.
         let fresh = FreshAdmissionStore::from_root(self.root.clone())
             .current_session(session)
             .await?;

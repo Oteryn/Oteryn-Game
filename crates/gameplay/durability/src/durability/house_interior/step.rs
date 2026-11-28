@@ -58,7 +58,7 @@ impl DurabilityRoot {
                     .execute(&mut *tx).await?;
                 if !super::super::house_hireling::fence::assert_house_inventory_fence(
                     &mut tx, &node, &request.fence, request.origin_channel,
-                ).await? { return Err(DurabilityError::Unavailable); }
+                ).await? { return Err(DurabilityError::CommitRejected); }
                 // The shared named-House fence above holds the native Guild
                 // and property/access locks. Compose only the existing item
                 // placement lock; there is no second House ACL authority.

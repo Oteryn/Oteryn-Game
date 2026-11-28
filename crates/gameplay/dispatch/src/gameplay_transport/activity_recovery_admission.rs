@@ -332,6 +332,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             drop(runtime);
             drop(_lane);
             drop(_revision);
+            if super::connection::join_recovery::retain_join(
+                retained,
+                super::connection::join_recovery::JoinAction::CapabilityMismatch {
+                    epoch,
+                    activity_store: Some(Box::new(store.clone())),
+                },
+            ) {
+                return Err(Rejected);
+            }
             let release = owner
                 .release_terminal_with_store(
                     retained,
@@ -412,13 +421,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .map_err(|_| Unavailable)?;
+        if !matches_candidate(next, &recovered) {
+            return Err(Unavailable);
+        }
+        super::connection::join_recovery::retain_join(
+            next,
+            super::connection::join_recovery::JoinAction::NativeActivity,
+        );
+        super::connection::join_recovery::retain_committed_session(next);
         #[cfg(test)]
         if let Ok(barrier) = RECOVERY_COMMITTED_TEST_BARRIER.try_with(Arc::clone) {
             barrier.entered.notify_one();
             barrier.proceed.notified().await;
-        }
-        if !matches_candidate(next, &recovered) {
-            return Err(Unavailable);
         }
         owner
             .install_activity_recovery(&pending, &mut runtime, &mut spells)
@@ -434,6 +448,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.finish_activity_recovery_record(&pending)
             .map_err(|_| Unavailable)?;
         drop(guard);
+        super::connection::join_recovery::clear_join();
         Ok(Some(next))
     }
 
