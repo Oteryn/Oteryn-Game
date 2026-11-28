@@ -80,15 +80,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let blank = provisioning::item_reference(&index, BLANK_RUNE_ID)?;
-    let mut client = PREPARATION.connect(clients, 0xc6, 1).await?;
-    // Xodet's pinned price is ten gold per blank rune. The second blank
-    // makes the immediate repeat test cooldown rather than reagent absence.
-    super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 20)
-        .await
-        .map_err(|error| format!("step=1 observed=fund-blank-runes:{error}"))?;
+    let mut prepared = connect_world(clients, 0xc6).await?;
+    let preparation_session = prepared.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(preparation_session.as_bytes()),
+        "--profile",
+        PREPARATION.profile.into(),
+    )
+    .await?;
+    evidence("C06_FIXTURE input=gold item=3035 count=3 purpose=live-rune-purchases");
+    character_prep::grant_item(&prepared, 3035, 3).await?;
+    logout(&mut prepared).await?;
+    drop(prepared);
+    let mut client = connect_world(clients, 0xc6).await?;
+    if client.join_snapshot().game_session_id == preparation_session {
+        return Err("C06 funding reused its preparation session".into());
+    }
+    let vitals = client.actor_vitals().ok_or("C06 seeded vitals absent")?;
+    if (vitals.max_health, vitals.max_mana) != (220, 300) {
+        return Err(format!("C06 level-15 Sorcerer maxima mismatch: {vitals:?}").into());
+    }
+    let platinum = provisioning::item_reference(&index, 3035)?;
+    if quantity(&client, platinum)? < 3 {
+        return Err("C06 fixture platinum absent after admission".into());
+    }
+    // Buy both inputs from the live shop before leaving town for combat.
     acquire(&mut client, world, &metadata.npcs, blank, BLANK_RUNE_ID, 2)
         .await
         .map_err(|error| format!("step=1 item={BLANK_RUNE_ID} {error}"))?;
+    acquire(&mut client, world, &metadata.npcs, healing, HEAL_RUNE_ID, 2)
+        .await
+        .map_err(|error| format!("step=1 item={HEAL_RUNE_ID} {error}"))?;
     check(1, client.last_server_sequence());
 
     let spell = conjure_index(&mut client)?;
@@ -186,12 +208,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=4 healing rune absent from pinned spell catalogue")?;
     let cooldown = spell.groups.iter().map(|group| group.cooldown_micros)
         .fold(spell.cooldown_micros, u64::max);
-    super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 190)
-        .await
-        .map_err(|e| format!("step=4 observed=fund-healing-runes:{e}"))?;
-    acquire(&mut client, world, &metadata.npcs, healing, HEAL_RUNE_ID, 2)
-        .await
-        .map_err(|error| format!("step=4 item={HEAL_RUNE_ID} {error}"))?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let entities = client
         .world_entities()
@@ -469,7 +485,7 @@ async fn acquire(
             .map(|p| (n, p))
         })
         .min_by_key(|(_, p)| p.len())
-        .ok_or_else(|| seller_gap(item_id, sellers.len(), placed))?;
+        .ok_or_else(|| format!("{};from={here:?}", seller_gap(item_id, sellers.len(), placed)))?;
     walk(client, world, &path).await?;
     let position = client.world_spatial().actor_position;
     let actor = client
@@ -689,17 +705,11 @@ async fn wait_paid_effect(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    let d = tokio::time::Instant::now() + Duration::from_secs(75);
-    loop {
-        let r = client.session_mut().logout().await?;
-        if r.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= d {
-            return Err(format!("logout observed={:?}", r.result).into());
-        }
-        client.service_liveness(Duration::from_millis(250)).await?;
+    let result = client.session_mut().logout().await?;
+    if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("logout observed={:?}", result.result).into());
     }
+    Ok(())
 }
 
 #[cfg(test)]
