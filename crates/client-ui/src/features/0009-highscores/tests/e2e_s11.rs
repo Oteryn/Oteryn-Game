@@ -179,14 +179,23 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     let count: usize = value(expected, "rows")?.parse()?;
     assert!(count > 0);
     assert_eq!(page.rows.len(), count);
+    let mut rendered = Vec::with_capacity(count);
     for (index, row) in page.rows.iter().enumerate() {
         let want = parse_row(value(expected, &format!("row{index}"))?)?;
         assert_eq!(*row, want);
-        assert!(panel_text(&panel).contains(&format!(
-            "\n{} | {} | {} | {} | {}",
+        rendered.push(format!(
+            "{} | {} | {} | {} | {}",
             want.rank, want.name, want.vocation, want.level, want.value
-        )));
+        ));
     }
+    let text = panel_text(&panel);
+    let (_, table) = text
+        .split_once("Rank | Name | Vocation | Level | Value\n")
+        .ok_or("missing rendered Highscores table")?;
+    let (rows, _) = table
+        .split_once("\nYour rank:")
+        .ok_or("missing rendered own rank")?;
+    assert_eq!(rows.lines().collect::<Vec<_>>(), rendered);
     let own = value(expected, "own")?;
     assert_eq!(
         page.own_row
@@ -219,9 +228,14 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
         panel.feedback.as_deref(),
         Some("Server refused highscores: Rejected. Refresh to retry with the current snapshot.")
     );
-    panel.category = 13;
+    let loyalty_filter = Action::Filter {
+        category: 13,
+        vocation: 0,
+    };
+    assert!(request(&mut panel, loyalty_filter).is_none());
+    panel.loyalty_selected = true;
     let loyalty_query =
-        request(&mut panel, Action::Refresh).ok_or("s11 loyalty query not produced")?;
+        request(&mut panel, loyalty_filter).ok_or("s11 loyalty query not produced")?;
     let (_, loyalty) = live_reply(root, "loyalty", session, &loyalty_query, 0)?;
     assert_eq!(refused.command_id.checked_add(1), Some(loyalty.command_id));
     assert!(refused.server_sequence < loyalty.server_sequence);
@@ -237,26 +251,26 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
 
     let relog_session = value(expected, "relog_session")?;
     assert_ne!(session, relog_session);
-    let relog_query = oteryn_client_runtime::highscores::command(wire::HighscoresQuery {
-        world: None,
-        details: true,
+    let mut relog_panel = HighscoresPanel {
+        selected: true,
         category: 1,
-        vocation: 0,
-        page: 1,
-        snapshot_id: page.snapshot_id,
-    })
-    .map_err(|e| format!("{e:?}"))?;
+        ..Default::default()
+    };
+    let relog_query = request(&mut relog_panel, Action::Refresh).ok_or("missing relog refresh")?;
     let (_, relog) = live_reply(root, "relog", relog_session, &relog_query, 0)?;
     assert_eq!(relog.status, CommandStatus::Accepted);
-    assert_eq!(
-        wire::decode_highscores_result(&relog.payload).map_err(|e| format!("{e:?}"))?,
-        page
-    );
-    Ok(())
+    apply_result(&mut relog_panel, &relog);
+    assert!(!relog_panel.pending && relog_panel.feedback.is_none());
+    assert_eq!(relog_panel.reply, Some(page));
+    assert_malformed_reply_keeps_the_visible_page()
 }
 
 #[test]
 fn malformed_highscores_reply_keeps_the_visible_page() -> Result<(), BoxError> {
+    assert_malformed_reply_keeps_the_visible_page()
+}
+
+fn assert_malformed_reply_keeps_the_visible_page() -> Result<(), BoxError> {
     let mut panel = panel();
     panel.category = 1;
     let kept = wire::HighscoresResult {

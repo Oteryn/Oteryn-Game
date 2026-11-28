@@ -115,7 +115,7 @@ async fn experience_facts(
     ))
 }
 
-async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<u64> {
+async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<(u64, i64)> {
     use crate::durability::highscore_snapshot::{CutLimits, SnapshotCatalogues};
     let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
     root.await_ready().await?;
@@ -135,7 +135,7 @@ async fn publish_ranking(clients: &SeamClients<'_>) -> TestResult<u64> {
         .iter()
         .find(|snapshot| snapshot.category == 1)
         .ok_or("S11 publication lacks the Experience cut")?;
-    Ok(snapshot.snapshot_id)
+    Ok((snapshot.snapshot_id, snapshot.computed_at_ms))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -157,7 +157,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if before.rows == expected_rows && before.own_row.as_ref() == Some(&expected_own) {
         return Err("S11 expected ranking already present before publication".into());
     }
-    let published = publish_ranking(clients).await?;
+    let (published, computed_at) = publish_ranking(clients).await?;
     if published <= before.snapshot_id {
         return Err("S11 publication did not advance the Experience cut".into());
     }
@@ -168,6 +168,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if page.category != 1
         || page.page != 1
         || page.snapshot_id != published
+        || page.computed_at != computed_at
         || page.world != Some(wire::WorldId::decode(&clients.world)?)
         || page.own_page != Some(expected_own_page)
         || page.has_more != expected_has_more
@@ -224,7 +225,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         page.category,
         page.page,
         page.snapshot_id,
-        page.computed_at,
+        computed_at,
         u8::from(page.has_more),
         page.rows.len()
     );
@@ -246,15 +247,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if relog_session == session {
         return Err("S11 relog reused the original session".into());
     }
-    let (status, _, after) = exchange(
-        &mut rejoined,
-        "relog",
-        wire::HighscoresQuery {
-            snapshot_id: page.snapshot_id,
-            ..query
-        },
-    )
-    .await?;
+    let (status, _, after) = exchange(&mut rejoined, "relog", query).await?;
     require_mechanic_acceptance(status, "highscore-relog-query")?;
     let after = wire::decode_highscores_result(&after)
         .map_err(|error| format!("step=relog-decode observed={error:?}"))?;
