@@ -46,20 +46,7 @@ async fn capture_reply(
     command: &runtime::PartyCommand,
     capability: u32,
 ) -> TestResult<(String, Vec<u8>)> {
-    let session = client.join_snapshot().game_session_id;
-    let encoded = session
-        .as_bytes()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let session = format!(
-        "{}-{}-{}-{}-{}",
-        &encoded[..8],
-        &encoded[8..12],
-        &encoded[12..16],
-        &encoded[16..20],
-        &encoded[20..]
-    );
+    let session = session_label(client);
     let before = client.last_server_sequence();
     let reply = client
         .session_mut()
@@ -69,6 +56,36 @@ async fn capture_reply(
             &command.payload,
         )
         .await?;
+    let name = record_reply(&session, command, &reply)?;
+    if reply.server_sequence <= before {
+        return Err("S01 reply did not advance the sequence".into());
+    }
+    Ok((name, reply.payload))
+}
+
+fn session_label(client: &DevClientSession) -> String {
+    let session = client.join_snapshot().game_session_id;
+
+    let encoded = session
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &encoded[..8],
+        &encoded[8..12],
+        &encoded[12..16],
+        &encoded[16..20],
+        &encoded[20..]
+    )
+}
+
+fn record_reply(
+    session: &str,
+    command: &runtime::PartyCommand,
+    reply: &oteryn_dev_client::GatedCommandResult,
+) -> TestResult<String> {
     let name = format!("s01-{session}-{}.json", reply.command_id);
     capture(
         &name,
@@ -80,7 +97,7 @@ async fn capture_reply(
             "status": reply.status as u32,
         }))?,
     )?;
-    if reply.status != runtime::CommandStatus::Accepted || reply.server_sequence <= before {
+    if reply.status != runtime::CommandStatus::Accepted {
         return Err(format!(
             "party command {} refused: {:?}",
             reply.command_id, reply.status
@@ -95,7 +112,7 @@ async fn capture_reply(
     {
         capture(&format!("{name}.request"), &command.payload)?;
     }
-    Ok((name, reply.payload))
+    Ok(name)
 }
 
 async fn check_peer_shield(
@@ -119,41 +136,52 @@ async fn check_peer_shield(
     Ok(())
 }
 
-async fn exchange(
-    client: &mut DevClientSession,
-    command: &runtime::PartyCommand,
-) -> TestResult<(String, runtime::party::PartyResult)> {
-    let (name, payload) = capture_reply(client, command, runtime::party::CAPABILITY_PARTY_V1).await?;
-    let result = runtime::party::decode_party_result(&payload)
-        .map_err(|error| format!("party reply: {error:?}"))?;
-    if result.disposition != PartyDisposition::Ok {
-        return Err(format!("party refused: {:?}", result.disposition).into());
-    }
-    Ok((name, result))
-}
-
 async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> TestResult<Sent> {
     let query = runtime::PartyCommand::query();
-    let Some(intent) = intent else {
-        let (view, result) = exchange(client, &query).await?;
-        return Ok(Sent {
-            operation: view.clone(),
-            view,
-            result,
-        });
+    let mutation = intent.is_some();
+    let command = match intent {
+        Some(intent) => runtime::PartyCommand::intent(intent)
+            .map_err(|error| format!("party input: {error:?}"))?,
+        None => query.clone(),
     };
-    let command =
-        runtime::PartyCommand::intent(intent).map_err(|error| format!("party input: {error:?}"))?;
-    let (operation, receipt) = exchange(client, &command).await?;
-    if receipt.shared_xp_enabled || !receipt.members.is_empty() || !receipt.invitations.is_empty() {
-        return Err(format!("S01 party mutation returned an invalid receipt: {receipt:?}").into());
+    let session = session_label(client);
+    let mut sequence = client.last_server_sequence();
+    let first_command = client.next_command_id();
+    let mut frames = Vec::new();
+    let (_, response) =
+        runtime::send_observed(client.session_mut(), &command, |reply| {
+            frames.push(reply.clone());
+        })
+        .await?;
+    if frames.len() != 1 + usize::from(mutation) {
+        return Err(format!("S01 Party exchange returned {} frames: {:?}", frames.len(), response.status).into());
     }
-    let (view, result) = exchange(client, &query).await?;
-    Ok(Sent {
-        operation,
-        view,
-        result,
-    })
+    let mut names = Vec::new();
+    for (index, frame) in frames.iter().enumerate() {
+        if frame.server_sequence <= sequence
+            || first_command.checked_add(index as u64) != Some(frame.command_id)
+        {
+            return Err("S01 Party exchange frames are out of order".into());
+        }
+        sequence = frame.server_sequence;
+        names.push(record_reply(&session, if index == 0 { &command } else { &query }, frame)?);
+    }
+    let decode = |payload: &[u8]| -> TestResult<runtime::party::PartyResult> {
+        let result = runtime::party::decode_party_result(payload)
+            .map_err(|error| format!("party reply: {error:?}"))?;
+        if result.disposition != PartyDisposition::Ok {
+            return Err(format!("party refused: {:?}", result.disposition).into());
+        }
+        Ok(result)
+    };
+    if mutation {
+        let receipt = decode(&response.operation)?;
+        if receipt.shared_xp_enabled || !receipt.members.is_empty() || !receipt.invitations.is_empty() {
+            return Err(format!("S01 party mutation returned an invalid receipt: {receipt:?}").into());
+        }
+    }
+    let result = decode(response.view.as_deref().ok_or("S01 Party exchange returned no view")?)?;
+    Ok(Sent { operation: names[0].clone(), view: names[usize::from(mutation)].clone(), result })
 }
 
 fn check_state(sent: &Sent, members: &[(&str, bool)], inviter: Option<&str>) -> TestResult {

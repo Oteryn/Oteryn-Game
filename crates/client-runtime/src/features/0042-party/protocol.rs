@@ -80,6 +80,15 @@ pub async fn send_with_receipt<S: SessionStream>(
     session: &mut Session<S>,
     request: &PartyCommand,
 ) -> Result<(u64, PartyResponse), SessionError> {
+    send_observed(session, request, |_| {}).await
+}
+
+/// Run the production exchange and observe each original command result in wire order.
+pub async fn send_observed<S: SessionStream>(
+    session: &mut Session<S>,
+    request: &PartyCommand,
+    mut observe: impl FnMut(&GatedCommandResult),
+) -> Result<(u64, PartyResponse), SessionError> {
     if !request.valid() {
         return Err(SessionError::CapabilityNotSelected {
             capability: party::CAPABILITY_PARTY_V1,
@@ -88,6 +97,7 @@ pub async fn send_with_receipt<S: SessionStream>(
     let result = session
         .gated_command(party::CAPABILITY_PARTY_V1, request.kind, &request.payload)
         .await?;
+    observe(&result);
     let operation = result.payload.clone();
     let status = result.status;
     let command_id = result.command_id;
@@ -97,15 +107,15 @@ pub async fn send_with_receipt<S: SessionStream>(
         status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        accepted(
-            session
-                .gated_command(
-                    party::CAPABILITY_PARTY_V1,
-                    party::COMMAND_TYPE_PARTY_QUERY,
-                    &[],
-                )
-                .await?,
-        )
+        let refresh = session
+            .gated_command(
+                party::CAPABILITY_PARTY_V1,
+                party::COMMAND_TYPE_PARTY_QUERY,
+                &[],
+            )
+            .await?;
+        observe(&refresh);
+        accepted(refresh)
     } else {
         None
     };
