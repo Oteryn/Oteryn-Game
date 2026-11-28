@@ -126,6 +126,8 @@ mod equipment_reflection;
 mod fixtures;
 
 mod forge_creature;
+#[cfg(feature = "qualification-spawn")]
+pub use forge_creature::{ForgePopulationCensus, ForgePopulationDrawRefusal};
 mod hazard;
 
 #[path = "carrier/monster_summon_admission.rs"]
@@ -1222,6 +1224,8 @@ pub struct ScopeRuntimeV1 {
     echo_wardens: echo_warden::EchoRuntime,
     forge_next_tick_micros: u64,
     forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
+    #[cfg(feature = "qualification-spawn")]
+    forge_population_draw: Option<forge_creature::PendingDraw>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
     /// point), written with every schedule write, so a drive reads only the occurrences it runs
     /// (`O(log n)` each) instead of collecting and sorting every due occurrence.
@@ -1372,6 +1376,8 @@ impl ChannelRuntimeV1 {
             echo_wardens: echo_warden::EchoRuntime::default(),
             forge_next_tick_micros: 0,
             forge_fiends: Vec::new(),
+            #[cfg(feature = "qualification-spawn")]
+            forge_population_draw: None,
             spawn_deadlines: BTreeSet::new(),
             spawn_scan_cursor: spawn::SpawnPoint {
                 source: 0,

@@ -12,6 +12,7 @@ category = "gameplay"
 release-role = "production"
 
 [features]
+qualification-spawn = ["dep:tokio"]
 test-support = ["oteryn-gameplay-content/test-support", "oteryn-gameplay-foundation/test-support"]
 
 [dependencies]
@@ -22,6 +23,7 @@ oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-d
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
+tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
 oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
