@@ -386,6 +386,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .step(oteryn_protocol_oteryn::world_spatial::StepDirection::East)
         .await?;
     if step.status != oteryn_protocol_oteryn::CommandStatus::Accepted
+        || step.disposition != oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
         || client.world_spatial().actor_position != destination
     {
         return Err(format!("N07d first-attempt east step failed: {step:?}").into());

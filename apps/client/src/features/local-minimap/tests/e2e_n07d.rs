@@ -162,7 +162,36 @@ fn replay() -> Result<(), Error> {
 }
 
 #[cfg(bevy_shell)]
-async fn check_reply(receipt: &Envelope, session: &[u8; 16], command: u64) -> Result<(), Error> {
+fn require_moved_step(payload: &[u8], capabilities: &[u32]) -> Result<(), Error> {
+    use oteryn_protocol_oteryn::{refusal_detail, world_spatial::*};
+    let (payload, detail) = if capabilities.contains(&66) {
+        refusal_detail::split_refusal_detail(payload).map_err(|error| format!("{error:?}"))?
+    } else {
+        (payload, None)
+    };
+    let step = decode_step_result_profile(
+        payload,
+        capabilities.contains(&CAPABILITY_PACED_MOVEMENT_V1),
+        capabilities.contains(&CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    ).map_err(|error| format!("{error:?}"))?;
+    if step.disposition != StepDisposition::Moved || detail.is_some() {
+        return Err(format!("N07d expected typed Moved, got {:?}", step.disposition).into());
+    }
+    Ok(())
+}
+
+#[cfg(bevy_shell)]
+#[test]
+fn n07d_rejects_blocked_step_even_with_accepted_status() -> Result<(), Error> {
+    use oteryn_protocol_oteryn::world_spatial::{StepDisposition, encode_step_result};
+    assert!(require_moved_step(&encode_step_result(StepDisposition::Blocked), &[]).is_err());
+    require_moved_step(&encode_step_result(StepDisposition::Moved), &[])
+}
+
+#[cfg(bevy_shell)]
+async fn check_reply(
+    receipt: &Envelope, session: &[u8; 16], command: u64, step_profile: Option<&[u32]>,
+) -> Result<(), Error> {
     let mut frames = receipt.payload.as_slice();
     while !frames.is_empty() {
         let bytes = read_frame(&mut frames).await?;
@@ -175,6 +204,9 @@ async fn check_reply(receipt: &Envelope, session: &[u8; 16], command: u64) -> Re
             let result = oteryn_protocol_oteryn::decode_command_result(frame.payload())?;
             assert_eq!(result.command_id, command);
             assert_eq!(result.status, CommandStatus::Accepted);
+            if let Some(capabilities) = step_profile {
+                require_moved_step(result.payload, capabilities)?;
+            }
             return receipt.check(session, command, frame.server_sequence());
         }
     }
@@ -368,6 +400,7 @@ async fn verify(
         std::slice::from_ref(&marker)
     );
     wait_for_saved_marks(host, &cache_path, std::slice::from_ref(&marker)).await?;
+    let step_capabilities = session.selected_capabilities().to_vec();
     let worker = tokio::spawn(crate::play::run_session(session, commands, outbox));
     host.drag_minimap([4, 0])?;
     let zoom = 1;
@@ -393,7 +426,7 @@ async fn verify(
         Ok::<_, Error>(())
     })
     .await??;
-    check_reply(&step, &first_id, first.command_id).await?;
+    check_reply(&step, &first_id, first.command_id, Some(&step_capabilities)).await?;
     let moved_view = host.view()?;
     assert_eq!(
         moved_view.satellite_player(),
@@ -447,7 +480,7 @@ async fn verify(
         tokio::time::Instant::from_std(cache.saved_at + cache.retry_delay)
     };
     assert_remembered_cells(&super::lock(&view.minimap), &union);
-    check_reply(&logout, &first_id, step.command_id + 1).await?;
+    check_reply(&logout, &first_id, step.command_id + 1, None).await?;
     let pre_logout_feedback = super::lock(&retained_cache).feedback.clone();
     host.logout()?;
     tokio::time::timeout_at(periodic_deadline, async {
@@ -660,6 +693,7 @@ fn assert_projected_ground(
     let grid = oteryn_client_ui::minimap::view()?;
     let rendered: Vec<_> = crate::bevy_shell::n07d_sidebar_colors(scene).collect();
     let mut verified_pixels = 0;
+    let mut verified_fixed_pixel = false;
     let mut expected_colors = BTreeMap::new();
     for tile in &map.tiles {
         let pos = tile.position;
@@ -723,6 +757,7 @@ fn assert_projected_ground(
                 assert_sidebar_tile(pixels, at, rgba);
                 verified_pixels += 1;
                 if at == [28., 24.] {
+                    verified_fixed_pixel = true;
                     let origin = map.header.origin;
                     println!(
                         "N07d sidebar pixel (28,24) origin=({},{},{}) tile={key:?} rgba={rgba:?}",
@@ -736,6 +771,7 @@ fn assert_projected_ground(
         verified_pixels > 0,
         "N07d needs visible pinned terrain to verify"
     );
+    assert!(verified_fixed_pixel, "N07d fixed pixel (28,24) was not verified");
     Ok(expected_colors)
 }
 
@@ -813,6 +849,12 @@ async fn check_markers(
     host.click_minimap_button("Edit Mark")?;
     host.enter_mark_description("  ")?;
     host.click_minimap_button("Save mark")?;
+    assert_eq!(
+        super::lock(&host.view()?.minimap).feedback,
+        format!("Map mark: {}", oteryn_client_ui::tr!(
+            "Use map coordinates 0-65535, floor 0 to 15 and a label of up to 128 bytes"
+        )),
+    );
     assert_eq!(
         super::lock(&host.view()?.minimap).markers,
         std::slice::from_ref(&marker)
