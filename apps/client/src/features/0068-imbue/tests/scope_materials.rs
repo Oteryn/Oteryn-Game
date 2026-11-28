@@ -165,12 +165,12 @@ fn p21_live_shrine_selection_replays_exact_query() -> Result<(), Error> {
     let definition = field("item_definition")?.parse()?;
     let expected = field("query_hex")?;
     let inventory_hex = field("inventory_hex")?;
-    let mut pairs = inventory_hex.as_bytes().chunks_exact(2);
+    let (pairs, remainder) = inventory_hex.as_bytes().as_chunks::<2>();
+    assert!(remainder.is_empty());
     let bytes = pairs
-        .by_ref()
+        .iter()
         .map(|pair| Ok::<_, Error>(u8::from_str_radix(std::str::from_utf8(pair)?, 16)?))
         .collect::<Result<Vec<_>, _>>()?;
-    assert!(pairs.remainder().is_empty());
     let inventory = decode_character_inventory_with_appearances(&bytes, true, true)
         .map_err(|error| format!("P21 inventory decode: {error:?}"))?;
     let mut sword = inventory
