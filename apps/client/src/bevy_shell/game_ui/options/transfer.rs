@@ -400,13 +400,22 @@ mod tests {
         assert!(configured.is_none() || phase.as_deref() == Ok("transfer"));
         let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
         app.add_plugins((
+            MinimalPlugins,
+            bevy::asset::AssetPlugin::default(),
+            bevy::window::WindowPlugin::default(),
             bevy::input::InputPlugin,
             bevy::input_focus::InputDispatchPlugin,
+            bevy::text::TextPlugin,
+            bevy::ui_widgets::TextInputPlugin,
             bevy::ui_widgets::ButtonPlugin,
-        ));
-        app.init_resource::<InputFocus>();
-        app.world_mut()
-            .spawn((Window::default(), bevy::window::PrimaryWindow));
+        ))
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .init_resource::<UiScale>()
+        .init_resource::<bevy::text::RemSize>()
+        .init_resource::<bevy::picking::events::PointerState>()
+        .add_message::<bevy::picking::events::PointerRelease>()
+        .add_systems(PostUpdate, bevy::ui::widget::update_editable_text_styles);
         {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
             install_character(&mut owner, character, root)?;
@@ -469,11 +478,28 @@ mod tests {
         );
         assert!(!export.exists());
 
+        let path_text = export.to_str().ok_or("export path")?;
         app.world_mut()
-            .get_mut::<EditableText>(field)
-            .ok_or("production path field")?
-            .editor_mut()
-            .set_text(export.to_str().ok_or("export path")?);
+            .resource_mut::<InputFocus>()
+            .set(field, bevy::input_focus::FocusCause::Navigated);
+        app.world_mut()
+            .write_message(bevy::input::keyboard::KeyboardInput {
+                key_code: KeyCode::KeyA,
+                logical_key: bevy::input::keyboard::Key::Character(path_text.into()),
+                state: bevy::input::ButtonState::Pressed,
+                text: Some(path_text.into()),
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(field)
+                .ok_or("path field")?
+                .value()
+                .to_string(),
+            path_text
+        );
         {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
             owner.edit_preferences(|draft| draft.audio_device = "Unsaved draft".into());
