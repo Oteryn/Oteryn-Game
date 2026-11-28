@@ -292,7 +292,11 @@ pub(super) fn build(
             controls,
             key,
             Kind::Track,
-            "Track / Untrack quest",
+            if quest.state.mission_tracking {
+                "Track / Untrack mission"
+            } else {
+                "Track / Untrack quest"
+            },
             150.,
         );
     } else {

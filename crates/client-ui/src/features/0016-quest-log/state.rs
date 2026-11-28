@@ -13,24 +13,50 @@ pub struct QuestPanel {
     pub list_search: String,
     pub list_sort: QuestSort,
     pub pending_query: Option<QuestLogQuery>,
+    pub pending_missions: Option<Vec<TrackedMission>>,
     pub tracker: QuestTracker,
 }
 
 impl QuestPanel {
+    pub fn tracker_line(&self) -> Option<&QuestLine> {
+        self.tracker_selection.and_then(|id| {
+            self.state.log.tracked.iter().find(|line| {
+                line.quest_index == id
+                    && (!self.state.mission_tracking
+                        || line
+                            .missions
+                            .iter()
+                            .any(|m| Some(m.mission_index) == self.mission))
+            })
+        })
+    }
+
     pub fn journal_line(&self) -> Option<&QuestLine> {
-        if let Some(line) = self.tracker_selection.and_then(|id| {
-            self.state
-                .log
-                .tracked
-                .iter()
-                .find(|line| line.quest_index == id)
-        }) {
-            return Some(line);
-        }
-        match &self.state.log.view {
+        self.tracker_line().or(match &self.state.log.view {
             Some(QuestLogView::Line(line)) => Some(line),
             _ => None,
-        }
+        })
+    }
+
+    pub fn selected_mission(&self) -> Option<TrackedMission> {
+        let line = self.journal_line()?;
+        let mission_index = self.mission?;
+        line.missions
+            .iter()
+            .any(|mission| mission.mission_index == mission_index)
+            .then_some(TrackedMission {
+                quest_index: line.quest_index,
+                mission_index,
+            })
+    }
+
+    pub fn confirmed_missions(&self) -> impl Iterator<Item = TrackedMission> + '_ {
+        self.state.log.tracked.iter().flat_map(|line| {
+            line.missions.iter().map(|mission| TrackedMission {
+                quest_index: line.quest_index,
+                mission_index: mission.mission_index,
+            })
+        })
     }
 
     pub fn title(&self, index: u32) -> String {

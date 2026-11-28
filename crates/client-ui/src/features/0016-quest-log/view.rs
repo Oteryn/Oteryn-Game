@@ -10,7 +10,13 @@ pub fn panel_text(panel: &QuestPanel) -> String {
             match refusal {
                 QuestRefusal::CapabilityNotSelected => tr!("Quest log unavailable in this session"),
                 QuestRefusal::UnknownQuest => tr!("Unknown quest; refresh the list"),
+                QuestRefusal::LimitExceeded if panel.state.mission_tracking => {
+                    "Mission tracker is full. Untrack a mission first."
+                }
                 QuestRefusal::LimitExceeded => tr!("At most ten quests can be tracked"),
+                QuestRefusal::MissionTrackingRejected => {
+                    "Server refused the mission tracking change. Check your tracker limit and try again."
+                }
                 QuestRefusal::Rejected => tr!("Quest request refused; refresh the list"),
                 QuestRefusal::ReconciliationRequired => {
                     tr!("Quest request outcome unavailable; refresh the list")
@@ -56,10 +62,11 @@ pub fn panel_text(panel: &QuestPanel) -> String {
         }
         None => lines.push(tr!("Open the quest list").into()),
     }
-    lines.push(lfmt!(
-        "Tracked quests ({}/10)",
-        panel.state.log.tracked.len()
-    ));
+    lines.push(if panel.state.mission_tracking {
+        mission_tracking_summary(panel)
+    } else {
+        lfmt!("Tracked quests ({}/10)", panel.state.log.tracked.len())
+    });
     for line in &panel.state.log.tracked {
         lines.push(panel.title(line.quest_index));
         for mission in &line.missions {
@@ -72,11 +79,15 @@ pub fn panel_text(panel: &QuestPanel) -> String {
 /// Independent tracker view, using confirmed lines and local visibility filters only.
 pub fn tracker_text(panel: &QuestPanel) -> String {
     let rows = tracker_lines(panel);
-    let mut text = lfmt!(
-        "Quest tracker — {} / {} tracked quests\r\n",
-        rows.len(),
-        panel.state.log.tracked.len()
-    );
+    let mut text = if panel.state.mission_tracking {
+        format!("{}\r\n", mission_tracking_summary(panel))
+    } else {
+        lfmt!(
+            "Quest tracker — {} / {} tracked quests\r\n",
+            rows.len(),
+            panel.state.log.tracked.len()
+        )
+    };
     if !panel.state.selected {
         text.push_str(tr!("Quest tracking unavailable in this session\r\n"));
     }
@@ -100,9 +111,13 @@ pub fn tracker_text(panel: &QuestPanel) -> String {
         }
     }
     if rows.is_empty() {
-        text.push_str(tr!("No tracked quests match these filters\r\n"));
+        text.push_str(if panel.state.mission_tracking {
+            "No tracked missions match these filters\r\n"
+        } else {
+            tr!("No tracked quests match these filters\r\n")
+        });
     }
-    if panel.pending_query.is_some() {
+    if panel.pending_query.is_some() || panel.pending_missions.is_some() {
         text.push_str(tr!("Waiting for server confirmation\r\n"));
     }
     if panel.state.refusal.is_some() {
@@ -111,4 +126,13 @@ pub fn tracker_text(panel: &QuestPanel) -> String {
         ));
     }
     text
+}
+
+pub fn mission_tracking_summary(panel: &QuestPanel) -> String {
+    format!(
+        "Tracked missions ({}) · Limit: {} free, {} Premium",
+        panel.state.log.tracked.len(),
+        MAX_FREE_TRACKED_MISSIONS,
+        MAX_TRACKED_MISSIONS
+    )
 }

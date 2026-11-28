@@ -200,6 +200,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
     // Party join and leave notices on domain 57 (576, requires 42 and 92).
     party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
+    quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
 ];
 
@@ -219,6 +220,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_interaction::CAPABILITY_WORLD_INTERACTION_V1,
     CAPABILITY_CONTAINER_TREE_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,
+    quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1,
     CAPABILITY_ATTACK_V1,
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,

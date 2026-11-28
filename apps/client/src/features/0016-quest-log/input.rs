@@ -1,6 +1,9 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::quest_log::{QuestLogQuery, QuestSort, request};
+use oteryn_client_ui::quest_log::{
+    QuestLogQuery, QuestLogWireError, QuestRefusal, QuestSort, TrackedMission,
+    encode_quest_mission_track, request, tracking_query,
+};
 use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
@@ -44,6 +47,28 @@ impl PlayLink {
         self.enqueue_quest_request(&mut lock(&self.mailbox), query);
     }
 
+    pub fn quest_toggle_tracking(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mailbox.quest;
+        if !panel.state.mission_tracking {
+            let Some(query) = tracking_query(panel) else {
+                return false;
+            };
+            self.enqueue_quest_request(&mut mailbox, &query);
+            return true;
+        }
+        let Some(pair) = panel.selected_mission() else {
+            return false;
+        };
+        let mut pairs: Vec<_> = panel.confirmed_missions().collect();
+        if let Some(index) = pairs.iter().position(|tracked| *tracked == pair) {
+            pairs.remove(index);
+        } else {
+            pairs.push(pair);
+        }
+        self.enqueue_mission_tracking(&mut mailbox, pairs)
+    }
+
     pub fn quest_clean_tracker(&self, completed_only: bool) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mailbox.quest;
@@ -51,6 +76,22 @@ impl PlayLink {
             return false;
         }
         let tracked = &panel.state.log.tracked;
+        if panel.state.mission_tracking {
+            let pairs: Vec<_> = tracked
+                .iter()
+                .flat_map(|line| {
+                    line.missions
+                        .iter()
+                        .filter(|mission| completed_only && !mission.done)
+                        .map(|mission| TrackedMission {
+                            quest_index: line.quest_index,
+                            mission_index: mission.mission_index,
+                        })
+                })
+                .collect();
+            return pairs.len() != tracked.len()
+                && self.enqueue_mission_tracking(&mut mailbox, pairs);
+        }
         let quest_indexes: Vec<_> = tracked
             .iter()
             .filter(|line| completed_only && !line.completed)
@@ -62,12 +103,41 @@ impl PlayLink {
         self.enqueue_quest_request(&mut mailbox, &QuestLogQuery::Track { quest_indexes })
     }
 
+    fn enqueue_mission_tracking(
+        &self,
+        mailbox: &mut crate::play::mailbox::Mailbox,
+        pairs: Vec<TrackedMission>,
+    ) -> bool {
+        let panel = &mut mailbox.quest;
+        if mailbox.quest_pending || panel.pending_missions.is_some() || !panel.state.selected {
+            return false;
+        }
+        match encode_quest_mission_track(&pairs) {
+            Ok(payload) => {
+                mailbox.quest_pending = self.commands.send(PlayCommand::QuestLog(payload)).is_ok();
+                if mailbox.quest_pending {
+                    panel.pending_missions = Some(pairs);
+                    panel.state.refusal = None;
+                } else {
+                    panel.state.refusal = Some(QuestRefusal::ReconciliationRequired);
+                }
+            }
+            Err(QuestLogWireError::LimitExceeded) => {
+                panel.state.refusal = Some(QuestRefusal::LimitExceeded);
+            }
+            Err(QuestLogWireError::Malformed) => {
+                panel.state.refusal = Some(QuestRefusal::Malformed);
+            }
+        }
+        mailbox.quest_pending
+    }
+
     fn enqueue_quest_request(
         &self,
         mailbox: &mut crate::play::mailbox::Mailbox,
         query: &QuestLogQuery,
     ) -> bool {
-        if mailbox.quest_pending {
+        if mailbox.quest_pending || mailbox.quest.pending_missions.is_some() {
             return false;
         }
         if let Ok(payload) = request(&mut mailbox.quest, query) {

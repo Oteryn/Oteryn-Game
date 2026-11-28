@@ -1,5 +1,8 @@
 use crate::play::{Outbox, Pushed};
-use oteryn_client_runtime::quest_log::{QuestLog, QuestState, QuestUpdate};
+use oteryn_client_runtime::{
+    CommandStatus,
+    quest_log::{MAX_FREE_TRACKED_MISSIONS, QuestLog, QuestRefusal, QuestState, QuestUpdate},
+};
 use oteryn_session::{AppliedDelta, Session, SessionError, SessionStream};
 
 pub(in crate::play) fn quest_log(pushed: &mut Pushed, delta: AppliedDelta<QuestLog>) {
@@ -30,6 +33,7 @@ impl Outbox {
         panel.hidden.clear();
         panel.show_hidden = false;
         panel.tracker_selection = None;
+        panel.pending_missions = None;
         if matches!(
             &state.log.view,
             Some(oteryn_client_runtime::quest_log::QuestLogView::List(_))
@@ -42,6 +46,20 @@ impl Outbox {
     pub(in crate::play) fn quest_result(&self, result: &oteryn_session::GatedCommandResult) {
         let mut mailbox = crate::play::mailbox::lock(&self.0);
         mailbox.quest_pending = false;
+        let panel = &mut mailbox.quest;
+        if let Some(requested) = &panel.pending_missions {
+            if let Err(refusal) = panel.state.record_result(result.status, &result.payload) {
+                panel.state.refusal = Some(refusal);
+            } else if result.status == CommandStatus::Rejected
+                && requested.len() > MAX_FREE_TRACKED_MISSIONS
+            {
+                panel.state.refusal = Some(QuestRefusal::MissionTrackingRejected);
+            }
+            if panel.state.refusal.is_some() {
+                panel.pending_missions = None;
+            }
+            return;
+        }
         if result.status != oteryn_client_runtime::CommandStatus::Accepted {
             mailbox.quest.tracker.command_failed();
         }
@@ -154,6 +172,12 @@ pub(in crate::play) fn reduce(
         }
         if matches!(&delta, QuestUpdate::Snapshot(_)) {
             panel.tracker.reconcile();
+            panel.pending_missions = None;
+        }
+        if panel.pending_missions.as_ref().is_some_and(|expected| {
+            panel.confirmed_missions().eq(expected.iter().copied())
+        }) {
+            panel.pending_missions = None;
         }
         if matches!(
             &panel.state.log.view,
@@ -162,14 +186,7 @@ pub(in crate::play) fn reduce(
             panel.tracker.observe(&panel.state.list);
         }
         panel.tracker.confirm(&panel.state.log.tracked);
-        if panel.tracker_selection.is_some_and(|id| {
-            !panel
-                .state
-                .log
-                .tracked
-                .iter()
-                .any(|line| line.quest_index == id)
-        }) {
+        if panel.tracker_selection.is_some() && panel.tracker_line().is_none() {
             panel.tracker_selection = None;
         }
         let missions = panel

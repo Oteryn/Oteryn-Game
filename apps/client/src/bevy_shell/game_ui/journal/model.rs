@@ -124,9 +124,19 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
                 .map(|mission| Row {
                     id: RowId::Mission(line.quest_index, mission.mission_index),
                     label: format!(
-                        "{}{}",
+                        "{}{}{}",
                         mission.name,
-                        if mission.done { " (completed)" } else { "" }
+                        if mission.done { " (completed)" } else { "" },
+                        if panel.state.mission_tracking
+                            && panel.confirmed_missions().any(|pair| {
+                                pair.quest_index == line.quest_index
+                                    && pair.mission_index == mission.mission_index
+                            })
+                        {
+                            " (tracked)"
+                        } else {
+                            ""
+                        }
                     ),
                     selected: panel.mission == Some(mission.mission_index),
                 })
@@ -152,7 +162,7 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
     } else {
         "Select a quest to read its missions.".into()
     };
-    let status = if panel.pending_query.is_some() {
+    let status = if panel.pending_query.is_some() || panel.pending_missions.is_some() {
         "Waiting for server confirmation…".into()
     } else if panel.state.refusal.is_some() {
         quest_log::panel_text(panel)
@@ -161,8 +171,13 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
             .unwrap_or("Quest request refused; refresh the list.")
             .to_owned()
     } else {
+        let tracked = if panel.state.mission_tracking {
+            format!("{} missions tracked", panel.state.log.tracked.len())
+        } else {
+            format!("{} tracked / 10", panel.state.log.tracked.len())
+        };
         format!(
-            "{} quests · {} completed · {} hidden · {} tracked / 10 · Page {} / {}",
+            "{} quests · {} completed · {} hidden · {} · Page {} / {}",
             visible.len(),
             panel.state.list.iter().filter(|q| q.completed).count(),
             panel
@@ -171,7 +186,7 @@ pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> P
                 .iter()
                 .filter(|q| panel.hidden.contains(&q.quest_index))
                 .count(),
-            panel.state.log.tracked.len(),
+            tracked,
             page + 1,
             pages
         )

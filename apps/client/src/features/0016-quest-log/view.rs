@@ -54,10 +54,7 @@ impl PlayLink {
     #[must_use]
     pub fn quest_panel(&self) -> QuestPanel {
         let mut panel = lock(&self.mailbox).quest.clone();
-        if let Some(line) = panel
-            .tracker_selection
-            .and_then(|id| panel.state.log.tracked.iter().find(|l| l.quest_index == id))
-        {
+        if let Some(line) = panel.tracker_line() {
             panel.state.log.view = Some(oteryn_client_ui::quest_log::QuestLogView::Line(
                 line.clone(),
             ));

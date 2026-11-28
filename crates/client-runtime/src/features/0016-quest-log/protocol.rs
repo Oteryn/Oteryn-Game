@@ -8,6 +8,9 @@ impl QuestState {
         let known = match query {
             QuestLogQuery::List | QuestLogQuery::ListOnly => true,
             QuestLogQuery::Quest { quest_index } => self.known(*quest_index),
+            QuestLogQuery::Track { .. } if self.mission_tracking => {
+                return Err(QuestRefusal::Malformed);
+            }
             QuestLogQuery::Track { quest_indexes } => quest_indexes.iter().all(|q| self.known(*q)),
         };
         if !known {
@@ -17,18 +20,23 @@ impl QuestState {
     }
 }
 
-/// The session rechecks selection and ownership before sending command 22.
+/// The session rechecks negotiation and command ownership before sending either tracker command.
 pub async fn send<S: SessionStream>(
     session: &mut Session<S>,
     payload: &[u8],
 ) -> Result<GatedCommandResult, SessionError> {
-    let result = session
-        .gated_command(
-            CAPABILITY_QUEST_LOG_V1,
-            COMMAND_TYPE_QUEST_LOG_QUERY,
-            payload,
+    // The shell's quest command channel carries canonical payloads. A command-22 query
+    // never encodes as a mission replacement: its list has an empty field-1 body, its
+    // other cases use different tags, and it cannot have an empty payload.
+    let (capability, command) = if decode_quest_mission_track(payload).is_ok() {
+        (
+            CAPABILITY_QUEST_MISSION_TRACKING_V1,
+            COMMAND_TYPE_QUEST_MISSION_TRACK,
         )
-        .await?;
+    } else {
+        (CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY)
+    };
+    let result = session.gated_command(capability, command, payload).await?;
     let list_only = matches!(decode_quest_log_query(payload), Ok(QuestLogQuery::ListOnly));
     let valid = if list_only && result.status == CommandStatus::Accepted {
         valid_list_only(&result.payload)

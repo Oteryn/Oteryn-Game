@@ -93,6 +93,9 @@ pub fn tracker_query(panel: &mut QuestPanel, now: Instant) -> Option<QuestLogQue
         }
         return None;
     }
+    if panel.state.mission_tracking {
+        return None;
+    }
     t.confirm(&panel.state.log.tracked);
     let confirmed: Vec<_> = panel
         .state
@@ -143,10 +146,17 @@ pub fn tracker_lines(panel: &QuestPanel) -> Vec<&QuestLine> {
         .log
         .tracked
         .iter()
-        .filter(|line| match panel.tracker.filter {
-            TrackerFilter::All => true,
-            TrackerFilter::Active => !line.completed,
-            TrackerFilter::Completed => line.completed,
+        .filter(|line| {
+            let completed = if panel.state.mission_tracking {
+                line.missions.iter().all(|mission| mission.done)
+            } else {
+                line.completed
+            };
+            match panel.tracker.filter {
+                TrackerFilter::All => true,
+                TrackerFilter::Active => !completed,
+                TrackerFilter::Completed => completed,
+            }
         })
         .filter(|line| {
             lfmt!("Quest {}", line.quest_index)

@@ -8,12 +8,15 @@ pub enum QuestRefusal {
     Malformed,
     RevisionMismatch,
     Rejected,
+    MissionTrackingRejected,
     ReconciliationRequired,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct QuestState {
     pub selected: bool,
+    /// Capability 577 projects each confirmed pair as a single-mission quest line.
+    pub mission_tracking: bool,
     pub revision: Option<u64>,
     pub log: QuestLog,
     pub list: Vec<QuestListEntry>,
@@ -33,7 +36,7 @@ impl QuestState {
             QuestUpdate::Delta(delta) => self.apply(delta),
             QuestUpdate::Snapshot(snapshot) => {
                 self.require_selected()?;
-                *self = Self::from_snapshot(&[CAPABILITY_QUEST_LOG_V1], Some(snapshot))?;
+                *self = Self::from_selected_snapshot(self.mission_tracking, snapshot)?;
                 Ok(())
             }
         }
@@ -43,26 +46,36 @@ impl QuestState {
         selected: &[u32],
         snapshot: Option<&GatedSnapshot>,
     ) -> Result<Self, QuestRefusal> {
-        let mut state = Self {
-            selected: selected.contains(&CAPABILITY_QUEST_LOG_V1),
-            ..Self::default()
-        };
-        if !state.selected {
+        if !selected.contains(&CAPABILITY_QUEST_LOG_V1) {
             return if snapshot.is_some() {
                 Err(QuestRefusal::CapabilityNotSelected)
             } else {
-                Ok(state)
+                Ok(Self::default())
             };
         }
-        let snapshot = snapshot.ok_or(QuestRefusal::Malformed)?;
+        Self::from_selected_snapshot(
+            selected.contains(&CAPABILITY_QUEST_MISSION_TRACKING_V1),
+            snapshot.ok_or(QuestRefusal::Malformed)?,
+        )
+    }
+
+    fn from_selected_snapshot(
+        mission_tracking: bool,
+        snapshot: &GatedSnapshot,
+    ) -> Result<Self, QuestRefusal> {
         if snapshot.domain_id != STATE_DOMAIN_QUEST_LOG
             || snapshot.snapshot_type != SNAPSHOT_TYPE_QUEST_LOG_V1
         {
             return Err(QuestRefusal::Malformed);
         }
         let log = decode_quest_log(&snapshot.payload).map_err(wire_refusal)?;
+        let mut state = Self {
+            selected: true,
+            mission_tracking,
+            revision: Some(snapshot.revision),
+            ..Self::default()
+        };
         state.replace(log);
-        state.revision = Some(snapshot.revision);
         Ok(state)
     }
 
@@ -72,7 +85,12 @@ impl QuestState {
             return Err(QuestRefusal::RevisionMismatch);
         }
         // Session validates the bytes; validate typed input too before changing state.
-        encode_quest_log(&delta.value).map_err(wire_refusal)?;
+        let encode = if self.mission_tracking {
+            encode_quest_log_missions
+        } else {
+            encode_quest_log
+        };
+        encode(&delta.value).map_err(wire_refusal)?;
         self.replace(delta.value.clone());
         self.revision = Some(delta.new_revision);
         self.refusal = None;

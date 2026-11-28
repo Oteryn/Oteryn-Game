@@ -16,6 +16,7 @@ type Result = std::result::Result<(), Box<dyn std::error::Error>>;
 pub(super) fn quest_state() -> QuestState {
     QuestState {
         selected: true,
+        mission_tracking: false,
         revision: Some(1),
         log: QuestLog {
             view: Some(QuestLogView::Line(QuestLine {

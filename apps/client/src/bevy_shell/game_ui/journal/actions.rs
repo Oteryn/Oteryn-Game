@@ -85,13 +85,7 @@ pub(super) fn perform(
             state.selected_spell = Some(id);
             return true;
         }
-        Kind::Track => {
-            if let Some(query) = quest_log::tracking_query(&quest) {
-                link.quest_request(&query);
-                return true;
-            }
-            return false;
-        }
+        Kind::Track => return link.quest_toggle_tracking(),
         Kind::Cast => {
             if action.key.tab != Tab::Spells {
                 return false;
@@ -343,3 +337,7 @@ fn number(value: &str) -> Option<u32> {
         value.trim().parse().ok()
     }
 }
+
+#[cfg(test)]
+#[path = "mission_tracking_tests.rs"]
+mod mission_tracking_tests;

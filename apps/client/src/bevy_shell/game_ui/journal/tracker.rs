@@ -24,6 +24,7 @@ struct Windows {
     generation: Option<u64>,
     slots: [bool; 8],
     lines: Vec<(String, QuestLine)>,
+    mission_count: Option<String>,
     full: bool,
 }
 pub(super) fn install(app: &mut App) {
@@ -46,10 +47,15 @@ fn project(
         windows.slots[0] = active.is_some();
         windows.generation = generation;
     }
-    let lines = active
-        .map(|p| {
-            let panel = p.link.quest_panel();
-            oteryn_client_ui::quest_log::tracker_lines(&panel)
+    let panel = active.map(|p| p.link.quest_panel());
+    let mission_count = panel
+        .as_ref()
+        .filter(|p| p.state.mission_tracking)
+        .map(oteryn_client_ui::quest_log::mission_tracking_summary);
+    let lines = panel
+        .as_ref()
+        .map(|panel| {
+            oteryn_client_ui::quest_log::tracker_lines(panel)
                 .into_iter()
                 .map(|line| {
                     let mut line = line.clone();
@@ -62,7 +68,8 @@ fn project(
         })
         .unwrap_or_default();
     let full = !windows.slots.contains(&false);
-    let changed = windows.lines != lines || windows.full != full;
+    let changed =
+        windows.lines != lines || windows.full != full || windows.mission_count != mission_count;
     windows.full = full;
     let mut mounted = [None; 8];
     for (entity, window) in &roots {
@@ -73,6 +80,7 @@ fn project(
         }
     }
     windows.lines = lines;
+    windows.mission_count = mission_count;
     let Some(generation) = generation else {
         return;
     };
@@ -135,6 +143,12 @@ fn project(
             button(&mut commands, Control::Add, "New tracker window");
         }
         button(&mut commands, Control::Close, "Close tracker");
+        if let Some(count) = &windows.mission_count {
+            let text = commands
+                .spawn(source::text(count, source::font(skins.font.clone(), false)))
+                .id();
+            commands.entity(root).add_child(text);
+        }
         for (title, line) in &windows.lines {
             let heading = commands
                 .spawn(source::text(title, source::font(skins.font.clone(), true)))

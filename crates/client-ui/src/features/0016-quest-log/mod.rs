@@ -10,7 +10,7 @@ pub use input::{open_key, tracker_key, tracking_query};
 pub use list::{QUEST_SORT_LABELS, QuestSort, quest_row_query, quest_rows};
 pub use protocol::request;
 pub use state::QuestPanel;
-pub use view::{panel_text, tracker_text};
+pub use view::{mission_tracking_summary, panel_text, tracker_text};
 #[cfg(test)]
 #[path = "tests/list_options.rs"]
 mod list_options_tests;

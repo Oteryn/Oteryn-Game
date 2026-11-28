@@ -2,17 +2,19 @@
   "mechanic": "0577-quest-mission-tracking",
   "kind": "handlers",
   "id": "0577-quest-mission-tracking-replace",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
     6318
   ],
   "direction": "client_to_server",
-  "reason": "This branch adds the server protocol. The native panel still uses command 22 for its tracker.",
   "not_applicable": {
-    "state": "The server retains mission pairs in GameSession continuity.",
-    "protocol": "The server sends tracked missions on domain 16 to clients selecting capability 577.",
-    "view": "The native panel continues to display its quest-level tracker.",
-    "input": "The native panel continues to submit tracked quest indexes.",
+    "state": "The quest log reducer owns the confirmed domain-16 mission lines.",
+    "protocol": "The session uses the quest log wire codec for the replacement command and projection.",
+    "view": "The quest journal and tracker render the confirmed mission lines.",
+    "input": "The quest journal replaces the set of tracked mission pairs.",
     "settings": "Tracker allowance follows account Premium status."
-  }
+  },
+  "capability": 577,
+  "entry": "gated_command.rs::gated_command",
+  "entry_owner": "session"
 }

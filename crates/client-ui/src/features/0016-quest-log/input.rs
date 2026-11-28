@@ -6,6 +6,9 @@ pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
 
 /// Replaces the complete tracked set; the server confirms the change in domain 16.
 pub fn tracking_query(panel: &super::QuestPanel) -> Option<super::QuestLogQuery> {
+    if panel.state.mission_tracking {
+        return None;
+    }
     let Some(super::QuestLogView::Line(line)) = &panel.state.log.view else {
         return None;
     };
