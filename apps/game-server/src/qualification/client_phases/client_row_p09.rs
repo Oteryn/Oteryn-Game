@@ -117,7 +117,7 @@ fn replay(
     else {
         return Err("wall query did not decode as a wall".into());
     };
-    if wall.claimed || wall.claim_enabled || !(1..=30).contains(&wall.lane_day) {
+    if wall.claimed || wall.claim_enabled || !(1..=7).contains(&wall.lane_day) {
         return Err(format!("expected fresh unopened wall observed={wall:?}").into());
     }
     if !apply_result(
@@ -132,7 +132,7 @@ fn replay(
     }
     let text = panel_text(&panel);
     for expected in [
-        format!("Day {} of 7", (wall.lane_day - 1) % 7 + 1),
+        format!("Day {} of 7", wall.lane_day),
         format!("Streak: {}", wall.streak),
         format!("Jokers: {}", wall.jokers),
         "Status: not available".to_owned(),
