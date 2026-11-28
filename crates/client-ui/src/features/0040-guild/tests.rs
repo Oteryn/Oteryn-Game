@@ -32,13 +32,18 @@ fn no_next_page_does_not_repeat_the_first_page() {
             name: "Knights".into(),
             state: 1,
             revision: 3,
-            own_rank: 0,
+            own_rank: 1,
             title: String::new(),
             message: String::new(),
             ranks: vec!["Leader".into()],
         }),
         ..Default::default()
     };
+    assert!(
+        panel_text(&panel)
+            .lines()
+            .any(|line| line == "Rank: Leader")
+    );
     assert_eq!(request(&mut panel, Intent::MoreRoster), None);
     panel.roster.push(guild::GuildMember {
         channel: None,

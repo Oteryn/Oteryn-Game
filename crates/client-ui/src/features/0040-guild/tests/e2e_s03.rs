@@ -54,7 +54,7 @@ fn load() -> Result<Replay, Error> {
                 own_rank: 1,
                 title: "Founder".into(),
                 message: "Welcome to the guild".into(),
-                ranks: vec!["Member".into(), "Leader".into(), "Vice-Leader".into()],
+                ranks: vec!["Leader".into(), "Vice Leader".into(), "Member".into()],
             },
         )))
         .map_err(|e| format!("own {e:?}"))?,
@@ -126,7 +126,6 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     assert_eq!(own.name, name);
     assert_eq!(own.ranks.len(), rank_count);
     assert_eq!(own.own_rank, own_rank);
-    let rank = own.ranks[usize::from(own_rank)].clone();
     assert_eq!(
         panel_text(&panel).lines().next(),
         Some(format!("{name} — {}", own.title).as_str())
@@ -134,7 +133,7 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
     assert!(
         panel_text(&panel)
             .lines()
-            .any(|l| l == format!("Rank: {rank}"))
+            .any(|line| line == "Rank: Leader")
     );
     assert_eq!(panel.feedback, None);
 
@@ -147,12 +146,12 @@ fn guild_replay_found_summary_roster_and_invitation() -> Result<(), Error> {
         (member.name.as_str(), member.level),
         (founder, roster_level)
     );
-    assert!(
-        panel_text(&panel)
-            .lines()
-            .any(|l| l.starts_with(&format!("{founder} — "))
-                && l.ends_with(&format!("(rank {roster_level})")))
-    );
+    let roster_text = format!("{founder} — {} (rank {roster_level})", member.title);
+    let roster_text = match member.channel {
+        Some(_) => format!("{roster_text} — —"),
+        None => roster_text,
+    };
+    assert!(panel_text(&panel).lines().any(|line| line == roster_text));
     assert!(panel_text(&panel).lines().any(|l| l == "Roster (1):"));
 
     // The invitee sees the pending invitation and no guild.

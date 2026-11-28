@@ -134,8 +134,9 @@ pub fn panel_text(panel: &GuildPanel) -> String {
                 g.name,
                 g.title,
                 g.message,
-                g.ranks
-                    .get(usize::from(g.own_rank))
+                g.own_rank
+                    .checked_sub(1)
+                    .and_then(|index| g.ranks.get(usize::from(index)))
                     .map_or("unknown", String::as_str)
             )
         },

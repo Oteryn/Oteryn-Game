@@ -19,8 +19,10 @@ NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 \
     bash tools/qualification/node_boot/run.sh 2>&1 | tee "$RUN/node.log" || node_status=$?
 
 # Missing captures are an error. A failed boot cannot silently use unit fixtures.
+# The node-boot S03 row runs its exact replay inside the row verdict boundary.
 "$CARGO" test --offline --locked -p oteryn-client-runtime -p oteryn-client-domain -p oteryn-client-ui \
-    -p oteryn-client -p oteryn-session -p oteryn-dev-client --lib --quiet 2>&1 | tee "$RUN/client.log" || client_status=$?
+    -p oteryn-client -p oteryn-session -p oteryn-dev-client --lib --quiet \
+    -- --skip guild::e2e_s03::guild_replay_found_summary_roster_and_invitation 2>&1 | tee "$RUN/client.log" || client_status=$?
 
 python3 tools/qualification/e2e_all/report.py \
     --matrix apps/game-server/src/qualification/SCENARIO_MATRIX.md \
