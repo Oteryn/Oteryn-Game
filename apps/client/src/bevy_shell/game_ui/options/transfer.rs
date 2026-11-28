@@ -334,7 +334,18 @@ mod tests {
             .iter(world)
             .find_map(|(entity, name)| (name.as_str() == id).then_some(entity))
             .ok_or("production transfer button missing")?;
-        world.trigger(Activate { entity: button });
+        world
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(button, bevy::input_focus::FocusCause::Navigated);
+        world.write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Enter,
+            logical_key: bevy::input::keyboard::Key::Enter,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+        app.update();
         Ok(())
     }
 
@@ -360,15 +371,33 @@ mod tests {
         let fixture = tempfile::tempdir()?;
         let path = fixture.path().join("preferences.json");
         let export = fixture.path().join("export.json");
+        let character = [3; 16];
+        let active = PreferenceStore::character_path(&path, character);
         let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
-        assert_eq!(device(&app)?, (String::new(), String::new()));
+        app.add_plugins((
+            bevy::input::InputPlugin,
+            bevy::input_focus::InputDispatchPlugin,
+            bevy::ui_widgets::ButtonPlugin,
+        ));
+        app.init_resource::<InputFocus>();
+        app.world_mut()
+            .spawn((Window::default(), bevy::window::PrimaryWindow));
         {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-            owner.edit_preferences(|draft| draft.audio_device = "Headset".into());
-            owner.apply(true);
+            let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+            view.set_preference_character(character);
+            view.bind_test_minimap(fixture.path().join("maps"));
+            let (link, _, _) = play_channel();
+            assert!(owner.install_play(view, link));
+            assert_eq!(owner.settings.character_scope(), Some(character));
             owner.open_graphics();
-            owner.settings.use_background_preferences();
         }
+        let generation = app.world().non_send::<HostOwner>().generation();
+        app.world_mut().resource_mut::<OptionsState>().generation = Some(generation);
+        save_device(&mut app, "Headset", 37);
+        let exported = PreferenceStore::read_transfer(&active)?;
+        assert_eq!(exported.audio_device, "Headset");
+        assert_eq!(exported.audio.master_volume, 37);
         let world = app.world_mut();
         let parent = world.spawn_empty().id();
         let skins = Skins {
@@ -405,23 +434,66 @@ mod tests {
             .editor_mut()
             .set_text(export.to_str().ok_or("export path")?);
         press_built(&mut app, "misc.transfer.export")?;
-        assert_eq!(
-            PreferenceStore::read_transfer(&export)?.audio_device,
-            "Headset"
-        );
+        assert_eq!(PreferenceStore::read_transfer(&export)?, exported);
 
-        for (button, expected) in [
-            ("misc.transfer.defaults", ""),
-            ("misc.transfer.import", "Headset"),
-            ("misc.transfer.restore", ""),
-        ] {
-            assert_ne!(device(&app)?.1, expected);
-            press_built(&mut app, button)?;
-            finish_transfer(&mut app)?;
-            assert_eq!(device(&app)?, (expected.into(), expected.into()));
-            let reopened = HostOwner::new(Some(path.clone()))?;
-            assert_eq!(reopened.settings.preferences.audio_device, expected);
+        save_device(&mut app, "Speakers", 62);
+        let reset_backup = PreferenceStore::read_transfer(&active)?;
+        assert_ne!(reset_backup, exported);
+        let expected_defaults = ReferencePreferences::default();
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .use_background_preferences();
+        press_built(&mut app, "misc.transfer.defaults")?;
+        finish_transfer(&mut app)?;
+        assert_eq!(PreferenceStore::read_transfer(&active)?, expected_defaults);
+        let backup = active.with_extension("backup.json");
+        assert_eq!(PreferenceStore::read_transfer(&backup)?, reset_backup);
+
+        // Use a non-default pre-import state whose backup differs from the export.
+        press_built(&mut app, "misc.transfer.restore")?;
+        finish_transfer(&mut app)?;
+        assert_eq!(PreferenceStore::read_transfer(&active)?, reset_backup);
+        save_device(&mut app, "Desk", 81);
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+            while owner.settings.preference_save_pending() {
+                if std::time::Instant::now() >= deadline {
+                    return Err("background preference save did not complete".into());
+                }
+                owner.poll([800, 600]);
+                std::thread::yield_now();
+            }
         }
+        let overwritten = PreferenceStore::read_transfer(&active)?;
+        assert_eq!(overwritten.audio_device, "Desk");
+        assert_eq!(overwritten.audio.master_volume, 81);
+        assert_ne!(overwritten, exported);
+        assert_ne!(PreferenceStore::read_transfer(&backup)?, exported);
+        press_built(&mut app, "misc.transfer.import")?;
+        finish_transfer(&mut app)?;
+        assert_eq!(PreferenceStore::read_transfer(&active)?, exported);
+        assert_eq!(PreferenceStore::read_transfer(&backup)?, overwritten);
+        assert_eq!(device(&app)?, ("Headset".into(), "Headset".into()));
+
+        press_built(&mut app, "misc.transfer.restore")?;
+        finish_transfer(&mut app)?;
+        assert_eq!(PreferenceStore::read_transfer(&active)?, overwritten);
+        assert_eq!(device(&app)?, ("Desk".into(), "Desk".into()));
+        drop(app);
+        let mut reopened = HostOwner::new(Some(path))?;
+        reopened.settings.select_character(Some(character));
+        assert_eq!(reopened.settings.preferences, overwritten);
         Ok(())
+    }
+
+    fn save_device(app: &mut App, device: &str, volume: u8) {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.edit_preferences(|draft| {
+            draft.audio_device = device.into();
+            draft.audio.master_volume = volume;
+        });
+        owner.apply(false);
     }
 }

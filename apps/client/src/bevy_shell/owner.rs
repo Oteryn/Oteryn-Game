@@ -160,7 +160,11 @@ impl HostOwner {
             self.selection.clear_known_worlds();
         }
     }
-    fn install_play(&mut self, mut view: PlayView, link: PlayLink) -> bool {
+    pub(in crate::bevy_shell) fn install_play(
+        &mut self,
+        mut view: PlayView,
+        link: PlayLink,
+    ) -> bool {
         let Some(character) = view.preference_character() else {
             // Never substitute a login hint, display name or invented identity.
             drop((view, link));

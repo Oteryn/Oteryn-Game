@@ -66,20 +66,23 @@ fn ctrl_k_opens_the_hotkey_options_only_outside_blocked_input() -> TestResult {
         modifiers: Modifiers::one(Modifier::Control),
         repeat: false,
     };
-    let mut press = |host: &mut HostOwner, blocked: bool| {
-        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
-            *state = ButtonState::Pressed;
-        }
-        host.route_input(std::slice::from_ref(&shortcut), blocked);
+    let mut press = |host: &mut HostOwner, blocked, editor| {
+        crate::bevy_shell::input::route_keyboard(host, shortcut.clone(), blocked, editor);
         if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
             *state = ButtonState::Released;
         }
-        host.route_input(std::slice::from_ref(&shortcut), blocked);
+        crate::bevy_shell::input::route_keyboard(host, shortcut.clone(), blocked, editor);
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Pressed;
+        }
     };
-    press(&mut host, true);
+    press(&mut host, true, None);
     assert!(host.preferences_draft().is_none());
     assert_eq!(host.hotkey_options, 0);
-    press(&mut host, false);
+    press(&mut host, false, Some(false));
+    assert!(host.preferences_draft().is_none());
+    assert_eq!(host.hotkey_options, 0);
+    press(&mut host, false, None);
     assert!(
         host.preferences_draft().is_some(),
         "Ctrl+K opens the options"
