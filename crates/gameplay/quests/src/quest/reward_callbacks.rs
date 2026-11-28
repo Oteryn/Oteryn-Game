@@ -3714,6 +3714,14 @@ mod tests {
             }
         }
         assert!(expected.insert(colours_peer::KEY.to_owned()));
+        for species in ["perch", "trout"] {
+            for fish in 1..=99 {
+                assert!(expected.insert(format!(
+                    "oteryn:quest-reward/sinatuki/{species}-fish-{fish}"
+                )));
+            }
+            assert!(expected.insert(format!("oteryn:quest-reward/sinatuki/final-{species}")));
+        }
         if let Some(full) = shards
             .iter()
             .flat_map(|shard| &shard.callbacks)
