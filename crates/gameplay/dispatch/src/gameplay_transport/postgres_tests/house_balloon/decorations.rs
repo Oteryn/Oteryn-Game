@@ -262,3 +262,140 @@ pub(super) async fn scenario(
     );
     Ok(())
 }
+
+pub(super) async fn carpet_wire(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    (before_ref, after_ref): (std::num::NonZeroU32, std::num::NonZeroU32),
+    body: &[u8],
+    expected: CarpetResult,
+) -> TestResult {
+    use super::scenario::{custody, item, receipts};
+
+    let read_neighbor = || async {
+        sqlx::query_scalar::<_, Value>(
+            "SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(72).as_slice())
+        .fetch_one(&h.pool)
+        .await
+    };
+    let neighbor = read_neighbor().await?;
+    let before = item(h).await?;
+    let original_custody = custody(h).await?;
+    let command_id = admitted.continuity.next_command_id;
+    let commits = expected != CarpetResult::Refused;
+    let (admitted, disposition, wire, deltas) = exchange(
+        owner,
+        admitted,
+        command_id,
+        body,
+        HouseExchange {
+            current: Some(before_ref),
+            after: (expected == CarpetResult::Folded).then_some(after_ref),
+            nested: None,
+            foreign_after_snapshot: None,
+        },
+    )
+    .await?;
+    assert_eq!(
+        disposition,
+        if commits {
+            UseDisposition::Committed
+        } else {
+            UseDisposition::NotPossible
+        }
+    );
+    assert_eq!(deltas, usize::from(commits));
+    assert_eq!(read_neighbor().await?, neighbor);
+    assert_eq!(receipts(h).await?, i64::from(commits));
+    let stored = item(h).await?;
+    match expected {
+        CarpetResult::Refused => {
+            assert_eq!(stored, before);
+            assert_eq!(custody(h).await?, original_custody);
+            return Ok(());
+        }
+        CarpetResult::Folded => {
+            assert_eq!(
+                stored["definition_production_key"],
+                "oteryn:item.tibia.i22737"
+            );
+            assert_eq!(custody(h).await?, original_custody);
+        }
+        CarpetResult::Removed => {
+            assert_eq!(stored["quantity"], 0);
+            assert_eq!(stored["lifecycle"], 2);
+            assert_eq!(
+                stored["definition_production_key"],
+                before["definition_production_key"]
+            );
+            assert!(
+                custody(h)
+                    .await?
+                    .as_object()
+                    .ok_or("retired custody")?
+                    .values()
+                    .all(Value::is_null)
+            );
+        }
+    }
+    assert_eq!(stored["state_revision"], 2);
+    assert_eq!(stored["minted_transaction_id"], before["minted_transaction_id"]);
+    let committed_custody = custody(h).await?;
+    assert_carpet_replay(owner, h, admitted, command_id, &wire).await?;
+    assert_eq!(item(h).await?, stored);
+    assert_eq!(custody(h).await?, committed_custody);
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(read_neighbor().await?, neighbor);
+    Ok(())
+}
+
+async fn assert_carpet_replay(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    command_id: u64,
+    wire: &[u8],
+) -> TestResult {
+    use crate::gameplay_transport::connection::{UseCommand, UseOutcome};
+
+    // A rebuilt handle directory can no longer resolve the original wire handle.
+    // An unrelated base-map maintenance lock must not prevent reading its receipt.
+    let mut maintenance = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_house_base_materializations IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *maintenance)
+        .await?;
+    let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+        admitted.continuity.selected_capabilities.as_slice(),
+        wire,
+    )
+    .map_err(debug)?;
+    let actor = admitted.runtime_actor.ok_or("House guest")?;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id,
+        item_fence: admitted.item_fence,
+    };
+    let replay = || owner.use_event_item(actor, command, intent.clone(), None, true);
+    let result = tokio::time::timeout(std::time::Duration::from_secs(5), replay()).await;
+    maintenance.rollback().await?;
+    let disposition = |outcome: Result<Option<UseOutcome>, ()>| {
+        outcome
+            .map_err(|()| "House USE unavailable")?
+            .map(|outcome| outcome.disposition)
+            .ok_or("House USE must return a disposition")
+    };
+    assert_eq!(disposition(result?)?, UseDisposition::Committed);
+
+    let mut exit = vec![8, 2, 18, u8::try_from(HOUSE.len())?];
+    exit.extend_from_slice(HOUSE.as_bytes());
+    let (outside, _) = owner
+        .transfer_house(admitted, admitted.continuity.next_command_id, &exit)
+        .await
+        .ok_or("guest House exit outcome")?;
+    assert!(outside.is_some(), "guest must cross the real House boundary");
+    assert_eq!(disposition(replay().await)?, UseDisposition::StaleState);
+    Ok(())
+}

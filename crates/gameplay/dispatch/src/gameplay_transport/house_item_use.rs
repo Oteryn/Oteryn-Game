@@ -81,19 +81,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
                 .map_err(|_| ())?,
         };
-        if let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
-            intent.use_with_map_item.as_ref()
-        {
-            // A successful bed use consumed its source kit and changed both bed
-            // revisions. Probe history before resolving either current handle.
-            if let Some(replay) = self
+        // A stale handle cannot start a decoration action, but it can still
+        // replay its receipt. A committed bed kit also changed both bed parts.
+        if (source.is_none() || intent.use_with_map_item.is_some())
+            && let Some(replay) = self
                 .root
                 .replay_house_item_action(self.holder, &context, &request)
                 .await
                 .map_err(|_| ())?
-            {
-                return Ok(refuse(replay.disposition));
-            }
+        {
+            return Ok(refuse(replay.disposition));
+        }
+        if source.is_none() && intent.use_with_map_item.is_none() {
+            return Ok(refuse(UseDisposition::StaleState));
+        }
+        if let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
+            intent.use_with_map_item.as_ref()
+        {
             if !self
                 .root
                 .house_source_is_bed_kit(self.holder, &context, request.source)
