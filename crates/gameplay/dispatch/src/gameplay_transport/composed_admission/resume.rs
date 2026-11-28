@@ -52,6 +52,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         let owner = scoped.as_ref().unwrap_or(self);
         let admitted = owner.resume_session_for_scope(attempt).await?;
+        if crate::durability::holder_deadline()
+            .is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+        {
+            return Ok(admitted);
+        }
         self.activity_runtimes
             .remember(admitted)
             .map_err(|_| AdmissionRefusal::Unavailable)?;

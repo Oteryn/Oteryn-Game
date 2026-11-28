@@ -28,6 +28,7 @@ pub(in crate::gameplay_transport) struct JoinRecovery {
     pending: std::sync::Mutex<Option<Box<UnpublishedJoin>>>,
     published: std::sync::atomic::AtomicBool,
     failed: std::sync::atomic::AtomicBool,
+    abandoned_resume: std::sync::atomic::AtomicBool,
     name: std::sync::Mutex<
         Option<(
             ExactActorRef,
@@ -46,6 +47,11 @@ impl JoinRecovery {
             .then(|| self.pending.lock().ok()?.take())
             .flatten()
     }
+    pub(in crate::gameplay_transport) fn abandoned_resume(&self) -> bool {
+        self.abandoned_resume
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
     pub(in crate::gameplay_transport) fn published(&self) -> bool {
         self.published.load(std::sync::atomic::Ordering::Relaxed)
     }
@@ -146,4 +152,11 @@ pub(super) fn join_requires_recovery() -> bool {
     JOIN_RECOVERY
         .try_with(|join| join.failed.load(std::sync::atomic::Ordering::Relaxed))
         .unwrap_or(false)
+}
+
+pub(in crate::gameplay_transport) fn abandon_unpublished_resume() {
+    let _ = JOIN_RECOVERY.try_with(|join| {
+        join.abandoned_resume
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    });
 }

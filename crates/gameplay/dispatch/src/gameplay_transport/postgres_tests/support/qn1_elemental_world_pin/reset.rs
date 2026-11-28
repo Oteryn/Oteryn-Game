@@ -65,6 +65,7 @@ pub(super) async fn exercise(
             owner,
             crate::gameplay_transport::listener::LostControl {
                 pending_join: None,
+                abandoned_resume: false,
                 session: admitted,
                 wait: Duration::ZERO,
                 reset: Some(reset),

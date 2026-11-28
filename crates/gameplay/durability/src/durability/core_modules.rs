@@ -177,7 +177,7 @@ pub use admission_journal::AdmissionReconnectJournal;
 #[cfg(any(test, feature = "test-support"))]
 pub use db::with_stalled_commit_response;
 pub use db::{
-    holder_deadline, with_holder_deadline,
+    holder_deadline, outside_holder_deadline, with_holder_deadline,
     DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
     IssuedSemanticPass, ROOT_RECOVERY_WINDOW, with_holder_trace,
 };

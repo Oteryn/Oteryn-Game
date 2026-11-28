@@ -302,6 +302,17 @@ where
         if !callbacks_ready {
             return ServeEnd::Disconnected.finish(admitted);
         }
+        let mut repaired_io = if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
+            && admitted.runtime_actor.is_some()
+        {
+            match spell_repair::wait(stream, &mut admitted, authority, policy, join_deadline).await
+            {
+                Ok(io) => Some(io),
+                Err(end) => return end.finish(admitted),
+            }
+        } else {
+            None
+        };
         if admitted.item_fence.is_some_and(|fence| {
             matches!(
                 fence.runtime_scope,
@@ -318,10 +329,13 @@ where
                 authority,
                 root_authority,
                 &mut server_messages,
-                policy,
-                &mut integrity,
-                require_session_binding,
-                join_deadline.take(),
+                house_transfer::Join {
+                    policy,
+                    integrity: &mut integrity,
+                    require_session_binding,
+                    deadline: join_deadline.take(),
+                    repaired_io: repaired_io.take(),
+                },
             ))
             .await
             {
@@ -329,17 +343,6 @@ where
                 Err(end) => return *end,
             };
         }
-        let repaired_io = if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
-            && admitted.runtime_actor.is_some()
-        {
-            match spell_repair::wait(stream, &mut admitted, authority, policy, join_deadline).await
-            {
-                Ok(io) => Some(io),
-                Err(end) => return end.finish(admitted),
-            }
-        } else {
-            None
-        };
         let playable = matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled

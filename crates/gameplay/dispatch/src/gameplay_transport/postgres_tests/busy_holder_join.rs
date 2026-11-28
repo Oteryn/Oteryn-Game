@@ -243,6 +243,33 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
         assert_eq!(resumed.runtime_actor, ended.runtime_actor);
         assert_eq!(resumed.game_session_id, ended.game_session_id);
         assert!(resumed.continuity.connection_generation > ended.continuity.connection_generation);
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let serving = async {
+            let deadline = tokio::time::Instant::now() + ROOT_RECOVERY_WINDOW;
+            let end =
+                serve_admitted_by(&mut server, resumed, &owner, IDLE_LIVENESS, Some(deadline))
+                    .await;
+            drop(server);
+            end
+        };
+        let reading = async {
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = crate::foundation::decode_wire_envelope(&frame).map_err(debug)?;
+                assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+                if envelope.message_type() == MessageType::SnapshotCommit {
+                    break;
+                }
+            }
+            drop(client);
+            Ok::<_, Box<dyn std::error::Error>>(())
+        };
+        let (end, result) = tokio::time::timeout(ROOT_RECOVERY_WINDOW, async {
+            tokio::join!(serving, reading)
+        })
+        .await?;
+        result?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
         let rows: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions")
                 .fetch_one(&h.pool)

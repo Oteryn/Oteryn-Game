@@ -830,7 +830,8 @@ where
     A: FreshAdmissionAuthority,
     I: ConnectionIdentifiers,
 {
-    let deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+    let deadline =
+        tokio::time::Instant::now() + crate::durability::DurabilityRoot::MAX_BOOT_PASS_DEADLINE;
     admit_frame_inner(stream, frame, authority, identifiers, deadline).await
 }
 

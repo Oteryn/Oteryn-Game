@@ -8,13 +8,15 @@ enum PendingSpellEvent {
     Frame(std::io::Result<Vec<u8>>),
 }
 
+pub(super) type RepairedIo = (FrameReader, Liveness, tokio::time::Interval);
+
 pub(super) async fn wait<S, A>(
     stream: &mut S,
     admitted: &mut AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
     join_deadline: Option<tokio::time::Instant>,
-) -> Result<(FrameReader, Liveness, tokio::time::Interval), ServeEnd>
+) -> Result<RepairedIo, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,

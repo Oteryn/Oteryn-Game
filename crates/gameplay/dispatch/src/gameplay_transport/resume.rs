@@ -772,8 +772,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The COMMIT may have landed without proof. If it did, the session is ACTIVE on
                 // a candidate that will never serve: release it (only that exact transport),
                 // never strand it. If it did not, withdraw the prepared attempt.
-                let _ = self.release_abandoned(resumed).await;
-                let _ = store.abort_complete_reconnect(&identity).await;
+                crate::durability::outside_holder_deadline(async {
+                    let _ = self.release_abandoned(resumed).await;
+                    let _ = store.abort_complete_reconnect(&identity).await;
+                })
+                .await;
                 return Err(Unavailable);
             }
             refused => {
@@ -784,16 +787,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // The durable session is ACTIVE on the candidate connection: the still-present actor
         // is controlled again, from the lost connection's FND-02 continuity. The durable
         // switch stands even if the runtime mark could not be cleared.
-        if house_resume && !self.validate_house_resume(actor, session_id).await {
-            // Current ACL or cell facts may have changed while PREPARE/COMMIT
-            // ran. Retain the native loss/fence until the ordinary terminal
-            // owner proves release; never reactivate on the stale House cell.
-            let released = self.release_abandoned_session(resumed).await;
-            return Err(if released == GraceExpiryResult::Released {
-                Rejected
-            } else {
-                Unavailable
-            });
+        if house_resume {
+            let valid = retry
+                .retry_unavailable(async || {
+                    if self.validate_house_resume(actor, session_id).await {
+                        Ok(())
+                    } else if crate::durability::holder_deadline().is_some()
+                        && self.root.holder_contended()
+                    {
+                        Err(Unavailable)
+                    } else {
+                        Err(Rejected)
+                    }
+                })
+                .await;
+            if valid.is_err() {
+                // Current ACL or cell facts may have changed during COMMIT.
+                // Keep the native loss/fence until terminal recovery settles it.
+                if crate::durability::holder_deadline()
+                    .is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+                {
+                    crate::gameplay_transport::connection::join_recovery::abandon_unpublished_resume();
+                    return Ok(resumed);
+                }
+                let released = crate::durability::outside_holder_deadline(
+                    self.release_abandoned_session(resumed),
+                )
+                .await;
+                return Err(if released == GraceExpiryResult::Released {
+                    Rejected
+                } else {
+                    Unavailable
+                });
+            }
         }
         #[cfg(test)]
         if let Ok(barrier) = PRE_RESTORE_TEST_BARRIER.try_with(Arc::clone) {

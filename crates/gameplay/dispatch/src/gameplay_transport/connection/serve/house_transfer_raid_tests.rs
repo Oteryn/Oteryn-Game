@@ -155,13 +155,16 @@ async fn house_connection(selected: bool, fresh: bool, already_joined: bool) -> 
             &authority,
             &authority,
             &mut server_messages,
-            LivenessPolicy {
-                interval: Duration::from_secs(3_600),
-                missed_limit: 3,
+            Join {
+                policy: LivenessPolicy {
+                    interval: Duration::from_secs(3_600),
+                    missed_limit: 3,
+                },
+                integrity: &mut integrity,
+                require_session_binding: false,
+                deadline: None,
+                repaired_io: None,
             },
-            &mut integrity,
-            false,
-            None,
         )
         .await;
         drop(server_messages);

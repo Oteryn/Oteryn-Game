@@ -10,6 +10,7 @@ use crate::durability::character_last_position::{
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::house_scope_handoff::{HouseEntryRefusal, HouseId};
 use crate::durability::house_transfer::{HouseTransferOutcome, HouseTransferRequest};
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{
     CharacterLease, LocalPosition, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
@@ -736,7 +737,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.reserve_precondition().await?;
         let _lane = self.spell_lane_permit().await.ok_or(Unavailable)?;
-        let mut runtime = self.runtime.lock().await;
+        let runtime = self.runtime.lock().await;
         let (retained_actor, loss) = if let Some((actor, _)) = runtime
             .house_player_for_session(retained_destination)
             .map_err(|_| Unavailable)?
@@ -794,11 +795,97 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     recovered.ack.connection_generation,
                 );
         }
-        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(destination)
-            .await
-            .map_err(|_| Unavailable)?;
+        drop(runtime);
+        drop(_lane);
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let retry = super::AdmissionRetryBudget::for_root(&destination, self.root);
+        let current = retry
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(destination)
+                    .await
+                    .map_err(|error| match error {
+                        crate::durability::DurabilityError::RootPassDeadlineExceeded => Unavailable,
+                        other => super::activity_recovery::projection_refusal(other),
+                    })
+            })
+            .await;
+        let (current, _) = match current {
+            Ok(current) => current,
+            Err(Unavailable)
+                if crate::durability::holder_deadline()
+                    .is_some_and(|deadline| tokio::time::Instant::now() >= deadline) =>
+            {
+                // The authenticated native COMMIT replaced the transport, even
+                // though its observation was unavailable before publication.
+                let runtime_scope = if let Some(key) = &recovered.ack.house {
+                    HouseId::new(self.world_id, key)
+                        .ok_or(Rejected)?
+                        .runtime_scope()
+                        .map_err(|_| Rejected)?
+                } else {
+                    RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+                };
+                let fence = CurrentCharacterItemFence {
+                    character_id: crate::domain::CharacterId::from_bytes(
+                        *recovered.current.character_id.as_bytes(),
+                    )
+                    .map_err(|_| Unavailable)?,
+                    game_session_id: destination,
+                    connection_generation: crate::foundation::ConnectionGeneration::new(
+                        recovered.ack.connection_generation,
+                    )
+                    .map_err(|_| Unavailable)?,
+                    character_lease_generation: recovered.ack.lease_generation,
+                    runtime_scope,
+                    scope_ownership_generation: ScopeOwnershipGeneration::new(
+                        recovered.ack.scope_generation,
+                    )
+                    .map_err(|_| Unavailable)?,
+                };
+                return Ok(Some(AdmittedSession {
+                    game_session_id: destination,
+                    world_id: self.world_id,
+                    channel_id: self.channel_id,
+                    runtime_actor: retained_actor,
+                    first_entry: FirstEntryOutcome::RefusedUnavailable,
+                    controller: Some(ControllerBinding {
+                        transport: attempt.transport,
+                        account_id: recovered.account,
+                    }),
+                    continuity: SessionContinuity {
+                        connection_generation: recovered.ack.connection_generation,
+                        selected_capabilities: selected,
+                        house_input_pending: Some(true),
+                        ..SessionContinuity::FRESH
+                    },
+                    item_fence: Some(fence),
+                }));
+            }
+            Err(error) => return Err(error),
+        };
+        let _lane = self.spell_lane_permit().await.ok_or(Unavailable)?;
+        let mut runtime = self.runtime.lock().await;
+        if let Some(previous) = retained_actor {
+            let native = runtime
+                .house_player_for_session(destination)
+                .map_err(|_| Unavailable)?
+                .map(|(actor, _)| actor);
+            let channel = runtime
+                .positioned_player_for_session(destination)
+                .map_err(|_| Unavailable)?
+                .map(|(actor, _)| actor);
+            let actual = native.or(channel);
+            if actual != Some(previous) {
+                return Err(Rejected);
+            }
+        }
         let fence = super::item_fence_of(current).ok_or(Unavailable)?;
+        if current.current_transport() != Some(attempt.transport)
+            || current.current_connection_generation().get() != recovered.ack.connection_generation
+        {
+            return Err(Rejected);
+        }
         let lease = CharacterLease::new(
             recovered.current.character_id,
             recovered.ack.lease_generation,

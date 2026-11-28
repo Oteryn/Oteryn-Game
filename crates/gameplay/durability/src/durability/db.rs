@@ -105,6 +105,11 @@ pub async fn with_holder_deadline<F: Future>(deadline: TokioInstant, future: F) 
         .await
 }
 
+/// Lifecycle compensation has its own budget after the original holder deadline.
+pub async fn outside_holder_deadline<F: Future>(future: F) -> F::Output {
+    HOLDER_DEADLINE.scope(None, future).await
+}
+
 pub fn holder_deadline() -> Option<TokioInstant> {
     HOLDER_DEADLINE.try_with(|deadline| *deadline).ok().flatten()
 }

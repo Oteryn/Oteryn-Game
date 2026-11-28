@@ -96,23 +96,31 @@ pub(super) async fn execute<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
     }
 }
 
+pub(super) struct Join<'a> {
+    pub(super) policy: LivenessPolicy,
+    pub(super) integrity: &'a mut integrity::Integrity,
+    pub(super) require_session_binding: bool,
+    pub(super) deadline: Option<tokio::time::Instant>,
+    pub(super) repaired_io: Option<spell_repair::RepairedIo>,
+}
+
 /// House custody uses the same command ingress and framing, with no Channel
 /// snapshot, combat cadence or Channel mutations while the House owns the slot.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "the same transport carries its activity session fence into House ingress"
-)]
 pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     stream: &mut S,
     mut admitted: AdmittedSession,
     authority: &A,
     root_authority: &'a A,
     server_messages: &mut Option<ServerMessageConnection<'a, A>>,
-    policy: LivenessPolicy,
-    integrity: &mut integrity::Integrity,
-    require_session_binding: bool,
-    join_deadline: Option<tokio::time::Instant>,
+    join: Join<'_>,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
+    let Join {
+        policy,
+        integrity,
+        require_session_binding,
+        deadline: join_deadline,
+        repaired_io,
+    } = join;
     let generation = admitted.continuity.connection_generation;
     let selected = admitted.continuity.selected_capabilities;
     let mut staged = admitted;
@@ -214,14 +222,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         }
     };
     let run = async {
-        let mut queue = house_hireling::step::Queue::default();
         let mut podium = None::<PodiumWalk>;
-        let mut liveness = Liveness::new(policy);
-        let mut cadence = tokio::time::interval_at(
-            tokio::time::Instant::now() + policy.interval,
-            policy.interval,
-        );
-        cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let (frames, mut liveness, mut cadence) = repaired_io.unwrap_or_else(|| {
+            let mut cadence = tokio::time::interval_at(
+                tokio::time::Instant::now() + policy.interval,
+                policy.interval,
+            );
+            cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            (FrameReader::default(), Liveness::new(policy), cadence)
+        });
+        let mut queue = house_hireling::step::Queue::with_frames(frames);
         let mut service_cadence = tokio::time::interval_at(
             tokio::time::Instant::now() + std::time::Duration::from_secs(1),
             std::time::Duration::from_secs(1),

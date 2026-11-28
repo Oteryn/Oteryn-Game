@@ -386,6 +386,7 @@ fn an_unknown_grace_expiry_is_retried_until_final() -> Result<(), Box<dyn Error>
         };
         let lost = LostControl {
             pending_join: None,
+            abandoned_resume: false,
             reset: None,
             session,
             wait: Duration::ZERO,

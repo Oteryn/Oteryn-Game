@@ -401,6 +401,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(name) = name {
             connection::join_recovery::retain_join_name(actor, name);
         }
+        let mut checkpoint = source;
         let finish = async {
             // Q16: preserve the source and any exact destination transaction even
             // when neither the restore nor its fallback can read the holder.
@@ -569,6 +570,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Both are reads or an idempotent fenced write through the shared holder, so a busy
             // holder is retried within the attempt's window rather than refusing it (DEFLAKE-3).
             if writes_after_progression(positioned, admitted.first_entry) {
+                checkpoint = AdmittedSession {
+                    first_entry: FirstEntryOutcome::AwaitingSpellRepair,
+                    ..admitted
+                };
                 #[cfg(test)]
                 if let Ok(barrier) = FRESH_SPELL_ADMISSION_BARRIER.try_with(std::sync::Arc::clone) {
                     barrier.0.notify_one();
@@ -647,7 +652,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match crate::durability::holder_deadline() {
             Some(deadline) => match tokio::time::timeout_at(deadline, finish).await {
                 Ok(result) => result,
-                Err(_) => Ok(source),
+                Err(_) => Ok(checkpoint),
             },
             None => finish.await,
         }

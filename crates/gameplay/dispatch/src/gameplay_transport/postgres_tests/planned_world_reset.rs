@@ -108,6 +108,7 @@ fn scenario() -> TestResult {
                     &owner,
                     crate::gameplay_transport::listener::LostControl {
                         pending_join: None,
+                        abandoned_resume: false,
                         session: dependencies.admitted,
                         wait: Duration::ZERO,
                         reset: drain.reset(),
