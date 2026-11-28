@@ -46,7 +46,7 @@ class M01cKeyDoorsTests(unittest.TestCase):
             ):
                 continue
             raw = (base.ROOT / region["path"]).read_bytes()
-            result, rows = doors.overlay_region(raw, index["palette"], capture)
+            result, rows, _ = doors.overlay_region(raw, index["palette"], capture)
             count += len(rows)
             self.assertEqual(
                 doors.overlay_region(result, index["palette"], capture)[0], result
@@ -65,6 +65,35 @@ class M01cKeyDoorsTests(unittest.TestCase):
                             self.assertIn(attrs.pop("action"), (3012, 3520, 4502, 5010))
                             self.assertEqual(attrs, a[2] or {})
         self.assertEqual(count, 7)
+
+    def test_fresh_capture_counts_only_actions_missing_after_startup(self):
+        path = doors.region_name([1, 2, 7])
+        capture = {
+            "bindings": [
+                {"position": [1, 2, 7], "key_number": 4502, "item": 7033},
+                {"position": [2, 2, 7], "key_number": 3012, "item": 5097},
+            ]
+        }
+        index = {
+            "palette": [{"source_item_id": 7033}, {"source_item_id": 5097}],
+            "regions": [{"path": path}],
+            "source": {},
+        }
+        tiles = [
+            (1, 2, 0, 0, (), [(0, 0, {"action": 4502})]),
+            (2, 2, 0, 0, (), [(1, 0, None)]),
+        ]
+        raw = codec.encode_region(7, 0, 0, {0: codec.encode_sector_tiles(0, 0, tiles)})
+        outputs = {
+            path: raw,
+            base.INDEX.as_posix(): base.canonical(index),
+            doors.SUMMARY: base.canonical(
+                {"item_attributes": {"action": 1}, "bytes_on_disk": len(raw)}
+            ),
+        }
+        self.assertEqual(len(doors.overlay_outputs(outputs, base.canonical(capture))), 2)
+        summary = json.loads(outputs[doors.SUMMARY])
+        self.assertEqual(summary["item_attributes"]["action"], 2)
 
     def test_missing_or_duplicate_native_target_refuses(self):
         capture = {

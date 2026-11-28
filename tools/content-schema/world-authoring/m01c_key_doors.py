@@ -33,10 +33,11 @@ def overlay_region(raw, palette, capture):
         and row["position"][1] // 256 == ry
     ]
     if not bindings:
-        return raw, []
+        return raw, [], 0
     sectors = base.codec.decode_region(raw)[3]
     if len({tuple(row["position"]) for row in bindings}) != len(bindings):
         raise ValueError("M01C_KEY_DOOR_TARGET: duplicate source position")
+    added_actions = 0
     for row in bindings:
         number = row["key_number"]
         if type(number) is not int or number not in (3012, 3520, 4502, 5010):
@@ -53,8 +54,11 @@ def overlay_region(raw, palette, capture):
         ]
         if len(matches) != 1:
             raise ValueError(f"M01C_KEY_DOOR_TARGET: {row['position']}")
+        if "action" not in (matches[0][2] or {}):
+            added_actions += 1
     document = {"bindings": [{**row, "action": row["key_number"]} for row in bindings]}
-    return base.overlay_region(raw, palette, document, item_ids=LOCKED)
+    result, rows = base.overlay_region(raw, palette, document, item_ids=LOCKED)
+    return result, rows, added_actions
 
 
 def overlay_outputs(outputs, capture_bytes=None):
@@ -67,20 +71,20 @@ def overlay_outputs(outputs, capture_bytes=None):
     capture = json.loads(capture_bytes)
     index = json.loads(outputs[base.INDEX.as_posix()])
     names = {region_name(row["position"]) for row in capture["bindings"]}
-    imported, delta = [], 0
+    imported, delta, added_actions = [], 0, 0
     for region in index["regions"]:
         path = region["path"]
         if Path(path).name not in names:
             continue
         previous = outputs[path]
-        result, rows = overlay_region(previous, index["palette"], capture)
+        result, rows, added = overlay_region(previous, index["palette"], capture)
+        added_actions += added
         outputs[path] = result
         region["sha256"] = hashlib.sha256(result).hexdigest()
         delta += len(result) - len(previous)
         imported.extend(rows)
     if not imported:
         return []
-    previous_count = index["source"].get("m01c_key_doors", {}).get("imported", 0)
     index["source"]["m01c_key_doors"] = {
         "path": CAPTURE.as_posix(),
         "sha256": hashlib.sha256(capture_bytes).hexdigest(),
@@ -88,7 +92,7 @@ def overlay_outputs(outputs, capture_bytes=None):
     }
     summary = json.loads(outputs[SUMMARY])
     summary["source"] = index["source"]
-    summary["item_attributes"]["action"] += len(imported) - previous_count
+    summary["item_attributes"]["action"] += added_actions
     summary["bytes_on_disk"] += delta
     outputs[base.INDEX.as_posix()] = base.canonical(index)
     outputs[SUMMARY] = base.canonical(summary)

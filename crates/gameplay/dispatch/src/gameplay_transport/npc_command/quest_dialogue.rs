@@ -148,7 +148,6 @@ struct Pending {
     intent: NpcTalkIntent,
     context: Context,
     next_topic: Option<Topic>,
-    failure_topic: Option<u16>,
     reply: Vec<String>,
 }
 
@@ -433,7 +432,6 @@ pub(super) async fn apply(
             intent: intent.clone(),
             context: step.context.clone(),
             next_topic: step.next_topic,
-            failure_topic: step.failure_topic,
             reply: step.reply.clone(),
         });
     }
@@ -556,24 +554,24 @@ pub(super) async fn apply(
         other => {
             // The locked reward writer reports a missing payment as StageMismatch.
             // Crystal storkus.lua:142-197 closes each rank offer after a refusal.
-            let completion = if matches!(
+            let stage_mismatch = matches!(
                 other,
                 Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
-            ) && reward_callback.as_ref().is_some_and(|callback| {
-                callback
-                    .key
-                    .starts_with("oteryn:quest-reward/vampire-hunter-rank-")
-            }) {
+            );
+            let completion = if stage_mismatch
+                && reward_callback.as_ref().is_some_and(|callback| {
+                    callback
+                        .key
+                        .starts_with("oteryn:quest-reward/vampire-hunter-rank-")
+                }) {
                 Completion::ClearTopic
-            } else if matches!(other, Ok(QuestTransitionOutcome::Refused(_)))
-                && let Some(topic) = step.failure_topic
-            {
+            } else if stage_mismatch && let Some(topic) = step.failure_topic {
                 Completion::RefusedAt(Topic::from(topic))
             } else {
                 Completion::Refused
             };
             finish(admission, command.game_session_id, completion);
-            if step.failure_reply.is_empty() {
+            if step.failure_reply.is_empty() || (step.failure_topic.is_some() && !stage_mismatch) {
                 return rejected();
             }
             let rendered = reply(
@@ -638,9 +636,7 @@ pub(in crate::gameplay_transport) async fn resume(
             let completion = if receipt.is_some() {
                 Completion::Committed
             } else {
-                pending.failure_topic.map_or(Completion::Refused, |topic| {
-                    Completion::RefusedAt(Topic::from(topic))
-                })
+                Completion::Refused
             };
             finish(admission, command.game_session_id, completion);
             if receipt.is_some() {

@@ -119,6 +119,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut result = Vec::new();
         for (member, fence) in plan.members.iter().zip(fences) {
             if runtime.read_actor_position(member.actor) != Ok(member.expected)
+                || runtime
+                    .player_control_facts(member.actor, member.session)
+                    .ok()?
+                    .control_loss
+                    .is_some()
                 || !states.current_cooldown_transport(
                     member.actor,
                     member.session,
