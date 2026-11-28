@@ -15,7 +15,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W15B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W15B_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -132,7 +134,11 @@ fn adjacent(a: TilePos, b: TilePos) -> bool {
 }
 
 async fn use_chest(client: &mut DevClientSession, chest: &Chest) -> TestResult<UseDisposition> {
-    Ok(client.session_mut().use_object(&chest.placement, 0).await?.disposition)
+    Ok(client
+        .session_mut()
+        .use_object(&chest.placement, 0)
+        .await?
+        .disposition)
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
@@ -144,7 +150,13 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         .clone();
     let inventory_payload = |client: &DevClientSession| -> TestResult<Vec<u8>> {
         let inventory = client.inventory().ok_or("inventory snapshot missing")?;
-        item_view::encode_character_inventory(inventory)
+        if !client
+            .selected_capabilities()
+            .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1)
+        {
+            return Err("W15b inventory capture requires equipment capability".into());
+        }
+        item_view::encode_character_inventory_with_equip_drop(inventory, true)
             .map_err(|error| format!("inventory encode: {error:?}").into())
     };
     let before_units = units(&client)?;
@@ -165,7 +177,9 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
                 break;
             }
             UseDisposition::NothingToUse => continue,
-            other => return Err(format!("step=use claim={} disposition={other:?}", chest.claim).into()),
+            other => {
+                return Err(format!("step=use claim={} disposition={other:?}", chest.claim).into());
+            }
         }
     }
     let chest = claimed.ok_or("step=use no reachable unclaimed quest reward chest committed")?;
@@ -207,11 +221,19 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     capture("w15b-inventory-after.bin", &after_payload);
     capture("w15b-expected.txt", expected.as_bytes());
     let _ = client.session_mut().logout().await;
-    Ok(format!("claim={} before={before_units} after={after_units}", chest.claim))
+    Ok(format!(
+        "claim={} before={before_units} after={after_units}",
+        chest.claim
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients, world))).await {
+    match verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(clients, world)),
+    )
+    .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W15b.client status=CAPTURED evidence={observed}"
         )),

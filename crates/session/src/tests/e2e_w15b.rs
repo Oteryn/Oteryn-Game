@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::{encode_state_delta, item_view};
 const SELECTED: &[u32] = &[
     item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
+    item_view::CAPABILITY_ITEM_EQUIP_DROP_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,
 ];
 
@@ -79,11 +80,17 @@ fn fixture() -> Result<Capture, BoxError> {
     let inventory = |extra: Option<ItemEntry>| -> Result<Vec<u8>, BoxError> {
         let mut entries = vec![entry(3, 3031, 100)?];
         entries.extend(extra);
-        item_view::encode_character_inventory(&CharacterInventory {
-            main_backpack: Some(entry(2, 2854, 1)?),
-            entries,
-            ..CharacterInventory::default()
-        })
+        item_view::encode_character_inventory_with_equip_drop(
+            &CharacterInventory {
+                main_backpack: Some(entry(2, 2854, 1)?),
+                entries,
+                equipment: vec![item_view::EquippedItem {
+                    slot: item_view::EquipmentSlot::Armor,
+                    item: entry(5, 3359, 1)?,
+                }],
+            },
+            true,
+        )
         .map_err(|error| format!("{error:?}").into())
     };
     let list = |entries: &[(u32, bool)]| -> Result<Vec<u8>, BoxError> {
@@ -109,8 +116,8 @@ fn fixture() -> Result<Capture, BoxError> {
             .map_err(|error| format!("{error:?}"))?,
         quest_before: list(&[(5, false)])?,
         quest_after: list(&[(5, false), (9, false)])?,
-        expected: "claim=oteryn:claim.fixture\nsnapshot_revision=2\nbefore_units=2854:1;3031:100\n\
-                   after_units=2854:1;3031:100;3382:1\nlist_before=5:0\nlist_before_base=2\n\
+        expected: "claim=oteryn:claim.fixture\nsnapshot_revision=2\nbefore_units=2854:1;3031:100;3359:1\n\
+                   after_units=2854:1;3031:100;3359:1;3382:1\nlist_before=5:0\nlist_before_base=2\n\
                    list_before_new=3\nlist_before_sequence=41\nlist_after=5:0;9:0\nlist_after_base=3\n\
                    list_after_new=4\nlist_after_sequence=42\nsecond_use=NothingToUse\n"
             .into(),
