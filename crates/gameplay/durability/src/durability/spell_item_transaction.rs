@@ -3244,8 +3244,52 @@ pub async fn prepare_rune_instance_consumption_in_transaction(
     caster_ground: &GroundPlacement,
     qualify_parent: &(dyn Fn(&TypedDefinitionRef) -> Option<QualifiedItemDefinition> + Send + Sync),
 ) -> Result<DurableRuneUseReservation> {
+    resolve_rune_instance(
+        tx,
+        authority,
+        qualified,
+        item_instance_id,
+        Some(expected_state_revision),
+        caster_ground,
+        qualify_parent,
+    )
+    .await
+}
+
+/// Snapshot the revision using the exact same custody proof as the eventual debit.
+pub async fn current_rune_instance_revision(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    qualified: &QualifiedRuneDefinition,
+    item_instance_id: [u8; 16],
+    caster_ground: &GroundPlacement,
+    qualify_parent: &(dyn Fn(&TypedDefinitionRef) -> Option<QualifiedItemDefinition> + Send + Sync),
+) -> Result<u64> {
+    Ok(resolve_rune_instance(
+        tx,
+        authority,
+        qualified,
+        item_instance_id,
+        None,
+        caster_ground,
+        qualify_parent,
+    )
+    .await?
+    .source
+    .state_revision)
+}
+
+async fn resolve_rune_instance(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    qualified: &QualifiedRuneDefinition,
+    item_instance_id: [u8; 16],
+    expected_state_revision: Option<u64>,
+    caster_ground: &GroundPlacement,
+    qualify_parent: &(dyn Fn(&TypedDefinitionRef) -> Option<QualifiedItemDefinition> + Send + Sync),
+) -> Result<DurableRuneUseReservation> {
     check_transaction(tx, authority).await?;
-    if expected_state_revision == 0
+    if expected_state_revision == Some(0)
         || item_instance_id[6] >> 4 != 7
         || item_instance_id[8] & 192 != 128
         || qualified.source_item_id == 0
@@ -3262,7 +3306,14 @@ pub async fn prepare_rune_instance_consumption_in_transaction(
             "unqualified Rune source definition",
         ));
     }
-    let row=sqlx::query("SELECT i.item_instance_id::text,i.quantity,i.state_revision::text,e.parent_item_instance_id::text AS parent,e.placement_ordinal::text AS ordinal,s.slot,es.revision::text AS equipment_revision FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id LEFT JOIN game_character_equipment_slots s ON s.item_instance_id=i.item_instance_id LEFT JOIN game_character_equipment_state es ON es.character_id=s.character_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=($3,$4,$5) AND i.quantity>=1 AND ((e.character_id=encode($6,'hex')::uuid AND e.world_id=i.world_id) OR (s.character_id=encode($6,'hex')::uuid AND s.world_id=i.world_id)) FOR UPDATE OF i")
+    let row=sqlx::query("SELECT i.item_instance_id::text,i.quantity,i.state_revision::text,e.parent_item_instance_id::text AS parent,e.placement_ordinal::text AS ordinal,s.slot,es.revision::text AS equipment_revision FROM game_item_instances i LEFT JOIN LATERAL (
+        SELECT parent_item_instance_id, placement_ordinal, character_id, world_id
+        FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id
+        UNION ALL
+        SELECT n.parent_item_instance_id, n.placement_ordinal, o.owner_character, n.world_id
+        FROM game_item_nested_entries n CROSS JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) o
+        WHERE n.item_instance_id=i.item_instance_id AND o.depth BETWEEN 1 AND 7
+    ) e ON true LEFT JOIN game_character_equipment_slots s ON s.item_instance_id=i.item_instance_id LEFT JOIN game_character_equipment_state es ON es.character_id=s.character_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=($3,$4,$5) AND i.quantity>=1 AND ((e.character_id=encode($6,'hex')::uuid AND e.world_id=i.world_id) OR (s.character_id=encode($6,'hex')::uuid AND s.world_id=i.world_id)) FOR UPDATE OF i")
         .bind(item_instance_id.as_slice()).bind(authority.world.as_slice()).bind(&q.definition.family)
         .bind(&q.definition.production_key).bind(&q.definition.revision_ref).bind(authority.character.as_slice())
         .fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("exact carried Rune absent"))?;
@@ -3303,7 +3354,7 @@ pub async fn prepare_rune_instance_consumption_in_transaction(
         custody,
         caster_ground: caster_ground.clone(),
     };
-    if source.state_revision != expected_state_revision {
+    if expected_state_revision.is_some_and(|expected| source.state_revision != expected) {
         return Err(SpellItemError::Rejected(
             "Rune source state revision changed",
         ));
@@ -3345,7 +3396,14 @@ async fn verify_rune_container_chain(
         if !visited.insert(parent) {
             return Err(SpellItemError::Rejected("Rune container ancestry cycle"));
         }
-        let row=sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,bag.item_instance_id::text AS root,e.parent_item_instance_id::text AS parent,(SELECT count(*) FROM game_item_container_entries children WHERE children.parent_item_instance_id=i.item_instance_id) AS children FROM game_item_instances i LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=i.item_instance_id AND bag.character_id=encode($3,'hex')::uuid AND bag.world_id=i.world_id LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($3,'hex')::uuid AND e.world_id=i.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 FOR UPDATE OF i")
+        let row=sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,bag.item_instance_id::text AS root,e.parent_item_instance_id::text AS parent,((SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id)
+        + (SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)) AS children FROM game_item_instances i LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=i.item_instance_id AND bag.character_id=encode($3,'hex')::uuid AND bag.world_id=i.world_id LEFT JOIN LATERAL (
+        SELECT parent_item_instance_id FROM game_item_container_entries
+        WHERE item_instance_id=i.item_instance_id AND character_id=encode($3,'hex')::uuid AND world_id=i.world_id
+        UNION ALL
+        SELECT parent_item_instance_id FROM game_item_nested_entries
+        WHERE item_instance_id=i.item_instance_id AND world_id=i.world_id
+    ) e ON true WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 FOR UPDATE OF i")
             .bind(parent.as_slice()).bind(authority.world.as_slice()).bind(authority.character.as_slice())
             .fetch_optional(&mut **tx).await?.ok_or(SpellItemError::Rejected("Rune ancestor Item not live/current"))?;
         let definition = decoded_definition(&row)?;

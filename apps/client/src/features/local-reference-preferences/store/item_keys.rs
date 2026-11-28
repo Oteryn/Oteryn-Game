@@ -82,6 +82,16 @@ fn catalogue() -> io::Result<&'static Catalogue> {
     .map_err(|error| io::Error::other(error.clone()))
 }
 
+impl super::PreferenceStore {
+    pub(in crate::play) fn item_source_id(definition: std::num::NonZeroU32) -> Option<u32> {
+        let key = catalogue()
+            .ok()?
+            .active
+            .get(definition.get() as usize - 1)?;
+        key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
+    }
+}
+
 #[derive(Clone, Copy)]
 pub(super) enum Operation {
     Save,

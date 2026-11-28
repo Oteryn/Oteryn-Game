@@ -212,6 +212,7 @@ pub(super) struct Mailbox {
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
     pub(super) inventory_shutdown: bool,
     pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
+    pub(super) rune_use_selected: bool,
     pub(super) item_count_selected: bool,
     /// Tibia Global's Manual Sort Mode of this session (capability 510).
     pub(super) container_manual_sort: oteryn_client_ui::container_manual_sort::ManualSort,

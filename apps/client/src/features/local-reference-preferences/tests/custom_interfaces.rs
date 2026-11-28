@@ -343,7 +343,7 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
     let rune = SpellCatalogEntry {
         cast_index: 71,
         name: "Test rune".into(),
-        words: "test".into(),
+        words: String::new(),
         level: 1,
         mana: 1,
         mana_percent: false,
@@ -351,7 +351,7 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
         learned: true,
         available: true,
         cooldown_groups: vec![],
-        rune_item: Some(900),
+        rune_item: Some(3153),
     };
     let catalog = encode_catalog(&[rune]).map_err(|e| format!("{e:?}"))?;
     outbox.spell_catalog_initialize(true, Some(catalog))?;
@@ -361,7 +361,7 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
         ObjectTarget::CursorPosition,
     ] {
         let action = CustomAction::Object {
-            definition: 900,
+            definition: 18924,
             sub_type: 0,
             target,
         };
@@ -373,6 +373,142 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
                 .is_none()
         );
         assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn item_shortcuts_resolve_production_rune_definitions() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{BarAction, CustomAction, ItemUseMode, ObjectTarget};
+    use oteryn_client_runtime::world_interaction::{Action, Target};
+    use oteryn_session::spell_catalog::{SpellCatalogEntry, encode_catalog};
+    let play = view()?;
+    let catalog = encode_catalog(&[(3153, "Antidote Rune"), (3155, "Sudden Death Rune")].map(
+        |(item, name)| SpellCatalogEntry {
+            cast_index: item,
+            name: name.into(),
+            words: String::new(),
+            level: 1,
+            mana: 0,
+            mana_percent: false,
+            soul: 0,
+            learned: true,
+            available: true,
+            cooldown_groups: vec![],
+            rune_item: Some(item),
+        },
+    ))
+    .map_err(|e| format!("{e:?}"))?;
+    for (reference, rune) in [(18924u32, true), (3153, false), (18938, true)] {
+        let definition = reference.try_into()?;
+        for visible in [false, true] {
+            for custom in [false, true] {
+                let (link, mut commands, outbox) = play_channel();
+                outbox.targeting_initialize(true);
+                outbox.inventory_initialize(
+                    Some(oteryn_session::CharacterInventory {
+                        entries: if visible {
+                            vec![oteryn_session::ItemEntry {
+                                appearance_id: 0,
+                                handle: 77u64.try_into()?,
+                                item_definition_ref: definition,
+                                count: 1u32.try_into()?,
+                                sub_type: 0,
+                            }]
+                        } else {
+                            vec![]
+                        },
+                        ..Default::default()
+                    }),
+                    false,
+                );
+                outbox.spell_catalog_initialize(true, Some(catalog.clone()))?;
+                crate::play::mailbox::lock(&link.mailbox).rune_use_selected = true;
+                let activate = |cursor| {
+                    if custom {
+                        assert!(link.custom_hotkey_action(
+                            &play,
+                            &CustomAction::Object {
+                                definition: reference,
+                                sub_type: 0,
+                                target: if cursor {
+                                    ObjectTarget::Cursor
+                                } else {
+                                    ObjectTarget::CurrentTarget
+                                },
+                            }
+                        ));
+                    } else {
+                        assert!(link.assign_bar_action(
+                            0,
+                            BarAction::Use {
+                                definition,
+                                sub_type: None,
+                                mode: if cursor {
+                                    ItemUseMode::Cursor
+                                } else {
+                                    ItemUseMode::Target
+                                },
+                            }
+                        ));
+                        link.cast_spell_slot(std::num::NonZeroU32::MIN);
+                    }
+                };
+                let action = if visible {
+                    Action::UseOn(77u64.try_into()?)
+                } else {
+                    Action::UseDefinitionOn(definition)
+                };
+                activate(true);
+                {
+                    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+                    assert_eq!(mailbox.world_context.rune_targeting, rune);
+                    assert_eq!(
+                        mailbox.world_context.targeting_action(),
+                        Some(action.clone())
+                    );
+                    mailbox.world_context.clear_targeting();
+                }
+                assert!(commands.try_recv().is_err());
+                let target = oteryn_session::WorldSpatialEntity {
+                    motion: None,
+                    display_name: None,
+                    kind: oteryn_session::EntityKind::Creature,
+                    entity: oteryn_session::EntityRef {
+                        identity: [7; 16],
+                        generation: 4,
+                    },
+                    position: oteryn_session::ActorPosition {
+                        x: 10,
+                        y: 20,
+                        floor: 7,
+                    },
+                    detail: oteryn_session::EntityDetail::Actor {
+                        direction: oteryn_session::StepDirection::South,
+                        appearance_ref: 1,
+                        health_percent: 100,
+                    },
+                };
+                outbox.battle_publish(
+                    Some(oteryn_session::ActorCombatState {
+                        target: Some(target.entity),
+                        modes: oteryn_session::FightModes::DEFAULT,
+                        in_fight: false,
+                    }),
+                    Some(7),
+                    &[target],
+                );
+                activate(false);
+                let crate::combat_input::PlayCommand::WorldContext(command) =
+                    commands.try_recv()?
+                else {
+                    return Err("expected a targeted item use".into());
+                };
+                assert_eq!(command.action, action);
+                assert_eq!(command.target, Target::Creature(target.entity));
+                assert!(commands.try_recv().is_err());
+            }
+        }
     }
     Ok(())
 }

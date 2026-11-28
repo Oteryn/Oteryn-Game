@@ -39,6 +39,7 @@ pub(super) fn initialize<T: Stepper>(
     {
         let mut mailbox = mailbox::lock(&outbox.0);
         mailbox.capture_observations.personal_boss_events = session.feature_selected(615);
+        mailbox.rune_use_selected = session.feature_selected(22);
         mailbox.party.typed_feedback = session.feature_selected(617);
     }
     outbox.properties_initialize(session);

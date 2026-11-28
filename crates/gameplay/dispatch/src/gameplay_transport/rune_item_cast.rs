@@ -21,7 +21,7 @@ use sqlx::{Postgres, Transaction};
 mod use_refusal;
 pub(super) use use_refusal::use_refusal;
 
-/// Read the direct donor's revision under current authority. This only prepares a
+/// Read the carried rune's revision under current authority. This only prepares a
 /// consumption; the existing Rune reservation independently verifies it before payment.
 #[allow(clippy::too_many_arguments)]
 pub(in crate::gameplay_transport) async fn current_revision(
@@ -34,16 +34,15 @@ pub(in crate::gameplay_transport) async fn current_revision(
     instance: [u8; 16],
 ) -> Result<u64, SpellItemError> {
     let (rune, placement) = source_context(authority, runtime, room, content, spell)?;
-    let source = items::prepare_inventory_consumption_in_transaction(
+    items::current_rune_instance_revision(
         tx,
         authority,
-        &rune.item,
-        1,
-        Some(instance),
+        &rune,
+        instance,
         &placement,
+        &|definition| qualify_parent(content, definition),
     )
-    .await?;
-    Ok(source.state_revision)
+    .await
 }
 
 pub(super) async fn reserve(
@@ -63,17 +62,22 @@ pub(super) async fn reserve(
         intent.rune_item_instance,
         intent.expected_state_revision,
         &placement,
-        &|definition| {
-            if definition.family != "Item" {
-                return None;
-            }
-            QualifiedItemDefinition::from_native_policy(
-                content.item_policy(&definition.production_key, &definition.revision_ref)?,
-            )
-            .ok()
-        },
+        &|definition| qualify_parent(content, definition),
     )
     .await
+}
+
+fn qualify_parent(
+    content: &NativeGameplayState,
+    definition: &crate::durability::item_mint::TypedDefinitionRef,
+) -> Option<QualifiedItemDefinition> {
+    if definition.family != "Item" {
+        return None;
+    }
+    QualifiedItemDefinition::from_native_policy(
+        content.item_policy(&definition.production_key, &definition.revision_ref)?,
+    )
+    .ok()
 }
 
 fn source_context(

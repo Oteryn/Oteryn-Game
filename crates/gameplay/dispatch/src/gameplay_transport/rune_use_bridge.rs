@@ -1,4 +1,4 @@
-//! Gated legacy USE adapter: current direct-backpack custody selects the existing Rune caster.
+//! Gated legacy USE adapter: current carried custody selects the existing Rune caster.
 //! Child modules compose native replay and current Item revision resolution;
 //! the spell executor, payment and retained-batch cache remain with their owners.
 
@@ -75,7 +75,9 @@ impl LegacyRuneUse {
 
 pub(super) fn routes(intent: &UseIntent, selected: &SelectedCapabilities) -> bool {
     selected.contains(CAPABILITY_RUNE_USE_V1)
-        && matches!(intent.target, UseTarget::Item(_))
+        && (matches!(intent.target, UseTarget::Item(_))
+            || (matches!(intent.target, UseTarget::ItemByDefinition(_))
+                && (intent.use_with.is_some() || intent.use_with_position.is_some())))
         && intent.use_with_map_item.is_none()
 }
 
@@ -89,9 +91,13 @@ pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     selected: &SelectedCapabilities,
 ) -> Option<UseOutcome> {
     let key = match intent.target {
-        UseTarget::Item(handle) => {
-            view.and_then(|v| v.resolve(handle).filter(|key| v.is_backpack_entry(key)))
-        }
+        UseTarget::Item(handle) => view.and_then(|v| {
+            v.resolve(handle).filter(|key| {
+                intent.use_with.is_some()
+                    || intent.use_with_position.is_some()
+                    || v.is_backpack_entry(key)
+            })
+        }),
         _ => None,
     };
     let visible = intent
@@ -330,27 +336,77 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (rune, legacy)
         } else {
-            let Some(ItemKey::Instance(instance)) = key else {
-                return Some(outcome(UseDisposition::StaleState));
-            };
             let Some(fence) = command.item_fence else {
                 return Some(UseOutcome::rejected());
             };
             let Some(native) = self.active_generation.and_then(|a| a.native_gameplay()) else {
                 return Some(UseOutcome::rejected());
             };
-            let backpack = self
-                .root
-                .read_character_backpack(self.character, fence.character_id)
-                .await
-                .ok()??;
-            let entry = backpack
-                .entries
-                .iter()
-                .find(|e| e.item.item_instance_id == instance);
             let plain_use = intent.use_with.is_none()
                 && intent.use_with_map_item.is_none()
                 && intent.use_with_position.is_none();
+            let (instance, entry) = if plain_use {
+                let Some(ItemKey::Instance(instance)) = key else {
+                    return Some(outcome(UseDisposition::StaleState));
+                };
+                let backpack = self
+                    .root
+                    .read_character_backpack(self.character, fence.character_id)
+                    .await
+                    .ok()??;
+                let entry = backpack
+                    .entries
+                    .iter()
+                    .find(|entry| entry.item.item_instance_id == instance);
+                (instance, entry.map(|entry| entry.item.definition.clone()))
+            } else {
+                let inventory = self
+                    .root
+                    .read_item_use_inventory(self.character, self.holder, fence)
+                    .await
+                    .ok()?;
+                let instance = match (&intent.target, key) {
+                    (UseTarget::Item(_), Some(ItemKey::Instance(instance))) => instance,
+                    (UseTarget::ItemByDefinition(reference), None) => {
+                        let runtime = self.runtime.lock().await;
+                        let Some((key, revision)) = super::item_ref_admission::pinned_index(
+                            &runtime,
+                            self.active_generation,
+                        )
+                        .and_then(|index| index.definition_at(*reference)) else {
+                            return Some(outcome(UseDisposition::StaleState));
+                        };
+                        let definition = crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: key.into(),
+                            revision_ref: revision.into(),
+                        };
+                        let states = self.states.spell_states.lock().await;
+                        let reserved = states
+                            .item_uses
+                            .reserved_sources(actor, command.game_session_id);
+                        let Ok(instance) = inventory.first_unreserved(&definition, reserved) else {
+                            return Some(outcome(UseDisposition::NothingToUse));
+                        };
+                        instance
+                    }
+                    _ => return Some(outcome(UseDisposition::StaleState)),
+                };
+                if !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(instance))
+                {
+                    return Some(UseOutcome::rejected());
+                }
+                let entry = inventory
+                    .backpack
+                    .iter()
+                    .flat_map(|bag| &bag.entries)
+                    .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                    .find(|entry| entry.item.item_instance_id == instance);
+                (instance, entry.map(|entry| entry.item.definition.clone()))
+            };
             // The original instance can still be named by the connection when its coin stack
             // has already been consumed. Check the receipt before refusing the absent entry.
             if plain_use
@@ -364,10 +420,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(entry) = entry else {
                 return Some(outcome(UseDisposition::StaleState));
             };
-            let policy = native.item_policy(
-                &entry.item.definition.production_key,
-                &entry.item.definition.revision_ref,
-            );
+            let policy = native.item_policy(&entry.production_key, &entry.revision_ref);
             let spell = policy
                 .and_then(|p| p.record().production_binding.external_id.parse().ok())
                 .and_then(|id| self.spells.rune(id));
@@ -376,17 +429,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || matches!(
                         s.carrier,
                         crate::spell::Carrier::Rune {
-                            item: 3165 | 3177 | 3178,
+                            item: 3155 | 3165 | 3177 | 3178,
                             ..
                         }
                     )
             }) else {
                 if plain_use {
                     let item = ItemKey::Instance(instance);
-                    if crate::domain::currency::Coin::from_production_key(
-                        &entry.item.definition.production_key,
-                    )
-                    .is_some()
+                    if crate::domain::currency::Coin::from_production_key(&entry.production_key)
+                        .is_some()
                         && let Some(outcome) = self.use_coin(actor, command, item, false).await
                     {
                         return outcome;
@@ -399,7 +450,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3152 | 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
+                        item: 3152 | 3155 | 3165 | 3174 | 3177 | 3178 | 3188 | 3197 | 17512,
                         ..
                     }
                 )

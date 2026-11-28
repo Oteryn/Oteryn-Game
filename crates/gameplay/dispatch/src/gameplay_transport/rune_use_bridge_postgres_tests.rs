@@ -17,6 +17,11 @@ fn rune_use_bridge_postgres_before_commit_reconciles_the_cast() -> TestResult {
 }
 
 #[test]
+fn closed_sudden_death_shortcut_casts_and_debits_once() -> TestResult {
+    large_stack(|| scenario(Case::ClosedSuddenDeath))
+}
+
+#[test]
 fn rune_use_bridge_postgres_lost_content_disconnects() -> TestResult {
     large_stack(|| scenario(Case::LostContent))
 }

@@ -1,5 +1,5 @@
 //! Item uses preserve the current session handle and the current server target generation.
-use crate::play::mailbox::Mailbox;
+use crate::play::{PreferenceStore, mailbox::Mailbox};
 use oteryn_client_runtime::world_interaction::{Action, Command, Selection, Target};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU32;
@@ -103,12 +103,15 @@ pub(super) fn use_item(
 }
 
 pub(in crate::play) fn shortcut_rune(mailbox: &Mailbox, definition: NonZeroU32) -> bool {
+    let Some(source_id) = PreferenceStore::item_source_id(definition) else {
+        return false;
+    };
     mailbox
         .spell_catalog
         .catalog
         .entries()
         .iter()
-        .any(|entry| entry.rune_item == Some(definition.get()))
+        .any(|entry| entry.rune_item == Some(source_id))
 }
 
 pub(in crate::play) fn definition_fallback(
@@ -119,7 +122,7 @@ pub(in crate::play) fn definition_fallback(
 ) -> bool {
     mailbox.world_context.use_with
         && sub_type.unwrap_or(0) == 0
-        && !(targeted && shortcut_rune(mailbox, definition))
+        && !(targeted && !mailbox.rune_use_selected && shortcut_rune(mailbox, definition))
 }
 
 #[cfg(bevy_shell)]

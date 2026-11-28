@@ -65,6 +65,7 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
+    ClosedSuddenDeath,
     EngencTraining,
     IntenseHealingOwnSummon,
     ParalyzeMonster,
@@ -191,7 +192,20 @@ async fn client_cast(
     let intent = match original {
         Some(original) => original,
         None => UseIntent {
-            target: UseTarget::Item(source.ok_or("snapshot exposes the direct entry handle")?),
+            target: if case == Case::ClosedSuddenDeath {
+                let index = owner
+                    .active_generation
+                    .and_then(|g| g.native_gameplay())
+                    .and_then(|n| n.item_index())
+                    .ok_or("active item index")?;
+                UseTarget::ItemByDefinition(
+                    index
+                        .definition_ref("Item", "oteryn:item.tibia.i3155", "definition-r1")
+                        .ok_or("Sudden Death rune")?,
+                )
+            } else {
+                UseTarget::Item(source.ok_or("snapshot exposes the direct entry handle")?)
+            },
             use_with: Some(victim),
             use_with_map_item: None,
             use_with_position: None,
@@ -239,7 +253,7 @@ async fn client_cast(
             send_use(client, first_id, &intent, Expected::Result(UseDisposition::TargetIllegal))
                 .await?;
         }
-        Case::EngencTraining => {
+        Case::EngencTraining | Case::ClosedSuddenDeath => {
             send_use(
                 client,
                 first_id,
@@ -537,7 +551,10 @@ async fn serve_cast(
 pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let trained_caster = matches!(
         case,
-        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon
+        Case::ParalyzeMonster
+            | Case::ParalyzePlayer
+            | Case::IntenseHealingOwnSummon
+            | Case::ClosedSuddenDeath
     );
     let harness =
         Harness::create_with_admission_seed(admin, "rune_bridge", !trained_caster, false).await?;
@@ -787,11 +804,25 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     } else {
         "oteryn:item.tibia.i3174"
     };
-    seed_main_backpack(&harness, &[(source_key, 3)]).await?;
+    if case == Case::ClosedSuddenDeath {
+        seed_main_backpack(
+            &harness,
+            &[
+                ("oteryn:item.tibia.i3155", 3),
+                ("oteryn:item.tibia.i2854", 1),
+            ],
+        )
+        .await?;
+    } else {
+        seed_main_backpack(&harness, &[(source_key, 3)]).await?;
+    }
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-    if case == Case::Replay {
+    if case == Case::ClosedSuddenDeath {
+        super::qengine_rewards_fixtures::into_bag(&owner, &admitted, id(71), id(72), 8000).await?;
+    }
+    if matches!(case, Case::Replay | Case::ClosedSuddenDeath) {
         // This direct fixture has no Channel maintenance loop. Finish the real
         // map owner setup before its vitals timer competes with rune commands.
         assert!(
@@ -846,6 +877,27 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         serve_cast(&owner, &harness, admitted, victim, case, None),
     )
     .await??;
+    if case == Case::ClosedSuddenDeath {
+        let (remaining, receipts): (i64, i64) = sqlx::query_as(
+            "SELECT i.quantity,(SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($2,'hex')::uuid)
+             FROM game_item_instances i JOIN game_item_nested_entries n USING(item_instance_id)
+             WHERE i.item_instance_id=encode($1,'hex')::uuid AND n.parent_item_instance_id=encode($3,'hex')::uuid"
+        ).bind(id(71).as_slice()).bind(session.as_bytes().as_slice()).bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!((remaining, receipts), (2, 1));
+        assert!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .live_creature_health(victim_actor)
+                .unwrap_or(0)
+                < initial_health
+        );
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     if case == Case::StaleSession {
         assert_eq!(
             resumed.continuity.next_command_id,
