@@ -1,6 +1,8 @@
 //! Portable native playback through upstream Rodio. No device is opened by headless tests.
+#[cfg(bevy_shell)]
+use super::UiSound;
 use super::{
-    AudioSettings, BattleClass, SoundCatalog, SoundChannel, SoundCue, UiSound, select_audio_device,
+    AudioSettings, BattleClass, SoundCatalog, SoundChannel, SoundCue, select_audio_device,
 };
 use oteryn_session::PresentationSource;
 use rodio::cpal::traits::{DeviceTrait, HostTrait};
@@ -27,7 +29,8 @@ fn update_voices(voices: &mut Vec<Voice>, settings: AudioSettings) {
 }
 
 pub struct AudioOutput {
-    stream: OutputStream,
+    mixer: rodio::mixer::Mixer,
+    _stream: Option<OutputStream>,
     catalog: SoundCatalog,
     voices: Vec<Voice>,
     ambient: Option<(u32, Sink)>,
@@ -84,7 +87,8 @@ impl AudioOutput {
         }
         .map_err(|e| e.to_string())?;
         Ok(Self {
-            stream,
+            mixer: stream.mixer().clone(),
+            _stream: Some(stream),
             catalog,
             voices: Vec::new(),
             ambient: None,
@@ -93,6 +97,7 @@ impl AudioOutput {
     }
 
     /// Confirmed local UI tones share the bounded voices and stop with the session.
+    #[cfg(bevy_shell)]
     pub(crate) fn play_ui(&mut self, settings: AudioSettings, cues: Vec<UiSound>) {
         let gain = settings.channel_gain(PresentationSource::Global, SoundChannel::Ui) * 0.15;
         if gain == 0.0 {
@@ -103,7 +108,7 @@ impl AudioOutput {
             if self.voices.len() == 32 {
                 self.voices.remove(0).sink.stop();
             }
-            let voice = Sink::connect_new(self.stream.mixer());
+            let voice = Sink::connect_new(&self.mixer);
             voice.set_volume(gain);
             voice.append(
                 rodio::source::SineWave::new(cue.frequency())
@@ -119,10 +124,11 @@ impl AudioOutput {
         }
     }
 
+    #[cfg(bevy_shell)]
     pub(crate) fn start_title(&mut self) -> Result<(), String> {
         if let Some(bytes) = self.catalog.read_title()? {
             let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
-            let sink = Sink::connect_new(self.stream.mixer());
+            let sink = Sink::connect_new(&self.mixer);
             sink.set_volume(0.0);
             sink.append(source);
             self.voices.push(Voice {
@@ -196,7 +202,7 @@ impl AudioOutput {
                 return Ok(());
             };
             let source = Decoder::try_from(Cursor::new(bytes)).map_err(|e| e.to_string())?;
-            let voice = Sink::connect_new(self.stream.mixer());
+            let voice = Sink::connect_new(&self.mixer);
             voice.set_volume(gain);
             voice.append(source.repeat_infinite());
             self.ambient = Some((cue.id, voice));
@@ -212,7 +218,7 @@ impl AudioOutput {
         if self.voices.len() == 32 {
             self.voices.remove(0).sink.stop();
         }
-        let voice = Sink::connect_new(self.stream.mixer());
+        let voice = Sink::connect_new(&self.mixer);
         voice.set_volume(gain);
         // Numeric cues are one-shots. Bound voice lifetime even for malformed/stream assets.
         voice.append(source.take_duration(Duration::from_secs(30)));
@@ -289,7 +295,7 @@ fn verify_audio_thread() {
         "blocking audio operation reached the frame thread"
     );
 }
-#[cfg(test)]
+#[cfg(all(test, bevy_shell))]
 pub(crate) fn check_audio_frame(frame: impl FnOnce()) {
     TEST_FRAME.set(true);
     frame();

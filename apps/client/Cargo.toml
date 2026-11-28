@@ -25,7 +25,8 @@ path = "src/bin/oteryn-client-bevy.rs"
 required-features = ["bevy-shell"]
 
 [features]
-bevy-shell = ["dep:bevy", "dep:bevy_tasks", "dep:oteryn-client-ui-bevy", "dep:rodio", "dep:winit", "oteryn-input-platform/native-winit"]
+native-audio = ["dep:rodio"]
+bevy-shell = ["dep:bevy", "dep:bevy_tasks", "dep:oteryn-client-ui-bevy", "native-audio", "dep:winit", "oteryn-input-platform/native-winit"]
 
 [dependencies]
 bevy = { version = "=0.20.1", optional = true, default-features = false, features = ["std", "async_executor", "bevy_asset", "bevy_winit", "bevy_render", "bevy_core_pipeline", "bevy_sprite_render", "bevy_ui_render", "bevy_ui_widgets", "ui_picking", "png", "x11", "system_clipboard", "bevy_log", "default_font"] }

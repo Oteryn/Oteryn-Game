@@ -262,10 +262,10 @@ impl SoundCatalog {
     }
 }
 
-#[cfg(bevy_shell)]
+#[cfg(any(bevy_shell, feature = "native-audio"))]
 #[path = "output.rs"]
 mod output;
-#[cfg(bevy_shell)]
+#[cfg(any(bevy_shell, feature = "native-audio"))]
 pub use output::{AudioOutput, audio_device_names};
 
 pub const MAX_VISUAL_CUES: usize = 64;

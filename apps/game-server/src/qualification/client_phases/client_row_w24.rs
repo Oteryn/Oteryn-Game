@@ -12,9 +12,16 @@ fn ambient_batch(
     client: &mut DevClientSession,
     minute: &mut u16,
 ) -> TestResult<Option<(PresentationEvent, u16, u64)>> {
+    let position = client.world_spatial().actor_position;
     let mut batch = None;
     for event in client.take_events() {
         match event {
+            SessionEvent::WorldSpatial(delta) if delta.value.actor_position != position => {
+                return Err("step=ambient unexpected spatial movement".into());
+            }
+            SessionEvent::WorldSpatialEntities(delta) if delta.value.actor_position != position => {
+                return Err("step=ambient unexpected spatial movement".into());
+            }
             SessionEvent::WorldClock(delta) => *minute = delta.value.tibian_minute,
             SessionEvent::Presentation(delta) => {
                 for event in delta.value {
@@ -38,7 +45,11 @@ async fn wait_for_ambient(
     minute: &mut u16,
 ) -> TestResult<Option<(PresentationEvent, u16, u64)>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+    let position = client.world_spatial().actor_position;
     loop {
+        if client.world_spatial().actor_position != position {
+            return Err("step=ambient position moved while waiting for cue".into());
+        }
         if let Some(batch) = ambient_batch(client, minute)? {
             return Ok(Some(batch));
         }
@@ -152,23 +163,41 @@ async fn walk_boundary(
 }
 
 async fn capture_logout(
+    clients: &SeamClients<'_>,
     client: &mut DevClientSession,
     minute: &mut u16,
     root: &Path,
     name: &str,
-    initial: (u32, u64),
-    actions: &str,
+    capture: ((u32, u64), &str),
 ) -> TestResult {
+    let position = client.world_spatial().actor_position;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err(format!("step={name} logout refused").into());
     }
-    if ambient_batch(client, minute)?.is_some() {
-        return Err(format!("step={name} unexpected ambient during logout").into());
+    if client.world_spatial().actor_position != position || ambient_batch(client, minute)?.is_some()
+    {
+        return Err(format!("step={name} unexpected state during logout").into());
     }
     let session = client.join_snapshot().game_session_id;
-    let (cue, sequence) = initial;
+    let released = tokio::time::timeout(Duration::from_secs(4), async {
+        let mut database = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions
+              WHERE game_session_id=encode($1,'hex')::uuid AND session_state=3
+                AND current_transport_ref IS NULL AND control_loss_epoch IS NULL)",
+        )
+        .bind(session.as_bytes().as_slice())
+        .fetch_one(&mut database)
+        .await
+    })
+    .await??;
+    if !released {
+        return Err(format!("step={name} accepted logout did not commit terminal release").into());
+    }
+    client.session_mut().wait_for_logout_eof().await?;
+    let ((cue, sequence), actions) = capture;
     std::fs::write(
         root.join(format!("{name}.bin")),
         take_qualification_frames(),
@@ -209,9 +238,10 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
     }
     let mut minute = clock_snapshot(&mut client)?;
     let from = tile(client.world_spatial().actor_position)?;
-    let intended_city = zone(world, from).unwrap_or("thais");
-    let mut boundary = None;
-    let exited = if let Some(city) = zone(world, from) {
+    let intended_city = zone(world, from)
+        .ok_or("step=starting-city must start inside a supported city to prove exit")?;
+    let boundary = {
+        let city = intended_city;
         let (event, observed_minute, initial_sequence) = wait_for_ambient(&mut client, &mut minute)
             .await?
             .ok_or("step=starting-city missing admission ambience")?;
@@ -229,17 +259,20 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
             .ok_or("invalid exit route")?;
         let (route, (event, _, exit_sequence)) =
             walk_boundary(&mut client, world, &mut minute, path).await?;
-        boundary = Some(inside);
+
         require_silence(event)?;
         let outside = client.world_spatial().actor_position;
         let session = client.join_snapshot().game_session_id;
         capture_logout(
+            clients,
             &mut client,
             &mut minute,
             root,
             "w24-exit",
-            (initial_cue, initial_sequence),
-            &format!("{route} 0 {exit_sequence}"),
+            (
+                (initial_cue, initial_sequence),
+                &format!("{route} 0 {exit_sequence}"),
+            ),
         )
         .await?;
         drop(client);
@@ -250,9 +283,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
         {
             return Err("step=outside fresh admission did not restore the saved position".into());
         }
-        true
-    } else {
-        false
+        inside
     };
     let (outside, _, outside_sequence) = wait_for_ambient(&mut client, &mut minute)
         .await?
@@ -262,25 +293,14 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
     let entry_path = walking_route(
         world,
         outside_tile,
-        |at| {
-            boundary.map_or_else(
-                || zone(world, at) == Some(intended_city),
-                |inside| at == inside,
-            )
-        },
-        |at| {
-            zone(world, at).is_none()
-                || boundary.map_or_else(
-                    || zone(world, at) == Some(intended_city),
-                    |inside| at == inside,
-                )
-        },
+        |at| at == boundary,
+        |at| zone(world, at).is_none() || at == boundary,
     )?;
     let (route, (entry, observed_minute, city_sequence)) =
         walk_boundary(&mut client, world, &mut minute, entry_path).await?;
     let mut actions = route;
     let entered = tile(client.world_spatial().actor_position)?;
-    if zone(world, entered) != Some(intended_city) {
+    if entered != boundary || zone(world, entered) != Some(intended_city) {
         return Err("step=city-entry wrong city".into());
     }
     let replacement = city_cue(intended_city, entry, observed_minute)?;
@@ -300,12 +320,12 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
     let expected_position = client.world_spatial().actor_position;
     let session = client.join_snapshot().game_session_id;
     capture_logout(
+        clients,
         &mut client,
         &mut minute,
         root,
         "w24-entry",
-        (0, outside_sequence),
-        &actions,
+        ((0, outside_sequence), &actions),
     )
     .await?;
     drop(client);
@@ -322,21 +342,24 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, full: bool) -> 
         .ok_or("step=city-relog missing admission ambience")?;
     let relog_cue = city_cue(intended_city, event, observed_minute)?;
     capture_logout(
+        clients,
         &mut fresh,
         &mut minute,
         root,
         "w24-relog",
-        (relog_cue, sequence),
-        "",
+        ((relog_cue, sequence), ""),
     )
     .await?;
-    std::fs::write(
-        root.join("w24-expected.txt"),
-        if exited { "exit" } else { "outside" },
-    )?;
     Ok(format!(
-        "outside=0 city={replacement} relog={relog_cue} exited={exited}"
+        "outside=0 city={replacement} relog={relog_cue} exited=true"
     ))
+}
+
+fn boundary_collision(
+    blocked: Option<StepDirection>,
+    walkable_outside: impl FnMut(StepDirection) -> bool,
+) -> Option<StepDirection> {
+    blocked.filter(|_| CARDINAL.into_iter().any(walkable_outside))
 }
 
 async fn full_checks(
@@ -368,13 +391,14 @@ async fn full_checks(
         })
     };
     let same_city = |at| zone(world, at) == Some(city);
-    let path = walking_route(
-        world,
-        entered,
-        |at| blocked_direction(at).is_some(),
-        same_city,
-    )
-    .map_err(|error| format!("step=collision-approach {error}"))?;
+    let at_boundary = |at| {
+        boundary_collision(blocked_direction(at), |direction| {
+            walking_landing(world, at, direction)
+                .is_some_and(|neighbor| zone(world, neighbor).is_none())
+        })
+    };
+    let path = walking_route(world, entered, |at| at_boundary(at).is_some(), same_city)
+        .map_err(|error| format!("step=collision-approach {error}"))?;
     let planned = path
         .iter()
         .try_fold(entered, |at, direction| {
@@ -382,7 +406,7 @@ async fn full_checks(
         })
         .ok_or("invalid collision approach")?;
     let direction =
-        blocked_direction(planned).ok_or("step=blocked-refusal no compiled collision")?;
+        at_boundary(planned).ok_or("step=blocked-refusal no compiled boundary collision")?;
     let (approach, _) = walk(client, world, minute, path, false).await?;
     if !approach.is_empty() {
         actions.push_str(&format!("\nW {approach}"));
@@ -468,5 +492,23 @@ pub(super) async fn run_journey(clients: &SeamClients<'_>, world: &BundleWorld, 
         Err(_) => evidence(&format!(
             "e2e_all scenario={scenario} status=FAIL evidence=timeout"
         )),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn w24_rejects_collision_without_walkable_outside_neighbor() {
+        assert_eq!(
+            boundary_collision(Some(StepDirection::East), |_| false),
+            None
+        );
+        assert_eq!(
+            boundary_collision(Some(StepDirection::East), |direction| direction
+                == StepDirection::North),
+            Some(StepDirection::East),
+        );
+        assert_eq!(boundary_collision(None, |_| true), None);
     }
 }

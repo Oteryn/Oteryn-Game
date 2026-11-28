@@ -90,6 +90,15 @@ sys.exit(not (start <= index and index - start < length <= 2**64 - 1))
 PY
 }
 
+w24_full_playback() {
+  local capture_dir=$1 playback_log=$1.playback.log
+  E2E_ALL_W24_PLAYBACK_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client \
+    --features native-audio --lib w24_ambient_capture_reaches_native_mixer \
+    -- --nocapture > "$playback_log" 2>&1 || return 1
+  grep -Eq '^test .*::w24_ambient_capture_reaches_native_mixer \.\.\. ok$' "$playback_log" &&
+    grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$playback_log"
+}
+
 w24_client_replay() {
   local capture_dir=$1 log=$2 mode=${3:-client} replay_log=$1.replay.log
   [[ $mode != full ]] || replay_log=$1.full.replay.log
@@ -168,7 +177,8 @@ for group in "$@"; do
   child_pid=
   if [[ -n $capture_dir && $status == 0 ]]; then
     for w24_mode in "${w24_modes[@]}"; do
-      if w24_client_replay "$capture_dir" "$log" "$w24_mode"; then
+      if w24_client_replay "$capture_dir" "$log" "$w24_mode" &&
+        { [[ $w24_mode != full ]] || w24_full_playback "$capture_dir"; }; then
         printf 'SEAM_EVIDENCE e2e_all scenario=W24.%s status=PASS evidence=live-capture-replayed\n' "$w24_mode" >> "$log"
       else
         status=1

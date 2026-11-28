@@ -2,6 +2,21 @@
 use super::*;
 
 impl<S: SessionStream> Session<S> {
+    /// Wait for the peer to close after an accepted logout, rejecting trailing data.
+    pub async fn wait_for_logout_eof(&mut self) -> Result<(), SessionError> {
+        let mut byte = [0];
+        match bounded(self.deadline, "logout EOF", async {
+            Ok::<_, SessionError>(self.stream.read(&mut byte).await?)
+        })
+        .await?
+        {
+            0 => Ok(()),
+            _ => {
+                Err(io::Error::new(io::ErrorKind::InvalidData, "trailing data after logout").into())
+            }
+        }
+    }
+
     /// Service an idle connection until at least one pushed domain event is applied.
     ///
     /// The deadline bounds the whole wait; individual idle reads are deliberately short so

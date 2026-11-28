@@ -746,6 +746,24 @@ class CloudRunSummaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             subprocess.run(["bash", "-c", command, "test", temp], check=True)
 
+    def test_full_w24_playback_requires_an_executed_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("w24_full_playback()"):cloud.index("w24_client_replay()")]
+        command = helper + textwrap.dedent("""
+            set -e
+            capture="$1/capture"
+            cargo() { echo 'test result: ok. 0 passed; 0 failed; 0 ignored;'; }
+            if w24_full_playback "$capture"; then exit 1; fi
+            cargo() {
+                [[ $E2E_ALL_W24_PLAYBACK_DIR == "$capture" ]] || return 1
+                echo 'test output::tests::w24_ambient_capture_reaches_native_mixer ... ok'
+                echo 'test result: ok. 1 passed; 0 failed; 0 ignored;'
+            }
+            w24_full_playback "$capture"
+            """)
+        with tempfile.TemporaryDirectory() as temp:
+            subprocess.run(["bash", "-c", command, "test", temp], check=True)
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',

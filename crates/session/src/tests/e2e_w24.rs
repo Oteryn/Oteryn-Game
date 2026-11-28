@@ -77,24 +77,39 @@ fn observed_cue(event: SessionEvent) -> Result<Option<Cue>, BoxError> {
     }
 }
 
+fn reject_spatial_movement(event: &SessionEvent, position: ActorPosition) -> Result<(), BoxError> {
+    let observed = match event {
+        SessionEvent::WorldSpatial(delta) => delta.value.actor_position,
+        SessionEvent::WorldSpatialEntities(delta) => delta.value.actor_position,
+        _ => return Ok(()),
+    };
+    if observed != position {
+        return Err("W24 unexpected spatial movement".into());
+    }
+    Ok(())
+}
+
 fn drain_cues(session: &mut Session<ReplayStream>) -> Result<Vec<Cue>, BoxError> {
+    let position = session.world_spatial().actor_position;
     session
         .take_events()
         .into_iter()
         .try_fold(Vec::new(), |mut cues, event| {
+            reject_spatial_movement(&event, position)?;
             cues.extend(observed_cue(event)?);
             Ok(cues)
         })
 }
 
 async fn read_cue(session: &mut Session<ReplayStream>, expected: Cue) -> Result<(), BoxError> {
+    let position = session.world_spatial().actor_position;
     let mut cues = drain_cues(session)?;
     while session.last_server_sequence() < expected.1 {
         let (kind, sequence, payload) = session.read_sequenced_push("W24 ambient").await?;
         assert_eq!(kind, MessageType::StateDelta);
-        cues.extend(observed_cue(
-            session.apply_state_delta(sequence, &payload)?,
-        )?);
+        let event = session.apply_state_delta(sequence, &payload)?;
+        reject_spatial_movement(&event, position)?;
+        cues.extend(observed_cue(event)?);
     }
     require_cue(&cues, expected)
 }
@@ -148,6 +163,25 @@ fn w24_rejects_false_boundary_evidence() -> Result<(), BoxError> {
     };
     let adjacent = ActorPosition { x: 11, ..from };
     let teleported = ActorPosition { x: 50, ..from };
+    let pushed_position = |actor_position| {
+        SessionEvent::WorldSpatial(AppliedDelta {
+            server_sequence: 2,
+            base_revision: 0,
+            new_revision: 1,
+            value: WorldSpatialObservation {
+                content_generation: [0; 32],
+                actor_position,
+            },
+        })
+    };
+    // Returning to the saved tile cannot erase the earlier unsolicited movement.
+    let events = [pushed_position(adjacent), pushed_position(from)];
+    assert!(
+        events
+            .iter()
+            .try_for_each(|event| reject_spatial_movement(event, from))
+            .is_err()
+    );
     require_ordinary_step(from, adjacent, StepDirection::East)?;
     assert!(require_ordinary_step(from, teleported, StepDirection::East).is_err());
 
@@ -281,12 +315,9 @@ async fn replay_connection(
         session.logout().await?.result,
         Some(logout::LogoutResult::Accepted)
     );
+    assert_eq!(session.world_spatial().actor_position, after);
     require_no_cues(&drain_cues(&mut session)?, "logout")?;
-    assert_eq!(
-        session.stream.read(&mut [0]).await?,
-        0,
-        "trailing data after logout"
-    );
+    session.wait_for_logout_eof().await?;
     assert_invalid_ambient_unchanged(&mut session)?;
     Ok((id.to_owned(), before, after))
 }
@@ -307,21 +338,10 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
     } else {
         &[entry]
     };
-    let origin = std::fs::read_to_string(path.join("w24-expected.txt"))?;
+    let (exit_id, _, exit_position) = replay_connection(path, "w24-exit", false, &[exit]).await?;
     let (entry_id, outside, inside) = replay_connection(path, "w24-entry", true, actions).await?;
-    match origin.as_str() {
-        "exit" => {
-            let (exit_id, _, exit_position) =
-                replay_connection(path, "w24-exit", false, &[exit]).await?;
-            assert_ne!(exit_id, entry_id);
-            assert_eq!(exit_position, outside);
-        }
-        "outside" => {
-            assert!(!path.join("w24-exit.bin").exists());
-            assert!(!path.join("w24-exit.txt").exists());
-        }
-        _ => return Err("invalid W24 origin".into()),
-    }
+    assert_ne!(exit_id, entry_id);
+    assert_eq!(exit_position, outside);
     let (relog_id, relog_position, _) = replay_connection(path, "w24-relog", false, &[]).await?;
     assert_ne!(relog_id, entry_id);
     assert_ne!(outside, inside);
@@ -366,6 +386,31 @@ fn assert_invalid_ambient_unchanged<S: SessionStream>(
         assert!(session.take_events().is_empty());
     }
     Ok(())
+}
+
+#[test]
+fn w24_logout_rejects_an_open_peer_and_trailing_data() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let (send, receive) = tokio::sync::oneshot::channel();
+        let peer = tokio::spawn(async move {
+            join_peer_with(&mut server, &[6], &[6], &[], entity_snapshot(vec![]), &[]).await?;
+            receive.await?;
+            server.write_all(&[1]).await?;
+            Ok::<_, BoxError>(())
+        });
+        let mut session = Session::admit(client, admission_with(&[6])?).await?;
+        session.deadline = Duration::from_millis(20);
+        assert!(matches!(
+            session.wait_for_logout_eof().await,
+            Err(SessionError::Timeout("logout EOF"))
+        ));
+        send.send(()).map_err(|_| "test peer closed early")?;
+        peer.await??;
+        assert!(session.wait_for_logout_eof().await.is_err());
+        session.wait_for_logout_eof().await?;
+        Ok(())
+    })?
 }
 
 #[test]
