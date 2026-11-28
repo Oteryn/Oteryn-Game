@@ -215,7 +215,7 @@ fn assert_training_replies(
     assert_eq!(stopped.summary, summary(stopped_charges));
 
     if exercise_invalid_inputs {
-        assert_invalid_inputs(panel, running, &start, &replies.running);
+        assert_invalid_inputs(panel, running, running_charges, &start, &replies.running);
     }
     Ok(())
 }
@@ -223,10 +223,10 @@ fn assert_training_replies(
 fn assert_invalid_inputs(
     panel: Panel,
     running: Panel,
+    running_charges: u32,
     start: &oteryn_client_runtime::raw_feature::FeatureCommand,
     reply: &GatedCommandResult,
 ) {
-    let running_charges = running.charges.expect("running fixture charges");
     // A rejected status and malformed payloads leave the charges and summary as they were.
     for (code, payload) in [
         (CommandStatus::Rejected, reply.payload.as_slice()),
