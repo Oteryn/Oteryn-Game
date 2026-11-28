@@ -24,9 +24,9 @@ const SEALED: &str = "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/rewa
 const CREATURE: &str = "oteryn:creature.koshei_the_deathless";
 const CYCLOPS: &str = "oteryn:npc.a_sweaty_cyclops";
 
-pub(super) const SWITCH: Position = at(33281, 32447, -8);
-const CRYPT_GATE: Position = at(33271, 32418, -12);
-const STAGING: Position = at(33271, 32419, -12);
+const SWITCH: Position = at(33281, 32447, -8);
+pub(super) const CRYPT_GATE: Position = at(33271, 32418, -12);
+pub(super) const STAGING: Position = at(33271, 32419, -12);
 const NPC: Position = at(32699, 31674, -3);
 const DOOR: Position = at(33269, 32446, -12);
 const LEGS: Position = at(33261, 32444, -12);

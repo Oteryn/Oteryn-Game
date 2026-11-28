@@ -277,7 +277,7 @@ fn scenario_case(
     } else if qd_world {
         super::super::qd_world_fixtures::start(name)?
     } else if koshei {
-        Position { x: trigger.x - 1, ..trigger }
+        super::super::koshei_the_deathless_journey_fixtures::STAGING
     } else if engenc_asura {
         super::super::engenc_asura_dispatch_fixtures::start(name)?
     } else if too_hot_research || tower_defence {
