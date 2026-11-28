@@ -250,6 +250,11 @@ pub enum QuestEffectKind {
         delta: i64,
         minimum: i64,
     },
+    /// Crystal hunt journals start at stage two on the first kill and stop at completion.
+    HuntMissionProgress {
+        kill_counter: u8,
+        maximum: u16,
+    },
     /// Checked addition while pinning physical admission terms.
     AddWithBinding {
         delta: i64,
@@ -310,6 +315,13 @@ impl QuestEffectKind {
                 out.push(13);
                 out.extend_from_slice(&delta.to_be_bytes());
                 out.extend_from_slice(&minimum.to_be_bytes());
+            }
+            Self::HuntMissionProgress {
+                kill_counter,
+                maximum,
+            } => {
+                out.extend_from_slice(&[14, kill_counter]);
+                out.extend_from_slice(&maximum.to_be_bytes());
             }
             Self::AddWithBinding { delta, binding } => {
                 out.push(8);
@@ -547,6 +559,17 @@ impl QuestStateCatalogue {
                         usize::from(other_effect) < transition.effects.len()
                             && usize::from(other_effect) != index
                             && (track.min..=track.max).contains(&value)
+                    }
+                    QuestEffectKind::HuntMissionProgress {
+                        kill_counter,
+                        maximum,
+                    } => {
+                        maximum >= 2
+                            && (track.min..=track.max).contains(&i64::from(maximum))
+                            && transition
+                                .effects
+                                .get(usize::from(kill_counter))
+                                .is_some_and(|counter| counter.effect == QuestEffectKind::Add(1))
                     }
                     QuestEffectKind::AddAtLeast { minimum, .. } => {
                         (track.min..=track.max).contains(&minimum)
@@ -857,6 +880,17 @@ impl QuestStateCatalogue {
                     }
                     QuestEffectKind::AddAtLeast { delta, minimum } => {
                         before.checked_add(delta).map(|value| value.max(minimum))
+                    }
+                    QuestEffectKind::HuntMissionProgress {
+                        kill_counter,
+                        maximum,
+                    } => {
+                        // The locked counter also carries kills earned before journal mirroring.
+                        current.get(usize::from(kill_counter)).map(|(_, kills)| {
+                            (kills.saturating_add(2))
+                                .max(before.saturating_add(1))
+                                .min(i64::from(maximum))
+                        })
                     }
                     QuestEffectKind::SetNow | QuestEffectKind::SetNowWithBinding { .. } => {
                         Some(now)

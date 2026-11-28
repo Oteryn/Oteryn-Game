@@ -59,6 +59,18 @@ pub(super) struct CommitStep {
     supersedes_topic: bool,
 }
 
+pub(super) fn awaiting_renown_amount(
+    conversations: &NpcConversations,
+    session: GameSessionId,
+    context: &Context,
+) -> bool {
+    context.2 == "oteryn:npc.gnomally"
+        && conversations.sessions.lock().is_ok_and(|sessions| {
+            matches!(sessions.get(&session).and_then(|state| state.catalogue.as_ref()),
+                Some(Pending::Topic(topic)) if topic.context == *context && topic.topic == 122)
+        })
+}
+
 /// The paid decline consumes the same source topic as the original dialogue.
 pub(in crate::gameplay_transport) fn reset_travel_topic(
     conversations: &NpcConversations,

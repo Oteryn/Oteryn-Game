@@ -183,6 +183,11 @@ pub(super) fn prepare(
     } else {
         &raw_text
     };
+    let awaiting_amount = super::catalogue::awaiting_renown_amount(
+        &admission.states.npc_conversations,
+        command.game_session_id,
+        &context,
+    );
     let says_no = raw_text == "no";
     if says_no
         || (!matches!(
@@ -190,6 +195,7 @@ pub(super) fn prepare(
             "yes" | "hi" | "hello" | "bye" | "farewell"
         ) && offers.iter().any(|offer| {
             offer.npc == context.2
+                && !(awaiting_amount && offer.next_topic == 5)
                 && (phase == Phase::Offers || offer.reward_order.is_some())
                 && offer.matches_keyword(requests_offer)
         }))
@@ -291,6 +297,7 @@ pub(super) fn prepare(
             if let Phase::Rewards { skip_opening } = phase {
                 let earlier = offers.clone().find(|offer| {
                     offer.reward_order.is_some()
+                        && !(awaiting_amount && offer.next_topic == 5)
                         && offer.admits(&context.2, topic.number, &text, catalogue, tracks)
                         && carried_matches(offer)
                         && account_matches(offer)

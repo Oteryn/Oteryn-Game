@@ -1539,7 +1539,7 @@
         {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
           "minimum": 0,
-          "maximum": 4,
+          "maximum": 5,
           "set": 5
         },
         {
@@ -1558,7 +1558,8 @@
           "track": "oteryn:quest-progress/chosen/wrath/nobles",
           "minimum": -1,
           "maximum": 6,
-          "set": 0
+          "set": 0,
+          "at_least": true
         }
       ],
       "take": [],
@@ -1572,17 +1573,17 @@
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "key": "oteryn:quest-reward/chosen/wrath/noble-hunt",
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zlak",
       "keywords": [
-        "mission",
         "yes"
       ],
-      "topic": 0,
+      "topic": 45,
       "next_topic": 0,
       "storage": [
         {
@@ -1601,7 +1602,8 @@
           "track": "oteryn:quest-progress/chosen/wrath/nobles",
           "minimum": -1,
           "maximum": 6,
-          "set": 0
+          "set": 0,
+          "at_least": true
         }
       ],
       "take": [],
@@ -1622,7 +1624,8 @@
           "minimum": 5,
           "maximum": 5
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "key": "oteryn:quest-reward/chosen/wrath/imperial-report",
@@ -1633,7 +1636,7 @@
         "imperial report"
       ],
       "topic": 0,
-      "next_topic": 0,
+      "next_topic": 1,
       "storage": [
         {
           "track": "oteryn:quest-progress/chosen/wrath/stage",
@@ -1680,7 +1683,8 @@
           "minimum": 24,
           "maximum": 24
         }
-      ]
+      ],
+      "msg_contains": true
     },
     {
       "key": "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves",
@@ -3130,7 +3134,7 @@
       "keywords": [
         "mission"
       ],
-      "topic": 0,
+      "topic": 1,
       "next_topic": 0,
       "storage": [
         {
@@ -3164,6 +3168,249 @@
           "minimum": 6,
           "maximum": 6
         }
+      ],
+      "msg_contains": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/noble-assignment",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 0,
+          "at_least": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Eliminate six imperial nobles and report your mission to me."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": 5,
+          "maximum": 5
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": -1,
+          "maximum": 3
+        }
+      ],
+      "msg_contains": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/palace-arrival",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "mission"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission08",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/zizzle",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "You made it. Ask about your mission when you are ready for the briefing."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/dragon-mixture",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "yes"
+      ],
+      "msg_contains": true,
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/sleeping_dragon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i11372",
+        "count": 1,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i11426",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Drink the potion and speak the word on the sheet to the Sleeping Dragon: SOLOSARASATIQUARIUM."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/drink-mixture",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "drink mixture"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/interdimensional_potion",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11372",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": false,
+      "reply": [
+        "You drink the interdimensional potion."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission09_the_sleeping_dragon_mixture.lua"
+      ],
+      "carried_item": "oteryn:item.tibia.i11372",
+      "magic_effects": [
+        {
+          "effect": "CONST_ME_MAGIC_BLUE",
+          "target": "player"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/resume-imperial-hunt",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "imperial hunt"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": -1,
+          "maximum": 22,
+          "set": 23
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Your previous kills still count. Report your mission once four Magistratus have fallen."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
       ]
     }
   ]

@@ -309,6 +309,20 @@
           "maximum": 5,
           "set": 5,
           "at_least": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/magistrati",
+          "minimum": -1,
+          "maximum": 4,
+          "set": 0,
+          "at_least": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": 0,
+          "maximum": 5,
+          "set": 0,
+          "at_least": true
         }
       ],
       "take": [],
@@ -316,7 +330,7 @@
       "outfit": null,
       "achievement": null,
       "reply": [
-        "I have opened the passage to the rebel camp. For your next mission we need four Magistratus and six nobles. Ask about the imperial hunt."
+        "I have opened the passage to the rebel camp. Eliminate four Lizard Magistratus and report your mission to me."
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/zlak.lua:56-66"

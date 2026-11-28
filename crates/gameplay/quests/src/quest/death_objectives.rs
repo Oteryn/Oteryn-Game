@@ -19,6 +19,8 @@ pub struct DeathObjective {
     pub stage_value: i64,
     pub counter: String,
     pub required: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    mission_journal: Option<MissionJournal>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     state_ops: Vec<StateOperation>,
     pub minimum: Position,
@@ -33,6 +35,13 @@ pub struct GuardianSpawn {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub additional_positions: Vec<Position>,
     pub respawn_ms: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct MissionJournal {
+    track: String,
+    maximum: u16,
 }
 
 impl GuardianSpawn {
@@ -77,6 +86,14 @@ impl DeathObjective {
                 },
             ]
             .into_iter()
+            .chain(self.mission_journal.iter().map(|journal| QuestEffect {
+                track: journal.track.clone(),
+                from: QuestComparison::Between(0, i64::from(journal.maximum)),
+                effect: QuestEffectKind::HuntMissionProgress {
+                    kill_counter: 1,
+                    maximum: journal.maximum,
+                },
+            }))
             .chain(self.state_ops.iter().map(StateOperation::quest_effect))
             .collect(),
         }
@@ -140,7 +157,8 @@ fn parse(text: &str) -> Result<Vec<DeathObjective>, String> {
                 .is_none_or(str::is_empty)
             || objective.stage == objective.counter
             || objective.required == 0
-            || objective.state_ops.len() > super::QUESTSTATE0_RL_02 - 2
+            || objective.state_ops.len() + usize::from(objective.mission_journal.is_some())
+                > super::QUESTSTATE0_RL_02 - 2
             || objective
                 .state_ops
                 .iter()

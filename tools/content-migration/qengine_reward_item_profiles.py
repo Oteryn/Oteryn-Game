@@ -83,6 +83,8 @@ IDS = {
     28792,
     28793,
 }
+# Zizzle hands out the dream potion and the sheet bearing the dragon's word.
+IDS |= {11372, 11426}
 # Knightwatch leader confirmations grant these two shields alongside the documents.
 IDS |= {6390, 6432}
 # Ferumbras chest: the Rift Tapestry and Teddy need portable reward custody.

@@ -327,6 +327,56 @@
       "reply": [
         "The officials are gone. Will you eliminate six imperial nobles?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "mission"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 24,
+          "maximum": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+          "minimum": 6,
+          "maximum": 6
+        }
+      ],
+      "reply": [
+        "Word of your deeds is spreading. Your next mission will be a strike into the heart of the empire."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "mission"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 26,
+          "maximum": 26
+        }
+      ],
+      "reply": [
+        "To reach the emperor you must enter the dreams of the Sleeping Dragon. Are you prepared?"
+      ]
     }
   ]
 }

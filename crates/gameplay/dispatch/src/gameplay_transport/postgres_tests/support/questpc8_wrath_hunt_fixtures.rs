@@ -237,6 +237,16 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 3);
     assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06"
+        )
+        .await?,
+        4
+    );
+    assert_eq!(
         noble_counter(h).await?,
         None,
         "noble kills before the Office Job report earn no credit"
@@ -284,6 +294,16 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 4);
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06"
+        )
+        .await?,
+        5
+    );
     super::questpc8_mystery_geometry_fixtures::arrive(
         owner,
         admitted,
@@ -295,7 +315,7 @@ pub(super) async fn exercise(
     )
     .await?;
     talk(owner, admitted, npc, 8202, "hi").await?;
-    talk(owner, admitted, npc, 8203, "mission").await?;
+    talk(owner, admitted, npc, 8203, "tell me about the mission").await?;
     assert_eq!(noble_counter(h).await?, Some(0));
     assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 0);
     refused(owner, admitted, npc, 8205, "imperial report").await?;
@@ -318,6 +338,16 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 1);
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07"
+        )
+        .await?,
+        2
+    );
     super::grizzly_npc_fixtures::questpc8_campaign::hunt(
         owner,
         admitted,
@@ -327,6 +357,16 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 6);
+    assert_eq!(
+        progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07"
+        )
+        .await?,
+        6
+    );
     super::questpc8_mystery_geometry_fixtures::arrive(
         owner,
         admitted,
@@ -342,7 +382,11 @@ pub(super) async fn exercise(
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 6);
     let questline = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
     assert_eq!(progress(owner, admitted, authority, questline).await?, 24);
-    talk(owner, admitted, npc, 8212, "mission").await?;
+    talk(owner, admitted, npc, 8214, "bye").await?;
+    talk(owner, admitted, npc, 8215, "hi").await?;
+    talk(owner, admitted, npc, 8216, "tell me about the mission").await?;
+    assert_eq!(progress(owner, admitted, authority, questline).await?, 24);
+    talk(owner, admitted, npc, 8217, "mission").await?;
     for (track, value) in [
         ("questline", 25),
         ("mission08", 1),
@@ -360,8 +404,8 @@ pub(super) async fn exercise(
             value
         );
     }
-    talk(owner, admitted, npc, 8212, "mission").await?;
-    refused(owner, admitted, npc, 8213, "imperial report").await?;
+    talk(owner, admitted, npc, 8217, "mission").await?;
+    refused(owner, admitted, npc, 8218, "imperial report").await?;
     let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/wrath/imperial-report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
     eprintln!("POSTGRES_WRATH_IMPERIAL_NATIVE_EXACT_FOUR_SIX_COLD_REPLAY_PASS");

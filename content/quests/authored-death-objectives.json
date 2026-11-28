@@ -731,7 +731,11 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "Conservative source spawn quarter: existing native lizard_magistratus33080,31192,z3 and lizard_noble33066,31147,z3. Present principal only; exact quota, no phantom party credit."
-      ]
+      ],
+      "mission_journal": {
+        "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+        "maximum": 5
+      }
     },
     {
       "key": "oteryn:quest-death/wrath-noble",
@@ -756,7 +760,11 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "Conservative source spawn quarter: existing native lizard_magistratus33080,31192,z3 and lizard_noble33066,31147,z3. Present principal only; exact quota, no phantom party credit."
-      ]
+      ],
+      "mission_journal": {
+        "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+        "maximum": 6
+      }
     }
   ]
 }
