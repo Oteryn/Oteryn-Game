@@ -131,7 +131,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !runtime
             .player_control_facts(actor, session)
             .is_ok_and(|f| f.control_loss.is_none())
-            || (callback.key.starts_with("oteryn:quest-callback/spike/nest-")
+            || (callback
+                .key
+                .starts_with("oteryn:quest-callback/spike/nest-")
                 && !states.get(runtime, actor, session).is_some_and(|state| {
                     state.owned_conditions().outfit_at(self.owner_now().get()) == Some(307)
                 }))
