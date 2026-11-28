@@ -49,6 +49,8 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_character(clients, 0x64, 1).await?;
+    let initial_position = client.world_spatial().actor_position;
+    let session_id = client.join_snapshot().game_session_id;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
@@ -139,12 +141,20 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
             .service_liveness(remaining.min(Duration::from_millis(50)))
             .await?;
     }
+    let refusal_position = client.world_spatial().actor_position;
+    let refusal_combat = client.session_mut().combat_state().copied();
     let refused = client.session_mut().logout().await?;
     let Some(LogoutResult::InFight { retry_after_ms }) = refused.result else {
         return Err(format!("step=logout-refusal observed {refused:?}, expected InFight").into());
     };
     if retry_after_ms == 0 {
         return Err("step=logout-refusal InFight carried no retry wait".into());
+    }
+    if client.world_spatial().actor_position != refusal_position
+        || client.join_snapshot().game_session_id != session_id
+        || client.session_mut().combat_state() != refusal_combat.as_ref()
+    {
+        return Err("step=logout-refusal changed position, session, or combat state".into());
     }
     let mut expected = format!(
         "logout-refusal\tstatus={:?}\tresult=InFight\tretry_after_ms={retry_after_ms}\n",
@@ -162,9 +172,38 @@ async fn journey(clients: &SeamClients<'_>, capture_dir: &Path) -> TestResult<St
     })
     .ok_or("step=logout-cleanup no walkable protection tile outside Rat aggro")?;
     walk_s15b(&mut client, world, &shelter).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while !client
+        .session_mut()
+        .combat_state()
+        .is_some_and(|state| !state.in_fight && state.target.is_none())
+    {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("step=logout-cleanup combat lock did not clear within its duration".into());
+        }
+        client
+            .service_liveness(remaining.min(Duration::from_millis(100)))
+            .await?;
+    }
+    let saved_position = client.world_spatial().actor_position;
+    if saved_position == initial_position {
+        return Err("step=logout-cleanup saved position equals the admission position".into());
+    }
     let accepted = client.session_mut().logout().await?;
     if accepted.result != Some(LogoutResult::Accepted) {
         return Err(format!("step=logout-in-protection-zone observed {accepted:?}").into());
+    }
+    drop(client);
+    let mut fresh = connect_character(clients, 0x65, 1).await?;
+    if fresh.join_snapshot().game_session_id == session_id
+        || fresh.world_spatial().actor_position != saved_position
+    {
+        return Err("step=relog expected a new session at the exact saved position".into());
+    }
+    let cleanup = fresh.session_mut().logout().await?;
+    if cleanup.result != Some(LogoutResult::Accepted) {
+        return Err(format!("step=relog-cleanup observed {cleanup:?}").into());
     }
     expected.push_str(&format!(
         "logout-accepted\tstatus={:?}\tresult=Accepted\n",
