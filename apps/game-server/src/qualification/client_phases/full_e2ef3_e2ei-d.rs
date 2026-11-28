@@ -414,6 +414,20 @@ async fn hunt_for(
     Err(format!("{key}: acquisition budget exhausted after {attempts} kills from {sources:?}; inventory={:?}", client.inventory()).into())
 }
 
+// The town crop contains the hunt rooms, but a previous journey can leave the
+// shared fixture on a disconnected floor. Start the existing hunt budget near
+// authored spawns, as for the rat and Energy Ring journeys.
+const TROLL_HUNT_APPROACH: TilePos = TilePos {
+    x: 32380,
+    y: 32153,
+    floor: -8,
+};
+const STONE_GOLEM_HUNT_APPROACH: TilePos = TilePos {
+    x: 32719,
+    y: 32520,
+    floor: -10,
+};
+
 async fn refine(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -426,14 +440,20 @@ async fn refine(
     let stone = provisioning::item_reference(index, 10310)?;
     let gold = provisioning::item_reference(index, 3031)?;
     if carried(client, pick).is_none() {
-        hunt_for_carried_gold(client, world, &metadata.spawns, gold, 50).await?;
+        if carried_coin_count(&quantities(client)?, gold) < 50 {
+            rejoin(client, clients, Some(TROLL_HUNT_APPROACH)).await?;
+            hunt_for_carried_gold(client, world, &metadata.spawns, gold, 50).await?;
+        }
+        rejoin(client, clients, Some(TOWN)).await?;
         buy_from_gorn(client, &world.bundle, pick, gold, 1, 50).await?;
     }
     if carried(client, stone).is_none() {
+        rejoin(client, clients, Some(STONE_GOLEM_HUNT_APPROACH)).await?;
         hunt_for(client, world, &metadata.spawns, 10310, |client| {
             carried(client, stone).is_some()
         })
         .await?;
+        rejoin(client, clients, Some(TOWN)).await?;
     }
     let source = carried(client, pick).ok_or("pick 3456 absent after acquisition")?;
     let target = carried(client, stone).ok_or("Shiny Stone 10310 absent after acquisition")?;
