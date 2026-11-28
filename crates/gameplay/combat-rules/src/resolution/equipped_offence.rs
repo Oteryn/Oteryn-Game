@@ -23,6 +23,8 @@ pub struct EquippedOffence {
     /// Canary item.cpp:571-583,607-619: installed weapon and boots tiers.
     pub weapon_tier: u8,
     pub boots_tier: u8,
+    /// Transient attacker-position and schedule decision for the current swing.
+    pub exaltation_overload: bool,
     pub reflect_percent: u64,
     /// Physical reflection points; other elements receive only reflectpercentall.
     pub reflect_flat: u32,
@@ -103,17 +105,23 @@ impl EquippedOffence {
     /// Boots amplify the fatal chance, not critical chance or base damage. Roll 0..=10000.
     #[must_use]
     pub fn fatal(&self, damage: u32, roll: u64) -> u32 {
-        if self.weapon_tier == 0 {
-            return damage;
-        }
         let weapon = u64::from(self.weapon_tier.min(10));
         let boots = u64::from(self.boots_tier.min(10));
-        let base = 5 * weapon * weapon + 40 * weapon + 5;
-        let amplification = if boots == 0 {
+        let mut base = if weapon == 0 {
+            0
+        } else {
+            5 * weapon * weapon + 40 * weapon + 5
+        };
+        let mut amplification = if boots == 0 {
             0
         } else {
             40 * boots * boots + 170 * boots + 40
         };
+        if self.exaltation_overload {
+            // Global Amplification: each bonus is added before multiplying.
+            base += 105;
+            amplification += 525;
+        }
         if roll.saturating_mul(10_000) >= base * (10_000 + amplification) {
             return damage;
         }
@@ -246,6 +254,29 @@ mod tests {
         assert_eq!(offence.fatal(11, 52), 11);
         offence.weapon_tier = 0;
         assert_eq!(offence.fatal(11, 0), 11);
+    }
+
+    #[test]
+    fn exaltation_overload_applies_both_additions_before_multiplying_onslaught() {
+        let mut offence = EquippedOffence {
+            weapon_tier: 5,
+            boots_tier: 5,
+            exaltation_overload: true,
+            ..EquippedOffence::default()
+        };
+        // Global: 4.35% * 1.2415 = 5.400525%.
+        assert_eq!(offence.fatal(100, 540), 160);
+        assert_eq!(offence.fatal(100, 541), 100);
+        offence.exaltation_overload = false;
+        assert_eq!(offence.fatal(100, 540), 100);
+
+        let offence = EquippedOffence {
+            exaltation_overload: true,
+            ..EquippedOffence::default()
+        };
+        // No equipment: 1.05% * 1.0525 = 1.105125%.
+        assert_eq!(offence.fatal(100, 110), 160);
+        assert_eq!(offence.fatal(100, 111), 100);
     }
 
     #[test]

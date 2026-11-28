@@ -24,6 +24,9 @@ use std::sync::OnceLock;
 const SCHEDULE: &str = include_str!("../../../../content/encounters/event-schedule/schedule.json");
 /// `data/global.lua:69-73`: the neutral rate of every schedule.
 pub const NEUTRAL_RATE: u32 = 100;
+const EXALTATION_OVERLOAD: &str = "Exaltation Overload";
+const ISLANDS: &str =
+    include_str!("../../../../content/world/areas/islands/islands-00000-00059.json");
 /// `spawn_monster.cpp:35-36`: an event-scaled respawn interval stays within 1 s and one day.
 const MIN_RESPAWN_MICROS: u64 = 1_000_000;
 const MAX_RESPAWN_MICROS: u64 = 86_400_000_000;
@@ -36,6 +39,7 @@ pub struct EventRates {
     pub boss_loot: u32,
     pub spawn: u32,
     pub skill: u32,
+    pub exaltation_overload: bool,
 }
 
 impl Default for EventRates {
@@ -46,6 +50,7 @@ impl Default for EventRates {
             boss_loot: NEUTRAL_RATE,
             spawn: NEUTRAL_RATE,
             skill: NEUTRAL_RATE,
+            exaltation_overload: false,
         }
     }
 }
@@ -182,6 +187,7 @@ impl Schedule {
                     boss_loot: rate(event.ingame.bosslootrate),
                     spawn: rate(event.ingame.spawnrate),
                     skill: rate(event.ingame.skillrate),
+                    exaltation_overload: event.name == EXALTATION_OVERLOAD,
                 },
             });
         }
@@ -253,6 +259,7 @@ impl Schedule {
                 boss_loot: compound(active.boss_loot, event.rates.boss_loot),
                 spawn: compound(active.spawn, event.rates.spawn),
                 skill: compound(active.skill, event.rates.skill),
+                exaltation_overload: active.exaltation_overload || event.rates.exaltation_overload,
             })
     }
 }
@@ -285,6 +292,55 @@ pub fn current_rates() -> EventRates {
         .and_then(|elapsed| i64::try_from(elapsed.as_secs()).ok())
         .unwrap_or(0);
     content_schedule().rates_at(now)
+}
+
+/// Global excludes the two starting islands. The surface footprints identify
+/// the islands by horizontal position, including their underground levels.
+pub fn exaltation_overload_allowed_at(x: i32, y: i32) -> bool {
+    #[derive(Deserialize)]
+    struct Islands {
+        records: Vec<Island>,
+    }
+
+    #[derive(Deserialize)]
+    struct Island {
+        declaration: IslandDeclaration,
+    }
+
+    #[derive(Deserialize)]
+    struct IslandDeclaration {
+        name: String,
+        footprint: Option<Footprint>,
+    }
+
+    #[derive(Deserialize)]
+    struct Footprint {
+        min_x: i32,
+        max_x: i32,
+        min_y: i32,
+        max_y: i32,
+    }
+
+    static EXCLUDED: OnceLock<Option<Vec<Footprint>>> = OnceLock::new();
+    EXCLUDED
+        .get_or_init(|| {
+            let islands: Islands = serde_json::from_str(ISLANDS).ok()?;
+            let mut excluded = Vec::new();
+            for island in islands.records {
+                let island = island.declaration;
+                if matches!(island.name.as_str(), "Dawnport" | "Rookgaard") {
+                    excluded.push(island.footprint?);
+                }
+            }
+            (excluded.len() == 2).then_some(excluded)
+        })
+        .as_ref()
+        .is_some_and(|islands| {
+            islands.iter().all(|island| {
+                !((island.min_x..=island.max_x).contains(&x)
+                    && (island.min_y..=island.max_y).contains(&y))
+            })
+        })
 }
 
 /// Experience, a loot chance or skill tries under `percent` (floor).
@@ -393,6 +449,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn exaltation_overload_only_during_the_scheduled_window() {
+        let schedule = content_schedule();
+        let start = utc_instant("04/03/2026", "08:00").expect("start");
+        let end = utc_instant("04/06/2026", "08:00").expect("end");
+        assert!(!schedule.rates_at(start - 1).exaltation_overload);
+        assert!(schedule.rates_at(start).exaltation_overload);
+        assert!(schedule.rates_at(end - 1).exaltation_overload);
+        assert!(!schedule.rates_at(end).exaltation_overload);
+    }
+
+    #[test]
     fn w05d_annual_calendar_retains_holiday_sources_for_production() -> Result<(), ScheduleError> {
         let schedule = Schedule::parse(SCHEDULE)?;
         assert!(format!("{schedule:?}").contains("halloween"));
@@ -443,6 +510,7 @@ mod tests {
             boss_loot: 250,
             spawn: 200,
             skill: 300,
+            ..EventRates::default()
         };
         assert_eq!(schedule.rates_at(START - 1), EventRates::default());
         assert_eq!(schedule.rates_at(START), active);

@@ -21,6 +21,13 @@
         "spawnrate": 100,
         "skillrate": 100
       }
+    },
+    {
+      "name": "Exaltation Overload",
+      "startdate": "04/03/2026",
+      "enddate": "04/06/2026",
+      "starthour": "08:00:00",
+      "endhour": "07:59:59"
     }
   ],
   "seasonal": [

@@ -5,17 +5,25 @@ use super::*;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_gameplay_combat_rules::resolution::equipped_offence::{EquippedOffence, leech_amount};
 
-/// The attacker's installed offence; zero for an actor without spell state.
+/// The attacker's installed offence and the current swing's world event bonus.
 pub(super) fn attacker_offence(
     states: &ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
 ) -> EquippedOffence {
-    states
-        .get(runtime, actor, session)
-        .map(crate::spell::cast::PlayerSpellState::equipped_offence)
-        .unwrap_or_default()
+    use oteryn_gameplay_foundation::scheduled_events;
+
+    let Some(state) = states.get(runtime, actor, session) else {
+        return EquippedOffence::default();
+    };
+    let mut offence = state.equipped_offence();
+    offence.exaltation_overload = scheduled_events::current_rates().exaltation_overload
+        && runtime.read_actor_position(actor).is_ok_and(|snapshot| {
+            let position = snapshot.position();
+            scheduled_events::exaltation_overload_allowed_at(position.x, position.y)
+        });
+    offence
 }
 
 /// `Combat::applyExtensions` (`combat.cpp:2724-2742`): a drawn swing meets the critical roll
@@ -31,7 +39,7 @@ pub(super) fn critical_swing(
     damage: i64,
     critical_roll: u64,
 ) -> Option<i64> {
-    if damage <= 0 || (!offence.rolls_critical() && offence.weapon_tier == 0) {
+    if damage <= 0 {
         return Some(damage);
     }
     let damage = u32::try_from(damage).ok()?;
@@ -40,7 +48,7 @@ pub(super) fn critical_swing(
     } else {
         damage
     };
-    let damage = if offence.weapon_tier > 0 {
+    let damage = if offence.weapon_tier > 0 || offence.exaltation_overload {
         let roll = swing_draw(
             root,
             attacker,
@@ -153,6 +161,68 @@ pub(super) fn cleave_targets(
         }
     }
     targets
+}
+
+#[cfg(test)]
+mod exaltation_overload_tests {
+    use super::*;
+    use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+    use crate::spell::cast::PlayerSpellState;
+    use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+
+    #[test]
+    fn exaltation_overload_rolls_onslaught_without_equipment_only_on_the_mainland()
+    -> Result<(), String> {
+        // The deterministic schedule clock uses 2030-01-01 00:00:00 UTC.
+        let schedule = Schedule::parse(
+            r#"{"events":[{"name":"Exaltation Overload","startdate":"01/01/2030","enddate":"01/02/2030"}]}"#,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let swing = |(x, y), at| -> Result<i64, String> {
+            let _clock = test_clock::set(schedule.clone(), at);
+            let (mut runtime, actor, session) = runtime_with_player(65);
+            runtime
+                .initialize_source_pinned_lab_player_position(
+                    actor,
+                    session,
+                    MovementLocalPosition { x, y, floor: -7 },
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            let mut states = ChannelSpellStates::default();
+            let player = PlayerSpellState::new(FACTS, 0, 0).ok_or("character invalid")?;
+            states.actors.push((actor, session, player));
+            let offence = attacker_offence(&states, &runtime, actor, session);
+            let lineage =
+                CommandRef::new(session, CommandId::new(1).map_err(|e| format!("{e:?}"))?);
+            let root = GameplayDecisionRoot::from_bytes([1; 32]);
+
+            // Find an occurrence whose fatal draw succeeds only with the event.
+            let ordinal = (0..u16::MAX)
+                .find(|ordinal| {
+                    swing_draw(
+                        &root,
+                        actor,
+                        lineage,
+                        *ordinal,
+                        b"fatal-hit",
+                        "attack.fatal-hit",
+                        0,
+                        10_000,
+                    )
+                    .is_some_and(|roll| roll < 105)
+                })
+                .ok_or("no event-eligible draw")?;
+            critical_swing(&offence, &root, actor, lineage, ordinal, 100, 10_000)
+                .ok_or_else(|| "missing swing draw".into())
+        };
+
+        let start = 1_893_456_000;
+        assert_eq!(swing((32369, 32241), start)?, 160);
+        assert_eq!(swing((32369, 32241), start - 1)?, 100);
+        assert_eq!(swing((32097, 32219), start)?, 100); // Rookgaard
+        assert_eq!(swing((32062, 31895), start)?, 100); // Dawnport
+        Ok(())
+    }
 }
 
 #[cfg(test)]
