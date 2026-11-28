@@ -404,6 +404,7 @@ pub struct Session<S> {
     inventory_revision: u64,
     container_revision: u64,
     inventory: Option<CharacterInventory>,
+    inventory_npc_purchase_ids: Vec<u64>,
     open_container: Option<OpenContainer>,
     container_views: Option<container_tree::ContainerViews>,
     /// `Some` exactly when capability 7 is selected.

@@ -211,6 +211,7 @@ impl<S: SessionStream> Session<S> {
             inventory_revision,
             container_revision,
             inventory,
+            inventory_npc_purchase_ids: Vec::new(),
             open_container,
             container_views,
             chat,

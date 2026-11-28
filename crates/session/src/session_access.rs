@@ -248,6 +248,11 @@ impl<S: SessionStream> Session<S> {
         self.inventory.as_ref()
     }
 
+    /// Purchase command IDs covered by the currently applied inventory view.
+    pub fn inventory_npc_purchase_command_ids(&self) -> &[u64] {
+        &self.inventory_npc_purchase_ids
+    }
+
     /// The open corpse after every delta applied so far (the default means nothing is open);
     /// `Some` exactly when capability 4 is selected.
     pub fn open_container(&self) -> Option<&OpenContainer> {
