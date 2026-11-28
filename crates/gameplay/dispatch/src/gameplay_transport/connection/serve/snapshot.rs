@@ -608,7 +608,10 @@ pub(super) async fn world<A: FreshAdmissionAuthority>(
             .selected_capabilities
             .domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW)
     }) {
-        let mut view = SessionMapView::starting_after(admitted.continuity.world_map_revision);
+        let mut view = SessionMapView::for_session(
+            admitted.continuity.world_map_revision,
+            selected_capabilities,
+        );
         let observed = authority.observe_world_map(actor, &mut view, items).await;
         admitted.continuity.item_view = items.continuity();
         let Some(Ok(Some(MapUpdate::Snapshot(snapshot)))) = observed else {

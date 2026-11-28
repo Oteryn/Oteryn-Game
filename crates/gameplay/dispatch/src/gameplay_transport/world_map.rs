@@ -32,6 +32,7 @@
 mod house;
 pub(super) use house::{DecoratedFacts, HouseBaseMapEntry};
 
+use super::capabilities::SelectedCapabilities;
 use super::item_view::{
     ItemHandleTable, ItemKey, ItemViewDelta, ItemViewError, ItemViewSnapshotDomain, SessionItemView,
 };
@@ -42,6 +43,7 @@ use crate::map::view::{
 };
 use oteryn_gameplay_world::map_view_diff::{Planned, SentView, encode};
 use oteryn_protocol_oteryn::item_view::ItemMoveOutcome;
+use oteryn_protocol_oteryn::loop_training::CAPABILITY_TRAINING_V1;
 use oteryn_protocol_oteryn::world_map::{
     DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapDefinition,
     MapItem, MapOrigin, MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
@@ -262,7 +264,7 @@ pub fn plan<F: MapFacts>(
     source: &MapViewSource<'_, F>,
     actor: ActorPosition,
 ) -> Result<MapPlan, MapViewError> {
-    plan_with(source, actor, PlanBuffers::default())
+    plan_with(source, actor, PlanBuffers::default(), false)
 }
 
 /// One original HouseInterior item, with facts from the current content pin.
@@ -279,8 +281,9 @@ fn plan_with<F: MapFacts>(
     source: &MapViewSource<'_, F>,
     actor: ActorPosition,
     buffers: PlanBuffers,
+    training_targets: bool,
 ) -> Result<MapPlan, MapViewError> {
-    plan_with_house(source, actor, buffers, None)
+    plan_with_house(source, actor, buffers, None, training_targets)
 }
 
 fn plan_with_house<F: MapFacts>(
@@ -288,6 +291,7 @@ fn plan_with_house<F: MapFacts>(
     actor: ActorPosition,
     buffers: PlanBuffers,
     house: Option<&[HouseMapEntry]>,
+    training_targets: bool,
 ) -> Result<MapPlan, MapViewError> {
     let mut house_tiles = std::collections::BTreeMap::<TilePos, Vec<&HouseMapEntry>>::new();
     let mut unique = std::collections::BTreeSet::new();
@@ -402,7 +406,8 @@ fn plan_with_house<F: MapFacts>(
         let start = entries.len();
         for stack_index in kept {
             let entry = &stack[stack_index];
-            let exercise_dummy = matches!(entry.source, EntrySource::Base { .. })
+            let exercise_dummy = training_targets
+                && matches!(entry.source, EntrySource::Base { .. })
                 && matches!(entry.facts.definition, MapDefinition::Item(_))
                 && super::loop_training::is_exercise_dummy_appearance(entry.facts.appearance_id);
             if entry.source.handle_bearing() || exercise_dummy {
@@ -470,6 +475,7 @@ pub struct SessionMapView {
     revision: u64,
     sent: Option<SentView>,
     buffers: PlanBuffers,
+    training_targets: bool,
 }
 
 impl SessionMapView {
@@ -477,8 +483,14 @@ impl SessionMapView {
     pub fn starting_after(last: u64) -> Self {
         Self {
             revision: last,
-            sent: None,
-            buffers: PlanBuffers::default(),
+            ..Self::default()
+        }
+    }
+
+    pub(super) fn for_session(last: u64, selected: SelectedCapabilities) -> Self {
+        Self {
+            training_targets: selected.contains(CAPABILITY_TRAINING_V1),
+            ..Self::starting_after(last)
         }
     }
 
@@ -509,7 +521,12 @@ impl SessionMapView {
         source: &MapViewSource<'_, F>,
         actor: ActorPosition,
     ) -> Result<Option<MapUpdate>, MapViewError> {
-        let plan = plan_with(source, actor, std::mem::take(&mut self.buffers))?;
+        let plan = plan_with(
+            source,
+            actor,
+            std::mem::take(&mut self.buffers),
+            self.training_targets,
+        )?;
         self.update_plan(items, source, plan)
     }
 
@@ -534,6 +551,7 @@ impl SessionMapView {
             actor,
             std::mem::take(&mut self.buffers),
             Some(house),
+            self.training_targets,
         )?;
         self.update_plan(items, &source, plan)
     }

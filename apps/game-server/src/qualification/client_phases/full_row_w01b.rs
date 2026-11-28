@@ -3,8 +3,8 @@
 //!
 //! 1. Admit the provisioned node-boot character, load the exact served bundle, walk with native
 //!    STEP commands to the authored `oteryn:creature.rat` point, and require its live entity.
-//! 2. Send ATTACK_TARGET for that rat; require an accepted/Ok reply, health update(s), removal of
-//!    that actor, and the corpse entity at its last position.
+//! 2. Send ATTACK_TARGET for that rat; require an accepted/Ok reply, player kill credit,
+//!    removal of that actor, and a new corpse at its last live position.
 //! 3. Remain in player interest through the authored respawn interval. This is the refusal path:
 //!    require the dead actor to stay absent and no new creature to enter at its authored point.
 //! 4. Walk outside interest with native STEP commands, wait the next authored interval, return,
@@ -14,7 +14,7 @@
 //!    actor generation has not returned. Finish with another accepted LOGOUT.
 use super::*;
 use oteryn_dev_client::{
-    DevClientSession, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity,
+    DevClientSession, EntityKind, EntityRef, SessionEvent, WorldSpatialEntity,
 };
 
 const ROW: &str = "W01b";
@@ -131,6 +131,71 @@ async fn pump(client: &mut DevClientSession) -> TestResult<Vec<oteryn_dev_client
     Ok(client.take_events())
 }
 
+/// The kill owner can remove a Rat on the first hit without publishing a live health update.
+async fn wait_for_kill(
+    target: WorldSpatialEntity,
+    race: std::num::NonZeroU32,
+    deadline: tokio::time::Instant,
+    mut observe: impl AsyncFnMut() -> TestResult<Vec<SessionEvent>>,
+) -> TestResult<(EntityRef, ActorPosition)> {
+    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+
+    let is_rat_credit = |fact: &AnalyserFact| *fact == AnalyserFact::Kill { race: Some(race) };
+    let mut credited = false;
+    let mut removed = false;
+    let mut last = target.position;
+    let mut corpse = None;
+    loop {
+        for event in observe().await? {
+            match event {
+                SessionEvent::AnalyserFacts(delta) => {
+                    credited |= delta.value.iter().any(is_rat_credit);
+                }
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    credited |= delta.value.iter().any(|entry| is_rat_credit(&entry.fact));
+                }
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    if let Some(live) = delta
+                        .value
+                        .update
+                        .iter()
+                        .chain(&delta.value.enter)
+                        .find(|entry| entry.entity == target.entity)
+                    {
+                        last = live.position;
+                        removed = false;
+                        corpse = None;
+                    }
+                    removed |= delta.value.leave.contains(&target.entity);
+                    if removed {
+                        if corpse.is_some_and(|corpse| delta.value.leave.contains(&corpse)) {
+                            corpse = None;
+                        }
+                        if let Some(fresh) = delta.value.enter.iter().find(|entry| {
+                            entry.kind == EntityKind::Corpse && entry.position == last
+                        }) {
+                            corpse = Some(fresh.entity);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        if credited
+            && removed
+            && let Some(corpse) = corpse
+        {
+            return Ok((corpse, last));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "rat kill observation expired: target={:?} credited={credited} removed={removed} corpse={corpse:?} last={last:?}",
+                target.entity,
+            ).into());
+        }
+    }
+}
+
 async fn wait_until(
     client: &mut DevClientSession,
     deadline: tokio::time::Instant,
@@ -194,52 +259,49 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
         .ok_or("step=initial-spawn live routed creature has no nearby authored rat point")?;
     progress.pass("initial-spawn", (spawn, respawn_ms, target));
 
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightModes};
+
     progress.begin("kill-command");
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let mode = client.session_mut().set_fight_modes(&modes).await?;
+    if mode.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("chase mode reply={mode:?}").into());
+    }
+    let race = full_row_p05::race_reference("oteryn:creature.rat")?;
+    let live_target = client
+        .world_entities()
+        .and_then(|entities| entities.get(&target))
+        .copied()
+        .ok_or("selected rat left the view before ATTACK_TARGET")?;
+    client.take_events();
     let attack = client.session_mut().attack_target(Some(&target)).await?;
-    if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+    if attack.disposition != AttackIntentDisposition::Ok {
         return Err(format!("ATTACK_TARGET reply={attack:?}").into());
     }
     progress.pass("kill-command", attack);
     progress.begin("kill-deltas");
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut damaged = false;
-    let mut last = spawn;
-    let corpse = loop {
-        for event in pump(&mut client).await? {
-            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(entity) = delta.value.update.iter().find(|entry| entry.entity == target)
-            {
-                last = tile(entity.position)?;
-                damaged |= matches!(entity.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
-            }
-        }
-        let corpse = client.world_entities().and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == EntityKind::Corpse
-                    && tile(entity.position).is_ok_and(|position| position == last)
-            })
-        });
-        if let Some(corpse) = corpse {
-            break corpse.entity;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("ATTACK_TARGET accepted but corpse/removal delta timed out".into());
-        }
-    };
-    if !damaged
-        || client
-            .world_entities()
-            .is_some_and(|entities| entities.get(&target).is_some())
-    {
-        return Err("kill lacked damage delta or killed actor remained live".into());
-    }
-    progress.pass("kill-deltas", (target, corpse, last));
+    verdict::Harness::global().bounded_wait(deadline, "kill-deltas");
+    let (corpse, at) = wait_for_kill(live_target, race, deadline, async || {
+        pump(&mut client).await
+    })
+    .await?;
+    progress.pass("kill-deltas", (target, corpse, at));
 
+    // Chase may move the observer. Re-establish adjacency for the blocked respawn.
+    progress.begin("return-to-interest");
+    let near = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        distance(at, spawn) <= 1
+    })
+    .ok_or("no route from the kill back into spawn interest")?;
+    walk(&mut client, world, &near).await?;
     progress.begin("nearby-refusal");
-    let blocked_until = tokio::time::Instant::now()
-        + Duration::from_millis(u64::from(respawn_ms) + 1_000);
-    verdict::Harness::global().bounded_wait(blocked_until, "bounded-observation");
+    let blocked_until =
+        tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
+    verdict::Harness::global().bounded_wait(blocked_until, "nearby-refusal");
     while tokio::time::Instant::now() < blocked_until {
         pump(&mut client).await?;
         if visible_rat_at(&client, spawn).is_some() {
@@ -257,7 +319,8 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
-    verdict::Harness::global().bounded_wait(until, "bounded-observation");
+    progress.begin("out-of-interest-respawn");
+    verdict::Harness::global().bounded_wait(until, "out-of-interest-respawn");
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
@@ -316,6 +379,7 @@ async fn journey(clients: &SeamClients<'_>, progress: &mut Progress) -> TestResu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_dev_client::EntityDetail;
 
     #[test]
     fn spawn_check_requires_a_rat() -> TestResult {
@@ -358,6 +422,97 @@ mod tests {
         assert_eq!(rat_at([decoy].into_iter(), at), None);
         assert_eq!(rat_at([decoy, rat].into_iter(), at), Some(rat.entity));
         Ok(())
+    }
+
+    #[test]
+    fn kill_wait_accepts_a_lethal_hit_away_from_spawn_without_a_live_update() -> TestResult {
+        use oteryn_dev_client::AppliedDelta;
+        use oteryn_protocol_oteryn::analyser::AnalyserFact;
+        use oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntitiesDelta;
+
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .start_paused(true)
+            .build()?;
+        runtime.block_on(async {
+            let spawn = TilePos {
+                x: 10,
+                y: 10,
+                floor: -7,
+            };
+            let last = ActorPosition {
+                x: 12,
+                y: 10,
+                floor: 7,
+            };
+            assert_ne!(tile(last)?, spawn);
+            let target = WorldSpatialEntity {
+                detail: EntityDetail::Actor {
+                    direction: StepDirection::East,
+                    appearance_ref: 1,
+                    health_percent: 100,
+                },
+                kind: EntityKind::Creature,
+                entity: EntityRef {
+                    identity: v7(10, 2),
+                    generation: 1,
+                },
+                position: last,
+                display_name: None,
+                motion: None,
+            };
+            let race = full_row_p05::race_reference("oteryn:creature.rat")?;
+            let corpse = WorldSpatialEntity {
+                detail: EntityDetail::Object {
+                    item_definition_ref: 1,
+                    item_handle: None,
+                    quantity: 1,
+                },
+                kind: EntityKind::Corpse,
+                entity: EntityRef {
+                    identity: v7(10, 3),
+                    generation: 0,
+                },
+                position: last,
+                display_name: None,
+                motion: None,
+            };
+            let mut batches = [
+                vec![SessionEvent::WorldSpatialEntities(AppliedDelta {
+                    server_sequence: 1,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: WorldSpatialEntitiesDelta {
+                        content_generation: [1; 32],
+                        actor_position: last,
+                        enter: vec![corpse],
+                        update: vec![],
+                        leave: vec![target.entity],
+                    },
+                })],
+                vec![SessionEvent::AnalyserFacts(AppliedDelta {
+                    server_sequence: 2,
+                    base_revision: 1,
+                    new_revision: 2,
+                    value: vec![AnalyserFact::Kill { race: Some(race) }],
+                })],
+            ]
+            .into_iter();
+            let observation = wait_for_kill(
+                target,
+                race,
+                tokio::time::Instant::now() + Duration::from_secs(1),
+                async || {
+                    batches
+                        .next()
+                        .ok_or_else(|| "missing kill observation after both frames".into())
+                },
+            )
+            .await?;
+            assert_eq!(observation, (corpse.entity, last));
+            assert_eq!(batches.len(), 0, "the waiter must observe the kill credit");
+            Ok(())
+        })
     }
 
     #[test]

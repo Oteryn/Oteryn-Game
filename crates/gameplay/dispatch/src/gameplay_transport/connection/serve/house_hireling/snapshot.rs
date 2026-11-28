@@ -56,7 +56,7 @@ impl State {
         };
         let mut world_map = selected
             .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
-            .then(|| SessionMapView::starting_after(admitted.continuity.world_map_revision));
+            .then(|| SessionMapView::for_session(admitted.continuity.world_map_revision, selected));
         let mut payloads = Vec::new();
         let mut containers = None;
         if let Some(view) = items.as_mut() {

@@ -372,7 +372,7 @@ pub(super) fn canonical_races()
         .ok_or_else(|| "canonical bestiary unavailable".into())
 }
 
-fn race_reference(race: &str) -> TestResult<std::num::NonZeroU32> {
+pub(super) fn race_reference(race: &str) -> TestResult<std::num::NonZeroU32> {
     let index = canonical_races()?
         .binary_search_by(|(entry, _)| entry.key().cmp(race))
         .map_err(|_| {

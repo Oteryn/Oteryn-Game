@@ -380,6 +380,39 @@ fn door_origin(revision: u64) -> MapOrigin {
 }
 
 #[test]
+fn served_legacy_map_keeps_authored_exercise_dummy_base_ordinal() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let channel = BundleChannel::new();
+                *channel.fixture.borrow_mut() =
+                    Fixture::new(vec![(ACTOR, vec![item(GRASS), item(EXERCISE_DUMMY)])]);
+                let sent = serve(&channel, bundle_session(), &[], NO_HOLD).await;
+                let map = map_snapshot(&sent)?;
+                let dummy = map
+                    .tiles
+                    .iter()
+                    .flat_map(|tile| &tile.items)
+                    .find(|item| item.definition == MapDefinition::Item(nz(EXERCISE_DUMMY)))
+                    .ok_or("authored exercise dummy")?;
+                assert_eq!(
+                    dummy.origin,
+                    MapOrigin::BaseOrdinal {
+                        ordinal: 1,
+                        object_revision: 0,
+                    }
+                );
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "legacy exercise dummy map panic")??;
+    Ok(())
+}
+
+#[test]
 fn served_bundle_snapshot_reports_map_tiles_and_origin() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)

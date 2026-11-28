@@ -5,6 +5,7 @@ use crate::gameplay_transport::{
     capabilities::SelectedCapabilities,
     connection::{FreshAdmissionAuthority, UseCommand},
     item_view::{ItemKey, ItemViewContinuity, SessionItemView},
+    world_map::{MapUpdate, SessionMapView},
 };
 use oteryn_protocol_oteryn::loop_training::*;
 use std::time::Duration;
@@ -17,6 +18,20 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
     }
     out.push(value as u8);
 }
+
+#[test]
+fn exercise_dummy_projects_at_the_runtime_floor_before_start() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || scenario(ExerciseCase::Projection, Some(admin)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "exercise dummy projection PG panic")??;
+    Ok(())
+}
+
 #[test]
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
     std::thread::Builder::new()
@@ -345,6 +360,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8, choice: Option<u8>) -> TestRes
 
 #[derive(Clone, Copy)]
 enum ExerciseCase {
+    Projection,
     AtomicStop,
     NodeBoot,
     SecondStart,
@@ -691,26 +707,30 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
         items.snapshot(inventory, None).map_err(debug)?;
         // The inventory fixture supplies the weapon. The map projection must issue
         // the dummy handle for the immovable entry before START can name it.
-        let source = crate::gameplay_transport::world_map::MapViewSource {
-            overlay: world.overlay(),
-            facts: world.facts(),
-            content_generation: active.identity().client_artifact_digest(),
-            reset_epoch: 0,
-        };
         let wh = items.table().handle(&weapon).ok_or("carried weapon handle")?;
-        let snapshot = crate::gameplay_transport::world_map::SessionMapView::default()
-            .snapshot(
+        let mut view = SessionMapView::for_session(
+            admitted.continuity.world_map_revision,
+            admitted.continuity.selected_capabilities,
+        );
+        let projected = {
+            let mut runtime = owner.runtime.lock().await;
+            crate::gameplay_transport::bundle_world_map(
+                &mut runtime,
+                owner.movement_cells(),
+                deps.actor,
+                &mut view,
                 &mut items,
-                &source,
-                crate::gameplay_transport::world_spatial::ActorPosition {
-                    x: 1,
-                    y: 0,
-                    floor: 7,
-                },
             )
-            .map_err(debug)?;
+        };
+        let Some(MapUpdate::Snapshot(snapshot)) = projected
+            .ok_or("exercise actor must have a bundle map position")?
+            .map_err(debug)?
+        else {
+            return Err("exercise actor must receive a domain 17 snapshot before START".into());
+        };
         use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin, decode_world_map_snapshot};
         let map = decode_world_map_snapshot(&snapshot.payload).map_err(debug)?;
+        assert_eq!(map.header.origin.floor, 7, "exercise actor's wire floor");
         let definition = index
             .definition_ref("Item", "oteryn:item.tibia.i28558", "definition-r1")
             .ok_or("exercise dummy definition")?;
@@ -730,6 +750,9 @@ fn scenario(case: ExerciseCase, admin: Option<String>) -> TestResult {
             Some(dummy),
             "authored exercise dummy must have a training handle",
         );
+        if matches!(case, ExerciseCase::Projection) {
+            return Ok(());
+        }
         let dh = handle.ok_or("dummy handle")?;
         let mut start = vec![8, 1];
         field(&mut start, 16, wh.get());

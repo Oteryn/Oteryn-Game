@@ -29,6 +29,7 @@ const CHEST: u32 = 6;
 const TABLE: u32 = 7;
 const BAG: u32 = 8;
 const PILLAR: u32 = 9;
+const EXERCISE_DUMMY: u32 = 10;
 
 const ACTOR: TilePos = TilePos {
     x: 20,
@@ -67,7 +68,11 @@ fn facts_of(id: u32) -> EntryFacts {
     let item = |pickupable, bound, blocks_projectile| EntryFacts {
         definition: MapDefinition::Item(nz(id)),
         terrain_kind: None,
-        appearance_id: 100 + id as u16,
+        appearance_id: if id == EXERCISE_DUMMY {
+            28558
+        } else {
+            100 + id as u16
+        },
         blocks_projectile,
         pickupable,
         bound,
@@ -243,6 +248,7 @@ fn bundle_bytes(
             plain("item:table", TABLE),
             plain("item:bag", BAG),
             plain("item:pillar", PILLAR),
+            plain("oteryn:item.tibia.i28558", EXERCISE_DUMMY),
         ],
         draft_areas: Vec::new(),
         skipped_provisional_keys: Vec::new(),

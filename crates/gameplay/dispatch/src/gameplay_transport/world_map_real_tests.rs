@@ -304,7 +304,12 @@ fn staged_update(
     if force_snapshot {
         view.sent = None;
     }
-    let plan = plan_with(source, actor, std::mem::take(&mut view.buffers))?;
+    let plan = plan_with(
+        source,
+        actor,
+        std::mem::take(&mut view.buffers),
+        view.training_targets,
+    )?;
     let planned_at = started.elapsed();
     let sent = view.sent.as_ref();
     let (mut tiles_ns, mut encode_ns) = (Duration::ZERO, Duration::ZERO);
