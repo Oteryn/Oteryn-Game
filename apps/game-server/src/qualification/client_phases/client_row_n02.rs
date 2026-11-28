@@ -303,6 +303,8 @@ async fn step_once(
     direction: StepDirection,
     expected: TilePos,
 ) -> TestResult {
+    // Each request waits for its move receipt before the next step. The server
+    // buffers that next step until its own pacing clock is due.
     let result = client.step(direction).await?;
     if result.status != CommandStatus::Accepted
         || result.disposition != StepDisposition::Moved
@@ -312,7 +314,6 @@ async fn step_once(
         return Err(format!("castle step {direction:?} expected {expected:?}: {result:?}").into());
     }
     verdict::Harness::global().progress("walk");
-    tokio::time::sleep(Duration::from_millis(u64::from(result.step_wait_ms))).await;
     client.take_events();
     Ok(())
 }
