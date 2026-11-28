@@ -1377,6 +1377,36 @@ SQL
   evidence "flow=deployment_administration issuer=database_owner scope=seeded_world_channel operations=$operations game_roles_can_issue=0"
 }
 
+provision_p04_house_catalogue() {
+  local catalogue="$WORK/p04-house-catalogue.json"
+  "${as_operator[@]}" "$BASE/bin/oteryn-game-ops" world-reset house-catalogue \
+    --bundle "$BASE/world/world.otbundle" --digest "$WORLD_DIGEST" > "$catalogue" || return 1
+  python3 - "$catalogue" <<'PY_P04_CATALOGUE' | psql_admin oteryn_node_boot
+import json
+import sys
+
+with open(sys.argv[1]) as source:
+    document = json.dumps(json.load(source), separators=(",", ":"))
+print("BEGIN;")
+print("CREATE TEMP TABLE p04_catalogue_import (document jsonb) ON COMMIT DROP;")
+print(r"\copy p04_catalogue_import FROM STDIN")
+print(document)
+print(r"\.")
+print("""
+INSERT INTO game_world_reset_bundle_house_catalogues
+SELECT decode(document->>'bundle_digest', 'hex'), document->'house_tiles'
+FROM p04_catalogue_import
+ON CONFLICT (bundle_digest) DO NOTHING;
+SELECT 'NODE_BOOT_P04_HOUSE_CATALOGUE digest=' || encode(c.bundle_digest,'hex')
+       || ' tiles=' || jsonb_array_length(c.house_tiles)
+FROM game_world_reset_bundle_house_catalogues c JOIN p04_catalogue_import i
+  ON c.bundle_digest=decode(i.document->>'bundle_digest','hex')
+ AND c.house_tiles=i.document->'house_tiles';
+COMMIT;
+""")
+PY_P04_CATALOGUE
+}
+
 node_assigned_ready() { # §4.2–§4.4
   local boot_started=$SECONDS
   start_node
@@ -1400,6 +1430,22 @@ node_complete_assignment() {
   ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
   [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
   node_deployment_grants
+  if [[ "$NODE_BOOT_WORLD" == 1 && ",${NODE_BOOT_E2E_ONLY:-rows}," == *,rows,* ]]; then
+    local catalogue_selected=0
+    if PYTHONPATH="$GAME_SOURCE/tools/qualification/node_boot" python3 -c '
+import os
+from client_replay import selected_rows
+rows, _ = selected_rows(os.environ.get("OTERYN_E2E_ROW_BATCH"))
+raise SystemExit(not any(row in rows for row in ("P04.client", "P04.full")))
+'; then
+      catalogue_selected=1
+    fi
+    if [[ "$catalogue_selected" == 1 ]]; then
+      local catalogue_result
+      catalogue_result="$(provision_p04_house_catalogue)" || return 1
+      grep '^NODE_BOOT_P04_HOUSE_CATALOGUE ' <<< "$catalogue_result" || return 1
+    fi
+  fi
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
   local -a report_args=()
