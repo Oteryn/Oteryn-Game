@@ -17,7 +17,15 @@ pub(in crate::gameplay_transport::npc_command) fn needs_facts(
     ) else {
         return false;
     };
-    let text = callback_keyword(&context.2, &intent.text);
+    let text = callback_keyword(admission, command, &context.2, &intent.text);
+    if context.2 == storkus::NPC
+        && text == "mission"
+        && storkus::track(admission, command, storkus::QUESTLINE) == Some(6)
+        && storkus::track(admission, command, storkus::DUST)
+            .is_some_and(|saved| (1..=20).contains(&saved))
+    {
+        return true;
+    }
     let Some(catalogue) = admission.quest_catalogue.as_deref() else {
         return false;
     };
@@ -31,13 +39,13 @@ pub(in crate::gameplay_transport::npc_command) fn needs_facts(
         .unwrap_or(&callbacks);
     callbacks.iter().any(|callback| {
         callback.npc == context.2
-            && callback.keywords.contains(&text)
+            && matches_reward_keyword(callback, &text)
             && (!callback.inventory.is_empty() || callback.minimum_level.is_some())
     }) || offers::load(admission).is_some_and(|document| {
-        document.offers.iter().any(|offer| {
+        document.iter().any(|offer| {
             offer.npc == context.2
-                && offer.keywords.contains(&text)
-                && offer.minimum_level.is_some()
+                && offer.matches_keyword(&text)
+                && (offer.minimum_level.is_some() || !offer.inventory.is_empty())
         })
     })
 }

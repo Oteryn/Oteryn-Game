@@ -109,6 +109,14 @@ impl<'a> Staged<'a> {
                     .map_err(|_| NpcRuleError::Arithmetic("item count".into()))?;
                 op.holds(actual, i64::from(*count), None)
             }
+            NpcRuleGuard::ItemTotal {
+                items: [first, second],
+                minimum,
+            } => {
+                item_count(&self.inventory, first, None)?
+                    + item_count(&self.inventory, second, None)?
+                    >= u64::from(*minimum)
+            }
             NpcRuleGuard::Money {
                 amount,
                 include_bank,
@@ -144,7 +152,9 @@ impl<'a> Staged<'a> {
     /// `false` means an optional source removeItem failed and made no change.
     fn effect(&mut self, effect: &NpcRuleEffect, now: i64) -> Result<bool, NpcRuleError> {
         match effect {
-            NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
+            NpcRuleEffect::BigfootMatchmakerTarget
+            | NpcRuleEffect::BigfootSoulMelody
+            | NpcRuleEffect::TakeAllItems { .. } => {
                 return Err(NpcRuleError::MissingNativeResolution(
                     "unresolved native effect".into(),
                 ));
@@ -406,7 +416,23 @@ fn plan_with_teleport(
                 {
                     return Err(NpcRuleError::MissingNativeResolution(rule.key.clone()));
                 }
+                let all_items;
                 let concrete = match effect {
+                    NpcRuleEffect::TakeAllItems { items } => {
+                        all_items = state
+                            .inventory
+                            .items
+                            .iter()
+                            .filter(|(key, count)| items.contains(&key.item) && **count > 0)
+                            .map(|(key, count)| NpcRuleEffect::TakeItem {
+                                item: key.item.clone(),
+                                count: *count,
+                                subtype: key.subtype,
+                                optional: false,
+                            })
+                            .collect::<Vec<_>>();
+                        all_items.as_slice()
+                    }
                     NpcRuleEffect::BigfootMatchmakerTarget | NpcRuleEffect::BigfootSoulMelody => {
                         resolve_native(effect, &rule.key, resolutions)?
                     }

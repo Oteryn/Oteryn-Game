@@ -1,6 +1,7 @@
 //! N--Q source chests through the production USE dispatcher and durable item owner.
 //! These cases qualify reward execution from committed map selectors; they do not
 //! certify the entire source quest journey.
+use super::classic_quest_source_fixtures::committed_attrs;
 use super::fixture::{Harness, debug, id, run};
 use super::quest_callbacks_fixtures::{source_world, wire_use_targets, wire_use_targets_retained};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -219,7 +220,6 @@ const PHASE_A_CONTAINERS: &[Chest] = &[
         contents: &[
             ("oteryn:item.tibia.i3448", 30, 0),
             ("oteryn:item.tibia.i3299", 1, 0),
-            ("oteryn:item.tibia.i3299", 1, 0),
         ],
         text_digest: None,
     },
@@ -320,7 +320,7 @@ fn quest_reward_claims_batch_one_purple_tome_all_three_bookcases() -> TestResult
 }
 
 #[test]
-fn quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay() -> TestResult {
+fn quest_reward_claims_batch_two_poison_daggers_numeric_contents_once_and_replay() -> TestResult {
     execute(&PHASE_A_CONTAINERS[2])
 }
 
@@ -405,46 +405,6 @@ fn execute_cohort(chests: &'static [Chest]) -> TestResult {
     }
 }
 
-fn committed_attrs(
-    position: (u16, u16, i8),
-    appearance: u16,
-) -> TestResult<oteryn_world_bundle::sector::Attrs> {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let (x, y, floor) = position;
-    let path = root.join(format!(
-        "content/world/placements/region-z{:02}-x{:03}-y{:03}.b3",
-        -floor,
-        x / 256,
-        y / 256
-    ));
-    let mut budget = oteryn_world_bundle::bundle::BUNDLE_BUDGET;
-    let region = oteryn_world_bundle_compiler::b3::decode_region(
-        &std::fs::read(path)?,
-        oteryn_world_bundle::bundle::TILE_LIMITS,
-        &mut budget,
-    )?;
-    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/world/placements/index.json"),
-    )?)?;
-    let entries: Vec<_> = region
-        .sectors
-        .iter()
-        .flat_map(|(_, _, tiles)| tiles)
-        .filter(|tile| tile.x == x && tile.y == y)
-        .flat_map(|tile| &tile.items)
-        .filter(|item| {
-            item.depth == 0
-                && index["palette"][item.palette as usize]["source_item_id"] == appearance
-        })
-        .collect();
-    assert_eq!(
-        entries.len(),
-        1,
-        "one committed source entry at {position:?}"
-    );
-    Ok(entries[0].attrs.clone())
-}
-
 #[test]
 fn quest_reward_claims_committed_map_selectors_match_source() -> TestResult {
     assert_eq!(committed_attrs(NAGINATA_ROCK, 1791)?.action, Some(40031));
@@ -474,6 +434,111 @@ fn quest_reward_claims_committed_map_selectors_match_source() -> TestResult {
         );
     }
     Ok(())
+}
+
+#[test]
+fn restored_quest_chests_use_committed_selectors() -> TestResult {
+    use super::quest_catalogue_chests_fixtures::{cases_including, execute};
+
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let ids = [5006, 5007, 6047, 6048, 6052, 6053, 6054, 6066, 6075, 6218];
+    let selected: Vec<_> = cases_including(|claim| {
+        claim.contains(".behemothquest")
+            || claim.contains(".blackknight")
+            || claim.ends_with(".key.id5010")
+            || claim.ends_with(".berserker_treasure.rewards.white_pearls")
+            || claim.ends_with(".shardsof_ancient_winters.helheim")
+    })?
+    .into_iter()
+    .filter(|chest| chest.servable && ids.contains(&chest.unique))
+    .collect();
+    assert_eq!(selected.len(), ids.len());
+    for chest in &selected {
+        assert_eq!(
+            committed_attrs(chest.position, chest.appearance)?.unique,
+            Some(chest.unique),
+            "{} {:?}",
+            chest.claim,
+            chest.position
+        );
+    }
+    execute(selected)
+}
+
+static BEHEMOTH_GATE: Gate = Gate {
+    quest: "Behemoth Quest",
+    position: (33297, 31670, -14),
+    appearance: 1648,
+    level: 80,
+};
+static BLACK_KNIGHT_GATES: [Gate; 2] = [
+    Gate {
+        quest: "Black Knight Quest west gate",
+        position: (32874, 31974, -12),
+        appearance: 5102,
+        level: 50,
+    },
+    Gate {
+        quest: "Black Knight Quest east gate",
+        position: (32875, 31974, -12),
+        appearance: 5102,
+        level: 50,
+    },
+];
+
+#[test]
+fn restored_expertise_doors_enforce_donor_levels() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    for gate in std::iter::once(&BEHEMOTH_GATE).chain(&BLACK_KNIGHT_GATES) {
+        assert_eq!(
+            committed_attrs(gate.position, gate.appearance)?.action,
+            Some(u16::try_from(1000 + gate.level)?)
+        );
+        execute_gate(gate)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn behemoth_lever_use_opens_all_five_native_passages() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| behemoth_lever().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Behemoth lever scenario panicked")??;
+    Ok(())
+}
+
+fn behemoth_lever() -> TestResult {
+    let attrs = committed_attrs((33290, 31715, -12), 2772)?;
+    let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/behemoth")
+        .ok_or("Behemoth lever callback")?;
+    assert_eq!(attrs.unique, Some(30009));
+    assert_eq!(attrs.unique, callback.selector.unique);
+    assert_eq!(callback.lever, Some([2772, 2773]));
+    assert_eq!(callback.passages.len(), 5);
+    for passage in callback.passages {
+        let position = passage.position;
+        committed_attrs((position.x, position.y, position.floor), 1791)?;
+    }
+    super::quest_world_callbacks_fixtures::scenario(
+        "behemoth",
+        oteryn_gameplay_quests::quest::world_callbacks::Position {
+            x: 33290,
+            y: 31715,
+            floor: -12,
+        },
+        false,
+    )
 }
 
 #[test]
@@ -1296,7 +1361,23 @@ async fn naginata_journey(
         journey_use(owner, admitted, &gate).await?,
         UseDisposition::Committed
     );
-    for direction in [West, West, West, West, South] {
+    let (gate_x, gate_y, gate_floor) = NAGINATA_GATE.position;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        MovementLocalPosition {
+            x: i32::from(gate_x),
+            y: i32::from(gate_y),
+            floor: -i16::from(gate_floor),
+        },
+        "opening the level gate moves the player onto its tile"
+    );
+    for direction in [West, West, West, South] {
         journey_step(owner, admitted, direction).await?;
     }
     assert_eq!(

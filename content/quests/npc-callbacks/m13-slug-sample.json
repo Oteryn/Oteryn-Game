@@ -54,7 +54,8 @@
         "docs/reference/content-prep/engnpc2-m13/slug-sample.md: ordered variant derivation 17670 to 17672; this personal receipt does not finish the four-odour stage",
         "https://www.tibiawiki.com.br/wiki/Task:Rafzan: fresh Slug slime is the first perfume sample"
       ],
-      "fresh_corpse": true
+      "fresh_corpse": true,
+      "per_occurrence_mint": true
     }
   ]
 }

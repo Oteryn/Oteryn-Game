@@ -106,3 +106,87 @@ fn srx3_soul_war_personal_loot_keeps_literal_local_chance_for_every_recipient()
         .map_err(|_| "literal source loot test thread failed")??;
     Ok(())
 }
+
+#[test]
+fn pinned_private_reward_rows_have_active_item_policies() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::gameplay_transport::item_ref_admission::generation_item_facts;
+    use oteryn_gameplay_domain::domain::loot_data::LootTableEntry;
+
+    fn missing_items(
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        creature: &str,
+        entries: &[LootTableEntry],
+        missing: &mut Vec<String>,
+    ) {
+        for entry in entries {
+            let definition = TypedDefinitionRef {
+                family: entry.item.family.clone(),
+                production_key: entry.item.production_key.clone(),
+                revision_ref: entry.item.revision_ref.clone(),
+            };
+            match generation_item_facts(native, &definition) {
+                Ok(facts) if facts.stack != ItemStackClass::Unknown => {}
+                outcome => missing.push(format!(
+                    "{creature}/{}: {outcome:?}",
+                    entry.item.production_key
+                )),
+            }
+            missing_items(native, creature, &entry.details.children, missing);
+        }
+    }
+
+    std::thread::Builder::new()
+        .name("pinned-private-reward-closure".into())
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let world =
+                oteryn_protocol_oteryn::WorldId::decode(&id(1)).map_err(|e| format!("{e:?}"))?;
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
+                world, &manifest,
+            );
+            let rewards = native.reward_table();
+            for (creature, item) in [
+                ("oteryn:creature.king_zelos", "oteryn:item.tibia.i2852"),
+                (
+                    "oteryn:creature.the_enraged_thorn_knight",
+                    "oteryn:item.tibia.i3295",
+                ),
+                ("oteryn:creature.the_many", "oteryn:item.tibia.i9606"),
+            ] {
+                let reward = rewards
+                    .row(creature)
+                    .map_err(|reason| format!("{creature}: {reason:?}"))?;
+                assert!(
+                    reward.loot_table.entries.iter().any(|entry| {
+                        entry.item.production_key == item
+                            && entry.probability_ppm.is_some_and(|chance| chance > 0)
+                    }),
+                    "{creature}: missing authored reward {item}"
+                );
+            }
+            let mut missing = Vec::new();
+            for policy in native
+                .policies()
+                .policies()
+                .iter()
+                .filter(|p| p.reward_boss == Some(true))
+            {
+                if let Ok(reward) = rewards.row(&policy.definition_key) {
+                    missing_items(
+                        &native,
+                        &policy.definition_key,
+                        &reward.loot_table.entries,
+                        &mut missing,
+                    );
+                }
+            }
+            assert!(missing.is_empty(), "private reward Items: {missing:?}");
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "private reward closure test thread failed")??;
+    Ok(())
+}

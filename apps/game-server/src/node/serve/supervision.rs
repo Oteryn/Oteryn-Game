@@ -45,8 +45,6 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         .active_generation
         .and_then(|active| active.native_gameplay());
     let runtime = owners.runtime;
-    #[cfg(feature = "qualification-spawn")]
-    let premium = owners.premium_coordinator;
     let config = &material.config;
     let (active_layers_epoch, active_layers) =
         super::super::raid_scheduler::world_change_layers(owners.movement_cells);
@@ -61,6 +59,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             }
             _ => None,
         },
+        movement_cells: owners.movement_cells,
         world: material.world,
         channel: material.channel,
         generation,
@@ -98,8 +97,6 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             runtime,
             room: spawn_room,
         }),
-        #[cfg(feature = "qualification-spawn")]
-        premium,
         shutdown,
     ));
     let mut expiry = Box::pin(both(

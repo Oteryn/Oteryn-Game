@@ -1,6 +1,7 @@
 //! The existing quest receipt earns one durable Grizzly room visit. Native Channel
 //! ownership controls cleanup; an offline player's return remains pending afterward.
 
+use crate::durability::db::commit_semantic_read;
 use super::super::boss_encounter::{BossClockError, assert_channel_owner};
 use super::super::quest_world_callback::QuestWorldContext;
 use super::super::spell_owner_commit::SpellLanePermit;
@@ -116,14 +117,13 @@ impl DurabilityRoot {
             let row = sqlx::query(sqlx::AssertSqlSafe(query))
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let value = row.as_ref().map(decode).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(value))
         })).await?
     }
 
     /// Historical obligation lookup only; a session need not have a fresh-admission
     /// journal. Returning a visit still requires the independently current gameplay fence.
-    /// Queue for the ready holder during callback recovery before opening the read transaction.
     pub async fn pending_grizzly_boss_entry_for_session(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -132,14 +132,14 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
-        self.issue_ready_semantic_pass().await?.run(move |holder, deadline| Box::pin(async move {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let query = format!("{} WHERE character_id=(SELECT character_id FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid) AND state IN ('ACTIVE','RETURN_PENDING')", select_columns());
             let row = sqlx::query(sqlx::AssertSqlSafe(query))
                 .bind(session.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let value = row.as_ref().map(decode).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(value))
         })).await?
     }
@@ -169,7 +169,7 @@ impl DurabilityRoot {
                 .bind(generation.get().to_string()).fetch_all(&mut *tx).await?;
             if rows.len() > 30 { return Err(DurabilityError::InvalidStoredState); }
             let values = rows.iter().map(decode).collect::<StoredResult<Vec<_>>>()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(values))
         })).await?
     }

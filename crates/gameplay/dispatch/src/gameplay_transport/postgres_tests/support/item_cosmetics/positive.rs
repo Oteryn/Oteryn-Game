@@ -16,6 +16,7 @@ pub(in super::super) enum Case {
     ProductionParts,
     ProductionOtOnly,
     ProductionMount,
+    Pegasus,
     RandomOutfit,
     Glider { missing: bool },
 }
@@ -360,31 +361,67 @@ pub(in super::super) async fn execute(
                 .ok_or("earned outfit")?;
             assert_eq!(outfit.permitted_addons, 3);
         }
-        Case::ProductionMount => {
+        Case::ProductionMount | Case::Pegasus => {
+            let pegasus = matches!(case, Case::Pegasus);
+            let (item, mount, source_id) = if pegasus {
+                // The publisher presents the last backpack placement first.
+                ("oteryn:item.tibia.i48424", "oteryn:content.mount.pegasus", 72)
+            } else {
+                (
+                    "oteryn:item.tibia.i23538",
+                    "oteryn:content.mount.sparkion_mount",
+                    71,
+                )
+            };
             let (end, result, actual) = super::super::rust_lottery_fixtures::exchange(
                 owner,
                 admitted,
                 1,
                 &payload,
-                reference("oteryn:item.tibia.i23538"),
+                reference(item),
                 None,
             )
             .await?;
             assert_eq!(result, UseDisposition::Committed);
-            assert_eq!(item_quantity(h, 71).await?, 0);
+            assert_eq!(item_quantity(h, source_id).await?, 0);
             assert!(
                 appearance(owner, &end)
                     .await?
                     .catalogue
                     .mounts
                     .iter()
-                    .any(|key| key == "oteryn:content.mount.sparkion_mount")
+                    .any(|key| key == mount)
             );
-            let (_, replayed, _) =
+            let (end, replayed, _) =
                 super::super::rust_lottery_fixtures::exchange(owner, end, 1, &actual, None, None).await?;
             assert_eq!(replayed, UseDisposition::Committed);
-            assert_eq!(grant_count(h).await?, 1);
             assert_eq!(receipt_count(h).await?, 1);
+            if pegasus {
+                assert_eq!(
+                    scalar(h, "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/i_wanna_fly_away'").await?,
+                    1,
+                );
+                let remaining = carried_snapshot(h, id(71)).await?;
+                assert_eq!(remaining.0["quantity"], 1);
+                let next = end.continuity.next_command_id;
+                let (_, duplicate, _) = super::super::rust_lottery_fixtures::exchange(
+                    owner,
+                    end,
+                    next,
+                    &payload,
+                    reference(item),
+                    None,
+                )
+                .await?;
+                assert_eq!(duplicate, UseDisposition::Committed);
+                assert_eq!(carried_snapshot(h, id(71)).await?, remaining);
+                assert_eq!(receipt_count(h).await?, 2);
+                assert_eq!(
+                    scalar(h, "SELECT count(*) FROM game_item_consume_transform_records WHERE consume_source").await?,
+                    1,
+                );
+            }
+            assert_eq!(grant_count(h).await?, 1);
         }
         Case::ProductionOtOnly => {
             let (_, result, _) = super::super::rust_lottery_fixtures::exchange(

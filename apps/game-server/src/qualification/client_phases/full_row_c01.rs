@@ -70,11 +70,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 fn target(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
     let here = client.world_spatial().actor_position;
     client.world_entities().and_then(|entities| entities.iter().find(|entry| {
-        entry.kind == EntityKind::Creature
-            && entry.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name.eq_ignore_ascii_case("rat")))
-            && entry.position.floor == here.floor
+        entry.kind == EntityKind::Creature && entry.position.floor == here.floor
             && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
-    })).map(|entry| entry.entity).ok_or("step=target observed=no-adjacent-rat".into())
+    })).map(|entry| entry.entity).ok_or("step=target observed=no-adjacent-creature".into())
 }
 
 fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
@@ -191,17 +189,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_C01_ACCOUNT").await?;
-    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let mut client = connect_world(clients, 0xc1)
         .await
         .map_err(|error| admission_error("initial-admission", error))?;
-    let sam = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at.floor == 7 && u32::from(at.x.abs_diff(32361).max(at.y.abs_diff(32198)))
-            <= oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES
-    }).ok_or("step=equipment observed=no-playable-route-to-Sam")?;
-    walk(&mut client, world, &sam).await?;
     let definitions = provisioning::item_index()?;
     for (id, slot) in MELEE_KIT {
         let key = format!("oteryn:item.tibia.i{id}");

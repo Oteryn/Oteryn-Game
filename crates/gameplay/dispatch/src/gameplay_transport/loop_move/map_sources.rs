@@ -6,7 +6,6 @@ pub(super) async fn observe(
     actor: ExactActorRef,
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
-    house_capacity_v2: bool,
 ) -> Option<ContainerObservation> {
     let fence = fence?;
     let _permit = admission.spell_lane_permit().await?;
@@ -96,16 +95,11 @@ pub(super) async fn observe(
     let physical_capacity = generation_item_facts(native, &definition)
         .ok()
         .and_then(|facts| facts.container_capacity);
-    let view_limit = if house_capacity_v2 {
-        oteryn_protocol_oteryn::container_tree::MAX_HOUSE_CONTAINER_VIEW_ENTRIES
-    } else {
-        MAX_CONTAINER_VIEW_ENTRIES
-    };
     let capacity = crate::map::facts::captured_source_capacity(
         physical_capacity,
         facts.pickupable,
         children.len(),
-        view_limit,
+        MAX_CONTAINER_VIEW_ENTRIES,
     )?;
     let entries = children
         .into_iter()
@@ -154,4 +148,18 @@ pub(super) fn is_top_level(base: &WorldBase, key: u64) -> bool {
     base.tile(pos.x, pos.y, pos.floor).is_some_and(|tile| {
         tile.depths().iter().filter(|depth| **depth == 0).count() > usize::from(ordinal)
     })
+}
+
+/// A retired map cask also stops contributing its authored static collision.
+pub(super) fn hide_retired_cask(map: &crate::map::boot::BundleMap, key: u64) -> Option<()> {
+    let (pos, _) = view::placement_of(key)?;
+    let original = map.facts.base_only();
+    let tile = view::compose_tile(&map.overlay, &original, pos).ok()??;
+    let entry = tile
+        .entries
+        .iter()
+        .find(|entry| entry.source.key() == view::MapEntryKey::Base(key))?;
+    map.facts
+        .install_gathering_state(key, 1, entry.facts, None)
+        .then_some(())
 }

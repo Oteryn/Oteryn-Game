@@ -1,5 +1,5 @@
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::TestResult;
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 use super::fixture::{Harness, debug};
 
@@ -143,6 +143,55 @@ fn requirements(callback: &RewardCallback) -> TestResult<Vec<Requirement>> {
             .cloned()
             .unwrap_or_else(|| serde_json::json!([])),
     )?)
+}
+
+// These are the terminal stages of the other hand-in in each paired source route.
+fn other_outfit_addon(key: &str) -> Option<(&'static str, i64)> {
+    Some(match key.rsplit('/').next()? {
+        "l2-elementalist-cap" => (
+            "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon2", 1,
+        ),
+        "l2-elementalist-staff" => (
+            "oteryn:quest-progress/quest/u9_1/elementalist_outfits/addon1", 1,
+        ),
+        "pirate-sabre" => (
+            "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_hat_addon", 2,
+        ),
+        "l4-pirate-hat" => (
+            "oteryn:quest-progress/quest/u7_8/pirate_outfits/pirate_sabre_addon", 5,
+        ),
+        "l5-oriental-female-comb" => (
+            "oteryn:quest-progress/quest/u7_8/oriental_outfits/second_oriental_addon", 5,
+        ),
+        "l5-oriental-female-blue-cloth" => (
+            "oteryn:quest-progress/quest/u7_8/oriental_outfits/first_oriental_addon", 2,
+        ),
+        "knight-sword" => (
+            "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_helmet", 7,
+        ),
+        "l7-knight-helmet-reward" => (
+            "oteryn:quest-progress/quest/u7_8/knight_outfits/addon_sword", 2,
+        ),
+        "l7-assassin-yarn" => (
+            "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_second_addon", 2,
+        ),
+        "l7-assassin-second" => (
+            "oteryn:quest-progress/quest/u7_8/assassin_outfits/assassin_first_addon", 8,
+        ),
+        "l8-hunter-hat" => (
+            "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove", 1,
+        ),
+        "l8-hunter-gloves" => (
+            "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter_hat_addon", 5,
+        ),
+        "qb-warrior-shoulder" => (
+            "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon", 2,
+        ),
+        "qb-warrior-sword" => (
+            "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon", 7,
+        ),
+        _ => return None,
+    })
 }
 
 type Counts = (i64, i64, i64, i64);
@@ -462,13 +511,14 @@ pub(super) async fn seed_quest_revision(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
     occurrence: u8,
-) -> TestResult<(crate::durability::character_progression::CurrentCharacterGameplayFence, u64)> {
+) -> TestResult<(
+    crate::durability::character_progression::CurrentCharacterGameplayFence,
+    u64,
+)> {
     use crate::durability::character_progression::{
         ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     };
-    let binding = owner
-        .progression_binding(session)
-        .ok_or("progression")?;
+    let binding = owner.progression_binding(session).ok_or("progression")?;
     let fence = owner
         .current_quest_fence(session)
         .await
@@ -518,6 +568,17 @@ pub(super) async fn seed_quest_prerequisites(
     values: &[(String, i64)],
     occurrence: u8,
 ) -> TestResult {
+    seed_quest_prerequisites_and_completions(h, owner, admitted, values, &[], occurrence).await
+}
+
+pub(super) async fn seed_quest_prerequisites_and_completions(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: &[(String, i64)],
+    completed_quests: &[String],
+    occurrence: u8,
+) -> TestResult {
     let catalogue = owner
         .quest_catalogue
         .as_ref()
@@ -546,6 +607,27 @@ pub(super) async fn seed_quest_prerequisites(
             .execute(&mut *tx).await?;
         assert_eq!(changed.rows_affected(), 1);
     }
+    for quest in completed_quests {
+        let hash = catalogue
+            .definition_hash(quest)
+            .ok_or("canonical prerequisite quest")?;
+        let changed = sqlx::query(
+            "INSERT INTO game_character_quest_states(
+                character_id, quest_key, pinned_content_revision, definition_hash,
+                started_character_revision, completed_character_revision, committed_character_revision
+             ) SELECT character_id, $2, $3, $4, character_revision, character_revision, character_revision
+               FROM game_character_roots
+              WHERE character_id=encode($1,'hex')::uuid AND character_revision=$5::text::numeric",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(quest)
+        .bind(catalogue.content_revision())
+        .bind(hash.as_slice())
+        .bind(revision.to_string())
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(changed.rows_affected(), 1);
+    }
     tx.commit().await?;
     let stored = owner
         .root
@@ -554,6 +636,15 @@ pub(super) async fn seed_quest_prerequisites(
         .map_err(debug)?;
     for (key, (_, value)) in tracks {
         assert_eq!(stored.tracks().get(&key), Some(&value));
+    }
+    for quest in completed_quests {
+        let state = stored
+            .states()
+            .get(quest)
+            .ok_or("stored prerequisite quest")?;
+        assert!(state.completed);
+        assert_eq!(state.pinned_content_revision, catalogue.content_revision());
+        assert_eq!(Some(state.definition_hash), catalogue.definition_hash(quest));
     }
     Ok(())
 }
@@ -578,7 +669,10 @@ async fn earn_rook_citizen_addon(
     let mut occurrence = 400;
     for step in steps {
         let key = format!("oteryn:quest-reward/l6-citizen-rook-{step}");
-        let reward = callbacks.iter().find(|row| row.key == key).ok_or("Rook Citizen callback")?;
+        let reward = callbacks
+            .iter()
+            .find(|row| row.key == key)
+            .ok_or("Rook Citizen callback")?;
         for item in &reward.take {
             supply(owner, admitted, h, item, &mut bags, &mut occurrence).await?;
         }
@@ -586,15 +680,20 @@ async fn earn_rook_citizen_addon(
             let track = &reward.state_ops.first().ok_or("Rook backpack wait")?.track;
             // Age only the timer written by Amber's successful material hand-in.
             let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
             let affected = sqlx::query(
                 "UPDATE game_character_quest_tracks SET value=value-7201 WHERE track_key=$1 AND value>7201",
             ).bind(track).execute(&mut *tx).await?.rows_affected();
             assert_eq!(affected, 1);
             tx.commit().await?;
-            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
         }
-        let (result, _, _) = wire_reward(owner, admitted, npc, reward, reward.outfit.is_some()).await?;
+        let (result, _, _) =
+            wire_reward(owner, admitted, npc, reward, reward.outfit.is_some()).await?;
         assert_eq!(result, NpcIntentDisposition::Ok, "{key}");
     }
     Ok(())
@@ -626,7 +725,8 @@ async fn crystal_citizen(
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let owned_backpack = name.ends_with("lubo-progress");
     let npc = if owned_backpack {
-        let [lubo, amber] = install(owner, admitted, [npc_key.as_str(), "oteryn:npc.amber"]).await?;
+        let [lubo, amber] =
+            install(owner, admitted, [npc_key.as_str(), "oteryn:npc.amber"]).await?;
         earn_rook_citizen_addon(owner, admitted, h, amber, &callbacks, true).await?;
         lubo
     } else {
@@ -699,7 +799,8 @@ async fn crystal_citizen(
             inventory_before.push(quantity(h, &item.item).await?);
         }
         let (result, _, _) =
-            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, reward, false).await?;
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, reward, false)
+                .await?;
         assert_eq!(
             result,
             NpcIntentDisposition::Ok,
@@ -748,19 +849,23 @@ async fn crystal_citizen(
         let mut bags = Vec::new();
         let mut occurrence = 500;
         if owned_backpack {
-            let start = callbacks.iter()
+            let start = callbacks
+                .iter()
                 .find(|row| row.key == "oteryn:quest-reward/qb-citizen-backpack-start")
                 .ok_or("Lubo's recipe")?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, start, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, start, false)
+                    .await?;
             assert_eq!(result, NpcIntentDisposition::Ok);
         }
         supply(owner, admitted, h, leather, &mut bags, &mut occurrence).await?;
         if owned_backpack {
             let before = counts(h).await?;
             let available = quantity(h, &leather.item).await?;
-            let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, materials, false).await?;
+            let (result, _, _) = super::qengine_rewards_fixtures::wire_reward(
+                owner, admitted, npc, materials, false,
+            )
+            .await?;
             assert_eq!(result, NpcIntentDisposition::Rejected);
             assert_eq!(counts(h).await?, before);
             assert_eq!(quantity(h, &leather.item).await?, available);
@@ -843,20 +948,26 @@ async fn citizen_hat_regression(
     let already_owned = name.ends_with("owned-hat");
     let hanna = if already_owned {
         let [hanna, norma] = super::classic_quests_fixtures::install(
-            owner, admitted, ["oteryn:npc.hanna", "oteryn:npc.norma"],
-        ).await?;
+            owner,
+            admitted,
+            ["oteryn:npc.hanna", "oteryn:npc.norma"],
+        )
+        .await?;
         earn_rook_citizen_addon(owner, admitted, h, norma, &callbacks, false).await?;
         if !starting {
-            let start = callbacks.iter()
+            let start = callbacks
+                .iter()
                 .find(|row| row.key == "oteryn:quest-reward/qb-citizen-hat-start")
                 .ok_or("Hanna's recipe")?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, hanna, start, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, hanna, start, false)
+                    .await?;
             assert_eq!(result, NpcIntentDisposition::Ok);
         }
         hanna
     } else {
-        let [hanna] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.hanna"]).await?;
+        let [hanna] =
+            super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.hanna"]).await?;
         hanna
     };
     let ready = hat
@@ -940,13 +1051,28 @@ async fn citizen_hat_regression(
                 .bind(&state.track)
                 .fetch_one(&h.pool)
                 .await?;
-        let prior = ready.iter().find(|(track, _)| *track == state.track).ok_or("prior track")?.1;
-        assert_eq!(value, if already_owned && !starting { prior } else { state.set });
+        let prior = ready
+            .iter()
+            .find(|(track, _)| *track == state.track)
+            .ok_or("prior track")?
+            .1;
+        assert_eq!(
+            value,
+            if already_owned && !starting {
+                prior
+            } else {
+                state.set
+            }
+        );
     }
     for (item, available) in hat.take.iter().zip(inventory_before) {
         assert_eq!(
             quantity(h, &item.item).await?,
-            if already_owned { available } else { available - i64::from(item.count) },
+            if already_owned {
+                available
+            } else {
+                available - i64::from(item.count)
+            },
         );
     }
     Ok(())
@@ -981,17 +1107,33 @@ pub(super) async fn exercise(
             ("tortoise", 5899),
             ("bonebeast", 5925),
             ("rotworm", 3374),
-        ].into_iter().enumerate() {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let key = format!("oteryn:item.tibia.i{item}");
             super::l6_tomb_native_fixtures::hunt_loot(
-                owner, admitted, h, creature, &key, 1, 20_000 + 4 * u64::try_from(index)?,
-            ).await?;
-            assert!(quantity(h, &key).await? > 0, "{creature} materialized {item}");
+                owner,
+                admitted,
+                h,
+                creature,
+                &key,
+                1,
+                20_000 + 4 * u64::try_from(index)?,
+            )
+            .await?;
+            assert!(
+                quantity(h, &key).await? > 0,
+                "{creature} materialized {item}"
+            );
         }
         return Ok(());
     }
     if name.ends_with("-main-outfit-pin") {
-        return Box::pin(super::outfit_participant_pins_fixtures::exercise(owner, admitted, h, name)).await;
+        return Box::pin(super::outfit_participant_pins_fixtures::exercise(
+            owner, admitted, h, name,
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-qb-crystal-") {
         return Box::pin(crystal_citizen(owner, admitted, h, name)).await;
@@ -1025,7 +1167,7 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("book", Some((28792, 5)), None, Some(1)),
-                ("epaulettes", Some((28793, 20)), None, Some(2)),
+                ("epaulettes-complete", Some((28793, 20)), None, Some(2)),
             ],
             1070,
         ),
@@ -1055,7 +1197,16 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("shield", None, None, Some(1)),
+                ("helmet-complete", None, None, Some(2)),
+            ],
+            542,
+        ),
+        "qengine-rewards-l3-demon-helmet-first-story" => (
+            "demon",
+            &[
+                ("base", None, None, Some(0)),
                 ("helmet", None, None, Some(2)),
+                ("shield-complete", None, None, Some(1)),
             ],
             542,
         ),
@@ -1073,7 +1224,7 @@ pub(super) async fn exercise(
             &[
                 ("base", None, None, Some(0)),
                 ("first-low", None, None, Some(1)),
-                ("second", None, None, Some(2)),
+                ("second-after-first", None, None, Some(2)),
             ],
             618,
         ),
@@ -1171,7 +1322,7 @@ pub(super) async fn exercise(
                 ("leather", Some((5876, 100)), Some((5948, 100)), None),
                 ("wings", Some((5891, 5)), None, None),
                 ("hat", None, None, Some(1)),
-                ("gloves", Some((5875, 1)), None, Some(2)),
+                ("elane-gloves", Some((5875, 1)), None, Some(2)),
             ],
             129,
         ),
@@ -1387,7 +1538,8 @@ pub(super) async fn exercise(
         .filter_map(|(_, _, _, addon)| *addon)
         .fold(0, |mask, addon| mask | addon);
     let all = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
-    let mut callbacks = Vec::new();
+    let mut callbacks = Vec::<RewardCallback>::new();
+    let mut outfit_requirements = BTreeMap::new();
     for (suffix, take, present, addon) in steps {
         let batch = if name.starts_with("qengine-rewards-l10-") {
             "l10"
@@ -1408,13 +1560,28 @@ pub(super) async fn exercise(
         } else {
             "l2"
         };
-        let key = if family == "knight" && *suffix == "sword" {
+        let mut key = if family == "hunter" && *suffix == "gloves" && name.contains("-female-") {
+            "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves".into()
+        } else if family == "knight" && *suffix == "sword" {
             "oteryn:quest-reward/knight-sword".into()
         } else if family == "pirate" && *suffix == "sabre" {
             "oteryn:quest-reward/pirate-sabre".into()
         } else {
             format!("oteryn:quest-reward/{batch}-{family}-{suffix}")
         };
+        if let Some((track, terminal)) = other_outfit_addon(&key) {
+            let completed_other = callbacks.iter().any(|callback| {
+                callback.storage.iter().any(|state| state.track == track && state.set == terminal)
+            });
+            if completed_other {
+                key.push_str("-full-outfit");
+            }
+            outfit_requirements.insert(key.clone(), Requirement {
+                track: track.into(),
+                minimum: if completed_other { terminal } else { -1 },
+                maximum: if completed_other { terminal } else { terminal - 1 },
+            });
+        }
         let callback = all
             .iter()
             .find(|c| c.key == key)
@@ -1481,7 +1648,9 @@ pub(super) async fn exercise(
         );
         let expected_targets: Vec<(&str, u8, &str)> = match (family, *suffix) {
             ("hunter", "hat") => vec![("hunter", 1, "male"), ("hunter", 2, "female")],
-            ("hunter", "gloves") => vec![("hunter", 2, "male"), ("hunter", 1, "female")],
+            ("hunter", "gloves" | "elane-gloves") => {
+                vec![("hunter", 2, "male"), ("hunter", 1, "female")]
+            }
             ("mage", "male-ritual") => vec![("mage", 1, "male"), ("summoner", 1, "female")],
             ("mage", "male-hat") => vec![("mage", 2, "male"), ("summoner", 2, "female")],
             ("mage", "female-belt") => vec![("mage", 1, "female"), ("summoner", 1, "male")],
@@ -1536,7 +1705,7 @@ pub(super) async fn exercise(
         if family == "golden" {
             assert_eq!(
                 serde_json::to_value(&callback)?["fee"],
-                serde_json::json!({"gold": if *suffix == "base" {100000} else {50000}, "include_bank":true})
+                serde_json::json!({"gold": if *suffix == "base" {500000000} else {250000000}, "include_bank":true})
             );
             assert!(!callback.requires_premium);
         }
@@ -1554,12 +1723,23 @@ pub(super) async fn exercise(
                 Some("oteryn:achievement/battle_mage")
             );
         }
-        let expected = if family == "battle-mage" && *suffix != "base" {
-            vec![Requirement {
-                track: format!("{LIBRARY}library_permission"),
-                minimum: 7,
-                maximum: 7,
-            }]
+        let mut expected = if family == "battle-mage" && *suffix != "base" {
+            let completes = *suffix == "epaulettes-complete";
+            vec![
+                Requirement {
+                    track: format!("{LIBRARY}library_permission"),
+                    minimum: 7,
+                    maximum: 7,
+                },
+                Requirement {
+                    track: format!(
+                        "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon{}",
+                        if completes { 1 } else { 2 }
+                    ),
+                    minimum: if completes { 1 } else { -1 },
+                    maximum: i64::from(completes),
+                },
+            ]
         } else if family == "knight"
             && matches!(
                 *suffix,
@@ -1584,11 +1764,24 @@ pub(super) async fn exercise(
                 maximum: 2,
             }]
         } else if family == "demon" && *suffix != "base" {
-            vec![Requirement {
-                track: ANNIHILATOR.into(),
-                minimum: 2,
-                maximum: 2,
-            }]
+            let complete = suffix.ends_with("-complete");
+            let (other, done) = if suffix.starts_with("shield") {
+                (DEMON_OAK, 4)
+            } else {
+                (DEMON_HELMET, 2)
+            };
+            vec![
+                Requirement {
+                    track: ANNIHILATOR.into(),
+                    minimum: 2,
+                    maximum: 2,
+                },
+                Requirement {
+                    track: other.into(),
+                    minimum: if complete { done } else { -1 },
+                    maximum: if complete { done } else { done - 1 },
+                },
+            ]
         } else if family == "pirate" && *suffix == "base" {
             vec![
                 Requirement {
@@ -1640,6 +1833,14 @@ pub(super) async fn exercise(
                         },
                     },
                 ];
+                if suffix.starts_with("second") {
+                    let value = if *suffix == "second-after-first" { 1 } else { -1 };
+                    expected.push(Requirement {
+                        track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon1".into(),
+                        minimum: value,
+                        maximum: if *suffix == "second-after-first" { 1 } else { 0 },
+                    });
+                }
                 if *suffix == "first-high" {
                     expected.push(Requirement {
                         track: "oteryn:quest-progress/quest/u10_50/glooth_engineer_outfits/addon2"
@@ -1653,6 +1854,9 @@ pub(super) async fn exercise(
         } else {
             vec![]
         };
+        if let Some(requirement) = outfit_requirements.get(&callback.key) {
+            expected.push(requirement.clone());
+        }
         assert_eq!(
             requirements(&callback)?,
             expected,
@@ -1679,7 +1883,9 @@ pub(super) async fn exercise(
     for callback in &callbacks {
         let required = requirements(callback)?;
         if readonly.is_none() {
-            readonly = required.first().cloned();
+            readonly = required.iter()
+                .find(|state| Some(*state) != outfit_requirements.get(&callback.key))
+                .cloned();
         }
         let keys = std::iter::once(callback.key.clone()).chain(
             callback.participants.iter().enumerate().map(|(i, _)| {
@@ -1801,21 +2007,19 @@ pub(super) async fn exercise(
     } else {
         vec![]
     };
-    let historical_prerequisites = if family == "norseman" {
-        initial.clone()
-    } else {
-        vec![]
-    };
+    // Ice Islands and Ape City own these prerequisite tracks. Arrange their
+    // prior progress as saved state before exercising the outfit hand-ins.
+    let import_prerequisites = matches!(family, "norseman" | "knight");
     let mut setup = BTreeMap::<String, Vec<QuestEffect>>::new();
-    for (key, value) in initial.into_iter().filter(|_| family != "norseman") {
-        let track = tracks.get(&key).ok_or("setup track")?;
+    for (key, value) in initial.iter().filter(|_| !import_prerequisites) {
+        let track = tracks.get(key).ok_or("setup track")?;
         setup
             .entry(track.quest.clone())
             .or_default()
             .push(QuestEffect {
-                track: key,
+                track: key.clone(),
                 from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(value),
+                effect: QuestEffectKind::Set(*value),
             });
     }
     let mut setup_keys = Vec::new();
@@ -1832,7 +2036,7 @@ pub(super) async fn exercise(
         });
     }
     if let Some(required) = &readonly
-        && family != "norseman"
+        && !import_prerequisites
     {
         let track = tracks.get(&required.track).ok_or("read track")?;
         assert!(required.minimum > track.min);
@@ -1894,9 +2098,9 @@ pub(super) async fn exercise(
     for (index, key) in setup_keys.iter().enumerate() {
         commit_fixture(owner, admitted, key, 9000 + u64::try_from(index)?).await?;
     }
-    if family == "norseman" {
+    if import_prerequisites {
         assert!(setup_keys.is_empty());
-        seed_quest_prerequisites(h, owner, admitted, &historical_prerequisites, 106).await?;
+        seed_quest_prerequisites(h, owner, admitted, &initial, 106).await?;
     }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -2113,7 +2317,8 @@ pub(super) async fn exercise(
         }
     } else {
         let key = callbacks.first().ok_or("first stage")?.npc.clone();
-        let [actor] = super::classic_quests_fixtures::install(owner, admitted, [key.as_str()]).await?;
+        let [actor] =
+            super::classic_quests_fixtures::install(owner, admitted, [key.as_str()]).await?;
         npcs.insert(key, actor);
     }
     let mut checked_stale = false;
@@ -2128,7 +2333,7 @@ pub(super) async fn exercise(
             actor_condition_fixture(owner, admitted, *kind, true).await?;
         }
 
-        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second") {
+        if name == "qengine-rewards-l3-dark-trails-story" && callback.key.ends_with("-second-after-first") {
             commit_fixture(
                 owner,
                 admitted,
@@ -2143,7 +2348,8 @@ pub(super) async fn exercise(
         if family == "norseman" && callback.key.ends_with("-base") {
             let before = counts(h).await?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
@@ -2169,7 +2375,8 @@ pub(super) async fn exercise(
             );
             let before = counts(h).await?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
@@ -2188,6 +2395,27 @@ pub(super) async fn exercise(
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
         }
+        let glove_offer = family == "hunter" && callback.key.ends_with("-gloves");
+        if glove_offer {
+            use super::classic_quests_fixtures::talk;
+            let current = owner.premium_coordinator.take();
+            talk(owner, admitted, npc, 31_000, "hi").await?;
+            let lines = talk(owner, admitted, npc, 31_001, "sniper gloves").await?;
+            assert!(
+                !lines.is_empty(),
+                "the source informational reply must be delivered"
+            );
+            assert_eq!(
+                owner
+                    .states
+                    .npc_conversations
+                    .fixture_quest_topic(admitted.game_session_id)?,
+                0,
+                "a free character without gloves must receive information before an offer"
+            );
+            super::qengine_rewards_fixtures::talk(owner, admitted, npc, 31_002, "bye").await?;
+            owner.premium_coordinator = current;
+        }
         let needed: Vec<_> = callback.take.iter().chain(&callback.present).collect();
         let mut missing = false;
         for item in &needed {
@@ -2196,12 +2424,22 @@ pub(super) async fn exercise(
         if missing {
             let before = counts(h).await?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
-            assert_eq!(
-                result,
-                NpcIntentDisposition::Rejected,
-                "missing exact carried recipe"
-            );
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
+            if glove_offer {
+                assert_eq!(result, NpcIntentDisposition::Ok);
+                assert_eq!(
+                    owner.states.npc_conversations.fixture_quest_topic(admitted.game_session_id)?,
+                    0,
+                    "the informational reply must not open an exchange without gloves"
+                );
+            } else {
+                assert_eq!(
+                    result,
+                    NpcIntentDisposition::Rejected,
+                    "missing exact carried recipe"
+                );
+            }
             assert_eq!(counts(h).await?, before);
         }
         for (index, item) in needed.iter().enumerate() {
@@ -2214,9 +2452,10 @@ pub(super) async fn exercise(
                         quantity(h, &ingredient.item).await?,
                     ));
                 }
-                let (result, _, _) =
-                    super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
-                        .await?;
+                let (result, _, _) = super::qengine_rewards_fixtures::wire_reward(
+                    owner, admitted, npc, callback, false,
+                )
+                .await?;
                 assert_eq!(
                     result,
                     NpcIntentDisposition::Rejected,
@@ -2230,8 +2469,15 @@ pub(super) async fn exercise(
             if quantity(h, &item.item).await? < i64::from(item.count) {
                 if let Some(creature) = outfit_loot_creature(family, &item.item) {
                     super::l6_tomb_native_fixtures::hunt_loot(
-                        owner, admitted, h, creature, &item.item, item.count, 20_000 + occurrence,
-                    ).await?;
+                        owner,
+                        admitted,
+                        h,
+                        creature,
+                        &item.item,
+                        item.count,
+                        20_000 + occurrence,
+                    )
+                    .await?;
                     occurrence += 1 + u64::from(item.count);
                 } else {
                     supply(owner, admitted, h, item, &mut bags, &mut occurrence)
@@ -2256,9 +2502,10 @@ pub(super) async fn exercise(
             {
                 let before = counts(h).await?;
                 let silver = quantity(h, &item.item).await?;
-                let (result, _, _) =
-                    super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
-                        .await?;
+                let (result, _, _) = super::qengine_rewards_fixtures::wire_reward(
+                    owner, admitted, npc, callback, false,
+                )
+                .await?;
                 assert_eq!(
                     result,
                     NpcIntentDisposition::Rejected,
@@ -2279,7 +2526,8 @@ pub(super) async fn exercise(
             let total = quantity(h, &input.item).await?;
             assert_eq!(total, 2, "two legally admitted source hats");
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
@@ -2327,11 +2575,12 @@ pub(super) async fn exercise(
             assert!(result.is_ok(), "native drop extra source hat: {result:?}");
         }
         let required = requirements(callback)?;
-        if !checked_stale && !required.is_empty() {
+        let other_addon = outfit_requirements.get(&callback.key);
+        if !checked_stale && required.iter().any(|state| Some(state) != other_addon) {
             owner
                 .refresh_quest_session(admitted.game_session_id, false)
                 .await;
-            if family == "norseman" {
+            if import_prerequisites {
                 let required = readonly.as_ref().ok_or("readonly prerequisite")?;
                 seed_quest_prerequisites(
                     h,
@@ -2403,7 +2652,7 @@ pub(super) async fn exercise(
                 before,
                 "no consumption or value on failed parent prerequisite"
             );
-            if family == "norseman" {
+            if import_prerequisites {
                 let required = readonly.as_ref().ok_or("readonly prerequisite")?;
                 seed_quest_prerequisites(
                     h,
@@ -2431,10 +2680,64 @@ pub(super) async fn exercise(
         for item in &needed {
             held.insert(item.item.clone(), quantity(h, &item.item).await?);
         }
-        if let Some(fee) = &callback.fee {
+        if glove_offer {
+            use super::classic_quests_fixtures::talk;
             let before = counts(h).await?;
+            for (base, topic) in [(31_010, 9), (31_020, callback.topic)] {
+                let current = if topic == 9 {
+                    owner.premium_coordinator.take()
+                } else {
+                    None
+                };
+                talk(owner, admitted, npc, base, "hi").await?;
+                talk(owner, admitted, npc, base + 1, "sniper gloves").await?;
+                assert_eq!(
+                    owner
+                        .states
+                        .npc_conversations
+                        .fixture_quest_topic(admitted.game_session_id)?,
+                    topic
+                );
+                talk(owner, admitted, npc, base + 2, "no").await?;
+                assert_eq!(
+                    owner
+                        .states
+                        .npc_conversations
+                        .fixture_quest_topic(admitted.game_session_id)?,
+                    0
+                );
+                super::qengine_rewards_fixtures::talk(owner, admitted, npc, base + 3, "yes")
+                    .await?;
+                assert_eq!(
+                    counts(h).await?,
+                    before,
+                    "yes after declining cannot commit an exchange"
+                );
+                for (item, count) in &held {
+                    assert_eq!(
+                        quantity(h, item).await?,
+                        *count,
+                        "declining leaves the gloves"
+                    );
+                }
+                super::qengine_rewards_fixtures::talk(owner, admitted, npc, base + 4, "bye")
+                    .await?;
+                if topic == 9 {
+                    owner.premium_coordinator = current;
+                }
+            }
+        }
+        if let Some(fee) = &callback.fee
+            && (family != "golden" || step_index == 0)
+        {
+            let before = counts(h).await?;
+            if family == "golden" {
+                sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+                    .execute(&h.pool).await?;
+            }
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
@@ -2445,22 +2748,24 @@ pub(super) async fn exercise(
                 before,
                 "unpaid hand-in has no flags/value/consumption"
             );
-            supply(
-                owner,
-                admitted,
-                h,
-                &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
-                    fluid_subtype: None,
-
-                    item: "oteryn:item.tibia.i3043".into(),
-                    count: u16::try_from(fee.gold / 10000).map_err(debug)?,
-                },
-                &mut bags,
-                &mut occurrence,
-            )
-            .await?;
+            if family == "golden" {
+                super::item_forge_fusion_fixtures::fixture::seed_bank(h).await?;
+            } else {
+                supply(
+                    owner,
+                    admitted,
+                    h,
+                    &oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                        fluid_subtype: None,
+                        item: "oteryn:item.tibia.i3043".into(),
+                        count: u16::try_from(fee.gold / 10000).map_err(debug)?,
+                    },
+                    &mut bags,
+                    &mut occurrence,
+                ).await?;
+            }
         }
-        let money_before = if callback.fee.is_some() {
+        let money_before = if callback.fee.is_some() && family != "golden" {
             Some(coin_worth(h).await?)
         } else {
             None
@@ -2472,7 +2777,8 @@ pub(super) async fn exercise(
             let before = counts(h).await?;
             let money = coin_worth(h).await?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
             assert_eq!(
                 result,
                 NpcIntentDisposition::Rejected,
@@ -2496,7 +2802,8 @@ pub(super) async fn exercise(
             let before = counts(h).await?;
             let coins = coin_worth(h).await?;
             let (result, _, _) =
-                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
+                super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false)
+                    .await?;
             owner.premium_coordinator = current;
             assert_eq!(
                 result,
@@ -2524,7 +2831,8 @@ pub(super) async fn exercise(
         };
         let before = counts(h).await?;
         let (result, catalogues, command) =
-            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, true).await?;
+            super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, true)
+                .await?;
         assert_eq!(result, NpcIntentDisposition::Ok);
         let after = counts(h).await?;
         assert_eq!(
@@ -2578,6 +2886,29 @@ pub(super) async fn exercise(
                 "exact source fee, retain all change"
             );
         }
+        if family == "glooth-engineer" {
+            let awards: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/glooth_engineer'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(awards, i64::from(step_index == 2));
+            let completions: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key='oteryn:quest.glooth_engineer_outfits_quest' AND completes",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(completions, awards);
+        }
+        if family == "battle-mage" {
+            let exalted: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements
+                 WHERE achievement_key='oteryn:achievement/exalted_battle_mage'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(exalted, i64::from(step_index == 2), "award requires both addons");
+        }
         if let Some(key) = &callback.achievement {
             let earned: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
@@ -2588,6 +2919,33 @@ pub(super) async fn exercise(
             assert_eq!(
                 earned, 1,
                 "source achievement rides the same committed reward"
+            );
+        }
+        let full_outfit_award = match family {
+            "festive" => Some("oteryn:achievement/reason_to_celebrate"),
+            "dream-warden" => Some("oteryn:achievement/dream_warden"),
+            _ => None,
+        };
+        if let Some(key) = full_outfit_award {
+            let earned: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind(key)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(earned, i64::from(step_index + 1 == callbacks.len()));
+        }
+        if family == "demon" {
+            let earned: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind("oteryn:achievement/true_dedication")
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                earned,
+                i64::from(step_index == 2),
+                "True Dedication requires the complete Demon outfit"
             );
         }
         for item in &callback.take {
@@ -2609,10 +2967,36 @@ pub(super) async fn exercise(
             assert_eq!(row, (tracks[&state.track].quest.clone(), state.set));
         }
         for state in &required {
-            let row: (String,i64) = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_one(&h.pool).await?;
+            if (family == "battle-mage" || Some(state) == other_addon) && state.minimum == -1 {
+                let stored: Option<i64> = sqlx::query_scalar(
+                    "SELECT value FROM game_character_quest_tracks
+                     WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(&state.track)
+                .fetch_optional(&h.pool)
+                .await?;
+                assert_eq!(stored, None, "the first addon cannot write the other addon");
+                continue;
+            }
+            let row: Option<(String,i64)> = sqlx::query_as("SELECT quest_key,value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&state.track).fetch_optional(&h.pool).await?;
+            if family == "glooth-engineer"
+                && steps[step_index].0 == "second"
+                && state.track.ends_with("/glooth_engineer_outfits/addon1")
+            {
+                assert!(row.is_none(), "the high-vote second addon leaves the first untouched");
+                assert_eq!(tracks[&state.track].initial, 0);
+                continue;
+            }
+            // The Demon fixture starts the unclaimed source quest at its earned reward stage.
+            let value = if family == "demon" {
+                state.maximum
+            } else {
+                state.minimum
+            };
             assert_eq!(
                 row,
-                (tracks[&state.track].quest.clone(), state.minimum),
+                Some((tracks[&state.track].quest.clone(), value)),
                 "read-only parent ownership and progress retained"
             );
         }
@@ -2682,7 +3066,8 @@ pub(super) async fn exercise(
     );
     if family == "golden" {
         let paid: (i64, i64) = sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;
-        assert_eq!(paid, (3, 200000));
+        assert_eq!(paid, (3, 1_000_000_000));
+        assert_eq!(super::item_forge_fusion_fixtures::fixture::bank(h).await?, 0);
     }
     if family == "nobleman" {
         let paid:(i64,i64,i64)=sqlx::query_as("SELECT count(*),coalesce(sum(fee_gold_units),0)::bigint,coalesce(sum(bank_debit_gold_units),0)::bigint FROM game_item_fee_burns WHERE cause_kind=18").fetch_one(&h.pool).await?;

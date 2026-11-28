@@ -66,8 +66,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(_foreground) = self.root.foreground_demand() else {
             return GraceExpiryResult::Unknown;
         };
-        let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
-            return GraceExpiryResult::Unknown;
+        let token = {
+            if !self.settle_paid_quest_callbacks(session).await {
+                return GraceExpiryResult::Unknown;
+            }
+            let mut runtime = self.runtime.lock().await;
+            if self.has_pending_paid_quest_callback(session) {
+                return GraceExpiryResult::Unknown;
+            }
+            let Ok(token) = release.fence(&mut runtime) else {
+                return GraceExpiryResult::Unknown;
+            };
+            token
         };
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
@@ -245,9 +255,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return ReleaseAttempt::Retry;
         };
         let releasing = self.journal_logout_store(releasing, admitted.world_id);
-        // The terminal release and logout callers already retain foreground demand.
-        // Use the lifecycle recovery window for the final write's holder checkout.
-        let outcome = AdmissionRetryBudget::for_root(&session, self.root)
+        let outcome = AdmissionRetryBudget::for_command(self.root)
             .retry_durability("release_commit", async || match release {
                 TerminalRelease::Abandoned(transport) => {
                     releasing
@@ -341,11 +349,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         // Grace expiry polls this before every release attempt: a busy holder is waited
         // for in turn, or the poll loses it to steady holder use and the release never runs.
-        let Ok(retry) =
-            AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
-        else {
-            return GraceExpiryResult::Unknown;
-        };
+        let retry = AdmissionRetryBudget::for_command(self.root);
         let current = match retry
             .retry_durability("staff_release", || {
                 store.current_session(admitted.game_session_id)

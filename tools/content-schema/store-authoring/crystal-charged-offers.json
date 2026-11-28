@@ -1,0 +1,143 @@
+{
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/modules/scripts/gamestore/gamestore.lua",
+    "sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7",
+    "evidence": "OTS_HYPOTHESIS_ONLY"
+  },
+  "offers": [
+    {
+      "ordinal": 43,
+      "source_line": 488,
+      "title": "Exercise Wraps",
+      "category": "consumables.exercise-weapons",
+      "price": 25,
+      "item_key": "oteryn:item.tibia.i50293",
+      "charges": 500
+    },
+    {
+      "ordinal": 52,
+      "source_line": 579,
+      "title": "Great Health Keg",
+      "category": "consumables.kegs",
+      "price": 103,
+      "item_key": "oteryn:item.tibia.i25905",
+      "charges": 500
+    },
+    {
+      "ordinal": 53,
+      "source_line": 588,
+      "title": "Great Mana Keg",
+      "category": "consumables.kegs",
+      "price": 66,
+      "item_key": "oteryn:item.tibia.i25910",
+      "charges": 500
+    },
+    {
+      "ordinal": 54,
+      "source_line": 597,
+      "title": "Great Spirit Keg",
+      "category": "consumables.kegs",
+      "price": 105,
+      "item_key": "oteryn:item.tibia.i25913",
+      "charges": 500
+    },
+    {
+      "ordinal": 55,
+      "source_line": 606,
+      "title": "Health Keg",
+      "category": "consumables.kegs",
+      "price": 26,
+      "item_key": "oteryn:item.tibia.i25903",
+      "charges": 500
+    },
+    {
+      "ordinal": 56,
+      "source_line": 615,
+      "title": "Mana Keg",
+      "category": "consumables.kegs",
+      "price": 26,
+      "item_key": "oteryn:item.tibia.i25908",
+      "charges": 500
+    },
+    {
+      "ordinal": 57,
+      "source_line": 624,
+      "title": "Strong Health Keg",
+      "category": "consumables.kegs",
+      "price": 53,
+      "item_key": "oteryn:item.tibia.i25904",
+      "charges": 500
+    },
+    {
+      "ordinal": 58,
+      "source_line": 633,
+      "title": "Strong Mana Keg",
+      "category": "consumables.kegs",
+      "price": 43,
+      "item_key": "oteryn:item.tibia.i25909",
+      "charges": 500
+    },
+    {
+      "ordinal": 59,
+      "source_line": 642,
+      "title": "Supreme Health Keg",
+      "category": "consumables.kegs",
+      "price": 288,
+      "item_key": "oteryn:item.tibia.i25907",
+      "charges": 500
+    },
+    {
+      "ordinal": 60,
+      "source_line": 651,
+      "title": "Ultimate Health Keg",
+      "category": "consumables.kegs",
+      "price": 175,
+      "item_key": "oteryn:item.tibia.i25906",
+      "count": 500
+    },
+    {
+      "ordinal": 61,
+      "source_line": 660,
+      "title": "Ultimate Mana Keg",
+      "category": "consumables.kegs",
+      "price": 202,
+      "item_key": "oteryn:item.tibia.i25911",
+      "charges": 500
+    },
+    {
+      "ordinal": 62,
+      "source_line": 668,
+      "title": "Ultimate Spirit Keg",
+      "category": "consumables.kegs",
+      "price": 202,
+      "item_key": "oteryn:item.tibia.i25914",
+      "charges": 500
+    },
+    {
+      "ordinal": 717,
+      "source_line": 6579,
+      "title": "Gold Converter",
+      "category": "useful-things",
+      "price": 5,
+      "item_key": "oteryn:item.tibia.i23722",
+      "charges": 500
+    },
+    {
+      "ordinal": 719,
+      "source_line": 6597,
+      "title": "Magic Gold Converter",
+      "category": "useful-things",
+      "price": 15,
+      "item_key": "oteryn:item.tibia.i28525",
+      "charges": 500
+    }
+  ],
+  "converter_weights": {
+    "23722": 1800,
+    "25719": 300,
+    "28525": 0,
+    "28526": 0
+  }
+}

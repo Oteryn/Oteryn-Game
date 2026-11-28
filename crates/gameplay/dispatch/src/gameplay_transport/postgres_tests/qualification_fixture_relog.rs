@@ -8,10 +8,6 @@ use oteryn_protocol_oteryn::logout::LogoutResult;
     dead_code,
     reason = "this mount uses the served-policy provisioning entry point"
 )]
-#[allow(
-    unexpected_cfgs,
-    reason = "the shared Game Server module owns the qualification-spawn feature"
-)]
 #[path = "../../../../../../apps/game-server/src/qualification_spell_character.rs"]
 pub(super) mod provision;
 
@@ -108,7 +104,7 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
                 .policy_for("profile-1", "ruleset-1", "content-1").map_err(debug)?;
             let current = store.current_session(admitted.game_session_id).await.map_err(debug)?;
             provision::prepare_character_with_policy(&h.root, &authority, &h.node, &current,
-                provision::QualificationBuildSpec { vocation: "knight", level: 100, context: policy.context.clone(), xp_occurrence: id(183), build_occurrence: id(184) }, policy).await?;
+                provision::QualificationBuildSpec { vocation: "knight", level: 100, exact_level: false, context: policy.context.clone(), xp_occurrence: id(183), build_occurrence: id(184) }, policy).await?;
         }
         let position_fence = owner
             .current_quest_fence(admitted.game_session_id)
@@ -234,6 +230,7 @@ fn scenario(tag: &str, provision_before_relog: bool) -> TestResult {
             provision::QualificationBuildSpec {
                 vocation: "knight",
                 level: 100,
+                exact_level: false,
                 context: policy.context.clone(),
                 xp_occurrence: id(181),
                 build_occurrence: id(182),

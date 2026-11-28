@@ -494,7 +494,7 @@ async fn bootstrap_party_character(
     Ok(bootstrapped.character_id)
 }
 
-pub(crate) async fn committed_fresh_player(
+async fn committed_fresh_player(
     h: &Harness,
     character: u8,
     account: u8,

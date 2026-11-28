@@ -682,7 +682,12 @@ impl ContentActivationController {
         if !inside(boss) || entries.iter().any(|p| !inside(*p)) {
             return Err(R::IncompleteLayout);
         }
-        for position in levers.iter().chain(entries.iter()).copied().chain([exit]) {
+        for position in levers
+            .iter()
+            .chain(entries.iter())
+            .copied()
+            .chain([boss, exit])
+        {
             if room
                 .movement_cells()
                 .index()
@@ -693,11 +698,6 @@ impl ContentActivationController {
                 return Err(R::UnknownPlacement);
             }
         }
-        qualify_boss_spawn_placement(
-            room.movement_cells()
-                .index()
-                .lookup(room.movement_cells().scope(), boss),
-        )?;
         let native = active
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
@@ -874,20 +874,6 @@ fn qualify_instance_death_descendant(
     Ok(())
 }
 
-fn qualify_boss_spawn_placement(
-    collision: Result<
-        crate::content::CollisionClass,
-        crate::content::static_cell_engine::StaticCellEngineError,
-    >,
-) -> Result<(), ActivityTemplateRefusal> {
-    // Crystal 201189f8 boss_lever.lua:235-241 uses forced placement.
-    // Map::placeCreature (map.cpp:243-253) accepts the existing centre tile
-    // even when ordinary creature movement would refuse it.
-    collision
-        .map(|_| ())
-        .map_err(|_| ActivityTemplateRefusal::UnknownPlacement)
-}
-
 fn hex_digest(text: &str) -> bool {
     text.len() == 64
         && text
@@ -898,24 +884,6 @@ fn hex_digest(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn forced_boss_spawn_still_requires_a_known_cell() {
-        use crate::content::{CollisionClass, static_cell_engine::StaticCellEngineError};
-
-        assert_eq!(
-            qualify_boss_spawn_placement(Err(StaticCellEngineError::Absent)),
-            Err(ActivityTemplateRefusal::UnknownPlacement)
-        );
-        assert_eq!(
-            qualify_boss_spawn_placement(Ok(CollisionClass::Walkable)),
-            Ok(())
-        );
-        assert_eq!(
-            qualify_boss_spawn_placement(Ok(CollisionClass::Blocked)),
-            Ok(())
-        );
-    }
 
     fn debug(error: impl std::fmt::Debug) -> String {
         format!("{error:?}")

@@ -5,6 +5,7 @@ use crate::durability::world_reset::ground_step::DeathEntryKind;
 use crate::durability::world_reset::test_support::{RetirementPhase, RetirementProbe};
 use sqlx::types::Uuid;
 
+#[allow(clippy::too_many_arguments)]
 pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     tx: &mut mint_audit::Type2Transaction<'_>,
     permit: &SpellLanePermit,
@@ -12,6 +13,7 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     node: &NodeIncarnationProof,
     step: DecayRetireStep,
     parent: &Admitted,
+    arena_reset: Option<&audit::OneItemArenaResetV1>,
     #[cfg(any(test, feature = "test-support"))] mut profile: Option<&mut RetirementProbe>,
 ) -> std::result::Result<(), DurabilityError> {
     #[cfg(any(test, feature = "test-support"))]
@@ -20,18 +22,17 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
     }
     if !matches!(
         step.cause,
-        RetireCause::WorldReset(_) | RetireCause::ActivityRetirement(_)
+        RetireCause::WorldReset(_) | RetireCause::ActivityRetirement(_) | RetireCause::ArenaReset(_)
     ) || !step.is_corpse_step()
-        || !crate::durability::world_reset::ground_step::is_death_container(
-            tx,
-            step.corpse_item_instance_id,
-        )
-        .await?
+        || (!matches!(step.cause, RetireCause::ArenaReset(_))
+            && !crate::durability::world_reset::ground_step::is_death_container(
+                tx, step.corpse_item_instance_id,
+            ).await?)
     {
         return Ok(());
     }
-    let tree =
-        crate::durability::world_reset::ground_step::death_tree(tx, step.item_instance_id).await?;
+    let arena = matches!(step.cause, RetireCause::ArenaReset(_));
+    let tree = retirement_tree(tx, step.item_instance_id, &parent.world_id, arena).await?;
     #[cfg(any(test, feature = "test-support"))]
     if let Some(profile) = profile.as_mut() {
         profile.descendants(tree.len());
@@ -51,8 +52,7 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
         profile.enter(RetirementPhase::GraphRecheck);
     }
     if rows.len() != tree.len()
-        || crate::durability::world_reset::ground_step::death_tree(tx, step.item_instance_id)
-            .await?
+        || retirement_tree(tx, step.item_instance_id, &parent.world_id, arena).await?
             != tree
     {
         return Err(DurabilityError::InvalidStoredState);
@@ -115,6 +115,12 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
         };
         let transaction_id = uuid_text(row.try_get("transaction_id")?)?;
         let event_id = uuid_text(row.try_get("event_id")?)?;
+        let mut message = decay_message(child, fence, &admitted);
+        if let Some(arena_reset) = arena_reset {
+            let mut cause = arena_reset.clone();
+            cause.item_instance_id = child.item_instance_id.to_vec();
+            message.arena_reset = Some(cause);
+        }
         let envelope = audit::encode_decay_retire_event(
             DecayRetireEventIdentity {
                 event_id,
@@ -122,7 +128,7 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
                 occurred_at_unix_ms: admitted.database_now_unix_ms,
                 server_build_id: SERVER_BUILD_ID,
             },
-            decay_message(child, fence, &admitted),
+            message,
             tuple.tuple(),
         )
         .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -136,6 +142,7 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
         entry_kinds.push(match entry.kind {
             DeathEntryKind::Direct => 1_i16,
             DeathEntryKind::Nested => 2_i16,
+            DeathEntryKind::Corpse => 3_i16,
         });
     }
     // The held SpellLane cannot change scope or acquire an unresolved attempt.
@@ -202,4 +209,19 @@ pub(in crate::durability::item_decay_retire) async fn retire_death_contents(
         profile.batch_finished(count);
     }
     Ok(())
+}
+
+
+async fn retirement_tree(
+    tx: &mut mint_audit::Type2Transaction<'_>,
+    root: [u8; 16],
+    world: &[u8; 16],
+    arena: bool,
+) -> std::result::Result<Vec<crate::durability::world_reset::ground_step::DeathTreeEntry>, DurabilityError> {
+    use crate::durability::world_reset::ground_step::{arena_tree, death_tree};
+    if arena {
+        arena_tree(tx, root, world).await
+    } else {
+        death_tree(tx, root).await
+    }
 }

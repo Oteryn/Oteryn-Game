@@ -105,7 +105,7 @@ fn snowbunny_transaction_scenario() -> TestResult {
                 failed,
                 character,
                 &event,
-                std::time::Instant::now() + Duration::from_secs(5),
+                tokio::time::Instant::now() + Duration::from_secs(5),
             )
             .await
             .is_err()
@@ -129,7 +129,7 @@ fn snowbunny_transaction_scenario() -> TestResult {
             committed,
             character,
             &event,
-            std::time::Instant::now() + Duration::from_secs(5),
+            tokio::time::Instant::now() + Duration::from_secs(5),
         )
         .await?;
         let progress: i64 = sqlx::query_scalar(

@@ -6,7 +6,7 @@
 //! analyser reducer in `apps/client/src/features/0010-analyser/protocol.rs`.
 use super::*;
 use oteryn_dev_client::client_runtime::analyser::{AnalyserFact, AnalyserImpact};
-use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
+use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 
 fn capture(bytes: &[u8]) -> TestResult {
     use std::io::Write;
@@ -20,6 +20,69 @@ fn capture(bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
+fn track_aggressors(event: &SessionEvent, aggressors: &mut Vec<EntityRef>) -> TestResult {
+    match event {
+        SessionEvent::AnalyserAttributedFacts(delta) => {
+            for attributed in &delta.value {
+                if matches!(
+                    attributed.fact,
+                    AnalyserFact::DamageInput {
+                        source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(_),
+                        ..
+                    }
+                ) {
+                    let attacker = attributed
+                        .attacker
+                        .ok_or("incoming creature damage has no exact attacker")?;
+                    if !aggressors.contains(&attacker) {
+                        aggressors.push(attacker);
+                    }
+                }
+            }
+        }
+        SessionEvent::AnalyserFacts(delta)
+            if delta.value.iter().any(|fact| {
+                matches!(
+                    fact,
+                    AnalyserFact::DamageInput {
+                        source: oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(_),
+                        ..
+                    }
+                )
+            }) =>
+        {
+            return Err("legacy creature damage cannot prove exact aggressor departure".into());
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+fn drain_aggressors(client: &mut DevClientSession, aggressors: &mut Vec<EntityRef>) -> TestResult {
+    for event in client.take_events() {
+        track_aggressors(&event, aggressors)?;
+    }
+    Ok(())
+}
+
+fn verify_no_aggressor(client: &DevClientSession, aggressors: &[EntityRef]) -> TestResult {
+    let view = client
+        .world_entities()
+        .ok_or("aggressor check has no entity view")?;
+    if let Some(attacker) = aggressors.iter().find(|id| {
+        view.get(id)
+            .is_some_and(|entry| entry.kind == EntityKind::Creature)
+    }) {
+        return Err(format!("Rat logout still has a live aggressor in view: {attacker:?}").into());
+    }
+    Ok(())
+}
+
+struct RatObservation {
+    target_selected: bool,
+    last_position: ActorPosition,
+}
+
 /// Canonical re-encoding of complete typed events, not the discarded raw state-delta bytes.
 fn collect(
     client: &mut DevClientSession,
@@ -27,7 +90,8 @@ fn collect(
     facts: &mut Vec<AnalyserFact>,
     events: &mut Vec<String>,
     target: oteryn_dev_client::EntityRef,
-    target_observed: &mut bool,
+    target_state: &mut RatObservation,
+    aggressors: &mut Vec<EntityRef>,
 ) -> TestResult {
     use oteryn_protocol_oteryn::analyser::{encode_analyser_fact, encode_attributed_analyser_fact};
     let hex = |bytes: Vec<u8>| {
@@ -37,6 +101,7 @@ fn collect(
             .collect::<String>()
     };
     for event in client.take_events() {
+        track_aggressors(&event, aggressors)?;
         let (kind, sequence, base, revision, encoded) = match event {
             SessionEvent::AnalyserFacts(delta) => {
                 if selected {
@@ -81,7 +146,18 @@ fn collect(
                 )
             }
             SessionEvent::ActorCombatState(delta) => {
-                *target_observed |= delta.value.target == Some(target);
+                target_state.target_selected |= delta.value.target == Some(target);
+                continue;
+            }
+            SessionEvent::WorldSpatialEntities(delta) => {
+                if let Some(entry) = delta
+                    .value
+                    .update
+                    .iter()
+                    .find(|entry| entry.entity == target)
+                {
+                    target_state.last_position = entry.position;
+                }
                 continue;
             }
             _ => continue,
@@ -94,17 +170,74 @@ fn collect(
     Ok(())
 }
 
-// Follow the authored Rat route once, honoring the server's step pacing receipt.
+// Honor step pacing and detour only around a confirmed creature.
 async fn walk_rat_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
+    aggressors: &mut Vec<EntityRef>,
 ) -> TestResult {
-    for &direction in path {
+    let center = tile(client.world_spatial().actor_position)?;
+    let mut path = VecDeque::from(path.to_vec());
+    let mut detours = 0;
+    while let Some(direction) = path.pop_front() {
         let from = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("Rat route landing missing")?;
         let step = client.step(direction).await?;
         let actual = tile(client.world_spatial().actor_position)?;
+        if step.disposition == StepDisposition::Blocked && actual == from {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            let occupant = client
+                .world_entities()
+                .and_then(|view| {
+                    view.iter().find(|entry| {
+                        matches!(
+                            entry.kind,
+                            EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+                        ) && tile(entry.position).ok() == Some(expected)
+                    })
+                })
+                .map(|entry| (entry.entity, entry.kind));
+            let Some((occupant, kind)) = occupant else {
+                return Err(format!("BLOCKER-SERVER Rat route blocked without an occupant from={from:?} expected={expected:?} step={step:?}").into());
+            };
+            if kind != EntityKind::Creature {
+                return Err(
+                    format!("Rat route blocked by {kind:?} {occupant:?} at {expected:?}").into(),
+                );
+            }
+            if detours == 8 {
+                return Err("Rat route exhausted its creature detour budget".into());
+            }
+            detours += 1;
+            client.service_liveness(Duration::from_millis(100)).await?;
+            if tile(client.world_spatial().actor_position)? != from {
+                return Err("Rat route actor moved while observing a blocked step".into());
+            }
+            let view = client
+                .world_entities()
+                .ok_or("Rat route entity view missing")?;
+            let position = view.get(&occupant).map(|entry| entry.position);
+            evidence(&format!(
+                "N07C_CREATURE_BLOCK attempt={detours} entity={occupant:?} blocked={expected:?} current={position:?} step={step:?}"
+            ));
+            let blocked: std::collections::BTreeSet<_> = view
+                .iter()
+                .filter(|entry| &entry.entity.identity != view.own_identity())
+                .filter_map(|entry| tile(entry.position).ok())
+                .collect();
+            path = route_around_occupant(
+                from,
+                center,
+                expected,
+                &path,
+                |at| !blocked.contains(&at),
+                |at, direction| destination(world, at, direction),
+            )
+            .ok_or("Rat route has no detour to the original goal")?
+            .into();
+            continue;
+        }
         if step.disposition != StepDisposition::Moved
             || step.world_spatial_delta.is_none()
             || actual != expected
@@ -120,7 +253,7 @@ async fn walk_rat_route(
                 .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
                 .await?;
         }
-        client.take_events();
+        drain_aggressors(client, aggressors)?;
     }
     Ok(())
 }
@@ -129,6 +262,7 @@ async fn travel_to_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    aggressors: &mut Vec<EntityRef>,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
     let mut rats = Vec::new();
@@ -184,13 +318,14 @@ async fn travel_to_rat(
     )
     .ok_or("no reachable Rat spawn outside neighboring spawn tiles")?;
     evidence(&format!("N07C_RAT_ROUTE steps={}", path.len()));
-    walk_rat_route(client, world, &path).await
+    walk_rat_route(client, world, &path, aggressors).await
 }
 
 /// Fight the adjacent creature and collect every analyser fact the server pushes for the kill.
 async fn fight(
     client: &mut DevClientSession,
     selected: bool,
+    aggressors: &mut Vec<EntityRef>,
 ) -> TestResult<(Vec<AnalyserFact>, Vec<String>)> {
     let here = client.world_spatial().actor_position;
     let target = client
@@ -219,6 +354,13 @@ async fn fight(
     {
         return Err("Rat attack requires an observed clear combat target".into());
     }
+    let existing_corpses: Vec<_> = client
+        .world_entities()
+        .ok_or("Rat fight has no entity view")?
+        .iter()
+        .filter(|entry| entry.kind == EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -226,7 +368,10 @@ async fn fight(
     if attack.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("Rat attack refused: {attack:?}").into());
     }
-    let mut target_observed = false;
+    let mut target_state = RatObservation {
+        target_selected: false,
+        last_position: target.position,
+    };
     let mut facts = Vec::new();
     let mut events = Vec::new();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
@@ -236,15 +381,13 @@ async fn fight(
             .iter()
             .any(|fact| matches!(fact, AnalyserFact::Kill { .. }));
         let xp = facts.iter().any(|fact| matches!(fact, AnalyserFact::Experience { raw, gained } if *raw > 0 && *gained > 0));
-        let loot = facts
-            .iter()
-            .any(|fact| matches!(fact, AnalyserFact::KillLoot { gold, .. } if *gold > 0));
-        if target_observed && kill && xp && loot {
+        if target_state.target_selected && kill && xp {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "Rat analyser settlement deadline target={target_observed} kill={kill} xp={xp} loot={loot}"
+                "Rat analyser settlement deadline target={} kill={kill} xp={xp}",
+                target_state.target_selected
             )
             .into());
         }
@@ -255,7 +398,8 @@ async fn fight(
             &mut facts,
             &mut events,
             target.entity,
-            &mut target_observed,
+            &mut target_state,
+            aggressors,
         )?;
     }
     // Keep the trailing observation to catch duplicate settlement facts.
@@ -267,7 +411,8 @@ async fn fight(
             &mut facts,
             &mut events,
             target.entity,
-            &mut target_observed,
+            &mut target_state,
+            aggressors,
         )?;
     }
     let entities = client
@@ -279,6 +424,94 @@ async fn fight(
     {
         return Err("Rat kill fact left the attacked Rat alive".into());
     }
+    let corpse = entities
+        .iter()
+        .find(|entry| {
+            entry.kind == EntityKind::Corpse
+                && entry.position == target_state.last_position
+                && !existing_corpses.contains(&entry.entity)
+        })
+        .ok_or("Rat settlement has no new corpse at the target's last position")?;
+    let oteryn_dev_client::EntityDetail::Object {
+        item_handle: Some(handle),
+        ..
+    } = corpse.detail
+    else {
+        return Err("Rat corpse has no server item handle".into());
+    };
+    let used = client.use_item(handle).await?;
+    if used.status != CommandStatus::Accepted
+        || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("Rat corpse USE refused: {used:?}").into());
+    }
+    let until = tokio::time::Instant::now() + Duration::from_secs(5);
+    let entries = loop {
+        if let Some(view) = client
+            .open_container()
+            .filter(|view| view.container_handle == Some(handle))
+        {
+            break view.entries.clone();
+        }
+        if tokio::time::Instant::now() >= until {
+            return Err("Rat corpse container delta missing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
+    let counts = |items: Vec<(u32, u32)>| {
+        let mut counts = BTreeMap::<u32, u64>::new();
+        for (id, count) in items {
+            *counts.entry(id).or_default() += u64::from(count);
+        }
+        counts
+    };
+    let actual = counts(
+        entries
+            .iter()
+            .map(|item| (item.item_definition_ref.get(), item.count.get()))
+            .collect(),
+    );
+    let reported = counts(
+        facts
+            .iter()
+            .filter_map(|fact| match fact {
+                AnalyserFact::KillLoot { corpse_items, .. } => Some(corpse_items),
+                _ => None,
+            })
+            .flatten()
+            .map(|item| (item.item_type.get(), u32::from(item.count.get())))
+            .collect(),
+    );
+    let mut actual_gold = 0;
+    let mut actual_cheese = 0;
+    for item in &entries {
+        match item.appearance_id {
+            3031 => actual_gold += u64::from(item.count.get()),
+            3607 => actual_cheese += u64::from(item.count.get()),
+            appearance => {
+                return Err(format!("unexpected Rat corpse item appearance={appearance}").into());
+            }
+        }
+    }
+    let reported_gold: u64 = facts
+        .iter()
+        .filter_map(|fact| match fact {
+            AnalyserFact::KillLoot { gold, .. } => Some(*gold),
+            _ => None,
+        })
+        .sum();
+    if actual_gold != reported_gold || actual_gold > 4 || actual_cheese > 1 {
+        return Err(format!("Rat corpse totals gold={actual_gold} cheese={actual_cheese} analyser_gold={reported_gold}").into());
+    }
+    if actual != reported {
+        return Err(format!(
+            "Rat corpse loot differs from analyser facts actual={actual:?} reported={reported:?}"
+        )
+        .into());
+    }
+    evidence(&format!(
+        "N07C_RAT_CORPSE gold={actual_gold} cheese={actual_cheese}"
+    ));
     Ok((facts, events))
 }
 
@@ -348,16 +581,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !client.selected_capabilities().contains(&10) {
         return Err("analyser capability 10 not selected".into());
     }
-    travel_to_rat(&mut client, world, &metadata.spawns).await?;
+    let mut aggressors = Vec::new();
+    travel_to_rat(&mut client, world, &metadata.spawns, &mut aggressors).await?;
     verdict::Harness::global().progress("rat-attack");
     let attribution_selected = client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1);
     let before_xp = experience(&mut client).await?;
-    client.take_events();
+    drain_aggressors(&mut client, &mut aggressors)?;
     let combat_session = client.join_snapshot().game_session_id;
     let sequence_before = client.last_server_sequence();
-    let (facts, events) = fight(&mut client, attribution_selected).await?;
+    let (facts, events) = fight(&mut client, attribution_selected, &mut aggressors).await?;
     let sequence_after = client.last_server_sequence();
     if sequence_after <= sequence_before {
         return Err("Rat combat did not advance the admitting session's sequence".into());
@@ -388,9 +622,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     }
     if kills != 1
-        || raw == 0
+        || raw != 5
         || gained == 0
-        || gold == 0
         || facts
             .iter()
             .any(|fact| matches!(fact, AnalyserFact::Dropped(_)))
@@ -410,7 +643,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     let saved_position = client.world_spatial().actor_position;
-    let combat_expiry = tokio::time::Instant::now() + Duration::from_secs(65);
+    drain_aggressors(&mut client, &mut aggressors)?;
+    verify_no_aggressor(&client, &aggressors)?;
+    let combat_expiry = tokio::time::Instant::now() + Duration::from_secs(60);
     verdict::Harness::global().bounded_wait(combat_expiry, "pve-logout-lock");
     while client
         .session_mut()
@@ -421,7 +656,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("Rat combat did not release the observed PvE logout lock".into());
         }
         client.service_liveness(Duration::from_millis(200)).await?;
-        client.take_events();
+        drain_aggressors(&mut client, &mut aggressors)?;
+        verify_no_aggressor(&client, &aggressors)?;
     }
     logout(&mut client).await?;
     drop(client);

@@ -19,8 +19,6 @@ pub(in crate::qualification) use mp::legacy_d150;
 
 include!("character_core.rs");
 include!("character_release.rs");
-#[path = "character_prep.rs"]
-mod character_prep;
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
@@ -488,17 +486,14 @@ fn route_with_landings(
 ) -> Option<Vec<StepDirection>> {
     find_route(from, goal, |at, direction| {
         let next = landing(at, direction)?;
-        (next.x.abs_diff(from.x) <= 160
-            && next.y.abs_diff(from.y) <= 160
-            && next.floor.abs_diff(from.floor) <= 2
-            && available(next))
-        .then_some(next)
+        (map_journey::in_town(next, from) && available(next)).then_some(next)
     })
     .ok()
 }
 
 fn route_around_occupant(
     from: TilePos,
+    center: TilePos,
     occupied: TilePos,
     remaining: &VecDeque<StepDirection>,
     available: impl Fn(TilePos) -> bool,
@@ -507,12 +502,16 @@ fn route_around_occupant(
     let goal = remaining
         .iter()
         .try_fold(occupied, |at, &direction| landing(at, direction))?;
-    route_with_landings(
+    find_route(
         from,
         |at| at == goal,
-        |at| at != occupied && available(at),
-        landing,
+        |at, direction| {
+            let next = landing(at, direction)?;
+            (map_journey::in_town(next, center) && next != occupied && available(next))
+                .then_some(next)
+        },
     )
+    .ok()
 }
 
 fn find_route(
@@ -636,6 +635,7 @@ struct HuntDeath {
     stamina: u16,
     reward_occurrence: Option<[u8; 16]>,
     shared: bool,
+    committed_at_ms: i64,
     awards: BTreeMap<[u8; 16], u64>,
 }
 
@@ -662,14 +662,15 @@ async fn committed_hunt_death(
         &clients.scope_generation.to_be_bytes(),
     ]
     .concat();
-    type ReceiptRow = (Vec<u8>, i32, bool, Option<Vec<u8>>);
+    type ReceiptRow = (Vec<u8>, i32, bool, Option<Vec<u8>>, i64);
     tokio::time::timeout_at(deadline, async {
         let mut database = sqlx::PgConnection::connect(clients.url).await?;
         loop {
             // The Channel death key is the exact byte sequence hashed by
             // ExactActorRef::placement_identity after its domain separator.
             let row: Option<ReceiptRow> = sqlx::query_as(
-                "SELECT r.death_key, m.stamina_minutes, r.shared, uuid_send(m.reward_occurrence_id)
+                "SELECT r.death_key, m.stamina_minutes, r.shared, uuid_send(m.reward_occurrence_id),
+                        floor(EXTRACT(EPOCH FROM r.committed_at) * 1000)::bigint
                  FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
                  ON m.death_key=r.death_key AND m.character_id=r.principal_id
                  WHERE ($1::bytea IS NULL OR r.principal_id=encode($1,'hex')::uuid)
@@ -686,7 +687,7 @@ async fn committed_hunt_death(
             .bind(target.identity.as_slice())
             .fetch_optional(&mut database)
             .await?;
-            if let Some((death_key, stamina, shared, reward_occurrence)) = row {
+            if let Some((death_key, stamina, shared, reward_occurrence, committed_at_ms)) = row {
                 let slot = death_key
                     .get(40..44)
                     .ok_or("missing death actor slot")?
@@ -718,6 +719,7 @@ async fn committed_hunt_death(
                         .map(|id| id.as_slice().try_into())
                         .transpose()?,
                     shared,
+                    committed_at_ms,
                     awards: awards
                         .into_iter()
                         .map(|(id, xp)| {
@@ -759,16 +761,7 @@ async fn request_fixture_control(
     operation: &'static str,
     argument: String,
 ) -> Result<String, String> {
-    request_fixture_control_at("NODE_BOOT_CONTROL_SOCKET", session, operation, argument).await
-}
-
-async fn request_fixture_control_at(
-    socket_env: &str,
-    session: String,
-    operation: &'static str,
-    argument: String,
-) -> Result<String, String> {
-    let socket = required(socket_env).map_err(|error| error.to_string())?;
+    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
@@ -828,7 +821,7 @@ async fn walk_with_landings(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> TestResult {
-    walk_with_landing_budget(client, path, landing, None).await
+    walk_with_landing_budget(client, path, landing, None, None).await
 }
 
 async fn walk_with_landing_budget(
@@ -836,6 +829,7 @@ async fn walk_with_landing_budget(
     path: &[StepDirection],
     landing: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
     step_budget: Option<Duration>,
+    detour_center: Option<TilePos>,
 ) -> TestResult {
     let mut path = VecDeque::from(path.to_vec());
     let mut blocked = std::collections::BTreeSet::new();
@@ -896,6 +890,7 @@ async fn walk_with_landing_budget(
                 && blocked.insert(occupied)
                 && let Some(detour) = route_around_occupant(
                     from,
+                    detour_center.unwrap_or(from),
                     occupied,
                     &path,
                     |at| !blocked.contains(&at) && !visible_blockers.contains(&at),
@@ -3468,59 +3463,27 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     Ok((nonce, attempt))
 }
 
-pub(super) fn requires_platform_grant(account: &str) -> bool {
-    std::env::var("NODE_BOOT_PLATFORM_GRANT_ACCOUNTS")
-        .is_ok_and(|accounts| accounts.split(',').any(|required| required == account))
-}
-
-async fn platform_row_grant(clients: &SeamClients<'_>, index: usize) -> TestResult<String> {
-    let work = required("NODE_BOOT_PLATFORM_GRANT_DIR")?;
-    let account = clients.accounts[index].clone();
-    let character = uuid_text(&clients.characters[index]);
-    let world = uuid_text(&clients.world);
-    let channel = uuid_text(&clients.channel);
-    let address = clients.address.to_string();
-    let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("python3")
-            .arg(
-                Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .join("../../tools/qualification/node_boot/platform_grant.py"),
-            )
-            .args([work, account, character, world, channel, address])
-            .output()
-    })
-    .await??;
-    if !output.status.success() {
-        return Err("Platform-issued row grant unavailable".into());
-    }
-    Ok(String::from_utf8(output.stdout)?)
-}
-
 pub(super) async fn connect_character(
     clients: &SeamClients<'_>,
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     wait_character_released(clients, index).await?;
-    let token = if requires_platform_grant(&clients.accounts[index]) {
-        platform_row_grant(clients, index).await?
-    } else {
-        let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
-        let (nonce, attempt) = fresh_grant_material(tag)?;
-        let grant = Grant {
-            signing: clients.signing,
-            key_id: clients.key_id,
-            account_id: &clients.accounts[index],
-            character_id: clients.characters[index],
-            world_id: clients.world,
-            channel_id: clients.channel,
-            security_generation: generation,
-            scope_generation: clients.scope_generation,
-            nonce,
-            attempt,
-        };
-        sign_grant(&grant, now_seconds()?)
+    let generation = platform_generation(clients.descriptor, &clients.accounts[index]).await?;
+    let (nonce, attempt) = fresh_grant_material(tag)?;
+    let grant = Grant {
+        signing: clients.signing,
+        key_id: clients.key_id,
+        account_id: &clients.accounts[index],
+        character_id: clients.characters[index],
+        world_id: clients.world,
+        channel_id: clients.channel,
+        security_generation: generation,
+        scope_generation: clients.scope_generation,
+        nonce,
+        attempt,
     };
+    let token = sign_grant(&grant, now_seconds()?);
     let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",
@@ -3832,9 +3795,10 @@ fn qualification_town_route_detours_around_live_wolf() -> TestResult {
         route_with_landings(from, |at| at == goal, |_| true, landing),
         Some(vec![East, East])
     );
-    let detour = route_around_occupant(from, wolf, &VecDeque::from([East]), |_| true, landing)
-        .ok_or("missing wolf detour")?;
+    let detour =
+        route_around_occupant(from, from, wolf, &VecDeque::from([East]), |_| true, landing)
+            .ok_or("missing wolf detour")?;
     assert_eq!(detour, [North, East, East, South]);
-    assert!(route_around_occupant(from, wolf, &VecDeque::new(), |_| true, landing).is_none());
+    assert!(route_around_occupant(from, from, wolf, &VecDeque::new(), |_| true, landing).is_none());
     Ok(())
 }

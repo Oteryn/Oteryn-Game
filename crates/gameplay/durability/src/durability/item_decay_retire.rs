@@ -69,6 +69,7 @@ use sqlx::Row;
 
 mod activity_retirement;
 pub use activity_retirement::ActivityGroundRetirement;
+pub(super) mod arena_reset;
 mod world_reset_cause;
 use world_reset_cause::RetireCause;
 
@@ -439,6 +440,7 @@ async fn admit(
             }
             return world_reset_cause::admit_ground(tx, fence, step).await;
         }
+        RetireCause::ArenaReset(_) => return Ok(Err(DecayRetireError::AuthorityRejected)),
         RetireCause::CorpseDecay => {}
     }
     let item = sqlx::query(
@@ -594,18 +596,14 @@ async fn apply_retire(
         }
         Some(ordinal) => {
             use super::world_reset::ground_step::DeathEntryKind;
-            let (query, parent) = match admitted.death_entry {
-                Some(entry) => (
-                    match entry.kind {
-                        DeathEntryKind::Direct => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
-                        DeathEntryKind::Nested => "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
-                    },
-                    entry.parent,
-                ),
-                None => (
-                    "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
-                    step.corpse_item_instance_id,
-                ),
+            let (kind, parent) = admitted.death_entry.map_or(
+                (DeathEntryKind::Corpse, step.corpse_item_instance_id),
+                |entry| (entry.kind, entry.parent),
+            );
+            let query = match kind {
+                DeathEntryKind::Direct => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
+                DeathEntryKind::Nested => "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
+                DeathEntryKind::Corpse => "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
             };
             sqlx::query(query)
                 .bind(item)

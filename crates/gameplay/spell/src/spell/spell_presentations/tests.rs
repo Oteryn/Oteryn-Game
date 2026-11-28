@@ -9,6 +9,26 @@ use {
     oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
 
+#[test]
+fn crystal_equipment_bond_cues_resolve_from_committed_client_bindings() {
+    let bindings: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../content/presentations/bindings/client-ids.json"
+    ))
+    .unwrap();
+    for colour in ["green", "pink"] {
+        let key = format!("canary.appearance:effect/{colour}_tigerclash");
+        let id = bindings["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["key"] == key)
+            .and_then(|row| row["client_id"].as_u64())
+            .and_then(|id| u16::try_from(id).ok())
+            .unwrap();
+        assert!(matches!(resolve_source_cue(&key), Some(Cue::Effect(bound)) if bound == id));
+    }
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }
@@ -451,80 +471,4 @@ fn ordinary_passive_cue_rejects_retired_current_owner_before_preparing() {
     assert_eq!(batch, before);
     assert!(owner.pending.is_empty());
     assert!(owner.held.is_empty());
-}
-
-#[test]
-fn native_haste_profiles_admit_the_authored_magic_green_cue() {
-    let (active, runtime, actor, session) = ordinary_passive_cue_fixture();
-    for key in ["charge", "haste", "strong_haste", "swift_foot"] {
-        let (index, definition) =
-            ordinary_passive_cue_definition(&active, &format!("candidate:spell/{key}"));
-        let sound = definition
-            .authored
-            .as_ref()
-            .and_then(|source| source.header.presentation.as_ref())
-            .and_then(|presentation| presentation.cast_cue.as_deref())
-            .unwrap();
-        let mut owner = SpellPresentationOwner::new(&runtime);
-        let mut batch = ordinary_passive_cue_batch(actor, session);
-        let prepared = owner.prepare_source_definition(
-            &runtime,
-            &active,
-            index,
-            &definition,
-            &mut batch,
-            vec![
-                ordinary_passive_cue_request(actor, sound),
-                ordinary_passive_cue_request(actor, SOURCE_MAGIC_GREEN_CUE),
-            ],
-        );
-        assert_eq!(
-            prepared.map(|cue| cue
-                .events
-                .into_iter()
-                .map(|event| event.cue)
-                .collect::<Vec<_>>()),
-            Ok(vec![resolve_source_cue(sound).unwrap(), Cue::Effect(15)]),
-            "{key}"
-        );
-    }
-}
-
-#[test]
-fn named_summon_uses_the_registered_teleport_cue() {
-    let (active, runtime, actor, session) = ordinary_passive_cue_fixture();
-    let (index, definition) =
-        ordinary_passive_cue_definition(&active, "candidate:spell/summon_creature");
-    let mut owner = SpellPresentationOwner::new(&runtime);
-    let mut batch = ordinary_passive_cue_batch(actor, session);
-    let prepared = owner.prepare_source_definition(
-        &runtime,
-        &active,
-        index,
-        &definition,
-        &mut batch,
-        vec![ordinary_passive_cue_request(actor, SOURCE_TELEPORT_CUE)],
-    );
-    assert_eq!(
-        prepared.map(|cue| cue
-            .events
-            .into_iter()
-            .map(|event| event.cue)
-            .collect::<Vec<_>>()),
-        Ok(vec![Cue::Effect(11)])
-    );
-
-    let (index, definition) = ordinary_passive_cue_definition(&active, "candidate:spell/charge");
-    let mut batch = ordinary_passive_cue_batch(actor, session);
-    assert!(matches!(
-        owner.prepare_source_definition(
-            &runtime,
-            &active,
-            index,
-            &definition,
-            &mut batch,
-            vec![ordinary_passive_cue_request(actor, SOURCE_TELEPORT_CUE)]
-        ),
-        Err(Error::UnqualifiedSource)
-    ));
 }

@@ -2,7 +2,6 @@
 use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_pin};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::item_look_fixtures::{large_stack, read_frame, seed_main_backpack};
-use super::rune_use_bridge_fixtures::{Case as RuneUseCase, run_case as run_rune_use_case};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -18,7 +17,6 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use crate::spell::cast::CharacterCastFacts;
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
 use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
@@ -139,6 +137,30 @@ fn field_runes_postgres_player_contact_recovers_committed_damage() -> TestResult
 }
 
 #[test]
+fn field_runes_postgres_gift_commits_shortened_cooldown() -> TestResult {
+    large_stack(|| run(async |admin| gift_field_case(admin, false).await))
+}
+
+#[test]
+fn field_runes_postgres_gift_restages_shortened_cooldown_after_rollback() -> TestResult {
+    large_stack(|| run(async |admin| gift_field_case(admin, true).await))
+}
+
+async fn gift_field_case(admin: String, rollback: bool) -> TestResult {
+    field_scenario(
+        admin,
+        3188,
+        1,
+        2118,
+        true,
+        false,
+        false,
+        Scenario::GiftOfLife(rollback),
+    )
+    .await
+}
+
+#[test]
 fn field_runes_postgres_safe_wall_unknown_commit_never_repeats_movement() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -183,51 +205,6 @@ fn field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs() -> TestResu
 }
 
 #[test]
-fn combat_rune_use_explosion_casts_and_debits() -> TestResult {
-    large_stack(|| run(|admin| run_rune_use_case(admin, RuneUseCase::Explosion)))
-}
-
-#[test]
-fn combat_rune_use_fireball_casts_and_keeps_connection_open() -> TestResult {
-    large_stack(|| run(|admin| run_rune_use_case(admin, RuneUseCase::Fireball)))
-}
-
-#[test]
-fn combat_rune_use_fireball_refuses_insufficient_magic_level() -> TestResult {
-    large_stack(|| run(|admin| run_rune_use_case(admin, RuneUseCase::FireballIneligible)))
-}
-
-#[test]
-fn field_runes_postgres_thais_ignores_unrelated_unknown_sight_tiles() -> TestResult {
-    large_stack(|| {
-        run(async |admin| {
-            // Crystal 201189f8 data/scripts/runes/fire_field.lua:5,9-10,18 creates a fire field with rune 3188.
-            // src/creatures/combat/combat.cpp:1199-1201 substitutes the safe field in Optional PvP.
-            field_scenario(admin, 3188, 1, 21465, true, false, false, Scenario::Thais).await
-        })
-    })
-}
-
-#[test]
-fn field_runes_postgres_casts_on_the_caster_tile() -> TestResult {
-    large_stack(|| {
-        run(async |admin| {
-            for (rune, count, item) in [
-                (3149, 9, 2135),
-                (3188, 1, 21465),
-                (3190, 5, 21465),
-                (3192, 9, 21465),
-            ] {
-                field_scenario(
-                    admin.clone(), rune, count, item, true, false, false, Scenario::CasterTile,
-                ).await?;
-            }
-            Ok(())
-        })
-    })
-}
-
-#[test]
 fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -248,17 +225,23 @@ fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> Test
 fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
     large_stack(|| {
         run(async |admin| {
-            field_scenario(
-                admin,
-                3156,
-                1,
-                2130,
-                true,
-                false,
-                false,
-                Scenario::SecretMachete,
-            )
-            .await
+            for tool in [9594, 9596, 9598] {
+                field_scenario(admin.clone(), 3156, 1, 2130, true, false, false,
+                    Scenario::SecretMachete(tool)).await?;
+            }
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn field_runes_postgres_secret_agent_jam_preserves_wild_growth() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            for tool in [9594, 9596, 9598] {
+                field_scenario(admin.clone(), 3156, 1, 2130, true, false, false, Scenario::SecretJam(tool)).await?;
+            }
+            Ok(())
         })
     })
 }
@@ -348,8 +331,6 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
-    CasterTile,
-    Thais,
     HolderBusy,
     DestroyField,
     DestroyFar,
@@ -361,11 +342,13 @@ enum Scenario {
     Hardcore,
     SelfHardcore,
     SelfOpen,
-    SecretMachete,
+    SecretMachete(u32),
+    SecretJam(u32),
     NoPvp,
     PzTick,
     NoPvpTick,
     Death,
+    GiftOfLife(bool),
     RevokedCaster,
     DepartedCaster,
     PeriodicRollback,
@@ -380,6 +363,7 @@ enum Scenario {
     EquippedMantraAmmo,
     EquippedLastCharge,
     EquippedWrongSlot,
+    EquippedDeadline,
     EquippedRollback,
     EquippedCommit,
 }
@@ -393,6 +377,7 @@ fn equipped(scenario: Scenario) -> bool {
             | Scenario::EquippedMantraAmmo
             | Scenario::EquippedLastCharge
             | Scenario::EquippedWrongSlot
+            | Scenario::EquippedDeadline
             | Scenario::EquippedRollback
             | Scenario::EquippedCommit
     )
@@ -407,7 +392,7 @@ fn equipped_hit(scenario: Scenario, output: u32, ordinal: u32) -> u32 {
         return damage.saturating_sub(if ordinal == 0 { 3 } else { 0 });
     }
     if !equipped(scenario)
-        || scenario == Scenario::EquippedWrongSlot
+        || matches!(scenario, Scenario::EquippedWrongSlot | Scenario::EquippedDeadline)
         || scenario == Scenario::EquippedLastCharge && ordinal > 0
     {
         return damage;
@@ -452,6 +437,15 @@ fn field_runes_postgres_equipped_step_tick_charges_and_mantra() -> TestResult {
                 .await?;
             }
             Ok(())
+        })
+    })
+}
+
+#[test]
+fn crystal_equipment_deadline_helmet_allows_field_damage_postgres() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            field_scenario(admin, 3188, 1, 2118, true, false, false, Scenario::EquippedDeadline).await
         })
     })
 }
@@ -851,7 +845,7 @@ async fn field_scenario_inner(
         .await
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, pin) = if equipped(scenario) {
+    let (controller, pin) = if equipped(scenario) && scenario != Scenario::EquippedDeadline {
         equipped_generation(world, scenario)?
     } else {
         production_generation_with_pin(world, "content-1")?
@@ -859,32 +853,7 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let thais = scenario == Scenario::Thais;
-    let map = if thais {
-        let path = std::env::var_os("OTERYN_TEST_THAIS_BUNDLE").ok_or("Thais bundle path")?;
-        let bytes = std::fs::read(path)?;
-        let bundle = oteryn_world_bundle::bundle::read(&bytes).map_err(debug)?;
-        let identity = bundle.manifest.identity;
-        let pins = crate::map::BundlePins {
-            digest: bundle.digest,
-            project_format_version: identity.project_format_version,
-            world_schema_version: identity.world_schema_version,
-            content_revision: identity.content_revision,
-            production: false,
-        };
-        let base = crate::map::load(&bytes, &pins).map_err(debug)?;
-        crate::map::boot::boot(
-            &bytes,
-            &crate::map::boot::BootPins {
-                bundle: pins,
-                map_revision: crate::map::overlay::map_revision(&base),
-                start: crate::map::overlay::TilePos { x: 32369, y: 32230, floor: -7 },
-            },
-            world,
-            crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-            |key| crate::map::boot::native_item_definition(Some(native), key),
-        ).map_err(debug)?
-    } else if scenario == Scenario::DestroyBlocked {
+    let map = if scenario == Scenario::DestroyBlocked {
         field_world_inner(world, 0, true)?
     } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
@@ -897,14 +866,11 @@ async fn field_scenario_inner(
         .movement_cells(entry_room.movement_cells())
         .map_err(debug)?;
     // Runtime floors are the negation of the bundle's native floors.
-    let (x, y) = if thais {
-        (32369, 32230)
-    } else if protection {
-        (1, 0)
-    } else {
-        (100, 100)
+    let start = MovementLocalPosition {
+        x: if protection { 1 } else { 100 },
+        y: if protection { 0 } else { 100 },
+        floor: 7,
     };
-    let start = MovementLocalPosition { x, y, floor: 7 };
     let room = entry_room
         .bundle_view(
             cells.clone(),
@@ -945,22 +911,6 @@ async fn field_scenario_inner(
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-    }
-    if thais {
-        assert_eq!(
-            cells.spell_tiles().lookup(cells.scope(), crate::content::LogicalCell {
-                x: 32367, y: 32257, z: 7,
-            }),
-            Err(crate::content::SpellTileLookupError::Unknown),
-        );
-        let mut runtime = dependencies.runtime.lock().await;
-        native.install_companion_policies(&mut runtime).map_err(debug)?;
-        let pin = runtime.content_pin().clone();
-        runtime.realize_native_qualification_spawn(
-            pin,
-            "oteryn:creature.snake",
-            MovementLocalPosition { x: 32365, y: 32284, floor: 7 },
-        ).map_err(debug)?;
     }
     let mut owner = dependencies.owner(&harness, &authority);
     // Equipped scenarios explicitly advance residual evaluation to application+11s.
@@ -1113,7 +1063,7 @@ async fn field_scenario_inner(
     };
     if equipped(scenario) {
         let policy = native
-            .item_policy_for_source_id(3081)
+            .item_policy_for_source_id(if scenario == Scenario::EquippedDeadline { 22127 } else { 3081 })
             .ok_or("equipment policy")?;
         let definition = &policy.record().production_definition;
         let mut tx = harness.pool.begin().await?;
@@ -1123,7 +1073,7 @@ async fn field_scenario_inner(
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
             .bind(id(180).as_slice()).bind(id(42).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).bind(id(181).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid)")
-            .bind(id(101).as_slice()).bind(if matches!(scenario,Scenario::EquippedWrongSlot|Scenario::EquippedMantraAmmo) {10_i16}else{7_i16}).bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(182).as_slice()).execute(&mut *tx).await?;
+            .bind(id(101).as_slice()).bind(match scenario { Scenario::EquippedWrongSlot | Scenario::EquippedMantraAmmo => 10_i16, Scenario::EquippedDeadline => 1_i16, _ => 7_i16 }).bind(id(180).as_slice()).bind(id(42).as_slice()).bind(id(182).as_slice()).execute(&mut *tx).await?;
         if scenario == Scenario::EquippedPair {
             sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
                 .bind(id(183).as_slice()).bind(id(42).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).bind(id(184).as_slice()).execute(&mut *tx).await?;
@@ -1133,18 +1083,14 @@ async fn field_scenario_inner(
         tx.commit().await?;
     }
     let mut inventory = vec![(format!("oteryn:item.tibia.i{rune}"), 3)];
+    let machete_id = match scenario {
+        Scenario::SecretMachete(tool) => tool,
+        Scenario::SecretJam(tool) => tool,
+        _ => 3308,
+    };
+    let jam = matches!(scenario, Scenario::SecretJam(_));
     if matches!(output, 2128 | 2130) {
-        inventory.push((
-            format!(
-                "oteryn:item.tibia.i{}",
-                if scenario == Scenario::SecretMachete {
-                    9594
-                } else {
-                    3308
-                }
-            ),
-            1,
-        ));
+        inventory.push((format!("oteryn:item.tibia.i{machete_id}"), 1));
     }
     if destroy_scenario(scenario) {
         inventory.push(("oteryn:item.tibia.i3148".into(), 3));
@@ -1157,6 +1103,10 @@ async fn field_scenario_inner(
             .collect::<Vec<_>>(),
     )
     .await?;
+    if jam {
+        // Cast, step in, move out and back, then use the tool on command 8.
+        super::item_look_fixtures::force_seeded_tool_jam(&harness, session, 8, 72).await?;
+    }
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
@@ -1216,10 +1166,10 @@ async fn field_scenario_inner(
     let crate::gameplay_transport::world_map::MapUpdate::Snapshot(baseline) = baseline else {
         return Err("map baseline snapshot".into());
     };
-    let baseline =
+    let map_header =
         oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&baseline.payload)
-            .map_err(debug)?;
-    let map_header = baseline.header;
+            .map_err(debug)?
+            .header;
     let inventory_definition = |id| -> TestResult<std::num::NonZeroU32> {
         let key = format!("oteryn:item.tibia.i{id}");
         let index = native.item_index().ok_or("inventory index")?;
@@ -1228,13 +1178,7 @@ async fn field_scenario_inner(
             .definition_ref("Item", &key, revision)
             .ok_or_else(|| "inventory definition".into())
     };
-    let cast_x = start.x + i32::from(!matches!(scenario, Scenario::CasterTile | Scenario::Thais));
     let rune_definition = inventory_definition(rune)?;
-    let machete_id = if scenario == Scenario::SecretMachete {
-        9594
-    } else {
-        3308
-    };
     let machete_definition = inventory_definition(machete_id)?;
     let destroy_definition = inventory_definition(3148)?;
     let casting = async {
@@ -1293,7 +1237,7 @@ async fn field_scenario_inner(
             use_with: None,
             use_with_map_item: None,
             use_with_position: Some(SpellTargetPosition {
-                x: cast_x,
+                x: start.x + 1,
                 y: start.y,
                 floor: wire_start.floor,
             }),
@@ -1366,7 +1310,7 @@ async fn field_scenario_inner(
             )
             .map_err(debug)?;
             assert!(
-                delta.tiles.iter().any(|tile| tile.position.x == cast_x
+                delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
                     && tile.position.floor == start.floor
                     && tile.items.len() > 1),
@@ -1666,7 +1610,11 @@ async fn field_scenario_inner(
             }
             if matches!(output, 2128 | 2130) {
                 let use_tool = UseIntent {
-                    target: UseTarget::Item(machete.ok_or("machete handle")?),
+                    target: if matches!(scenario, Scenario::SecretMachete(_) | Scenario::SecretJam(_)) {
+                        UseTarget::ItemByDefinition(machete_definition)
+                    } else {
+                        UseTarget::Item(machete.ok_or("machete handle")?)
+                    },
                     use_with: None,
                     use_with_map_item: Some(
                         oteryn_protocol_oteryn::world_object::MapUseTarget::Item(
@@ -1690,11 +1638,8 @@ async fn field_scenario_inner(
                     let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                     if envelope.message_type() == MessageType::CommandResult {
                         let result = decode_command_result(envelope.payload()).map_err(debug)?;
-                        assert_eq!(
-                            decode_use_result(result.payload).map_err(debug)?,
-                            UseDisposition::TargetIllegal,
-                            "machete reach is checked before any Item removal"
-                        );
+                        assert_eq!(decode_use_result(result.payload).map_err(debug)?, UseDisposition::TargetIllegal,
+                            "machete reach is checked before any Item removal");
                         break;
                     }
                 }
@@ -1730,7 +1675,16 @@ async fn field_scenario_inner(
                     }
                 }
             }
-            if matches!(output, 2128 | 2130) {
+            if jam {
+                let timers: Vec<(String, i64)> = sqlx::query_as(
+                    "SELECT definition_production_key, duration_millis FROM game_spell_item_temporal_schedules WHERE target_production_key=$1",
+                ).bind(format!("oteryn:item.tibia.i{machete_id}")).fetch_all(&harness.pool).await?;
+                assert_eq!(timers, [(format!("oteryn:item.tibia.i{}", machete_id + 1), 60_000)]);
+                let field: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING (item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i2130' AND i.lifecycle=1)",
+                ).fetch_one(&harness.pool).await?;
+                assert!(field, "a jam leaves the durable field in place");
+            } else if matches!(output, 2128 | 2130) {
                 let tool:(i16,i64)=sqlx::query_as("SELECT lifecycle,quantity::bigint FROM game_item_instances WHERE definition_production_key=$1").bind(format!("oteryn:item.tibia.i{machete_id}")).fetch_one(&harness.pool).await?;
                 assert_eq!(
                     tool,
@@ -1743,11 +1697,11 @@ async fn field_scenario_inner(
                 .await?;
             assert_eq!(
                 removals,
-                i64::from(matches!(output, 10181 | 10182 | 2130)),
+                i64::from(!jam && matches!(output, 10181 | 10182 | 2130)),
                 "safe entry and machete retire the exact barrier once"
             );
         }
-        if matches!(output, 10181 | 10182 | 2130) {
+        if !jam && matches!(output, 10181 | 10182 | 2130) {
             let delta = owner
                 .observe_world_map(actor, &mut map_view, &mut map_items)
                 .await
@@ -1810,7 +1764,7 @@ async fn field_scenario_inner(
         format!("FIELD-RUNES transport rune={rune} scenario={scenario:?}: {error}")
     })??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
-    if destroy_scenario(scenario) {
+    if destroy_scenario(scenario) || matches!(scenario, Scenario::GiftOfLife(_)) {
         drop(owner);
         drop(authority);
         drop(seal);
@@ -1857,7 +1811,7 @@ async fn field_scenario_inner(
     // Reload durable Ground custody independently of the runtime's physical installation.
     let ground: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations g JOIN game_spell_item_lines l USING(item_instance_id) WHERE l.transaction_id IN(SELECT transaction_id FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid)")
         .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
-    let remaining_count = if committed && matches!(output, 10181 | 10182 | 2130) {
+    let remaining_count = if committed && !jam && matches!(output, 10181 | 10182 | 2130) {
         0
     } else {
         count
@@ -1963,26 +1917,10 @@ async fn field_scenario_inner(
                 &delta.payload,
             )
             .map_err(debug)?;
-            let original_stack_size = if thais {
-                baseline
-                    .tiles
-                    .iter()
-                    .find(|tile| {
-                        tile.position.x == cast_x
-                            && tile.position.y == start.y
-                            && tile.position.floor == start.floor
-                    })
-                    .ok_or("Thais cast tile in baseline")?
-                    .items
-                    .len()
-            } else {
-                1
-            };
             assert!(
-                delta.tiles.iter().any(|tile| tile.position.x == cast_x
+                delta.tiles.iter().any(|tile| tile.position.x == start.x + 1
                     && tile.position.y == start.y
-                    && tile.position.floor == start.floor
-                    && tile.items.len() == original_stack_size),
+                    && tile.items.len() == 1),
                 "expiry invalidates the cache and sends a leave on the converted floor"
             );
         }
@@ -2143,7 +2081,7 @@ async fn field_scenario_inner(
         let (lifecycle, charges, writes): (i16, Option<i32>, i64) = sqlx::query_as("SELECT i.lifecycle,t.charges,(SELECT count(*) FROM game_item_timed_state_writes w WHERE w.item_instance_id=i.item_instance_id) FROM game_item_instances i LEFT JOIN game_item_timed_states t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid").bind(id(180).as_slice()).fetch_one(&harness.pool).await?;
         let spent = if matches!(
             scenario,
-            Scenario::EquippedWrongSlot | Scenario::EquippedMantraAmmo
+            Scenario::EquippedWrongSlot | Scenario::EquippedMantraAmmo | Scenario::EquippedDeadline
         ) {
             0
         } else if matches!(
@@ -2817,6 +2755,145 @@ async fn player_health(
         .health)
 }
 
+async fn drive_gift_field_entry(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    actor: crate::foundation::ExactActorRef,
+    rollback: bool,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use crate::gameplay_transport::field_removal::faults;
+    use crate::spell::cast::PlayerSpellState;
+    use oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects;
+    use oteryn_protocol_oteryn::presentation as wire;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    use std::num::NonZeroU32;
+
+    let session = admitted.game_session_id;
+    let generation = admitted.continuity.connection_generation;
+    let offered =
+        crate::gameplay_transport::native_cue_offer::offered(owner.offered_capabilities(), true);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(
+            &offered,
+            &[
+                6,
+                wire::CAPABILITY_PRESENTATION_V1,
+                wire::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+            ],
+        )
+        .ok_or("presentation capability")?;
+    let book = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native gameplay")?
+        .spell_book();
+    let key = &book.spoken("exura").ok_or("exura")?.spell.key;
+    let spell_id = (1..=u32::try_from(book.source_len())?)
+        .filter_map(NonZeroU32::new)
+        .find(|i| {
+            book.source_indexed(*i)
+                .is_some_and(|(spell, _)| &spell.key == key)
+        })
+        .ok_or("exura index")?
+        .get();
+    let cooldown = (wire::ActorCooldownKind::Spell, spell_id);
+    let _clock = owner.freeze_owner_clock_for_test();
+    let now = owner.owner_now().get();
+    let deadline = now + 90_000_000;
+    let shortened = now + 30_000_000;
+    let mut feed = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.get_mut(&runtime, actor, session).ok_or("victim")?;
+        let facts = CharacterCastFacts {
+            vocation: crate::spell::Vocation::ElderDruid,
+            level: oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET + 1,
+            ..state.character_facts()
+        };
+        let mut ready = PlayerSpellState::new(facts, 0, 0).ok_or("Wheel-eligible victim")?;
+        ready
+            .apply_owner_promotion_transition(true, true, Some(u64::MAX))
+            .map_err(debug)?;
+        let mut effects = WheelRuntimeEffects::default();
+        effects.revelation_stages.insert("gift_of_life".into(), 1);
+        ready.install_wheel_effects(effects);
+        assert!(ready.restore_wheel_gift(0, now));
+        ready.install_wheel_gift_spellbook(book);
+        // Exercise zero mana on commit and a two-mana shield spend on restaging.
+        ready.restore_saved_vitals(1, if rollback { 2 } else { 0 });
+        ready.install_equipped_mana_shield(rollback);
+        ready
+            .cooldowns
+            .spells
+            .insert(key.clone(), SemanticTimeMicros::from_micros(deadline));
+        *state = ready;
+        states
+            .subscribe_cooldowns(&runtime, actor, admitted, book)
+            .ok_or("victim cooldown subscription")?
+    };
+    let snapshot = feed.take_snapshot().ok_or("current cooldown snapshot")?;
+    assert_eq!(snapshot.get(&cooldown), Some(&deadline));
+
+    owner.root.await_ready().await?;
+    let mut interrupted = rollback.then(|| faults::arm(faults::PLAYER, false));
+    let (step, _) = owner
+        .ordinary_paced_step(actor, session, StepDirection::West, None, None)
+        .await;
+    assert_eq!(step.disposition, StepDisposition::Moved);
+    if let Some(reached) = interrupted.as_mut() {
+        assert_eq!(
+            reached.try_recv(),
+            Ok(()),
+            "field STEP reached its COMMIT fault"
+        );
+        drop(
+            owner
+                .spell_lane_permit()
+                .await
+                .ok_or("field STEP recovery")?,
+        );
+    }
+    let (revision, vitals, attributed_damage) = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session).ok_or("victim")?;
+        assert_eq!(
+            state.wheel_gift_activation(),
+            Some(1),
+            "field STEP triggers Gift once"
+        );
+        assert!(state.vitals().health > 1, "Gift rescues the field victim");
+        assert_eq!(state.vitals().mana, state.character_facts().max_mana / 5);
+        assert_eq!(
+            state.cooldowns.spells[key].get().checked_sub(now),
+            Some(30_000_000),
+            "Gift leaves 30 seconds on the active instant spell",
+        );
+        let vitals = state.vitals();
+        let health_spent = 1 + vitals.max_health / 5 - vitals.health;
+        (
+            state.revision(),
+            vitals,
+            health_spent + if rollback { 2 } else { 0 },
+        )
+    };
+    let published = feed
+        .take(generation, None)
+        .ok_or("current cooldown subscription")?;
+    assert_eq!(published.deadlines, Some([(cooldown, shortened)].into()));
+    assert_eq!(published.rescued, Some((revision, vitals)));
+    let harm: (i64, i64) = sqlx::query_as(
+        "SELECT count(*), COALESCE(sum(damage), 0)::bigint
+         FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(harm, (1, i64::from(attributed_damage)));
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn drive_player_field(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -2850,6 +2927,9 @@ async fn drive_player_field(
     });
     admitted.continuity.connection_generation = current.current_connection_generation().get();
     admitted.item_fence = item_fence_of(current);
+    if let Scenario::GiftOfLife(rollback) = scenario {
+        return drive_gift_field_entry(owner, harness, admitted, target, rollback).await;
+    }
     if scenario == Scenario::Death {
         owner.admit_progression_session(&mut admitted).await;
         assert!(

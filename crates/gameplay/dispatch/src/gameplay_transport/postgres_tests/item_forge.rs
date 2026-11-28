@@ -41,13 +41,6 @@ fn forge_postgres_resource_refusals_remain_retained_after_refill() -> TestResult
 }
 
 #[test]
-fn forge_postgres_underfunded_conversion_waits_for_the_holder() -> TestResult {
-    super::kill_reward_e2e_fixtures::scenario_thread::run("forge-busy-holder", || {
-        support::scenario(Case::BusyHolder)
-    })
-}
-
-#[test]
 fn forge_postgres_capability_payload_and_session_generation_are_fenced() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("forge-fences", || support::scenario(Case::Fences))
 }

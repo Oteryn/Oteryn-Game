@@ -165,7 +165,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         "oteryn:quest-transition/srvenc-fixture/seed-{}",
         rule.creature.rsplit('.').next().ok_or("creature")?
     );
-    let catalogue = if seeds.is_empty() || rule.top_damage_only {
+    let imported_predecessor = rule.top_damage_only || rule.top_damage_party;
+    let catalogue = if seeds.is_empty() || imported_predecessor {
         Arc::new(catalogue)
     } else {
         let mut transitions = vec![native_transition];
@@ -235,13 +236,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
-    if rule.top_damage_only && !seeds.is_empty() {
-        // Herald starts after Emiliana's historical mission admission. The
-        // generic writer must not impersonate her protected quest operation.
-        // Import only that predecessor, as the other native Quest fixtures do;
-        // the death and all its rewards still use the real fenced owners.
+    if imported_predecessor && !seeds.is_empty() {
+        // Herald and Nomad start after their source mission admission. Retain
+        // the production catalogue while importing the mission predecessor.
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(h, &owner, &admitted, &seeds, 0xa6)
-            .await?;
+            .await
+            .map_err(|error| format!("principal mission predecessor: {error}"))?;
     } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
@@ -321,8 +321,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 lease_generation: fence.character_lease_generation,
                 position,
                 dealt_damage: true,
-                top_damage_character: rule
-                    .top_damage_only
+                top_damage_character: imported_predecessor
                     .then_some(*fence.character_id.as_bytes()),
             }),
         };
@@ -339,7 +338,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 Arc::clone(&catalogue),
             )
             .await
-            .map_err(debug)?;
+            .map_err(|error| format!("detached source death: {error:?}"))?;
         assert!(
             matches!(
                 outcome,
@@ -352,8 +351,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
     owner.refresh_quest_session(session, false).await;
     // Both peers are independently admitted durable Characters in this Channel.
     // Member one damages the boss; member two only stands nearby.
-    let mut overlord_peers = Vec::new();
-    let peer_source = if rule.creature.ends_with("_overlord") {
+    let nomad = rule.creature == "oteryn:creature.nomad";
+    let left_party = mode == "nomad_excludes_former_member_with_stale_top_damage_roster";
+    let kicked_by_leader = mode == "nomad_excludes_member_kicked_by_leader";
+    let shared_xp_disabled = mode == "nomad_respects_leader_disabling_shared_xp";
+    let remote_shared_xp_disabled = mode == "nomad_ignores_shared_xp_disabled_in_the_world_owner";
+    let enabled_after_death = mode == "nomad_shared_xp_enabled_after_death";
+    let disabled_after_death = mode == "nomad_shared_xp_disabled_after_death";
+    let leader_changed_party = kicked_by_leader || shared_xp_disabled;
+    let mut death_peers = Vec::new();
+    let peer_source = if nomad || rule.creature.ends_with("_overlord") {
         Some(super::house_transfer_fixtures::RecoverySource::start(h).await?)
     } else {
         None
@@ -364,6 +371,8 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         };
         let peer_count = if mode == "overlordcr_seventeen" {
             17u8
+        } else if leader_changed_party {
+            3
         } else {
             2
         };
@@ -422,6 +431,13 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 owner.progression_binding(peer_session).is_some(),
                 "peer completed progression admission"
             );
+            if nomad {
+                super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                    h, &owner, &peer, &seeds, member,
+                )
+                .await
+                .map_err(|error| format!("peer {member} mission predecessor: {error}"))?;
+            }
             if mode == "overlordcr_missing_cache" && member == 1 {
                 assert!(
                     owner
@@ -447,8 +463,47 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 );
                 owner.refresh_quest_session(peer_session, false).await;
             }
-            overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
+            death_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
         }
+    }
+    if nomad {
+        // The World owner has committed the toggle, while both killing-Channel
+        // projections below still reflect the earlier shared-XP roster.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO game_parties \
+             (party_id,world_id,leader_character_id,revision,next_seq,shared_xp_enabled) \
+             VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,4,$4)",
+        )
+        .bind(id(81).as_slice())
+        .bind(owner.world_id.as_bytes().as_slice())
+        .bind(
+            if leader_changed_party {
+                death_peers[2].2
+            } else {
+                id(41)
+            }
+            .as_slice(),
+        )
+        .bind(!remote_shared_xp_disabled && !shared_xp_disabled && !enabled_after_death)
+        .execute(&mut *tx)
+        .await?;
+        let characters = std::iter::once(id(41))
+            .chain((!left_party && !kicked_by_leader).then_some(death_peers[1].2))
+            .chain(leader_changed_party.then(|| death_peers[2].2));
+        for (sequence, character) in (1_i64..).zip(characters) {
+            sqlx::query(
+                "INSERT INTO game_party_members (character_id,party_id,seq,presence_state,presence_channel_id) \
+                 VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,1,encode($4,'hex')::uuid)",
+            )
+            .bind(character.as_slice())
+            .bind(id(81).as_slice())
+            .bind(sequence)
+            .bind(owner.channel_id.as_bytes().as_slice())
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
     }
     if mode == "overlordcr_old_pin" {
         let previous = source_deaths::overlord_predecessor(&catalogue)?;
@@ -490,7 +545,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         assert_eq!(stored, hash);
     }
     let drain_session = if mode == "overlordcr_fallback" {
-        overlord_peers[0].1
+        death_peers[0].1
     } else {
         session
     };
@@ -562,6 +617,68 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             let lease = runtime
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
+            if nomad {
+                use crate::foundation::{PartyMemberSnapshot, PartyPresence, PartySnapshot};
+
+                let character = *lease.character_id().as_bytes();
+                let (peer, peer_session, idle_member) = death_peers[1];
+                // Freeze the party observation at the lethal turn. The first
+                // peer deals damage, but only the second belongs to this party.
+                let leader = if leader_changed_party {
+                    death_peers[2].2
+                } else {
+                    character
+                };
+                let members = [character, idle_member]
+                    .into_iter()
+                    .chain(leader_changed_party.then_some(leader))
+                    .zip(1..)
+                    .map(|(character, invitation_order)| PartyMemberSnapshot {
+                        character,
+                        invitation_order,
+                        presence_revision: 1,
+                        presence: PartyPresence::Channel,
+                        channel: Some(*owner.channel_id.as_bytes()),
+                    })
+                    .collect();
+                let party = PartySnapshot {
+                    world: *owner.world_id.as_bytes(),
+                    character,
+                    party_id: Some(id(81)),
+                    revision: Some(1),
+                    leader: Some(leader),
+                    shared_xp_enabled: !enabled_after_death,
+                    members,
+                    observed_database_micros: 1,
+                };
+                let mut peer_party = party.clone();
+                peer_party.character = idle_member;
+                if left_party {
+                    // The Leave command projects the departing actor without refreshing the leader.
+                    peer_party.party_id = None;
+                    peer_party.revision = None;
+                    peer_party.leader = None;
+                    peer_party.shared_xp_enabled = false;
+                    peer_party.members.clear();
+                    peer_party.observed_database_micros = 2;
+                }
+                if leader_changed_party {
+                    // The leader's committed command updates only the leader's actor projection.
+                    let (leader_actor, leader_session, _) = death_peers[2];
+                    let mut updated = party.clone();
+                    updated.character = leader;
+                    updated.revision = Some(2);
+                    updated.observed_database_micros = 2;
+                    if kicked_by_leader {
+                        updated.members.retain(|member| member.character != idle_member);
+                    } else {
+                        updated.shared_xp_enabled = false;
+                    }
+                    runtime.project_world_party(leader_actor, leader_session, updated).map_err(debug)?;
+                }
+                runtime.project_world_party(actor, session, party).map_err(debug)?;
+                runtime.project_world_party(peer, peer_session, peer_party).map_err(debug)?;
+            }
             let mut health = runtime.companion_snapshot(target).map_err(debug)?.health;
             if matches!(mode, "overlordcr_seventeen" | "overlordcr_fallback") {
                 let prime = if mode == "overlordcr_fallback" {
@@ -591,7 +708,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             } else {
                 1
             };
-            for (peer_actor, peer_session, _) in overlord_peers.iter().take(damaging_peers) {
+            for (peer_actor, peer_session, _) in death_peers.iter().take(damaging_peers) {
                 runtime
                     .borrow_exact_actor_commit_at(now)
                     .commit_damage_for_bound_attacker(
@@ -613,7 +730,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
                 runtime
                     .remove_terminal_session(session, actor)
                     .map_err(debug)?;
-                let (peer_actor, peer_session, _) = overlord_peers[0];
+                let (peer_actor, peer_session, _) = death_peers[0];
                 let peer_lease = runtime
                     .bound_attacker_lease(peer_actor, peer_session)
                     .map_err(debug)?;
@@ -751,7 +868,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
         }
         if ended_secondary {
             use crate::gameplay_transport::kill_reward::TakeOutcome;
-            let (peer_actor, peer_session, _) = overlord_peers[0];
+            let (peer_actor, peer_session, _) = death_peers[0];
             let mut runtime = owner.runtime.lock().await;
             let lease = runtime.bound_attacker_lease(actor, session).map_err(debug)?;
             let TakeOutcome::Taken(taken) = queue.take(session, lease.generation()) else {
@@ -774,7 +891,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             use crate::durability::spell_owner_commit::SpellLane;
             use crate::gameplay_transport::kill_reward::TakeOutcome;
 
-            let (_, peer_session, peer_character) = overlord_peers[0];
+            let (_, peer_session, peer_character) = death_peers[0];
             let peer_fence = owner.current_quest_fence(peer_session).await
                 .map_err(|_| "secondary fence read")?.ok_or("live secondary fence")?;
             let lease = owner.runtime.lock().await.bound_attacker_lease(actor, session).map_err(debug)?;
@@ -834,6 +951,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             ] {
                 sqlx::query(statement).execute(&h.pool).await?;
             }
+        }
+        if enabled_after_death || disabled_after_death {
+            sqlx::query("UPDATE game_parties SET shared_xp_enabled=$1, revision=revision+1")
+                .bind(enabled_after_death)
+                .execute(&h.pool)
+                .await?;
         }
         let drained = owner.drain_kill_rewards(drain_session).await;
         if drained != DrainOutcome::Drained {
@@ -961,9 +1084,28 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             effect.track
         );
     }
-    for (index, (_, _, character)) in overlord_peers.iter().enumerate() {
+    for (index, (_, _, character)) in death_peers.iter().enumerate() {
         let value: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
             .bind(character.as_slice()).bind(&rule.effects[0].track).fetch_optional(&h.pool).await?;
+        if nomad {
+            let before = seeds.first().ok_or("Nomad mission predecessor")?.1;
+            assert_eq!(
+                value,
+                if index == 0
+                    || left_party
+                    || shared_xp_disabled
+                    || remote_shared_xp_disabled
+                    || enabled_after_death
+                    || (kicked_by_leader && index == 1)
+                {
+                    Some(before)
+                } else {
+                    rule.effects[0].set
+                },
+                "Nomad credits the idle party member and excludes the damaging outsider (peer {index})",
+            );
+            continue;
+        }
         assert_eq!(
             value,
             if !ended_secondary && index
@@ -1030,7 +1172,12 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule, mode: &str) -> TestRe
             1
         } else {
             i64::try_from(kills)?
-                + if overlord_peers.is_empty() {
+                + if death_peers.is_empty()
+                    || left_party
+                    || shared_xp_disabled
+                    || remote_shared_xp_disabled
+                    || enabled_after_death
+                {
                     0
                 } else if mode == "overlordcr_seventeen" {
                     16

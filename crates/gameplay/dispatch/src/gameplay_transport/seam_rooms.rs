@@ -91,9 +91,9 @@ impl<'a> SeamRooms<'a> {
         }
     }
 
-    /// Inventory grants use the Channel's pinned tile facts for placement and protection.
+    /// The world item casts and their commit.
     pub fn gate_world_item_cast(&self) -> Option<&QualifiedNativeEntryRoom> {
-        self.combat.as_deref()
+        self.qualified.as_deref()
     }
 
     /// The field step ingress and its commit.

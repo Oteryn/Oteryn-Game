@@ -2,10 +2,12 @@
 use super::*;
 
 struct SpatialPhase {
-    direction_available: bool,
+    position: MovementPositionSnapshot,
     caster_position: TilePosition,
     origin: TilePosition,
     facing: Direction,
+    /// WU26-14: the direction comes from the aim, so it is available without a facing.
+    aimed: bool,
     bindings: Vec<LiveActorBinding>,
     chain_creatures: Vec<ChainCreature>,
     sight_origin: TilePosition,
@@ -63,8 +65,11 @@ pub(in crate::gameplay_transport) fn aimed_origin(
     facing: Option<Direction>,
     point: Option<TilePosition>,
 ) -> Result<(TilePosition, Direction), SpellCastDisposition> {
-    let aim = point.and_then(|p| plans::aimed_cardinal(plan_position(caster), plan_position(p)));
-    let d = cast_direction(plans::player_spell_direction(aim, facing.map(delta)));
+    let d = point
+        .and_then(|p| plans::aimed_cardinal(plan_position(caster), plan_position(p)))
+        .map(cast_direction)
+        .or(facing)
+        .ok_or(SpellCastDisposition::TargetRequired)?;
     let (dx, dy) = delta(d);
     Ok((offset(caster, dx, dy)?, d))
 }
@@ -309,9 +314,7 @@ pub(super) async fn prepare_inner(
         profile,
         actor,
         attack_target,
-        legacy.and_then(|use_intent| use_intent.creature),
         &roster,
-        &creatures,
         states,
         now,
     )
@@ -402,13 +405,11 @@ async fn prepare_spatial(
     profile: &crate::spell::executable_catalog::OperationalProfile,
     actor: ExactActorRef,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    rune_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     roster: &[(
         ExactActorRef,
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
-    creatures: &[crate::foundation::CompanionSnapshot],
     states: &ChannelSpellStates,
     now: SemanticTimeMicros,
 ) -> Result<SpatialPhase, SpellCastDisposition> {
@@ -416,13 +417,28 @@ async fn prepare_spatial(
         .read_actor_position(actor)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let caster_position = tile(position.position());
+    // Crystal spells.cpp:1158–1206 resolves the held creature before placing the
+    // area of a target-required instant spell. Legacy position requests still
+    // resolve the held creature when the catalogue advertises held-target casts.
+    let targeting = &profile.header.targeting;
+    let held_target_profile = matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
+        && targeting.cast_at_position.is_some()
+        && targeting.needs_target;
+    let target = if held_target_profile
+        && aim.is_none()
+        && matches!(intent.target, SpellTarget::Position(_))
+    {
+        SpellTarget::AttackTarget
+    } else {
+        intent.target
+    };
     // SPELL-TARGET-1: the held ATTACK-0 §4 target. No target is `TargetRequired`; one that is no
     // longer a visible creature is `TargetIllegal`.
-    let attack_target_actor = match intent.target {
+    let attack_target_actor = match target {
         SpellTarget::AttackTarget => {
             let held = attack_target.ok_or(SpellCastDisposition::TargetRequired)?;
-            let creature = runtime
-                .visible_entities()
+            let visible = runtime.visible_entities();
+            let creature = visible
                 .creatures
                 .iter()
                 .find(|c| {
@@ -430,18 +446,15 @@ async fn prepare_spatial(
                 })
                 .map(|c| c.actor)
                 .or_else(|| {
-                    // An item use names a specific creature, including the caster.
-                    // The caller captured its generation before acquiring the writer.
-                    (rune_target == Some(held)
+                    (held_target_profile
                         || matches!(
                             spell.carrier,
                             crate::spell::Carrier::Rune { item: 3165, .. }
                         ))
                     .then(|| {
-                        runtime
-                            .visible_entities()
+                        visible
                             .players
-                            .into_iter()
+                            .iter()
                             .find(|p| {
                                 p.actor.placement_identity() == held.identity
                                     && p.generation == held.generation
@@ -486,7 +499,7 @@ async fn prepare_spatial(
     // A directional or aimed spell keeps the caster as geometry origin; the target only picks
     // the facing (`aim_at_target`). A single-target spell is centred on the target.
     let directional = profile.header.targeting.needs_direction || spell.target_or_direction;
-    let origin = match (aimed, intent.target) {
+    let origin = match (aimed, target) {
         (Some((origin, _)), _) => origin,
         (None, SpellTarget::Position(p)) => TilePosition {
             x: p.x,
@@ -496,7 +509,12 @@ async fn prepare_spatial(
         (None, SpellTarget::None)
             if profile.header.targeting.needs_direction || spell.target_or_direction =>
         {
-            caster_front(caster_position, position.facing())?
+            let d = position
+                .facing()
+                .map(direction)
+                .ok_or(SpellCastDisposition::TargetRequired)?;
+            let (dx, dy) = delta(d);
+            offset(caster_position, dx, dy)?
         }
         (None, SpellTarget::None) => caster_position,
         (None, SpellTarget::AttackTarget) => {
@@ -516,32 +534,11 @@ async fn prepare_spatial(
     } else {
         position.facing().map(direction)
     };
-    let direction_available = directional || position.facing().is_some() || aimed.is_some();
-    let facing = facing.unwrap_or(if directional {
-        cast_direction(plans::DEFAULT_PLAYER_SPELL_DIRECTION)
-    } else {
-        Direction::North
-    });
+    let facing = facing.unwrap_or(Direction::North);
     let mut candidates = BTreeSet::from([caster_position, origin]);
     for a in &profile.dependencies.abilities {
         candidates.extend(geometry(a, origin, facing)?);
     }
-    // A non-chain rune only acts on its authored footprint. An unrelated
-    // creature's tile and sight path cannot qualify or veto this cast.
-    let rune_footprint =
-        matches!(spell.carrier, crate::spell::Carrier::Rune { .. }) && spell.chain.is_none();
-    // A direct cast with no held target can fall back to an occupant of the
-    // caster's front tile, including when its explicit position has no target.
-    let fallback_front = (spell.target_or_direction
-        && !spell.self_target
-        && attack_target_actor.is_none()
-        && profile
-            .dependencies
-            .abilities
-            .iter()
-            .any(|ability| ability.area.is_none()))
-    .then(|| caster_front(caster_position, position.facing()))
-    .transpose()?;
     let mut bindings = Vec::new();
     let mut chain_creatures = Vec::new();
     for (a, p, _) in roster {
@@ -549,7 +546,6 @@ async fn prepare_spatial(
         if p.floor != caster_position.floor
             || p.x.abs_diff(caster_position.x) > MAX_SIGHT_DISTANCE
             || p.y.abs_diff(caster_position.y) > MAX_SIGHT_DISTANCE
-            || (rune_footprint && !candidates.contains(&p) && attack_target_tile != Some(p))
         {
             continue;
         }
@@ -571,8 +567,13 @@ async fn prepare_spatial(
             actor: atom,
             position: p,
         });
-        if Some(p) == fallback_front {
-            candidates.insert(p);
+        candidates.insert(p);
+        if spell.chain.is_some() {
+            for dx in -9..=9 {
+                for dy in -9..=9 {
+                    candidates.insert(offset(p, dx, dy)?);
+                }
+            }
         }
     }
     if bindings.len() > crate::spell::combat_batch::MAX_EFFECTS {
@@ -598,55 +599,31 @@ async fn prepare_spatial(
         );
         candidates.insert(target);
     }
-    let mut visual_tiles = BTreeSet::new();
-    let explicit_chain_target = match intent.target {
-        SpellTarget::AttackTarget => attack_target_tile,
-        SpellTarget::Position(_) => Some(origin),
-        _ => None,
-    }
-    .filter(|_| spell.takes_target());
-    if let Some(chain) = spell
-        .chain
-        .as_ref()
-        .filter(|_| spell.chains(explicit_chain_target.is_some()))
-    {
-        // Aggressive chains use the same creature admission as the target phase.
-        let eligible = creatures
+    if spell.chain.is_some() {
+        for a in chain_creatures
             .iter()
-            .filter(|c| c.health > 0 && c.state.master.is_none() && c.state.policy.flags.attackable)
-            .map(|c| u64::from(c.actor.actor_local_id()))
-            .collect::<BTreeSet<_>>();
-        let caster_id = u64::from(actor.actor_local_id());
-        let possible = chain_creatures
-            .iter()
-            .filter(|c| c.id != caster_id && (!spell.aggressive || eligible.contains(&c.id)))
-            .map(|c| plan_position(c.position))
-            .collect();
-        let explicit = explicit_chain_target.map(|p| {
-            (
-                plan_position(p),
-                spell.range_tiles.unwrap_or(chain.initial_range_tiles),
-            )
-        });
-        let search = plans::ordinary_chain_search(
-            Some(chain),
-            plan_position(caster_position),
-            explicit,
-            possible,
-        )
-        .map_err(|_| SpellCastDisposition::Rejected)?;
-        candidates.extend(search.tiles.into_iter().map(cast_position));
-        visual_tiles.extend(search.visual_tiles.into_iter().map(cast_position));
-        for (from, to) in search.sight {
-            let (from, to) = (cast_position(from), cast_position(to));
-            paths.insert((from, to), sight_steps(from, to)?);
+            .chain(std::iter::once(&ChainCreature {
+                id: u64::from(actor.actor_local_id()),
+                actor: String::new(),
+                position: caster_position,
+            }))
+        {
+            for c in &chain_creatures {
+                if a.position.x.abs_diff(c.position.x) <= 9
+                    && a.position.y.abs_diff(c.position.y) <= 9
+                {
+                    paths.insert(
+                        (a.position, c.position),
+                        sight_steps(a.position, c.position)?,
+                    );
+                }
+            }
         }
     }
     for steps in paths.values() {
         candidates.extend(steps.iter().map(|(p, _)| *p));
     }
-    visual_tiles.retain(|position| !candidates.contains(position));
-    if candidates.len() + visual_tiles.len() > MAX_WORLD_TILES {
+    if candidates.len() > MAX_WORLD_TILES {
         return reject();
     }
     #[cfg(test)]
@@ -657,13 +634,6 @@ async fn prepare_spatial(
             p,
             read_tile(tx, authority, room, runtime, objects, p).await?,
         );
-    }
-    for p in visual_tiles {
-        if let Some(tile) =
-            super::super::read_chain_visual_tile(tx, authority, room, runtime, objects, p).await?
-        {
-            tiles.insert(p, tile);
-        }
     }
     let caster_tile = tiles
         .get(&caster_position)
@@ -684,10 +654,11 @@ async fn prepare_spatial(
         })
         .collect::<BTreeSet<_>>();
     Ok(SpatialPhase {
-        direction_available,
+        position,
         caster_position,
         origin,
         facing,
+        aimed: aimed.is_some(),
         bindings,
         chain_creatures,
         sight_origin,
@@ -720,10 +691,11 @@ async fn qualify_targets(
     now: SemanticTimeMicros,
 ) -> Result<TargetPhase, SpellCastDisposition> {
     let SpatialPhase {
-        direction_available,
+        position,
         caster_position,
         origin,
         facing,
+        aimed,
         bindings,
         chain_creatures,
         sight_origin,
@@ -820,7 +792,7 @@ async fn qualify_targets(
     {
         return Err(SpellCastDisposition::TargetIllegal);
     }
-    if let (SpellTarget::AttackTarget, Some(target)) = (intent.target, attack_target_tile) {
+    if let Some(target) = attack_target_tile {
         let distance = target
             .x
             .abs_diff(caster_position.x)
@@ -869,7 +841,7 @@ async fn qualify_targets(
         line_of_sight_clear: Some(
             caster_position == origin || sight.contains(&(caster_position, origin)),
         ),
-        direction_available,
+        direction_available: position.facing().is_some() || aimed,
         wheel_unlocked: None,
         in_protection_zone: caster_protection,
         target_tile_solid: tiles.get(&origin).map(|t| t.solid),

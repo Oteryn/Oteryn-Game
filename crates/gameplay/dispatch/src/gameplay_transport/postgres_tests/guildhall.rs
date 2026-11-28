@@ -490,13 +490,12 @@ fn scenario(ending: u8, reject_ordinary_release: bool) -> TestResult {
             expected_revision: revision.parse()?,
         };
         let leadership_command = leader.continuity.next_command_id;
-        let (status, result) = super::guild_wire_fixtures::exchange_with_holder_pressure(
+        let (status, result) = exchange(
             &owner,
             &mut leader,
             leadership_command,
             wire::COMMAND_TYPE_GUILDHALL_LEADERSHIP,
             &wire::encode_guildhall_leadership(request).map_err(debug)?,
-            true,
         )
         .await?;
         assert_eq!(status, CommandStatus::Accepted);

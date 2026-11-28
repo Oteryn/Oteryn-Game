@@ -26,10 +26,11 @@ pub(super) async fn exercise(
         .activity_runtimes
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("real Vemiath runtime")?;
-    super::srx3_activity_source_fixture::drive_native_cycle(&owner.runtime_view(&registered))
-        .await?;
-    let (boss, target, route) = {
-        let view = owner.runtime_view(&registered);
+    let view = owner.runtime_view(&registered);
+    let clock = NativeOwnerClock::new(&view);
+    clock.set(view.owner_now().get());
+    super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
+    let (boss, target) = {
         let runtime = view.runtime.lock().await;
         let creature = runtime
             .visible_entities()
@@ -37,43 +38,38 @@ pub(super) async fn exercise(
             .into_iter()
             .find(|c| runtime.matches_live_creature_identity(c.actor, b"oteryn:creature.vemiath"))
             .ok_or("unchanged native source Vemiath")?;
-        let occupied = runtime
-            .visible_entities()
-            .creatures
-            .into_iter()
-            .map(|c| runtime.read_actor_position(c.actor).map(|p| p.position()))
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(debug)?;
-        let route = super::srx3_primal_terminal::source_route(
-            view.effective_movement_cells(),
-            runtime
-                .read_actor_position(player)
-                .map_err(debug)?
-                .position(),
-            runtime
-                .read_actor_position(creature.actor)
-                .map_err(debug)?
-                .position(),
-            &occupied,
-            true,
-        )?;
         (
             creature.actor,
             EntityRef {
                 identity: creature.actor.placement_identity(),
                 generation: creature.generation,
             },
-            route,
         )
     };
-    for direction in route {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(1))
-            .ok_or("source pace")?;
-        let view = owner.runtime_view(&registered);
-        // The owner clock advance can select an older Item continuation before onMove.
+    // A retained source turn can move Vemiath during the approach. Read the
+    // current positions after settling that work and walk only the next step.
+    for _ in 0..32 {
         super::srx3_activity_source_fixture::settle_native_work(&view).await?;
+        let route = {
+            let runtime = view.runtime.lock().await;
+            let occupied = runtime
+                .visible_entities()
+                .creatures
+                .into_iter()
+                .map(|c| runtime.read_actor_position(c.actor).map(|p| p.position()))
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(debug)?;
+            super::srx3_primal_terminal::source_route(
+                view.effective_movement_cells(),
+                runtime.read_actor_position(player).map_err(debug)?.position(),
+                runtime.read_actor_position(boss).map_err(debug)?.position(),
+                &occupied,
+                true,
+            )?
+        };
+        let Some(direction) = route.first().copied() else {
+            break;
+        };
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -81,11 +77,17 @@ pub(super) async fn exercise(
             step.disposition,
             oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
         );
-        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
+        clock.set(view.owner_now().get() + 1_000_000);
     }
-    let view = owner.runtime_view(&registered);
+    super::srx3_activity_source_fixture::settle_native_work(&view).await?;
     {
         let mut runtime = view.runtime.lock().await;
+        let from = runtime.read_actor_position(player).map_err(debug)?.position();
+        let to = runtime.read_actor_position(boss).map_err(debug)?.position();
+        assert!(
+            from.floor == to.floor && from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)) == 1,
+            "actual Vemiath approach ends in melee range: {from:?} to {to:?}"
+        );
         let original = runtime
             .companion_snapshot(boss)
             .map_err(debug)?
@@ -110,16 +112,12 @@ pub(super) async fn exercise(
         );
         assert!(!runtime.retains_corpse_projection(boss));
     }
-    let clock = NativeOwnerClock::new(&view);
     let mut now = view.owner_now().get();
-    clock.set(now);
     assert_eq!(
         view.select_attack_target(player, admitted.game_session_id, 944, Some(target))
             .await,
         AttackIntentDisposition::Ok
     );
-    // The approach drains native work, which can move the boss after the
-    // initial route was read. Follow its live position through the chase owner.
     let modes = FightModes {
         chase: ChaseMode::Chase,
         ..FightModes::DEFAULT

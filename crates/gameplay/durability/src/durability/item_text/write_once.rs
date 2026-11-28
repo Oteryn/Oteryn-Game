@@ -1,4 +1,5 @@
 //! WRITE-0 §5.3: one closed, text-free PRESERVE_INSTANCE transform audit.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::item_mint_audit::{self as audit, Type2Transaction};
 use crate::durability::item_transfer_audit::OneItemCommandRefV1;
@@ -112,7 +113,7 @@ impl DurabilityRoot {
             let source: Option<(String, String, String)> = sqlx::query_as("SELECT before_item->>'definition_family',before_item->>'definition_production_key',before_item->>'definition_revision_ref' FROM game_item_write_once_transforms WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid AND item_instance_id=encode($4,'hex')::uuid")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
                 .bind(character.as_bytes().as_slice()).bind(item.as_slice()).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(source.map(|(family, production_key, revision_ref)| TypedDefinitionRef { family, production_key, revision_ref }))
         })).await.map_err(Into::into)
     }

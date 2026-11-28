@@ -13,18 +13,64 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
-pub(super) fn source_key_door(x: u16, y: u16, floor: i8, action: u16) -> TestResult {
+pub(super) fn source_key_door(x: u16, y: u16, floor: i8, appearance: u16, action: u16) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("fibula-source-key", move || {
-        scenario(Some((x, y, floor, action)))
+        scenario(Some((x, y, floor, appearance, action)))
     })
 }
 
-pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
+fn authored_door_action(x: u16, y: u16, floor: i8, appearance: u16) -> TestResult<Option<u16>> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/world/placements");
+    let region = std::fs::read(root.join(format!(
+        "region-z{:02}-x{:03}-y{:03}.b3",
+        floor.unsigned_abs(),
+        x / 256,
+        y / 256
+    )))?;
+    let palette: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join("index.json"))?)?;
+    let region = oteryn_world_bundle_compiler::b3::decode_region(
+        &region,
+        oteryn_world_bundle::bundle::TILE_LIMITS,
+        &mut oteryn_world_bundle::sector::Budget {
+            tiles: 65536,
+            entries: 1_000_000,
+        },
+    )?;
+    let door = region
+        .sectors
+        .iter()
+        .flat_map(|(_, _, tiles)| tiles)
+        .filter(|tile| (tile.x, tile.y, tile.house) == (x, y, 0))
+        .flat_map(|tile| &tile.items)
+        .find(|item| {
+            item.depth == 0
+                && palette["palette"][item.palette as usize]["source_item_id"] == appearance
+        })
+        .ok_or("source door placement")?;
+    Ok(door.attrs.action)
+}
+
+pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
     run(async |admin| {
-        let level_gate = source.is_some_and(|(_, _, _, action)| action == 1050);
+        let (door_x, door_y, door_floor, door_appearance, key_action) =
+            source.unwrap_or((6, 0, -7, 1628, 4321));
+        let level_gate = key_action == 1050;
+        let door_action = if let Some((x, y, floor, _, action)) = source {
+            let authored = authored_door_action(x, y, floor, door_appearance)?;
+            assert_eq!(
+                authored,
+                Some(action),
+                "authored door action at ({x}, {y}, {floor})"
+            );
+            authored
+        } else {
+            Some(4321)
+        };
         let harness =
             Harness::create_with_admission_seed(admin, "m06_keys", !level_gate, false).await?;
         let version: String = sqlx::query_scalar("SELECT current_setting('server_version')")
@@ -55,14 +101,6 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let (door_x, door_y, door_floor, key_action) = source.unwrap_or((6, 0, -7, 4321));
-        let door_appearance = if level_gate {
-            1648
-        } else if source.is_some() {
-            1631
-        } else {
-            1628
-        };
         let door_key = format!("oteryn:item.tibia.i{door_appearance}");
         let door = door_key.as_str();
         let station_pos = crate::map::overlay::TilePos {
@@ -74,7 +112,8 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             crate::map::view::placement_key(station_pos, 1).ok_or("door placement")?;
         let key_item = match key_action {
             3940 => "oteryn:item.tibia.i2968",
-            3980 => "oteryn:item.tibia.i2972",
+            3303 | 3802 => "oteryn:item.tibia.i2970",
+            3304 | 3980 => "oteryn:item.tibia.i2972",
             _ => "oteryn:item.tibia.i2967",
         };
         let wrong_key = if key_action == 3940 {
@@ -91,6 +130,18 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             ),
         );
         let mut data = oteryn_world_bundle::bundle::read(&bytes)?;
+        if level_gate {
+            let tiles = &mut data.sectors.first_mut().ok_or("door sector")?.tiles;
+            let mut next_door = tiles.iter().find(|tile| tile.x == 6)
+                .and_then(|tile| tile.items.last()).ok_or("origin door")?.clone();
+            next_door.attrs.action = Some(key_action);
+            let next_tile = tiles.iter_mut().find(|tile| tile.x == 5).ok_or("adjacent door tile")?;
+            next_tile.items.truncate(1);
+            next_tile.items.push(next_door);
+            let coin = tiles.iter().find(|tile| tile.x == 7)
+                .and_then(|tile| tile.items.last()).ok_or("coin")?.clone();
+            tiles.iter_mut().find(|tile| tile.x == 6).ok_or("origin tile")?.items.push(coin);
+        }
         let entry = data
             .sectors
             .iter_mut()
@@ -98,9 +149,9 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             .find(|tile| tile.x == 6)
             .ok_or("door tile")?
             .items
-            .last_mut()
+            .get_mut(1)
             .ok_or("door entry")?;
-        entry.attrs.action = source.is_none().then_some(4321);
+        entry.attrs.action = door_action;
         if source.is_some() {
             let mut sectors = std::collections::BTreeMap::new();
             for sector in std::mem::take(&mut data.sectors) {
@@ -174,15 +225,16 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             );
         }
         let cells = map
-            .movement_cells(deps.room.movement_cells())
+            .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame = map.frame_binding_digest(deps.admitted.world_id);
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
-            pin.qualified_room().map_revision_digest(),
+            frame,
+            map.map_revision_digest(),
             (
                 i32::from(door_x + 1),
                 i32::from(door_y),
@@ -231,7 +283,7 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         }
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&harness.pool).await?;
         if !level_gate {
             super::item_look_fixtures::seed_main_backpack(&harness, &[(key_item, 1), (wrong_key, 1)])
                 .await?;
@@ -310,7 +362,30 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                 assert_eq!(result, expected, "source level50 gate at level{level}");
                 admitted = next;
                 assert_eq!(map.enterable(station_pos), level == 50);
+                let position = owner
+                    .runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?;
+                assert_eq!(
+                    position.position(),
+                    MovementLocalPosition {
+                        x: i32::from(if level == 50 { door_x } else { door_x + 1 }),
+                        y: i32::from(door_y),
+                        floor: -i16::from(door_floor),
+                    },
+                );
                 if level == 50 {
+                    assert_eq!(
+                        owner.runtime.lock().await.read_actor_position(deps.actor).map_err(debug)?.position(),
+                        MovementLocalPosition {
+                            x: i32::from(door_x),
+                            y: i32::from(door_y),
+                            floor: -i16::from(door_floor),
+                        },
+                        "source expertise door USE enters the doorway"
+                    );
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
                     let (next, result, _) =
                         super::item_craft_fixtures::exchange(&owner, admitted, command, &replay, None)
@@ -318,10 +393,43 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16)>) -> TestResult {
                     admitted = next;
                     assert_eq!(result, UseDisposition::Committed);
                     assert_eq!(map.facts().doors().revision(placement_key), 1);
+                    assert_eq!(
+                        owner
+                            .runtime
+                            .lock()
+                            .await
+                            .read_actor_position(deps.actor)
+                            .map_err(debug)?,
+                        position,
+                    );
                 }
             }
+            let adjacent = crate::map::overlay::TilePos { x: door_x - 1, ..station_pos };
+            let adjacent_key = crate::map::view::placement_key(adjacent, 1).ok_or("adjacent door")?;
+            let mut placement = map.base().digest().to_vec();
+            placement.extend_from_slice(&adjacent_key.to_be_bytes());
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
+                &WorldObjectTarget { placement, expected_revision: 0 },
+            ).map_err(debug)?;
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+            let command = admitted.continuity.next_command_id;
+            for _ in 0..2 {
+                let (next, result, _) =
+                    super::item_craft_fixtures::exchange(&owner, admitted, command, &payload, None).await?;
+                admitted = next;
+                assert_eq!(result, UseDisposition::Committed);
+                assert_eq!(map.facts().doors().revision(placement_key), 2, "the vacated door closes");
+                assert!(!map.enterable(station_pos));
+                assert!(map.enterable(adjacent));
+                let moved: Vec<Vec<u8>> = sqlx::query_scalar(
+                    "SELECT g.spatial_position FROM game_map_item_mint_receipts m JOIN game_item_ground_locations g USING (item_instance_id) WHERE m.definition_production_key='oteryn:item.tibia.i3031'",
+                ).fetch_all(&harness.pool).await?;
+                assert_eq!(moved.len(), 1, "move the doorway coin exactly once");
+                let cell = crate::durability::spell_items_abi::decode_ground_cell(&moved[0]).map_err(debug)?;
+                assert_eq!((cell.x, cell.y, cell.z), (i32::from(door_x + 1), i32::from(door_y), i32::from(door_floor)));
+            }
             eprintln!(
-                "POSTGRES_CASE_COMPLETED fibula_source_level50_gate duration={:?}",
+                "POSTGRES_CASE_COMPLETED source_level50_gate_{source:?} duration={:?}",
                 started.elapsed()
             );
             drop(owner);

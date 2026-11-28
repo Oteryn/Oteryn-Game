@@ -36,17 +36,19 @@ pub(super) async fn retry_holder<T, E>(
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
-    if let Some(root) = root {
-        return root.retry_foreground_holder(deadline, busy, step).await;
-    }
     loop {
         let outcome = step().await;
-        let now = tokio::time::Instant::now();
-        if !outcome.as_ref().is_err_and(&busy) || now >= deadline {
+        if !outcome.as_ref().is_err_and(&busy) || tokio::time::Instant::now() >= deadline {
             return outcome;
         }
-        let retry_at = (now + std::time::Duration::from_millis(50)).min(deadline);
-        tokio::time::sleep_until(retry_at).await;
+        let now = tokio::time::Instant::now();
+        let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
+        let earliest = (now + std::time::Duration::from_millis(50)).min(latest);
+        if let Some(root) = root {
+            root.wait_holder_retry(earliest, latest).await;
+        } else {
+            tokio::time::sleep_until(earliest).await;
+        }
         if tokio::time::Instant::now() >= deadline {
             return outcome;
         }
@@ -96,6 +98,7 @@ pub(super) async fn prepare_free_sorcerer(
         QualificationBuildSpec {
             vocation: "sorcerer",
             level: 8,
+            exact_level: false,
             context,
             xp_occurrence,
             build_occurrence,
@@ -109,6 +112,7 @@ pub(super) async fn prepare_free_sorcerer(
 pub(crate) struct QualificationBuildSpec<'a> {
     pub vocation: &'a str,
     pub level: u32,
+    pub exact_level: bool,
     pub context: ProgressionRevisionContext<String>,
     pub xp_occurrence: [u8; 16],
     pub build_occurrence: [u8; 16],
@@ -200,10 +204,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     policy: FiniteProgressionPolicy<String, N>,
     deadline: tokio::time::Instant,
 ) -> TestResult {
-    let playable = PLAYABLE_VOCATIONS.contains(&spec.vocation);
-    #[cfg(feature = "qualification-spawn")]
-    let playable = playable || (spec.vocation == NO_VOCATION && spec.level == 8);
-    if !playable || !(1..=1000).contains(&spec.level) {
+    if !PLAYABLE_VOCATIONS.contains(&spec.vocation) || !(1..=1000).contains(&spec.level) {
         return Err("qualification requires a base vocation and source level 1..1000".into());
     }
     let xp_occurrence =
@@ -212,6 +213,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     let QualificationBuildSpec {
         vocation,
         level,
+        exact_level,
         context,
         xp_occurrence: _,
         build_occurrence: _,
@@ -238,10 +240,6 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
-    #[cfg(feature = "qualification-spawn")]
-    if vocation == NO_VOCATION && before.vocation() != NO_VOCATION {
-        return Err("unassigned preparation requires an unassigned birth".into());
-    }
     let classed = before.vocation() != NO_VOCATION;
     let requested_vocation_present = classed && before.vocation() == vocation;
     let xp_checkpoint = if level > 1
@@ -317,7 +315,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             return Err("spell fixture progression level or XP is not initial".into());
         }
         if checkpoint
-            && !resume_items
+            && (exact_level || !resume_items)
             && (state.level != level || state.total_experience != experience)
         {
             return Err("qualification fixture XP checkpoint has changed".into());
@@ -428,14 +426,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         &context.content,
     )
     .map_err(debug)?;
-    #[cfg(not(feature = "qualification-spawn"))]
     let after = convert_vocation(&formula, &before, vocation).map_err(debug)?;
-    #[cfg(feature = "qualification-spawn")]
-    let after = if vocation == NO_VOCATION {
-        before.clone()
-    } else {
-        convert_vocation(&formula, &before, vocation).map_err(debug)?
-    };
     if before != after {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_build(

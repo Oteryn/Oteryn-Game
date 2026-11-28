@@ -62,7 +62,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let budget = super::AdmissionRetryBudget::for_command(self.root);
         if command_type == wire::COMMAND_TYPE_GUILD_QUERY {
             let Ok(query) = wire::decode_guild_query(payload) else {
                 return GuildReply::Rejected;
@@ -71,16 +70,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if wire::encode_guild_query(&query).is_err() {
                 return GuildReply::Rejected;
             }
-            return match budget
-                .retry_holder(
-                    async || {
-                        self
-                            .root
-                            .query_guild(self.character, self.holder, fence, query)
-                            .await
-                    },
-                    guild_holder_busy,
-                )
+            return match self
+                .root
+                .query_guild(self.character, self.holder, fence, query)
                 .await
             {
                 Ok(mut result) => {
@@ -151,16 +143,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(name) = GuildName::parse(name) else {
                     return GuildReply::Rejected;
                 };
-                match budget
-                    .retry_holder(
-                        async || {
-                            self
-                                .root
-                                .resolve_guild_invitee(self.character, self.holder, fence, command, name.clone())
-                                .await
-                        },
-                        guild_holder_busy,
-                    )
+                match self
+                    .root
+                    .resolve_guild_invitee(self.character, self.holder, fence, command, name)
                     .await
                 {
                     Ok(Some(character)) => GuildCommand::Invite(character),
@@ -205,25 +190,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(premium) = self.premium_coordinator else {
                     return GuildReply::Unavailable;
                 };
-                budget
-                    .retry_holder(
-                        async || {
-                            self.root
-                                .commit_guild_found(
-                                    self.character,
-                                    self.holder,
-                                    fence,
-                                    GuildFoundRequest {
-                                        identity: request.identity.clone(),
-                                        command,
-                                        guild_id,
-                                        name: name.clone(),
-                                    },
-                                    premium,
-                                )
-                                .await
+                self.root
+                    .commit_guild_found(
+                        self.character,
+                        self.holder,
+                        fence,
+                        GuildFoundRequest {
+                            identity: request.identity,
+                            command,
+                            guild_id,
+                            name,
                         },
-                        guild_holder_busy,
+                        premium,
                     )
                     .await
             }
@@ -238,27 +216,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(premium) = self.premium_coordinator else {
                     return GuildReply::Unavailable;
                 };
-                budget
-                    .retry_holder(
-                        async || {
-                            self.root
-                                .commit_guild_rank(self.character, self.holder, fence, rank.clone(), premium)
-                                .await
-                        },
-                        guild_holder_busy,
-                    )
+                self.root
+                    .commit_guild_rank(self.character, self.holder, fence, rank, premium)
                     .await
             }
             _ => {
-                budget
-                    .retry_holder(
-                        async || {
-                            self.root
-                                .commit_guild_membership(self.character, self.holder, fence, request.clone())
-                                .await
-                        },
-                        guild_holder_busy,
-                    )
+                self.root
+                    .commit_guild_membership(self.character, self.holder, fence, request)
                     .await
             }
         };
@@ -319,10 +283,3 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
-
-pub(super) fn guild_holder_busy(error: &GuildError) -> bool {
-    matches!(
-        error,
-        GuildError::Unavailable(crate::durability::DurabilityError::RootUnavailable)
-    )
-}
