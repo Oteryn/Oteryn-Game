@@ -14,6 +14,8 @@ use oteryn_dev_client::{
 };
 use oteryn_protocol_oteryn::exiva;
 
+const MANA_POTION: u32 = 268;
+
 const ACTIONS: &[&str] = &["allow", "locate", "deny", "refusal", "fresh-admission"];
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -103,6 +105,13 @@ pub(super) async fn cast(
 }
 
 pub(super) async fn connect_caster(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    prepare_caster(clients, false).await
+}
+
+async fn prepare_caster(
+    clients: &SeamClients<'_>,
+    supply_mana_potion: bool,
+) -> TestResult<DevClientSession> {
     let mut initial = connect_character(clients, 0xc5, 0).await?;
     let old_session = initial.join_snapshot().game_session_id;
     request_fixture_control_at(
@@ -112,6 +121,9 @@ pub(super) async fn connect_caster(clients: &SeamClients<'_>) -> TestResult<DevC
         "c05-exiva".into(),
     )
     .await?;
+    if supply_mana_potion {
+        character_prep::grant_item(&initial, MANA_POTION, 1).await?;
+    }
     let logout = initial.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C05 caster preparation logout refused: {:?}", logout.result).into());
@@ -152,7 +164,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let target_identity =
         character_prep::dedicated_character(clients, "NODE_BOOT_C05_TARGET_ACCOUNT").await?;
     let target_clients = target_identity.clients(clients);
-    let mut caster = connect_caster(&caster_clients).await?;
+    let mut caster = prepare_caster(&caster_clients, true).await?;
     let mut target = connect_character(&target_clients, 0xc6, 0)
         .await
         .map_err(|error| admission_error("target-admission", error))?;
@@ -223,15 +235,41 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ACTIONS[1]
     ));
 
-    // Observe ordinary regeneration to a full pool before either refusal. The
-    // row deadline bounds the wait and no spell command is retried.
+    // Let the existing two-second spell cooldown elapse before the first refusal.
+    // The paid cast depleted mana, so restore it through one real inventory use.
+    let spell_ready = tokio::time::Instant::now() + Duration::from_secs(2);
+    let potion = provisioning::item_reference(&provisioning::item_index()?, MANA_POTION)?;
+    let handle = caster
+        .inventory()
+        .and_then(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .find(|entry| entry.item_definition_ref == potion)
+        })
+        .map(|entry| entry.handle)
+        .ok_or("C05 caster has no provisioned Mana Potion")?;
+    let result = caster.use_item(handle).await?;
+    if result.status != CommandStatus::Accepted
+        || result.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("C05 Mana Potion USE refused: {result:?}").into());
+    }
+    let potion_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while !caster
         .actor_vitals()
         .is_some_and(|vitals| vitals.mana == vitals.max_mana)
     {
+        if tokio::time::Instant::now() >= potion_deadline {
+            return Err("C05 Mana Potion did not restore the full mana pool".into());
+        }
         caster.service_liveness(Duration::from_millis(50)).await?;
-        target.service_liveness(Duration::from_millis(50)).await?;
     }
+    while tokio::time::Instant::now() < spell_ready {
+        caster.service_liveness(Duration::from_millis(25)).await?;
+        target.service_liveness(Duration::from_millis(25)).await?;
+    }
+
     if setting(&mut target, &[0, 0]).await? != [1] {
         return Err("deny step missing committed [1] reply".into());
     }
