@@ -142,7 +142,7 @@ pub(crate) fn decode(proof: &[u8]) -> std::result::Result<Proof, AuditError> {
         || value.outputs_hash.len() != 32
         || value.stash_hash.len() != 32
         || !(value.ruleset == storage::RULESET
-            || (value.operation == 3 && value.ruleset == DUST_LIMIT_RULESET_REVISION))
+            || (value.operation == 3 && value.ruleset == dust_audit::GLOBAL_FORGE_V2))
         || value.simulation_revision != 1
         || value.rolls[0] >= 100
         || value.rolls[1] >= 100

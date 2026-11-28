@@ -349,9 +349,9 @@ fn forge_reference_conversions_and_d1230_dust_cap() -> Result<(), String> {
     }
     for (stage, limit, cost) in [
         (0, 100, Some(25)),
-        (1, 101, Some(26)),
-        (224, 324, Some(249)),
-        (225, 325, None),
+        (1, 120, Some(26)),
+        (224, 4_580, Some(249)),
+        (225, 4_600, None),
     ] {
         let policy = ForgeDustLimit::new(stage).map_err(|e| format!("{e:?}"))?;
         assert_eq!(policy.current_limit(), Ok(limit));

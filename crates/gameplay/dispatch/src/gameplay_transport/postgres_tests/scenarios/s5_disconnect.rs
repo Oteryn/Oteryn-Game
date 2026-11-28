@@ -246,7 +246,7 @@ fn scenario(case: Case) -> TestResult {
                     )
                     .fetch_one(&h.pool)
                     .await?,
-                    (75, 101)
+                    (75, 120)
                 );
             }
         }
@@ -284,7 +284,7 @@ fn scenario(case: Case) -> TestResult {
                 let replay: serde_json::Value = serde_json::from_slice(&replay)?;
                 assert_eq!(replay["succeeded"], true);
                 assert_eq!(replay["result"]["dust"], 75);
-                assert_eq!(replay["result"]["dust_limit"], 101);
+                assert_eq!(replay["result"]["dust_limit"], 120);
             }
         }
         assert_eq!(
@@ -407,7 +407,7 @@ fn scenario(case: Case) -> TestResult {
                     )
                     .fetch_one(&h.pool)
                     .await?,
-                    (75, 101)
+                    (75, 120)
                 );
                 assert_eq!(
                     count(&h, "SELECT count(*) FROM game_forge_dust_limit_receipts").await?,

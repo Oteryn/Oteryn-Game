@@ -1,6 +1,6 @@
 //! Forge dust (IMBUE-FORGE-0 §9, FORGE-1a): a per-Character balance from 0 to the dust limit,
-//! and the Tibia Global progression: +1 per purchase at the current limit minus 75 Dust,
-//! up to 325 (TibiaWiki Equipment Upgrade, revision 1205481).
+//! and the Tibia Global progression: +20 per purchase, costing 25 Dust plus the
+//! current upgrade stage, up to 4,600.
 //! Gain and Spend preserve the unlocked limit. LimitRaise is a checked value plan;
 //! only its native receipt/ledger owner may commit it.
 
@@ -10,10 +10,10 @@ use std::fmt::{self, Display, Formatter};
 /// `IMBFORGE0-RL-08`: the initial and lowest dust limit.
 pub const DUST_LIMIT_MIN: u16 = 100;
 /// `IMBFORGE0-RL-08`: the highest dust limit.
-pub const DUST_LIMIT_MAX: u16 = 325;
-pub const DUST_LIMIT_UPGRADES_MAX: u16 = DUST_LIMIT_MAX - DUST_LIMIT_MIN;
-const LEGACY_LIMIT_MAX: u16 = 4_600;
-const LEGACY_LIMIT_STEP: u16 = 20;
+pub const DUST_LIMIT_MAX: u16 = 4_600;
+const DUST_LIMIT_STEP: u16 = 20;
+pub const DUST_LIMIT_UPGRADES_MAX: u16 = (DUST_LIMIT_MAX - DUST_LIMIT_MIN) / DUST_LIMIT_STEP;
+const HISTORICAL_V2_CAP: u16 = 325;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ForgeDustError {
@@ -49,11 +49,11 @@ pub struct DustLimit(u16);
 impl DustLimit {
     pub const INITIAL: Self = Self(DUST_LIMIT_MIN);
 
-    /// Accept Global limits and existing legacy limits above the Global cap.
+    /// Accept current stages and historical one-point limits for reads and replay.
     pub fn new(value: u16) -> Result<Self, ForgeDustError> {
-        if (DUST_LIMIT_MIN..=DUST_LIMIT_MAX).contains(&value)
-            || ((DUST_LIMIT_MAX + 1..=LEGACY_LIMIT_MAX).contains(&value)
-                && (value - DUST_LIMIT_MIN).is_multiple_of(LEGACY_LIMIT_STEP))
+        if (DUST_LIMIT_MIN..=HISTORICAL_V2_CAP).contains(&value)
+            || ((HISTORICAL_V2_CAP + 1..=DUST_LIMIT_MAX).contains(&value)
+                && (value - DUST_LIMIT_MIN).is_multiple_of(DUST_LIMIT_STEP))
         {
             Ok(Self(value))
         } else {
@@ -69,30 +69,29 @@ impl DustLimit {
         if upgrades > DUST_LIMIT_UPGRADES_MAX {
             return Err(ForgeDustError::InvalidLimit);
         }
-        Ok(Self(DUST_LIMIT_MIN + upgrades))
+        Ok(Self(DUST_LIMIT_MIN + DUST_LIMIT_STEP * upgrades))
     }
 
-    /// The Global stage, saturated at the cap for grandfathered higher limits.
+    /// The current stage, rounded down for historical one-point limits.
     pub fn upgrade_count(self) -> u16 {
-        self.0.min(DUST_LIMIT_MAX) - DUST_LIMIT_MIN
+        (self.0 - DUST_LIMIT_MIN) / DUST_LIMIT_STEP
     }
 
     pub fn next_upgrade(self) -> Result<(u32, Self), ForgeDustError> {
         if self.0 >= DUST_LIMIT_MAX {
             return Err(ForgeDustError::MaximumLimitReached);
         }
-        Ok((u32::from(self.0) - 75, Self(self.0 + 1)))
+        if !(self.0 - DUST_LIMIT_MIN).is_multiple_of(DUST_LIMIT_STEP) {
+            return Err(ForgeDustError::InvalidLimit);
+        }
+        Ok((
+            25 + u32::from(self.upgrade_count()),
+            Self(self.0 + DUST_LIMIT_STEP),
+        ))
     }
 
-    fn legacy_upgrade(self) -> Option<(u32, Self)> {
-        let offset = self.0 - DUST_LIMIT_MIN;
-        if self.0 >= LEGACY_LIMIT_MAX || !offset.is_multiple_of(LEGACY_LIMIT_STEP) {
-            return None;
-        }
-        Some((
-            25 + u32::from(offset / LEGACY_LIMIT_STEP),
-            Self(self.0 + LEGACY_LIMIT_STEP),
-        ))
+    fn historical_v2_upgrade(self) -> Option<(u32, Self)> {
+        (self.0 < HISTORICAL_V2_CAP).then(|| (u32::from(self.0) - 75, Self(self.0 + 1)))
     }
 }
 
@@ -168,17 +167,17 @@ impl ForgeDustBalance {
         })
     }
 
-    /// Quote one indivisible debit and +1 limit transition. The caller cannot
+    /// Quote one indivisible debit and +20 limit transition. The caller cannot
     /// supply a cost, resulting limit, or a fabricated earlier unlock count.
     pub fn raise_limit(self) -> Result<DustLimitRaise, ForgeDustError> {
         let (amount, limit) = self.limit.next_upgrade()?;
         self.apply_limit_raise(amount, limit)
     }
 
-    /// Validate historical D1230 ledger and receipt rows during replay.
-    pub fn matches_legacy_raise(self, after: Self, amount: u32) -> bool {
+    /// Validate historical one-point ledger and receipt rows during replay.
+    pub fn matches_historical_v2_raise(self, after: Self, amount: u32) -> bool {
         self.limit
-            .legacy_upgrade()
+            .historical_v2_upgrade()
             .and_then(|(cost, limit)| self.apply_limit_raise(cost, limit).ok())
             .is_some_and(|raise| raise.amount == amount && raise.after == after)
     }
@@ -238,6 +237,25 @@ mod tests {
         assert_eq!(DustLimit::new(326), Err(ForgeDustError::InvalidLimit));
         assert_eq!(DustLimit::new(4_601), Err(ForgeDustError::InvalidLimit));
         assert_eq!(DustLimit::INITIAL.get(), 100);
+    }
+
+    #[test]
+    fn next_upgrade_uses_global_twenty_point_steps_and_cap() -> Result<(), ForgeDustError> {
+        let (cost, limit) = DustLimit::INITIAL.next_upgrade()?;
+        assert_eq!((cost, limit.get()), (25, 120));
+        let (cost, limit) = limit.next_upgrade()?;
+        assert_eq!((cost, limit.get()), (26, 140));
+        let (cost, limit) = DustLimit::new(4_580)?.next_upgrade()?;
+        assert_eq!((cost, limit.get()), (249, 4_600));
+        assert_eq!(
+            limit.next_upgrade(),
+            Err(ForgeDustError::MaximumLimitReached)
+        );
+        assert_eq!(
+            DustLimit::new(101)?.next_upgrade(),
+            Err(ForgeDustError::InvalidLimit)
+        );
+        Ok(())
     }
 
     #[test]

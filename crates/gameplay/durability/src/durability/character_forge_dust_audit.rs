@@ -154,7 +154,7 @@ pub async fn audit_forge_dust_ledger(
                         entry.before,
                         entry.after,
                         entry.amount,
-                    ) || entry.before.matches_legacy_raise(entry.after, entry.amount))
+                    ) || entry.before.matches_historical_v2_raise(entry.after, entry.amount))
             }
         };
         if !consistent {
@@ -195,7 +195,8 @@ use prost::Message;
 use sha2::{Digest, Sha256};
 
 /// Current ruleset for newly reserved Dust Limit purchases.
-pub const DUST_LIMIT_RULESET_REVISION: &str = "global-forge-v2";
+pub const DUST_LIMIT_RULESET_REVISION: &str = "global-forge-dust-v3";
+pub(super) const GLOBAL_FORGE_V2: &str = "global-forge-v2";
 
 pub(super) fn matches_limit_raise(
     ruleset: &str,
@@ -204,10 +205,10 @@ pub(super) fn matches_limit_raise(
     amount: u32,
 ) -> bool {
     match ruleset {
-        DUST_LIMIT_RULESET_REVISION => before
+        DUST_LIMIT_RULESET_REVISION | "D1230" => before
             .raise_limit()
             .is_ok_and(|raise| raise.after == after && raise.amount == amount),
-        "D1230" => before.matches_legacy_raise(after, amount),
+        GLOBAL_FORGE_V2 => before.matches_historical_v2_raise(after, amount),
         _ => false,
     }
 }

@@ -28,7 +28,7 @@ const FORGE_APPROACH: TilePos = TilePos {
 };
 
 // Global 15.33 probe: docs/reference/content-prep/forge-content-1/live-client-forge-probe.json
-pub(super) const GLOBAL_FIRST_DUST_CAP: u64 = 120;
+const GLOBAL_FIRST_DUST_CAP: u64 = 120;
 
 const ADVENTURERS_STONE: u32 = 16277;
 const THAIS_TEMPLE: TilePos = TilePos {

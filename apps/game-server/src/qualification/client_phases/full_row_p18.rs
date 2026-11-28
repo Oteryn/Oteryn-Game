@@ -803,8 +803,11 @@ async fn raise_cap_for_funding(
     if baseline.status != CommandStatus::Accepted || !valid_history_ordinals(&expected_history) {
         return Err("invalid cap history baseline".into());
     }
-    for limit in u64::try_from(current)?..required {
-        let cost = limit - 75;
+    let mut final_limit = u64::try_from(current)?;
+    for limit in (final_limit..required).step_by(20) {
+        let stage = (limit - 100) / 20;
+        let cost = 25 + stage;
+        final_limit = limit + 20;
         let mut tx = sqlx::Connection::begin(&mut *db).await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
@@ -820,7 +823,7 @@ async fn raise_cap_for_funding(
         let result = command(
             &mut client,
             Operation::DustLimit,
-            occurrence(session, u8::try_from(limit - 100)?),
+            occurrence(session, u8::try_from(stage)?),
             None,
             0,
         )
@@ -828,13 +831,13 @@ async fn raise_cap_for_funding(
         if result.status != CommandStatus::Accepted
             || result.body
                 != serde_json::json!({
-                    "operation":"dust_limit","succeeded":true,"result":{"dust":0,"dust_limit":limit+1}
+                    "operation":"dust_limit","succeeded":true,"result":{"dust":0,"dust_limit":final_limit}
                 })
-            || super::client_row_p18::dust(&mut client).await? != (0, limit + 1)
+            || super::client_row_p18::dust(&mut client).await? != (0, final_limit)
         {
             return Err(format!(
                 "live Forge cap upgrade {limit} → {} failed: {}",
-                limit + 1,
+                final_limit,
                 result.body
             )
             .into());
@@ -851,7 +854,7 @@ async fn raise_cap_for_funding(
     logout(&mut client).await?;
     let mut fresh = connect_character(clients, tag.wrapping_add(1), 0).await?;
     if fresh.join_snapshot().game_session_id == session
-        || super::client_row_p18::dust(&mut fresh).await? != (0, required)
+        || super::client_row_p18::dust(&mut fresh).await? != (0, final_limit)
     {
         return Err("live Forge cap progression did not persist".into());
     }
@@ -1098,12 +1101,10 @@ async fn run_case(clients: &SeamClients<'_>, case: &ForgeCase, tag: u8) -> TestR
     }
     client.service_liveness(Duration::from_millis(490)).await?;
     let result = command(&mut client, case.operation, occurrence(session, 1), pair, 0).await?;
-    let expected_dust = funded.0 - u64::try_from(case.dust)?;
-    let expected_cap = if case.operation == Operation::DustLimit {
-        super::client_row_p18::GLOBAL_FIRST_DUST_CAP
-    } else {
-        funded.1
-    };
+    let (expected_dust, expected_cap) = (
+        funded.0 - u64::try_from(case.dust)?,
+        funded.1 + 20 * u64::from(case.operation == Operation::DustLimit),
+    );
     let (expected_slivers, expected_cores) = match case.operation {
         Operation::DustToSlivers => (slivers + 3, cores),
         Operation::SliversToCores => (

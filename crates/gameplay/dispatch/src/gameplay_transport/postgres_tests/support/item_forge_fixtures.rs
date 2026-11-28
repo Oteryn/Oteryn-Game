@@ -87,46 +87,39 @@ async fn dust_progression(
     admitted: &mut AdmittedSession,
     limit: u16,
 ) -> TestResult {
-    let (status, reply) = exchange(owner, admitted, request(Operation::DustLimit, 109)).await?;
-    assert_eq!(status, CommandStatus::Accepted);
-    match limit {
-        100 | 130 => {
-            let expected_cost = if limit == 100 { 25 } else { 55 };
-            assert_eq!(reply["succeeded"], true);
-            assert_eq!(reply["result"]["dust_limit"], limit + 1);
-            assert_eq!(
-                balances(h).await?,
-                (
-                    i64::from(limit) - expected_cost,
-                    i16::try_from(limit + 1)?,
-                    0,
-                    0
-                )
-            );
-            let spent: i64 = sqlx::query_scalar(
-                "SELECT amount FROM game_character_forge_dust_entries WHERE kind='LIMIT_RAISE'",
-            )
-            .fetch_one(&h.pool)
-            .await?;
-            assert_eq!(spent, expected_cost);
-        }
-        325 => {
-            assert_eq!(reply["reason"], "MAXIMUM_LIMIT");
-            assert_eq!(reply["applied"], false);
-            assert_eq!(balances(h).await?, (325, 325, 0, 0));
-            let entries: i64 = sqlx::query_scalar(
-                "SELECT count(*) FROM game_character_forge_dust_entries WHERE kind='LIMIT_RAISE'",
-            )
-            .fetch_one(&h.pool)
-            .await?;
-            assert_eq!(entries, 0);
-        }
+    let (purchases, balance_at_cap): (&[(u16, i64)], _) = match limit {
+        100 => (&[(120, 25), (140, 26)], None),
+        4_580 => (&[(4_600, 249)], Some(4_331)),
         _ => return Err("unexpected Dust Limit fixture".into()),
+    };
+    let mut balance = i64::from(limit);
+    for (index, &(after, cost)) in purchases.iter().enumerate() {
+        let (status, reply) = exchange(
+            owner, admitted, request(Operation::DustLimit, 109 + u8::try_from(index)?),
+        ).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(reply["succeeded"], true);
+        assert_eq!(reply["result"]["dust_limit"], after);
+        balance -= cost;
+        assert_eq!(balances(h).await?, (balance, i16::try_from(after)?, 0, 0));
+        cooldown_elapsed(h).await?;
     }
+    if let Some(balance) = balance_at_cap {
+        let (status, reply) = exchange(owner, admitted, request(Operation::DustLimit, 112)).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(reply["reason"], "MAXIMUM_LIMIT");
+        assert_eq!(reply["applied"], false);
+        assert_eq!(balances(h).await?, (balance, 4_600, 0, 0));
+    }
+    let paid: Vec<(i16, i64)> = sqlx::query_as(
+        "SELECT dust_limit_after, amount FROM game_character_forge_dust_entries
+         WHERE kind='LIMIT_RAISE' ORDER BY dust_limit_after",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(paid, purchases.iter().map(|&(after, cost)| (after as i16, cost)).collect::<Vec<_>>());
     if limit == 100 {
         let costs: Vec<(i32, Option<i32>)> = sqlx::query_as(
             "SELECT stage,game_forge_dust_limit_cost(stage)
-             FROM generate_series(100,325) AS stages(stage) ORDER BY stage",
+             FROM generate_series(100,4600,20) AS stages(stage) ORDER BY stage",
         )
         .fetch_all(&h.pool)
         .await?;
@@ -154,9 +147,9 @@ async fn dust_limit(
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(
         first,
-        serde_json::json!({"operation":"dust_limit","succeeded":true,"result":{"dust":75,"dust_limit":101}})
+        serde_json::json!({"operation":"dust_limit","succeeded":true,"result":{"dust":75,"dust_limit":120}})
     );
-    assert_eq!(balances(h).await?, (75, 101, 0, 0));
+    assert_eq!(balances(h).await?, (75, 120, 0, 0));
     assert_eq!(
         exchange(owner, admitted, action).await?,
         (CommandStatus::Accepted, first.clone())
@@ -187,7 +180,7 @@ async fn dust_limit(
         exchange(owner, admitted, next_request).await?,
         (CommandStatus::Accepted, refused)
     );
-    assert_eq!(balances(h).await?, (75, 101, 0, 0));
+    assert_eq!(balances(h).await?, (75, 120, 0, 0));
     let (status, history) = exchange(owner, admitted, request(Operation::QueryHistory, 0)).await?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(history.as_array().ok_or("history")?.len(), 1);
