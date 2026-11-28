@@ -519,6 +519,13 @@ cleanup() {
       [[ -z "${REUSE_STATE:-}" ]] || rm -f -- "$REUSE_STATE"
     fi
   fi
+  if [[ -n "${OTERYN_P23C_RAW_SERVER_LOG:-}" ]]; then
+    local raw_source="$node_log"
+    [[ ! -f "$failed_node_log" ]] || raw_source="$failed_node_log"
+    if [[ -f "$raw_source" ]]; then
+      install -m 0600 -- "$raw_source" "$OTERYN_P23C_RAW_SERVER_LOG"
+    fi
+  fi
   if [[ $rc != 0 && -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     mkdir -p "$NODE_BOOT_FAILURE_LOG_DIR"
     if [[ -f "$failed_node_log" ]]; then

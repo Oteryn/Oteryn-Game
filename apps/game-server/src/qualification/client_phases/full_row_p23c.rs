@@ -219,39 +219,16 @@ async fn check_legacy_controls(
     client: &mut DevClientSession,
     modern: &wire::full::Reply,
 ) -> TestResult {
-    let bounty = modern
-        .bounty
-        .active
-        .as_ref()
-        .map_or(modern.bounty.offers.as_slice(), std::slice::from_ref);
-    let tasks: Vec<_> = bounty
-        .iter()
-        .map(|task| (&task.race, task.required))
-        .chain(
-            modern
-                .weekly
-                .kills
-                .iter()
-                .filter(|task| !task.race.is_empty())
-                .map(|task| (&task.race, task.required)),
-        )
-        .take(wire::MAX_TASKS)
-        .map(|(race, required)| wire::TaskBoardTask {
-            race: race.clone(),
-            required: i64::from(required),
-            claimed_at_unix: 0,
-        })
-        .collect();
     let query = command(client, 0, 0).await?;
     if query.status != CommandStatus::Accepted
         || query.reply.refused
-        || query.reply.tasks != tasks
+        || !query.reply.tasks.is_empty()
         || (query.reply.selected, query.reply.kills) != (0, 0)
         || u64::try_from(query.reply.points)? != modern.points
         || u64::try_from(query.reply.bounty_points)? != modern.bounty_points
     {
         return Err(
-            format!("step=compact-projection expected-tasks={tasks:?} observed={query:?}").into(),
+            format!("step=compact-projection expected-tasks=empty observed={query:?}").into(),
         );
     }
 
@@ -271,10 +248,7 @@ async fn check_legacy_controls(
             .into());
         }
     }
-    evidence(&format!(
-        "P23C_CHECK step=legacy-negative-control projected-tasks={}",
-        tasks.len()
-    ));
+    evidence("P23C_CHECK step=legacy-negative-control projected-tasks=0");
     Ok(())
 }
 
