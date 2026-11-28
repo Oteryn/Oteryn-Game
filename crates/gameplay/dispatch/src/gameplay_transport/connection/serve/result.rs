@@ -235,6 +235,7 @@ pub(super) fn encode(
                 || command.command_type
                     == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
                 || routing::quick_loot::selected_moved(command.command_type, payload)
+                || routing::quick_loot::stale_move(command.command_type, *status, payload)
                 || routing::store::is_committed_claim(command.command_type, *status, payload) =>
         {
             (*status, payload.clone())

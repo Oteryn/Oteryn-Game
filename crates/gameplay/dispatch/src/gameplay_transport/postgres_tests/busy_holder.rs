@@ -286,6 +286,42 @@ fn committed_first_entry_does_not_wait_for_unrelated_admission_writer_postgres()
     })
 }
 
+#[test]
+fn promotion_read_ignores_unrelated_admission_writer_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("promotion-observation", move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async move {
+                let h = Harness::create_with_admission_seed(admin, "promotion_observation", true, false).await?;
+                prepare_current_session(&h).await?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                let session = Dependencies::new()?.admitted.game_session_id;
+                let store = FreshAdmissionStore::from_root(h.root.clone());
+                let fence = crate::gameplay_transport::item_fence_of(store.current_session_at(session).await?.0)
+                    .ok_or("promotion item fence")?;
+                let mut writer = h.pool.begin().await?;
+                sqlx::query("LOCK TABLE game_durability_admission_account_guards IN ROW EXCLUSIVE MODE")
+                    .execute(&mut *writer)
+                    .await?;
+                assert!(h.root.is_ready());
+                assert!(h.root.checked_out_semantic_pass().is_none());
+                assert!(!tokio::time::timeout(
+                    Duration::from_secs(1),
+                    h.root.read_promotion_for_session(&authority, &h.node, fence),
+                ).await??);
+                writer.rollback().await?;
+                drop(authority);
+                drop(seal);
+                h.cleanup().await
+            })
+    })
+}
+
 // Poll between advances so the retry reaches the final partial interval while
 // PostgreSQL's only holder is still checked out. Resume time before doing SQL.
 async fn holder_return_in_final_retry_interval(

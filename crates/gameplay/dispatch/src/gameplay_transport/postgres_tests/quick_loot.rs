@@ -1119,7 +1119,28 @@ async fn selected_item_cases(
                         )
                     );
                 }
+                fixture_corpse(pool, corpse, far, id(41), 0).await?;
+                command_id += 1;
+                send_click(&mut client, command_id, take.handle).await?;
+                let stale = (
+                    CommandStatus::Rejected,
+                    encode_quick_loot_refusal(QuickLootRefusal::Stale),
+                );
+                assert_eq!(command_reply(&mut client, command_id).await?, stale);
+                send_click(&mut client, command_id, take.handle).await?;
+                assert_eq!(
+                    command_reply(&mut client, command_id).await?,
+                    (CommandStatus::DuplicateReplay, stale.1)
+                );
                 assert_eq!(corpse_items(pool, corpse).await?, items);
+                fixture_corpse(pool, corpse, near, id(41), 0).await?;
+                command_id += 1;
+                send_click(&mut client, command_id, take.handle).await?;
+                assert_eq!(
+                    command_reply(&mut client, command_id).await?,
+                    (CommandStatus::Accepted, vec![16, 1])
+                );
+                assert_eq!(corpse_items(pool, corpse).await?, [*untouched]);
             } else {
                 for (cell, top, reason) in [
                     (far, id(41), "corpse out of range"),

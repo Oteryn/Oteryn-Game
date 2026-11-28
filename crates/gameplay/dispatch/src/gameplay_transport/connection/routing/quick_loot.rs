@@ -12,6 +12,14 @@ pub(in super::super) fn selected_moved(command_type: u32, payload: &[u8]) -> boo
         && wire::QuickLootClickOutcome::decode(payload) == Ok(wire::QuickLootClickOutcome::Moved)
 }
 
+pub(in super::super) fn stale_move(command_type: u32, status: CommandStatus, payload: &[u8]) -> bool {
+    matches!(
+        command_type,
+        wire::COMMAND_TYPE_QUICK_LOOT | wire::COMMAND_TYPE_QUICK_LOOT_DISTRIBUTE
+    ) && status == CommandStatus::Rejected
+        && wire::decode_quick_loot_refusal(payload) == Ok(QuickLootRefusal::Stale)
+}
+
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     admitted: &AdmittedSession,

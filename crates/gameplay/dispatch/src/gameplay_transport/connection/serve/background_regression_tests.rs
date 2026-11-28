@@ -11,6 +11,8 @@ struct MoveOwner {
     refused: Cell<bool>,
     reads: Cell<usize>,
     background_operations: Cell<usize>,
+    quick_loot_commands: Cell<usize>,
+    trade_revision: Cell<Option<u64>>,
 }
 
 fn item(tag: u8) -> ViewItem {
@@ -85,6 +87,34 @@ impl FreshAdmissionAuthority for MoveOwner {
                 vec![item(3)]
             },
         })
+    }
+
+    async fn quick_loot_wire(
+        &self,
+        _: AdmittedSession,
+        _: UseCommand,
+        _: oteryn_protocol_oteryn::quick_loot::QuickLootRequest,
+    ) -> Option<(CommandStatus, Vec<u8>)> {
+        use oteryn_protocol_oteryn::quick_loot::{QuickLootRefusal, encode_quick_loot_refusal};
+        self.quick_loot_commands
+            .set(self.quick_loot_commands.get() + 1);
+        Some((
+            CommandStatus::Rejected,
+            encode_quick_loot_refusal(QuickLootRefusal::Stale),
+        ))
+    }
+
+    async fn player_trade_open(&self, _: AdmittedSession) -> Option<()> {
+        Some(())
+    }
+
+    async fn player_trade_observation(
+        &self,
+        _: GameSessionId,
+    ) -> Option<(u64, oteryn_protocol_oteryn::player_trade::State, bool)> {
+        self.trade_revision
+            .get()
+            .map(|revision| (revision, Default::default(), false))
     }
 
     async fn move_loop_item(
@@ -295,4 +325,74 @@ fn committed_mail_and_trade_results_invalidate_capacity() -> TestResult {
         })?
         .join()
         .map_err(|_| "capacity result thread")?
+}
+
+#[test]
+fn stale_quick_loot_finishes_before_unrelated_trade_observation() -> TestResult {
+    use crate::gameplay_transport::capabilities::OfferedCapability;
+    use oteryn_protocol_oteryn::{player_trade, quick_loot};
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(async {
+                    let authority = MoveOwner::default();
+                    authority.trade_revision.set(Some(1));
+                    let (mut stream, _client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(false)?;
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                        &[
+                            OfferedCapability {
+                                id: player_trade::CAPABILITY_PLAYER_TRADE_V1,
+                                requires: &[],
+                            },
+                            OfferedCapability {
+                                id: quick_loot::CAPABILITY_QUICK_LOOT_V1,
+                                requires: &[],
+                            },
+                        ],
+                        &[
+                            player_trade::CAPABILITY_PLAYER_TRADE_V1,
+                            quick_loot::CAPABILITY_QUICK_LOOT_V1,
+                        ],
+                    )
+                    .ok_or("select loot and trade capabilities")?;
+                    let actor = admitted.runtime_actor.ok_or("actor")?;
+                    let mut session = setup::prepare(
+                        &mut stream,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "setup")?;
+                    assert_eq!(session.admitted.continuity.player_trade_revision, 1);
+                    authority.trade_revision.set(Some(0));
+                    for id in 1..=2 {
+                        let frame =
+                            command_frame(id, quick_loot::COMMAND_TYPE_QUICK_LOOT, &[8, 2])?;
+                        let input = receive(
+                            &mut stream,
+                            &authority,
+                            &mut session,
+                            Next::Held(frame, false, tokio::time::Instant::now()),
+                        )
+                        .await
+                        .map_err(|_| "receive loot")?
+                        .ok_or("loot input")?;
+                        command::execute(&mut stream, &authority, &mut session, input)
+                            .await
+                            .map_err(|_| "stale loot ended the session")?;
+                    }
+                    assert_eq!(authority.quick_loot_commands.get(), 2);
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "loot refusal test thread panicked")?
 }
