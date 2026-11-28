@@ -171,6 +171,9 @@ case "$NODE_BOOT_WORLD_PROFILE" in
   town)
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
     selected_groups="${NODE_BOOT_E2E_ONLY:-}"
+    if [[ "${OTERYN_E2E_ROW_BATCH:-}" == 68:1 ]]; then
+      WORLD_REGIONS+=";129,125"
+    fi
     case ",${selected_groups//[[:space:]]/}," in
       ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
     esac

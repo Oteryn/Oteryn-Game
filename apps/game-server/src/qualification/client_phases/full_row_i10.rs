@@ -4,8 +4,7 @@
 //!    with a committed revision and an inventory/house delta replacing it with its kit.
 //! 3. Send `Unwrap` for that construction kit at a free house cell; expect an accepted reply,
 //!    a later revision, and a delta moving the constructed furniture into house custody.
-//! 4. Use an ordinarily held destroy weapon on the furniture; expect the USE reply and the
-//!    furniture/remains delta (a failed deterministic roll must leave the furniture unchanged).
+//! 4. Use a sword on the exact authored outdoor bars and assert the resulting map revision.
 //! 5. Use an ordinarily held fluid container on a fluid source and then on the constructed
 //!    furniture/map target; expect committed USE replies and subtype/field deltas for fill/pour.
 //! 6. Repeat wrap with a stale revision; expect a `Stale` refusal and no inventory delta.
@@ -148,8 +147,8 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
         "house-i10".into(),
     )
     .await?;
-    character_prep::grant_item(&client, 2295, 1).await?;
     character_prep::grant_item(&client, 2775, 1).await?;
+    evidence("I10_FIXTURE request=item-3264-1");
     character_prep::grant_item(&client, 3264, 1).await?;
     character_prep::grant_item(&client, 2874, 1).await?;
     Ok(client)
@@ -267,11 +266,21 @@ fn inventory_item(
     Ok(entry)
 }
 
-const BARREL_TILE: oteryn_protocol_oteryn::world_spatial::ActorPosition =
+const BARS_START: TilePos = TilePos {
+    x: 33124,
+    y: 32151,
+    floor: -8,
+};
+const BARS_TARGET: TilePos = TilePos {
+    x: 33123,
+    y: 32151,
+    floor: -8,
+};
+const BARS_POSITION: oteryn_protocol_oteryn::world_spatial::ActorPosition =
     oteryn_protocol_oteryn::world_spatial::ActorPosition {
-        x: 32347,
-        y: 32254,
-        floor: 7,
+        x: 33123,
+        y: 32151,
+        floor: 8,
     };
 
 async fn observe_tile(
@@ -332,7 +341,7 @@ fn expected_destroy(
     };
     use sha2::{Digest, Sha256};
     let digest = Sha256::new()
-        .chain_update(b"oteryn.house.destroy.v1")
+        .chain_update(b"oteryn.channel.wooden_bars.v1")
         .chain_update(session)
         .chain_update(command.to_be_bytes())
         .chain_update(target)
@@ -340,9 +349,13 @@ fn expected_destroy(
     let occurrence = DecisionOccurrenceId::from_bytes(digest[..16].try_into()?);
     let root = GameplayDecisionRoot::from_bytes(root);
     for index in 0..8 {
-        let draw =
-            deterministic_decision_u64(&root, occurrence, "house.furniture.destroy.roll", index)
-                .map_err(|error| format!("step=destroy oracle={error:?}"))?;
+        let draw = deterministic_decision_u64(
+            &root,
+            occurrence,
+            "channel.wooden_bars.destroy.roll",
+            index,
+        )
+        .map_err(|error| format!("step=destroy oracle={error:?}"))?;
         if draw < u64::MAX - u64::MAX % 80 {
             // Crystal donor sword 3264 has attack 14.
             return Ok(draw % 80 < 14);
@@ -351,57 +364,87 @@ fn expected_destroy(
     Err("step=destroy exhausted deterministic roll oracle".into())
 }
 
-async fn destroy(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult<u32> {
-    use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
-    use oteryn_protocol_oteryn::item_view::WorldTilePosition;
-    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
-    let barrel = inventory_item(client, 2295)?.ok_or("step=destroy setup missing wooden bars")?;
-    let sword = inventory_item(client, 3264)?.ok_or("step=destroy setup missing sword")?;
-    let after = client.last_server_sequence();
-    let moved = client
-        .move_item(&ItemMoveIntent {
-            source: barrel.handle,
-            destination: ItemMoveDestination::Ground(WorldTilePosition {
-                x: BARREL_TILE.x,
-                y: BARREL_TILE.y,
-                floor: BARREL_TILE.floor,
-            }),
-        })
-        .await?;
-    if moved.outcome != ItemMoveOutcome::Moved {
-        return Err(format!("step=place-wooden-bars observed={:?}", moved.outcome).into());
+async fn stage_position(clients: &SeamClients<'_>, from: TilePos, to: TilePos) -> TestResult {
+    let character = clients
+        .characters
+        .first()
+        .ok_or("I10 dedicated character absent")?;
+    evidence(&format!(
+        "I10_FIXTURE request=offline-position from={from:?} to={to:?}"
+    ));
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let result = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$2, tile_y=$3, tile_floor=$4, write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($5,'hex')::uuid
+           AND tile_x=$6 AND tile_y=$7 AND tile_floor=$8 AND house_key IS NULL
+           AND NOT EXISTS (
+               SELECT 1 FROM game_durability_reconnect_sessions
+               WHERE character_id=encode($1,'hex')::uuid AND session_state IN (1,2)
+           )",
+    )
+    .bind(character.as_slice())
+    .bind(i32::from(to.x))
+    .bind(i32::from(to.y))
+    .bind(-i16::from(to.floor))
+    .bind(clients.world.as_slice())
+    .bind(i32::from(from.x))
+    .bind(i32::from(from.y))
+    .bind(-i16::from(from.floor))
+    .execute(&mut db)
+    .await?;
+    db.close().await?;
+    if result.rows_affected() != 1 {
+        return Err("step=offline-position observed=no-matching-saved-position".into());
     }
-    let tile = observe_tile(client, BARREL_TILE, after).await?;
-    let [item] = tile
+    Ok(())
+}
+
+fn bar_state(client: &mut DevClientSession) -> TestResult<(u16, u64)> {
+    use oteryn_protocol_oteryn::world_map::MapOrigin;
+    let snapshot = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("I10 map view absent")?;
+    let tile = snapshot
+        .tiles
+        .iter()
+        .find(|tile| tile.position == BARS_POSITION)
+        .ok_or("I10 authored bar tile absent from client map view")?;
+    let bar = tile
         .items
         .iter()
-        .filter(|entry| entry.definition == MapDefinition::Item(barrel.item_definition_ref))
-        .collect::<Vec<_>>()[..]
-    else {
-        return Err("step=destroy expected one placed wooden-bars handle".into());
-    };
-    let MapOrigin::Handle(handle) = item.origin else {
-        return Err("step=destroy placed wooden bars have no map handle".into());
-    };
-    let position: Vec<u8> = [BARREL_TILE.x, BARREL_TILE.y, i32::from(BARREL_TILE.floor)]
-        .into_iter()
-        .flat_map(i32::to_be_bytes)
-        .collect();
+        .find_map(|item| match item.origin {
+            MapOrigin::BaseOrdinal {
+                ordinal: 1,
+                object_revision,
+            } => Some((item.appearance_id, object_revision)),
+            _ => None,
+        })
+        .ok_or("I10 exact bar ordinal absent")?;
+    Ok(bar)
+}
+
+async fn destroy(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+) -> TestResult<(u16, u64)> {
+    let at = tile(client.world_spatial().actor_position)?;
+    if at != BARS_START || bar_state(client)? != (2295, 0) {
+        return Err(format!("step=destroy observed=wrong-initial-map-state at={at:?}").into());
+    }
+    let sword = inventory_item(client, 3264)?.ok_or("step=destroy setup missing sword")?;
+    let key = crate::map::view::placement_key(BARS_TARGET, 1).ok_or("I10 bar placement")?;
+    let payload = item_use::use_with_payload(sword.handle, &object_at(world, BARS_TARGET, 1)?)?;
+    let capabilities = client.selected_capabilities();
+    let decoded = world_object::decode_use_intent_target(capabilities, &payload)
+        .map_err(|error| format!("step=destroy decoded-request={error:?}"))?;
+    evidence(&format!(
+        "I10_DESTROY request={decoded:?} capabilities={capabilities:?} target={BARS_TARGET:?} ordinal=1 expected_revision=0 map_pin={:02x?}",
+        world.base().digest()
+    ));
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
-    let item_rows: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(i.item_instance_id) FROM game_item_instances i
-         JOIN game_item_house_interior_locations h USING(item_instance_id)
-         WHERE h.world_id=encode($1,'hex')::uuid AND h.house_key=$2 AND h.spatial_position=$3
-         AND i.definition_production_key='oteryn:item.tibia.i2295' AND i.lifecycle=1 LIMIT 2",
-    )
-    .bind(clients.world.as_slice())
-    .bind(HOUSE)
-    .bind(position)
-    .fetch_all(&mut db)
-    .await?;
-    let [item] = item_rows.as_slice() else {
-        return Err("step=destroy expected one durable target identity".into());
-    };
     let root: Vec<u8> = sqlx::query_scalar(
         "SELECT server_artifact_digest FROM game_content_activations
          WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
@@ -412,25 +455,34 @@ async fn destroy(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Te
     .fetch_one(&mut db)
     .await?;
     db.close().await?;
-    let before_use = client.last_server_sequence();
+    let after = client.last_server_sequence();
     let session = client.join_snapshot().game_session_id;
-    let command = use_on(client, "destroy", sword.handle, Target::Item(handle)).await?;
-    let succeeded = expected_destroy(
+    let reply = client.session_mut().world_context_use(&payload).await?;
+    let disposition = world_object::decode_use_result(&reply.payload);
+    evidence(&format!(
+        "I10_DESTROY reply={reply:?} disposition={disposition:?}"
+    ));
+    let disposition =
+        disposition.map_err(|error| format!("step=destroy reply-decode={error:?}"))?;
+    validate_use_reply("destroy", reply.status, disposition)?;
+    let succeeds = expected_destroy(
         root.as_slice().try_into()?,
         session.as_bytes(),
-        item,
-        command,
+        &key.to_be_bytes(),
+        reply.command_id,
     )?;
-    if succeeded {
-        let check = observe_tile(client, BARREL_TILE, before_use).await?;
-        if !has_map_item(&check, 3145, 0)? || has_map_item(&check, 2295, 0)? {
-            return Err("step=destroy observed=incorrect-remains-delta".into());
-        }
+    if succeeds {
+        observe_tile(client, BARS_POSITION, after).await?;
+    }
+    let observed = bar_state(client)?;
+    let expected = if succeeds { (3145, 1) } else { (2295, 0) };
+    if observed != expected {
+        return Err(format!("step=destroy observed={observed:?} expected={expected:?}").into());
     }
     evidence(&format!(
-        "I10_CHECK step=wooden-bars-roll status=PASS succeeds={succeeded}"
+        "I10_CHECK step=wooden-bars expected={expected:?} observed={observed:?}"
     ));
-    Ok(if succeeded { 3145 } else { 2295 })
+    Ok(expected)
 }
 
 fn has_map_item(
@@ -560,13 +612,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let account = character_prep::dedicated_character(clients, "NODE_BOOT_I10_ACCOUNT").await?;
     let clients = &account.clients(clients);
     let mut prepared = prepare(clients).await?;
+    let town = tile(prepared.world_spatial().actor_position)?;
     if prepared.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=fixture-logout observed=refused".into());
     }
     drop(prepared);
-    let mut client = connect_character(clients, 0xb0, 0).await?;
+    stage_position(clients, town, BARS_START).await?;
+    let mut bars = connect_character(clients, 0xb0, 0).await?;
+    let expected = destroy(&mut bars, clients, world).await?;
+    let prior_session = bars.join_snapshot().game_session_id;
+    client_row_i10::logout(&mut bars).await?;
+    drop(bars);
+    let mut bars = connect_character(clients, 0xb4, 0).await?;
+    if bars.join_snapshot().game_session_id == prior_session || bar_state(&mut bars)? != expected {
+        return Err("step=destroy-relog observed=incorrect-bar-state".into());
+    }
+    client_row_i10::logout(&mut bars).await?;
+    drop(bars);
+    stage_position(clients, BARS_START, town).await?;
+    let mut client = connect_character(clients, 0xb5, 0).await?;
     let initial = client
         .inventory()
         .cloned()
@@ -630,7 +696,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=stale observed={refused:?} or state changed").into());
     }
     evidence("I10_CHECK step=furniture-cycle status=PASS");
-    let destroy_expected = destroy(&mut client, clients).await?;
     client_row_i10::exit_house(&mut client).await?;
     fluid(&mut client, clients).await?;
     let before_logout = client
@@ -646,7 +711,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.inventory() != Some(&before_logout) {
         return Err("step=fresh-admission observed=inventory-state-changed".into());
     }
-    let after = fresh.last_server_sequence();
     client_row_i10::enter_house(&mut fresh, world).await?;
     if furniture(
         &catalogue(&mut fresh).await?,
@@ -655,11 +719,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )? != restored
     {
         return Err("step=fresh-admission observed=placed-furniture-changed".into());
-    }
-    let durable = observe_tile(&mut fresh, BARREL_TILE, after).await?;
-    let wrong_item = if destroy_expected == 3145 { 2295 } else { 3145 };
-    if !has_map_item(&durable, destroy_expected, 0)? || has_map_item(&durable, wrong_item, 0)? {
-        return Err("step=fresh-admission observed=incorrect-durable-destroy-outcome".into());
     }
     if inventory_item(&fresh, 2874)?.is_none_or(|vial| vial.sub_type != 0) {
         return Err("step=fresh-admission observed=vial-not-empty".into());

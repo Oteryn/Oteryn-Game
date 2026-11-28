@@ -393,7 +393,7 @@ async fn capture_refusal(
         .collect())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
