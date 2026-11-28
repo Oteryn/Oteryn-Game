@@ -106,9 +106,16 @@ fn captured_result(metadata: &str, payload: Vec<u8>) -> Result<GatedCommandResul
 
 #[test]
 fn e2e_p12a_replays_titles_and_refused_unearned_select() -> Result<(), Error> {
+    let started = std::time::Instant::now();
     let captured = captured()?;
     let e = captured.expected.as_str();
-    assert!(!value(e, "session")?.is_empty());
+    let session = value(e, "session")?;
+    assert!(!session.is_empty());
+    let live_session = std::env::var("OTERYN_P12A_REPLAY_SESSION").ok();
+    if let Some(expected_session) = &live_session {
+        assert_eq!(session, expected_session);
+        assert!(std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some());
+    }
     let before = captured_result(value(e, "query_result")?, captured.query)?;
     let refused = captured_result(value(e, "refused_result")?, captured.refused)?;
     let after = captured_result(value(e, "after_result")?, captured.after)?;
@@ -153,5 +160,11 @@ fn e2e_p12a_replays_titles_and_refused_unearned_select() -> Result<(), Error> {
     apply(&mut panel, &query, &trailing);
     assert_eq!(panel.feedback, "Invalid character information reply");
     assert_eq!(panel.summary, confirmed);
+    if live_session.is_some() {
+        println!(
+            "SEAM_EVIDENCE e2e_all scenario=P12a.client status=PASS seconds={:.3} session={session}",
+            started.elapsed().as_secs_f64()
+        );
+    }
     Ok(())
 }

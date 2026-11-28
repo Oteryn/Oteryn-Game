@@ -112,8 +112,8 @@ async fn query(client: &mut DevClientSession) -> TestResult<Titles> {
     let reply = command(client, CharacterInfoOperation::QuerySelf(page)).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!(
-            "step query: observed status={:?} payload={:?}",
-            reply.status, reply.payload
+            "step query: session={} reply={reply:?}",
+            uuid_text(client.join_snapshot().game_session_id.as_bytes())
         )
         .into());
     }
@@ -198,6 +198,28 @@ async fn prepare_title_inputs(clients: &SeamClients<'_>) -> TestResult<DevClient
     Ok(client)
 }
 
+async fn rotation_boundary(client: &mut DevClientSession) -> TestResult<u32> {
+    use oteryn_protocol_oteryn::arena::{
+        ArenaAction, CAPABILITY_ARENA_V1, COMMAND_TYPE_ARENA_MATCH, DromeAction, DromeResult,
+        encode_match_request,
+    };
+    let payload = encode_match_request(ArenaAction::Drome(DromeAction::Status))
+        .map_err(|error| format!("Drome schedule request: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(CAPABILITY_ARENA_V1, COMMAND_TYPE_ARENA_MATCH, &payload)
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("Drome schedule refused: {reply:?}").into());
+    }
+    let status = DromeResult::decode(&reply.payload)
+        .map_err(|error| format!("Drome schedule decode: {error:?}, reply={reply:?}"))?;
+    if status.disposition != 1 || status.rotation_ends == 0 {
+        return Err(format!("Drome schedule unavailable: {reply:?}").into());
+    }
+    Ok(status.rotation_ends)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = prepare_title_inputs(clients).await?;
     let initial_session = client.join_snapshot().game_session_id;
@@ -277,7 +299,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if fresh.join_snapshot().game_session_id == initial_session {
         return Err("step 6 fresh admission reused prior game session".into());
     }
-    let mut durable = query(&mut fresh).await?;
+    let durable = query(&mut fresh).await?;
     if expiry_refusal.is_some() && durable != selected {
         return Err(format!(
             "step 6 durable title state mismatch: before={selected:?} after={durable:?}"
@@ -291,16 +313,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if durable.selected != Some(drome) || !durable.earned.contains(&drome) {
         return Err(format!("step 6 durable expiring-title mismatch: after={durable:?}").into());
     }
+    let boundary = rotation_boundary(&mut fresh).await?;
+    evidence(&format!("P12A_ROTATION_WAIT server_rotation_ends={boundary} limit_seconds=120"));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while durable.selected == Some(drome) || durable.earned.contains(&drome) {
+    loop {
         if tokio::time::Instant::now() >= deadline {
             logout(&mut fresh).await?;
-            return Err("step 5 expiry: title remained earned/selected for the 120s observation window; need=observable-rota-expiry; source:crates/protocol-oteryn/src/character_info.rs:652".into());
+            return Err(format!(
+                "step 5 expiry: server rotation boundary {boundary} did not advance within 120s"
+            )
+            .into());
         }
         fresh.service_liveness(Duration::from_secs(1)).await?;
         fresh.take_events();
-        durable = query(&mut fresh).await?;
+        let next = rotation_boundary(&mut fresh).await?;
+        if next > boundary {
+            evidence(&format!("P12A_ROTATION_ADVANCED previous_end={boundary} next_end={next}"));
+            break;
+        }
+    }
+    let expired = query(&mut fresh).await?;
+    if expired.selected.is_some() || expired.earned.contains(&drome) {
+        return Err(format!("Drome title survived rotation: {expired:?}").into());
     }
     logout(&mut fresh).await?;
     Ok(())
