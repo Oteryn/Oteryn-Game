@@ -134,20 +134,78 @@ fn inert_refusal(status: CommandStatus, payload: &[u8], before: &Titles, after: 
     status == CommandStatus::Rejected && payload.is_empty() && before == after
 }
 
+async fn prepare_title_inputs(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    character_prep::declare_seeded(
+        "P12a.full",
+        "level-100,preceding-drome-rank-1",
+        "ordinary title qualification and a completed rotation exceed the live row budget",
+    );
+    let client = character_prep::Seeded {
+        profile: "explorer",
+        reason: "drive ordinary title selection at level 100",
+    }
+    .connect(clients, 0xc1, 1)
+    .await?;
+    let character = clients.characters.get(1).ok_or("P12a character absent")?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let mut transaction = database.begin().await?;
+    let level: i64 = sqlx::query_scalar(
+        "SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_slice())
+    .fetch_one(&mut *transaction)
+    .await?;
+    if level != 100 {
+        return Err(format!("P12a persisted level={level}, expected 100").into());
+    }
+    let rotation: i64 = sqlx::query_scalar(
+        "SELECT floor(extract(epoch FROM clock_timestamp()) / (14 * 24 * 3600))::bigint - 1",
+    )
+    .fetch_one(&mut *transaction)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_tibiadrome_scores(world_id,rotation,character_id,level,experience)
+         VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,20,1000)",
+    )
+    .bind(clients.world.as_slice())
+    .bind(rotation)
+    .bind(character.as_slice())
+    .execute(&mut *transaction)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_tibiadrome_awards(world_id,rotation,character_id,rank,potions)
+         VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,3)",
+    )
+    .bind(clients.world.as_slice())
+    .bind(rotation)
+    .bind(character.as_slice())
+    .execute(&mut *transaction)
+    .await?;
+    transaction.commit().await?;
+    let rank: i64 = sqlx::query_scalar(
+        "SELECT rank FROM game_tibiadrome_awards WHERE world_id=encode($1,'hex')::uuid
+         AND rotation=$2 AND character_id=encode($3,'hex')::uuid",
+    )
+    .bind(clients.world.as_slice())
+    .bind(rotation)
+    .bind(character.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    if rank != 1 {
+        return Err(format!("P12a persisted Drome rank={rank}, expected 1").into());
+    }
+    evidence(&format!("P12A_FIXTURE level={level} previous_rotation={rotation} rank={rank}"));
+    Ok(client)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xc1).await?;
+    let mut client = prepare_title_inputs(clients).await?;
     let initial_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client).await?;
-    let Some(earned) = initial.earned.first().copied() else {
-        let drome = CharacterTitle::ReigningDromeChampion;
-        let reply = command(&mut client, CharacterInfoOperation::Unlock(drome)).await?;
-        let retained = query(&mut client).await?;
-        logout(&mut client).await?;
-        if !inert_refusal(reply.status, &reply.payload, &initial, &retained) {
-            return Err(format!("step=title-prerequisite empty entry titles but Drome unlock observed={reply:?} retained={retained:?}").into());
-        }
-        return Err(format!("step=title-prerequisite observed=no-earned-title,Drome-unlock-{:?} need=ordinary-title-qualification-and-preceding-rota-top-five; source:crates/gameplay/durability/src/durability/character_title.rs:155", reply.status).into());
-    };
+    let earned = CharacterTitle::Trolltrasher;
+    if !initial.earned.contains(&earned) || initial.selected == Some(earned) {
+        return Err(format!("P12a unexpected initial ordinary title state {initial:?}").into());
+    }
 
     let unlock = command(&mut client, CharacterInfoOperation::Unlock(earned)).await?;
     if unlock.status != CommandStatus::Accepted || unlock.payload != [2, earned.id()] {

@@ -70,7 +70,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let page = info::PageRequest::new(0, 50).ok_or("page")?;
     let query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
     if query.status != CommandStatus::Accepted {
-        return Err(format!("QuerySelf status={:?}", query.status).into());
+        return Err(format!(
+            "QuerySelf status={:?} session={} command_id={} server_sequence={} payload={:?}",
+            query.status,
+            uuid_text(&session),
+            query.command_id,
+            query.server_sequence,
+            query.payload
+        )
+        .into());
     }
     let before = summary(&query.payload)?;
     let earned: Vec<u8> = before
