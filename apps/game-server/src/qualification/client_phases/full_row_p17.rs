@@ -171,6 +171,26 @@ fn private_messages(client: &mut DevClientSession) -> Vec<String> {
         .collect()
 }
 
+// At full vitals, ordinary regeneration cannot change the refusal baseline.
+async fn await_full_vitals(
+    caster: &mut DevClientSession,
+    target: &mut DevClientSession,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+    loop {
+        let vitals = caster.actor_vitals().ok_or("Exiva caster vitals absent")?;
+        if vitals.mana == vitals.max_mana && vitals.health == vitals.max_health {
+            evidence(&format!("E2E_P17_VITALS_BASELINE {vitals:?}"));
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("Exiva caster did not regain full vitals: {vitals:?}").into());
+        }
+        let poll = Duration::from_millis(250);
+        tokio::try_join!(caster.service_liveness(poll), target.service_liveness(poll))?;
+    }
+}
+
 async fn cast(
     caster: &mut DevClientSession,
     target: &str,
@@ -295,6 +315,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("deny-modes", 0_u8);
 
+    await_full_vitals(&mut caster, &mut target).await?;
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 2 denial lacked protected reply: {denied:?}").into());
@@ -392,6 +413,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step 8 fresh admission did not retain the removed entry and mode".into());
     }
+    await_full_vitals(&mut caster, &mut target).await?;
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 8 denial lacked protected reply: {denied:?}").into());
