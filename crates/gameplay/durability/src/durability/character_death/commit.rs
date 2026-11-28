@@ -495,14 +495,22 @@ async fn unfair_fight_opponent_levels(
         return Ok(0);
     }
 
-    let levels: i64 = sqlx::query_scalar(
+    let levels: i64 = sqlx::query_scalar(concat!(
         "SELECT COALESCE(sum(p.level), 0)::bigint FROM unnest($1::bytea[]) AS opponent(id) \
          JOIN game_character_roots r ON r.character_id = encode(opponent.id,'hex')::uuid \
          JOIN game_character_progression_state p USING(character_id) \
-         WHERE r.world_id = encode($2,'hex')::uuid",
-    )
+         WHERE r.world_id = encode($2,'hex')::uuid AND NOT EXISTS ( \
+           SELECT 1 FROM game_guild_members attacker \
+           JOIN game_guild_members victim ON victim.character_id=encode($3,'hex')::uuid \
+           JOIN game_guild_wars w ON w.world_id=r.world_id AND ",
+        crate::durability::guild_war::active_war_predicate!(),
+        " AND ((w.declaring_guild=attacker.guild_id AND w.opposing_guild=victim.guild_id) \
+            OR (w.opposing_guild=attacker.guild_id AND w.declaring_guild=victim.guild_id)) \
+           WHERE attacker.character_id=r.character_id)",
+    ))
     .bind(&opponents)
     .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .bind(fence.character_id.as_bytes().as_slice())
     .fetch_one(&mut **tx)
     .await?;
     u64::try_from(levels).map_err(|_| DurabilityError::InvalidStoredState)
