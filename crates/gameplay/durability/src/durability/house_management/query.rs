@@ -131,16 +131,24 @@ fn summary(
     })
 }
 const PAGE_SQL: &str = r#"
-WITH eligible AS (
+WITH catalogue_entries AS (
+ SELECT p.world_id,p.house_key,p.kind,p.state,p.rent_gold,p.revision,p.acl_revision,p.ownership_generation
+ FROM game_house_properties p
+ WHERE p.world_id=encode($1,'hex')::uuid AND p.content_digest=$5
+ UNION ALL
+ SELECT q.world_id,q.house_key,q.kind,1::smallint,q.rent_gold,1::numeric,1::numeric,1::numeric
+ FROM game_house_current_auction_catalogue q
+ WHERE q.world_id=encode($1,'hex')::uuid AND q.content_digest=$5
+  AND NOT EXISTS(SELECT 1 FROM game_house_properties p WHERE (p.world_id,p.house_key)=(q.world_id,q.house_key))
+), eligible AS (
  SELECT p.*, a.auction_id, a.ends_at,
   CASE WHEN $7 AND p.state=2 AND a.ends_at > statement_timestamp()
        THEN (extract(epoch FROM a.ends_at)*1000)::bigint
        ELSE 9223372036854775807::bigint END AS sort_end
- FROM game_house_properties p
+ FROM catalogue_entries p
  LEFT JOIN game_house_auctions a ON a.world_id=p.world_id AND a.house_key=p.house_key AND NOT a.settled
  WHERE p.world_id=encode($1,'hex')::uuid AND (p.house_key,p.kind) IN
   (SELECT * FROM unnest($2::text[],$6::text[]))
-  AND p.content_digest=$5
 ), page AS (
  SELECT * FROM eligible
  WHERE $3::text IS NULL

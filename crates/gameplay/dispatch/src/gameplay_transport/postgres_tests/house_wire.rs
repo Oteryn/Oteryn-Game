@@ -1,6 +1,8 @@
 //! Real command bytes -> production connection/composed owner -> runtime-role PostgreSQL -> result.
 #[path = "house_wire/bid.rs"]
 mod bid;
+#[path = "house_wire/opening.rs"]
+mod opening;
 #[path = "house_wire/runtime_gate.rs"]
 mod runtime_gate;
 

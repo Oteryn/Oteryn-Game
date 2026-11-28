@@ -10,6 +10,7 @@
 
 mod audit_collector;
 mod channel_boot;
+mod house_auctions;
 mod public_house_catalogue;
 mod qualification_fixture;
 #[cfg(test)]
@@ -4246,6 +4247,26 @@ async fn boot_and_serve(
         // enforcement-owner exit authoritative while this auxiliary worker is idle.
         std::future::pending::<()>().await;
     };
+    let auctions = async {
+        if let Some(bundle) = bundle.as_ref() {
+            let digest = runtime.lock().await.content_pin().server_artifact_digest();
+            house_auctions::HouseAuctions {
+                root,
+                authority,
+                node: proof,
+                gate: &premium_reads,
+                catalogue: crate::durability::house_ownership::HouseAuctionCatalogue {
+                    scope,
+                    generation,
+                    reset_epoch,
+                    map_revision: bundle.map_revision(),
+                    content_digest: digest,
+                },
+            }
+            .run(bundle, &shutdown)
+            .await;
+        }
+    };
     let receipts = crate::gameplay_transport::run_store_receipt_outbox(
         root,
         authority,
@@ -4259,7 +4280,10 @@ async fn boot_and_serve(
         ),
     );
     first(
-        first(first(serving, enforcement_owner), catalogue),
+        first(
+            first(serving, enforcement_owner),
+            Box::pin(both(catalogue, auctions)),
+        ),
         Box::pin(receipts),
     )
     .await

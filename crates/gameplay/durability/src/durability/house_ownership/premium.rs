@@ -20,8 +20,7 @@ enum Work {
 }
 
 impl DurabilityRoot {
-    /// HOUSE-1a backend pass. A VACANT anchor cannot open an auction; D1383's
-    /// qualified catalogue and runtime acceptance remain separate activation gates.
+    /// Places a bid and opens a qualified vacant auction in the same transaction.
     pub async fn house_bid<G: PremiumGateOwner>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

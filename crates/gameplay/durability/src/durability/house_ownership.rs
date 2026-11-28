@@ -1,8 +1,9 @@
 //! HOUSE-1a transaction participants. The caller retains the Premium gate's
 //! transaction, recovery/admission locks and its commit/rollback responsibility.
-//! Opening awaits D1383's qualified catalogue producer: a VACANT row grants nothing.
+//! Ordinary auction opening requires the current qualified map catalogue.
 
 mod bid;
+mod catalogue;
 pub(super) mod eligibility;
 mod guildhall;
 mod premium;
@@ -14,6 +15,7 @@ use oteryn_gameplay_housing::house_auction::AuctionError;
 use sqlx::{Postgres, Row, Transaction};
 
 pub use bid::HouseBidRequest;
+pub use catalogue::{HouseAuctionCatalogue, HouseAuctionProperty};
 pub use settlement::HouseSettlementRequest;
 
 #[derive(Debug)]

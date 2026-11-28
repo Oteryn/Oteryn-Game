@@ -1,4 +1,4 @@
-//! Public read-model metadata only; the checked map determines active physical houses.
+//! Checked map metadata for public house listings and ordinary auction qualification.
 use super::*;
 use crate::durability::public_projections::house_catalogue::{
     PublicHouseCatalogue, PublicHouseMetadata,
@@ -54,6 +54,15 @@ struct House {
     retired: bool,
 }
 fn metadata(map: &crate::map::boot::BundleWorld) -> Result<Vec<PublicHouseMetadata>, ()> {
+    Ok(checked_metadata(map)?
+        .into_iter()
+        .map(|(_, row)| row)
+        .collect())
+}
+
+fn checked_metadata(
+    map: &crate::map::boot::BundleWorld,
+) -> Result<Vec<(u32, PublicHouseMetadata)>, ()> {
     // House catalogue owner contract §3: names/town/size/beds/rent are committed
     // client facts; engine house ids are a source join only, never public identity.
     let mut expected = map.facts().house_ids().collect::<BTreeSet<_>>();
@@ -108,23 +117,46 @@ fn metadata(map: &crate::map::boot::BundleWorld) -> Result<Vec<PublicHouseMetada
             {
                 return Err(());
             }
-            records.push(PublicHouseMetadata {
-                house_key: h.identity.key,
-                name: h.name,
-                kind: h.kind,
-                town: h.town.key,
-                size_sqm: h.size_sqm,
-                beds: h.beds,
-                rent_gold: h.rent_gold,
-                content_digest: digest.clone(),
-            });
+            records.push((
+                source.house_id,
+                PublicHouseMetadata {
+                    house_key: h.identity.key,
+                    name: h.name,
+                    kind: h.kind,
+                    town: h.town.key,
+                    size_sqm: h.size_sqm,
+                    beds: h.beds,
+                    rent_gold: h.rent_gold,
+                    content_digest: digest.clone(),
+                },
+            ));
         }
     }
     if !expected.is_empty() {
         return Err(());
     }
-    records.sort_unstable_by(|a, b| a.house_key.cmp(&b.house_key));
+    records.sort_unstable_by(|(_, a), (_, b)| a.house_key.cmp(&b.house_key));
     Ok(records)
+}
+
+pub(super) fn auction_properties(
+    map: &crate::map::boot::BundleWorld,
+) -> Result<impl Iterator<Item = (String, &'static str, u64, Vec<[i32; 3]>)> + '_, ()> {
+    Ok(checked_metadata(map)?
+        .into_iter()
+        .filter_map(|(source, row)| {
+            let kind = match row.kind.as_str() {
+                "private_house" => "private_house",
+                "shop" => "shop",
+                _ => return None,
+            };
+            let tiles: Vec<_> = map
+                .facts()
+                .house_tiles(source)
+                .map(|tile| [i32::from(tile.x), i32::from(tile.y), i32::from(tile.floor)])
+                .collect();
+            (!tiles.is_empty()).then_some((row.house_key, kind, row.rent_gold, tiles))
+        }))
 }
 
 /// Source failure holds the house watermark; publication never gates gameplay.

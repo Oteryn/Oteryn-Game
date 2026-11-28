@@ -5,7 +5,7 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::CommandRef;
 use oteryn_gameplay_housing::house_auction::value::plan_bid_value;
-use oteryn_gameplay_housing::house_auction::{Bid, bid_deadline, quote};
+use oteryn_gameplay_housing::house_auction::{Bid, OPENING_US, bid_deadline, quote};
 use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone)]
@@ -68,10 +68,11 @@ pub(super) async fn bid_in_transaction(
     assert_item_only_fence(tx, fence, node)
         .await?
         .map_err(|_| HouseOwnershipError::AuthorityRejected)?;
-    let kind: Option<String> = sqlx::query_scalar("SELECT kind FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
+    let existing: Option<(String, i16)> = sqlx::query_as("SELECT kind,state FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
         .bind(world.as_bytes().as_slice()).bind(&request.house_key).fetch_optional(&mut **tx).await?;
-    if kind.as_deref().is_some_and(|kind| kind != request.kind)
-        || (kind.is_none() && request.kind != "guildhall")
+    if existing
+        .as_ref()
+        .is_some_and(|(kind, _)| kind != request.kind)
     {
         return Err(HouseOwnershipError::CatalogueUnavailable);
     }
@@ -86,23 +87,37 @@ pub(super) async fn bid_in_transaction(
     let account: [u8; 16] = account
         .try_into()
         .map_err(|_| HouseOwnershipError::InvalidInput)?;
-    let property = lock_property(tx, world.as_bytes(), &request.house_key).await?;
-    if property.try_get::<&str, _>("kind")? == "guildhall" {
-        return Err(HouseOwnershipError::Ineligible);
+    if existing.as_ref().is_none_or(|(_, state)| *state == 1) {
+        let fact = node.fact();
+        let opened: bool = sqlx::query_scalar(
+                "SELECT game_house_open_auction(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,$7::text::numeric,$8)",
+            )
+            .bind(world.as_bytes().as_slice())
+            .bind(&request.house_key)
+            .bind(request.content_digest.as_slice())
+            .bind(request.operation_id.as_slice())
+            .bind(OPENING_US)
+            .bind(fact.node_id().as_bytes().as_slice())
+            .bind(fact.registration_revision().to_string())
+            .bind(node.sql_possession_secret())
+            .fetch_one(&mut **tx)
+            .await?;
+        if !opened {
+            return Err(HouseOwnershipError::CatalogueUnavailable);
+        }
     }
-    // Opening cannot be authorized by an anchor. The bundle lane supplies the
-    // qualified acquisition catalogue together with accepted runtime entry/exit.
-    if property.try_get::<i16, _>("state")? == 1 {
+    let property = lock_property(tx, world.as_bytes(), &request.house_key).await?;
+    if property.try_get::<&str, _>("kind")? != request.kind {
         return Err(HouseOwnershipError::CatalogueUnavailable);
     }
     if property.try_get::<i16, _>("state")? != 2 {
         return Err(HouseOwnershipError::AuctionClosed);
     }
+    let now = clock(tx).await?;
     let auction=sqlx::query("SELECT uuid_send(auction_id) AS auction,first_rent,(extract(epoch FROM ends_at)*1000000)::bigint AS end_us,next_order FROM game_house_auction_lock(encode($1,'hex')::uuid,$2,NULL)")
         .bind(world.as_bytes().as_slice()).bind(&request.house_key).fetch_optional(&mut **tx).await?
         .ok_or(HouseOwnershipError::AuctionClosed)?;
     let auction_id = uuid(&auction, "auction")?;
-    let now = clock(tx).await?;
     let end = bid_deadline(now, Some(auction.try_get("end_us")?))?;
     account_lock(tx, &account, world.as_bytes()).await?;
     let competing: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bids WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND state=1 AND guild_id IS NULL AND auction_id<>encode($3,'hex')::uuid)")

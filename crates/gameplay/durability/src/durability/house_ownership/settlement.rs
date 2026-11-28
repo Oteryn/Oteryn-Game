@@ -20,6 +20,48 @@ pub struct HouseSettlementRequest {
     pub step: u32,
 }
 
+impl super::super::DurabilityRoot {
+    /// Find the next bounded batch of ended ordinary auctions or unfinished refunds.
+    pub async fn due_house_auctions(
+        &self,
+        world: WorldId,
+        after: Option<[u8; 16]>,
+    ) -> Result<Vec<HouseSettlementRequest>> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| Box::pin(async move {
+                let mut tx = super::super::db::begin_semantic_transaction(holder, deadline).await?;
+                let rows = sqlx::query(
+                    "SELECT uuid_send(a.auction_id) AS auction, a.house_key,
+                      coalesce((SELECT step+1 FROM game_house_settlement_steps s
+                        WHERE s.auction_id=a.auction_id ORDER BY step DESC LIMIT 1),0)::integer AS step
+                     FROM game_house_auctions a JOIN game_house_properties p USING(world_id,house_key)
+                     WHERE a.world_id=encode($1,'hex')::uuid
+                      AND ($2::bytea IS NULL OR a.auction_id>encode($2,'hex')::uuid)
+                      AND p.kind IN ('private_house','shop') AND a.ends_at<=statement_timestamp()
+                      AND (NOT a.settled OR EXISTS(SELECT 1 FROM game_house_bids b
+                            WHERE b.auction_id=a.auction_id AND b.state=1))
+                     ORDER BY a.auction_id LIMIT 16",
+                )
+                .bind(world.as_bytes().as_slice())
+                .bind(after.as_ref().map(|id| id.as_slice()))
+                .fetch_all(&mut *tx)
+                .await?;
+                Ok(rows.into_iter().map(|row| {
+                    let auction: Vec<u8> = row.try_get("auction")?;
+                    Ok(HouseSettlementRequest {
+                        world,
+                        house_key: row.try_get("house_key")?,
+                        auction: auction.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+                        step: u32::try_from(row.try_get::<i32, _>("step")?)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                    })
+                }).collect::<std::result::Result<Vec<_>, DurabilityError>>()?)
+            }))
+            .await
+            .map_err(Into::into)
+    }
+}
+
 pub(super) async fn candidates(tx: &mut Tx<'_>, auction: &[u8; 16]) -> Result<Vec<[u8; 16]>> {
     let rows=sqlx::query("SELECT uuid_send(account_id) AS account FROM game_house_bids WHERE auction_id=encode($1,'hex')::uuid ORDER BY account_id LIMIT 257")
         .bind(auction.as_slice()).fetch_all(&mut **tx).await?;

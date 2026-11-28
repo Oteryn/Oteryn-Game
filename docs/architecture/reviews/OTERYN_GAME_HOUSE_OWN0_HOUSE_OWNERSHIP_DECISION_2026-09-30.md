@@ -34,9 +34,14 @@
 | HOUSE-WIRE-1 | impl, protocol review | capability `HOUSE_V1`, the house commands and domain: house list, bids, move-out, the House Management panel (§11) | HOUSE-1; HOUSE-ACL-1 |
 
 HOUSE-CUSTODY-0 §4 orders ownership after the house interior runtime (HOUSE-RUNTIME-0 and its
-child), so no auction opens before a house can be entered and furnished. Later, each with its own
-decision: beds and Rested, Residence, guildhalls, Character Bazaar disposition, guild and wildcard
-ACL patterns, direct transfer between players.
+child). For ordinary auction opening, the active Channel's checked bundle may qualify the
+property before individual House entry is admitted (owner decision 2026-11-28). The World
+reset epoch, live Channel assignment, content pin and exact map tile membership fence
+catalogue registration. Registration alone creates a vacant listing. The first bid registers
+custody addresses and the ownership anchor atomically, with the existing WorldReset custody
+barrier still in force once an anchor exists. Entry and furnishing retain their separate gates.
+Later, each with its own decision: beds and Rested, Residence, guildhalls, Character Bazaar
+disposition, guild and wildcard ACL patterns, direct transfer between players.
 
 ## 1. Question
 
@@ -128,7 +133,10 @@ How does a character get, keep and lose an ordinary physical house?
 - **Bid** `{house, max}`: the acting Character is the nominated owner (EXP-HOUSES-01 §11.2;
   picking another character needs a later wire decision). The first bid on a `VACANT` house starts
   the auction: `ends_at` = +7 days (`HOUSEOWN0-RL-02`), and the house's `rent_gold` is snapshotted
-  on the auction.
+  on the auction. A qualified property becomes available for bidding when it is vacant.
+  The opening bid, its escrow and the auction deadline commit together. See the archived
+  [TibiaWiki House](https://tibia.fandom.com/wiki/House#Auction): “If you win the auction,
+  you will have to pay the winning bid plus the first rent”.
 - **Escrow.** Every bid holds `escrow_gold` = its max + the snapshotted rent, as DUR-03 §18 value in
   custody on the bid row, debited from the bank when the bid is placed or raised
   (`HOUSE_BID_RESERVE`). A bid is `HELD`, then `WON` or `RELEASED`; a guard keeps `escrow_gold` =
