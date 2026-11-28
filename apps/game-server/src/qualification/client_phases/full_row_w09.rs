@@ -999,8 +999,10 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
+    // The journey includes multiple full admissions. The mechanic checks enforce their own
+    // exact cooldown deadlines against live frames.
     let result =
-        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "reset-and-cube-transform".to_owned()),
         Ok(Err(error)) => ("FAIL", error.to_string()),
