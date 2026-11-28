@@ -418,6 +418,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
     let command_id = client.next_command_id();
+    let mut lock_trace = CombatLockTrace::open(caster.generation)?;
     let cast_started = tokio::time::Instant::now();
     let (report, mut exchange) = oteryn_dev_client::capture_qualification_exchange(run_combat(
         client.session_mut(),
@@ -627,8 +628,8 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         },
     ).ok_or("C18a fixed outdoor retreat route unavailable")?;
     walk_path(&mut client, world, &spawn_cells, &retreat, rest, Some(&mut observation), None).await?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
+        let deadline_ms = lock_trace.deadline_ms()?;
         let state = client
             .session_mut()
             .combat_state()
@@ -636,11 +637,14 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         if !state.in_fight {
             break;
         }
-        if tokio::time::Instant::now() >= deadline {
+        if lock_trace_time_ms() >= deadline_ms {
             return Err(format!(
-                "C18a combat lock did not clear at the fixed outdoor tile {rest:?}"
-            )
-            .into());
+                "C18a combat lock failed expiry at {rest:?}: last_renewal={:?} deadline_ms={deadline_ms} frame={:?}",
+                lock_trace.last, observation.last_combat,
+            ).into());
+        }
+        if fed_since.elapsed() >= MEAT_SATIETY {
+            return Err(format!("C18a combat lock kept renewing: last_renewal={:?}", lock_trace.last).into());
         }
         client.service_liveness(Duration::from_millis(200)).await?;
         collect_events(&mut client, Some(&mut observation), None)?;
@@ -1346,6 +1350,74 @@ async fn first_cast_vitals(
         }
     }
     Ok(None)
+}
+
+struct CombatLockTrace {
+    log: std::fs::File,
+    pending: String,
+    generation: u64,
+    actor: Option<String>,
+    anchor: Option<(u128, u128)>,
+    last: Option<String>,
+    expiry: u128,
+}
+
+impl CombatLockTrace {
+    fn open(generation: u64) -> TestResult<Self> {
+        use std::io::{Seek, SeekFrom};
+        let mut log = std::fs::File::open(required("NODE_BOOT_CAST_EVIDENCE_LOG")?)?;
+        log.seek(SeekFrom::End(0))?;
+        Ok(Self {
+            log, pending: String::new(), generation, actor: None, anchor: None, last: None, expiry: 0,
+        })
+    }
+
+    fn deadline_ms(&mut self) -> TestResult<u128> {
+        use std::io::Read;
+        self.log.read_to_string(&mut self.pending)?;
+        let Some(end) = self.pending.rfind('\n') else {
+            return self.projected_deadline_ms();
+        };
+        let lines: String = self.pending.drain(..=end).collect();
+        for line in lines.lines().filter(|line| line.contains("combat_lock_renewed ")) {
+            let parsed = oteryn_error_codes::parse_line(line)
+                .map_err(|error| format!("C18a invalid renewal log: {error:?}"))?;
+            let Some(detail) = parsed.detail.as_deref() else { continue };
+            let fields: Vec<_> = detail.split_whitespace().collect();
+            let ["combat_lock_renewed", actor, cause, "lock=in_fight", expiry, tile] = fields.as_slice()
+            else { continue };
+            let (local_id, generation) = actor.strip_prefix("actor=")
+                .and_then(|actor| actor.split_once('/')).ok_or("C18a malformed renewal actor")?;
+            if generation.parse::<u64>()? != self.generation {
+                continue;
+            }
+            let expiry: u128 = expiry.strip_prefix("expires_at_us=")
+                .ok_or("C18a malformed renewal expiry")?.parse()?;
+            if let Some(bound) = &self.actor {
+                if bound != local_id || expiry <= self.expiry {
+                    continue;
+                }
+            } else {
+                let cast_tile = format!("tile=({},{},{})", CAST_TILE.x, CAST_TILE.y, CAST_TILE.floor.unsigned_abs());
+                if *cause != "cause=attack" || *tile != cast_tile {
+                    continue;
+                }
+                self.actor = Some(local_id.into());
+                // The diagnostic's wall timestamp anchors process-relative owner time.
+                self.anchor = Some((u128::from(parsed.ts), expiry));
+            }
+            self.expiry = expiry;
+            self.last = Some(detail.into());
+            evidence(&format!("c18a_lock_renewal {detail}"));
+        }
+        self.projected_deadline_ms()
+    }
+
+    fn projected_deadline_ms(&self) -> TestResult<u128> {
+        let (wall_ms, initial_expiry) = self.anchor.ok_or("C18a initial Scorch renewal absent")?;
+        // Global’s 60 s in-fight period and one 250 ms COMBAT_REFRESH tick.
+        Ok(wall_ms + 60_250 + (self.expiry - initial_expiry).div_ceil(1_000))
+    }
 }
 
 fn lock_trace_time_ms() -> u128 {
