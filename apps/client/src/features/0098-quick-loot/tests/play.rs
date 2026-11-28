@@ -541,6 +541,8 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         corpse_position: [i32; 3],
         corpse_definition: u32,
         primary_use_sequence: u64,
+        nearby_extra_coins: Vec<[u8; 16]>,
+        cap_coins: Vec<[u8; 16]>,
         opened: ContainerDelta,
         after_click: ContainerDelta,
         coin: [u8; 16],
@@ -821,6 +823,32 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         Some(expected.fulfilment),
         false,
     );
+    assert_eq!(expected.nearby_extra_coins.len(), if full { 6 } else { 0 });
+    assert_eq!(expected.cap_coins.len(), if full { 31 } else { 0 });
+    let nearby_items: Vec<_> = expected
+        .nearby_extra_coins
+        .iter()
+        .copied()
+        .map(|item| (item, true))
+        .chain([
+            (expected.coin, true),
+            (expected.diagonal_coin, true),
+            (expected.armor, false),
+            (expected.filtered, false),
+            (expected.spare, false),
+            (expected.listed, false),
+            (expected.other, false),
+            (expected.top_food, false),
+            (expected.bottom_food, false),
+        ])
+        .collect();
+    let cap_items: Vec<_> = expected
+        .cap_coins
+        .iter()
+        .take(30)
+        .copied()
+        .map(|item| (item, true))
+        .collect();
     let steps: [ReplayStep<'_>; 20] = [
         (
             Action::Add {
@@ -843,18 +871,12 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
         (main.clone(), &[], None),
         (
             Action::LootAll,
-            &[
-                (expected.coin, true),
-                (expected.diagonal_coin, true),
-                (expected.armor, false),
-                (expected.filtered, false),
-                (expected.spare, false),
-                (expected.listed, false),
-                (expected.other, false),
-                (expected.top_food, false),
-                (expected.bottom_food, false),
-            ],
-            Some("Looted 2 of 9 items"),
+            &nearby_items,
+            Some(if full {
+                "Looted 8 of 15 items"
+            } else {
+                "Looted 2 of 9 items"
+            }),
         ),
         (gold_main.clone(), &[], None),
         (armor(false), &[], None),
@@ -1072,6 +1094,12 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
             None,
         ),
     ));
+    if full {
+        probes.push((
+            26,
+            (Action::LootAll, &cap_items, Some("Looted 30 of 30 items")),
+        ));
+    }
     for (key, (action, expected_items, notice)) in probes {
         let session_index = usize::from(key >= 12);
         let reply: Reply =
@@ -1164,7 +1192,13 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     .iter()
                     .filter(|(x, y, _, _)| *x == tile.x && *y == tile.y)
                     .count(),
-                if key >= 15 { 2 } else { 1 },
+                if key == 26 {
+                    33
+                } else if key >= 15 {
+                    2
+                } else {
+                    1
+                },
                 "I07 probe {key}"
             );
             assert_eq!(
@@ -1176,22 +1210,28 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                 (reply.command_id, reply.server_sequence),
                 "I07 probe {key} tile command"
             );
-            assert_eq!(
-                tile.corpses.len(),
-                4,
-                "I07 probe {key} competing corpse omitted"
-            );
             let east = tile
                 .actor_x
                 .checked_add(1)
                 .ok_or("I07 corpse tile overflow")?;
             let south = tile.y.checked_add(1).ok_or("I07 corpse tile overflow")?;
             assert_eq!(tile.x, if key >= 15 { east } else { tile.actor_x });
-            for (position, count) in [
+            let stack_count = if key == 26 { 33 } else { 2 };
+            let mut expected_tiles = vec![
                 ((tile.actor_x, tile.y), 1),
-                ((east, tile.y), 2),
+                ((east, tile.y), stack_count),
                 ((east, south), 1),
-            ] {
+            ];
+            if full {
+                for (dx, dy) in [(-1, -1), (0, -1), (1, -1), (-1, 0), (-1, 1), (0, 1)] {
+                    expected_tiles.push(((tile.actor_x + dx, tile.y + dy), 1));
+                }
+            }
+            assert_eq!(
+                tile.corpses.len(),
+                expected_tiles.iter().map(|(_, count)| count).sum::<usize>()
+            );
+            for (position, count) in expected_tiles {
                 assert_eq!(
                     tile.corpses
                         .iter()
@@ -1201,7 +1241,7 @@ fn e2e_i07_real_replies_replay_through_play_outbox() -> Result<(), Box<dyn std::
                     "I07 probe {key} live corpse tile {position:?}"
                 );
             }
-            if key >= 15 {
+            if key >= 15 && key != 26 {
                 let top = tile
                     .corpses
                     .iter()

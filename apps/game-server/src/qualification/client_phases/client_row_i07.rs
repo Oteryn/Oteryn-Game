@@ -407,10 +407,8 @@ impl Capture<'_> {
             .others()
             .filter(|entity| {
                 entity.kind == EntityKind::Corpse
-                    && (entity.position.x == actor.x
-                        || actor.x.checked_add(1) == Some(entity.position.x))
-                    && (entity.position.y == actor.y
-                        || actor.y.checked_add(1) == Some(entity.position.y))
+                    && entity.position.x.abs_diff(actor.x) <= 1
+                    && entity.position.y.abs_diff(actor.y) <= 1
                     && entity.position.floor == actor.floor
             })
             .map(|entity| {
@@ -426,18 +424,23 @@ impl Capture<'_> {
             .iter()
             .filter(|(tile_x, tile_y, _, _)| *tile_x == x && *tile_y == actor.y)
             .collect();
-        if nearby.len() != 4 || clicked.len() != if east_stack { 2 } else { 1 } {
-            return Err(
-                format!("I07 probe {key} expected the exact corpse tiles and stack").into(),
-            );
-        }
         let east = actor.x.checked_add(1).ok_or("I07 corpse tile overflow")?;
         let south = actor.y.checked_add(1).ok_or("I07 corpse tile overflow")?;
-        for (position, count) in [
+        let stack_count = if key == 26 { 33 } else { 2 };
+        let mut expected_tiles = vec![
             ((actor.x, actor.y), 1),
-            ((east, actor.y), 2),
+            ((east, actor.y), stack_count),
             ((east, south), 1),
-        ] {
+        ];
+        if self.full {
+            for (dx, dy) in [(-1, -1), (0, -1), (1, -1), (-1, 0), (-1, 1), (0, 1)] {
+                expected_tiles.push(((actor.x + dx, actor.y + dy), 1));
+            }
+        }
+        if nearby.len() != expected_tiles.iter().map(|(_, count)| count).sum::<usize>() {
+            return Err(format!("I07 probe {key} unexpected nearby corpse count").into());
+        }
+        for (position, count) in expected_tiles {
             if nearby
                 .iter()
                 .filter(|(x, y, _, _)| (*x, *y) == position)
@@ -451,7 +454,7 @@ impl Capture<'_> {
             }
         }
         let anchor = clicked.last().ok_or("I07 missing selected corpse")?.2;
-        if east_stack && Some(anchor) != self.visible_top {
+        if east_stack && key != 26 && Some(anchor) != self.visible_top {
             return Err(
                 "I07 the last published corpse must be the visible top of the east stack".into(),
             );
@@ -755,7 +758,11 @@ pub(super) async fn journey(
         return Err("I07 fixture requires admission at the seeded corpse tile".into());
     }
     timing.enter("loot_provisioning");
-    let provisioning_log = provision_while_serving(&mut client, "i07-loot".into()).await?;
+    let provisioning_log = provision_while_serving(
+        &mut client,
+        if full { "i07-loot-full" } else { "i07-loot" }.into(),
+    )
+    .await?;
     if !provisioning_log.is_empty() {
         evidence(&provisioning_log);
     }
@@ -882,6 +889,36 @@ pub(super) async fn journey(
     ) else {
         return Err("I07 fixture corpse count differs".into());
     };
+    let mut boundary = Vec::new();
+    if full {
+        for (dx, dy) in [(-1, -1), (0, -1), (1, -1), (-1, 0), (-1, 1), (0, 1), (2, 0)] {
+            let position = cell(admitted_position.x + dx, admitted_position.y + dy);
+            let ids: Vec<Vec<u8>> = sqlx::query_scalar(
+                "SELECT uuid_send(r.item_instance_id) FROM game_item_mint_receipts r
+                 JOIN game_item_ground_locations g USING (item_instance_id)
+                 WHERE death_world_id=encode($1,'hex')::uuid AND death_channel_id=encode($2,'hex')::uuid
+                   AND death_scope_ownership_generation=$3::text::numeric
+                   AND corpse_top_damage_character_id=encode($4,'hex')::uuid
+                   AND loot_table_production_key='oteryn:qualification.i07.loot'
+                   AND loot_purpose_key='CORPSE_MATERIALIZATION' AND draw_ordinal=0
+                   AND g.spatial_position=$5 LIMIT 2",
+            )
+            .bind(clients.world.as_slice()).bind(clients.channel.as_slice())
+            .bind(clients.scope_generation.to_string()).bind(character.as_slice()).bind(position)
+            .fetch_all(&mut database).await?;
+            let [id] = ids.as_slice() else {
+                return Err("I07 expected exactly one corpse on each boundary tile".into());
+            };
+            let contents = placements(&mut database, Storage::Corpse, character, id).await?;
+            let [item] = contents.as_slice() else {
+                return Err("I07 boundary corpse must contain one gold stack".into());
+            };
+            if item.key != "oteryn:item.tibia.i3031" || item.quantity != 1 || item.slot != 1 {
+                return Err("I07 boundary coin fixture differs".into());
+            }
+            boundary.push((id.clone(), item.clone(), dx != 2));
+        }
+    }
     evidence(if full {
         "I07_FULL_INPUT corpses=4 east_stack=2 diagonal=1 source=qualification_fixture"
     } else {
@@ -967,16 +1004,21 @@ pub(super) async fn journey(
     }
     let mut bag_armor = armor.clone();
     bag_armor.slot = expected_backpack.last().map_or(1, |item| item.slot + 1);
-    // Nearby traverses corpses by durable identity. Either fixture mint can sort first.
-    let (first_coin, donor_coin) = if corpse < diagonal_corpse {
-        (coin, diagonal_coin)
-    } else {
-        (diagonal_coin, coin)
-    };
-    let mut pouch_coin = first_coin.clone();
-    pouch_coin.quantity += donor_coin.quantity;
+    let mut nearby_coins = vec![
+        (corpse.as_slice(), coin),
+        (diagonal_corpse.as_slice(), diagonal_coin),
+    ];
+    nearby_coins.extend(
+        boundary
+            .iter()
+            .filter(|(_, _, inside)| *inside)
+            .map(|(id, item, _)| (id.as_slice(), item)),
+    );
+    nearby_coins.sort_unstable_by_key(|(id, _)| *id);
+    let mut pouch_coin = nearby_coins[0].1.clone();
+    pouch_coin.quantity = nearby_coins.iter().map(|(_, item)| item.quantity).sum();
     pouch_coin.slot = 1;
-    let expected_pouch = [pouch_coin];
+    let mut expected_pouch = [pouch_coin];
     let expected_filters = [FILTERS[0], (true, "oteryn:item.tibia.i3031"), FILTERS[1]];
     let original_session = client.join_snapshot().game_session_id;
     let session = uuid_text(original_session.as_bytes());
@@ -1065,24 +1107,44 @@ pub(super) async fn journey(
         );
     }
     evidence("I07_GOLD_ISOLATION unassigned=main fallback=off before_transfer=true");
+    let nearby_outcomes = nearby_coins
+        .iter()
+        .map(|(_, item)| (*item, true))
+        .chain([
+            (armor, false),
+            (filtered, false),
+            (spare, false),
+            (listed, false),
+            (other, false),
+            (top_food, false),
+            (bottom_food, false),
+        ])
+        .collect::<Vec<_>>();
     capture
         .probe(
             &mut client,
             6,
             request(QuickLootAction::LootAll),
-            &[
-                (coin, true),
-                (diagonal_coin, true),
-                (armor, false),
-                (filtered, false),
-                (spare, false),
-                (listed, false),
-                (other, false),
-                (top_food, false),
-                (bottom_food, false),
-            ],
+            &nearby_outcomes,
         )
         .await?;
+    for (id, item, inside) in &boundary {
+        require_placements(
+            &mut database,
+            Storage::Corpse,
+            character,
+            id,
+            if *inside {
+                &[]
+            } else {
+                std::slice::from_ref(item)
+            },
+        )
+        .await?;
+    }
+    if full {
+        evidence("I07_NEARBY_BOUNDARY checked_tiles=9 outside_sentinel=retained");
+    }
     require_placements(
         &mut database,
         Storage::InboxPouch,
@@ -1091,7 +1153,9 @@ pub(super) async fn journey(
         &expected_pouch,
     )
     .await?;
-    require_retired_donor(&mut database, &donor_coin.item).await?;
+    for (_, donor) in &nearby_coins[1..] {
+        require_retired_donor(&mut database, &donor.item).await?;
+    }
     require_placements(
         &mut database,
         Storage::Corpse,
@@ -1656,6 +1720,52 @@ pub(super) async fn journey(
     )
     .await?;
     evidence("I07_FOREIGN_CLICK refusal=stale live_item=foreign_corpse custody=unchanged");
+    let mut cap_items = Vec::new();
+    if full {
+        timing.enter("cap_provisioning");
+        provision_while_serving(&mut fresh, "i07-loot-cap".into()).await?;
+        let mut context = *fresh.join_snapshot().game_session_id.as_bytes();
+        context[15] ^= 0xe1;
+        let ids: Vec<Vec<u8>> = sqlx::query_scalar(
+            "SELECT uuid_send(g.item_instance_id) FROM game_item_ground_locations g
+             JOIN game_item_mint_receipts r USING (item_instance_id)
+             WHERE g.native_room_placement_context=$1 AND g.spatial_position=$2
+               AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
+             ORDER BY g.corpse_ref DESC LIMIT 32",
+        )
+        .bind(context.as_slice())
+        .bind(&adjacent)
+        .fetch_all(&mut database)
+        .await?;
+        if ids.len() != 31 {
+            return Err("I07 cap fixture must contain 31 new corpses on the east tile".into());
+        }
+        for id in ids {
+            let contents = placements(&mut database, Storage::Corpse, character, &id).await?;
+            let [item] = contents.as_slice() else {
+                return Err("I07 cap corpse must contain one coin".into());
+            };
+            if item.key != "oteryn:item.tibia.i3031" || item.quantity != 1 || item.slot != 1 {
+                return Err("I07 cap coin fixture differs".into());
+            }
+            cap_items.push((id, item.clone()));
+        }
+        let outcomes: Vec<_> = cap_items[..30]
+            .iter()
+            .map(|(_, item)| (item, true))
+            .collect();
+        capture.loot_all(&mut fresh, 26, true, &outcomes).await?;
+        expected_pouch[0].quantity += 30;
+        require_placements(
+            &mut database,
+            Storage::InboxPouch,
+            character,
+            &pouch,
+            &expected_pouch,
+        )
+        .await?;
+        evidence("I07_STACK_CAP accepted=30 thirty_first=excluded");
+    }
     timing.enter("corpse_logout");
     require_logout(&mut fresh).await?;
     drop(fresh);
@@ -1713,7 +1823,40 @@ pub(super) async fn journey(
     require_filters(&mut database, character, false, &expected_filters).await?;
     require_routes(&mut database, character, &pouch, false, false, full, true).await?;
     require_retired_donor(&mut database, &other.item).await?;
-    require_retired_donor(&mut database, &donor_coin.item).await?;
+    for (_, donor) in &nearby_coins[1..] {
+        require_retired_donor(&mut database, &donor.item).await?;
+    }
+    for (id, item, inside) in &boundary {
+        require_placements(
+            &mut database,
+            Storage::Corpse,
+            character,
+            id,
+            if *inside {
+                &[]
+            } else {
+                std::slice::from_ref(item)
+            },
+        )
+        .await?;
+    }
+    for (index, (id, item)) in cap_items.iter().enumerate() {
+        require_placements(
+            &mut database,
+            Storage::Corpse,
+            character,
+            id,
+            if index < 30 {
+                &[]
+            } else {
+                std::slice::from_ref(item)
+            },
+        )
+        .await?;
+        if index < 30 {
+            require_retired_donor(&mut database, &item.item).await?;
+        }
+    }
     evidence("I07_MERGE_DONOR lifecycle=retired quantity=0 after_relog=true donors=food,gold");
     capture_restore(&mut readback, capture_dir, "restore").await?;
     let inventory = readback
@@ -1781,6 +1924,8 @@ pub(super) async fn journey(
                 "corpse_position": [corpse_entity.position.x, corpse_entity.position.y, i32::from(corpse_entity.position.floor)],
                 "corpse_definition": provisioning::item_reference(&index, 5973)?.get(),
                 "primary_use_sequence": primary_use_sequence,
+                "nearby_extra_coins": boundary.iter().filter(|(_, _, inside)| *inside).map(|(_, item, _)| &item.item).collect::<Vec<_>>(),
+                "cap_coins": cap_items.iter().map(|(_, item)| &item.item).collect::<Vec<_>>(),
                 "opened": captured_container(opened)?, "after_click": captured_container(after_click)?,
                 "coin": coin.item, "diagonal_coin": diagonal_coin.item, "top_food": top_food.item, "bottom_food": bottom_food.item, "armor": armor.item, "filtered": filtered.item, "spare": spare.item, "other": other.item,
             }))?,
