@@ -442,30 +442,46 @@ async fn observe_corpse(
                 },
             });
         }
-        let budget = super::AdmissionRetryBudget::for_holder_window(
-            admission.root,
-            super::AdmissionRetryBudget::holder_wait_window(),
-        );
+        let wait = super::AdmissionRetryBudget::holder_wait_window();
+        let budget = super::AdmissionRetryBudget::for_holder_window(admission.root, wait);
+        // The checkout cutoff leaves the reserved SQL time inside the same
+        // command window, including when the holder returns near the cutoff.
+        let read_deadline = budget.deadline + crate::durability::DB_PASS_DEADLINE;
+        let holder_busy = |error: &ItemTransferError| {
+            matches!(
+                error,
+                ItemTransferError::Unavailable(DurabilityError::RootUnavailable)
+            )
+        };
+        let mut log_wait = command
+            .map(|command| command.command_id)
+            .filter(|&id| id != 0);
         let entries = budget
             .retry_logged_holder(
                 "corpse_open",
                 async || {
+                    if tokio::time::Instant::now() >= budget.deadline {
+                        return Err(DurabilityError::RootUnavailable.into());
+                    }
                     admission
                         .root
                         .read_corpse_contents_for_open(
                             admission.character,
                             corpse.item.item_instance_id,
                             viewer,
-                            budget.deadline,
+                            read_deadline,
                         )
                         .await
+                        .inspect_err(|error| {
+                            if holder_busy(error) && let Some(command_id) = log_wait.take() {
+                                super::operator_event(&format!(
+                                    "event=corpse_open_wait command_id={command_id} cause=holder_busy budget_ms={}",
+                                    wait.as_millis(),
+                                ));
+                            }
+                        })
                 },
-                |error| {
-                    matches!(
-                        error,
-                        ItemTransferError::Unavailable(DurabilityError::RootUnavailable)
-                    )
-                },
+                holder_busy,
             )
             .await;
         match entries {
