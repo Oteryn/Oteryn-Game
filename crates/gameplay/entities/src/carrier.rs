@@ -127,7 +127,9 @@ mod fixtures;
 
 mod forge_creature;
 #[cfg(feature = "qualification-spawn")]
-pub use forge_creature::{ForgePopulationCensus, ForgePopulationDrawRefusal};
+pub use forge_creature::{
+    ForgePopulationCensus, ForgePopulationDrawRefusal, ForgePopulationSelection,
+};
 mod hazard;
 
 #[path = "carrier/monster_summon_admission.rs"]

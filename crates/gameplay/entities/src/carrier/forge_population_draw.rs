@@ -1,5 +1,6 @@
 //! One-shot observation of the due Forge population turn in qualification builds.
 use super::*;
+use crate::carrier::runtime_actor_companion::CompanionSnapshot;
 use tokio::sync::oneshot;
 use tokio::time::Instant;
 
@@ -14,11 +15,25 @@ pub enum ForgePopulationDrawRefusal {
 pub struct ForgePopulationCensus {
     pub now_micros: u64,
     /// Newly classified incarnations in application order.
-    pub selected: Vec<(ExactActorRef, ForgeCreature)>,
+    pub selected: Vec<ForgePopulationSelection>,
+    /// Previously classified native actors, including fiends still holding a dead slot.
+    pub retained: Vec<(ExactActorRef, ForgeCreature)>,
+    /// Planner deficit after counting live retained fiends.
+    pub fiendish_vacancy: usize,
+    /// Owner allowance after counting all held slots, including dead fiends.
+    pub fiendish_available_slots: usize,
     /// Each native spawn's planner identity and exact incarnation, before selection.
     pub eligible: Vec<(u64, ExactActorRef)>,
     /// All live controlled summons, including familiars, in the Channel.
     pub excluded_owned_summons: Vec<ExactActorRef>,
+}
+
+#[derive(Debug)]
+pub struct ForgePopulationSelection {
+    pub actor: ExactActorRef,
+    pub kind: ForgeCreature,
+    pub creature_key: String,
+    pub position: MovementLocalPosition,
 }
 
 type DrawResult = Result<ForgePopulationCensus, ForgePopulationDrawRefusal>;
@@ -38,6 +53,17 @@ pub(super) struct ActiveDraw {
     pub(super) seed: u64,
     pub(super) census: ForgePopulationCensus,
     pub(super) reply: oneshot::Sender<DrawResult>,
+}
+
+impl ActiveDraw {
+    pub(super) fn record_selection(&mut self, snapshot: &CompanionSnapshot, kind: ForgeCreature) {
+        self.census.selected.push(ForgePopulationSelection {
+            actor: snapshot.actor,
+            kind,
+            creature_key: snapshot.state.policy.definition_key.clone(),
+            position: snapshot.position,
+        });
+    }
 }
 
 impl ChannelRuntimeV1 {
@@ -160,6 +186,9 @@ impl ChannelRuntimeV1 {
         let census = ForgePopulationCensus {
             now_micros,
             selected: Vec::new(),
+            retained: Vec::new(),
+            fiendish_vacancy: 0,
+            fiendish_available_slots: 0,
             eligible: Vec::new(),
             excluded_owned_summons,
         };

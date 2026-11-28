@@ -8,10 +8,10 @@ use crate::node::uuid_text;
 use crate::party_shared_xp_postgres_tests::committed_fresh_player;
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_domain::domain::forge_creature::{
-    ForgeCreature, ForgeSpawnCandidate, plan_fiendish_tick,
+    FIENDISH_SIMULTANEOUS_MAX, ForgeCreature, ForgeSpawnCandidate, plan_fiendish_tick,
 };
 use oteryn_gameplay_entities::carrier::runtime_actor_companion::{
-    CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+    CompanionSnapshot, CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
 };
 use serde_json::Value;
 use std::time::Duration;
@@ -120,11 +120,12 @@ async fn exercise_draw(harness: &Harness) -> TestResult {
     driven?;
     let census: Value = serde_json::from_str(&reply).map_err(|err| format!("{err}: {reply}"))?;
     assert_eq!(census["now_micros"], FIRST_CYCLE);
-    let owner = channel.lock().await;
+    let mut owner = channel.lock().await;
     let mut candidates = Vec::new();
     let mut eligible = Vec::new();
     let mut selected = Vec::new();
     let mut fiends = Vec::new();
+    let mut held_fiend = None;
     for (point, _, actor) in owner.spawn_point_creatures() {
         let actor = actor.ok_or("expected a live native spawn")?;
         let spawn_identity = (u64::from(point.source) << 8) | u64::from(point.ordinal);
@@ -134,15 +135,13 @@ async fn exercise_draw(harness: &Harness) -> TestResult {
             alive: true,
         });
         eligible.push(serde_json::json!({"id": actor_id(actor), "spawn_identity": spawn_identity}));
-        match owner.companion_snapshot(actor)?.forge {
-            Some(ForgeCreature::Fiendish) => {
+        let snapshot = owner.companion_snapshot(actor)?;
+        if let Some(kind) = snapshot.forge {
+            if kind == ForgeCreature::Fiendish {
                 fiends.push(spawn_identity);
-                selected.push(serde_json::json!({"id": actor_id(actor), "stacks": ForgeCreature::Fiendish.reward_stacks()}));
+                held_fiend = Some(actor);
             }
-            Some(ForgeCreature::Influenced(stacks)) => {
-                selected.push(serde_json::json!({"id": actor_id(actor), "stacks": stacks}));
-            }
-            None => {}
+            selected.push(selected_entry(&snapshot, kind));
         }
     }
     let mut expected = plan_fiendish_tick(FIRST_CYCLE, seed, &[], &candidates).selected;
@@ -153,6 +152,12 @@ async fn exercise_draw(harness: &Harness) -> TestResult {
         "the production selector must consume the requested seed"
     );
     assert_eq!(census["eligible"], Value::Array(eligible));
+    assert_eq!(census["retained"], serde_json::json!([]));
+    assert_eq!(census["fiendish_vacancy"], FIENDISH_SIMULTANEOUS_MAX);
+    assert_eq!(
+        census["fiendish_available_slots"],
+        FIENDISH_SIMULTANEOUS_MAX
+    );
     let reported = census["selected"]
         .as_array()
         .ok_or("missing selected census")?;
@@ -164,6 +169,48 @@ async fn exercise_draw(harness: &Harness) -> TestResult {
         census["excluded_owned_summons"],
         serde_json::json!([{"id": actor_id(owned), "reason": "owned_summon"}])
     );
+    // One retained fiend dies before the next scan. The planner sees a vacancy
+    // while the population owner still reserves that actor's slot.
+    let held_fiend = held_fiend.ok_or("missing fiend to hold a replacement slot")?;
+    owner.set_test_creature_health(held_fiend, 0)?;
+    let retained: Vec<_> = selected
+        .iter()
+        .map(|entry| serde_json::json!({"id": entry["id"], "stacks": entry["stacks"]}))
+        .collect();
+    drop(owner);
+    let drive = when_draw_is_armed(&channel, |owner| {
+        owner.drive_spawn_respawns(2 * FIRST_CYCLE, |_, _| false)?;
+        Ok(())
+    });
+    let (reply, driven) = tokio::join!(draw(root, true, Some(&channel), request.as_bytes()), drive);
+    driven?;
+    let census: Value = serde_json::from_str(&reply).map_err(|err| format!("{err}: {reply}"))?;
+    assert_eq!(census["now_micros"], 2 * FIRST_CYCLE);
+    assert_eq!(census["fiendish_vacancy"], 1);
+    assert_eq!(census["fiendish_available_slots"], 0);
+    let reported = census["retained"]
+        .as_array()
+        .ok_or("missing retained roster")?;
+    assert_eq!(reported.len(), retained.len());
+    assert!(retained.iter().all(|entry| reported.contains(entry)));
+    let owner = channel.lock().await;
+    let mut newly_classified = Vec::new();
+    for actor in owner
+        .spawn_point_creatures()
+        .into_iter()
+        .filter_map(|(_, _, actor)| actor)
+    {
+        let snapshot = owner.companion_snapshot(actor)?;
+        if let Some(kind) = snapshot.forge {
+            let entry = selected_entry(&snapshot, kind);
+            if !selected.contains(&entry) {
+                assert!(matches!(kind, ForgeCreature::Influenced(_)));
+                newly_classified.push(entry);
+            }
+        }
+    }
+    assert_eq!(newly_classified.len(), 1);
+    assert_eq!(census["selected"], Value::Array(newly_classified));
     drop(owner);
 
     let advance = when_draw_is_armed(&channel, |owner| {
@@ -176,7 +223,7 @@ async fn exercise_draw(harness: &Harness) -> TestResult {
             },
         )?;
         owner.restore_control(player, session, 1)?;
-        owner.drive_spawn_respawns(2 * FIRST_CYCLE, |_, _| false)?;
+        owner.drive_spawn_respawns(3 * FIRST_CYCLE, |_, _| false)?;
         Ok(())
     });
     let (stale, advanced) = tokio::join!(
@@ -207,6 +254,16 @@ async fn when_draw_is_armed(
         }
     })
     .await?
+}
+
+fn selected_entry(snapshot: &CompanionSnapshot, kind: ForgeCreature) -> Value {
+    let MovementLocalPosition { x, y, floor } = snapshot.position;
+    serde_json::json!({
+        "id": actor_id(snapshot.actor),
+        "stacks": kind.reward_stacks(),
+        "creature_key": snapshot.state.policy.definition_key,
+        "position": {"x": x, "y": y, "floor": floor},
+    })
 }
 
 fn actor_id(actor: ExactActorRef) -> String {
@@ -268,7 +325,7 @@ fn channel(harness: &Harness) -> TestResult<(ChannelRuntimeV1, u64)> {
         }],
     )?)?;
     let points = (2..11)
-        .map(|x| ((x, 0, 0), 60_000, RAT.to_owned(), 100, false))
+        .map(|x| ((x, 3, -1), 60_000, RAT.to_owned(), 100, false))
         .collect();
     runtime.begin_activation_spawn_sources(vec![(points, 5_000)])?;
     assert_eq!(runtime.realize_activation_spawn_window(0)?.remaining, 0);
