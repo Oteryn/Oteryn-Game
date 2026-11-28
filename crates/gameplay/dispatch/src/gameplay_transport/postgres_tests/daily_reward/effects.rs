@@ -8,6 +8,7 @@ pub(super) async fn kills_before_and_at_expiry(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     premium: bool,
+    promoted_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
 ) -> TestResult {
     // Winter Update 2026 (thread 565): the daily boost runs beside the Store boost.
     let beside: bool = sqlx::query_scalar("WITH daily AS (SELECT max(effect_started_at) AS starts FROM game_character_daily_reward_lines WHERE kind='XP_BOOST') SELECT EXISTS(SELECT 1 FROM game_character_store_xp_boosts s,daily WHERE s.starts_at<=daily.starts AND s.expires_at>daily.starts)")
@@ -48,10 +49,28 @@ pub(super) async fn kills_before_and_at_expiry(
     for expired in [false, true] {
         let clock = if expired {
             "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_expires_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$"
+        } else if promoted_fence.is_some() {
+            "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_started_at)+interval '31 minutes' FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$"
         } else {
             "CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_started_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$"
         };
         sqlx::raw_sql(clock).execute(&h.pool).await?;
+        if let Some(fence) = promoted_fence {
+            let timers = h
+                .root
+                .read_active_potion_durations(authority, &h.node, fence, id(43))
+                .await
+                .map_err(debug)?;
+            let daily = timers.iter().find(|line| line.source == 4);
+            assert_eq!(
+                daily.map(|line| (line.percent, line.remaining_ms)),
+                if expired {
+                    None
+                } else {
+                    Some((50, 29 * 60_000))
+                },
+            );
+        }
         // One player plus two expiry-pass creatures must leave half the carrier free
         // for player admission. Five slots is the smallest capacity that fits both.
         let mut deps = Dependencies::with_content_and_capacity(

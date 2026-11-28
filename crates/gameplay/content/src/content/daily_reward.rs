@@ -10,6 +10,16 @@ pub struct DailyRewardContent {
     pub entry_shrine: DailyRewardShrine,
     pub shrine_source_ids: Vec<u32>,
     pub days: Vec<DailyRewardDay>,
+    #[serde(default)]
+    premium_day_seven_boost_windows: Vec<DailyRewardBoostWindow>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DailyRewardBoostWindow {
+    first_reset_date: i32,
+    last_reset_date: i32,
+    source: String,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -51,6 +61,12 @@ impl DailyRewardContent {
         ))
         .ok()?;
         (content.schema == "OTERYN_DAILY_REWARDS/v2"
+            && content
+                .premium_day_seven_boost_windows
+                .iter()
+                .all(|window| {
+                    !window.source.is_empty() && window.first_reset_date <= window.last_reset_date
+                })
             && content.days.len() == 7
             && content.days.iter().enumerate().all(|(index, day)| {
                 day.day == u8::try_from(index + 1).unwrap_or_default()
@@ -74,5 +90,27 @@ impl DailyRewardContent {
     pub fn reward(&self, day: u8, premium: bool) -> Option<DailyRewardTier> {
         let row = self.days.get(usize::from(day.checked_sub(1)?))?;
         Some(if premium { row.premium } else { row.free })
+    }
+
+    /// Resolve the advertised tier for a committed server-save date (YYYYMMDD).
+    pub fn reward_on_reset(
+        &self,
+        day: u8,
+        premium: bool,
+        reset_date: i32,
+    ) -> Option<DailyRewardTier> {
+        let mut tier = self.reward(day, premium)?;
+        // The Fandom event archive confirms a 50% one-hour Premium day-seven boost.
+        // Its other entries describe a different reward catalogue.
+        if premium
+            && day == 7
+            && (tier.xp_boost_percent, tier.xp_boost_minutes) == (50, 30)
+            && self.premium_day_seven_boost_windows.iter().any(|window| {
+                (window.first_reset_date..=window.last_reset_date).contains(&reset_date)
+            })
+        {
+            tier.xp_boost_minutes = 60;
+        }
+        Some(tier)
     }
 }

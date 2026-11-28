@@ -16,6 +16,13 @@
     25802,
     25803
   ],
+  "premium_day_seven_boost_windows": [
+    {
+      "first_reset_date": 20250301,
+      "last_reset_date": 20250331,
+      "source": "https://tibia.fandom.com/wiki/Double_Daily_Reward_Events"
+    }
+  ],
   "days": [
     {
       "day": 1,

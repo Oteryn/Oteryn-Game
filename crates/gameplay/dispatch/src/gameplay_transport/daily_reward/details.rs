@@ -41,8 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 bounty_tokens: t.bounty_reroll_tokens,
             };
             *details.days.get_mut(index)? = wire::details::Day {
-                free: tier(day.free),
-                premium: tier(day.premium),
+                free: tier(content.reward_on_reset(day.day, false, view.reset_date)?),
+                premium: tier(content.reward_on_reset(day.day, true, view.reset_date)?),
             };
         }
         for (slot, receipt) in details.history.iter_mut().zip(view.history) {

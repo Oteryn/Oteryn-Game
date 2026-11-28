@@ -3,7 +3,8 @@
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::daily_reward::{load_receipt, load_state};
 use super::daily_reward_claim::{
-    DailyRewardClaimError, DailyRewardClaimOutcome, DailyRewardClaimRequest, write_claim,
+    DailyRewardClaimError, DailyRewardClaimOutcome, DailyRewardClaimRequest, DailyRewardWrite,
+    write_claim,
 };
 use super::db::{begin_semantic_transaction, begin_type2_transaction, lock_admission_relations};
 use super::item_mint_audit::Type2Transaction;
@@ -33,6 +34,7 @@ pub struct DailyRewardDeliveryPlan {
 pub struct DailyRewardView {
     pub epoch: u64,
     pub next_reset_at: i64,
+    pub reset_date: i32,
     pub instant_access_tokens: u32,
     pub history: Vec<oteryn_protocol_oteryn::daily_reward::details::Receipt>,
     pub lane_day: u8,
@@ -86,9 +88,9 @@ impl DurabilityRoot {
             if !current(&mut tx, &node, fence, command).await? {
                 return Ok(Err(DailyRewardClaimError::AuthorityRejected));
             }
-            let reset: Option<(String, i64)> = sqlx::query_as("SELECT h.reset_epoch::text, (extract(epoch FROM (((DATE '1970-01-01' + (h.reset_day + 1)::integer) + TIME '06:00') AT TIME ZONE 'Europe/Berlin')) * 1000)::bigint FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
+            let reset: Option<(String, i64, i32)> = sqlx::query_as("SELECT h.reset_epoch::text, (extract(epoch FROM (((DATE '1970-01-01' + (h.reset_day + 1)::integer) + TIME '06:00') AT TIME ZONE 'Europe/Berlin')) * 1000)::bigint, to_char(DATE '1970-01-01' + h.reset_day::integer, 'YYYYMMDD')::integer FROM public.game_world_reset_history h WHERE h.world_id=encode($1,'hex')::uuid ORDER BY h.reset_epoch DESC LIMIT 1")
                 .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let Some((epoch, next_reset_at)) = reset else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
+            let Some((epoch, next_reset_at, reset_date)) = reset else { return Ok(Err(DailyRewardClaimError::ResetWindowUnavailable)); };
             let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let state = load_state(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes()).await?;
             let receipt = load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch).await?;
@@ -106,7 +108,7 @@ impl DurabilityRoot {
             let tokens: Option<i64> = sqlx::query_scalar("SELECT tokens FROM public.game_character_daily_reward_access WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let instant_access_tokens = u32::try_from(tokens.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?;
-            Ok(Ok(DailyRewardView { epoch, next_reset_at, instant_access_tokens, lane_day, streak, jokers, receipt, settled, history }))
+            Ok(Ok(DailyRewardView { epoch, next_reset_at, reset_date, instant_access_tokens, lane_day, streak, jokers, receipt, settled, history }))
         })).await?
     }
 
@@ -231,8 +233,8 @@ async fn apply<G: DailyRewardPremiumGate>(
         .current(tx, super::item_mint::uuid_text(&account)?)
         .await?;
     let joker = super::daily_reward_jokers::grant(tx, fence, request).await?;
-    let outcome = write_claim(tx, fence, request, joker.balance, premium).await?;
-    let DailyRewardClaimOutcome::Committed(receipt) = &outcome else {
+    let write = write_claim(tx, fence, request, joker.balance, premium).await?;
+    let DailyRewardWrite::Committed(ref receipt, reward) = write else {
         return Err(DailyRewardClaimError::InvalidRequest);
     };
     if remote {
@@ -246,8 +248,8 @@ async fn apply<G: DailyRewardPremiumGate>(
     sqlx::query("INSERT INTO public.game_daily_reward_commands VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid)")
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(request.transaction_id.as_slice()).execute(&mut ***tx).await?;
-    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium).await?;
-    Ok(outcome)
+    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, reward).await?;
+    Ok(write.into())
 }
 
 #[path = "daily_reward_delivery/returner.rs"]

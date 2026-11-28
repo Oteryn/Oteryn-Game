@@ -6,6 +6,8 @@ use super::*;
 mod effects;
 #[path = "daily_reward/picker.rs"]
 mod picker;
+#[path = "daily_reward/promotion.rs"]
+mod promotion;
 #[path = "daily_reward/returner.rs"]
 mod returner;
 
@@ -337,6 +339,16 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
                 [(1, crate::foundation::CommandStatus::Rejected, Vec::new())]
             );
         }
+        if mode == promotion::MODE {
+            let result =
+                promotion::claim_promoted_day_seven(&harness, &authority, &owner, &mut admitted)
+                    .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return result;
+        }
         epoch(&harness, 1).await?;
         if mode == 3 {
             epoch(&harness, 24).await?;
@@ -629,7 +641,7 @@ fn scenario_mode(premium: bool, mode: u8) -> TestResult {
             "daily_xp_boost_no_longer_extends_store_timer"
         );
         // New composed owners reload the saved grant; no in-memory boost flag is carried over.
-        effects::kills_before_and_at_expiry(&harness, &authority, premium).await?;
+        effects::kills_before_and_at_expiry(&harness, &authority, premium, None).await?;
         let state: (i16, i32) =
             sqlx::query_as("SELECT lane_day,streak FROM game_character_daily_rewards")
                 .fetch_one(&harness.pool)

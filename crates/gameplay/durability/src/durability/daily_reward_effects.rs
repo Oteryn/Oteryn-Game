@@ -4,6 +4,7 @@ use super::DurabilityError;
 use super::daily_reward_claim::DailyRewardClaimRequest;
 use super::item_mint_audit::Type2Transaction;
 use super::item_transfer::CurrentCharacterItemFence;
+use oteryn_gameplay_progression::daily_reward::DailyRewardSet;
 use sqlx::{Postgres, Row, Transaction};
 
 pub(super) async fn grant(
@@ -11,13 +12,11 @@ pub(super) async fn grant(
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     day: u8,
-    premium: bool,
+    reward: DailyRewardSet,
 ) -> Result<(), DurabilityError> {
     let character = fence.character_id.as_bytes().as_slice();
     let world = fence.runtime_scope.world_id();
     let claim = request.transaction_id.as_slice();
-    let reward = oteryn_gameplay_progression::daily_reward::reward_for_day(day, premium)
-        .ok_or(DurabilityError::InvalidStoredState)?;
     let temple = super::daily_reward_picked_items::mint(
         tx,
         fence,

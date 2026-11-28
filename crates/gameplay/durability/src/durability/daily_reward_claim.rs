@@ -20,7 +20,10 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::CommandRef;
 #[cfg(test)]
 use crate::foundation::RuntimeScopeRefV1;
-use oteryn_gameplay_progression::daily_reward::{advance_daily_reward, daily_reward_reset_day};
+use oteryn_gameplay_content::content::daily_reward::DailyRewardContent;
+use oteryn_gameplay_progression::daily_reward::{
+    DailyRewardSet, advance_daily_reward, daily_reward_reset_day,
+};
 use sqlx::Row;
 
 /// Frozen by the source owner before the first attempt. No client-
@@ -37,6 +40,20 @@ pub struct DailyRewardClaimRequest {
 pub enum DailyRewardClaimOutcome {
     Committed(DailyRewardReceipt),
     AlreadyClaimed(DailyRewardReceipt),
+}
+
+pub(super) enum DailyRewardWrite {
+    Committed(DailyRewardReceipt, DailyRewardSet),
+    AlreadyClaimed(DailyRewardReceipt),
+}
+
+impl From<DailyRewardWrite> for DailyRewardClaimOutcome {
+    fn from(write: DailyRewardWrite) -> Self {
+        match write {
+            DailyRewardWrite::Committed(receipt, _) => Self::Committed(receipt),
+            DailyRewardWrite::AlreadyClaimed(receipt) => Self::AlreadyClaimed(receipt),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -107,7 +124,9 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(Error::AuthorityRejected));
                     }
-                    let result = write_claim(&mut tx, fence, request, 0, false).await;
+                    let result = write_claim(&mut tx, fence, request, 0, false)
+                        .await
+                        .map(DailyRewardClaimOutcome::from);
                     if result.is_ok() {
                         commit_semantic_transaction(tx, deadline).await?;
                     }
@@ -124,7 +143,7 @@ pub(super) async fn write_claim(
     request: DailyRewardClaimRequest,
     jokers: u8,
     premium: bool,
-) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
+) -> Result<DailyRewardWrite, DailyRewardClaimError> {
     use DailyRewardClaimError as Error;
     let world_id = fence.runtime_scope.world_id();
     if let Some(receipt) = load_receipt(
@@ -139,13 +158,13 @@ pub(super) async fn write_claim(
             return Err(Error::BindingMismatch);
         }
         // No new receipt, projection update, or commit is needed for a refusal.
-        return Ok(DailyRewardClaimOutcome::AlreadyClaimed(receipt));
+        return Ok(DailyRewardWrite::AlreadyClaimed(receipt));
     }
     // Latest committed epoch, never wall-clock-derived. The World owner
     // will publish this history after its durable reset protocol commits.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:world-reset:' || (encode($1,'hex')::uuid)::text,0))")
                 .bind(world_id.as_bytes().as_slice()).execute(&mut **tx).await?;
-    let reset = sqlx::query("SELECT reset_epoch::text, reset_day, (local_time::date - DATE '1970-01-01')::bigint AS civil_day, floor(extract(epoch FROM local_time::time))::bigint AS local_seconds FROM (SELECT reset_epoch,reset_day,to_timestamp(reset_at_unix_ms/1000.0) AT TIME ZONE 'Europe/Berlin' AS local_time FROM public.game_world_reset_history WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch DESC LIMIT 1) h")
+    let reset = sqlx::query("SELECT reset_epoch::text, reset_day, to_char(DATE '1970-01-01' + reset_day::integer, 'YYYYMMDD')::integer AS reset_date, (local_time::date - DATE '1970-01-01')::bigint AS civil_day, floor(extract(epoch FROM local_time::time))::bigint AS local_seconds FROM (SELECT reset_epoch,reset_day,to_timestamp(reset_at_unix_ms/1000.0) AT TIME ZONE 'Europe/Berlin' AS local_time FROM public.game_world_reset_history WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch DESC LIMIT 1) h")
                 .bind(world_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(reset) = reset else {
         return Err(Error::ResetWindowUnavailable);
@@ -183,9 +202,10 @@ pub(super) async fn write_claim(
                 .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
                 .bind(i16::from(advance.next.lane_day)).bind(i32::try_from(advance.next.streak).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .bind(epoch.to_string()).bind(day).execute(&mut **tx).await?;
-    let reward =
-        oteryn_gameplay_progression::daily_reward::reward_for_day(receipt.lane_day, premium)
-            .ok_or(DurabilityError::InvalidStoredState)?;
+    let reset_date: i32 = reset.try_get("reset_date")?;
+    let reward = DailyRewardContent::catalogue()
+        .and_then(|content| content.reward_on_reset(receipt.lane_day, premium, reset_date))
+        .ok_or(DurabilityError::InvalidStoredState)?;
     let specification = serde_json::to_string(&[
         reward.cosmetic_tokens,
         reward.prey_wildcards,
@@ -200,7 +220,7 @@ pub(super) async fn write_claim(
                 .bind(epoch.to_string()).bind(day).bind(receipt.transaction_id.as_slice()).bind(receipt.request_binding.as_slice())
                 .bind(i16::from(receipt.lane_day)).bind(i32::try_from(receipt.streak_before).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i32::try_from(receipt.streak_after).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .bind(i16::from(receipt.jokers_spent)).bind(premium).bind(specification).execute(&mut **tx).await?;
-    Ok(DailyRewardClaimOutcome::Committed(receipt))
+    Ok(DailyRewardWrite::Committed(receipt, reward))
 }
 
 #[cfg(test)]
