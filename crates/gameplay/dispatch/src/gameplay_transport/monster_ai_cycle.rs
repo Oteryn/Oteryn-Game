@@ -805,6 +805,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ordinary.push(pair);
             }
         }
+        let mut logged_melee_refusal = false;
         for movement_retry in [false, true] {
             if movement_retry && runtime.has_pending_source_creature_deaths() {
                 continue;
@@ -1051,12 +1052,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
                     // landed attack starts the player's in-fight deadline. A replayed think returns its
                     // recorded dispatch without resolving a target again, so nothing runs twice.
+                    if let Err(error) | Ok(Dispatch::Bite(Err(error))) = dispatch
+                        && !logged_melee_refusal
+                    {
+                        super::operator_event(&format!(
+                            "monster melee refused creature={race_key} reason={error:?}"
+                        ));
+                        logged_melee_refusal = true;
+                    }
                     let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
                         continue;
                     };
                     let received_damage = match dispatch {
                         Dispatch::Bite(Ok(applied)) => {
-                            if applied.damage.applied > 0 {
+                            if let Some(damage) = std::num::NonZeroU32::new(applied.damage.applied)
+                            {
+                                if let Some(map) = self.bundle_map()
+                                    && let Ok(stamp) = runtime.issue_owner_work()
+                                    && let Some(cue) =
+                                        crate::map::facts::CreatureVisualCue::melee_damage(
+                                            &runtime, stamp, *actor, player, damage,
+                                        )
+                                {
+                                    map.facts.emit_creature_visual(&runtime, cue);
+                                }
                                 attack.kills().boss_damage_received(
                                     &runtime,
                                     *actor,

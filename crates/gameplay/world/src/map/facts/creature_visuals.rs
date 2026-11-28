@@ -17,6 +17,12 @@ pub enum CreatureVisualKind {
         to: TilePos,
         missile: u16,
     },
+    MeleeDamage {
+        position: TilePos,
+        attacker: ExactActorRef,
+        target: ExactActorRef,
+        applied: std::num::NonZeroU32,
+    },
 }
 
 /// Opaque, non-Clone capture. Moving it into the map outbox consumes that receipt.
@@ -135,6 +141,38 @@ impl CreatureVisualCue {
             CreatureVisualKind::Missile { from, to, missile },
         )
     }
+
+    pub fn melee_damage(
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        attacker: ExactActorRef,
+        target: ExactActorRef,
+        applied: std::num::NonZeroU32,
+    ) -> Option<Self> {
+        let target_position = runtime.read_actor_position(target).ok()?;
+        if target_position.context() != runtime.pinned_movement_context() {
+            return None;
+        }
+        let cell = target_position.position();
+        let position = TilePos {
+            x: cell.x.try_into().ok()?,
+            y: cell.y.try_into().ok()?,
+            floor: i8::try_from(-crate::movement::interest::tibia_floor(cell.floor)?).ok()?,
+        };
+        // Equipment reflection can kill the source as part of the same hit.
+        Self::capture_binding(
+            runtime,
+            stamp,
+            attacker,
+            CreatureVisualKind::MeleeDamage {
+                position,
+                attacker,
+                target,
+                applied,
+            },
+        )
+    }
+
     pub(super) fn current(&self, runtime: &ChannelRuntimeV1) -> bool {
         let pin = runtime.content_pin();
         runtime.owner_fence().is_ok_and(|fence| {

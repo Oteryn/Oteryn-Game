@@ -5,6 +5,52 @@ use oteryn_gameplay_durability::durability::native_world_read::qualified_combat_
 use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
 
 #[test]
+fn adjacent_rat_melee_publishes_exact_attacker_and_applied_damage_postgres() -> TestResult {
+    run_case(async |harness| {
+        prepare_current_session(harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) =
+            crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
+        let active = controller.active().ok_or("active generation")?;
+        let (deps, rat) = spread_dependencies(active, &pin)?;
+        let mut owner = deps.owner(harness, &authority);
+        owner.active_generation = Some(active);
+        owner.movement_cells = deps.room.movement_cells().into();
+        deps.initialize(&owner).await;
+        owner.clock_origin -= std::time::Duration::from_secs(10);
+        let session = deps.admitted.game_session_id;
+        let health = async |owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>| {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            states.get(&runtime, deps.actor, session)
+                .map(|state| state.vitals().health).ok_or("player health")
+        };
+        let before = health(&owner).await?;
+        let mut lost = 0;
+        for _ in 0..16 {
+            owner.drain_monster_melee().await;
+            lost = before - health(&owner).await?;
+            if lost > 0 {
+                break;
+            }
+            owner.clock_origin -= std::time::Duration::from_secs(2);
+        }
+        assert!((1..=8).contains(&lost), "the adjacent source Rat must reduce the player's HP");
+        let map = owner.bundle_map().ok_or("bundle map")?;
+        let visuals = map.facts.creature_visuals_since(0);
+        assert_eq!(visuals.len(), 1, "one committed Rat hit must publish one combat cue");
+        assert!(visuals.iter().any(|(_, event)| matches!(
+            event,
+            crate::map::facts::CreatureVisualKind::MeleeDamage { attacker, target, applied, .. }
+                if *attacker == rat && *target == deps.actor && applied.get() == lost
+        )), "the real Rat melee cycle must publish the exact attacker and committed HP loss");
+        Ok(())
+    })
+}
+
+#[test]
 fn source_owner_cycle_drives_monsters_without_connection_vitals() -> TestResult {
     run_case(async |harness| {
         prepare_current_session(harness).await?;
