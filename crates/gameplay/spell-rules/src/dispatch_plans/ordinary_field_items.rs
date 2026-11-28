@@ -34,7 +34,6 @@ pub fn select_source_field_id(
     };
     if player_owned && (no_pvp || world_no_pvp) {
         match pvp {
-            2118 => 21465,
             105 => 2134,
             2122 => 2135,
             other => other,
@@ -48,14 +47,14 @@ mod source_field_selection_tests {
     use super::*;
     #[test]
     fn source_field_ids_apply_safe_world_conversion_only_to_actual_player_owned_casters() {
-        for (source, safe) in [(2118, 21465), (2122, 2135), (105, 2134)] {
+        for (source, safe) in [(2118, 2118), (2122, 2135), (105, 2134)] {
             assert_eq!(select_source_field_id(source, false, true, true), source);
             assert_eq!(select_source_field_id(source, true, false, false), source);
             assert_eq!(select_source_field_id(source, true, true, false), safe);
             assert_eq!(select_source_field_id(source, true, false, true), safe);
         }
         assert_eq!(select_source_field_id(2123, true, false, false), 2118);
-        assert_eq!(select_source_field_id(2123, true, true, false), 21465);
+        assert_eq!(select_source_field_id(2123, true, true, false), 2118);
     }
 }
 
@@ -66,8 +65,8 @@ mod safe_field_tests {
     #[test]
     fn qualified_safe_context_keeps_source_conversion_and_decay_ids() {
         for (source, selected) in [
-            (2123, 21465),
-            (2118, 21465),
+            (2123, 2118),
+            (2118, 2118),
             (2121, 2134),
             (105, 2134),
             (2126, 2135),

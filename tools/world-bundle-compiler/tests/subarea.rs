@@ -52,8 +52,30 @@ fn subarea_real_masks_compile_deterministically_and_drop_inaccessible_tiles()
     let second = compile::compile(&make(&families), &Ground)?;
     assert_eq!(first.bytes, second.bytes);
     compile::equivalence(&make(&families), &Ground, &first.bytes)?;
+    // Read the serialized floors before the reader projects them into signed map keys.
+    let length = u32::from_le_bytes(first.bytes[8..12].try_into()?) as usize;
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&first.bytes[bundle::HEADER..bundle::HEADER + length])?;
+    let newhaven = manifest["subareas"]["areas"]
+        .as_array()
+        .and_then(|areas| areas.iter().find(|area| area["town_id"] == 33))
+        .ok_or("compiled Newhaven town")?;
+    assert_eq!(
+        newhaven["temple"],
+        serde_json::json!({"x": 32536, "y": 32514, "floor": 7}),
+        "the authored Newhaven temple's Global floor is preserved on disk"
+    );
+    assert_eq!(first.bytes[bundle::HEADER + length], 7);
     let read = bundle::read(&first.bytes)?;
     let table = &read.manifest.subareas;
+    assert_eq!(
+        table
+            .town(33)
+            .and_then(|area| area.temple)
+            .map(|at| at.floor),
+        Some(-7),
+        "the map index still projects the Global floor to its signed key"
+    );
     assert_eq!(table.areas.len(), 465);
     assert_eq!(table.masks.len(), 209);
     assert_eq!(

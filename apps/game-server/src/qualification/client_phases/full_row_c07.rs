@@ -7,11 +7,11 @@
 //!    tile. Require `ProtectionZone`, unchanged vitals, and unchanged rune count.
 //! 3. Walk to a reachable non-PZ two-tile corridor and send the same USE at its
 //!    adjacent tile. Require `Committed`, a pushed map delta containing field
-//!    item 21465, and the exact one-rune inventory debit.
+//!    item 2118, and the exact one-rune inventory debit.
 //! 4. Send STEP onto that safe field. Require movement and no health debit.
 //!    A damaging-field contact remains a separate required observation.
 //! 5. Wait on native liveness for the server-owned decay and require a pushed
-//!    map delta removing item 21465; step off and back on, requiring movement
+//!    map delta removing item 2118; step off and back on, requiring movement
 //!    but no further field-contact health loss.
 //! 6. Logout, perform a fresh admission, and require a different game session,
 //!    the retained position, and the remaining rune count. This re-checks the
@@ -23,7 +23,7 @@ use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 
 const RUNE_ID: u32 = 3188;
-const FIELD_ID: u32 = 21465;
+const FIELD_ID: u32 = 2118;
 const LEVEL: u32 = 15;
 const RUNE_COUNT: u64 = 2;
 const PREPARATION: character_prep::Seeded = character_prep::Seeded {
@@ -34,10 +34,10 @@ const PREPARATION: character_prep::Seeded = character_prep::Seeded {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     character_prep::declare_seeded("C07.full", "level-15-sorcerer,magic-level-1,two-fire-field-runes", PREPARATION.reason);
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(560), verdict::observe(journey(clients))).await;
     let result = match result {
         Ok(result) => result,
-        Err(_) => Err("step=journey observed=timeout-420s need=server-complete-field-lifecycle".into()),
+        Err(_) => Err("step=journey observed=timeout-560s need=server-complete-field-lifecycle".into()),
     };
     if let Err(error) = &result {
         evidence(&format!("C07_GAP {error}"));
@@ -177,10 +177,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || condition::ConditionStatus::decode(&after.payload).is_none_or(|status| !status.conditions.is_empty())
         || client.actor_vitals().is_none_or(|vitals| !safe_field_health(health_before, vitals.health))
     {
-        return Err("step=safe-field-contact observed=condition-or-vital-debit need=harmless-21465".into());
+        return Err("step=safe-field-contact observed=condition-or-vital-debit need=harmless-2118".into());
     }
     check("safe-field-contact-no-damage", client.last_server_sequence());
-    let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75)).await?;
+    // Regular Fire decays through 200 s, 148 s and 98 s stages.
+    let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(465)).await?;
     check("field-expiry", expired);
 
     let back = route(world, target_tile, |at| at == from).ok_or("step=post-expiry-step observed=no-return-route need=adjacent-route")?;
@@ -215,7 +216,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     check("fresh-admission", fresh.last_server_sequence());
     logout(&mut fresh).await?;
-    Err("step=field-contact-damage observed=harmless-21465-on-baseline-world need=separate-damaging-field-and-PvP-eligible-target".into())
+    Err("step=field-contact-damage observed=harmless-2118-on-baseline-world need=separate-damaging-field-and-PvP-eligible-target".into())
 }
 
 fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)> {
@@ -348,7 +349,7 @@ async fn observe_safe_contact(client: &mut DevClientSession, mut health: u32, at
                 && delta.server_sequence > step_sequence
             {
                 if !safe_field_health(health, delta.value.health) {
-                    return Err("step=safe-field-contact observed=health-debit need=harmless-21465".into());
+                    return Err("step=safe-field-contact observed=health-debit need=harmless-2118".into());
                 }
                 health = delta.value.health;
             }
@@ -362,7 +363,7 @@ async fn observe_safe_contact(client: &mut DevClientSession, mut health: u32, at
 async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
+    loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && (if present { tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) } else { !tile.more && tile.items.len() == 1 }) { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
