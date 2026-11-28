@@ -12,12 +12,18 @@ mod dark_trails;
 mod isle_of_evil;
 mod literal_contacts;
 mod questpc7_reward_bounds;
+mod regional_contacts;
+#[cfg(test)]
+mod regional_tests;
+mod source_dialogue;
+#[cfg(test)]
+mod source_dialogue_tests;
 mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
 use crate::greeting::{DEFAULT_TALK_RANGE, contains_words, words};
-use crate::greeting::{GreetingNpc, greeted_npc};
+use crate::greeting::{GreetingNpc, greeted_npc, matches_greeting};
 
 /// Words that start a conversation, until an NPC carries its own.
 const GREETINGS: [&str; 3] = ["hi", "hello", "hail"];
@@ -28,32 +34,49 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/ape-city.json"),
+    include_str!("../../../../content/quests/npc-callbacks/beginning.json"),
+    include_str!("../../../../content/quests/npc-callbacks/battle-mage-completions.json"),
+    include_str!("../../../../content/quests/npc-callbacks/warrior-completions.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
+    include_str!("../../../../content/quests/npc-callbacks/nomads-land.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/outfit-completions.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-quests.json"),
+    include_str!("../../../../content/quests/npc-callbacks/classic-missions.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
-    include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
     include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
-    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
     include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
+    include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
+    include_str!("../../../../content/quests/npc-callbacks/tibia-tales.json"),
 ];
 #[cfg(test)]
 mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/classic-quest-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qd-greetings.json"),
     include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/classic-mission-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/nomads-land-greetings.json"),
     include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
     include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/quest-contact-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/tibia-tales-greetings.json"),
 ];
 
 mod quest_merchant;
@@ -64,6 +87,8 @@ struct RewardMessages {
     greet: String,
     farewell: String,
     walkaway: String,
+    #[serde(default)]
+    greeting_words: Vec<String>,
 }
 
 fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
@@ -198,6 +223,15 @@ fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
         && keyword.links.is_empty()
 }
 
+/// A Crystal travel child and its effects on the current conversation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TravelDecline {
+    pub reply: Vec<String>,
+    pub ungreet: bool,
+    pub reset_topic: bool,
+    fallback: bool,
+}
+
 /// What one NPC says, from its generated catalogue replies.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTalkEntry {
@@ -205,15 +239,21 @@ pub struct NpcTalkEntry {
     bank: bool,
     admitted_dialogue: bool,
     dialogue_keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
+    source_keyword_count: usize,
     greetings: Vec<String>,
+    farewells: Vec<String>,
     greeting_reply: String,
+    greeting_continuation: Vec<String>,
     farewell_reply: String,
+    focus_greet: Option<source_dialogue::FocusReply>,
+    focus_farewell: Option<source_dialogue::FocusReply>,
     source_name_templates: bool,
     source_walkaway: Option<String>,
     /// The service lines, joined; `None` when the NPC has no service.
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
     offers: Vec<ProjectV2ServiceOffer>,
+    travel_declines: HashMap<String, TravelDecline>,
     pub travel_routes: Vec<crate::content::npc_catalogue::travel::TravelRoute>,
     pub premium_services: Vec<crate::content::npc_catalogue::premium_services::PremiumNpcService>,
 }
@@ -223,20 +263,37 @@ impl NpcTalkEntry {
         self.bank
     }
 
+    /// A pending route's matching decline. Crystal keyword children match
+    /// substrings, and a fallback child gives the confirmation keyword priority.
+    pub fn travel_decline(&self, route: &str, lowercase: &str) -> Option<&TravelDecline> {
+        self.travel_declines.get(route).filter(|decline| {
+            if decline.fallback {
+                !lowercase.contains("yes")
+            } else {
+                lowercase.contains("no")
+            }
+        })
+    }
+
     /// The admitted offers the trade window projects.
     pub fn offers(&self) -> &[ProjectV2ServiceOffer] {
         &self.offers
     }
 
+    /// Whether the message contains a greeting authored for this NPC.
+    pub fn matches_greeting(&self, text: &str) -> bool {
+        matches_greeting(&words(text), &self.greetings)
+    }
+
     /// Whether a focus message or an admitted dialogue keyword takes precedence over a default callback.
     pub fn matches_focus_or_dialogue(&self, text: &str) -> bool {
         let said = words(text);
-        self.greetings
-            .iter()
-            .any(|greeting| contains_words(&said, &words(greeting)))
-            || says_any(&said, &FAREWELLS)
+        matches_greeting(&said, &self.greetings)
+            || self.is_farewell(&said)
+            || focus_reply(self.focus_greet.as_ref(), &said, false).is_some()
+            || focus_reply(self.focus_farewell.as_ref(), &said, false).is_some()
             || says_any(&said, &TRADE_WORDS)
-            || self.dialogue_keyword(&said).is_some()
+            || self.dialogue_keyword(text, &said, false).is_some()
     }
 
     /// Whether the focused NPC's authored dialogue consumes the message before its shop: an
@@ -244,24 +301,65 @@ impl NpcTalkEntry {
     /// `trade` or `ariki` keywords, which reply and open the window).
     pub fn dialogue_keyword_preempts_trade(&self, npc_key: &str, text: &str) -> bool {
         let said = words(text);
-        self.dialogue_keywords.iter().any(|keyword| {
-            let trigger: Vec<_> = keyword
-                .triggers
-                .iter()
-                .flat_map(|part| words(part))
-                .collect();
-            dialogue_triggers_match(&said, &keyword.triggers)
-                && !asks_to_trade_for(npc_key, &trigger.join(" "))
-        })
+        let lower = text.to_ascii_lowercase();
+        self.dialogue_keywords
+            .iter()
+            .enumerate()
+            .any(|(index, keyword)| {
+                let trigger: Vec<_> = keyword
+                    .triggers
+                    .iter()
+                    .flat_map(|part| words(part))
+                    .collect();
+                self.keyword_matches(index, &lower, &said, &keyword.triggers)
+                    && !asks_to_trade_for(npc_key, &trigger.join(" "))
+            })
+    }
+
+    fn is_farewell(&self, said: &[String]) -> bool {
+        self.farewells
+            .iter()
+            .any(|word| contains_words(said, &words(word)))
+    }
+
+    fn keyword_matches(
+        &self,
+        index: usize,
+        lower: &str,
+        said: &[String],
+        triggers: &[String],
+    ) -> bool {
+        if index >= self.source_keyword_count {
+            return dialogue_triggers_match(said, triggers);
+        }
+        // Crystal compares the first position of each trigger in the full utterance.
+        let mut previous = 0;
+        !triggers.is_empty()
+            && triggers.iter().all(|trigger| {
+                let Some(found) = lower.find(trigger.as_str()) else {
+                    return false;
+                };
+                let ordered = found >= previous;
+                previous = found;
+                ordered
+            })
     }
 
     fn dialogue_keyword(
         &self,
+        text: &str,
         said: &[String],
+        require_whole_words: bool,
     ) -> Option<&crate::content::ProjectV2DialogueKeyword> {
+        let lower = text.to_ascii_lowercase();
         self.dialogue_keywords
             .iter()
-            .find(|keyword| dialogue_triggers_match(said, &keyword.triggers))
+            .enumerate()
+            .find(|(index, keyword)| {
+                self.keyword_matches(*index, &lower, said, &keyword.triggers)
+                    && (!require_whole_words || dialogue_triggers_match(said, &keyword.triggers))
+            })
+            .map(|(_, keyword)| keyword)
     }
 
     /// The line that ends a conversation.
@@ -293,14 +391,20 @@ impl NpcTalkEntry {
             bank: false,
             admitted_dialogue: false,
             dialogue_keywords: Vec::new(),
+            source_keyword_count: 0,
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+            farewells: FAREWELLS.iter().map(|word| (*word).to_owned()).collect(),
+            greeting_continuation: Vec::new(),
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
+            focus_greet: None,
+            focus_farewell: None,
             source_name_templates: false,
             source_walkaway: None,
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
+            travel_declines: HashMap::new(),
             travel_routes: Vec::new(),
         }
     }
@@ -441,14 +545,26 @@ impl NpcTalkBook {
                 format_args!("{}\0{}", REWARD_CALLBACKS.join("\0"), source),
                 REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
-                crate::content::npc_catalogue::travel::revision_material(),
+                format_args!(
+                    "{}\0{}",
+                    crate::content::npc_catalogue::travel::revision_material(),
+                    crate::content::npc_catalogue::travel::CRYSTAL_HELPERS,
+                ),
                 YASIR_SOURCE,
                 YASIR_GREET,
                 YASIR_FAREWELL,
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
-                literal_contacts::REVISION_MATERIAL,
+                format_args!(
+                    "{}\0{}\0{}\0{}\0{}\0{}",
+                    literal_contacts::REVISION_MATERIAL,
+                    source_dialogue::SOURCE,
+                    source_dialogue::TRAVEL_DECLINES,
+                    literal_contacts::REGIONAL_SOURCE,
+                    regional_contacts::DATA,
+                    crate::content::npc_catalogue::subtype_trades::REGIONAL_DATA,
+                ),
             )),
             ..Self::default()
         };
@@ -456,6 +572,7 @@ impl NpcTalkBook {
         for (reference, npc) in model.npcs() {
             book.display_names
                 .insert(reference.key.clone(), npc.name.clone());
+            let source_dialogue = source_dialogue::catalogue().get(&reference.key);
             let dark_messages = dark_trails::messages(&reference.key);
             let isle_messages = isle_of_evil::messages(&reference.key);
             let reward_messages = reward_messages(&reference.key);
@@ -495,13 +612,80 @@ impl NpcTalkBook {
                     || route.quest_gate.is_none()
             })
             .collect::<Vec<_>>();
+            let travel_declines = travel_routes
+                .iter()
+                .filter_map(|route| {
+                    let key = &route.route.key;
+                    let decline = if let Some(source) =
+                        source_dialogue::travel_decline(&reference.key, key)
+                    {
+                        source
+                    } else {
+                        let child = npc.bank_dialogue
+                            .as_ref()?
+                            .keywords
+                            .iter()
+                            .filter(|keyword| {
+                                keyword.key == *key
+                                    || matches!(keyword.triggers.as_slice(), [word] if route.matches_keyword(word))
+                            })
+                            .find_map(|keyword| {
+                                keyword
+                                    .children
+                                    .iter()
+                                    .find(|child| child.triggers == ["no"])
+                                    .or_else(|| keyword.children.iter().find(|child| child.fallback))
+                            })?;
+                        TravelDecline {
+                            reply: child.reply.clone(),
+                            ungreet: child.ungreet,
+                            reset_topic: false,
+                            fallback: child.fallback,
+                        }
+                    };
+                    Some((key.clone(), decline))
+                })
+                .collect();
             let bank = npc
                 .services
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let regional_dialogue = npc
+                .bank_dialogue
+                .as_ref()
+                .filter(|_| literal_contacts::regional(&reference.key));
+            let regional = regional_contacts::get(&reference.key);
+            let regional_keywords = || {
+                regional_dialogue
+                    .into_iter()
+                    .flat_map(|dialogue| &dialogue.keywords)
+                    .filter(|keyword| {
+                        literal_keyword(keyword) && !keyword.reply[0].contains("|TIME|")
+                    })
+            };
+            let mut merged_regional_keywords = false;
+            let literal_shop_focus = matches!(
+                reference.key.as_str(),
+                "oteryn:npc.alexander"
+                    | "oteryn:npc.asima"
+                    | "oteryn:npc.aurelia"
+                    | "oteryn:npc.billy"
+                    | "oteryn:npc.carlos"
+                    | "oteryn:npc.dixi"
+                    | "oteryn:npc.frodo"
+                    | "oteryn:npc.hyacinth"
+                    | "oteryn:npc.lily"
+                    | MORDECAI
+                    | "oteryn:npc.obi"
+                    | "oteryn:npc.sinatuki"
+                    | "oteryn:npc.willie"
+                    | "oteryn:npc.zethra"
+            );
             let mut journal_fallback = false;
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
+            let mut regional_source = false;
+            let mut regional_walkaway = None;
+            let messages = if native_quest
                 && matches!(
                     reference.key.as_str(),
                     "oteryn:npc.strange_pipe"
@@ -645,12 +829,9 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
-            } else if matches!(
-                reference.key.as_str(),
-                "oteryn:npc.frodo" | MORDECAI | "oteryn:npc.sinatuki"
-            ) {
-                // Use the pinned focus messages where supplied, with Crystal's defaults
-                // for Sinatuki. Only literal, single-line keywords are supported here.
+            } else if literal_shop_focus {
+                // Use source focus messages and Crystal's handler defaults.
+                // Only literal, single-line keywords are supported here.
                 let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
@@ -716,6 +897,38 @@ impl NpcTalkBook {
                     "Si, jema ze harun. <waves>".into(),
                     None,
                     keywords,
+                )
+            } else if let Some(contact) = regional.filter(|_| !bank) {
+                merged_regional_keywords = true;
+                (
+                    contact
+                        .greet
+                        .as_deref()
+                        .unwrap_or(regional_contacts::GREET)
+                        .into(),
+                    contact
+                        .farewell
+                        .as_deref()
+                        .unwrap_or(regional_contacts::FAREWELL)
+                        .into(),
+                    None,
+                    contact.keywords.clone(),
+                )
+            } else if let Some(messages) = npc
+                .bank_dialogue
+                .as_ref()
+                .and_then(|dialogue| literal_contacts::regional_messages(&reference.key, dialogue))
+            {
+                regional_source = true;
+                merged_regional_keywords = !bank;
+                regional_walkaway = messages.walkaway;
+                let passage = (!travel_routes.is_empty())
+                    .then(|| "Ask me for a passage to your destination.".into());
+                (
+                    messages.greet,
+                    messages.farewell,
+                    passage,
+                    messages.keywords,
                 )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
@@ -809,6 +1022,13 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if native_quest && reference.key == "oteryn:npc.kevin" {
+                (
+                    YASIR_GREET.into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else if native_quest && npc.dialogue.is_some() {
                 // Conditional native greeting rules own the text. An absent literal
                 // greeting still admits focus so that their reply or dismissal runs.
@@ -835,18 +1055,79 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
+            } else if let Some(dialogue) = regional_dialogue {
+                let focus_line = |lines: &[String], default: &str| match lines {
+                    [line] => line.clone(),
+                    _ => default.into(),
+                };
+                (
+                    focus_line(&dialogue.greet, "Greetings, |PLAYERNAME|."),
+                    focus_line(&dialogue.farewell, "Good bye, |PLAYERNAME|."),
+                    None,
+                    regional_keywords().cloned().collect(),
+                )
+            } else if source_dialogue.is_some() {
+                (
+                    "Greetings, |PLAYERNAME|.".into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
+            let (mut greeting_reply, mut farewell_reply, topic_reply, mut dialogue_keywords) =
+                messages;
+            if merged_regional_keywords
+                && npc.generated_replies.is_none()
+                && travel_routes.is_empty()
+            {
+                for keyword in regional_keywords() {
+                    if !dialogue_keywords
+                        .iter()
+                        .any(|existing| existing.triggers == keyword.triggers)
+                    {
+                        dialogue_keywords.push(keyword.clone());
+                    }
+                }
+            }
+            let mut greeting_continuation = Vec::new();
+            if let Some(source) = source_dialogue {
+                // The dispatcher can replace a greeting using the player's native
+                // quest state. Keep its existing fallback for native quest speakers.
+                if !native_quest
+                    && crate::quest_greetings::get(&reference.key).is_none()
+                    && reward_messages.is_none()
+                    && let Some((line, remaining)) =
+                        source.greet.as_deref().and_then(<[_]>::split_first)
+                {
+                    greeting_reply.clone_from(line);
+                    greeting_continuation = remaining.to_vec();
+                }
+                if let Some(line) = &source.farewell {
+                    farewell_reply.clone_from(line);
+                }
+                // Source order determines precedence. Published non-overlapping
+                // keywords retain their existing fallback behaviour.
+                let mut keywords = source.keywords.clone();
+                keywords.extend(dialogue_keywords.into_iter().filter(|keyword| {
+                    !source
+                        .keywords
+                        .iter()
+                        .any(|source| source.triggers == keyword.triggers)
+                }));
+                dialogue_keywords = keywords;
+            }
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
                     admitted_dialogue: !journal_fallback
                         && !matches!(reference.key.as_str(), YASIR | OROCKLE)
-                        && npc.dialogue.is_some()
+                        && (npc.dialogue.is_some() || regional.is_some())
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
+                    travel_declines,
                     travel_routes,
                     premium_services,
                     bank: npc
@@ -854,10 +1135,51 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: source_dialogue
+                        .and_then(|source| source.greetings.clone())
+                        .or_else(|| {
+                            reward_messages
+                                .filter(|messages| !messages.greeting_words.is_empty())
+                                .map(|messages| messages.greeting_words.clone())
+                        })
+                        .unwrap_or_else(|| {
+                            match reference.key.as_str() {
+                                "oteryn:npc.alesar" => &["hi", "hello", "hail", "djanni'hah"][..],
+                                "oteryn:npc.baa_leal"
+                                | "oteryn:npc.bo_ques"
+                                | "oteryn:npc.gabel"
+                                | "oteryn:npc.malor"
+                                | "oteryn:npc.ubaid"
+                                | "oteryn:npc.umar" => &["djanni'hah"][..],
+                                "oteryn:npc.maryza" => &["hi maryza"],
+                                "oteryn:npc.rata_mari" => &["piedpiper", "hi", "hello", "hail"],
+                                _ => &GREETINGS[..],
+                            }
+                            .iter()
+                            .map(|word| (*word).to_owned())
+                            .chain(
+                                regional
+                                    .into_iter()
+                                    .flat_map(|contact| contact.greet_aliases.iter().cloned()),
+                            )
+                            .collect()
+                        }),
+                    farewells: source_dialogue
+                        .and_then(|source| source.farewells.clone())
+                        .unwrap_or_else(|| {
+                            FAREWELLS.iter().map(|word| (*word).to_owned()).collect()
+                        }),
                     greeting_reply,
+                    greeting_continuation,
                     farewell_reply,
-                    source_name_templates: bank
+                    focus_greet: source_dialogue.and_then(|source| source.focus_greet.clone()),
+                    focus_farewell: source_dialogue
+                        .and_then(|source| source.focus_farewell.clone()),
+                    source_name_templates: source_dialogue.is_some()
+                        || bank
+                        || regional_dialogue.is_some()
+                        || regional.is_some()
+                        || regional_source
                         || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
@@ -867,29 +1189,47 @@ impl NpcTalkBook {
                         || reward_callback_npc(&reference.key)
                         || matches!(
                             reference.key.as_str(),
-                            "oteryn:npc.al_dee"
-                                | "oteryn:npc.frodo"
-                                | MORDECAI
-                                | "oteryn:npc.seymour"
-                                | "oteryn:npc.sinatuki"
-                                | "oteryn:npc.uzgod"
+                            "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
                         )
+                        || literal_shop_focus
                         || quest_merchant::contains(&reference.key)
                         || native_npcs.contains(&reference.key.as_str())
                         || journal_fallback,
-                    source_walkaway: if dark_messages.is_some() {
+                    source_walkaway: if let Some(line) =
+                        source_dialogue.and_then(|source| source.walkaway.clone())
+                    {
+                        Some(line)
+                    } else if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else if reference.key == MORDECAI {
                         npc.bank_dialogue
                             .as_ref()
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
                     } else {
-                        isle_messages
-                            .map(|messages| messages.walkaway)
+                        regional_walkaway
+                            .or_else(|| isle_messages.map(|messages| messages.walkaway))
                             .or_else(|| reward_messages.map(|messages| messages.walkaway.clone()))
+                            .or_else(|| {
+                                regional_dialogue.map(|dialogue| {
+                                    match dialogue.walkaway.as_slice() {
+                                        [line] => line.clone(),
+                                        _ => "Good bye.".into(),
+                                    }
+                                })
+                            })
+                            .or_else(|| {
+                                regional.map(|contact| {
+                                    contact
+                                        .walkaway
+                                        .as_deref()
+                                        .unwrap_or(regional_contacts::WALKAWAY)
+                                        .into()
+                                })
+                            })
                     },
                     topic_reply,
                     dialogue_keywords,
+                    source_keyword_count: source_dialogue.map_or(0, |source| source.keywords.len()),
                     offers: npc
                         .services
                         .iter()
@@ -978,6 +1318,15 @@ pub struct TalkNpc<'a, K> {
 pub struct NpcReply<K> {
     pub id: K,
     pub text: String,
+    pub continuation: Vec<String>,
+}
+
+impl<K> NpcReply<K> {
+    pub fn into_lines(self) -> impl Iterator<Item = String> {
+        std::iter::once(self.text)
+            .chain(self.continuation)
+            .filter(|line| !line.is_empty())
+    }
 }
 
 /// Words that open the trade window (Canary modules.lua `FOCUS_TRADE_MESSAGE`).
@@ -990,7 +1339,13 @@ pub fn asks_to_trade(text: &str) -> bool {
 
 /// Source-specific shop keyword; ordinary merchants retain the standard trade words.
 pub fn asks_to_trade_for(npc_key: &str, text: &str) -> bool {
-    asks_to_trade(text) || (npc_key == YASIR && says_any(&words(text), &["ariki"]))
+    let source_keyword = match npc_key {
+        YASIR => "ariki",
+        crate::content::npc_catalogue::quest_shops::ALBINIUS => "buy",
+        _ => return asks_to_trade(text),
+    };
+    let said = words(text);
+    says_any(&said, &TRADE_WORDS) || says_any(&said, &[source_keyword])
 }
 
 fn says_any(said: &[String], list: &[&str]) -> bool {
@@ -1009,6 +1364,17 @@ pub fn talk<K: Copy + PartialEq>(
     npcs: &[TalkNpc<'_, K>],
     engaged: &mut Option<K>,
 ) -> Option<NpcReply<K>> {
+    talk_with_speaker(speaker, text, npcs, engaged, false)
+}
+
+/// Applies the same conversation rules with the admitted speaker's creation sex.
+pub fn talk_with_speaker<K: Copy + PartialEq>(
+    speaker: ChatPosition,
+    text: &str,
+    npcs: &[TalkNpc<'_, K>],
+    engaged: &mut Option<K>,
+    female: bool,
+) -> Option<NpcReply<K>> {
     let said = words(text);
     if let Some(current) = *engaged {
         let here = npcs.iter().find(|npc| {
@@ -1019,19 +1385,26 @@ pub fn talk<K: Copy + PartialEq>(
         });
         let Some(npc) = here else {
             *engaged = None;
-            return start(speaker, text, npcs, engaged);
+            return start(speaker, text, &said, npcs, engaged, female);
         };
-        if let Some(keyword) = npc.entry.dialogue_keyword(&said) {
-            return Some(NpcReply {
-                id: npc.id,
-                text: keyword.reply[0].clone(),
-            });
-        }
-        if says_any(&said, &FAREWELLS) {
+        let generic_farewell = npc.entry.is_farewell(&said);
+        // Require a whole-word topic when the message also matches a generic farewell.
+        let keyword = npc.entry.dialogue_keyword(text, &said, generic_farewell);
+        let farewell = focus_reply(npc.entry.focus_farewell.as_ref(), &said, female)
+            .or_else(|| (generic_farewell && keyword.is_none()).then_some(npc.entry.farewell()));
+        if let Some(farewell) = farewell {
             *engaged = None;
             return Some(NpcReply {
                 id: npc.id,
-                text: npc.entry.farewell_reply.clone(),
+                text: farewell.to_owned(),
+                continuation: Vec::new(),
+            });
+        }
+        if let Some(keyword) = keyword {
+            return Some(NpcReply {
+                id: npc.id,
+                text: keyword.reply[0].clone(),
+                continuation: keyword.reply[1..].to_vec(),
             });
         }
         if says_any(&said, &TOPICS) && !npc.entry.admitted_dialogue {
@@ -1042,37 +1415,72 @@ pub fn talk<K: Copy + PartialEq>(
             return Some(NpcReply {
                 id: npc.id,
                 text: line,
+                continuation: Vec::new(),
             });
         }
         // NPC-REGREET-1 (Canary npc_handler.lua `greet`): the NPC already talking to the speaker
         // does not greet it again; a greeting that reaches another NPC still starts there.
-        return start(speaker, text, npcs, engaged).filter(|reply| reply.id != current);
+        return start(speaker, text, &said, npcs, engaged, female)
+            .filter(|reply| reply.id != current);
     }
-    start(speaker, text, npcs, engaged)
+    start(speaker, text, &said, npcs, engaged, female)
+}
+
+fn focus_reply<'a>(
+    variant: Option<&'a source_dialogue::FocusReply>,
+    said: &[String],
+    female: bool,
+) -> Option<&'a str> {
+    let variant = variant?;
+    ((!variant.female_only || female)
+        && variant
+            .triggers
+            .iter()
+            .any(|trigger| contains_words(said, &words(trigger))))
+    .then_some(variant.reply.as_str())
 }
 
 fn start<K: Copy + PartialEq>(
     speaker: ChatPosition,
     text: &str,
+    said: &[String],
     npcs: &[TalkNpc<'_, K>],
     engaged: &mut Option<K>,
+    female: bool,
 ) -> Option<NpcReply<K>> {
-    let greeting: Vec<GreetingNpc<'_>> = npcs
+    let greeting: Vec<_> = npcs
         .iter()
         .enumerate()
-        .map(|(index, npc)| GreetingNpc {
-            actor_id: index as u64,
-            position: npc.position,
-            greetings: &npc.entry.greetings,
-            talk_range: DEFAULT_TALK_RANGE,
+        .flat_map(|(index, npc)| {
+            let candidate = |greetings| GreetingNpc {
+                actor_id: index as u64,
+                position: npc.position,
+                greetings,
+                talk_range: DEFAULT_TALK_RANGE,
+            };
+            let alternate = npc
+                .entry
+                .focus_greet
+                .as_ref()
+                .filter(|variant| !variant.female_only || female)
+                .map(|variant| candidate(variant.triggers.as_slice()));
+            std::iter::once(candidate(npc.entry.greetings.as_slice())).chain(alternate)
         })
         .collect();
     let index = usize::try_from(greeted_npc(speaker, text, &greeting)?).ok()?;
     let npc = npcs.get(index)?;
     *engaged = Some(npc.id);
+    if let Some(reply) = focus_reply(npc.entry.focus_greet.as_ref(), said, female) {
+        return Some(NpcReply {
+            id: npc.id,
+            text: reply.to_owned(),
+            continuation: Vec::new(),
+        });
+    }
     Some(NpcReply {
         id: npc.id,
         text: npc.entry.greeting_reply.clone(),
+        continuation: npc.entry.greeting_continuation.clone(),
     })
 }
 
@@ -1139,10 +1547,7 @@ mod tests {
                 .get(&key)
                 .ok_or_else(|| format!("missing reward conversation {key}"))?;
             assert!(!entry.greeting_reply.is_empty());
-            assert!(
-                entry.dialogue_keywords.is_empty(),
-                "no scripted reward branch opens through talk rules"
-            );
+            source_dialogue_tests::assert_reward_lore(name, entry);
         }
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
@@ -1175,10 +1580,7 @@ mod tests {
                 .get(&key)
                 .ok_or_else(|| format!("missing reward conversation {key}"))?;
             assert!(!entry.greeting_reply.is_empty());
-            assert!(
-                entry.dialogue_keywords.is_empty(),
-                "no scripted reward branch opens through talk rules"
-            );
+            source_dialogue_tests::assert_reward_lore(name, entry);
         }
         assert!(
             book.get("oteryn:npc.zoltan")
@@ -1271,7 +1673,7 @@ mod tests {
         let sam = book
             .get("oteryn:npc.sam")
             .ok_or("qualified Sam reward NPC")?;
-        assert!(sam.dialogue_keywords.is_empty());
+        source_dialogue_tests::assert_reward_lore("sam", sam);
         assert!(
             model
                 .npcs()
@@ -1389,7 +1791,7 @@ mod tests {
         let sam = book
             .get("oteryn:npc.sam")
             .ok_or("qualified Sam reward NPC")?;
-        assert!(sam.dialogue_keywords.is_empty());
+        source_dialogue_tests::assert_reward_lore("sam", sam);
         assert!(
             model
                 .npcs()
@@ -1436,6 +1838,210 @@ mod tests {
         assert!(!asks_to_trade("ariki"));
         assert!(asks_to_trade_for("oteryn:npc.sam", "trade"));
         assert!(!asks_to_trade_for(YASIR, "marikina"));
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_trade_prices_and_variants_reach_the_shop() -> Result<(), String> {
+        #[derive(serde::Deserialize)]
+        struct Source {
+            shops: Vec<Shop>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Shop {
+            npc: String,
+            offers: Vec<Offer>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Offer {
+            item: u32,
+            direction: crate::content::ProjectV2ServiceOfferDirection,
+            unit_price: u64,
+            sub_type: Option<u16>,
+        }
+        let source: Source = serde_json::from_str(include_str!(
+            "../../../../content/services/trade/crystal-npc-trade.authoring.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let mut missing = Vec::new();
+        for shop in source.shops {
+            let npc = format!("oteryn:npc.{}", shop.npc);
+            for expected in shop.offers {
+                let item = format!("oteryn:item.tibia.i{}", expected.item);
+                if !book.get(&npc).is_some_and(|entry| {
+                    entry.offers().iter().any(|offer| {
+                        offer.item.key == item
+                            && offer.direction == expected.direction
+                            && offer.unit_price == expected.unit_price
+                            && offer.sub_type == expected.sub_type
+                    })
+                }) {
+                    missing.push(format!(
+                        "{npc}/{item}/{:?}/{}",
+                        expected.direction, expected.unit_price
+                    ));
+                }
+            }
+        }
+        let cael = book
+            .get("oteryn:npc.cael")
+            .ok_or("Cael has no focus entry")?;
+        use crate::content::npc_catalogue::quest_shops;
+        let shops = quest_shops::shops()?;
+        for (item, price, tome_count) in [
+            (2965, 5000, 6),
+            (2966, 1000, 6),
+            (10216, 2500, 11),
+            (10288, 5000, 12),
+        ] {
+            let item = format!("oteryn:item.tibia.i{item}");
+            let Some(offer) = cael
+                .offers()
+                .iter()
+                .find(|offer| offer.item.key == item && offer.unit_price == price)
+            else {
+                missing.push(format!("Cael/{item}/{price}"));
+                continue;
+            };
+            let guarded = quest_shops::required(
+                shops,
+                "oteryn:npc.cael",
+                &offer.item,
+                offer.direction,
+                price,
+                1,
+            )?
+            .ok_or("Cael's offer lacks a tome requirement")?;
+            assert!(!quest_shops::eligible(guarded, |_| None));
+            assert!(!quest_shops::eligible(guarded, |_| Some(tome_count - 1)));
+            assert!(quest_shops::eligible(guarded, |requirement| {
+                assert!(requirement.track.ends_with("/tomeof_knowledge"));
+                Some(tome_count)
+            }));
+        }
+        assert!(missing.is_empty(), "{missing:?}");
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_npc_services_reach_production_talk_book() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let mut missing = Vec::new();
+        for stem in ["adrian", "flavius"] {
+            let key = format!("oteryn:npc.{stem}");
+            if !book.get(&key).is_some_and(NpcTalkEntry::bank) {
+                missing.push(key);
+            }
+        }
+        for stem in [
+            "alexander",
+            "asima",
+            "aurelia",
+            "billy",
+            "carlos",
+            "dixi",
+            "hyacinth",
+            "lily",
+            "obi",
+            "willie",
+            "zethra",
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            if !book
+                .get(&key)
+                .is_some_and(|entry| !entry.offers().is_empty())
+            {
+                missing.push(key);
+            }
+        }
+        for (stem, keyword, fare, premium, arrival, gate) in [
+            ("captain_jack", "tibia", 0, false, (32204, 31756, 6), None),
+            ("eremo", "cormaya", 0, false, (33288, 31956, 6), None),
+            (
+                "ferryman_kamil",
+                "meluna",
+                0,
+                false,
+                (32088, 32470, 7),
+                None,
+            ),
+            (
+                "ferryman_kamil_meluna",
+                "fibula",
+                0,
+                false,
+                (32153, 32457, 7),
+                None,
+            ),
+            (
+                "harlow_vengoth",
+                "yalahar",
+                0,
+                false,
+                (32837, 31366, 7),
+                None,
+            ),
+            ("hawkhurst", "passage", 400, false, (33710, 32602, 6), None),
+            (
+                "hawkhurst_ingol",
+                "passage",
+                400,
+                false,
+                (33356, 31983, 7),
+                None,
+            ),
+            ("kendra", "thais", 180, true, (32259, 32262, 7), None),
+            ("tonar", "passage", 0, false, (33070, 32916, 7), None),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let route = book.get(&key).and_then(|entry| {
+                entry
+                    .travel_routes
+                    .iter()
+                    .find(|route| route.keyword == keyword)
+            });
+            if let Some(binding) = route {
+                assert!(!binding.held, "{key}/{keyword}");
+                let route = &binding.route;
+                assert_eq!(
+                    (route.price, route.premium, binding.quest_gate.as_deref()),
+                    (fare, premium, gate),
+                    "{key}"
+                );
+                assert_eq!(
+                    (
+                        route.destination.x,
+                        route.destination.y,
+                        route.destination.floor
+                    ),
+                    arrival,
+                    "{key}"
+                );
+                assert_eq!(binding.postman, matches!(stem, "kendra" | "tonar"), "{key}");
+            } else {
+                missing.push(format!("{key}/{keyword}"));
+            }
+        }
+        assert!(missing.is_empty(), "{missing:?}");
         Ok(())
     }
 

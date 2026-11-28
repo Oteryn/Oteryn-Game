@@ -1,4 +1,5 @@
 use super::*;
+use crate::durability::db::commit_semantic_read;
 
 pub(super) async fn publication(
     tx: &mut Transaction<'_, Postgres>,
@@ -149,7 +150,7 @@ impl DurabilityRoot {
                     }
                     lock_world(&mut tx, &fence).await?;
                     let view = list_view(&mut tx, &fence).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(view))
                 })
             })
@@ -183,7 +184,7 @@ impl DurabilityRoot {
                     lock_world(&mut tx, &fence).await?;
                     let view = list_view(&mut tx, &fence).await?;
                     let (members, active) = members(&mut tx, &fence, &probe).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(MemberView {
                         view,
                         members,
@@ -225,7 +226,7 @@ impl DurabilityRoot {
             }
             let callback=callback.take().ok_or(DurabilityError::Unavailable)?;
             let result=callback(allowed);
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(result)
         })).await
     }

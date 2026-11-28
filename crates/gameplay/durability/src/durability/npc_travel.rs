@@ -10,6 +10,7 @@
     reason = "Private accepted travel component; production owner integration remains a CP slot"
 )]
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, uuid_text};
 use super::character_last_position::{
     FinalLastPosition, LastPositionCell, LastPositionKey, LastPositionWrite, upsert_last_position,
@@ -120,7 +121,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let result = read_fenced(&mut tx, &recovery, &node, fence).await;
                     if result.is_ok() {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                     }
                     Ok(result)
                 })

@@ -860,7 +860,8 @@
     "break_item": false,
     "failures": [],
     "success_text": "You have assembled the wind-up loco.",
-    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:48"
+    "achievement_key": "oteryn:achievement/engine_driver",
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/mounts/mounts.lua:70"
   },
   {
     "item_key": "oteryn:item.tibia.i39548",

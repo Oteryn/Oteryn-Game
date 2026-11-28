@@ -126,6 +126,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let expected = runtime.read_actor_position(actor).ok()?;
         let blocking = crate::map::floor::BundleDoors(&map.facts);
+        let door_access = super::paced_movement::PlayerDoorAccess {
+            inner: &blocking,
+            level: states
+                .get(&runtime, actor, session)
+                .map(|state| state.character_facts().level),
+            states: &self.states,
+            session,
+        };
         let blocked = super::pvp_live::pz_blocked(&states, actor, session, self.owner_now());
         let proof = crate::map::floor::prepare_bundle_ladder(
             &runtime,
@@ -141,7 +149,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             target,
             blocked,
-            &blocking,
+            &door_access,
         );
         let disposition = match proof {
             Ok(proof) => {

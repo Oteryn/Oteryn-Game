@@ -31,17 +31,26 @@ const POSITION: [i32; 3] = [32310, 32804, 7];
 
 #[test]
 fn house_wrap_dispatch_postgres_roundtrip_replay_and_refusal() -> TestResult {
+    run_wrap_case(false)
+}
+
+#[test]
+fn cach1_snowman_counts_each_fresh_unwrap() -> TestResult {
+    run_wrap_case(true)
+}
+
+fn run_wrap_case(snowman: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
+        .spawn(move || {
             run(async |admin| {
                 let started = std::time::Instant::now();
                 let h =
                     Harness::create_with_admission_seed(admin, "house_wrap", true, false).await?;
-                let result = scenario(&h,false).await;
+                let result = scenario(&h, false, snowman, false).await;
                 h.cleanup().await?;
                 result?;
                 println!(
@@ -64,7 +73,7 @@ fn srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres()->TestResul
         run(async |admin|{
             let started=std::time::Instant::now();
             let h=Harness::create_with_admission_seed(admin,"srx1_house_cask",true,false).await?;
-            let result=scenario(&h,true).await;
+            let result=scenario(&h,true,false,false).await;
             h.cleanup().await?;result?;
             eprintln!("SRX1_PG House cask checkpoint/exhaustion/replay elapsed={:?}",started.elapsed());
             Ok(())
@@ -73,7 +82,22 @@ fn srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres()->TestResul
     Ok(())
 }
 
-async fn scenario(h: &Harness,cask:bool) -> TestResult {
+#[test]
+fn house_store_refuses_ordinary_items_before_platform_debit() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("house-store-capacity", || {
+        run(async |admin| {
+            let harness = Harness::create_with_admission_seed(admin, "house_store", true, false).await?;
+            let result = scenario(&harness, false, false, true).await;
+            harness.cleanup().await?;
+            result
+        })
+    })
+}
+
+async fn scenario(h: &Harness,cask:bool,snowman:bool,store:bool) -> TestResult {
     super::reset();
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -136,7 +160,11 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
         },
     ];
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-        &[],crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id,deps.admitted.channel_id),1,"policy-1",OFFERS,
+        &[],
+        crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id),
+        1,
+        "policy-1",
+        crate::gameplay_transport::store::with_store_offer(OFFERS, store),
     ).map_err(debug)?;
 
     deps.initialize(&owner).await;
@@ -183,6 +211,21 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
         })
         .await
         .map_err(debug)?;
+    let store_ledger = if store {
+        use super::store_fixtures::{FakePlatform, Ledger, uuid};
+        use crate::native_admission_source::store::StoreClient;
+        use std::sync::{Arc, Mutex};
+        let ledger = Arc::new(Mutex::new(Ledger {
+            balance: 60,
+            world: uuid(deps.admitted.world_id.as_bytes()),
+            ..Ledger::default()
+        }));
+        owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(
+            Box::new(FakePlatform(ledger.clone())),
+            "oteryn-game/store-consumer".into(),
+        ))));
+        Some(ledger)
+    } else { None };
     let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
         .current_session_at(deps.admitted.game_session_id)
         .await?;
@@ -191,7 +234,9 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
         owner.offered_capabilities(),
-        if cask {
+        if store {
+            &[4, 6, 49, 86, 154, 207, 508]
+        } else if cask {
             &[4, 6, 15, 49, 86, 207]
         } else {
             &[4, 6, 49, 86, 207, 508]
@@ -220,6 +265,17 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
         .ok_or("house transfer outcome")?;
     let mut admitted = inside.ok_or("house transfer admission")?;
 
+    if let Some(ledger) = store_ledger {
+        use oteryn_protocol_oteryn::store;
+        let command = super::store_fixtures::purchase_request(81, "store:exercise-sword", 25)?;
+        let rows = super::store_fixtures::serve(&owner, &mut admitted, &[command]).await?;
+        assert_eq!(ledger.lock().map_err(|_| "Store ledger")?.purchases, 0);
+        assert_eq!(rows[0].0, CommandStatus::Accepted);
+        assert_eq!(store::decode_purchase_result(&rows[0].1).map_err(debug)?.code,
+            store::StorePurchaseCode::OfferUnavailable);
+        return Ok(());
+    }
+
     // NX-1 refresh must use the exact named-House owner, including on ordinary players.
     let house_fence = admitted.item_fence.ok_or("House item fence")?;
     let status = owner.root.staff_live_status(owner.character, owner.holder, house_fence).await.map_err(debug)?;
@@ -232,14 +288,16 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
 
     if cask {return house_cask(&owner,h,admitted).await;}
 
-    // Seed a real placed oven and a backpack, then restore every constraint before commands.
+    // Seed placed furniture and a backpack, then restore every constraint before commands.
     super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i6355','definition-r1',1,1,encode($3,'hex')::uuid)")
-        .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+        .bind(id(71).as_slice()).bind(id(42).as_slice())
+        .bind(if snowman { "oteryn:item.tibia.i10208" } else { "oteryn:item.tibia.i6355" })
+        .bind(id(73).as_slice()).execute(&mut *tx).await?;
     let position: Vec<u8> = POSITION.iter().flat_map(|v| v.to_be_bytes()).collect();
     sqlx::query(
         "INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING",
@@ -267,6 +325,9 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
         .bind(id(75).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(77).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     admitted.continuity.next_command_id = 1;
+    if snowman {
+        return snowman_unwraps(&owner, h, &mut admitted, request).await;
+    }
     assert_eq!(
         exchange_checked(&owner, &mut admitted, 1, request, true).await?,
         (CommandStatus::Accepted, wire::Reply::Committed(2))
@@ -378,6 +439,51 @@ async fn scenario(h: &Harness,cask:bool) -> TestResult {
     );
     Ok(())
 }
+
+async fn snowman_unwraps(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &mut AdmittedSession,
+    wrap: wire::Request,
+) -> TestResult {
+    use super::achievement_granters::{assert_progress, seed_progress};
+    let key = "oteryn:achievement/the_snowman";
+    seed_progress(h, key, 98).await?;
+    assert_eq!(exchange(owner, admitted, 1, wrap).await?.1, wire::Reply::Committed(2));
+    assert_custody(h, "oteryn:item.tibia.i23398", false).await?;
+    let unwrap = wire::Request {
+        action: wire::Action::Unwrap,
+        expected_revision: 2,
+        ..wrap
+    };
+    let blocked = wire::Request { position: [0, 0, 7], ..unwrap };
+    assert_eq!(
+        exchange(owner, admitted, 2, blocked).await?.1,
+        wire::Reply::Refused(wire::Refusal::Blocked)
+    );
+    assert_progress(h, key, 98, false, "oteryn:house-wrap").await?;
+    assert_eq!(exchange(owner, admitted, 3, unwrap).await?.1, wire::Reply::Committed(3));
+    assert_custody(h, "oteryn:item.tibia.i10208", true).await?;
+    assert_eq!(
+        owner.house_wrap(*admitted, 3, unwrap).await,
+        Some(wire::Reply::Committed(3)),
+        "bypass the ingress cache and reach the durable replay"
+    );
+    assert_progress(h, key, 99, false, "oteryn:house-wrap").await?;
+    let wrap = wire::Request { expected_revision: 3, ..wrap };
+    assert_eq!(exchange(owner, admitted, 4, wrap).await?.1, wire::Reply::Committed(4));
+    let unwrap = wire::Request { expected_revision: 4, ..unwrap };
+    assert_eq!(exchange(owner, admitted, 5, unwrap).await?.1, wire::Reply::Committed(5));
+    let grant = assert_progress(h, key, 100, true, "oteryn:house-wrap").await?;
+    let receipt: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(transaction_id) FROM game_house_furniture_wrap_receipts WHERE command_id=5",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grant.as_ref().map(|(_, event, _)| event.as_slice()), Some(receipt.as_slice()));
+    Ok(())
+}
+
 async fn assert_custody(h: &Harness, key: &str, house: bool) -> TestResult {
     let (stored,placed,carried):(String,bool,bool)=sqlx::query_as("SELECT definition_production_key,EXISTS(SELECT 1 FROM game_item_house_interior_locations WHERE item_instance_id=i.item_instance_id),EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?;

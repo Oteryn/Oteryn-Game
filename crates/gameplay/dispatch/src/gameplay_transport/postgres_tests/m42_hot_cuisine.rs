@@ -53,3 +53,17 @@ fn m42_final_menu_and_culinary_master_use_real_typed_receipts() -> TestResult {
     );
     result
 }
+
+#[test]
+fn m42_upstairs_cookbooks_require_the_door_and_mint_readable_copies() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("m42-hot-cookbooks", || {
+        super::quest_world_callbacks_fixtures::scenario(
+            "m42-hot-cookbooks",
+            Position { x: 33066, y: 32529, floor: -5 },
+            false,
+        )
+    })
+}

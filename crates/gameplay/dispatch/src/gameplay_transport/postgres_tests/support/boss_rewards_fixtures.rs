@@ -58,6 +58,7 @@ pub(super) enum Case {
     Collection,
     Expiry,
     NativeDeath,
+    NestedCustody,
     NonOverlordHealing,
     OrdinaryDamagerAndHealer,
     ProductionNativeDeath,
@@ -112,6 +113,10 @@ fn scenario(case: Case) -> TestResult {
         } else if matches!(case, Case::LargePrivateCorpse) {
             crate::content::native_gameplay::test_support::activated_reward_boss_corpse_capacity_fixture(
                 deps.admitted.world_id, None, Some(64),
+            )
+        } else if matches!(case, Case::NestedCustody) {
+            crate::content::native_gameplay::test_support::activated_nested_reward_boss_fixture(
+                deps.admitted.world_id,
             )
         } else if matches!(case, Case::NativeDeath) {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
@@ -244,10 +249,11 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice())
             .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-        let existing = if matches!(case, Case::Collection) {
-            vec![(gold, 1); 17]
-        } else {
-            vec![]
+        let existing = match case {
+            Case::Collection => vec![(gold, 1); 17],
+            // One free direct slot must accommodate the bag and its complete subtree.
+            Case::NestedCustody => vec![(gold, 1); 19],
+            _ => vec![],
         };
         super::item_look_fixtures::seed_main_backpack(&h, &existing)
             .await
@@ -279,6 +285,7 @@ fn scenario(case: Case) -> TestResult {
         if matches!(
             case,
             Case::NativeDeath
+                | Case::NestedCustody
                 | Case::AtomicDeathFault
                 | Case::ProductionNativeDeath
                 | Case::LargePrivateCorpse
@@ -288,15 +295,7 @@ fn scenario(case: Case) -> TestResult {
             } else {
                 "oteryn:creature.rat"
             };
-            native_death(
-                &h,
-                &owner,
-                &mut admitted,
-                fence,
-                creature,
-                matches!(case, Case::AtomicDeathFault),
-            )
-            .await?;
+            native_death(&h, &owner, &mut admitted, fence, creature, case).await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
             drop(owner);
             drop(authority);
@@ -315,6 +314,7 @@ fn scenario(case: Case) -> TestResult {
             Case::Collection
             | Case::LargePrivateCorpse
             | Case::NativeDeath
+            | Case::NestedCustody
             | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::OfflineReward
@@ -361,7 +361,8 @@ fn scenario(case: Case) -> TestResult {
                 items: vec![
                     BossRewardItem {
                         definition,
-                        quantity: 1
+                        quantity: 1,
+                        parent_ordinal: None,
                     };
                     item_count
                 ],
@@ -588,6 +589,7 @@ fn scenario(case: Case) -> TestResult {
             .await
             .map_err(|error| format!("W03 expiry scenario: {error}"))?,
             Case::NativeDeath
+            | Case::NestedCustody
             | Case::AtomicDeathFault
             | Case::ProductionNativeDeath
             | Case::LargePrivateCorpse

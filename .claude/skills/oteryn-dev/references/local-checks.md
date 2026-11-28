@@ -93,7 +93,8 @@ matching one locally when your change can reach it; commands are copied from
   that check as it is. Local setup: the Docker recipe under the table in
   `CONTEXT_ROUTING.md`, *Local checks by changed path*, or the lane's own
   database on the PC. Where neither exists (Codex Cloud, a worker whose packet
-  forbids Docker), leave PostgreSQL targets to CI and say so in the report.
+  forbids Docker), say so in the report: the coordinator runs the PostgreSQL
+  targets when it has a route, otherwise CI (`heavy-tests`) does.
 - Export the admin URL into the environment without printing it
   (`set +x` first in scripts; never `echo` it or write it into a log, note or
   PR).

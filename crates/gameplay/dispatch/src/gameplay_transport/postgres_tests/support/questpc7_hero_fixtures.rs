@@ -30,6 +30,17 @@ async fn reward_sources(h: &Harness) -> TestResult<i64> {
     Ok(count)
 }
 
+async fn professor_grants(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests r \
+         JOIN game_account_achievements a USING (account_id, achievement_key) \
+         WHERE r.achievement_key = 'oteryn:achievement/the_professor_s_nut' \
+           AND r.source_kind = 'oteryn:quest-world-reward'",
+    )
+    .fetch_one(&h.pool)
+    .await?)
+}
+
 async fn value(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     a: &AdmittedSession,
@@ -288,6 +299,7 @@ pub(super) async fn exercise(
         "refusal must not mint any reward"
     );
     assert_eq!(reward_sources(h).await?, 0);
+    assert_eq!(professor_grants(h).await?, 0);
     assert_eq!(
         use_at(owner, a, 33571, 31952, 1855).await?,
         UseDisposition::Committed
@@ -301,6 +313,7 @@ pub(super) async fn exercise(
     let [blueprints, bags, coins] = before_reward;
     let after_reward = [blueprints + 1, bags + 4, coins + 5];
     assert_eq!(reward_quantities(h).await?, after_reward);
+    assert_eq!(professor_grants(h).await?, 1, "Maxxen's chest grants the achievement");
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.hero_of_rathleton_quest'").bind(super::fixture::id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
     assert_eq!(
@@ -313,5 +326,6 @@ pub(super) async fn exercise(
         "repeat cannot duplicate rewards"
     );
     assert_eq!(reward_sources(h).await?, 1);
+    assert_eq!(professor_grants(h).await?, 1, "repeat keeps exactly one grant");
     Ok(())
 }

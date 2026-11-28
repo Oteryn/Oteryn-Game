@@ -1,0 +1,292 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.budrik",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Horned Fox’s gang stole the mining helmet I inherited from my family. Will you bring it back?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eroth",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Elvenbane’s defenders spy on our plans. Will you help us stop them?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.one_eyed_joe",
+      "keywords": [
+        "cursed",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "People disappear in the crystal gardens below. Do you want to hear what I know?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.one_eyed_joe",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+          "minimum": -1,
+          "maximum": -1,
+          "set": -1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Weapons cannot shatter the cursed crystal. A deafening scream might. Will you try to destroy it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "here",
+        "passage"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Mal'ouquah belongs to the Efreet. Humans and Marid should leave. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "You have some nerve. Are you willing to fight the Marid for us?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Then leave before you provoke our guards."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "no"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Then leave before you provoke our guards."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Do you pledge your loyalty to King Malor and the Efreet?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ubaid",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "reply": [
+        "Then leave before you provoke our guards."
+      ]
+    }
+  ]
+}

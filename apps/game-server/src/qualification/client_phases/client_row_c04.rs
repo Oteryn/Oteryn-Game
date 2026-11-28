@@ -61,16 +61,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .groups
         .iter()
         .map(|group| {
-            authored_groups
+            let ordinal = authored_groups
                 .iter()
                 .position(|value| {
                     value.get("key").and_then(serde_json::Value::as_str) == Some(&group.key)
                 })
                 .and_then(|index| u32::try_from(index + 1).ok())
-                .ok_or("C04 client cooldown group ordinal absent")
+                .ok_or("C04 client cooldown group ordinal absent")?;
+            Ok::<_, &str>((ordinal, group.cooldown_micros.div_ceil(1000)))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let mut client = connect_world(clients, 0xc6).await?;
+    let client = connect_world(clients, 0xc6).await?;
+    let mut client = provisioning::provision_fixture(client, clients, 1, 100).await?;
     let snapshot = client
         .session_mut()
         .gated_snapshot(20)
@@ -78,10 +80,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .payload
         .clone();
 
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("C04 client vitals absent")?;
     let pz = client
         .cast_spell(aggressive, SpellTarget::None, false)
         .await?;
-    if pz.disposition != SpellCastDisposition::Rejected {
+    if pz.status != CommandStatus::Rejected
+        || pz.disposition != SpellCastDisposition::Rejected
+        || pz.actor_vitals_delta.is_some()
+        || client.actor_vitals().copied() != Some(before)
+    {
         return Err(format!("C04 client PZ gate reply={pz:?}").into());
     }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -100,9 +110,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .ok_or("C04 client route out of PZ absent")?;
     walk(&mut client, world, &path).await?;
+    client.take_events();
+    let cast_started = std::time::Instant::now();
     let cast = client
         .cast_spell(ordinary, SpellTarget::None, false)
         .await?;
+    let elapsed_ms = u64::try_from(cast_started.elapsed().as_micros().div_ceil(1000))?;
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("C04 client ordinary cast reply={cast:?}").into());
     }
@@ -115,33 +128,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .next_back()
         .ok_or("C04 client cast emitted no cooldown payload")?;
+    let spell_ms = source.cooldown_micros.div_ceil(1000);
+    for (kind, id, duration_ms) in
+        std::iter::once((ActorCooldownKind::Spell, ordinary.get(), spell_ms)).chain(
+            groups
+                .iter()
+                .map(|&(id, ms)| (ActorCooldownKind::Group, id, ms)),
+        )
+    {
+        let remaining = cooldowns
+            .entries
+            .iter()
+            .find(|entry| entry.kind == kind && entry.id == id)
+            .map_or(0, |entry| entry.expires_at_ms.saturating_sub(cooldowns.server_now_ms));
+        // The cast and cooldown sample both occurred within the observed request.
+        // Complete updates round the absolute deadline up and the sample time down.
+        let minimum_ms = duration_ms.saturating_sub(elapsed_ms).max(1);
+        if !(minimum_ms..=duration_ms + u64::from(cooldowns.snapshot)).contains(&remaining) {
+            return Err(format!(
+                "C04 client cast cooldown {kind:?}/{id}: remaining_ms={remaining}, authored_ms={duration_ms}"
+            ).into());
+        }
+    }
     let payload = encode_actor_cooldowns(&cooldowns)
         .map_err(|error| format!("C04 client cooldown encode: {error:?}"))?;
-    let remaining = cooldowns
-        .entries
-        .iter()
-        .filter(|entry| match entry.kind {
-            ActorCooldownKind::Spell => entry.id == ordinary.get(),
-            ActorCooldownKind::Group => groups.contains(&entry.id),
-        })
-        .map(|entry| entry.expires_at_ms.saturating_sub(cooldowns.server_now_ms))
-        .max()
-        .unwrap_or(0);
     capture(capture_dir, "c04-snapshot.bin", &snapshot);
     capture(capture_dir, "c04-cooldowns.bin", &payload);
     capture(
         capture_dir,
         "c04-expected.txt",
         format!(
-            "spell={} groups={} remaining_ms={} pz=Rejected cast=Cast\n",
+            "spell={}:{} groups={} snapshot={} elapsed_ms={} pz=Rejected cast=Cast\n",
             ordinary,
-            groups.iter().map(u32::to_string).collect::<Vec<_>>().join(","),
-            remaining
+            spell_ms,
+            groups.iter().map(|(id, ms)| format!("{id}:{ms}")).collect::<Vec<_>>().join(","),
+            cooldowns.snapshot,
+            elapsed_ms,
         )
         .as_bytes(),
     );
     evidence(&format!(
-        "e2e_all scenario=C04.client status=PASS evidence=cooldown-payload;spell={ordinary};remaining_ms={remaining}"
+        "e2e_all scenario=C04.client status=PASS evidence=cooldown-payload;spell={ordinary};authored_ms={spell_ms};snapshot={}",
+        cooldowns.snapshot,
     ));
     Ok(())
 }

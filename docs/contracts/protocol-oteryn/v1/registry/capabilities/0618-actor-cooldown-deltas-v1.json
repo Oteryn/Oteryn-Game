@@ -1,0 +1,13 @@
+{
+  "id": 618,
+  "name": "ACTOR_COOLDOWN_DELTAS_V1",
+  "owner_decision": "SPELL-PRESENT-0 \u00a710: negotiate per-key cooldown updates separately from complete capability-23 views",
+  "owner": "current ChannelRuntime (own actor only)",
+  "requires": [
+    23
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered with the qualified native presentation source and requires PRESENTATION_V1. Selects domain 20 delta type 2 and sparse payloads for paired delta type 3."
+}

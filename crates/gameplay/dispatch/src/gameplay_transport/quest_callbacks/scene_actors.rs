@@ -1,7 +1,46 @@
 use super::*;
 use crate::map::floor::{PreparedSceneRelocations, SceneEvacuation, prepare_source_scene};
 
+type SceneActorObservation = (
+    ExactActorRef,
+    Option<GameSessionId>,
+    MovementPositionSnapshot,
+);
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn publish_scene_positions(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+        optional_pvp: Option<bool>,
+        positions: impl IntoIterator<Item = (SceneActorObservation, MovementPositionSnapshot)>,
+    ) {
+        let now = self.owner_now().get();
+        for ((actor, session, before), after) in positions {
+            if let Some(session) = session {
+                states.stage_special_movement_step(
+                    runtime,
+                    map,
+                    actor,
+                    session,
+                    now,
+                    Some(before.position()),
+                    after.position(),
+                    optional_pvp,
+                );
+                states.stage_underwater_step(
+                    runtime,
+                    actor,
+                    session,
+                    now,
+                    underwater(map, before.position()),
+                    underwater(map, after.position()),
+                );
+            }
+        }
+    }
+
     pub(super) fn prepare_quest_scene_moves<'a>(
         &'a self,
         runtime: &ChannelRuntimeV1,

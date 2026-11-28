@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.muhad",
+      "keywords": [
+        "arito"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Arito left us when he moved to Ankrahmun. Did he send you here?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.muhad",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Tell Arito that he is free to stay in Ankrahmun. I will speak to my people about their threats.",
+        "Would you help us recover something stolen from us?"
+      ]
+    }
+  ]
+}

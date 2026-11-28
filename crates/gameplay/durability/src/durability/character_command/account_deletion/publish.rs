@@ -1,3 +1,4 @@
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::native_admission_source::{account_closure::Publication, descriptor::Operation};
 use wire::digest;
@@ -245,7 +246,7 @@ impl DurabilityRoot {
                     .bind(account.as_slice())
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(closed)
                 })
             })
@@ -308,7 +309,7 @@ impl DurabilityRoot {
     };
     sessions.push((uuid_text(&row.try_get::<String,_>("game_session_id")?)?,scope));
    }
-   commit_semantic_transaction(tx,deadline).await?;Ok(sessions)
+   commit_semantic_read(tx,deadline).await?;Ok(sessions)
   })).await
     }
 }
@@ -342,7 +343,7 @@ impl DurabilityRoot {
     if decoded.event_id!=event_id||decoded.event_type_id!=7||decoded.event_schema_revision!=1||decoded.payload_sha256!=hash||Sha256::digest(&decoded.payload).as_slice()!=hash {return Err(DurabilityError::InvalidStoredState);}
     events.push(AuditDelivery{event_id,envelope});
    }
-   commit_semantic_transaction(tx,deadline).await?;Ok(events)
+   commit_semantic_read(tx,deadline).await?;Ok(events)
   })).await
     }
     pub async fn acknowledge_account_closure_audit(

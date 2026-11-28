@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 
 use std::sync::{Arc,Mutex as SyncMutex};
 
-const REVISION:&str="e7e06a2b1ce23df40cc05be37882eb4b2d4139a5bbc112abd893e8eb526d890d";
+
 
 pub(super) const LAMP:&str="oteryn:item.tibia.i29432";
 
@@ -37,6 +37,9 @@ pub(super) struct Ledger {
     pub(super) intents:BTreeMap<String,serde_json::Value>,
     pub(super) answers:BTreeMap<String,serde_json::Value>,
     pub(super) lose_next_answer:bool,
+    pub(super) pending_claim: Option<String>,
+    pub(super) claim_receipt: Option<serde_json::Value>,
+    pub(super) claim_ready: Arc<tokio::sync::Notify>,
 }
 
 pub(super) struct FakePlatform(pub(super) Arc<SyncMutex<Ledger>>);
@@ -71,7 +74,25 @@ impl StoreTransport for FakePlatform {
                 let operation=request["operation_id"].as_str().expect("operation");
                 ledger.intents[operation].clone()
             }
-            Operation::PublishStoreDeliveryReceiptV1=>serde_json::json!({"contract_version":1,"result":"accepted"}),
+            Operation::ListPendingStoreOperationsV1 => {
+                let entries: Vec<_> = ledger.pending_claim.iter()
+                    .filter(|_| ledger.claim_receipt.is_none())
+                    .map(|id| serde_json::json!({
+                        "operation_kind": "CLAIM", "operation_id": id, "source_revision": "2",
+                    })).collect();
+                serde_json::json!({"contract_version":1,"pending":entries})
+            }
+            Operation::PublishStoreDeliveryReceiptV1 => {
+                if request["operation_kind"] == "CLAIM" {
+                    if let Some(receipt) = &ledger.claim_receipt {
+                        assert_eq!(receipt, &request);
+                    } else {
+                        ledger.claim_receipt = Some(request);
+                        ledger.claim_ready.notify_one();
+                    }
+                }
+                serde_json::json!({"contract_version":1,"result":"accepted"})
+            }
             _=>return Box::pin(async{Err(TransportFailure::NotFound)}),
         };
         Box::pin(async move{Ok(platform_bytes(&answer))})
@@ -103,7 +124,7 @@ pub(super) async fn serve(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&mu
 }
 
 pub(super) fn command(seed:u8,offer:u16,price:u64,custom:Option<wire::StoreHirelingCustomization>)->TestResult<(u32,Vec<u8>)> {
-    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:format!("store:hireling:{offer}"),catalog_revision:REVISION.into(),price,currency:"TIBIA_COIN".into()};
+    let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:format!("store:hireling:{offer}"),catalog_revision:crate::gameplay_transport::store::active_catalogue_revision().into(),price,currency:"TIBIA_COIN".into()};
     let bytes=if let Some(custom)=custom {wire::encode_hireling_purchase_request(&request,&custom)}else{wire::encode_purchase_request(&request)}.map_err(debug)?;
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,bytes))
 }
@@ -141,6 +162,7 @@ pub(super) async fn house_scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: AdmittedSession,
     producer: HouseStoreProducer,
+    previous_generation: Option<u64>,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("House Store fence")?;
     let actor = admitted.runtime_actor.ok_or("House Store actor")?;
@@ -240,7 +262,96 @@ pub(super) async fn house_scenario(
     assert_eq!(count(harness, "SELECT count(*) FROM store_delivery_receipts").await?, 2);
     assert_eq!(count(harness, "SELECT count(*) FROM game_store_hireling_effects").await?, 2);
     assert_eq!(count(harness, "SELECT count(*) FROM game_hireling_store_reservations WHERE state=1").await?, 0);
-    let held = ledger.lock().expect("ledger");
-    assert_eq!((held.debits, held.balance), (2, 9600));
+    let placement_generation = owner.root.store_publication_generation()
+        .await.map_err(debug)?.ok_or("reconciled placement generation")?;
+    if let Some(previous) = previous_generation {
+        // Model the retained delivery row from the previous generation while
+        // leaving the actual lamp placement and claim paths fully fenced.
+        assert_ne!(placement_generation, previous.to_string());
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("ALTER TABLE store_delivery_receipts DISABLE TRIGGER store_delivery_receipts_immutable")
+            .execute(&mut *tx).await?;
+        sqlx::query("UPDATE store_delivery_receipts SET recovery_generation=$2::text::numeric,
+                     receipt=convert_to(jsonb_set(convert_from(receipt,'UTF8')::jsonb, '{recovery_generation}',
+                                                  to_jsonb($2::text))::text,'UTF8')
+                     WHERE operation_id=encode($1,'hex')::uuid")
+            .bind(operation.as_slice()).bind(previous.to_string()).execute(&mut *tx).await?;
+        sqlx::query("ALTER TABLE store_delivery_receipts ENABLE TRIGGER store_delivery_receipts_immutable")
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    let claim_id = uuid(&id(141));
+    let ready = {
+        let mut held = ledger.lock().expect("ledger");
+        assert_eq!((held.debits, held.balance), (2, 9600));
+        let delivery = uuid(&operation);
+        let mut claim = held.intents[&delivery].clone();
+        assert_eq!(claim["unit_kind"], "ITEM");
+        claim["operation_id"] = claim_id.clone().into();
+        claim["operation_kind"] = "CLAIM".into();
+        claim["source_revision"] = "2".into();
+        claim["delivery_operation_id"] = delivery.into();
+        held.intents.insert(claim_id.clone(), claim);
+        held.pending_claim = Some(claim_id.clone());
+        held.claim_ready.clone()
+    };
+    use oteryn_protocol_oteryn::world_object as use_wire;
+    let lamp_index = {
+        let runtime = owner.runtime.lock().await;
+        let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+            &runtime, owner.active_generation,
+        ).ok_or("lamp definition index")?;
+        let revision = index.revision(LAMP).ok_or("lamp revision")?;
+        index.definition_ref("Item", LAMP, revision).ok_or("lamp wire definition")?
+    };
+    let query = (wire::COMMAND_TYPE_STORE_INBOX_CLAIM, vec![16, 2]);
+    let (status, inbox) = serve(owner, &mut admitted, query.clone()).await?;
+    assert_eq!(status, CommandStatus::Accepted, "opening the House Inbox must disclose its claim restrictions");
+    assert!(inbox.ends_with(&[32, 1]), "ordinary Store claims must tell the player to leave the House");
+    let lamp_ref = inbox.get(inbox.len().saturating_sub(8)..inbox.len().saturating_sub(2))
+        .filter(|field| field.starts_with(&[26, 4]))
+        .ok_or("the purchased lamp must have a native House USE action")?;
+    let projected_index = std::num::NonZeroU32::new(u32::from_be_bytes(lamp_ref[2..].try_into()?))
+        .ok_or("projected lamp definition")?;
+    assert_eq!(projected_index, lamp_index);
+    let use_lamp = use_wire::encode_item_use_intent(&use_wire::UseIntent {
+        target: use_wire::UseTarget::ItemByDefinition(projected_index),
+        use_with: None,
+        use_with_map_item: None,
+        use_with_position: None,
+    }).map_err(debug)?;
+    let placed = serve(owner, &mut admitted, (use_wire::COMMAND_TYPE_USE_INTENT, use_lamp)).await?;
+    assert_eq!(placed.0, CommandStatus::Accepted);
+    assert_eq!(use_wire::decode_use_result(&placed.1).map_err(debug)?, use_wire::UseDisposition::Committed);
+    assert_eq!(count(harness, "SELECT count(*) FROM game_hireling_lamp_transitions WHERE kind=1").await?, 1);
+
+    let client = StoreClient::new(
+        Box::new(FakePlatform(ledger.clone())), "oteryn-game/store-consumer".into(),
+    );
+    let worker = crate::gameplay_transport::run_store_receipt_outbox(owner.root, owner.character, client);
+    tokio::select! {
+        () = worker => return Err("Store worker exited".into()),
+        published = tokio::time::timeout(std::time::Duration::from_secs(3), ready.notified()) =>
+            published.map_err(|_| "placed Store lamp never published its Platform claim")?,
+    }
+    {
+        let held = ledger.lock().expect("ledger");
+        let claim = held.claim_receipt.as_ref().ok_or("lamp claim receipt")?;
+        assert_eq!(claim["operation_id"], claim_id);
+        assert_eq!(claim["outcome"], "COMMITTED");
+        assert_eq!(claim["minted_quantity"], 1);
+        assert_eq!(claim["recovery_generation"], placement_generation, "first lamp CLAIM must use the placement generation");
+        assert_eq!(held.debits, 2);
+    }
+    if previous_generation.is_some() {
+        let intent = wire::encode_inbox_claim_request(&wire::StoreInboxClaimRequest {
+            fulfilment_unit_id: uuid(&operation),
+        }).map_err(debug)?;
+        let replay = serve(owner, &mut admitted, (wire::COMMAND_TYPE_STORE_INBOX_CLAIM, intent)).await?;
+        assert_eq!(replay.0, CommandStatus::Accepted);
+        let receipt = wire::decode_claim_receipt(&replay.1).map_err(debug)?;
+        assert_eq!(receipt.result, wire::StoreClaimCode::Committed);
+        assert_eq!(receipt.recovery_generation.to_string(), placement_generation);
+    }
     Ok(())
 }

@@ -1,0 +1,169 @@
+{
+  "oteryn:npc.brodrosch": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "cormaya"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/brodrosch.lua:125:sha256:5bb9cb767aa898153af041dba8364246d0b7b1cc7d9b74e10e840447886c9c64"
+  },
+  "oteryn:npc.buddel": {
+    "reply": [
+      "You shouldn't miss the experience."
+    ],
+    "routes": [
+      "camp",
+      "helheim",
+      "okolnir",
+      "tyrsung"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/buddel.lua:72:sha256:8c5ad304be7253f3b728ce1daf354584d10032f3dbfcc270ecc015d815623485"
+  },
+  "oteryn:npc.captain_bluebear": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "ab_dendriel",
+      "carlin",
+      "edron",
+      "krailos",
+      "liberty_bay",
+      "oramond",
+      "port_hope",
+      "roshamuul",
+      "svargrond",
+      "venore",
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_bluebear.lua:67:sha256:8586fb9d2c7268aa3061ee2184d11d9cd59b2afa804911223df5f4caddb870e2"
+  },
+  "oteryn:npc.captain_fearless": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_fearless.lua:67:sha256:5b035a2491bbeb2ef39a9de2ba4236606490b03ad1aa1265aa93e32b6b5fcf73"
+  },
+  "oteryn:npc.captain_greyhound": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_greyhound.lua:61:sha256:602d5d1e76783306bef3a922799aa29f3689648021ffbfc674990e9587d89994"
+  },
+  "oteryn:npc.captain_max": {
+    "reply": [
+      "You shouldn't miss the experience."
+    ],
+    "routes": [
+      "calassa"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_max.lua:74:sha256:c62d7cbdeb1d1c177b68e7527c7db8efaf65e5c1e435e1590d770c60cf6475bd"
+  },
+  "oteryn:npc.captain_seagull": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_seagull.lua:61:sha256:59a3a071a035c780793063b4e46dbca306644956c368f1ef2d149d467a1ace79"
+  },
+  "oteryn:npc.captain_sinbeard": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_sinbeard.lua:91:sha256:e5b27bda7f029d8279611633bf016ad3a52a05518064b22dab6f10f84df97158"
+  },
+  "oteryn:npc.captain_waverider": {
+    "reply": [
+      "I have to admit this leaves me a bit puzzled."
+    ],
+    "routes": [
+      "meriana",
+      "treasure_island"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_waverider.lua:69:sha256:49eb00228cb490f2c15b8a73a1cd577874929ebdcd0260d305ac8174b16730b0"
+  },
+  "oteryn:npc.charles": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "ankrahmun",
+      "carlin",
+      "darashia",
+      "edron",
+      "liberty_bay",
+      "thais",
+      "venore",
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/charles.lua:118:sha256:8817c1f7be88121a58b03d4b9fb6263742e96bb218f02b002471fd66976f2423"
+  },
+  "oteryn:npc.dalbrect": {
+    "reply": [
+      "Well, I'll be here if you change your mind."
+    ],
+    "routes": [
+      "isle_of_kings"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dalbrect.lua:135:sha256:d190924b57571638bdd5b8a26444b773460b64eec318398e06cda53f96788e86"
+  },
+  "oteryn:npc.eremo": {
+    "reply": [
+      "Maybe later."
+    ],
+    "routes": [
+      "cormaya"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eremo.lua:140:sha256:132039a8d790af142e964d624e1516648a6d6a318c159534db9c84805648401d",
+    "ungreet": true,
+    "fallback": true
+  },
+  "oteryn:npc.jack_fate": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "goroma",
+      "yalahar"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jack_fate.lua:73:sha256:f9a1c019f021ec0b9f95c0f5ae3f3366951e861db734b895ffd7cc193fb6c323"
+  },
+  "oteryn:npc.karith": {
+    "reply": [
+      "Then no."
+    ],
+    "routes": [
+      "ab_dendriel",
+      "ankrahmun",
+      "carlin",
+      "darashia",
+      "liberty_bay",
+      "port_hope",
+      "thais",
+      "venore"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/karith.lua:332:sha256:8a9aa8b5e66848dcbd962799aa7b86cfe639d69cd7f896fbb499f9929effdffe",
+    "reset_topic": true
+  },
+  "oteryn:npc.sebastian": {
+    "reply": [
+      "We would like to serve you some time."
+    ],
+    "routes": [
+      "liberty_bay"
+    ],
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sebastian.lua:96:sha256:922efb07cad205cb69c1fbcbcfd02553d3e902e2d7806068a54253d53ea4a2e9"
+  }
+}

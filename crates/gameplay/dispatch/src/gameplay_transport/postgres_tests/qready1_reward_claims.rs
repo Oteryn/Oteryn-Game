@@ -4,7 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -12,6 +12,20 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 pub(super) fn retained_world(
     chest: (u16, u16, i8),
     native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    retained_world_from(
+        chest,
+        native,
+        &[
+            (-1, 0), (0, 1), (1, 0), (0, -1), (-1, 1), (1, 1), (-1, -1), (1, -1),
+        ],
+    )
+}
+
+fn retained_world_from(
+    chest: (u16, u16, i8),
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    approaches: &[(i32, i32)],
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle_compiler::{bundle, compile, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
@@ -35,16 +49,7 @@ pub(super) fn retained_world(
     )?;
     pins.digest = compiled.digest;
     let base = crate::map::load(&compiled.bytes, &pins).map_err(debug)?;
-    for (dx, dy) in [
-        (-1, 0),
-        (0, 1),
-        (1, 0),
-        (0, -1),
-        (-1, 1),
-        (1, 1),
-        (-1, -1),
-        (1, -1),
-    ] {
+    for &(dx, dy) in approaches {
         let start = crate::map::overlay::TilePos {
             x: u16::try_from(i32::from(chest.0) + dx)?,
             y: u16::try_from(i32::from(chest.1) + dy)?,
@@ -125,9 +130,12 @@ pub(super) fn claim_case(
             )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
+        let outfox = claim == "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet";
         // An empty choice list requests the shipped region. Doublet also uses
         // the shipped ground entry (ordinal zero).
-        let world = if choices.is_empty() || claim == "oteryn:reward-claim.kv.doublet" {
+        let world = if outfox {
+            retained_world_from(chest, native, &[(0, -2)])?
+        } else if choices.is_empty() || claim == "oteryn:reward-claim.kv.doublet" {
             retained_world(chest, native)?
         } else {
             super::quest_callbacks::source_world_choices(chest, choices, appearance)?
@@ -145,9 +153,12 @@ pub(super) fn claim_case(
             "{claim}: {:?}",
             report.unbound
         );
-        let cells = world
-            .movement_cells(deps.room.movement_cells())
-            .map_err(debug)?;
+        let entry_cells = if outfox {
+            activated_pin.qualified_room().movement_cells()
+        } else {
+            deps.room.movement_cells()
+        };
+        let cells = world.movement_cells(entry_cells).map_err(debug)?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -253,13 +264,7 @@ pub(super) fn claim_case(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?.catalogue().clone(),
         );
-        for (commands, expected) in [
-            (
-                &[1, 2][..],
-                &[UseDisposition::Committed, UseDisposition::NothingToUse][..],
-            ),
-            (&[1][..], &[UseDisposition::Committed][..]),
-        ] {
+        let mut journey_owner = if outfox {
             let mut owner = deps.owner(&harness, &authority);
             owner.active_generation = Some(generation);
             owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
@@ -267,12 +272,52 @@ pub(super) fn claim_case(
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
-            assert_eq!(
+            enter_mining_helmet_room(&mut owner, &mut admitted).await?;
+            Some(owner)
+        } else {
+            None
+        };
+        let first = admitted.continuity.next_command_id;
+        for (commands, expected) in [
+            (
+                &[first, first + 1][..],
+                &[UseDisposition::Committed, UseDisposition::NothingToUse][..],
+            ),
+            (&[first][..], &[UseDisposition::Committed][..]),
+        ] {
+            let owner = if let Some(owner) = journey_owner.take() {
+                owner
+            } else {
+                let mut owner = deps.owner(&harness, &authority);
+                owner.active_generation = Some(generation);
+                owner.quest_catalogue = Some(std::sync::Arc::clone(&catalogue));
+                owner.movement_cells = (&cells).into();
+                owner.admit_progression_session(&mut admitted).await;
+                owner.admit_quest_session(&admitted).await;
+                deps.initialize(&owner).await;
+                owner
+            };
+            let actual = if outfox && commands.len() == 1 {
+                // The new owner has no socket history. Exercise the same USE
+                // dispatcher directly with the original durable command ID.
+                let fence = owner
+                    .current_quest_fence(admitted.game_session_id)
+                    .await
+                    .map_err(|()| "Mining Helmet replay fence")?
+                    .ok_or("Mining Helmet replay fence")?;
+                let actor = admitted.runtime_actor.ok_or("Mining Helmet actor")?;
+                let command = UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: first,
+                    item_fence: Some(fence.item_fence()),
+                };
+                vec![owner.use_object(actor, command, target.clone()).await.disposition]
+            } else {
                 super::quest_callbacks::wire_uses(&owner, admitted, commands, &target)
                     .await
-                    .map_err(|e| format!("claim={claim} commands={commands:?}: {e}"))?,
-                expected
-            );
+                    .map_err(|e| format!("claim={claim} commands={commands:?}: {e}"))?
+            };
+            assert_eq!(actual, expected);
             let bag = harness
                 .root
                 .read_character_backpack(&authority, fence.character_id)
@@ -282,6 +327,25 @@ pub(super) fn claim_case(
             assert_eq!(bag.entries.len(), 1);
             assert_eq!(bag.entries[0].item.quantity, quantity);
             assert_eq!(bag.entries[0].item.definition.production_key, reward);
+            if claim == "oteryn:reward-claim.kv.timering3" {
+                let partial_charges: Option<i32> = sqlx::query_scalar(
+                    "SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid",
+                )
+                .bind(bag.entries[0].item.item_instance_id.as_slice())
+                .fetch_optional(&harness.pool)
+                .await?;
+                assert_eq!(partial_charges, None, "the amulet arrives at full charges");
+                let (timed, _) = crate::gameplay_transport::timed_item_content::facts(
+                    native,
+                    &bag.entries[0].item.definition,
+                )
+                .ok_or("Elven Amulet timed definition")?;
+                assert_eq!(
+                    timed.full.charges(),
+                    Some(50),
+                    "Shadowthorn Elven Amulet charges"
+                );
+            }
             let quest = match claim {
                 "oteryn:reward-claim.kv.adoreduh" => Some("oteryn:quest.adorned_uh_rune_quest"),
                 "oteryn:reward-claim.kv.barbarianaxe1" => Some("oteryn:quest.barbarian_axe_quest"),
@@ -304,6 +368,59 @@ pub(super) fn claim_case(
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn enter_mining_helmet_room(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
+            .ok_or("Mining Helmet room capabilities")?;
+    let map = owner.bundle_map().ok_or("Mining Helmet map")?;
+    let door = crate::map::view::placement_key(
+        crate::map::overlay::TilePos {
+            x: 32467,
+            y: 31969,
+            floor: -5,
+        },
+        1,
+    )
+    .ok_or("Mining Helmet door")?;
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&door.to_be_bytes());
+    let target = WorldObjectTarget {
+        placement,
+        expected_revision: 0,
+    };
+    let first = admitted.continuity.next_command_id;
+    let locked = super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(first, &target)])
+        .await?;
+    assert_eq!(locked[0].1, UseDisposition::Locked);
+
+    let [budrik] = super::classic_quests_fixtures::install_with_offsets(
+        owner,
+        admitted,
+        ["oteryn:npc.budrik"],
+        Some([(-1, 0)]),
+    )
+    .await?;
+    for (command, word) in [(9000, "hi"), (9001, "mission"), (9002, "yes")] {
+        assert_eq!(
+            super::qengine_rewards_fixtures::talk(owner, admitted, budrik, command, word).await?,
+            NpcIntentDisposition::Ok,
+            "{word}"
+        );
+    }
+    let next = admitted.continuity.next_command_id;
+    let opened = super::quest_callbacks::wire_use_targets_retained(owner, admitted, &[(next, &target)])
+        .await?;
+    assert_eq!(opened[0].1, UseDisposition::Committed);
+    super::desert_earned_route_fixtures::step(owner, admitted, StepDirection::South).await
 }
 
 #[test]
@@ -894,4 +1011,38 @@ fn qready1_griffin_shield_quest_exact_reward_once() -> TestResult {
         result.is_ok()
     );
     result
+}
+
+#[test]
+fn time_ring_shadowthorn_source_boxes_mint_exact_rewards_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("time-ring-source-boxes", || {
+        for (claim, x, reward) in [
+            ("oteryn:reward-claim.kv.timering1", 33038, "oteryn:item.tibia.i3076"),
+            ("oteryn:reward-claim.kv.timering2", 33039, "oteryn:item.tibia.i3053"),
+            ("oteryn:reward-claim.kv.timering3", 33040, "oteryn:item.tibia.i3082"),
+        ] {
+            claim_case(claim, (x, 32171, -9), &[], 2472, reward, 1)?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn outfox_shipped_cache_mints_mining_helmet_once() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e_fixtures::scenario_thread::run("outfox-source-cache", || {
+        claim_case(
+            "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet",
+            (32467, 31970, -5),
+            &[],
+            2469,
+            "oteryn:item.tibia.i139",
+            1,
+        )
+    })
 }
