@@ -11,6 +11,7 @@ pub(super) enum Next {
     StepDue,
     Probe,
     ServerMessage,
+    PartyIcons,
     PartyNotice,
     Serene,
     QuestLog,
@@ -32,6 +33,7 @@ impl Next {
             Self::StepDue => "step_due",
             Self::Probe => "probe",
             Self::ServerMessage => "server_message",
+            Self::PartyIcons => "party_icons",
             Self::PartyNotice => "party_notice",
             Self::Serene => "serene",
             Self::QuestLog => "quest_log",
@@ -75,6 +77,21 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
         let mut tick = std::pin::pin!(session.cadence.tick());
         let mut server_message =
             std::pin::pin!(authority.server_messages_changed(session.admitted));
+        let mut party_icons_changed = std::pin::pin!(async {
+            if let Some(updates) = session.party_icon_updates.as_mut()
+                && updates.changed().await.is_ok()
+            {
+                return;
+            }
+            std::future::pending::<()>().await;
+        });
+        let party_icons_retry_at = session.party_icons_retry_at;
+        let mut party_icons_retry = std::pin::pin!(async {
+            match party_icons_retry_at {
+                Some(at) => tokio::time::sleep_until(at).await,
+                None => std::future::pending().await,
+            }
+        });
         let mut serene_tick = std::pin::pin!(async {
             match session.serene.as_mut() {
                 Some(timer) => timer.tick().await,
@@ -167,6 +184,11 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             if server_message.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::ServerMessage);
             }
+            if party_icons_changed.as_mut().poll(context).is_ready()
+                || party_icons_retry.as_mut().poll(context).is_ready()
+            {
+                return std::task::Poll::Ready(Next::PartyIcons);
+            }
             // A refresh (or its following input turn) may outlast the timer's period.
             // Rotate only after selecting a refresh: every continuously ready timer gets
             // a turn within one pass of the ring, even when Serene is always overdue.
@@ -197,6 +219,7 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAut
             next,
             Next::Probe
                 | Next::ServerMessage
+                | Next::PartyIcons
                 | Next::PartyNotice
                 | Next::Serene
                 | Next::QuestLog

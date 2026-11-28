@@ -99,6 +99,15 @@ impl SpellLane {
         }
     }
 
+    /// Presentation reads yield to held or parked writes and never resolve them.
+    pub fn try_acquire_for_observation(&self) -> Option<SpellLanePermit> {
+        let permit = SpellLanePermit {
+            scope: self.scope,
+            guard: Arc::clone(&self.state).try_lock_owned().ok()?,
+        };
+        (!permit.has_unresolved()).then_some(permit)
+    }
+
     /// A Channel reload from durable truth (§1.6): the in-memory attempt is dropped with the
     /// runtime it belonged to.
     pub async fn clear_after_reload(&self) {

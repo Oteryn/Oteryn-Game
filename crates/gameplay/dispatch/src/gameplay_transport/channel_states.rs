@@ -72,6 +72,7 @@ pub struct ChannelSessionStates {
     pub(super) newhaven_travel: newhaven_travel::NewhavenTravel,
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
+    pub(super) party_icon_updates: std::sync::Arc<super::party_skull::PartyIconUpdates>,
     pub(super) player_trades: super::player_trade::TradeBook,
     pub(super) primal_menace: super::primal_menace::PrimalMenace,
     pub(super) primal_pods: super::primal_pods::State,
@@ -203,6 +204,7 @@ impl ChannelSessionStates {
             boss_activity_handoff: self.boss_activity_handoff.clone(),
             gameplay_idle_policy: self.gameplay_idle_policy,
             input_gate: std::sync::Arc::clone(&self.input_gate),
+            party_icon_updates: std::sync::Arc::clone(&self.party_icon_updates),
             server_messages: std::sync::Arc::clone(&self.server_messages),
             server_modals: std::sync::Arc::clone(&self.server_modals),
             ..Default::default()

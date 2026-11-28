@@ -5,6 +5,7 @@ pub(super) async fn refresh<S, A>(
     stream: &mut S,
     authority: &A,
     session: &mut ServeState,
+    retry_busy: bool,
 ) -> Result<(), ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -14,13 +15,31 @@ where
         .selected_capabilities
         .contains(CAPABILITY_PARTY_SKULL_V1)
     {
+        session.party_icons_retry_at = None;
         return Ok(());
     }
     let Some(view) = session.visibility.as_ref() else {
+        session.party_icons_retry_at = None;
         return Ok(());
     };
-    let Some(mut icons) = authority.observe_party_icons(session.admitted).await else {
-        return Ok(());
+    let mut icons = match authority
+        .observe_party_icons_for_push(session.admitted)
+        .await
+    {
+        Ok(icons) => {
+            session.party_icons_retry_at = None;
+            icons
+        }
+        Err(error) => {
+            // Only the dedicated turn schedules retries. An unrelated periodic
+            // refresh that found a busy holder must not postpone that turn.
+            if retry_busy {
+                session.party_icons_retry_at =
+                    matches!(error, crate::durability::DurabilityError::RootUnavailable)
+                        .then(|| tokio::time::Instant::now() + VISIBILITY_REFRESH);
+            }
+            return Ok(());
+        }
     };
     icons.retain(|icon| view.shows(icon.entity));
     icons.sort_by_key(|icon| icon.entity);

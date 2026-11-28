@@ -83,6 +83,10 @@ where
                 Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
+        Next::PartyIcons => {
+            party_skull::refresh(stream, authority, session, true).await?;
+            return Ok(None);
+        }
         Next::PartyNotice => {
             super::party_membership::refresh(stream, authority, session).await?;
             return Ok(None);

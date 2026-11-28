@@ -387,6 +387,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }).await;
         match outcome {
             Ok((receipt, source, refused, shared_hunt)) => {
+                if matches!(intent, Some(PartyIntent::PassLeadership(_)))
+                    && receipt
+                        .as_ref()
+                        .is_some_and(|receipt| receipt.disposition == "APPLIED")
+                {
+                    // The durable transaction has committed. Wake each member's live
+                    // presenter even if this caller's own runtime projection fails.
+                    self.states.party_icon_updates.publish(&source.source);
+                }
                 if let Some(plan) = &shared_hunt {
                     plan.apply(&self.states.analyser)?;
                 }
