@@ -327,6 +327,30 @@
       "reply": [
         "The officials are gone. Will you eliminate six imperial nobles?"
       ]
+    },
+    {
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 26,
+          "maximum": 26
+        }
+      ],
+      "reply": [
+        "The emperor has bound the dragon in an eternal slumber. Are you prepared to enter its dreams?"
+      ]
     }
   ]
 }

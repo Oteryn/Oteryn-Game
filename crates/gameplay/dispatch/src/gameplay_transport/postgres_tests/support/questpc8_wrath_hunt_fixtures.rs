@@ -61,6 +61,8 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
         &[
             (33077, 31215, 33087, 31225, -7),
             (33055, 31140, 33090, 31200, -3),
+            (33101, 31116, 33109, 31124, -12),
+            (33237, 31208, 33247, 31220, -10),
         ],
         &[],
         TilePos {
@@ -121,8 +123,12 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    legacy: bool,
 ) -> TestResult {
-    let npc = super::questpc8_wrath_hunt_npc::install(owner, admitted).await?;
+    use super::qengine_voucher_stories_fixtures::{quantity, use_native};
+    use oteryn_gameplay_quests::quest::wrath_sleeping_dragon as dream;
+
+    let [npc, zizzle, dragon] = super::questpc8_wrath_hunt_npc::install(owner, admitted).await?;
     owner.admit_premium(id(40), admitted.game_session_id);
     let native = owner
         .active_generation
@@ -131,21 +137,33 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
+    let canonical = owner.quest_catalogue.clone().ok_or("catalogue")?;
     let setup = "oteryn:quest-transition/questpc8-fixture-imperial-hunt-ready";
     let catalogue = Arc::new(
-        owner
-            .quest_catalogue
-            .as_ref()
-            .ok_or("catalogue")?
+        canonical
             .with_fixture_transition(QuestTransition {
                 world_change: None,
                 key: setup.into(),
                 quest: QUEST.into(),
-                effects: vec![QuestEffect {
-                    track: STAGE.into(),
+                effects: if legacy {
+                    vec![
+                        (STAGE, 5),
+                        (dream::QUESTLINE, 23),
+                        (
+                            "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+                            5,
+                        ),
+                    ]
+                } else {
+                    vec![(STAGE, 5)]
+                }
+                .into_iter()
+                .map(|(key, value)| QuestEffect {
+                    track: key.into(),
                     from: QuestComparison::Any,
-                    effect: QuestEffectKind::Set(5),
-                }],
+                    effect: QuestEffectKind::Set(value),
+                })
+                .collect(),
                 completes: false,
                 experience: None,
             })
@@ -178,10 +196,48 @@ pub(super) async fn exercise(
             .map_err(debug)?;
         assert!(matches!(result, QuestTransitionOutcome::Committed(_)));
     }
+    if legacy {
+        // Model an unfinished save from the train base, including its original receipt pin.
+        let prior = "43fbc448d162ab6f6801c1de3b566669a10d2bee97b27b1fc10058a9ff7d99cd";
+        let mut saved = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *saved)
+            .await?;
+        for statement in [
+            "UPDATE game_character_quest_states SET definition_hash=decode($1,'hex') WHERE character_id=encode($2,'hex')::uuid AND quest_key=$3",
+            "UPDATE game_character_quest_receipts SET definition_hash=decode($1,'hex') WHERE character_id=encode($2,'hex')::uuid AND quest_key=$3",
+        ] {
+            let updated = sqlx::query(statement)
+                .bind(prior)
+                .bind(id(41).as_slice())
+                .bind(QUEST)
+                .execute(&mut *saved)
+                .await?;
+            assert_eq!(updated.rows_affected(), 1);
+        }
+        saved.commit().await?;
+        owner.quest_catalogue = Some(canonical);
+    }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
     talk(owner, admitted, npc, 8001, "hi").await?;
+    if legacy {
+        assert_eq!(noble_counter(h).await?, None);
+        let offer = talk(owner, admitted, npc, 8002, "imperial hunt").await?;
+        assert!(
+            offer
+                .iter()
+                .any(|line| line.contains("six imperial nobles?"))
+        );
+        talk(owner, admitted, npc, 8003, "yes").await?;
+        assert_eq!(
+            progress(owner, admitted, authority, dream::QUESTLINE).await?,
+            24
+        );
+        assert_eq!(noble_counter(h).await?, Some(0));
+        return Ok(());
+    }
     refused(owner, admitted, npc, 8002, "imperial report").await?;
     talk(owner, admitted, npc, 8003, "imperial hunt").await?;
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 0);
@@ -364,6 +420,117 @@ pub(super) async fn exercise(
     refused(owner, admitted, npc, 8213, "imperial report").await?;
     let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/wrath/imperial-report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
+    talk(owner, admitted, npc, 8214, "bye").await?;
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33103,
+            y: 31119,
+            floor: -12,
+        },
+    )
+    .await?;
+    talk(owner, admitted, zizzle, 8220, "hi").await?;
+    talk(owner, admitted, zizzle, 8221, "mission").await?;
+    assert_eq!(
+        progress(owner, admitted, authority, dream::QUESTLINE).await?,
+        26
+    );
+    let palace = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission08";
+    assert_eq!(progress(owner, admitted, authority, palace).await?, 2);
+    talk(owner, admitted, zizzle, 8222, "mission").await?;
+    talk(owner, admitted, zizzle, 8223, "yes").await?;
+    assert_eq!(
+        progress(owner, admitted, authority, dream::QUESTLINE).await?,
+        27
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, dream::POTION).await?,
+        0
+    );
+    assert_eq!(
+        progress(owner, admitted, authority, dream::MISSION).await?,
+        1
+    );
+    assert_eq!(quantity(h, 11372).await?, 1);
+    assert_eq!(quantity(h, 11426).await?, 1);
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[4, 6, 11, 15, 18],
+        )
+        .ok_or("native item capabilities")?;
+    use_native(
+        owner,
+        admitted,
+        11372,
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+    )
+    .await?;
+    assert_eq!(quantity(h, 11372).await?, 0);
+    assert_eq!(
+        progress(owner, admitted, authority, dream::POTION).await?,
+        1
+    );
+    super::questpc8_mystery_geometry_fixtures::arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: 33242,
+            y: 31214,
+            floor: -10,
+        },
+    )
+    .await?;
+    talk(owner, admitted, dragon, 8229, "hi").await?;
+    let source: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/dialogues/quests-2/wrath-sleeping-dragon.json"
+    ))?;
+    let entry = talk(
+        owner,
+        admitted,
+        dragon,
+        8230,
+        source["entry_keyword"].as_str().ok_or("dream word")?,
+    )
+    .await?;
+    assert_eq!(serde_json::to_value(entry)?, source["entry_messages"]);
+    for (index, step) in source["steps"]
+        .as_array()
+        .ok_or("dream steps")?
+        .iter()
+        .enumerate()
+    {
+        let lines = talk(
+            owner,
+            admitted,
+            dragon,
+            8231 + u64::try_from(index)?,
+            step["keyword"].as_str().ok_or("dream step")?,
+        )
+        .await?;
+        assert_eq!(serde_json::to_value(lines)?, step["messages"]);
+    }
+    assert_eq!(
+        progress(owner, admitted, authority, dream::QUESTLINE).await?,
+        28
+    );
+    let achievements = h
+        .root
+        .read_account_achievements(
+            authority,
+            admitted.controller.ok_or("controller")?.account_id,
+            1000,
+        )
+        .await
+        .map_err(debug)?;
+    assert!(
+        achievements
+            .iter()
+            .any(|a| a.achievement_key == "oteryn:achievement/wayfarer")
+    );
+    super::questpc8_wrath_dream::after(owner, admitted, dragon, h, authority).await?;
     eprintln!("POSTGRES_WRATH_IMPERIAL_NATIVE_EXACT_FOUR_SIX_COLD_REPLAY_PASS");
     Ok(())
 }

@@ -129,6 +129,15 @@
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The noble report leads to Uninvited Guests, where the player must enter the palace."
       ]
+    },
+    {
+      "npc": "oteryn:npc.zizzle",
+      "greet": "You made it, |PLAYERNAME|! Report your mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua"
+      ]
     }
   ]
 }

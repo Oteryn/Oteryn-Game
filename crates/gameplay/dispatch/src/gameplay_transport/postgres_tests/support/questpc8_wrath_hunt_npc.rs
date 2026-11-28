@@ -1,4 +1,4 @@
-//! Real source Zlak placement, independent of the player's approach direction.
+//! Source placements for the imperial hunt and the palace-to-dragon handoff.
 
 use super::fixture::debug;
 
@@ -15,8 +15,10 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 pub(super) async fn install(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-) -> TestResult<EntityRef> {
-    const NPC: &str = "oteryn:npc.zlak";
+) -> TestResult<[EntityRef; 3]> {
+    const ZLAK: &str = "oteryn:npc.zlak";
+    const ZIZZLE: &str = "oteryn:npc.zizzle";
+    use oteryn_gameplay_quests::quest::wrath_sleeping_dragon::NPC as DRAGON;
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -25,7 +27,7 @@ pub(super) async fn install(
     .map_err(debug)?;
     let model = catalogue.service_model_for_project().map_err(debug)?;
     owner.states.chat.install_npc_talk(std::sync::Arc::new(
-        NpcTalkBook::from_model_with_native_quests(&model, &[NPC]),
+        NpcTalkBook::from_model_with_native_quests(&model, &[DRAGON, ZIZZLE, ZLAK]),
     ));
     owner.states.chat.admit(
         admitted.game_session_id,
@@ -54,29 +56,39 @@ pub(super) async fn install(
     runtime
         .place_npcs(
             &NpcPlacementTable {
-                npcs: vec![NpcPlacements {
-                    key: NPC.into(),
+                npcs: [
+                    (DRAGON, 33242, 31213, -10),
+                    (ZIZZLE, 33105, 31120, -12),
+                    (ZLAK, 33082, 31220, -7),
+                ]
+                .into_iter()
+                .map(|(key, x, y, floor)| NpcPlacements {
+                    key: key.into(),
                     placements: vec![NpcPlacement {
-                        x: 33082,
-                        y: 31220,
-                        floor: -7,
+                        x,
+                        y,
+                        floor,
                         direction: MovementFacing::North,
                     }],
-                }],
+                })
+                .collect(),
             },
             |_| true,
             true,
         )
         .map_err(debug)?;
-    runtime
-        .visible_entities()
-        .npcs
-        .into_iter()
-        .find_map(|npc| {
-            (runtime.npc_key(npc.actor) == Some(NPC)).then_some(EntityRef {
-                identity: npc.actor.placement_identity(),
-                generation: npc.generation,
+    let entities = runtime.visible_entities();
+    let lookup = |key| {
+        entities
+            .npcs
+            .iter()
+            .find_map(|npc| {
+                (runtime.npc_key(npc.actor) == Some(key)).then_some(EntityRef {
+                    identity: npc.actor.placement_identity(),
+                    generation: npc.generation,
+                })
             })
-        })
-        .ok_or_else(|| "source Zlak placement".into())
+            .ok_or("missing Wrath contact")
+    };
+    Ok([lookup(ZLAK)?, lookup(ZIZZLE)?, lookup(DRAGON)?])
 }

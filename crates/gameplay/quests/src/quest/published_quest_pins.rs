@@ -994,8 +994,10 @@ pub(super) fn retain_hunt_and_wrath_predecessors(catalogue: &mut QuestStateCatal
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
+            hash(b"4008c942f4be671e371d178b248ccb8b4c2e4b1abc21a8792d321843074d31dc"),
             &[
+                hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
+                hash(b"43fbc448d162ab6f6801c1de3b566669a10d2bee97b27b1fc10058a9ff7d99cd"),
                 hash(b"542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
                 hash(b"2956758279011af614d2ef72d62625dfa7532a8788fdc04ac9d9bbbf46c48e86"),
                 hash(b"58e9e5d6281350894a50b1903b1bce8e3bcc0c8f67d20407f7ef73ae8313a7cf"),
@@ -1090,7 +1092,7 @@ pub(super) fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
+            hash(b"4008c942f4be671e371d178b248ccb8b4c2e4b1abc21a8792d321843074d31dc"),
             hash(b"7adb730fed07f97911455a8152504bd4aec534a955154430cff9b4b7ad3fab1b"),
             hash(b"f3d60b1ad2225008433ceaea7e987126f6303e627da3a332c4ef54d4dedd3adb"),
             &[
@@ -1102,7 +1104,7 @@ pub(super) fn retain_daily_predecessors(catalogue: &mut QuestStateCatalogue) {
         ),
         (
             "oteryn:quest.wrath_of_the_emperor_quest",
-            hash(b"1b0477703b4e5b6a3b0d31fbbc06f4c3f466db6f41cbca8d10d5935408eb0ea8"),
+            hash(b"4008c942f4be671e371d178b248ccb8b4c2e4b1abc21a8792d321843074d31dc"),
             hash(b"7adb730fed07f97911455a8152504bd4aec534a955154430cff9b4b7ad3fab1b"),
             hash(b"6eaae3ce74eaedd8e8bd32d9714a148691090c7db9ba5be350f4f7bf6584c7b6"),
             &[

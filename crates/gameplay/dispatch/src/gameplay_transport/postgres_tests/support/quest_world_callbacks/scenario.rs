@@ -3536,8 +3536,14 @@ fn scenario_case(
             )
             .await?;
         } else if name == "authored-wrath-hunt" {
-            super::super::questpc8_wrath_hunt_fixtures::exercise(&mut owner, &mut admitted, &h, &authority)
-                .await?;
+            Box::pin(super::super::questpc8_wrath_hunt_fixtures::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                variant == "legacy",
+            ))
+            .await?;
         } else if name == "nx6-wayfarer" {
             Box::pin(super::super::nx6_wayfarer_fixtures::exercise(
                 &mut owner,

@@ -1356,7 +1356,7 @@
       "achievement": null,
       "requires_premium": true,
       "reply": [
-        "Take the old escape tunnel from the abandoned basement north of the ministry. Follow it to the palace lift and meet Zalamon underground."
+        "Take the old escape tunnel from the abandoned basement north of the ministry. Follow it to the palace lift and report your mission to Zizzle underground."
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
@@ -1369,6 +1369,214 @@
           "maximum": 6
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/noble-hunt-confirm",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 45,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Eliminate six imperial nobles and report your mission to me."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/palace-report",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 25,
+          "maximum": 25,
+          "set": 26
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission08",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/teleport_access/zizzle",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "You made it! Ask me about your next mission when you are ready."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/dream-supplies",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 26,
+          "maximum": 26,
+          "set": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i11372",
+        "count": 1,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i11426",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Take this potion and formula sheet. Drink the potion and say SOLOSARASATIQUARIUM to the Sleeping Dragon."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/drink-potion",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zizzle",
+      "keywords": [
+        "drink potion"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/interdimensional_potion",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i11372",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "You are ready to enter the dragon's dream."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission09_the_sleeping_dragon_mixture.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 27,
+          "maximum": 27
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i11372"
     }
   ],
   "offers": [
@@ -1581,6 +1789,15 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The noble report leads to Uninvited Guests, where the player must enter the palace."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.zizzle",
+      "greet": "You made it, |PLAYERNAME|! Report your mission.",
+      "farewell": "Farewell.",
+      "walkaway": "Farewell.",
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zizzle.lua"
       ]
     }
   ],
