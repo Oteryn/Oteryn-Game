@@ -70,7 +70,7 @@ pub(super) struct PendingGroundUse {
     intent: Vec<u8>,
 }
 
-pub(super) struct GroundUseGuard<'a, 'r> {
+pub(in crate::gameplay_transport) struct GroundUseGuard<'a, 'r> {
     owner:
         &'a super::super::activity_runtime::SharedOwner<'r, tokio::sync::Mutex<ChannelRuntimeV1>>,
     cancelled: &'a std::sync::Mutex<Vec<GroundUseTurn>>,
@@ -136,6 +136,56 @@ impl Drop for GroundUseGuard<'_, '_> {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::gameplay_transport) async fn reserve_corpse_sample<'permit>(
+        &self,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+        intent: &UseIntent,
+        encoded: &[u8],
+        corpse: [u8; 16],
+        permit: &'permit SpellLanePermit,
+    ) -> Option<(
+        crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof<'permit>,
+        GroundUseGuard<'_, '_>,
+    )> {
+        use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
+        use sha2::{Digest, Sha256};
+        let mut runtime = self.runtime.lock().await;
+        self.states
+            .quest_callbacks
+            .finish_cancelled_ground_uses(&mut runtime);
+        let binding = GroundUseProof {
+            actor,
+            command,
+            fence,
+            at: runtime.read_actor_position(actor).ok()?,
+            binding: Sha256::digest(encoded).into(),
+            affected: Vec::new(),
+        };
+        let (sample, reservation) = QuestCreatureUseProof::reserve_current_corpse(
+            &mut runtime,
+            actor,
+            fence,
+            command,
+            callback,
+            intent,
+            corpse,
+            permit,
+            &binding,
+        )?;
+        Some((
+            sample,
+            GroundUseGuard {
+                owner: &self.runtime,
+                cancelled: &self.states.quest_callbacks.ground_use_cleanup,
+                turn: Some(GroundUseTurn(binding, reservation)),
+            },
+        ))
+    }
+
     pub(super) fn reserve_tomb_entry(
         &self,
         runtime: &mut ChannelRuntimeV1,

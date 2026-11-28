@@ -875,33 +875,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lane -> Character sequence -> runtime is retained through COMMIT.
         // The proof's borrow prevents detaching a live target snapshot.
         let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;
-        let mut creature_runtime =
-            if callback.creature_target.is_some() || callback.self_target.is_some() {
-                Some(self.runtime.lock().await)
-            } else {
-                None
+        let sample = if callback.corpse_target.is_some() {
+            let Some(ItemKey::Instance(corpse)) = target else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
             };
+            let Some(sample) = self
+                .reserve_corpse_sample(
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    &encoded,
+                    corpse,
+                    &permit,
+                )
+                .await
+            else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
+            };
+            Some(sample)
+        } else {
+            None
+        };
+        let mut creature_runtime = if sample.is_none()
+            && (callback.creature_target.is_some() || callback.self_target.is_some())
+        {
+            Some(self.runtime.lock().await)
+        } else {
+            None
+        };
         let mut capture_guard = creature_runtime.as_mut().map(|runtime| {
             capture_commit::CaptureCommitGuard::new(runtime, callback.capture_creature)
         });
         let creature = if let Some(guard) = capture_guard.as_ref() {
             let runtime = guard.runtime();
             use crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof;
-            let proof = if callback.corpse_target.is_some() {
-                let Some(ItemKey::Instance(corpse)) = target else {
-                    return Ok(Some(outcome(UseDisposition::Rejected)));
-                };
-                QuestCreatureUseProof::read_current_corpse(
-                    runtime,
-                    actor,
-                    fence,
-                    command_ref,
-                    &callback,
-                    intent,
-                    corpse,
-                    &permit,
-                )
-            } else if let Some(operand) = corpse_operand {
+            let proof = if let Some(operand) = corpse_operand {
                 QuestCreatureUseProof::read_corpse(
                     runtime,
                     actor,
@@ -963,7 +973,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: Some(&use_),
-                    creature_use: creature.as_ref(),
+                    creature_use: creature
+                        .as_ref()
+                        .or_else(|| sample.as_ref().map(|(proof, _)| proof)),
                     peer_use: peer.as_ref(),
                 },
                 &self.premium_coordinator,
@@ -976,6 +988,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(capture_guard);
         drop(creature_runtime);
+        drop(sample);
         drop(sequence);
         drop(permit);
         let disposition = if matches!(

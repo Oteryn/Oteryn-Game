@@ -310,11 +310,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .ok()?
             .ok()?
         {
-            return Some(if outcome.disposition == oteryn_protocol_oteryn::world_object::UseDisposition::TooFar {
-                Dispatch::UseWithoutWalk(outcome)
-            } else {
-                Dispatch::Use(outcome)
-            });
+            return Some(Dispatch::Use(outcome));
         }
         match tokio::time::timeout(
             std::time::Duration::from_secs(10),

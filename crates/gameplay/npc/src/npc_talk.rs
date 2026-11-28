@@ -2143,8 +2143,19 @@ mod tests {
         );
         let stan = "oteryn:npc.stan";
         let entry = book.get(stan).ok_or("Stan's source shop must open focus")?;
-        assert_eq!(entry.offers().len(), 3);
-        assert!(entry.offers().iter().any(|offer| offer.item.key == "oteryn:item.tibia.i654" && offer.unit_price == 1000));
+        assert_eq!(entry.offers().len(), 5);
+        for (key, price) in [
+            ("oteryn:item.tibia.i653", 500),
+            ("oteryn:item.tibia.i654", 1000),
+            ("oteryn:item.tibia.i655", 1500),
+        ] {
+            assert!(
+                entry
+                    .offers()
+                    .iter()
+                    .any(|offer| offer.item.key == key && offer.unit_price == price)
+            );
+        }
         Ok(())
     }
 

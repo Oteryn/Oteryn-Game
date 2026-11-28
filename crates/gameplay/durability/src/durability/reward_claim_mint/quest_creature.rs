@@ -172,6 +172,42 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
         corpse: [u8; 16],
         permit: &'runtime SpellLanePermit,
     ) -> Option<Self> {
+        Self::sample_corpse(runtime, actor, fence, command, callback, intent, corpse, permit)
+    }
+
+    /// Reserve the sampling actor before releasing the channel runtime for the SQL transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub fn reserve_current_corpse(
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+        intent: &UseIntent,
+        corpse: [u8; 16],
+        permit: &'runtime SpellLanePermit,
+        binding: &impl crate::foundation::SourceActorReservationProof,
+    ) -> Option<(Self, crate::foundation::SourceActorReservation)> {
+        if binding.owner() != (actor, command.game_session_id()) {
+            return None;
+        }
+        let sample = Self::sample_corpse(runtime, actor, fence, command, callback, intent, corpse, permit)?;
+        let mut reservation = runtime.prepare_source_actor_reservation(binding).ok()?;
+        runtime.reserve_source_actors(&mut reservation, binding).ok()?;
+        Some((sample, reservation))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn sample_corpse(
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        command: CommandRef,
+        callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
+        intent: &UseIntent,
+        corpse: [u8; 16],
+        permit: &'runtime SpellLanePermit,
+    ) -> Option<Self> {
         let at = runtime.read_actor_position(actor).ok()?.position();
         // The durable corpse sample records actor positions in map coordinates.
         let position = [at.x, at.y, -i32::from(at.floor)];

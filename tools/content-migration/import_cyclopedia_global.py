@@ -697,23 +697,6 @@ def apply_trades(declarations, rows, identities, counts):
 
     for shop, service in services.items():
         captured_offers = captures[shop]
-        # Crystal 201189f8, data-global/npc/stan.lua:55-59, bounds this seasonal shop.
-        if shop == f"{TRADE_PREFIX}stan":
-            donor_offers = {
-                (654, "SellToPlayer"),
-                (6572, "SellToPlayer"),
-                (6578, "SellToPlayer"),
-            }
-            service["offers"] = [
-                offer
-                for offer in service["offers"]
-                if (item_id(offer["item"]), offer["direction"]) in donor_offers
-            ]
-            captured_offers = {
-                key: offers
-                for key, offers in captured_offers.items()
-                if key in donor_offers
-            }
         wrap_subtypes = qualified_wraps(service, rows)
         by_row = defaultdict(list)
         for offer in service["offers"]:
@@ -876,7 +859,8 @@ def materialize_details(root, reference, declarations):
         shard = tree.load(root / relative)
         for row in shard["records"]:
             key = row["declaration"]["identity"]["key"]
-            row["declaration"] = trades.pop(key)
+            if key.startswith(TRADE_PREFIX):
+                row["declaration"] = trades.pop(key)
         tree.write(relative, shard)
     if trades:
         raise ValueError("Global trade import changed the service identity inventory")

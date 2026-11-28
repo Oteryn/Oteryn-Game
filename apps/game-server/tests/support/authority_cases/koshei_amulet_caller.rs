@@ -493,17 +493,19 @@ async fn exercise(
     )
     .await?;
     owner.clock_origin -= std::time::Duration::from_secs(2);
-    let (next, too_far, _, _) = wire(
-        &owner,
-        admitted,
-        admitted.continuity.next_command_id,
-        &payload,
-        Some(amulet),
-        Some(corpse),
-        false,
-    )
-    .await?;
-    admitted = next;
+    let too_far = owner.use_quest_tool(
+        actor,
+        composed_test_owner::UseCommand {
+            game_session_id: session,
+            command_id: admitted.continuity.next_command_id,
+            item_fence: admitted.item_fence,
+        },
+        oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            admitted.continuity.selected_capabilities.as_slice(), &payload,
+        ).map_err(debug)?,
+        Some(composed_test_owner::ItemKey::Instance(id(92))),
+        Some(composed_test_owner::ItemKey::Instance(*body.as_bytes())),
+    ).await.map_err(|_| "quest owner unavailable")?.ok_or("quest owner declined")?.disposition;
     assert_eq!(too_far, UseDisposition::TooFar);
     assert_eq!(
         runtime
@@ -583,6 +585,12 @@ async fn exercise(
         use_with_map_item: Some(MapUseTarget::Item(std::num::NonZeroU64::MIN)),
     }).map_err(debug)?;
     let actual = if lose_ack {
+        // Exercise the definition hotkey and its retry with the same command ID.
+        place(
+            &owner,
+            admitted,
+            MovementLocalPosition { y: CORPSE.y - 2, ..CORPSE },
+        ).await?;
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)

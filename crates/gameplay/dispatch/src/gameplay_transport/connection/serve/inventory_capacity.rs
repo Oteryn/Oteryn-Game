@@ -69,7 +69,7 @@ pub(super) fn changes_carried_weight(dispatch: &Dispatch) -> bool {
         Dispatch::ItemMove(outcome, _, _) => {
             *outcome == oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
         }
-        Dispatch::Use(outcome) | Dispatch::UseWithoutWalk(outcome) => {
+        Dispatch::Use(outcome) => {
             outcome.disposition == oteryn_protocol_oteryn::world_object::UseDisposition::Committed
         }
         Dispatch::NpcTrade(_, _, deltas) | Dispatch::NpcShop(_, _, _, deltas) => !deltas.is_empty(),

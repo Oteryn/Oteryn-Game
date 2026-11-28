@@ -291,24 +291,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Revision serialization precedes the runtime turn, matching the other
         // physical action owners. Keep the live target current through COMMIT.
         let mut revision = self.revision_sequencer.acquire(fence.character_id).await;
-        let mut creature_runtime =
-            if callback.creature_target.is_some() || callback.self_target.is_some() {
-                Some(CreatureTurn {
-                    runtime: self.runtime.lock().await,
-                    uncertain: AtomicBool::new(false),
-                })
-            } else {
-                None
+        let sample = if callback.corpse_target.is_some() {
+            let Some(corpse) = corpse else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
             };
-        let creature = if callback.creature_target.is_some() || callback.self_target.is_some() {
-            let runtime = &*creature_runtime.as_ref().ok_or(())?.runtime;
-            let proof = if let Some(corpse) = corpse {
-                crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current_corpse(
-                    runtime, actor, fence, command_ref, &callback, intent, corpse, &permit)
-            } else {
-                crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
-                    runtime, actor, fence, command_ref, &callback, intent)
+            let Some(sample) = self
+                .reserve_corpse_sample(
+                    actor,
+                    fence,
+                    command_ref,
+                    &callback,
+                    intent,
+                    &encoded,
+                    corpse,
+                    &permit,
+                )
+                .await
+            else {
+                return Ok(Some(outcome(UseDisposition::Rejected)));
             };
+            Some(sample)
+        } else {
+            None
+        };
+        let mut creature_runtime = if sample.is_none()
+            && (callback.creature_target.is_some() || callback.self_target.is_some())
+        {
+            Some(CreatureTurn {
+                runtime: self.runtime.lock().await,
+                uncertain: AtomicBool::new(false),
+            })
+        } else {
+            None
+        };
+        let creature = if let Some(turn) = creature_runtime.as_ref() {
+            let proof = crate::durability::reward_claim_mint::quest_creature::QuestCreatureUseProof::read_current(
+                &turn.runtime, actor, fence, command_ref, &callback, intent);
             let Some(proof) = proof else {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
@@ -354,7 +372,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     fee_payment: None,
                     actor_conditions: None,
                     carried_use: Some(&use_),
-                    creature_use: creature.as_ref(),
+                    creature_use: creature
+                        .as_ref()
+                        .or_else(|| sample.as_ref().map(|(proof, _)| proof)),
                     peer_use: peer.as_ref(),
                 },
                 &self.premium_coordinator,
@@ -372,6 +392,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             turn.uncertain.store(false, Ordering::Relaxed);
         }
         drop(creature_runtime);
+        drop(sample);
         drop(revision);
         drop(permit);
         let disposition = if matches!(

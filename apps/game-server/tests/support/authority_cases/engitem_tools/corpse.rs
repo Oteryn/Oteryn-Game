@@ -103,8 +103,7 @@ pub(super) async fn sample(
     let source: [u8; 16] = source.try_into().map_err(|_| "source UUID")?;
     let species = callback.creature_target.as_deref().ok_or("slug species")?;
     let old = mint_body(h, authority, native, &mut runtime, at, 901, species).await?;
-    // Production freshness remains ten seconds. No shortened clock or quest writes.
-    tokio::time::sleep(std::time::Duration::from_millis(10050)).await;
+    let fresh = mint_body(h, authority, native, &mut runtime, at, DELAYED_SLUG, species).await?;
     let far = mint_body(
         h,
         authority,
@@ -115,7 +114,6 @@ pub(super) async fn sample(
         species,
     )
     .await?;
-    let fresh = mint_body(h, authority, native, &mut runtime, at, 902, species).await?;
     let intent = UseIntent {
         target: UseTarget::ItemByDefinition(definition),
         use_with: None,
@@ -378,6 +376,8 @@ pub(super) async fn explorer_sample(
     Ok(())
 }
 
+const DELAYED_SLUG: u16 = 902;
+
 async fn mint_body(
     h: &f::Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
@@ -529,6 +529,10 @@ async fn mint(
             ids.push(parent);
             children.push(child);
         }
+    }
+    if source == DELAYED_SLUG {
+        // The old slug expires while the fresh slug waits for publication.
+        tokio::time::sleep(std::time::Duration::from_millis(10050)).await;
     }
     let permit = candidate.fresh_death_lane_permit().await;
     let outcomes = h.root.commit_kill_loot_mints(
