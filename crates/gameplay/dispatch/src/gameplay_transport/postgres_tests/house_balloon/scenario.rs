@@ -531,13 +531,18 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
             .bind(id(42).as_slice()).bind(HOUSE).bind(position).execute(&mut *tx).await?;
     }
-    if placed || case == Case::Nested {
+    let equipped = matches!(case, Case::Lantern { equipped: true, .. });
+    if equipped || placed || case == Case::Nested {
         sqlx::query(
             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
         )
         .bind(id(71).as_slice())
         .execute(&mut *tx)
         .await?;
+    }
+    if equipped {
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,10,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
     }
     if placed {
         let position: Vec<u8> = POSITION.iter().flat_map(|v| v.to_be_bytes()).collect();
@@ -598,6 +603,11 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "{case:?}"
         );
         assert_eq!(item(h).await?["definition_production_key"], after_key);
+        if equipped {
+            let slot: i16 = sqlx::query_scalar("SELECT slot FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+                .bind(id(71).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(slot, 10);
+        }
         assert_eq!(receipts(h).await?, 1);
         return Ok(());
     }

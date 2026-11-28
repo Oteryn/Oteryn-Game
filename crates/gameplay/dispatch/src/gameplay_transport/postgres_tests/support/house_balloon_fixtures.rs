@@ -171,6 +171,7 @@ pub(super) enum Case {
     Placed,
     Carried,
     Lantern {
+        equipped: bool,
         placed: bool,
         definition: bool,
         source: u32,

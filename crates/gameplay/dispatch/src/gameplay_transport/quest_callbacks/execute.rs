@@ -1316,6 +1316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .is_some_and(|original| original != actors)
                     {
                         pending.remove(&session);
+                        drop(pending);
                         self.schedule_quest_refresh(session);
                         return UseDisposition::StaleState;
                     }

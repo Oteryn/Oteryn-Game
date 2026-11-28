@@ -149,11 +149,25 @@ fn house_lantern_uses_all_three_sources() -> TestResult {
     for source in [23734, 23738] {
         for (placed, definition) in modes {
             run_case(Case::Lantern {
+                equipped: false,
                 placed,
                 definition,
                 source,
             })?;
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn house_equipped_lantern_preserves_extra_slot() -> TestResult {
+    for (source, definition) in [(23734, true), (23738, false)] {
+        run_case(Case::Lantern {
+            equipped: true,
+            placed: false,
+            definition,
+            source,
+        })?;
     }
     Ok(())
 }

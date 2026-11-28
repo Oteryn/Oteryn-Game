@@ -29,7 +29,7 @@ LANGUAGE sql STABLE AS $$
     AND r.source_count=0 AND r.parent_item_instance_id IS NULL
     AND r.secondary_item_instance_id=r.source_item_instance_id AND r.before_secondary=r.before_item
     AND r.outputs='[]'::jsonb AND r.extra_inputs='[]'::jsonb AND r.content_digest IS NOT NULL
-    AND r.before_item->>'quantity'='1' AND r.effects->>'kind'='carried_transform'
+    AND r.before_item->>'quantity'='1' AND r.effects @> '{"kind":"carried_transform","require_head":false}'::jsonb
     AND (r.before_item->>'definition_production_key',r.recipe) IN (
        ('oteryn:item.tibia.i23734','oteryn:novelty-item.i23734.v1'),
        ('oteryn:item.tibia.i23738','oteryn:novelty-item.i23738.v1'))
@@ -87,8 +87,11 @@ BEGIN
   WHERE conrelid='game_item_consume_transform_records'::regclass AND conname='game_item_action_source_custody';
  ALTER TABLE game_item_consume_transform_records DROP CONSTRAINT game_item_action_source_custody;
  EXECUTE 'ALTER TABLE game_item_consume_transform_records ADD CONSTRAINT game_item_action_source_custody CHECK ('
-   ||body||$shape$ OR (source_kind=2 AND source_ordinal=10 AND parent_item_instance_id IS NULL AND NOT consume_source
-     AND recipe IN ('oteryn:novelty-item.i23734.v1','oteryn:novelty-item.i23738.v1')))$shape$;
+   ||body||$shape$ OR coalesce(source_kind=2 AND source_ordinal=10 AND parent_item_instance_id IS NULL AND NOT consume_source
+     AND effects @> '{"kind":"carried_transform","require_head":false}'::jsonb
+     AND (before_item->>'definition_production_key',recipe) IN (
+       ('oteryn:item.tibia.i23734','oteryn:novelty-item.i23734.v1'),
+       ('oteryn:item.tibia.i23738','oteryn:novelty-item.i23738.v1')),false))$shape$;
  FOR edit IN SELECT * FROM (VALUES
   ('game_item_consume_transform_admit()', 'OR (NEW.source_kind=2 AND i.definition_production_key=',
     'OR game_ghostsilver_equipped(NEW) OR (NEW.source_kind=2 AND i.definition_production_key='),
