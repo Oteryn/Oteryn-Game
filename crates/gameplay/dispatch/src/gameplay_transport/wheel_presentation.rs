@@ -162,22 +162,46 @@ pub(super) async fn gift_status(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
 ) -> Option<[u8; wire::GIFT_OF_LIFE_STATUS_BYTES]> {
+    let (stage, remaining) = match gift_status_snapshot(owner, admitted).await? {
+        (stage, Some(remaining)) => (stage, remaining),
+        (_, None) => {
+            // The join snapshot may have missed its best-effort Wheel reads.
+            let actor = admitted.runtime_actor?;
+            let session = admitted.game_session_id;
+            let generation = Some(admitted.continuity.connection_generation);
+            if !owner.load_wheel_gift_for_transport(actor, session, generation).await {
+                return None;
+            }
+            if !owner.refresh_wheel_vitals(actor, session).await {
+                return None;
+            }
+            let (stage, remaining) = gift_status_snapshot(owner, admitted).await?;
+            (stage, remaining?)
+        }
+    };
+    let mut result = [stage; wire::GIFT_OF_LIFE_STATUS_BYTES];
+    result[1..].copy_from_slice(&remaining.div_ceil(1000).to_le_bytes());
+    Some(result)
+}
+
+async fn gift_status_snapshot(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> Option<(u8, Option<u64>)> {
     let runtime = owner.runtime.lock().await;
     if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
         return None;
     }
     let states = owner.states.spell_states.lock().await;
-    let state = states.get(&runtime, admitted.runtime_actor?, admitted.game_session_id)?;
+    let actor = admitted.runtime_actor?;
+    let session = admitted.game_session_id;
+    let state = states.get(&runtime, actor, session)?;
     let now = owner.owner_now().get();
     let stage = state.wheel_gift_stage(now);
-    let remaining = if stage == 0 {
-        0
-    } else {
-        state.wheel_gift_save(now, true)?.1
-    };
-    let mut result = [stage; wire::GIFT_OF_LIFE_STATUS_BYTES];
-    result[1..].copy_from_slice(&remaining.div_ceil(1000).to_le_bytes());
-    Some(result)
+    let remaining = state.wheel_gift_save(now, true).map(|(_, remaining)| {
+        if stage == 0 { 0 } else { remaining }
+    });
+    Some((stage, remaining))
 }
 
 macro_rules! authority_methods {
@@ -216,7 +240,14 @@ macro_rules! composed_methods {
                 }
             }
             let budget = AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+            let fence = self.current_quest_fence_within(&budget, session).await.ok()??;
+            if fence.connection_generation.get() != admitted.continuity.connection_generation {
+                return None;
+            }
             let allocation_ready = || {
+                if self.wheel_ruleset.is_none() {
+                    return true;
+                }
                 self.states.wheel_sessions.lock().ok().is_some_and(|sessions| {
                     sessions.get(&session).is_some_and(Option::is_some)
                 })
@@ -226,7 +257,9 @@ macro_rules! composed_methods {
                     self.admit_wheel_session(session).await;
                 }
                 allocation_ready()
-                    && self.load_wheel_gift(actor, session).await
+                    && self.load_wheel_gift_for_transport(
+                        actor, session, Some(admitted.continuity.connection_generation),
+                    ).await
                     && self.refresh_wheel_vitals_with_budget(actor, session, Some(&budget)).await
             }).await {
                 return None;

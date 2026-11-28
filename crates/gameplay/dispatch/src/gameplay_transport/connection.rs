@@ -10,6 +10,23 @@ pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
 mod routing;
 #[cfg(test)]
+pub(super) async fn route_wheel_gift_status_for_test(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
+    let command = oteryn_protocol_oteryn::ClientCommandView {
+        command_id: admitted.continuity.next_command_id,
+        command_type:
+            oteryn_protocol_oteryn::wheel_presentation::COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS,
+        payload: &[],
+    };
+    match routing::wheel_presentation::route(owner, admitted, command).await {
+        routing::Dispatch::Reply(status, payload) => Some((status, payload)),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
 pub(super) async fn test_analyser_route(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,

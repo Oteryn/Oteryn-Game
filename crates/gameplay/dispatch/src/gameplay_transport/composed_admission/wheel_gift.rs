@@ -6,6 +6,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        self.load_wheel_gift_for_transport(actor, session, None)
+            .await
+    }
+
+    pub(in crate::gameplay_transport) async fn load_wheel_gift_for_transport(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: Option<u64>,
+    ) -> bool {
         {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
@@ -19,6 +29,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
+        if generation.is_some_and(|generation| generation != fence.connection_generation.get()) {
+            return false;
+        }
         let Ok(remaining) = self
             .root
             .read_character_wheel_gift(self.character, fence.character_id)
