@@ -101,8 +101,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 async || {
                     let observed = store.observe_committed_admission(request.operation()).await;
                     #[cfg(test)]
-                    if matches!(observed, Err(crate::durability::DurabilityError::RootUnavailable))
-                        && let Some(probe) = &probe
+                    if matches!(
+                        observed,
+                        Err(crate::durability::DurabilityError::RootUnavailable)
+                    ) && let Some(probe) = &probe
                     {
                         probe.blocked();
                     }

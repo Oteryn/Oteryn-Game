@@ -537,15 +537,15 @@ where
                 None,
             ),
             oteryn_protocol_oteryn::forge_preview::COMMAND_TYPE_FORGE_PREVIEW => {
-                let Some(request) =
-                    oteryn_protocol_oteryn::forge_preview::Request::decode(command.payload)
-                else {
-                    return Err(ServeEnd::server("serve_state_unavailable"));
-                };
-                let payload =
-                    crate::gameplay_transport::forge_preview::refused_reply(request.nonce)
-                        .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
-                Dispatch::Reply(crate::foundation::CommandStatus::Rejected, payload)
+                match oteryn_protocol_oteryn::forge_preview::Request::decode(command.payload) {
+                    Some(request) => {
+                        let payload =
+                            crate::gameplay_transport::forge_preview::refused_reply(request.nonce)
+                                .ok_or_else(|| ServeEnd::server("serve_state_unavailable"))?;
+                        Dispatch::Reply(crate::foundation::CommandStatus::Rejected, payload)
+                    }
+                    None => Dispatch::Unregistered,
+                }
             }
             _ => Dispatch::Unregistered,
         };
