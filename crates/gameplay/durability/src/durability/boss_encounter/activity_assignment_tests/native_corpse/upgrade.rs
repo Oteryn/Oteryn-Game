@@ -8,7 +8,7 @@ fn legacy_over_cap_scope_retires_its_due_corpse_postgres() -> TestResult {
     };
     fixture::runtime()?.block_on(async move {
         let h =
-            fixture::Harness::create_with_admission_seed(admin, "legacy_corpse_cap", true, false)
+            fixture::Harness::create_with_admission_seed(admin, "legacy_corpse_cap", true, true)
                 .await?;
         let result = drain_legacy_scope(&h).await;
         h.cleanup().await?;
@@ -128,7 +128,7 @@ fn sculpture_reconciliation_reads_the_commit_before_lock_acquisition_postgres() 
     };
     fixture::runtime()?.block_on(async move {
         let h =
-            fixture::Harness::create_with_admission_seed(admin, "sculpture_read_lock", true, false)
+            fixture::Harness::create_with_admission_seed(admin, "sculpture_read_lock", true, true)
                 .await?;
         let result = read_after_writer(&h).await;
         h.cleanup().await?;
@@ -213,7 +213,7 @@ fn takeover_skinning_observes_only_receipt_backed_ground_postgres() -> TestResul
             admin,
             "takeover_skinning_ground",
             true,
-            false,
+            true,
         )
         .await?;
         let result = read_prior_corpse(&h).await;
