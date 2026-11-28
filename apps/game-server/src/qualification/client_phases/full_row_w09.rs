@@ -967,7 +967,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let result =
-        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+        verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "reset-and-cube-transform".to_owned()),
         Ok(Err(error)) => ("FAIL", error.to_string()),

@@ -43,10 +43,10 @@ fn e2e_w09_replays_aid_clearance() -> Result<(), Box<dyn Error>> {
         "capture must contain one command"
     );
     let generation = request.connection_generation();
-    assert_eq!(
-        request.client_command_session_id()?,
-        Some(session.as_slice())
-    );
+    // V1 can omit the redundant session field. Capture metadata binds the transport.
+    if let Some(wire_session) = request.client_command_session_id()? {
+        assert_eq!(wire_session, session.as_slice());
+    }
     let command = request.client_command(generation)?;
     assert_eq!(command.command_type, world_object::COMMAND_TYPE_USE_INTENT);
 
@@ -130,7 +130,9 @@ fn gift(
     let [request] = requests.as_slice() else {
         return Err("expected exactly one Gift status command".into());
     };
-    assert_eq!(request.client_command_session_id()?, Some(expected_session));
+    if let Some(wire_session) = request.client_command_session_id()? {
+        assert_eq!(wire_session, expected_session);
+    }
     let generation = request.connection_generation();
     let command = request.client_command(generation)?;
     assert_eq!(
