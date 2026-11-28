@@ -86,7 +86,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "f5-c13" => Some(("sorcerer", 200)),
         "f5-c18a" => Some(("sorcerer", 1)),
         "f5-c17d" => Some(("knight", 20)),
-        "p11-corridor-knight" => Some(("knight", 3000)),
+        "p11-corridor-knight" => Some(("knight", 1000)),
         _ => None,
     }
 }
