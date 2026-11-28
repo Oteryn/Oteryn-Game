@@ -104,27 +104,75 @@ async fn capture_journey(
         return Err(format!("C20a wrong pre-death progress: {:?}", progress(&before)?).into());
     }
     let vocation_selected = general_stats::selected(&client);
-    travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
-    client.session_mut().attack_target(None).await?;
-    client.take_events();
-    let health = client
+    let home = world
+        .base()
+        .subareas
+        .default_town
+        .and_then(|id| world.base().subareas.town(id))
+        .and_then(|town| town.temple)
+        .ok_or("C20a compiled temple missing")?;
+    let basis = spatial_basis::current(&mut client)?;
+    let temple = ActorPosition {
+        x: i32::from(home.x),
+        y: i32::from(home.y),
+        floor: basis.floor(home.floor),
+    };
+    let baseline = *client
         .actor_vitals()
-        .ok_or("C20a death entry vitals missing")?
-        .health;
+        .ok_or("C20a pre-encounter vitals missing")?;
+    if baseline.health == 0 || baseline.health != baseline.max_health {
+        return Err(format!("C20a fixture did not enter at full health: {baseline:?}").into());
+    }
+    client.take_events();
+    let session_label = uuid_text(session.as_bytes());
+    travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
     let encounter = client.world_spatial().actor_position;
+    if encounter == temple {
+        return Err("C20a encounter and temple positions coincide".into());
+    }
+    let spider = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == oteryn_dev_client::EntityKind::Creature
+                    && entity.position.floor == encounter.floor
+                    && entity
+                        .position
+                        .x
+                        .abs_diff(encounter.x)
+                        .max(entity.position.y.abs_diff(encounter.y))
+                        <= 1
+                    && entity.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case("Poison Spider"))
+                    })
+            })
+        })
+        .ok_or("C20a encounter has no adjacent Poison Spider")?;
+    evidence(&format!(
+        "C20A_ENCOUNTER session={session_label} actor={:?} actor_position={:?} player={encounter:?} temple={temple:?} baseline_health={}",
+        spider.entity, spider.position, baseline.health
+    ));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut damaged = false;
+    let mut damage_sequence = None;
+    let mut min_health = baseline.health;
     loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event {
-                damaged |= delta.value.health < health;
+            if let SessionEvent::ActorVitals(delta) = event
+                && delta.value.health < min_health
+            {
+                min_health = delta.value.health;
+                damage_sequence.get_or_insert(delta.server_sequence);
+                evidence(&format!(
+                    "C20A_DAMAGE session={session_label} server_sequence={} health={min_health}",
+                    delta.server_sequence
+                ));
             }
         }
         let position = client.world_spatial().actor_position;
-        if damaged
-            && position != encounter
+        if damage_sequence.is_some()
+            && position == temple
             && client
                 .actor_vitals()
                 .is_some_and(|vitals| vitals.health > 0 && vitals.health == vitals.max_health)
@@ -132,8 +180,11 @@ async fn capture_journey(
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("C20a did not observe lethal damage and respawn".into());
+            return Err(format!(
+                "C20a missing temple respawn: session={session_label} first_damage_sequence={damage_sequence:?} min_health={min_health} position={position:?} expected={temple:?}"
+            ).into());
         }
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
     let after = stats(&mut client).await?;
     if progress(&after)? != AFTER {
