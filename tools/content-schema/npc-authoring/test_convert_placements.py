@@ -124,9 +124,29 @@ class ConvertPlacementsTest(unittest.TestCase):
                          "201189f871d23597b82caf88fd611454a2ddefb8")
 
     def test_gustavo_is_placed_at_the_newhaven_guard_post(self):
-        rows = [r['declaration']['cell'] for r in self.records
-                if r['declaration']['npc'] == 'oteryn:npc.gustavo_the_guard']
-        self.assertEqual(rows, [{'x': 32560, 'y': 32488, 'floor': 7}])
+        rows = [
+            r["declaration"]["cell"]
+            for r in self.records
+            if r["declaration"]["npc"] == "oteryn:npc.gustavo_the_guard"
+        ]
+        self.assertEqual(rows, [{"x": 32560, "y": 32488, "floor": 7}])
+    def test_quest_contacts_use_their_donor_cells(self):
+        expected = {
+            "oteryn:npc.curos": {"x": 33174, "y": 31394, "floor": 7},
+            "oteryn:npc.eshaya": {"x": 33913, "y": 31497, "floor": 6},
+            "oteryn:npc.rotem_valos": {"x": 32209, "y": 32297, "floor": 7},
+        }
+        placements = [
+            row["declaration"]
+            for row in self.records
+            if row["declaration"]["npc"] in expected
+        ]
+        self.assertEqual(len(placements), len(expected))
+        self.assertEqual({row["npc"]: row["cell"] for row in placements}, expected)
+        for row in placements:
+            self.assertTrue(
+                any(source["origin"] == "crystal" for source in row["provenance"])
+            )
 
     def test_jack_springer_uses_the_pinned_isle_of_the_kings_cell(self):
         rows = [r['declaration'] for r in self.records

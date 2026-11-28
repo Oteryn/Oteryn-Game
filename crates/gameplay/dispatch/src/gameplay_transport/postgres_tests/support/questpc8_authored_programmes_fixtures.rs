@@ -82,6 +82,31 @@ pub(super) async fn exercise_braindeath(
     assert_eq!(potions, 2);
     let bags: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i2867' AND lifecycle=1").fetch_one(&h.pool).await?;
     assert_eq!(bags, 1);
+    let contents: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT child.definition_production_key, child.quantity::bigint
+         FROM (
+             SELECT item_instance_id, parent_item_instance_id FROM game_item_container_entries
+             UNION ALL
+             SELECT item_instance_id, parent_item_instance_id FROM game_item_nested_entries
+         ) AS entry
+         JOIN game_item_instances AS child USING (item_instance_id)
+         JOIN game_item_instances AS bag ON bag.item_instance_id=entry.parent_item_instance_id
+         WHERE bag.definition_production_key='oteryn:item.tibia.i2867'
+           AND bag.lifecycle=1 AND child.lifecycle=1
+         ORDER BY child.definition_production_key",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        contents,
+        [
+            ("oteryn:item.tibia.i239".into(), 2),
+            ("oteryn:item.tibia.i268".into(), 1),
+            ("oteryn:item.tibia.i3003".into(), 1),
+            ("oteryn:item.tibia.i3035".into(), 13),
+            ("oteryn:item.tibia.i3457".into(), 1),
+        ]
+    );
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances")
         .fetch_one(&h.pool)
         .await?;
@@ -93,6 +118,14 @@ pub(super) async fn exercise_braindeath(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(after, before);
+    let complete: bool = sqlx::query_scalar(
+        "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.braindeath_quest'",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(complete);
     Ok(())
 }
 

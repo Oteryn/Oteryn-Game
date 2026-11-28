@@ -403,6 +403,7 @@ def convert(xml: bytes) -> dict[str, str]:
     chances = json.loads(chances_bytes)["bosses"]
     scheduled_bosses = []
     pharaohs = {}
+    renegade = None
     scoped_bytes = SCOPED_RECONCILIATION.read_bytes()
     scoped_anchors = json.loads(scoped_bytes)["points"]
     corrections = {}
@@ -463,11 +464,38 @@ def convert(xml: bytes) -> dict[str, str]:
                     key: value for key, value in point.items() if key != "respawn_ms"
                 }
                 scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
-                pharaohs[creature] = {"declaration": {
-                    "centre": {"floor": cz, "x": cx, "y": cy},
-                    "identity": {"key": f"{key}.pharaoh", "revision": "definition-r1"},
-                    "points": [scheduled],
-                }}
+                pharaohs[creature] = {
+                    "declaration": {
+                        "centre": {"floor": cz, "x": cx, "y": cy},
+                        "identity": {
+                            "key": f"{key}.pharaoh",
+                            "revision": "definition-r1",
+                        },
+                        "points": [scheduled],
+                    }
+                }
+            elif point["creature"] == "oteryn:creature.renegade_orc":
+                # Crystal world-monster.xml retains a single 90-second public spawn
+                # behind the personal access door. Death credit has its own quest owner.
+                if (
+                    renegade is not None
+                    or point["cell"] != {"floor": 7, "x": 33059, "y": 31299}
+                    or point["respawn_ms"] != 90_000
+                ):
+                    sys.exit(f"{key}: Renegade Orc spawn differs from its source")
+                scheduled = {
+                    field: value
+                    for field, value in point.items()
+                    if field != "respawn_ms"
+                }
+                scheduled["boss_policy"] = {"respawn": {"min_s": 90, "max_s": 90}}
+                renegade = {
+                    "declaration": {
+                        "centre": {"floor": cz, "x": cx, "y": cy},
+                        "identity": {"key": key, "revision": "definition-r1"},
+                        "points": [scheduled],
+                    }
+                }
             elif point["creature"] == FRONTIER_MINE_LEADER:
                 if (mine_leader is not None or key != "oteryn:spawn.x33071_y31433_z15"
                         or point["cell"] != {"floor": 15, "x": 33072, "y": 31434}
@@ -543,6 +571,9 @@ def convert(xml: bytes) -> dict[str, str]:
     if mine_leader is None:
         sys.exit("Farmine mine leader placement is missing")
     records.append(mine_leader)
+    if renegade is None:
+        sys.exit("Renegade Orc source spawn is missing")
+    records.append(renegade)
     files, shards, retained_records = {}, [], []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]

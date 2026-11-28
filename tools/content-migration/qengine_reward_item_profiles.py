@@ -83,6 +83,8 @@ IDS = {
     28792,
     28793,
 }
+# Lower Spike parcels must be portable and stackable for the four outpost deliveries.
+IDS.update({19203, 19205, 19206, 19219})
 # Knightwatch leader confirmations grant these two shields alongside the documents.
 IDS |= {6390, 6432}
 # Ferumbras chest: the Rift Tapestry and Teddy need portable reward custody.
@@ -126,6 +128,8 @@ IDS |= {24966}
 # QN3 Gnomus measurement report (Crystal 201189f gnomus.lua:88-97) grants this jar.
 IDS |= {27654}
 IDS |= qmech_m39.ITEMS
+# Rotem Valos hands out the carried Adventurer's Map for Cartography 101.
+IDS |= {22107}
 IDS |= {21504, 21505}
 # Lion trials: exact holy-water vessel plus separately qualified one-hour flower duration.
 IDS |= {21466, 21389}
@@ -278,7 +282,6 @@ STATIC_IDS = MERCHANT_SCENERY | {
     7181,  # Arito's opened cave entrance.
     8995,
     7845,  # Crystal Brotherhood lever 3047 creates immovable lava.
-    8995,
     8996,
     9527,
     17677,
@@ -376,7 +379,13 @@ RAID_LOOT_IDS = {
     19371,
     19391,
 }
-IDS |= COOKBOOK_IDS | JORGE_REPLICA_IDS | RAID_CORPSE_IDS | WILLI_WASP_DECAY | RAID_LOOT_IDS
+IDS |= (
+    COOKBOOK_IDS
+    | JORGE_REPLICA_IDS
+    | RAID_CORPSE_IDS
+    | WILLI_WASP_DECAY
+    | RAID_LOOT_IDS
+)
 
 # Existing Dworc and Merlkin loot yields require portable native custody.
 IDS |= {3348, 3403}
@@ -393,6 +402,7 @@ CLIENT = f"content/assets/files/appearances-{CLIENT_SHA}.dat"
 CANONICAL_WEIGHTS = {
     19361: (150, 850),
     19371: (1700, 170),
+    22107: (200, 240),
     23677: (2700, 200),
     32228: (20, 250),
     34210: (6660, 6659),
@@ -433,7 +443,9 @@ def _source_known_speed(item_id, speed, prior=None):
         return None
     if type(speed) is not int or speed != 0:
         raise ValueError("QENGINE_REWARD_ITEM_KNOWN_SPEED_SOURCE")
-    previous = prior.get("attributes", {}).get("speed_bonus") if prior is not None else None
+    previous = (
+        prior.get("attributes", {}).get("speed_bonus") if prior is not None else None
+    )
     if previous is not None and (type(previous) is not int or previous != speed):
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:attributes.speed_bonus")
     return speed
@@ -458,7 +470,8 @@ def _known_speed_identity(record):
     key = f"oteryn:item.tibia.i{item_id}"
     target = {"family": "Item", "key": key, "revision": "definition-r1"}
     if (
-        definition != {"family": "Item", "production_key": key, "revision_ref": "definition-r1"}
+        definition
+        != {"family": "Item", "production_key": key, "revision_ref": "definition-r1"}
         or binding.get("disposition") != "EXACT"
         or binding.get("external_id") != str(item_id)
         or binding.get("identity_namespace") != "ots/item_server_id"
@@ -478,7 +491,9 @@ def _admitted_known_speed(record, prior):
         for field in ("production_definition", "production_binding"):
             if prior.get(field) != record[field]:
                 raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + field)
-    return _source_known_speed(item_id, record.get("attributes", {}).get("speed_bonus"), prior)
+    return _source_known_speed(
+        item_id, record.get("attributes", {}).get("speed_bonus"), prior
+    )
 
 
 def capture(root=ROOT, ids=None, *, item_ids=None):
@@ -497,7 +512,9 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         raise ValueError("QENGINE_REWARD_ITEM_SOURCE_PIN")
     xml = source.xml_index(xml_raw)
     objects = source.engine_items.load_appearance_objects(client_raw)
-    physical = {r["server_item_id"]: r for r in source.policies(client_raw, xml_raw, selected)}
+    physical = {
+        r["server_item_id"]: r for r in source.policies(client_raw, xml_raw, selected)
+    }
     bindings = source.binding_index(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
@@ -527,23 +544,26 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         node = xml[item_id]
         attributes = source.attrs(node)
         flower = lion_flower.admitted(item_id, attributes)
-        temporal_keys = {"charges", "duration", "decayto", "stopduration"} & attributes.keys()
+        temporal_keys = {
+            "charges",
+            "duration",
+            "decayto",
+            "stopduration",
+        } & attributes.keys()
         if item_id == 17678:
             if {key: attributes[key] for key in temporal_keys} != {
                 "duration": "240",
                 "decayto": "17677",
             }:
                 raise ValueError("QENGINE_REWARD_SMASHED_TRUNK_TIMER_DRIFT")
-        elif (
-            not flower
-            and item_id not in timed
-            and temporal_keys
-        ):
+        elif not flower and item_id not in timed and temporal_keys:
             raise ValueError("QENGINE_REWARD_ITEM_INSTANCE_OWNER_REQUIRED")
         flags = objects[item_id]["flags"]
         if flags.get("flags.liquidcontainer") or flags.get("flags.liquidpool"):
             raise ValueError("QENGINE_REWARD_ITEM_FLUID_OWNER_REQUIRED")
-        record = source.profile(item_id, node, objects[item_id], physical[item_id], bindings, None)
+        record = source.profile(
+            item_id, node, objects[item_id], physical[item_id], bindings, None
+        )
         known_speed = _source_known_speed(
             item_id,
             record["attributes"].get("speed_bonus"),
@@ -553,7 +573,9 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         reconcile_canonical_physical(item_id, definition, record)
         if item_id == 6300:
             # The canonical Death Ring has a 450-second equipped budget.
-            record["semantics"]["temporal"] = copy.deepcopy(definition["semantics"]["temporal"])
+            record["semantics"]["temporal"] = copy.deepcopy(
+                definition["semantics"]["temporal"]
+            )
         if item_id in COOKBOOK_IDS:
             # Crystal's explicit cookbook actions grant read-only text. The
             # native literal inscription owner measures up to 4000 characters.
@@ -573,9 +595,12 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         # identity-only rows; their physical facts come from the pinned sources.
         ground_only = item_id in ground_only_ids
         identity_only = ground_only or item_id in WILLI_WASP_DECAY
-        semantics = definition.get("semantics") if identity_only else definition["semantics"]
+        semantics = (
+            definition.get("semantics") if identity_only else definition["semantics"]
+        )
         if identity_only and (
-            definition.get("kind") != "Item" or definition["identity"]["family"] != "Item"
+            definition.get("kind") != "Item"
+            or definition["identity"]["family"] != "Item"
         ):
             raise ValueError("QENGINE_REWARD_STATIC_IDENTITY")
         for group in ("physical", "stack", "container", "temporal"):
@@ -583,7 +608,10 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
                 semantics[group], record["semantics"][group]
             ):
                 raise ValueError(
-                    "QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:" + group + ":" + str(item_id)
+                    "QENGINE_REWARD_ITEM_CANONICAL_CONFLICT:"
+                    + group
+                    + ":"
+                    + str(item_id)
                 )
         if definition["stack_class"] not in (
             "Unknown",
@@ -595,15 +623,22 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         )
         if record["admission"]["legal_destinations"] != expected_destinations:
             raise ValueError("QENGINE_REWARD_ITEM_DESTINATION_DRIFT")
-        if item_id in STATIC_IDS and record["admission"]["stack_class"] != "NonStackable":
+        if (
+            item_id in STATIC_IDS
+            and record["admission"]["stack_class"] != "NonStackable"
+        ):
             raise ValueError("QENGINE_REWARD_STATIC_STACK_DRIFT")
         if semantics is not None:
-            record["semantics"] = accepted.accepted_first(semantics, record["semantics"])
+            record["semantics"] = accepted.accepted_first(
+                semantics, record["semantics"]
+            )
         prior = admitted.get(f"oteryn:item.tibia.i{item_id}")
         if prior is not None:
             refined = accepted.accepted_first(prior["semantics"], record["semantics"])
             record["semantics"] = (
-                accepted.accepted_first(semantics, refined) if semantics is not None else refined
+                accepted.accepted_first(semantics, refined)
+                if semantics is not None
+                else refined
             )
             record["attributes"] = accepted.accepted_first(
                 prior["attributes"], record["attributes"]
@@ -637,10 +672,14 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
         ],
         "scope": "Source-qualified portable quest custody, fixed Ground-only props and exact source corpse timers; no custom use or script activation.",
         "records": [
-            r for r in records if int(r["production_binding"]["external_id"]) in selected_ids
+            r
+            for r in records
+            if int(r["production_binding"]["external_id"]) in selected_ids
         ],
         "custody_promotions": [
-            r for r in records if int(r["production_binding"]["external_id"]) in CUSTODY_PROMOTIONS
+            r
+            for r in records
+            if int(r["production_binding"]["external_id"]) in CUSTODY_PROMOTIONS
         ],
     }
 
@@ -671,9 +710,9 @@ def reconcile(existing, observed):
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + field)
     merged = dict(existing)
     semantics = accepted.accepted_first(existing["semantics"], observed["semantics"])
-    if accepted.known_conflict(existing["semantics"], semantics) or accepted.known_conflict(
-        observed["semantics"], semantics
-    ):
+    if accepted.known_conflict(
+        existing["semantics"], semantics
+    ) or accepted.known_conflict(observed["semantics"], semantics):
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:semantics")
     merged["semantics"] = {
         field: value
@@ -694,7 +733,11 @@ def reconcile(existing, observed):
     optional = {"production_binding_qualification"}
     if existing.keys() - optional != observed.keys() - optional:
         raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:shape")
-    identity_fields = (existing.keys() | observed.keys()) - {"authoring", "attributes", "semantics"}
+    identity_fields = (existing.keys() | observed.keys()) - {
+        "authoring",
+        "attributes",
+        "semantics",
+    }
     for key in identity_fields:
         if existing.get(key) != observed.get(key):
             raise ValueError("QENGINE_REWARD_ITEM_NATIVE_CONFLICT:" + key)
@@ -703,7 +746,9 @@ def reconcile(existing, observed):
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     packet = capture(root)
-    generated[PROOF] = (json.dumps(packet, ensure_ascii=False, indent=2) + "\n").encode()
+    generated[PROOF] = (
+        json.dumps(packet, ensure_ascii=False, indent=2) + "\n"
+    ).encode()
     admit_records(
         root,
         generated,
@@ -715,18 +760,25 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     )
 
 
-def admit_records(root, generated, profile_path, manifest_path, order, canonical, records):
+def admit_records(
+    root, generated, profile_path, manifest_path, order, canonical, records
+):
     """Merge qualified physical profiles while preserving existing native owners."""
     document = json.loads(generated[profile_path])
     for existing in document["records"]:
         _known_speed_identity(existing)
-    present = {r["production_definition"]["production_key"]: r for r in document["records"]}
+    present = {
+        r["production_definition"]["production_key"]: r for r in document["records"]
+    }
     for record in records:
         key = record["production_definition"]["production_key"]
         known_speed = _admitted_known_speed(record, present.get(key))
         if key in present:
             prior = present[key]
-            if key in CUSTODY_PROMOTION_KEYS and "readable_writeable" in prior["semantics"]:
+            if (
+                key in CUSTODY_PROMOTION_KEYS
+                and "readable_writeable" in prior["semantics"]
+            ):
                 # The text owner retains an unresolved write-once target for these trophies.
                 record = {
                     **record,
@@ -766,7 +818,8 @@ def admit_records(root, generated, profile_path, manifest_path, order, canonical
             document["records"].append(record)
     document["records"].sort(key=order)
     raw = (
-        json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+        json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
     ).encode()
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
@@ -778,7 +831,9 @@ def admit_records(root, generated, profile_path, manifest_path, order, canonical
     if cosmetics_raw is None and (root / "content" / cosmetics).exists():
         cosmetics_raw = (root / "content" / cosmetics).read_bytes()
     if cosmetics_raw is not None:
-        if manifest["schema"] in {f"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v{i}" for i in range(1, 6)}:
+        if manifest["schema"] in {
+            f"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v{i}" for i in range(1, 6)
+        }:
             manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6"
         manifest["cosmetics"] = {
             "path": cosmetics,

@@ -28,375 +28,258 @@ const PUBLISHED_GRAVE_DANGER_LIVE: DefinitionHash =
 
 // A canonical citation can change when a different quest in its definition shard is
 // edited. For these exact citation-only refreshes, keep the published save identity.
-const CITATION_REFRESHES: &[(&str, DefinitionHash, DefinitionHash)] = &[
+const CITATION_REFRESHES: &[(&str, &[DefinitionHash], DefinitionHash)] = &[
     (
         "oteryn:quest.factions",
-        hash(b"443998012475d3e1daf6d0f0decc60f51d56fc03408583c6fd5c4927f86f5106"),
+        &[hash(
+            b"443998012475d3e1daf6d0f0decc60f51d56fc03408583c6fd5c4927f86f5106",
+        )],
         hash(b"16a0ebe1810d54cdaa467424e4e3f0ab02fa4a4b8a728d7aea33706c9957d738"),
     ),
     (
         "oteryn:quest.formogar_mine_hoist",
-        hash(b"94a749650b719e1d0221aa6ae103980b293e217efbc39da5e294e07a3f60987d"),
+        &[
+            hash(b"94a749650b719e1d0221aa6ae103980b293e217efbc39da5e294e07a3f60987d"),
+            hash(b"4dd6fb32f7883de4278a7096fa5a36ae077efa682522ae94abf97d8f02c1242c"),
+            hash(b"573f5ae9cf08a05018a99b7b773797326f93a2fd2e62025f5541bbcafb8795e7"),
+            hash(b"011e38be924e9587dc34a60e68ce55785a2813422ceeb40d35b82bd73a1857a0"),
+            hash(b"27004a9af9cc1bb7b59f061b9bbbd8b01a00e0f320a9d1e3682e91a41549ebdf"),
+            hash(b"2534afd2b057d81dce6c819eb3287d0a3e5c2f45de5e566278dd4960a1db1911"),
+            hash(b"23b3dd6ef1bb877686122ca1d97412221ec735bab162680a08b94743d8016bf9"),
+            hash(b"d91460774be98a4b174ae1c83d7d2c7e7efcf5fc5ac115f7cd60ae12094840fa"),
+            hash(b"617bff2ce025747e4a7747fce2009d039c79c0416d2ba226ed735d0ea5d76ede"),
+            hash(b"8e6dd324609ad288a973fc96293b0d8230bb51f8093f6e676199e7c173b6a191"),
+            hash(b"717ed235f59e2a87f75331f18199877f1324995ab8c3cf2d80cf52a1593d74ab"),
+        ],
         hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
     ),
     (
         "oteryn:quest.giant_smithhammer_quest",
-        hash(b"00820d29d902f9dd224a82ec10210292e273d8d2d98a758280451d3a54f338ca"),
+        &[
+            hash(b"00820d29d902f9dd224a82ec10210292e273d8d2d98a758280451d3a54f338ca"),
+            hash(b"4c294712b959c58cfc957e27be05b89278dedecda374e8f8a242169c81319722"),
+            hash(b"aee6849e771f86af9ac983344207ba160da0f0889441c0ae148b8c0a4d4cf4cc"),
+            hash(b"9501a6b0ebd1a3c91f01f62ce60193d4e60e963b89b35dd63874067e60b7a211"),
+            hash(b"5ce048870a692127563f83b2766a0b89034d2f74b09bb75c67826608d3f6ed64"),
+            hash(b"a5a9171709a883b61fe485bf7f11f04cdd7cf3bad7c3af22c2a977627ac0c3c6"),
+            hash(b"4db65fa625c6c170dd62e21fac749c3052ff2d98c9ef6257ea64693373647b04"),
+            hash(b"8c6b244adca3ac947bee105824abdc268648729a62add19adc897cc47845b1f1"),
+            hash(b"ae411e4ba985d12638e50fc7497cca6ca52ce87e02e2cb7b1382b9097a89ea5b"),
+        ],
         hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
     ),
     (
         "oteryn:quest.goblin_merchant_quest",
-        hash(b"0441ba70dc3784573be31f1cff59e7e6954a4d552652959a19c2786abd305b3d"),
+        &[
+            hash(b"0441ba70dc3784573be31f1cff59e7e6954a4d552652959a19c2786abd305b3d"),
+            hash(b"681ebe711c3e9c9624881d6ccd9ed49f4045563e6429329a516ebc0cb496f5f8"),
+            hash(b"26d7d2303a2ccd81de839f3a3653db3613762e14fcfec7573cb10c860db3bff0"),
+            hash(b"e5374a03d334a81681c8124b29a64a9a256ab626e7b242b10be790684136fe46"),
+            hash(b"cdaf632abd1feb4f61b76a2e03eb6c1bcd604b7e5f1bdff692c1289aea567b63"),
+            hash(b"3b0c0bf62b5e6e48922f569a845c4362af96e45e7ed1d5861a61bdc95eead228"),
+            hash(b"30c5f41357098fd2eda299fc3e35bb5f1d69e8469872f1d3368fc4d7792041da"),
+            hash(b"fe96732992ad3b207b75433d64569fffc0792eacc0eb6e2a16e80a636d5046ad"),
+            hash(b"c47908e169bd3d739136df750c3d5d9a227e73e579457abeb054329c0c3d3b5b"),
+        ],
         hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
     ),
     (
         "oteryn:quest.grave_danger_quest",
-        hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d"),
+        &[
+            hash(b"5c6e9bc04b7dc5881f879e073bf3165d452e599d3633b64416cf1f611ac9523d"),
+            hash(b"540cd73ad49e78251491ea0266f3930f000b57c26007a5fcb0dcaf2bea4a4113"),
+            hash(b"676537a62b92f7b97f27da4c44aab3fbb5dc1bbcd684c5173d99905a0927416a"),
+            hash(b"4736dfb1c2085d6000f06bb8a7cb811d4f55714a01e53f5c4f35a79b01db902f"),
+            hash(b"b29cb579067c778ba2fa8d4fba288bb8451dfb19486e87499877107d4f160789"),
+            hash(b"daec3ae8d16f98a0793bb3fdee1d20baacb36333f8f28bfa06b9f810d7a5c1be"),
+        ],
         GRAVE_DANGER_PRE_ZELOS,
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"8d5144f88d2889bd95d34648f36383a90b0bda712e4bd2f2b40d0256f0f854cd"),
+        &[
+            hash(b"8d5144f88d2889bd95d34648f36383a90b0bda712e4bd2f2b40d0256f0f854cd"),
+            hash(b"ffc0064a21640b08fd5cddd020cac005af21aed2fc98c8a0c76369e3ddbd33bf"),
+            hash(b"1eef1d1432518c55c87ff99b0462d5d0f43ba2412d3aa9873156df53ec9509c1"),
+            hash(b"bf28ee0fb34e8cb739fcaa7c0f6717f1eafdb599e54afffc4f94ff04042a2ef5"),
+            hash(b"bcfa73062ad864018ae4788e1fb314e73c105d5e5c06429dccae36caaba8e558"),
+            hash(b"6b3088673629c1cd58dbbd984e4d1d43eb18ba15e571584859f92ea46b81eb2f"),
+            hash(b"efd7667dbc0334f5c4213ce9bff5f53edd9d090007eb9f4c6a0f998fd9e5fcfc"),
+            hash(b"845f231a52f3b61457c2bfd659756cc076c73948215b0c1e4e5c686873dad697"),
+            hash(b"be926e9f2acf5908483637cc2f83c79dbeb7b3418c4051cb43a2ffa779233d65"),
+            hash(b"efe0803a67f5d52dd56ad28b9cece21419f5b7109b0f57752ebfc6eb2f978d17"),
+        ],
         hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
     ),
     (
         "oteryn:quest.grimvale_quest",
-        hash(b"ffc0064a21640b08fd5cddd020cac005af21aed2fc98c8a0c76369e3ddbd33bf"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
-    ),
-    // Shaman Treasure restores a UID in the shared Edron region citation.
-    (
-        "oteryn:quest.grimvale_quest",
-        hash(b"8d739e34de08f00342139183123982adb253d99776829429bcccaa471136702d"),
+        &[
+            hash(b"8d739e34de08f00342139183123982adb253d99776829429bcccaa471136702d"),
+            hash(b"87207e32015277e46a85905acf5e59ce524c22817b920255eeb62a7310f68923"),
+        ],
         hash(b"a12ba535924a59362bc81815385cc2164cd29b0a666f71c94340ff98a5a3970d"),
     ),
     (
-        "oteryn:quest.grimvale_quest",
-        hash(b"1eef1d1432518c55c87ff99b0462d5d0f43ba2412d3aa9873156df53ec9509c1"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
-    ),
-    (
         "oteryn:quest.heart_of_destruction_quest",
-        hash(b"d562a2963056485a18d5066552f7ece897ef7642bc2d4c703baebea8cfd45c88"),
+        &[
+            hash(b"d562a2963056485a18d5066552f7ece897ef7642bc2d4c703baebea8cfd45c88"),
+            hash(b"ca161893db0debcd005d1359f804106925c73f3e9fe397abb2fb710425dbb157"),
+            hash(b"b49004b3ac6547cf7f916ddfb0b343e2fd4a0315bcdf1d46c71f1a66def59154"),
+            hash(b"31d2eda46fbc8ceb31b0f874d61ac3cd5fb4a75b764007cbfb26753a557e1042"),
+            hash(b"e82d27abd4cf3c63aec484c243af15969b50b182ba5fd53e615a89b2682b0f73"),
+            hash(b"2848fd802cce5c88b001f01289c0dac7af6b769c3529b9ac3fd3278ef056a405"),
+            hash(b"939300991b2aeba03d7caea13110e0c65acc2ba02d6edeca688d7bb010e49f80"),
+            hash(b"24fc148f94a14a65c654cb3c583396ecd78928dfe925a3e02d96d4b939f3f0bb"),
+            hash(b"5fd58496a9bbec4ab0feda817d182f73fc9b562cfeee6c48ccec84df16fe064d"),
+            hash(b"d2b693bda2cb942c371056f6267c980bedff85882b81dbb1e3661732ba4b6e5d"),
+            hash(b"6932cd6660ef753b3d772eb61d25630e8885af55542c486a1f5e22be6d0c4abd"),
+        ],
         hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
     ),
     (
         "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"8395212c1ba468cb27802cf62a6235028b8b4500f9b4bcb053711bfda65fef1d"),
+        &[
+            hash(b"8395212c1ba468cb27802cf62a6235028b8b4500f9b4bcb053711bfda65fef1d"),
+            hash(b"36e6a39b51ab64edf9e285c81cb6248266c201b428f61841c490d136db4464e0"),
+            hash(b"13841887d2cda6862f0898037cc6441d42b704872ded826dfbecb3261a7727a7"),
+            hash(b"3565804c6beed42b4e4f88d875db68388c3b6ec34df17e0d892881ebdd46ca14"),
+            hash(b"d7d6e50db66e0c7aafb8d00355f40bd531d470a3ca8a7c04da4f9255d515acfb"),
+            hash(b"1338afbd82ba65494e5565ecdcf420ee35945e6bb146e54bccbda05d2e039791"),
+            hash(b"ad269982a9bdcc24960f74f743fe239aa043e4a10e123272b0f6949027847954"),
+            hash(b"7b5d449d50f32ca6d1a72ff58aa3c557f882358d32cc42259ea8614f7934bd05"),
+            hash(b"45f1e1cfde073c475a485ef92d29e9b6177b6e3fa1de7df67e4e2652aa3c462c"),
+            hash(b"59828756c8cdfdfcef9853acde04b5b420d372f1ca7b021213c2423ffa1469dd"),
+            hash(b"bcb632c2d8f98ea72960400637dcead1438c7267366415c3836be9a71e8963fd"),
+        ],
         hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
     ),
     (
         "oteryn:quest.hidden_threats_quest",
-        hash(b"c605417d3767ce5d646d6fd8f78eb64fc7c742ad26307249aa7205a49625e338"),
+        &[
+            hash(b"c605417d3767ce5d646d6fd8f78eb64fc7c742ad26307249aa7205a49625e338"),
+            hash(b"c00b18f773d09c9c372771d066dc470d85365aa27bfd2a1014583812cbccbd9b"),
+            hash(b"0a77d4d929a6c9719f3f39eb88a631595cf515da121f64fe84b4dc5e63826823"),
+            hash(b"997c65cbbd982f65e0099b3071c1708962f1d46ad2e37bfbc24f90997281dfed"),
+            hash(b"fc793d42c84350dbba73b31753ca10b1b94ee114b9c8d67c4cac9b2ad848b0e7"),
+            hash(b"1350f740c2780c11c22786cd4e0449c79f22fd245a47803bfaff85c44ecae2ae"),
+            hash(b"53345631c518ee8fd246468ff795ad043eb77d207ad03daaf2b368d5789015f7"),
+            hash(b"b9fd699bb82723a99a039107862d2920348cc47e38ab1dd99d8df5b3769965d9"),
+            hash(b"5710efb6a47e898a65a81660b74ee74e469d1ea3e4ceb14b5e3a0b5029ed4215"),
+            hash(b"8cbf1b4b88b94598939d9f352e1a4a69a2ba5ff13d0f5486d1f59eff8ccddc2d"),
+            hash(b"824fcc3e8d29376814c064b0c6343db5319456c1c186318caa16f8449a453f12"),
+        ],
         hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
     ),
     (
         "oteryn:quest.hydra_egg_quest",
-        hash(b"bf21c8ce62fd697df94d9125c787278372f8869088542a1a718ec7ba814f7dad"),
-        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
-    ),
-    (
-        "oteryn:quest.formogar_mine_hoist",
-        hash(b"4dd6fb32f7883de4278a7096fa5a36ae077efa682522ae94abf97d8f02c1242c"),
-        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
-    ),
-    (
-        "oteryn:quest.giant_smithhammer_quest",
-        hash(b"4c294712b959c58cfc957e27be05b89278dedecda374e8f8a242169c81319722"),
-        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
-    ),
-    (
-        "oteryn:quest.goblin_merchant_quest",
-        hash(b"681ebe711c3e9c9624881d6ccd9ed49f4045563e6429329a516ebc0cb496f5f8"),
-        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
-    ),
-    (
-        "oteryn:quest.grave_danger_quest",
-        hash(b"540cd73ad49e78251491ea0266f3930f000b57c26007a5fcb0dcaf2bea4a4113"),
-        GRAVE_DANGER_PRE_ZELOS,
-    ),
-    (
-        "oteryn:quest.grimvale_quest",
-        hash(b"bf28ee0fb34e8cb739fcaa7c0f6717f1eafdb599e54afffc4f94ff04042a2ef5"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
-    ),
-    (
-        "oteryn:quest.heart_of_destruction_quest",
-        hash(b"ca161893db0debcd005d1359f804106925c73f3e9fe397abb2fb710425dbb157"),
-        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
-    ),
-    (
-        "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"36e6a39b51ab64edf9e285c81cb6248266c201b428f61841c490d136db4464e0"),
-        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
-    ),
-    (
-        "oteryn:quest.hidden_threats_quest",
-        hash(b"c00b18f773d09c9c372771d066dc470d85365aa27bfd2a1014583812cbccbd9b"),
-        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
-    ),
-    (
-        "oteryn:quest.hydra_egg_quest",
-        hash(b"93f799015394a36b5896f0a862a860befd3f55a871778c5cfa2cbb6aeb1e35a7"),
+        &[
+            hash(b"bf21c8ce62fd697df94d9125c787278372f8869088542a1a718ec7ba814f7dad"),
+            hash(b"93f799015394a36b5896f0a862a860befd3f55a871778c5cfa2cbb6aeb1e35a7"),
+            hash(b"9b29515bba98d0b790f0bfdaa746c0223b6ccccf328e369370bcd9993a5a5067"),
+            hash(b"9e0e1064ccff5db2a9a3c7272e783136889ce9fe8721aacdae663e62f3423c99"),
+            hash(b"4410ec5c32a8a9991447e39703d77bcfb0145cb09c909765ff571789938ac534"),
+            hash(b"165adeeae7115720f419bc2aa99d6a942b24dd8b5a11af44016929c566335ada"),
+            hash(b"afabcb21148c24b6a84813da6046861ff35ea512193f4dd2e775234193336049"),
+        ],
         hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
     ),
     (
         "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"06686721ac1b4e2b9b8055018119ac9ac486bcc30976644dcc2bc1cd021f9811"),
+        &[
+            hash(b"06686721ac1b4e2b9b8055018119ac9ac486bcc30976644dcc2bc1cd021f9811"),
+            hash(b"90726ffb2298ce404833c2a08cee70eb699dd600256d2edf6763858d83697685"),
+            hash(b"05cdf255318dcd268826279656a9d779b53b88b8030efb2dc13600cb756d4b64"),
+            hash(b"87fac0d81843121fb8e0555c18f0497b81c9ab311058ab0547683c50200d602c"),
+            hash(b"046bc3914cc79a5d5f746a6dd56bab3ec6d0c77db6282615992fdb29cb3f3348"),
+            hash(b"b78d634978fcca046d0a4a9863448f6bdce8768754d80fa14fd040260a7834dd"),
+        ],
         hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
     ),
     (
         "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"2a0e84e7f04fe4eafff4c3824de035250c01f8c9317feb2773ba11391678e00b"),
-        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
-    ),
-    // Merged citation digests captured with quest_definition_hashes.
-    (
-        "oteryn:quest.formogar_mine_hoist",
-        hash(b"573f5ae9cf08a05018a99b7b773797326f93a2fd2e62025f5541bbcafb8795e7"),
-        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
-    ),
-    (
-        "oteryn:quest.giant_smithhammer_quest",
-        hash(b"aee6849e771f86af9ac983344207ba160da0f0889441c0ae148b8c0a4d4cf4cc"),
-        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
-    ),
-    (
-        "oteryn:quest.goblin_merchant_quest",
-        hash(b"26d7d2303a2ccd81de839f3a3653db3613762e14fcfec7573cb10c860db3bff0"),
-        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
-    ),
-    (
-        "oteryn:quest.heart_of_destruction_quest",
-        hash(b"b49004b3ac6547cf7f916ddfb0b343e2fd4a0315bcdf1d46c71f1a66def59154"),
-        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
-    ),
-    (
-        "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"13841887d2cda6862f0898037cc6441d42b704872ded826dfbecb3261a7727a7"),
-        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
-    ),
-    (
-        "oteryn:quest.hidden_threats_quest",
-        hash(b"0a77d4d929a6c9719f3f39eb88a631595cf515da121f64fe84b4dc5e63826823"),
-        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
-    ),
-    (
-        "oteryn:quest.grave_danger_quest",
-        hash(b"5379f875a00f92429abeaed968037bf4e2778416c0b62a7b4f31cc2ac7c4d0aa"),
-        hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e"),
-    ),
-    (
-        // The derived pre-Zelos definition keeps its exact saved defaults.
-        "oteryn:quest.grave_danger_quest",
-        hash(b"676537a62b92f7b97f27da4c44aab3fbb5dc1bbcd684c5173d99905a0927416a"),
-        GRAVE_DANGER_PRE_ZELOS,
-    ),
-    // Package 4 changes the placement inventory cited by these existing routes.
-    (
-        "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"90726ffb2298ce404833c2a08cee70eb699dd600256d2edf6763858d83697685"),
-        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
-    ),
-    (
-        "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"c5e817a79d863a9385dea01bfb4ab98f824a3a7d9be6656a1ee0ad1f19bbcb35"),
+        &[
+            hash(b"2a0e84e7f04fe4eafff4c3824de035250c01f8c9317feb2773ba11391678e00b"),
+            hash(b"c5e817a79d863a9385dea01bfb4ab98f824a3a7d9be6656a1ee0ad1f19bbcb35"),
+            hash(b"372df6f08b7588a01455b9f2ffef138d1bb52c70ee7b6ddde117babdd098b874"),
+            hash(b"e3b513a35624575283574370f7be62eb6b4edd46954d77fd99d8338fa437e569"),
+            hash(b"b8de92cb0d194f955969ae0e85b6ce47e18849b664742cebd656780cf6afad38"),
+            hash(b"1f2491941e888347f73919d391ecfbedbea6f1fb03433ed7e7edb5b008176d23"),
+        ],
         hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
     ),
     (
-        "oteryn:quest.formogar_mine_hoist",
-        hash(b"011e38be924e9587dc34a60e68ce55785a2813422ceeb40d35b82bd73a1857a0"),
-        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
-    ),
-    (
-        "oteryn:quest.giant_smithhammer_quest",
-        hash(b"9501a6b0ebd1a3c91f01f62ce60193d4e60e963b89b35dd63874067e60b7a211"),
-        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
-    ),
-    (
-        "oteryn:quest.goblin_merchant_quest",
-        hash(b"e5374a03d334a81681c8124b29a64a9a256ab626e7b242b10be790684136fe46"),
-        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
-    ),
-    (
         "oteryn:quest.grave_danger_quest",
-        hash(b"4736dfb1c2085d6000f06bb8a7cb811d4f55714a01e53f5c4f35a79b01db902f"),
-        GRAVE_DANGER_PRE_ZELOS,
-    ),
-    (
-        "oteryn:quest.grimvale_quest",
-        hash(b"bcfa73062ad864018ae4788e1fb314e73c105d5e5c06429dccae36caaba8e558"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
-    ),
-    (
-        "oteryn:quest.heart_of_destruction_quest",
-        hash(b"31d2eda46fbc8ceb31b0f874d61ac3cd5fb4a75b764007cbfb26753a557e1042"),
-        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
-    ),
-    (
-        "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"3565804c6beed42b4e4f88d875db68388c3b6ec34df17e0d892881ebdd46ca14"),
-        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
-    ),
-    (
-        "oteryn:quest.hidden_threats_quest",
-        hash(b"997c65cbbd982f65e0099b3071c1708962f1d46ad2e37bfbc24f90997281dfed"),
-        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
-    ),
-    (
-        "oteryn:quest.hydra_egg_quest",
-        hash(b"9b29515bba98d0b790f0bfdaa746c0223b6ccccf328e369370bcd9993a5a5067"),
-        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
-    ),
-    // Generated from the merged definitions and the published c3ca2e8dc loader.
-    (
-        "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"05cdf255318dcd268826279656a9d779b53b88b8030efb2dc13600cb756d4b64"),
-        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
-    ),
-    (
-        "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"372df6f08b7588a01455b9f2ffef138d1bb52c70ee7b6ddde117babdd098b874"),
-        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
-    ),
-    (
-        "oteryn:quest.formogar_mine_hoist",
-        hash(b"27004a9af9cc1bb7b59f061b9bbbd8b01a00e0f320a9d1e3682e91a41549ebdf"),
-        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
-    ),
-    (
-        "oteryn:quest.giant_smithhammer_quest",
-        hash(b"5ce048870a692127563f83b2766a0b89034d2f74b09bb75c67826608d3f6ed64"),
-        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
-    ),
-    (
-        "oteryn:quest.goblin_merchant_quest",
-        hash(b"cdaf632abd1feb4f61b76a2e03eb6c1bcd604b7e5f1bdff692c1289aea567b63"),
-        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
-    ),
-    (
-        "oteryn:quest.grave_danger_quest",
-        hash(b"622fd073a0be3b84c8c78c515db66bf8d09f18ba6fadb009b469572269c7c096"),
+        &[
+            hash(b"5379f875a00f92429abeaed968037bf4e2778416c0b62a7b4f31cc2ac7c4d0aa"),
+            hash(b"622fd073a0be3b84c8c78c515db66bf8d09f18ba6fadb009b469572269c7c096"),
+        ],
         hash(b"286f3e0a4fdaff0ae2a14494889fe2d3492c5bbd4d8668a4f9b2cdaa48e37e7e"),
     ),
     (
         "oteryn:quest.grave_danger_quest",
-        hash(b"b29cb579067c778ba2fa8d4fba288bb8451dfb19486e87499877107d4f160789"),
-        GRAVE_DANGER_PRE_ZELOS,
-    ),
-    (
-        "oteryn:quest.grimvale_quest",
-        hash(b"6b3088673629c1cd58dbbd984e4d1d43eb18ba15e571584859f92ea46b81eb2f"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
-    ),
-    (
-        "oteryn:quest.heart_of_destruction_quest",
-        hash(b"e82d27abd4cf3c63aec484c243af15969b50b182ba5fd53e615a89b2682b0f73"),
-        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
-    ),
-    (
-        "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"d7d6e50db66e0c7aafb8d00355f40bd531d470a3ca8a7c04da4f9255d515acfb"),
-        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
-    ),
-    (
-        "oteryn:quest.hidden_threats_quest",
-        hash(b"fc793d42c84350dbba73b31753ca10b1b94ee114b9c8d67c4cac9b2ad848b0e7"),
-        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
-    ),
-    (
-        "oteryn:quest.hydra_egg_quest",
-        hash(b"9e0e1064ccff5db2a9a3c7272e783136889ce9fe8721aacdae663e62f3423c99"),
-        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
-    ),
-    // Canonical Quest shard citations refreshed by the combined Crystal NPC content.
-    (
-        "oteryn:quest.ferumbras_ascension_quest",
-        hash(b"87fac0d81843121fb8e0555c18f0497b81c9ab311058ab0547683c50200d602c"),
-        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
-    ),
-    (
-        "oteryn:quest.forgotten_knowledge_quest",
-        hash(b"e3b513a35624575283574370f7be62eb6b4edd46954d77fd99d8338fa437e569"),
-        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
-    ),
-    (
-        "oteryn:quest.formogar_mine_hoist",
-        hash(b"2534afd2b057d81dce6c819eb3287d0a3e5c2f45de5e566278dd4960a1db1911"),
-        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
-    ),
-    (
-        "oteryn:quest.giant_smithhammer_quest",
-        hash(b"a5a9171709a883b61fe485bf7f11f04cdd7cf3bad7c3af22c2a977627ac0c3c6"),
-        hash(b"50bcf5c02dbbbd3a4ac6326dcd43ea563fa96fc8b1ca5d9274d3aa989a04d215"),
-    ),
-    (
-        "oteryn:quest.goblin_merchant_quest",
-        hash(b"3b0c0bf62b5e6e48922f569a845c4362af96e45e7ed1d5861a61bdc95eead228"),
-        hash(b"6a7abf586d279cd807c0ebd03967cab2116fc3bb036e72072a9ac1fccf81129b"),
-    ),
-    (
-        "oteryn:quest.grave_danger_quest",
-        hash(b"69f766380778b7206750fdb0c61124d6b2efba92d7001502012d7fa1d040b1d0"),
+        &[hash(
+            b"69f766380778b7206750fdb0c61124d6b2efba92d7001502012d7fa1d040b1d0",
+        )],
         PUBLISHED_GRAVE_DANGER_LIVE,
     ),
     (
-        "oteryn:quest.grimvale_quest",
-        hash(b"efd7667dbc0334f5c4213ce9bff5f53edd9d090007eb9f4c6a0f998fd9e5fcfc"),
-        hash(b"8485475de7287c1d16beffe6e14612fac04e2c8717c5c25ffb49012ea79d4de8"),
+        "oteryn:quest.grave_danger_quest",
+        &[
+            hash(b"5605ff5538ecb520e1a22c62ec5d64f8e6b7ffef27712b0c1492174247b9ee74"),
+            hash(b"de3fd7c3b92165f4cc71c57effa8beaa5a90aa8a305d365f22fc51a82baad1e5"),
+            hash(b"5e996375f282ec9d2d3b9d0fb17f46e3b19e8ae4443f6bf336299dedb010ad7d"),
+        ],
+        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
     ),
     (
-        "oteryn:quest.heart_of_destruction_quest",
-        hash(b"2848fd802cce5c88b001f01289c0dac7af6b769c3529b9ac3fd3278ef056a405"),
-        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
+        "oteryn:quest.the_ice_islands_quest",
+        &[hash(
+            b"2466334ebc8e1fe1c21a06e2eaec92d0048920c28ed8cf1abf27ba2a0038167d",
+        )],
+        hash(b"b31bab1af5526262b5b0590cf13b3b99947d18fe0d40ff1fbbbf24189199fdea"),
+    ),
+    // Exact citation refreshes measured across the integrated content train.
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        &[hash(
+            b"b5c362e28e85b935de1d7013a6cac14af4762101b7180dfa624a8199284ce206",
+        )],
+        hash(b"e612ad0f379b601b86b10d7c2b46d8e8ac7ce64c828cc12c5e4d686b9bf49620"),
     ),
     (
-        "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"1338afbd82ba65494e5565ecdcf420ee35945e6bb146e54bccbda05d2e039791"),
-        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+        "oteryn:quest.forgotten_knowledge_quest",
+        &[hash(
+            b"6aa8ccd292372accd01854fad5cc220d5af321308631bc1658172474dc005c20",
+        )],
+        hash(b"2c3b037dd13d724ea7b0371afc5756318c94d91285bfc6620aa710bb3005899f"),
     ),
     (
-        "oteryn:quest.hidden_threats_quest",
-        hash(b"1350f740c2780c11c22786cd4e0449c79f22fd245a47803bfaff85c44ecae2ae"),
-        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
+        "oteryn:quest.giant_smithhammer_quest",
+        &[hash(
+            b"2e4114efbc89f46d333713805e8ab81bc8c9205e5f213efbf96e71ab9e7aaaa3",
+        )],
+        hash(b"4242553063eec3ce16dd533c848c3f6a5cd716943b713c53a713ff42d8c80ce1"),
+    ),
+    (
+        "oteryn:quest.goblin_merchant_quest",
+        &[hash(
+            b"649dd6d0d108b695fb8c2c6fa3f0f7bbefeb6228a572603ac1ddb32ecfb1e8bf",
+        )],
+        hash(b"52f34079861497c5687b92fc1b02cc48bfd5072af466ca308c112c946c25f81f"),
+    ),
+    (
+        "oteryn:quest.grave_danger_quest",
+        &[hash(
+            b"5cbcc415adb5bb8ed3b77d0729ecff0950da236c0d0daa2aa03d4d1310241d18",
+        )],
+        hash(b"d1cdf6655a94744e239e485b9051f8e7d073be20d228a64e2fd1e19eda40840a"),
     ),
     (
         "oteryn:quest.hydra_egg_quest",
-        hash(b"4410ec5c32a8a9991447e39703d77bcfb0145cb09c909765ff571789938ac534"),
-        hash(b"78c0d4800b0094afbdf9a91ad444c7b8adbad1b2c6c5d8b3b48602837c69ffca"),
-    ),
-    // The same citation refresh before the Zelos questline effect.
-    (
-        "oteryn:quest.grave_danger_quest",
-        hash(b"5605ff5538ecb520e1a22c62ec5d64f8e6b7ffef27712b0c1492174247b9ee74"),
-        hash(b"9f3e5b1cb514d0aa4c8b475fd041fc61910791a53da2ce3ebd1cc80c9d31d2ab"),
-    ),
-    // Placement citations changed when the seven units were integrated.
-    (
-        "oteryn:quest.formogar_mine_hoist",
-        hash(b"23b3dd6ef1bb877686122ca1d97412221ec735bab162680a08b94743d8016bf9"),
-        hash(b"17d1d5c6239e5a9b23e4fdaa6ee89231368e507ced80608c055b9f66ede55ebb"),
-    ),
-    (
-        "oteryn:quest.heart_of_destruction_quest",
-        hash(b"939300991b2aeba03d7caea13110e0c65acc2ba02d6edeca688d7bb010e49f80"),
-        hash(b"4d4d919cff9c211b7996f838cf149b5ce8ea2437509eb323b65eaf8535d3cb5f"),
-    ),
-    (
-        "oteryn:quest.hero_of_rathleton_quest",
-        hash(b"ad269982a9bdcc24960f74f743fe239aa043e4a10e123272b0f6949027847954"),
-        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
-    ),
-    (
-        "oteryn:quest.hidden_threats_quest",
-        hash(b"53345631c518ee8fd246468ff795ad043eb77d207ad03daaf2b368d5789015f7"),
-        hash(b"0863383d44e7c74131f8d5424156f50df17a5ceb675eeb1be02218b288ebeadc"),
-    ),
-    // Exact pre-Zelos projection, with the integrated placement citations.
-    (
-        "oteryn:quest.grave_danger_quest",
-        hash(b"daec3ae8d16f98a0793bb3fdee1d20baacb36333f8f28bfa06b9f810d7a5c1be"),
-        GRAVE_DANGER_PRE_ZELOS,
+        &[hash(
+            b"4ccce72f5f05d84b3b7d08d6700eeb4870b3eb1fe51035c9a365a5eb8ce157ef",
+        )],
+        hash(b"ae002be99d3196b93a23087bd929766e6160482da9fc3f36e054d91e5acc32e6"),
     ),
 ];
 
@@ -416,6 +299,20 @@ const NEW_FRONTIER_NATIVE_PREDECESSORS: GameplayPredecessors = (
 // These definitions changed gameplay. Preserve their exact saved pins and keep the
 // new rules bound to the new hash. Existing absent-track defaults did not change.
 const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
+    (
+        "oteryn:quest.adventurers_guild",
+        hash(b"1ccc6851351d21c2d18943b259dbb017060607f9ab1421c4c36be4aadb4e9978"),
+        &[hash(
+            b"ae3b30a75e15f42fef0701e744bb27e91596aec92d794c9b969244d4668e7eae",
+        )],
+    ),
+    (
+        "oteryn:quest.adventures_of_galthen_quest",
+        hash(b"97f814314ddbe2aa7ca889e426f88d64c8fc38f83ae1bb753ddd9c23f18923bf"),
+        &[hash(
+            b"610d37ee99a353c9a5cb00020f3d425e1e8fe72df4b585878968abfb559a6445",
+        )],
+    ),
     // Captured by quest_definition_hashes on main 9295760b3 and the reviewed route definitions.
     (
         "oteryn:quest.factions",
@@ -772,7 +669,144 @@ const GAMEPLAY_PREDECESSORS: &[GameplayPredecessors] = &[
             hash(b"26da6d39754ac853af2a65436856b5b6f8b860dbdd5a5db4553b16fe2009ce4e"),
         ],
     ),
+    (
+        "oteryn:quest.an_uneasy_alliance_quest",
+        hash(b"f070da81828f66fd12f5e724544bb8bed5d956eadb6f818154ad3780e74c6839"),
+        &[hash(
+            b"5bd6915a3824b432e3e312bbdca7d301065770ee64cda78a1d1bc925b88732f5",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.asura_palace_quest",
+        hash(b"cfee58077cc792a8e8360d96a51c5fae025a539009d3f82689121dfc20290ede"),
+        &[
+            hash(b"a807363e56c5966b6e3bba458b4e29151bbf31230de20d129e0864e13c795a53"),
+            hash(b"f46458b071254e14908bea9b5f40d7924f6a3ca818e27c8961e01b35632d0518"),
+            hash(b"7d2ff46451588dd3ff2352c5db743480e1511730cce8c4ffcdf10f716a1d7caa"),
+        ],
+    ),
+    (
+        "oteryn:quest.chayenne_realm",
+        hash(b"cf99ff0b1b68f740343bc53faeff3928a1dd510b10b69f28a17c58c26f669a31"),
+        &[hash(
+            b"200ff087735610eda7ae1d765c08491c3508fbff97967865b6cba1a1045b9d10",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.braindeath_quest",
+        hash(b"8d8ea321374b01ddba4e073076959274c1d7d5bf03bb32d73240a50ec871c227"),
+        &[hash(
+            b"4e9b33f69585e0ce52302cfb0f018fd66c2864a6aec3259b2fc80757cf818940",
+        )],
+    ),
+    (
+        "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+        hash(b"7a5d8ac354c809d1406bd86f2bb2738764c9d0643a19adfb0cde06f1da329783"),
+        &[hash(
+            b"312cde5287a319cb4039095c61013abaadfa04c2fc34016c634baa4270160222",
+        )],
+    ),
+    (
+        "oteryn:quest.barbarian_test",
+        hash(b"18aa3b81e3b3462295a80b435696a7e9e66a739b0c26c199e6c0f1abbe6f89cb"),
+        &[hash(
+            b"036f08fefe3ff5f327c3801288be0dfae04987f4badfd00678a1db653490797b",
+        )],
+    ),
+    (
+        "oteryn:quest.battle_mage_outfits_quest",
+        hash(b"a19162baec7e41dd0e4c5b3332819dce4dd6b8f4a2bb300cd5f14ab58c4aff90"),
+        &[
+            hash(b"292c00bd7c415835a998f3f249239c9b0b78d2f712bd8a347cb0759bfbdc81e8"),
+            hash(b"5ad0bfbad1d580750ff170af788693571ddf9dcd7cd544a4a001c315e74f38b9"),
+        ],
+    ),
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+        &[hash(
+            b"e86e12f668231e6ff93181caf6bd34a4dde5b7d53b9bacff6bc4a44bd12fb464",
+        )],
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        &[hash(
+            b"298abe628683287d3aa5939bb4769361cccfeb586946e8956daa886f9b37a51a",
+        )],
+    ),
+    (
+        "oteryn:quest.the_ice_islands_quest",
+        hash(b"b31bab1af5526262b5b0590cf13b3b99947d18fe0d40ff1fbbbf24189199fdea"),
+        &[
+            hash(b"825a74759b817bb6d3bf39bfb339748ef62a5e30d96d5d0e2b93022734a71a6f"),
+            hash(b"299b92c459921a7f30b4128518dc869fc7e7f6de3d50dbcf3be09ee05dcb44c0"),
+        ],
+    ),
+    (
+        "oteryn:quest.the_secret_library_quest",
+        hash(b"22db0b0b39a6a299def5ea0466fd0def68f98d9ccba6e209ae2108ecefec0a6b"),
+        &[hash(
+            b"8d54b990bfdaf4e00123a18a7132517508dd920b997598f996419bbbb25ca008",
+        )],
+    ),
 ];
+
+pub(super) const DRAGON_CORPSE_PREDECESSOR: (&str, DefinitionHash) = (
+    "oteryn:quest.dragon_corpse_quest",
+    hash(b"ba645250c7b9827e710e57059c40e56ba56c1950c76433932125927c670b2f06"),
+);
+
+// Main at 3e09916423 before the donor routes attached new tracks and transitions.
+const SOURCE_ROUTE_PREDECESSORS: &[(&str, DefinitionHash)] = &[
+    (
+        "oteryn:quest.captain_iglues_treasure_quest",
+        hash(b"fb2d072d598f8543e7007e182645ef920900cb1b413e99aa2f114bf43a300477"),
+    ),
+    (
+        "oteryn:quest.cave_explorer_outfits_quest",
+        hash(b"9f18e63d91bb37882efd544b61e2d14dde49dc6b04422a006049aba3dc3f3c6c"),
+    ),
+    (
+        "oteryn:quest.chayenne_realm",
+        hash(b"245b1686c81a2abef73c1525e7ed55e6fc628ea056d9da81963b962f59f69a08"),
+    ),
+    (
+        "oteryn:quest.children_of_the_revolution_quest",
+        hash(b"e91b65cb6e0a69e9b4473bb83db970a115bd631acbfae34b7a7e5f8d740e52c2"),
+    ),
+    (
+        "oteryn:quest.crystal_wand_quest",
+        hash(b"84012a12a60d5371070c5fea63caf66af7b05807b9f3d36a6c8d77a7cfeea557"),
+    ),
+    DRAGON_CORPSE_PREDECESSOR,
+    (
+        "oteryn:quest.spike_task",
+        hash(b"056a2e30ee5ff71b52331a31967a02804df035b2f8b0befe321d8869809829bb"),
+    ),
+    (
+        "oteryn:quest.spike_task",
+        hash(b"3f03edd9b13bd48938ee76a9644e0c1f0acbe2528199ca6d0f3811202177ac7f"),
+    ),
+];
+
+pub(super) fn retain_source_route_predecessors(catalogue: &mut QuestStateCatalogue) {
+    for &(quest, saved) in SOURCE_ROUTE_PREDECESSORS {
+        if catalogue
+            .definition_hash(quest)
+            .is_some_and(|current| current != saved)
+        {
+            catalogue
+                .predecessors
+                .entry(quest.into())
+                .or_default()
+                .push(NpcDefinitionPredecessor {
+                    hash: saved,
+                    defaults: Default::default(),
+                });
+        }
+    }
+}
 
 // Published by the production loader on main at 95e63dc1c, before Dread Lord.
 pub(super) const BROTHERHOOD_BEFORE_DREAD_LORD: DefinitionHash =
@@ -783,6 +817,9 @@ const TIBIA_TALES_TRAIN_SUCCESSOR: DefinitionHash =
     hash(b"08ddd97de427afb52741eacdef7781de95f438f5a86a88915d484b447e885db7");
 const TIBIA_TALES_WITHOUT_ARITO_REFERRAL: DefinitionHash =
     hash(b"3e47096ea96ec29008c3666724672aeea3489bcd8e02ce3131c5be0a2837f05f");
+
+const TIBIA_TALES_WITH_LIONS_ROCK: DefinitionHash =
+    hash(b"97df564833d439d17ea75888b3cafc53c7551b489aa52f58b2dc4640f8c38362");
 
 // Exact successors captured from the integrated production loader. The unit
 // hashes remain valid predecessors for their own quest.
@@ -858,6 +895,51 @@ const CONTENT_TRAIN_SUCCESSORS: &[(&str, DefinitionHash, DefinitionHash)] = &[
         hash(b"6aba631a049bcb9213d7192bcc98fcaf7c94ef7ce643c4c741c7f738f3e0a233"),
         NEW_FRONTIER_AUTHORED_PIN,
     ),
+    (
+        "oteryn:quest.barbarian_test",
+        hash(b"18aa3b81e3b3462295a80b435696a7e9e66a739b0c26c199e6c0f1abbe6f89cb"),
+        hash(b"b093eed3bfc25b81c1aff81ab93a2316ba426353ec608ff705f21b3bd410f1be"),
+    ),
+    (
+        "oteryn:quest.battle_mage_outfits_quest",
+        hash(b"a19162baec7e41dd0e4c5b3332819dce4dd6b8f4a2bb300cd5f14ab58c4aff90"),
+        hash(b"7e24a445ca8fc5bc5e3443dd38c23bafa6f01b4815b666a652291f36305a1edf"),
+    ),
+    (
+        "oteryn:quest.ferumbras_ascension_quest",
+        hash(b"2c5453b476d04277fef5fcb9a0816805c039d3361eea70bf28ffda1846693c8f"),
+        hash(b"e612ad0f379b601b86b10d7c2b46d8e8ac7ce64c828cc12c5e4d686b9bf49620"),
+    ),
+    (
+        "oteryn:quest.forgotten_knowledge_quest",
+        hash(b"4c96930f43d73c762b1f0e546c0f71aa11a24a504fbde760e03327b4e0db74ce"),
+        hash(b"2c3b037dd13d724ea7b0371afc5756318c94d91285bfc6620aa710bb3005899f"),
+    ),
+    (
+        "oteryn:quest.nightmare_outfits_quest",
+        hash(b"dc94a505cae469502aacecb2886cf794f483a0a5082583c9c9fdf505f592bca2"),
+        hash(b"63d6c648bcbc087f4277361c686926870b2df2c73d6570d3dd8ea13fbe7cabc1"),
+    ),
+    (
+        "oteryn:quest.the_ice_islands_quest",
+        hash(b"fdaedce30df4cf940d0022e341e5c0e9be4025a17564ae8f0fed960e350cfe4e"),
+        hash(b"026ddacf9e11904f68123efbfaf0f8b19337ad6fd717809e2bf18e426d30a0ae"),
+    ),
+    (
+        "oteryn:quest.the_ice_islands_quest",
+        hash(b"b31bab1af5526262b5b0590cf13b3b99947d18fe0d40ff1fbbbf24189199fdea"),
+        hash(b"026ddacf9e11904f68123efbfaf0f8b19337ad6fd717809e2bf18e426d30a0ae"),
+    ),
+    (
+        "oteryn:quest.the_secret_library_quest",
+        hash(b"22db0b0b39a6a299def5ea0466fd0def68f98d9ccba6e209ae2108ecefec0a6b"),
+        hash(b"e5f4033817cca4c9f267379f185fa7c6ed2f2ec755544abc132221dc9b49b0a2"),
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        TIBIA_TALES_WITHOUT_ARITO_REFERRAL,
+        TIBIA_TALES_WITH_LIONS_ROCK,
+    ),
 ];
 
 fn is_content_train_successor(
@@ -874,6 +956,7 @@ fn is_successor(quest: &str, current: DefinitionHash, active: Option<DefinitionH
     active == Some(current)
         || (quest == "oteryn:quest.tibia_tales"
             && (active == Some(TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+                || active == Some(TIBIA_TALES_WITH_LIONS_ROCK)
                 || (current != TIBIA_TALES_WITHOUT_ARITO_REFERRAL
                     && active == Some(TIBIA_TALES_TRAIN_SUCCESSOR))))
         || is_content_train_successor(quest, current, active)
@@ -894,8 +977,56 @@ const AUTHORED_GAMEPLAY_PREDECESSORS: &[(&str, DefinitionHash, &[DefinitionHash]
 pub(super) fn published_hash(quest: &str, current: DefinitionHash) -> DefinitionHash {
     CITATION_REFRESHES
         .iter()
-        .find(|(owner, refreshed, _)| *owner == quest && *refreshed == current)
+        .find(|(owner, refreshed, _)| *owner == quest && refreshed.contains(&current))
         .map_or(current, |(_, _, published)| *published)
+}
+
+// The exact replacement NPC snapshots have the same absent-track defaults as the
+// earlier live snapshots. Preserve both under the measured active definition.
+const NPC_SNAPSHOT_PREDECESSORS: &[(&str, DefinitionHash, DefinitionHash, DefinitionHash)] = &[
+    (
+        "oteryn:quest.grave_danger_quest",
+        hash(b"d1cdf6655a94744e239e485b9051f8e7d073be20d228a64e2fd1e19eda40840a"),
+        GRAVE_DANGER_PRE_ZELOS,
+        hash(b"62b1a9c525aea095845afd89a9bfa0d478b729b851dc86d006eacb3b5b405e2f"),
+    ),
+    (
+        "oteryn:quest.hero_of_rathleton_quest",
+        hash(b"a124f146976b28bfedba9bf73d43e425fed9267ba60e7c23a523faba0bd11b38"),
+        hash(b"cab96523f101dda9dea22ea0b0c6b3a88054c5c5f71949e5f93f205fac1495f6"),
+        hash(b"aec1fbb66d6cbb19a6d3d9fa5c3a51999d1f159c8d1cee8d427ad3075adea0a5"),
+    ),
+    (
+        "oteryn:quest.tibia_tales",
+        TIBIA_TALES_WITH_LIONS_ROCK,
+        hash(b"26e770c01a6deddd293cde040494caabee10def864f616bac7e8afa01b7d5dde"),
+        hash(b"52cc0637ab01ee36326fbbd0f9f89aa45579e78d280cfea01ca44481eb27d64c"),
+    ),
+];
+
+fn retain_npc_snapshot_predecessors(catalogue: &mut QuestStateCatalogue) {
+    for &(quest, active, saved, replacement) in NPC_SNAPSHOT_PREDECESSORS {
+        if catalogue.definition_hash(quest) != Some(active) {
+            continue;
+        }
+        let Some(defaults) =
+            super::npc_rules::legacy_defaults(catalogue, quest, &replacement).cloned()
+        else {
+            continue;
+        };
+        let predecessors = catalogue.predecessors.entry(quest.into()).or_default();
+        if let Some(previous) = predecessors
+            .iter_mut()
+            .find(|previous| previous.hash == saved)
+        {
+            previous.defaults = defaults;
+        } else {
+            predecessors.push(NpcDefinitionPredecessor {
+                hash: saved,
+                defaults,
+            });
+        }
+    }
 }
 
 pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
@@ -905,6 +1036,7 @@ pub(super) fn retain_predecessors(catalogue: &mut QuestStateCatalogue) {
             .iter()
             .chain([&NEW_FRONTIER_NATIVE_PREDECESSORS]),
     );
+    retain_npc_snapshot_predecessors(catalogue);
 }
 
 pub(super) fn retain_authored_predecessors(catalogue: &mut QuestStateCatalogue) {
@@ -941,6 +1073,17 @@ mod tests {
     use crate::quest::{loader, npc_rules};
 
     #[test]
+    fn dragon_corpse_accepts_the_published_cave_pin() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let (quest, saved) = DRAGON_CORPSE_PREDECESSOR;
+        assert_ne!(catalogue.definition_hash(quest), Some(saved));
+        assert!(npc_rules::legacy_defaults(catalogue, quest, &saved).is_some());
+        Ok(())
+    }
+
+    #[test]
     fn nomads_land_accepts_main_save_under_the_composed_tibia_tales_pin() -> Result<(), String> {
         let loaded =
             loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
@@ -949,11 +1092,12 @@ mod tests {
         let main = hash(b"8d75517e41359a25abea653c8fd44fa5b4d2768c1470d9acaa9442b73f543065");
         assert_eq!(
             catalogue.definition_hash(quest),
-            Some(TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+            Some(TIBIA_TALES_WITH_LIONS_ROCK)
         );
         for (successor, accepted) in [
             (TIBIA_TALES_TRAIN_SUCCESSOR, true),
             (TIBIA_TALES_WITHOUT_ARITO_REFERRAL, true),
+            (TIBIA_TALES_WITH_LIONS_ROCK, true),
             ([0x5a; 32], false),
         ] {
             catalogue.predecessors.remove(quest);
@@ -966,7 +1110,15 @@ mod tests {
             assert_eq!(
                 npc_rules::legacy_defaults(&catalogue, quest, &TIBIA_TALES_TRAIN_SUCCESSOR)
                     .is_some(),
-                successor == TIBIA_TALES_WITHOUT_ARITO_REFERRAL
+                matches!(
+                    successor,
+                    TIBIA_TALES_WITHOUT_ARITO_REFERRAL | TIBIA_TALES_WITH_LIONS_ROCK
+                )
+            );
+            assert_eq!(
+                npc_rules::legacy_defaults(&catalogue, quest, &TIBIA_TALES_WITHOUT_ARITO_REFERRAL)
+                    .is_some(),
+                successor == TIBIA_TALES_WITH_LIONS_ROCK
             );
         }
         Ok(())
@@ -997,6 +1149,29 @@ mod tests {
             )
             .is_some()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_routes_keep_exact_main_quest_pins() -> Result<(), String> {
+        let loaded =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        for &(quest, saved) in SOURCE_ROUTE_PREDECESSORS {
+            let current = catalogue.definition_hash(quest).ok_or(quest)?;
+            if current != saved {
+                assert!(
+                    npc_rules::legacy_defaults(catalogue, quest, &saved).is_some(),
+                    "{quest}"
+                );
+            }
+            let mut unrelated = saved;
+            unrelated[0] ^= 1;
+            assert!(
+                npc_rules::legacy_defaults(catalogue, quest, &unrelated).is_none(),
+                "{quest}"
+            );
+        }
         Ok(())
     }
 
@@ -1046,12 +1221,12 @@ mod tests {
         let catalogue = loaded.catalogue();
 
         for &(quest, refreshed, published) in CITATION_REFRESHES {
-            assert_eq!(published_hash(quest, refreshed), published, "{quest}");
             let active = catalogue.definition_hash(quest);
             if active != Some(published)
-                && CONTENT_TRAIN_SUCCESSORS
-                    .iter()
-                    .any(|&(owner, _, train)| owner == quest && active == Some(train))
+                && (quest == "oteryn:quest.grave_danger_quest"
+                    || CONTENT_TRAIN_SUCCESSORS
+                        .iter()
+                        .any(|&(owner, _, train)| owner == quest && active == Some(train)))
             {
                 // These quests have since gained gameplay changes. Each citation
                 // variant still resolves to the exact published predecessor.
@@ -1062,12 +1237,15 @@ mod tests {
             } else {
                 assert_eq!(active, Some(published), "{quest}");
             }
-            let mut unrelated_revision = refreshed;
-            unrelated_revision[0] ^= 1;
-            assert_eq!(
-                published_hash(quest, unrelated_revision),
-                unrelated_revision
-            );
+            for &citation in refreshed {
+                assert_eq!(published_hash(quest, citation), published, "{quest}");
+                let mut unrelated_revision = citation;
+                unrelated_revision[0] ^= 1;
+                assert_eq!(
+                    published_hash(quest, unrelated_revision),
+                    unrelated_revision
+                );
+            }
         }
         for &(quest, current, previous) in GAMEPLAY_PREDECESSORS
             .iter()
@@ -1105,6 +1283,20 @@ mod tests {
                 foreign[0] ^= 1;
                 assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
             }
+        }
+        for &(quest, active, saved, replacement) in NPC_SNAPSHOT_PREDECESSORS {
+            assert_eq!(catalogue.definition_hash(quest), Some(active), "{quest}");
+            let defaults = npc_rules::legacy_defaults(catalogue, quest, &replacement)
+                .ok_or("replacement NPC snapshot defaults")?;
+            assert!(!defaults.is_empty(), "{quest}");
+            assert_eq!(
+                npc_rules::legacy_defaults(catalogue, quest, &saved),
+                Some(defaults),
+                "{quest}"
+            );
+            let mut foreign = saved;
+            foreign[0] ^= 1;
+            assert!(npc_rules::legacy_defaults(catalogue, quest, &foreign).is_none());
         }
         Ok(())
     }

@@ -738,6 +738,7 @@ pub mod native_doors;
 pub mod kill_objectives;
 pub mod carlos_trade;
 mod persist;
+mod lost_palace_raider;
 mod planegazer_finale;
 pub mod native_kills;
 pub(crate) mod native_observation;
@@ -755,7 +756,7 @@ pub mod source_deaths;
 pub mod soul_war_source;
 mod storage;
 mod task_board_use;
-mod terrain_use;
+pub(super) mod terrain_use;
 pub use terrain_use::TerrainUseObservation;
 mod world_change_journal_rewards;
 #[cfg(test)]

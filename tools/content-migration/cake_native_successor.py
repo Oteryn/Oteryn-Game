@@ -179,7 +179,7 @@ def admit(root, generated):
     result = dict(generated)
     result[CREATURES] = canonical_bytes(creatures)
     result[PRESENTATIONS] = canonical_bytes(presentations)
-    result[LOOT] = loot_successor(root, creatures)
+    # Native registration builds the loot closure after all Item cohorts are admitted.
     manifest = json.loads(result['content/spells.manifest.json'])
     for field, path in [('creature_profiles', CREATURES), ('presentation_profiles', PRESENTATIONS)]:
         manifest[field]['sha256'] = hashlib.sha256(result[path]).hexdigest()

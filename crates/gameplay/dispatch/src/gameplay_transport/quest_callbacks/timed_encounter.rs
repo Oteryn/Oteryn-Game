@@ -332,7 +332,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     index += 1;
                     continue;
                 };
-                for actor in census {
+                let mound = oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(
+                    &memo.callback,
+                )
+                .is_some();
+                // Mound decay restores the tile independently of the summoned creature.
+                for actor in census.into_iter().filter(|_| !mound) {
                     let in_room = runtime
                         .read_actor_position(actor)
                         .ok()

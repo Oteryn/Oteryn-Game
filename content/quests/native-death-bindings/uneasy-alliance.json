@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "runtime_enabled": true,
+  "quest": "oteryn:quest.an_uneasy_alliance_quest",
+  "tracks": [],
+  "rules": [
+    {
+      "creature": "oteryn:creature.renegade_orc",
+      "transition": "oteryn:quest-transition/uneasy-alliance/renegade-orc-death",
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/questline",
+          "default": 0,
+          "from": {
+            "kind": "eq",
+            "value": 1
+          },
+          "add": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/an_uneasy_alliance/quest_door",
+          "default": 0,
+          "from": {
+            "kind": "eq",
+            "value": 0
+          },
+          "set": 1
+        }
+      ],
+      "room": null,
+      "define_transition": true,
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua#L3-L9"
+      ]
+    }
+  ]
+}

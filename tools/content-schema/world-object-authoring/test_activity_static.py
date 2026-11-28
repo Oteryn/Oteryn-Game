@@ -7,12 +7,28 @@ import unittest
 from pathlib import Path
 
 import activity_static
+import classic_quest_ground
 import world_objects
 
 ROOT = Path(__file__).resolve().parents[3]
 
 
 class ActivityStaticTests(unittest.TestCase):
+    def test_bear_cave_note_has_one_position_across_publishers(self):
+        index = json.loads((ROOT / classic_quest_ground.INDEX).read_bytes())
+        expected = index["notes"]
+        bear = classic_quest_ground.NOTE
+        first = expected.replace(bear, "")
+        marker = " Additionally two appearance-only Blood Vestibule"
+        index["notes"] = first.replace(marker, bear + marker)
+        self.assertEqual(
+            activity_static.compose_terrain_notes(index["notes"]), expected
+        )
+        published = classic_quest_ground.outputs(terrain_index=json.dumps(index))
+        self.assertEqual(
+            json.loads(published[classic_quest_ground.INDEX])["notes"], expected
+        )
+
     def test_m25_exact_source_static_cohort_is_registered_without_item_aliases(self):
         # Actual pinned OTBM room+waiting+exit stacks; each source.policies row
         # is immutable, nonpickupable and has no dynamic Item owner.

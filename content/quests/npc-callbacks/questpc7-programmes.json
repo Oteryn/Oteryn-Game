@@ -120,7 +120,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674",
         "https://tibia.fandom.com/?curid=89657&oldid=1153851"
@@ -184,7 +184,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ]
@@ -230,7 +230,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ]
@@ -277,7 +277,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
         "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
       ]
@@ -315,7 +315,7 @@
         "Your fiend commission qualification is recorded."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
       ],
       "requires": [
@@ -362,7 +362,7 @@
         "Your fiend complete qualification is recorded."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
       ],
       "requires": [
@@ -413,7 +413,7 @@
         "Your fiend first token qualification is recorded."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
       ],
       "requires": [
@@ -464,7 +464,7 @@
         "Your fiend second token qualification is recorded."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
       ],
       "requires": [
@@ -505,7 +505,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
@@ -548,7 +548,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
@@ -584,7 +584,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
@@ -627,7 +627,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
@@ -670,7 +670,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
@@ -713,7 +713,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
@@ -755,7 +755,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
@@ -798,7 +798,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
@@ -841,7 +841,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
@@ -882,7 +882,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
@@ -920,7 +920,7 @@
         "Visit our anniversary exhibition beside the northeastern palace display, then use the display to claim your Formal Dress."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:5aaa2ed0aa9b2b0e2e018dcf949ad1986372a3471d4b16855ff6c813750d1001",
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:a7dfa077a030d597605a5cdd5d0512a8ca5f739b52cb6123ec7602361e6b3ffc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ]
     },
@@ -965,7 +965,7 @@
         "Attach this Brass Button, then ask me for a {formal decorative plume}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:5aaa2ed0aa9b2b0e2e018dcf949ad1986372a3471d4b16855ff6c813750d1001",
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:a7dfa077a030d597605a5cdd5d0512a8ca5f739b52cb6123ec7602361e6b3ffc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ]
     },
@@ -1006,7 +1006,7 @@
         "Your Formal Dress exhibition programme is complete. You are Sharp Dressed!"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:5aaa2ed0aa9b2b0e2e018dcf949ad1986372a3471d4b16855ff6c813750d1001",
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:a7dfa077a030d597605a5cdd5d0512a8ca5f739b52cb6123ec7602361e6b3ffc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ]
     },
@@ -1051,7 +1051,7 @@
         "Attach this Decorative Plume, then ask me to {complete formal dress}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:5aaa2ed0aa9b2b0e2e018dcf949ad1986372a3471d4b16855ff6c813750d1001",
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:a7dfa077a030d597605a5cdd5d0512a8ca5f739b52cb6123ec7602361e6b3ffc",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ]
     },
@@ -1091,7 +1091,7 @@
       ],
       "sources": [
         "https://tibia.fandom.com/index.php?title=Blessed!&oldid=844049",
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
       ]
     },
@@ -1121,7 +1121,7 @@
         "Your Friends and Traders programme is complete."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
       ],
       "completes": true
@@ -1157,7 +1157,7 @@
         "I can now spin ten spider silks into one spool of yarn."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:1-136:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
       ]
     },
@@ -1187,7 +1187,7 @@
         "Bring three bast skirts for my partner."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ]
     },
@@ -1222,7 +1222,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:1-207:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
       ]
     },
@@ -1257,7 +1257,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:1-194:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4"
       ]
     },
@@ -1292,7 +1292,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:1-176:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
       ]
     },
@@ -1327,7 +1327,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:1-177:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62"
       ]
     },
@@ -1362,7 +1362,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:1-232:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786"
       ]
     },
@@ -1397,7 +1397,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
       ]
     },
@@ -1432,7 +1432,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rahkem.lua:1-452:sha256:5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174"
       ]
     },
@@ -1467,7 +1467,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:1-143:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f"
       ]
     },
@@ -1502,7 +1502,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:1-180:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
       ]
     },
@@ -1537,7 +1537,7 @@
         "Your stake has received this line of the prayer."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:1-176:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
       ]
     },
@@ -1577,7 +1577,7 @@
         "Cling clang!"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ],
       "counter": {
@@ -1616,7 +1616,7 @@
         "Now I can forge royal steel for you."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
       ]
     },
@@ -1650,7 +1650,7 @@
         "Here is your wooden stake."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gamon.lua:1-191:sha256:466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
       ],
       "fee": {
@@ -1694,7 +1694,7 @@
         "Here is your spool of yarn."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:1-136:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
       ],
       "counter": {
@@ -1755,7 +1755,7 @@
         "Your advertisement task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -1827,7 +1827,7 @@
         "Your advertisement task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -1881,7 +1881,7 @@
         "Your busy task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -1935,7 +1935,7 @@
         "Your busy task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2007,7 +2007,7 @@
         "Your destroy task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2079,7 +2079,7 @@
         "Your destroy task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2133,7 +2133,7 @@
         "Your guards task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2194,7 +2194,7 @@
         "Your guards task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2251,7 +2251,7 @@
         "Your kill task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2300,7 +2300,7 @@
         "Your kill task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2365,7 +2365,7 @@
         "Your perfume task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2431,7 +2431,7 @@
         "Your perfume task is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2511,7 +2511,7 @@
         "All six swamp jobs are accepted: place three signs, gather four odours, catch three adventurers, apply rat urine, smash three trunks and hunt five marsh stalkers. Ask to buy swamp kit for the source-priced tools."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
       ]
     },
@@ -2569,7 +2569,7 @@
         "Here are three advertisement signs, a guardcatcher, a perfume gatherer, rat urine and a trunkhammer. The total is 1125 gold."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
       ],
       "fee": {
@@ -2608,7 +2608,7 @@
         "Rafzan pays you for the completed advertisement task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2669,7 +2669,7 @@
         "Rafzan pays you for the completed advertisement task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2729,7 +2729,7 @@
         "Rafzan pays you for the completed advertisement task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2789,7 +2789,7 @@
         "Rafzan pays you for the completed busy task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2849,7 +2849,7 @@
         "Rafzan pays you for the completed busy task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2908,7 +2908,7 @@
         "Rafzan pays you for the completed busy task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -2968,7 +2968,7 @@
         "Rafzan pays you for the completed destroy task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3028,7 +3028,7 @@
         "Rafzan pays you for the completed destroy task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3087,7 +3087,7 @@
         "Rafzan pays you for the completed destroy task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3147,7 +3147,7 @@
         "Rafzan pays you for the completed guards task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3207,7 +3207,7 @@
         "Rafzan pays you for the completed guards task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3266,7 +3266,7 @@
         "Rafzan pays you for the completed guards task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3326,7 +3326,7 @@
         "Rafzan pays you for the completed kill task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3386,7 +3386,7 @@
         "Rafzan pays you for the completed kill task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3445,7 +3445,7 @@
         "Rafzan pays you for the completed kill task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3510,7 +3510,7 @@
         "Rafzan pays you for the completed perfume task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3575,7 +3575,7 @@
         "Rafzan pays you for the completed perfume task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3639,7 +3639,7 @@
         "Rafzan pays you for the completed perfume task."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
         "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277"
       ],
@@ -3697,7 +3697,7 @@
         "Your basic Golden outfit is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "fee": {
@@ -3733,7 +3733,7 @@
         "Your account already owns it. I have recorded this commission step."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "requires_outfits": [
@@ -3765,7 +3765,7 @@
         "Your Golden commission is complete."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "completes": true
@@ -3798,7 +3798,7 @@
         "Your Golden boots and gloves is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "fee": {
@@ -3837,7 +3837,7 @@
         "Your account already owns it. I have recorded this commission step."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "requires_addons": [
@@ -3875,7 +3875,7 @@
         "Your Golden helmet is ready."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "fee": {
@@ -3914,7 +3914,7 @@
         "Your account already owns it. I have recorded this commission step."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ],
       "requires_addons": [
@@ -3950,7 +3950,7 @@
         "I can commission the Golden outfit and its two addons. Ask me for the base outfit."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-200:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
       ]
     },
@@ -3990,7 +3990,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4025,7 +4025,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
       ]
@@ -4072,7 +4072,7 @@
         "completed_quests": []
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324"
       ]
     },
@@ -4106,7 +4106,7 @@
         "Bring back my crossbow from the cultist cache."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/44/definition:sha256:3a91013e45892a6be4f6b074901ed87067a8163464bc00eb81809d6f89312980",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/44/definition:sha256:95b86dc7e38753e566ba46dfa0228ffaff3aeb2ba036cfe1a82475b584fd0393",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:1-352:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
       ]
     },
@@ -4338,7 +4338,7 @@
         "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
       "participants": [
@@ -4393,7 +4393,7 @@
         "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
       "participants": [
@@ -4449,7 +4449,7 @@
         "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
       "participants": [
@@ -4512,7 +4512,7 @@
         "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
       "participants": [
@@ -4585,7 +4585,7 @@
         "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
       "participants": [
@@ -4650,7 +4650,7 @@
         "Incredible! You averted a crisis that would have utterly crippeled our defenses against any other threat that is arising. Let me grant you the honor to be one of the hands of the inquisition alongside with the according outfit as a reward."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ],
       "participants": [
@@ -4724,7 +4724,7 @@
         "Your inquisition complete qualification is recorded."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "content/quests/grave-danger-final-source.json:204:sha256:082e48be518d24c5942fea2dbcf8f778e61093625cd6d5e890c1b5afe645a13f"
       ]
     },
@@ -4769,7 +4769,7 @@
         "Here is your Abacus replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4818,7 +4818,7 @@
         "Here is your Abacus replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4867,7 +4867,7 @@
         "Here is your Assassin Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -4916,7 +4916,7 @@
         "Here is your Assassin Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -4965,7 +4965,7 @@
         "Here is your Bag of Oriental Spices replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5014,7 +5014,7 @@
         "Here is your Bag of Oriental Spices replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5063,7 +5063,7 @@
         "Here is your Bookworm Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5112,7 +5112,7 @@
         "Here is your Bookworm Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5161,7 +5161,7 @@
         "Here is your Citizen Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5210,7 +5210,7 @@
         "Here is your Citizen Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5259,7 +5259,7 @@
         "Here is your Crimson Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5308,7 +5308,7 @@
         "Here is your Crimson Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5357,7 +5357,7 @@
         "Here is your Doll of Durin the Almighty replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5406,7 +5406,7 @@
         "Here is your Doll of Durin the Almighty replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5455,7 +5455,7 @@
         "Here is your Dragon Eye replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5504,7 +5504,7 @@
         "Here is your Dragon Eye replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5553,7 +5553,7 @@
         "Here is your Dragon Goblet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5602,7 +5602,7 @@
         "Here is your Dragon Goblet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5651,7 +5651,7 @@
         "Here is your Draken Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5700,7 +5700,7 @@
         "Here is your Draken Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5749,7 +5749,7 @@
         "Here is your Emblem replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5798,7 +5798,7 @@
         "Here is your Emblem replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5847,7 +5847,7 @@
         "Here is your Encyclopedia replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -5896,7 +5896,7 @@
         "Here is your Encyclopedia replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -5935,7 +5935,7 @@
         "Your replica commission is complete."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ]
     },
@@ -5980,7 +5980,7 @@
         "Here is your Friendship Amulet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6029,7 +6029,7 @@
         "Here is your Friendship Amulet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6078,7 +6078,7 @@
         "Here is your Frozen Heart replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6127,7 +6127,7 @@
         "Here is your Frozen Heart replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6176,7 +6176,7 @@
         "Here is your Golden Falcon replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6225,7 +6225,7 @@
         "Here is your Golden Falcon replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6274,7 +6274,7 @@
         "Here is your Golden Newspaper replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6323,7 +6323,7 @@
         "Here is your Golden Newspaper replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6372,7 +6372,7 @@
         "Here is your Goromaphone replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6421,7 +6421,7 @@
         "Here is your Goromaphone replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6470,7 +6470,7 @@
         "Here is your Hand Puppets replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6519,7 +6519,7 @@
         "Here is your Hand Puppets replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6568,7 +6568,7 @@
         "Here is your Imortus replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6617,7 +6617,7 @@
         "Here is your Imortus replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6666,7 +6666,7 @@
         "Here is your Jade Amulet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6715,7 +6715,7 @@
         "Here is your Jade Amulet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6764,7 +6764,7 @@
         "Here is your Key of Numerous Locks replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6813,7 +6813,7 @@
         "Here is your Key of Numerous Locks replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6862,7 +6862,7 @@
         "Here is your Little Adventurer Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -6911,7 +6911,7 @@
         "Here is your Little Adventurer Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -6960,7 +6960,7 @@
         "Here is your Loremaster Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7009,7 +7009,7 @@
         "Here is your Loremaster Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7058,7 +7058,7 @@
         "Here is your Lucky Clover Amulet replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7107,7 +7107,7 @@
         "Here is your Lucky Clover Amulet replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7156,7 +7156,7 @@
         "Here is your Mathmaster Shield replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7205,7 +7205,7 @@
         "Here is your Mathmaster Shield replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7254,7 +7254,7 @@
         "Here is your Medusa Skull replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7303,7 +7303,7 @@
         "Here is your Medusa Skull replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7352,7 +7352,7 @@
         "Here is your Music Box replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7401,7 +7401,7 @@
         "Here is your Music Box replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7450,7 +7450,7 @@
         "Here is your Noble Sword replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7499,7 +7499,7 @@
         "Here is your Noble Sword replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7548,7 +7548,7 @@
         "Here is your Norseman Doll replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7597,7 +7597,7 @@
         "Here is your Norseman Doll replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7646,7 +7646,7 @@
         "Here is your Old Radio replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7695,7 +7695,7 @@
         "Here is your Old Radio replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7744,7 +7744,7 @@
         "Here is your Orc's Jaw Shredder replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7793,7 +7793,7 @@
         "Here is your Orc's Jaw Shredder replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7842,7 +7842,7 @@
         "Here is your Phoenix Statue replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7891,7 +7891,7 @@
         "Here is your Phoenix Statue replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -7940,7 +7940,7 @@
         "Here is your Pigeon Trophy replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -7989,7 +7989,7 @@
         "Here is your Pigeon Trophy replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -8034,7 +8034,7 @@
         "{Pigeon Trophy}, {Shield of Destiny}, {Shield of Endless Search}, {The Mexcalibur}, {Tibiora's Box}"
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ]
     },
@@ -8079,7 +8079,7 @@
         "Here is your Shield of Destiny replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -8128,7 +8128,7 @@
         "Here is your Shield of Destiny replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -8177,7 +8177,7 @@
         "Here is your Shield of Endless Search replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -8226,7 +8226,7 @@
         "Here is your Shield of Endless Search replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -8275,7 +8275,7 @@
         "Here is your The Mexcalibur replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -8324,7 +8324,7 @@
         "Here is your The Mexcalibur replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,
@@ -8373,7 +8373,7 @@
         "Here is your Tibiora's Box replica. You can now {finish the commission}."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "failure_reply": [
@@ -8422,7 +8422,7 @@
         "Here is your Tibiora's Box replica."
       ],
       "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:22f1cdf1dcc6008361611d108fe2357be5dd1f4bef6c7b1cc1b2d8f1828d5bdf",
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1136f6ca8875f7ad353e513baff194a52744c054837871705463b263c3008787",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jorge.lua:60-132:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
       ],
       "repeatable": true,

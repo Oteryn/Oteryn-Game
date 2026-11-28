@@ -850,6 +850,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if !self
+            .survey_allows_use(actor, command, callback.survey.as_ref())
+            .await?
+        {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
+        }
         // Lane -> Character sequence -> runtime is retained through COMMIT.
         // The proof's borrow prevents detaching a live target snapshot.
         let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;

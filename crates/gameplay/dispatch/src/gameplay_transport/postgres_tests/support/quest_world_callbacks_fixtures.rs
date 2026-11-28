@@ -14,6 +14,37 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 use std::collections::BTreeMap;
 
+/// Observe the actual PostgreSQL waiter before probing both channel owners.
+pub(super) async fn while_blocked<T>(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    lock: &'static str,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query(lock).execute(&mut *blocker).await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *blocker).await?;
+    let observe = async {
+        let waited = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            loop {
+                let waiting: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid)))",
+                ).bind(pid).fetch_one(&h.pool).await?;
+                if waiting { return Ok::<_, sqlx::Error>(()); }
+                tokio::task::yield_now().await;
+            }
+        }).await;
+        let available = owner.runtime.try_lock().is_ok() && owner.states.spell_states.try_lock().is_ok();
+        blocker.rollback().await?;
+        waited??;
+        assert!(available, "channel owners unavailable while waiting on {lock}");
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (observed, outcome) = tokio::join!(observe, operation);
+    observed?;
+    outcome
+}
+
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     // The Stampede entry is an authored binding of the content catalogue.
     if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry_fixtures::CALLBACK {

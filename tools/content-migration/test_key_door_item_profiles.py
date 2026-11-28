@@ -10,21 +10,41 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class KeyDoorProfileTests(unittest.TestCase):
     def test_native_provider_contains_the_actual_key_and_door_physics(self):
-        rows = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())['records']
-        profiles = {r['production_definition']['production_key']: r for r in rows}
-        for item, kind, solid in [(1628, 'DOOR', True), (1629, 'DOOR', True),
-                                  (1630, 'DOOR', False), (1631, 'DOOR', True),
-                                  (1632, 'DOOR', True), (1633, 'DOOR', False), (1646, 'DOOR', True),
-                                  (1647, 'DOOR', False), (1648, 'DOOR', True),
-                                  (1649, 'DOOR', False), (2967, 'KEY', False),
-                                  (2968, 'KEY', False), (5097, 'DOOR', True),
-                                  (6248, 'DOOR', True), (5102, 'DOOR', True),
-                                  (5103, 'DOOR', False), (6264, 'DOOR', True),
-                                  (6265, 'DOOR', False), (5106, 'DOOR', True),
-                                  (5107, 'DOOR', True), (5108, 'DOOR', False),
-                                  (6251, 'DOOR', True), (6252, 'DOOR', True),
-                                  (6253, 'DOOR', False), (9565, 'DOOR', True),
-                                  (9566, 'DOOR', False)]:
+        rows = json.loads(
+            (ROOT / "content/items/definitions/spell-native-profiles.json").read_bytes()
+        )["records"]
+        profiles = {r["production_definition"]["production_key"]: r for r in rows}
+        for item, kind, solid in [
+            (1628, "DOOR", True),
+            (1629, "DOOR", True),
+            (1630, "DOOR", False),
+            (1631, "DOOR", True),
+            (1632, "DOOR", True),
+            (1633, "DOOR", False),
+            (1646, "DOOR", True),
+            (1647, "DOOR", False),
+            (1648, "DOOR", True),
+            (1649, "DOOR", False),
+            (2967, "KEY", False),
+            (2968, "KEY", False),
+            (5097, "DOOR", True),
+            (6248, "DOOR", True),
+            (5102, "DOOR", True),
+            (5103, "DOOR", False),
+            (6264, "DOOR", True),
+            (6265, "DOOR", False),
+            (5106, "DOOR", True),
+            (5107, "DOOR", True),
+            (5108, "DOOR", False),
+            (6251, "DOOR", True),
+            (6252, "DOOR", True),
+            (6253, "DOOR", False),
+            (9565, "DOOR", True),
+            (9566, "DOOR", False),
+            (7033, "DOOR", True),
+            (7034, "DOOR", True),
+            (7035, "DOOR", False),
+        ]:
             with self.subTest(item=item):
                 row = profiles.get(f'oteryn:item.tibia.i{item}')
                 self.assertIsNotNone(row, f'Production native profile missing: {item}')

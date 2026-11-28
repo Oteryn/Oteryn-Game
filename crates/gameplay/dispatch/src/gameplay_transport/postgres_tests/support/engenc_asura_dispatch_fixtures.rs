@@ -33,6 +33,10 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
 }
 
 pub(super) fn start(name: &str) -> TestResult<Position> {
+    if name.ends_with("-fire-side-orchid") {
+        let door = callback(name)?.selector.native.ok_or("native door")?.position;
+        return Ok(Position { x: door.x - 1, ..door });
+    }
     Ok(callback(name)?
         .effects
         .encounter
@@ -47,8 +51,9 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
     // Isolate each real caller at its authored predecessor, with no fabricated receipts.
     let predecessor = match stage(name)? {
         "s2" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
-        "s3" => "oteryn:quest-progress/engenc/asura/s2/opened",
+        "s3" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
         "s4" => "oteryn:quest-progress/engenc/asura/s3/opened",
+        "orchid" => "oteryn:quest-progress/engenc/asura/hydra/count",
         _ => return Err("Asura stage".into()),
     };
     b.quests[0]
@@ -56,8 +61,70 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
         .iter_mut()
         .find(|t| t.key == predecessor)
         .ok_or("predecessor")?
-        .initial = 1;
-    Ok(b.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
+        .initial = if stage(name)? == "orchid" { 3 } else { 1 };
+    if stage(name)? == "orchid" {
+        b.quests[0].tracks.iter_mut().find(|t| t.key == "oteryn:quest-progress/engenc/asura/s3/count")
+            .ok_or("fire defender kills")?.initial = 2;
+        b.quests[0]
+            .tracks
+            .iter_mut()
+            .find(|t| t.key == "oteryn:quest-progress/engenc/asura/s3/opened")
+            .ok_or("fire chamber predecessor")?
+            .initial = 1;
+    }
+    let progress = if name.ends_with("-fire-side-orchid") {
+        Some("s3")
+    } else if name.contains("-reentry-") {
+        Some(stage(name)?)
+    } else {
+        None
+    };
+    if let Some(stage) = progress {
+        for (track, value) in [("entered", 1), ("count", 2)] {
+            let key = format!("oteryn:quest-progress/engenc/asura/{stage}/{track}");
+            b.quests[0]
+                .tracks
+                .iter_mut()
+                .find(|track| track.key == key)
+                .ok_or("saved chamber progress")?
+                .initial = value;
+        }
+    }
+    let base = if stage(name)? == "orchid" {
+        let published = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        let tarun = published.catalogue().track("oteryn:quest-progress/quest/u10_80/the_lost_brother_quest")
+            .ok_or("published Tarun report")?.clone();
+        QuestStateCatalogue::new("content-1", vec![tarun], vec![]).map_err(debug)?
+    } else {
+        QuestStateCatalogue::empty("content-1").ok_or("catalogue")?
+    };
+    Ok(b.attach(&base)?)
+}
+
+fn library_portal() -> TestResult<super::l6_world_pickups_fixtures::ExpectedTeleport> {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../content/world/transitions/teleports-00000-00499.json"
+    ))?;
+    let portal = packet["records"]
+        .as_array()
+        .ok_or("native teleport records")?
+        .iter()
+        .map(|row| &row["declaration"])
+        .find(|row| row["identity"]["key"] == "oteryn:transition.teleport.x32962_y32673_z2")
+        .ok_or("library portal")?;
+    let coordinates = |key: &str| -> TestResult<(u16, u16, u8)> {
+        let point = &portal[key];
+        Ok((
+            u16::try_from(point["x"].as_u64().ok_or("portal x")?)?,
+            u16::try_from(point["y"].as_u64().ok_or("portal y")?)?,
+            u8::try_from(point["floor"].as_u64().ok_or("portal floor")?)?,
+        ))
+    };
+    Ok(super::l6_world_pickups_fixtures::ExpectedTeleport {
+        position: coordinates("from")?,
+        ordinal: 1,
+        destination: coordinates("to")?,
+    })
 }
 
 pub(super) fn world(
@@ -66,7 +133,7 @@ pub(super) fn world(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
     let cb = callback(name)?;
-    let at = cb.selector.position.ok_or("entry position")?;
+    let at = cb.selector.native.as_ref().ok_or("entry position")?.position;
     let staging = start(name)?;
     let (bytes, region, bounds, ids) = match stage(name)? {
         "s2" => (
@@ -89,6 +156,13 @@ pub(super) fn world(
             (2, 128, 127),
             (32942, 32675, 32950, 32683),
             vec![923],
+        ),
+        "orchid" => (
+            include_bytes!("../../../../../../../content/world/placements/region-z02-x128-y127.b3")
+                .as_slice(),
+            (2, 128, 127),
+            (32952, 32673, 32963, 32683),
+            vec![927, 1674],
         ),
         _ => return Err("Asura stage".into()),
     };
@@ -118,7 +192,31 @@ pub(super) fn world(
             }],
         });
     }
-    let world = native_scene_with_appearances(native, crops, &[], &[1675, 5737])?;
+    let mut teleports = Vec::new();
+    if stage(name)? == "orchid" {
+        crops.push(NativeCrop {
+            bytes: include_bytes!(
+                "../../../../../../../content/world/placements/region-z01-x128-y127.b3"
+            ),
+            region: (1, 128, 127),
+            bounds: (32943, 32677, 32958, 32682),
+            start: (32945, 32678),
+            expected: vec![],
+        });
+        let portal = library_portal()?;
+        let (x, y, z) = portal.destination;
+        crops.push(NativeCrop {
+            bytes: include_bytes!(
+                "../../../../../../../content/world/placements/region-z09-x128-y127.b3"
+            ),
+            region: (z, x / 256, y / 256),
+            bounds: (x, y, x + 1, y + 1),
+            start: (x, y),
+            expected: vec![],
+        });
+        teleports.push(portal);
+    }
+    let world = native_scene_with_appearances(native, crops, &teleports, &[])?;
     for defender in &cb.effects.encounter.as_ref().ok_or("encounter")?.monsters {
         assert!(
             world.enterable(crate::map::overlay::TilePos {
@@ -192,6 +290,54 @@ pub(super) async fn exercise(
         },
     )
     .map_err(debug)?;
+    if name.contains("-reentry-") {
+        use super::questpc8_authored_programmes_fixtures::{object_target, use_target};
+        use super::questpc8_mystery_geometry_fixtures::arrive;
+        let door_key = format!("oteryn:quest-callback/engenc/asura/{}/door", stage(name)?);
+        let door = bindings()?
+            .world_callbacks()
+            .find(|callback| callback.key == door_key)
+            .and_then(|callback| callback.selector.native.clone())
+            .ok_or("chamber door")?;
+        let position = crate::map::overlay::TilePos {
+            x: door.position.x,
+            y: door.position.y,
+            floor: door.position.floor,
+        };
+        arrive(
+            owner,
+            admitted,
+            crate::map::overlay::TilePos {
+                x: position.x - 1,
+                ..position
+            },
+        )
+        .await?;
+        let target = object_target(owner, position, door.ordinal)?;
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            use_target(owner, admitted, command, &target).await?,
+            oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+            "saved clearance authorizes the earlier crossing",
+        );
+        let staging = encounter.players[0].from;
+        arrive(
+            owner,
+            admitted,
+            crate::map::overlay::TilePos {
+                x: staging.x,
+                y: staging.y,
+                floor: staging.floor,
+            },
+        )
+        .await?;
+        // Crossing the door spends the ordinary world-action window. Re-entry
+        // is a fresh USE even when fixture relocation takes no simulation time.
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN)
+            .ok_or("chamber re-entry clock")?;
+    }
     let command = admitted.continuity.next_command_id;
     let reply =
         super::quest_world_callbacks_fixtures::wire(owner, admitted, command, 2, payload.clone()).await;
@@ -216,8 +362,20 @@ pub(super) async fn exercise(
     let reply = reply?;
     assert_eq!(
         oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-        oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+        "{name}"
     );
+    if name.ends_with("-fire-side-orchid") {
+        let door_receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+        )
+        .bind("oteryn:quest-callback/engenc/asura/s3/door")
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(door_receipts, 1);
+        assert!(owner.runtime.lock().await.visible_entities().creatures.is_empty());
+        return Ok(());
+    }
     let roster = {
         let runtime = owner.runtime.lock().await;
         assert_eq!(
@@ -228,7 +386,7 @@ pub(super) async fn exercise(
             super::quest_world_callbacks_fixtures::local(encounter.players[0].to)
         );
         let creatures = runtime.visible_entities().creatures;
-        assert_eq!(creatures.len(), 2);
+        assert_eq!(creatures.len(), encounter.monsters.len());
         for creature in &creatures {
             let snapshot = runtime.companion_snapshot(creature.actor).map_err(debug)?;
             assert_eq!(
@@ -262,6 +420,9 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(count, 1);
+    if stage(name)? == "orchid" {
+        return exercise_orchid(owner, admitted, h, &roster, &cb).await;
+    }
     let door_key = format!("oteryn:quest-callback/engenc/asura/{}/door", stage(name)?);
     let door = bindings()?
         .world_callbacks()
@@ -277,6 +438,21 @@ pub(super) async fn exercise(
         command + 1,
     )
     .await?;
+    if name.contains("-reentry-") {
+        use oteryn_protocol_oteryn::world_spatial::{
+            StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+        };
+        let reply = super::quest_world_callbacks_fixtures::wire(
+            owner, admitted, next_command, 1, encode_step_intent(StepDirection::East),
+        )
+        .await?;
+        assert_eq!(
+            decode_step_result(&reply).map_err(debug)?,
+            StepDisposition::Blocked,
+            "STEP must refuse a re-entered chamber while both defenders are alive",
+        );
+        return Ok(());
+    }
     let key = oteryn_world_bundle::bundle::placement_key(
         selector.position.floor,
         selector.position.x,
@@ -454,6 +630,190 @@ pub(super) async fn exercise(
     eprintln!("M30_ASURA_DISPATCH_COMBAT_DOOR_EXECUTED {}", stage(name)?);
 
     eprintln!("M30_ASURA_DISPATCH_ADMISSION_EXECUTED {}", stage(name)?);
+    Ok(())
+}
+
+async fn exercise_orchid(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    roster: &[crate::foundation::ExactActorRef],
+    callback: &Callback,
+) -> TestResult {
+    use super::m39_bone_journey_fixtures::{carried, stage};
+    use super::questpc8_authored_programmes_fixtures::{object_target, use_target};
+    use super::questpc8_mystery_geometry_fixtures::arrive;
+    use crate::map::overlay::TilePos;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let sapphire = TilePos {
+        x: 32944,
+        y: 32678,
+        floor: -1,
+    };
+    let ruby = TilePos {
+        x: 32957,
+        y: 32681,
+        floor: -1,
+    };
+    let west = TilePos {
+        x: 32945,
+        ..sapphire
+    };
+    let east = TilePos { x: 32956, ..ruby };
+    let target = object_target(owner, sapphire, 1)?;
+    arrive(owner, admitted, west).await?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_target(owner, admitted, command, &target).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(carried(h, 3029).await?, 3);
+
+    super::rottin_rewards_fixtures::seed_tracks(
+        h, owner, admitted, &[("oteryn:quest-progress/quest/u10_80/the_lost_brother_quest", 3)],
+    ).await?;
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 0);
+
+    // Reconstruct the seller's immutable legacy receipt after a transfer.
+    // The real Orchid kill below must settle on the character's current account.
+    let mut history = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *history).await?;
+    let seller: sqlx::types::Uuid = sqlx::query_scalar(
+        "WITH made AS (
+             INSERT INTO game_account_achievement_grant_requests
+               (source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at)
+             SELECT 'oteryn:lost-palace-raider',uuid_send(character_id),'oteryn:achievement/lost_palace_raider',
+                    '1',uuidv7(),character_id,1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+             RETURNING account_id,achievement_key,source_kind,source_event_id)
+         INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id)
+         SELECT * FROM made RETURNING account_id",
+    ).bind(admitted.item_fence.ok_or("item fence")?.character_id.as_bytes().as_slice())
+    .fetch_one(&mut *history).await?;
+    history.commit().await?;
+
+    let encounter = callback
+        .effects
+        .encounter
+        .as_ref()
+        .ok_or("Orchid encounter")?;
+    let landing = encounter.players[0].to;
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            x: landing.x,
+            y: landing.y,
+            floor: landing.floor,
+        },
+    )
+    .await?;
+    super::grizzly_npc_fixtures::questpc8_campaign::lethal(
+        owner,
+        admitted,
+        *roster.first().ok_or("Orchid actor")?,
+        &encounter.monsters[0].creature,
+        command + 1,
+        1,
+    )
+    .await?;
+    assert_eq!(
+        stage(h, "oteryn:quest-progress/engenc/asura/orchid/count").await?,
+        Some(1)
+    );
+
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 2);
+    let owners: (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE account_id=$1), count(*) FILTER (WHERE account_id<>$1)
+         FROM game_account_achievements WHERE achievement_key='oteryn:achievement/lost_palace_raider'",
+    ).bind(seller).fetch_one(&h.pool).await?;
+    assert_eq!(owners, (1, 1));
+
+    let library_door = TilePos {
+        x: 32962,
+        y: 32674,
+        floor: -2,
+    };
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            y: 32675,
+            ..library_door
+        },
+    )
+    .await?;
+    let target = object_target(owner, library_door, 1)?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_target(owner, admitted, command, &target).await?,
+        UseDisposition::Rejected
+    );
+    super::questpc8_secret_library_fixtures::raise_level(owner, admitted, 250, 202).await?;
+    let command = admitted.continuity.next_command_id;
+    assert_eq!(
+        use_target(owner, admitted, command, &target).await?,
+        UseDisposition::Committed
+    );
+    let (x, y, floor) = library_portal()?.destination;
+    let library_landing = Position { x, y, floor: -i8::try_from(floor)? };
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(admitted.runtime_actor.ok_or("actor")?)
+            .map_err(debug)?
+            .position(),
+        super::quest_world_callbacks_fixtures::local(library_landing),
+        "authorized USE crosses the library door and enters its portal",
+    );
+    use oteryn_protocol_oteryn::world_spatial::{
+        StepDirection, StepDisposition, decode_step_result, encode_step_intent,
+    };
+    arrive(
+        owner,
+        admitted,
+        TilePos {
+            y: library_door.y + 1,
+            ..library_door
+        },
+    )
+    .await?;
+    let command = admitted.continuity.next_command_id;
+    let reply = super::quest_world_callbacks_fixtures::wire(
+        owner,
+        admitted,
+        command,
+        1,
+        encode_step_intent(StepDirection::North),
+    )
+    .await?;
+    assert_eq!(
+        decode_step_result(&reply).map_err(debug)?,
+        StepDisposition::Blocked
+    );
+
+    for (position, approach, item) in [(sapphire, west, 3029), (ruby, east, 3030)] {
+        arrive(owner, admitted, approach).await?;
+        let target = object_target(owner, position, 1)?;
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            use_target(owner, admitted, command, &target).await?,
+            if item == 3029 { UseDisposition::Rejected } else { UseDisposition::Committed }
+        );
+        assert_eq!(carried(h, item).await?, 3);
+        let command = admitted.continuity.next_command_id;
+        assert_eq!(
+            use_target(owner, admitted, command, &target).await?,
+            UseDisposition::Rejected
+        );
+        assert_eq!(carried(h, item).await?, 3);
+    }
+    let completed: bool = sqlx::query_scalar(
+        "SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE quest_key=$1",
+    ).bind(&callback.quest).fetch_one(&h.pool).await?;
+    assert!(completed);
     Ok(())
 }
 

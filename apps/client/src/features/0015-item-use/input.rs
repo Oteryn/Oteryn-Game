@@ -130,9 +130,17 @@ impl PlayView {
             y: tile.y,
             floor: self.floor,
         };
+        let selected_item = self.scene.item_target_at(tile);
+        let realm_fire = matches!(selected_item, Some(crate::play::GroundItem::Map { item, position, .. })
+            if item.appearance_id == 2124 && (position.x, position.y, position.floor) == (33080, 32583, 3)
+                && matches!(item.origin, oteryn_session::world_map::MapOrigin::BaseOrdinal { ordinal: 1, .. }));
+        let destroy_field = mailbox.world_context.rune_targeting && realm_fire && mailbox.inventory.rows().iter()
+            .chain(mailbox.containers.views.iter().flat_map(|views| &views.views).flat_map(|view| &view.entries))
+            .any(|item| item.handle == source && item.appearance_id == 3148);
+        let prefer_item = destroy_field || !mailbox.world_context.rune_targeting && self.scene.target().is_some_and(|entry| entry.tile == tile && entry.item.is_some());
         let target = oteryn_client_ui::item_use::input::destination(
-            mailbox.world_context.rune_targeting,
-            self.world_context_target(tile),
+            mailbox.world_context.rune_targeting && !destroy_field,
+            self.world_context_target_for(tile, prefer_item),
             position,
         );
         if target == Target::Item(source) {
@@ -143,7 +151,12 @@ impl PlayView {
             return true;
         }
         mailbox.world_context.targeting = None;
-        let binding = match self.scene.target_at(tile).and_then(|target| target.item) {
+        let binding_item = if prefer_item {
+            selected_item
+        } else {
+            self.scene.target_at(tile).and_then(|target| target.item)
+        };
+        let binding = match binding_item {
             Some(crate::play::GroundItem::Map { header, .. }) => Some((
                 header.content_generation,
                 header.bundle_digest,

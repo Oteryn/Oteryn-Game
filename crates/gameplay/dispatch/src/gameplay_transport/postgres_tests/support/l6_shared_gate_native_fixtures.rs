@@ -428,8 +428,11 @@ pub(super) async fn exercise(
             expected_revision: 0,
         })
         .map_err(debug)?;
-        let reply =
-            super::quest_world_callbacks_fixtures::wire(owner, admitted, ordinal, 2, payload).await?;
+        let command = super::quest_world_callbacks_fixtures::wire(owner, admitted, ordinal, 2, payload);
+        let reply = if ordinal == 1 {
+            super::quest_world_callbacks_fixtures::while_blocked(owner, h,
+                "LOCK game_shared_switch_leases IN SHARE MODE", command).await?
+        } else { command.await? };
         ordinal += 1;
         assert_eq!(
             oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
@@ -447,7 +450,9 @@ pub(super) async fn exercise(
         .ok_or("native STEP clock")?;
     let payload = encode_step_intent(StepDirection::East);
     let reply =
-        super::quest_world_callbacks_fixtures::wire(owner, admitted, ordinal, 1, payload.clone()).await?;
+        super::quest_world_callbacks_fixtures::while_blocked(owner, h,
+            "LOCK game_shared_switch_leases IN ACCESS EXCLUSIVE MODE",
+            super::quest_world_callbacks_fixtures::wire(owner, admitted, ordinal, 1, payload.clone())).await?;
     assert_eq!(
         decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved

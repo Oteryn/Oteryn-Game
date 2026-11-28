@@ -15,6 +15,7 @@ CALLBACK_DOCUMENTS = (
     "content/quests/shared-reward-callbacks.json",
     "content/quests/npc-callbacks/outfit-completions.json",
     "content/quests/npc-callbacks/battle-mage-completions.json",
+    "content/quests/npc-callbacks/classic-quest-rewards.json",
     "content/quests/npc-callbacks/m39-stories.json",
     "content/quests/npc-callbacks/l2-ready-stories.json",
     "content/quests/npc-callbacks/l13-outfits.json",

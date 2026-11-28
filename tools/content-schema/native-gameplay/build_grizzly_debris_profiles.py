@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive the closed Grizzly-room debris profiles from pinned source facts."""
+"""Derive the walkable Grizzly and Zalamon room debris from pinned source facts."""
 
 import argparse
 import hashlib
@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "tools/content-schema/world-authoring"))
 from client_appearance_reader import read_appearances
 
 OUTPUT = Path(__file__).with_name("grizzly-debris-item-profiles.json")
-IDS = {6475, 6476, 6477, 6478, 6479, 6480, 6481, 6482, 6483, 6485, 6486}
+IDS = {1900, 6475, 6476, 6477, 6478, 6479, 6480, 6481, 6482, 6483, 6485, 6486}
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
 XML_SHA256 = "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
@@ -32,19 +32,17 @@ def capture():
     xml_raw = fetch(url)
     if hashlib.sha256(xml_raw).hexdigest() != XML_SHA256:
         raise ValueError("GRIZZLY_DEBRIS_XML_DIGEST")
-    matching = [
-        node
-        for node in ET.fromstring(xml_raw)
-        if node.get("fromid") == "6475" and node.get("toid") == "6487"
-    ]
-    if len(matching) != 1:
-        raise ValueError("GRIZZLY_DEBRIS_XML_RANGE")
-    node = matching[0]
-    attributes = {
-        child.get("key"): child.get("value") for child in node.findall("attribute")
-    }
-    if node.get("name") != "debris" or attributes != {"primarytype": "rocks"}:
-        raise ValueError("GRIZZLY_DEBRIS_XML_ROW")
+    nodes = ET.fromstring(xml_raw)
+    for first, last in (("1892", "1900"), ("6475", "6487")):
+        matching = [node for node in nodes if node.get("fromid") == first and node.get("toid") == last]
+        if len(matching) != 1:
+            raise ValueError("GRIZZLY_DEBRIS_XML_RANGE")
+        node = matching[0]
+        attributes = {
+            child.get("key"): child.get("value") for child in node.findall("attribute")
+        }
+        if node.get("name") != "debris" or attributes != {"primarytype": "rocks"}:
+            raise ValueError("GRIZZLY_DEBRIS_XML_ROW")
 
     manifest = json.loads(
         (ROOT / "imports/official/client-assets/15.30/manifest.json").read_bytes()

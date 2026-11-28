@@ -311,6 +311,9 @@ impl PlayView {
         if self.gameplay_input_blocked(link) {
             return false;
         }
+        if modifier == Modifier::Super {
+            return self.scene.cycle_stack(tile).is_ok();
+        }
         if modifier == Modifier::Alt {
             return self.attack_toggle_click(tile, link);
         }

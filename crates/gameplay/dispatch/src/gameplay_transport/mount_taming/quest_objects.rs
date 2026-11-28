@@ -10,6 +10,8 @@ pub(crate) const TOP_OF_THE_CITY_DIG: &str = "oteryn:quest-callback/authored-top
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
+            || oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(callback)
+                .is_some()
             || callback.key == TOP_OF_THE_CITY_DIG
             || (callback
                 .item_on_target
@@ -46,6 +48,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                             | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                             | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                             | "oteryn:quest-callback/alawars-vault-folda-shaft"
+                            | "oteryn:quest-callback/m07/realm-begin"
                             | "oteryn:quest-callback/an-interest-in-botany/s2"
                             | "oteryn:quest-callback/an-interest-in-botany/s3"
                             | "oteryn:quest-callback/an-interest-in-botany/s3-web"
@@ -61,6 +64,10 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                             | "oteryn:quest-callback/authored-shattered-isles-s4"
                             | "oteryn:quest-callback/authored-threatened-dreams/book-table-1"
                             | "oteryn:quest-callback/authored-threatened-dreams/book-table-2"
+                            | "oteryn:quest-callback/barbarian-test/fill-horn"
+                            | "oteryn:quest-callback/barbarian-test/stun-bear"
+                            | "oteryn:quest-callback/children-grease"
+                            | "oteryn:quest-callback/children-poison-water"
                             | "oteryn:quest-callback/explorer-society/collect-bells"
                             | "oteryn:quest-callback/explorer-society/cut-ice"
                             | "oteryn:quest-callback/to-blind-the-enemy/mirror"
@@ -145,6 +152,21 @@ mod tests {
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
 
     #[test]
+    fn all_spirit_shovel_outcomes_reach_the_selected_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let mounds = callbacks
+            .iter()
+            .filter(|row| world_callbacks::spike_mound::chances(row).is_some());
+        let mut count = 0;
+        for row in mounds {
+            assert!(accepts(row), "{}", row.key);
+            count += 1;
+        }
+        assert_eq!(count, 145);
+        Ok(())
+    }
+
+    #[test]
     fn ape_city_casks_reach_the_carried_tool_owner_for_both_crowbars() -> Result<(), String> {
         let callbacks = world_callbacks::load()?;
         let casks: Vec<_> = callbacks
@@ -214,6 +236,29 @@ mod tests {
                 "unhandled {prefix} tools: {unhandled:?}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn children_selected_tools_reach_the_carried_tool_owner() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let children: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback.key.starts_with("oteryn:quest-callback/children-")
+                    && callback
+                        .item_on_target
+                        .as_ref()
+                        .is_some_and(|tool| tool.selected_instance)
+            })
+            .collect();
+        assert_eq!(children.len(), 2);
+        let unrouted: Vec<_> = children
+            .iter()
+            .filter(|callback| !accepts(callback))
+            .map(|callback| callback.key.as_str())
+            .collect();
+        assert!(unrouted.is_empty(), "unrouted selected tools: {unrouted:?}");
         Ok(())
     }
 

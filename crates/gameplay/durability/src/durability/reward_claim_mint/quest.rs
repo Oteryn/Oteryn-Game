@@ -519,15 +519,49 @@ pub(crate) async fn apply(
         .chain_update(callback.key.as_bytes())
         .finalize();
     for progress in &callback.achievement_progress {
-        super::super::account_achievement::add_progress(
-            tx,
-            fence.character_id,
-            &progress.key,
-            progress.target,
-            "oteryn:quest-reward",
-            &progress_event,
-        )
-        .await?;
+        const CAVE_COMPLETIONIST: &str = "oteryn:achievement/cave_completionist";
+        if progress.key == CAVE_COMPLETIONIST {
+            // Both NPC routes hold the appearance account lock and have already
+            // written this purchase. Bazaar transfers Character progress but
+            // keeps the addon unlocks with the account that bought them.
+            let cosmetics = admission
+                .native
+                .cosmetics()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            let mut owned = 0;
+            for addon in 1..=2 {
+                if super::super::character_appearance::podium_cosmetic_owned(
+                    tx,
+                    fence.character_id,
+                    cosmetics,
+                    EarnedCosmetic::Addon("oteryn:outfit.cave_explorer", addon),
+                )
+                .await?
+                {
+                    owned += 1;
+                }
+            }
+            super::super::account_achievement::record_owned_progress(
+                tx,
+                fence.character_id,
+                &progress.key,
+                progress.target,
+                "oteryn:quest-reward",
+                &progress_event,
+                owned,
+            )
+            .await?;
+        } else {
+            super::super::account_achievement::add_progress(
+                tx,
+                fence.character_id,
+                &progress.key,
+                progress.target,
+                "oteryn:quest-reward",
+                &progress_event,
+            )
+            .await?;
+        }
     }
     if let Some(achievement) = achievement {
         let mut grant = achievement.clone();
@@ -551,8 +585,11 @@ pub(crate) async fn apply(
             serde_json::to_value(selected).map_err(|_| DurabilityError::InvalidStoredState)?;
         plan["reward_percentile"] = percentile.into();
     }
-    sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+    let retained = admission.carried_use.filter(|_| callback.survey.is_some() && callback.take.is_empty());
+    sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys,retained_detector,detector_intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7,$8,$9)")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys)
+        .bind(retained.map(|tool| sqlx::types::Uuid::from_bytes(tool.source)))
+        .bind(retained.map(|tool| tool.intent.as_slice())).execute(&mut **tx).await?;
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);

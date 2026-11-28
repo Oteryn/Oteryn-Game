@@ -882,39 +882,33 @@ async fn scenario(
         _ if case.staged_ally() => &[1],
         _ => &[],
     };
-    // These cases test settlement, not competing content-seeded swing draws.
-    // Bank real damage per staged contributor: five, or four for the foreign Character.
-    // When sharing is required, the leader stops at its first landed hit and lab damage
-    // then leaves one HP, so the leader's committed activity is recent at death.
-    //
-    // No staged swing can kill the rat (20 HP, armor 1, mitigation 3/25 in
-    // spell-native-profiles.json), whatever the draws. A level-1 fist hit draws at most
-    // floor(2 * 8 * (fist + 4) / 28 * factor), the factor doubled for a monk
-    // (formulas.rs:42-118; the level term is 0, formula.rs:17). Armor takes exactly 1 and
-    // the 0.12% mitigation truncates 1 more (formulas.rs:225-233, resolution.rs:240-272).
-    // A pass is at most one swing and one fist try; fist 15 needs 304 tries, so within
-    // 256 passes fist <= 14. A Balanced knight then lands <= 5 per hit, a Defensive monk
-    // <= 8 and a Balanced monk <= 13. Foreign banks 4..=8, its leader 1..=8: the rat keeps
-    // >= 4 HP, and both 4 * foreign >= leader + 1 and 4 * (leader + 1) >= foreign hold,
-    // so each damage group earns XP. Concurrent's one leader hit leaves >= 7 HP.
+    // Foreign stages two real contributors on the same rat. The live 1.2 attack
+    // factor is independent of stance. Within 256 tries fist stays at or below 14,
+    // so the knight can land up to 11 and the monk up to 23 after rat mitigation.
+    // Banking eight each bounds their totals to 8..=18 and 8..=30 respectively.
+    // Give this fixture enough current HP to survive both stages. With the member's
+    // final one HP, either damage group then earns at least one of the rat's five XP.
+    if matches!(case, Case::Foreign) {
+        let mut runtime = owner.runtime.lock().await;
+        let maximum_health = runtime
+            .companion_snapshot(creature.actor)
+            .map_err(debug)?
+            .maximum_health;
+        runtime
+            .set_test_creature_health(creature.actor, 3 * maximum_health)
+            .map_err(debug)?;
+    }
     for &index in staged_contributors {
         let (actor, session) = players[index];
         {
             let runtime = owner.runtime.lock().await;
-            let staged_mode = match case {
-                _ if case.forge() => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
-                Case::Foreign if index == 0 => {
-                    Some(oteryn_protocol_oteryn::attack::FightMode::Defensive)
-                }
-                _ => None,
-            };
-            if let Some(fight_mode) = staged_mode {
+            if case.forge() {
                 assert!(owner.states.attack.lock().await.set_modes(
                     &runtime,
                     actor,
                     session,
                     oteryn_protocol_oteryn::attack::FightModes {
-                        fight_mode,
+                        fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
                         ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
                     }
                 ));
@@ -951,14 +945,11 @@ async fn scenario(
                 .and_then(|c| runtime.companion_snapshot(c.actor).ok())
                 .ok_or("living rat")?
                 .health;
-            let contributed = if matches!(case, Case::ForgeForeign) {
-                health <= 15
-            } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
-                health < initial_health
-            } else if index == 2 && matches!(case, Case::Foreign) {
-                initial_health - health >= 4
-            } else {
-                initial_health - health >= 5
+            let contributed = match case {
+                Case::ForgeForeign => health <= 15,
+                Case::Foreign => initial_health - health >= 8,
+                Case::Concurrent => health < initial_health,
+                _ => initial_health - health >= 5,
             };
             if contributed {
                 owner.states.attack.lock().await.set_target(

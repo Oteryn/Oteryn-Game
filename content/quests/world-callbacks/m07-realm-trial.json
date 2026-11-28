@@ -9,67 +9,6 @@
       "selector": {
         "position": {
           "x": 33080,
-          "y": 32582,
-          "floor": -3
-        },
-        "unique": null,
-        "action": null,
-        "appearance": 2772,
-        "native": {
-          "position": {
-            "x": 33080,
-            "y": 32582,
-            "floor": -3
-          },
-          "ordinal": 3,
-          "appearance": 2772
-        }
-      },
-      "lever": null,
-      "reversible": false,
-      "passages": [],
-      "world_requirements": [],
-      "teleport": null,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/m07/chayenne_realm/guardian_trial",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "state_ops": [],
-      "offerings": [],
-      "item_on_target": {
-        "item": "oteryn:item.tibia.i14682",
-        "count": 1,
-        "replacement": null,
-        "target_replacement": null,
-        "reusable": true
-      },
-      "requires_world_admission": true,
-      "admission": {
-        "premium": true
-      },
-      "return_on_failure": false,
-      "failure_message": null,
-      "success_message": "The key attunes you to the guardian trial. Clear the tower before operating the hidden switch.",
-      "effects": {},
-      "sources": [
-        "docs/reference/content-prep/questpc4-M07-native-trials.md",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:1-29",
-        "OTERYN_CHOSEN_REALM_TRIAL:exact native entry control; no recovered action-id claim"
-      ],
-      "minimum_level": 40
-    },
-    {
-      "key": "oteryn:quest-callback/m07/realm-trial",
-      "quest": "oteryn:quest.chayenne_realm",
-      "actor_kind": "player",
-      "trigger": "use",
-      "selector": {
-        "position": {
-          "x": 33080,
           "y": 32583,
           "floor": -3
         },
@@ -88,6 +27,332 @@
       },
       "lever": null,
       "reversible": false,
+      "passages": [],
+      "world_requirements": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/chayenne_realm/guardian_trial",
+          "minimum": -1,
+          "maximum": 2,
+          "set": 1,
+          "at_least": true
+        }
+      ],
+      "state_ops": [],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3148",
+        "count": 1,
+        "target_remove": true,
+        "selected_instance": true
+      },
+      "requires_world_admission": true,
+      "admission": {
+        "premium": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The fire is gone, revealing a pressure plate.",
+      "effects": {},
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:1-29",
+        "OTERYN_CHOSEN_REALM_TRIAL:exact native entry control; no recovered action-id claim",
+        "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-plate",
+      "quest": "oteryn:quest.chayenne_realm",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32583,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 430
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33080,
+            "y": 32582,
+            "floor": -3
+          },
+          "appearance": 1772,
+          "replacement": null
+        }
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 33080,
+            "y": 32583,
+            "floor": -3
+          },
+          "appearance": 2124,
+          "hidden": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33080,32583,3;33080,32582,3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-draconia-book",
+      "quest": "oteryn:quest.chayenne_realm",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32804,
+          "y": 31586,
+          "floor": 0
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4073,
+        "native": {
+          "position": {
+            "x": 32804,
+            "y": 31586,
+            "floor": 0
+          },
+          "ordinal": 1,
+          "appearance": 4073
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/chayenne_realm/draconia_book",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:50-66",
+        "tibiawiki:Key to Magic (Book):2023-07-28"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i6533",
+          "count": 1,
+          "text": "A long-forgotten secret waits behind sealed stone and living flame. The key still carries the magic of those who forged it. What it unlocks may build a world or bring one down."
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-entry",
+      "quest": "oteryn:quest.chayenne_realm",
+      "actor_kind": "player",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33079,
+          "y": 32594,
+          "floor": -3
+        },
+        "unique": null,
+        "action": 55022,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32829,
+        "y": 31451,
+        "floor": -8
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/chayenne_realm/entered",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/m07/chayenne_realm/draconia_book",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": "You need Chayenne's magical key and the knowledge from the Draconia book.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:8-16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:285-288"
+      ],
+      "requires_world_admission": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i14682",
+          "count": 1
+        }
+      ],
+      "success_message": "You enter the Realm of Dreams.",
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-exit",
+      "quest": "oteryn:quest.chayenne_realm",
+      "actor_kind": "player",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32816,
+          "y": 31496,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 55024,
+        "appearance": 10840
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33117,
+        "y": 32604,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:17-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:290-293"
+      ],
+      "success_message": "Farewell, dream traveller.",
+      "effects": {
+        "teleport_effect": 11
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-reward",
+      "quest": "oteryn:quest.chayenne_realm",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32827,
+          "y": 31493,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 55023,
+        "appearance": 4025
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/chayenne_realm/beach_backpack",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You already claimed this reward.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_reward.lua:3-21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3490-3494"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i5949",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i16244",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3659",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i9034",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3027",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i5882",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i5791",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i2995",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i6570",
+              "count": 1
+            }
+          ]
+        },
+        "completes_quest": true
+      },
+      "success_message": "You have found a beach backpack."
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-trial",
+      "quest": "oteryn:quest.chayenne_realm",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32582,
+          "floor": -3
+        },
+        "unique": null,
+        "action": 55021,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
       "passages": [
         {
           "position": {
@@ -102,50 +367,43 @@
       "world_requirements": [
         {
           "position": {
-            "x": 33080,
-            "y": 32583,
-            "floor": -3
-          },
-          "appearance": 2124
-        },
-        {
-          "position": {
             "x": 33075,
             "y": 32591,
             "floor": -3
           },
           "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 33080,
+            "y": 32582,
+            "floor": -3
+          },
+          "appearance": 1772,
+          "hidden": true
         }
       ],
       "teleport": null,
       "storage": [
         {
           "track": "oteryn:quest-progress/m07/chayenne_realm/guardian_trial",
-          "minimum": 1,
-          "maximum": 1,
+          "minimum": -1,
+          "maximum": 2,
           "set": 2
         }
       ],
       "state_ops": [],
       "offerings": [],
-      "item_on_target": {
-        "item": "oteryn:item.tibia.i14682",
-        "count": 1,
-        "replacement": null,
-        "target_replacement": null,
-        "reusable": true
-      },
       "requires_world_admission": true,
       "admission": {
         "premium": true
       },
       "return_on_failure": false,
       "failure_message": null,
-      "success_message": "The guardians are gone. Your key reveals and operates the hidden switch; the passage opens briefly.",
+      "success_message": "The passage opens.",
       "effects": {
-        "transform": 2773,
         "reset_after_ms": 300000,
-        "passages_reset_after_ms": 60000,
+        "passages_reset_after_ms": 300000,
         "clear_area": {
           "minimum": {
             "x": 33074,
@@ -158,6 +416,7 @@
             "floor": -3
           },
           "additional_floors": [
+            -7,
             -6,
             -5,
             -4
@@ -166,13 +425,64 @@
             "oteryn:creature.dragon",
             "oteryn:creature.dragon_lord",
             "oteryn:creature.fire_elemental"
+          ],
+          "floor_bounds": [
+            {
+              "minimum": {
+                "x": 33066,
+                "y": 32566,
+                "floor": -7
+              },
+              "maximum": {
+                "x": 33080,
+                "y": 32586,
+                "floor": -7
+              }
+            },
+            {
+              "minimum": {
+                "x": 33078,
+                "y": 32578,
+                "floor": -6
+              },
+              "maximum": {
+                "x": 33111,
+                "y": 32619,
+                "floor": -6
+              }
+            },
+            {
+              "minimum": {
+                "x": 33078,
+                "y": 32579,
+                "floor": -5
+              },
+              "maximum": {
+                "x": 33105,
+                "y": 32603,
+                "floor": -5
+              }
+            },
+            {
+              "minimum": {
+                "x": 33081,
+                "y": 32584,
+                "floor": -4
+              },
+              "maximum": {
+                "x": 33094,
+                "y": 32593,
+                "floor": -4
+              }
+            }
           ]
         }
       },
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:3-28",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:391-394",
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:1-29",
-        "OTERYN_CHOSEN_REALM_TRIAL:one atomic fire reveal and switch operation; source wall60s/cooldown300s"
+        "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler"
       ]
     }
   ]

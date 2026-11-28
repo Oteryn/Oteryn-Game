@@ -40,6 +40,11 @@ pub(super) async fn exercise(
         } => i64::from(seconds),
         _ => return Err("production clock predicate".into()),
     };
+    let captain = callback.key == "oteryn:quest-callback/captain-iglues-left-chest";
+    if captain {
+        assert_eq!(wait, 86_400);
+    }
+    let mint_lines = i64::from(callback.effects.item_reward.is_some());
     let position = callback.selector.position.ok_or("source position")?;
     let key = oteryn_world_bundle::bundle::placement_key(position.floor, position.x, position.y, 1)
         .ok_or("source key")?;
@@ -56,7 +61,21 @@ pub(super) async fn exercise(
         expected_revision: 0,
     };
     let fence = admitted.item_fence.ok_or("item fence")?;
-    let offset = u64::from(callback.offerings.is_empty());
+    // Start the Captain case one second before a different collector's stock renews.
+    // This character has no quest receipt and would pass a personal clock alone.
+    if captain {
+        sqlx::query("INSERT INTO game_captain_iglue_chest_stock(world_id, channel_id, collected_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
+            .bind(admitted.world_id.as_bytes().as_slice())
+            .bind(admitted.channel_id.as_bytes().as_slice())
+            .bind(epoch - wait + 1)
+            .execute(&h.pool)
+            .await?;
+        assert_eq!(use_command(owner, admitted, &target, 1).await?, UseDisposition::Rejected);
+        assert_eq!(snapshot(h, callback).await?, (-1, 0, 0, 0));
+        h.root.advance_test_quest_clock(1)?;
+    }
+    let epoch = epoch + i64::from(captain);
+    let offset = u64::from(callback.offerings.is_empty() && !captain);
     if !callback.offerings.is_empty() {
         assert_eq!(
             use_command(owner, admitted, &target, 1).await?,
@@ -80,11 +99,7 @@ pub(super) async fn exercise(
         (
             epoch,
             1,
-            if callback.effects.item_reward.is_some() {
-                1
-            } else {
-                0
-            },
+            mint_lines,
             if callback.offerings.is_empty() { 0 } else { 6 }
         )
     );
@@ -114,14 +129,53 @@ pub(super) async fn exercise(
         (
             epoch + wait,
             2,
-            if callback.effects.item_reward.is_some() {
-                2
-            } else {
-                0
-            },
+            mint_lines * 2,
             if callback.offerings.is_empty() { 0 } else { 12 }
         )
     );
+    if captain {
+        let collected_at: i64 = sqlx::query_scalar(
+            "SELECT collected_at FROM game_captain_iglue_chest_stock
+             WHERE world_id = encode($1,'hex')::uuid AND channel_id = encode($2,'hex')::uuid",
+        )
+        .bind(admitted.world_id.as_bytes().as_slice())
+        .bind(admitted.channel_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(collected_at, epoch + wait);
+        let rewards: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT i.definition_production_key,sum(i.quantity)::bigint
+             FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
+             WHERE i.lifecycle=1 AND i.definition_production_key IN ('oteryn:item.tibia.i3506','oteryn:item.tibia.i3579')
+             GROUP BY 1 ORDER BY 1",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(rewards, vec![("oteryn:item.tibia.i3506".into(), 2), ("oteryn:item.tibia.i3579".into(), 24)]);
+        let texts: Vec<String> = sqlx::query_scalar(
+            "SELECT t.text FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i3506'",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(texts, ["Treasure of Captain Iglue"; 2]);
+    } else if callback.effects.item_reward.is_some() {
+        let reward:(String,i64)=sqlx::query_as("SELECT min(i.definition_production_key),sum(m.quantity)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id)").fetch_one(&h.pool).await?;
+        assert_eq!(reward, ("oteryn:item.tibia.i5953".into(), 2));
+    }
+    if captain {
+        // Arrange the already collected stock in channel A. The same character
+        // enters channel B with the personal stamp and prior mint still intact.
+        let moved = sqlx::query("UPDATE game_captain_iglue_chest_stock SET channel_id=uuidv7()
+            WHERE channel_id=encode($1,'hex')::uuid")
+            .bind(admitted.channel_id.as_bytes().as_slice()).execute(&h.pool).await?;
+        assert_eq!(moved.rows_affected(), 1);
+        target.expected_revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
+        assert_eq!(use_command(owner, admitted, &target, 6).await?, UseDisposition::Committed);
+        assert_eq!(snapshot(h, callback).await?, (epoch + wait, 3, 3, 0));
+        let empty: i64 = sqlx::query_scalar("SELECT count(*) FROM game_captain_iglue_chest_stock WHERE collected_at=$1")
+            .bind(epoch + wait).fetch_one(&h.pool).await?;
+        assert_eq!(empty, 2);
+        target.expected_revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
+        assert_eq!(use_command(owner, admitted, &target, 7).await?, UseDisposition::Rejected);
+    }
+    let before_replay = if captain { (epoch + wait, 3, 3, 0) } else { after };
+    assert_eq!(snapshot(h, callback).await?, before_replay);
     // A new transport retains its sequence, not its retired response cache.
     // SQL replay after reconnect is covered by qready1_world_clock_rewards.
     let replay = use_command(owner, admitted, &first_target, 2 - offset).await;
@@ -134,12 +188,8 @@ pub(super) async fn exercise(
     );
     assert_eq!(
         snapshot(h, callback).await?,
-        after,
+        before_replay,
         "historical wire replay cannot mint or consume twice"
     );
-    if callback.effects.item_reward.is_some() {
-        let reward:(String,i64)=sqlx::query_as("SELECT min(i.definition_production_key),sum(m.quantity)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id)").fetch_one(&h.pool).await?;
-        assert_eq!(reward, ("oteryn:item.tibia.i5953".into(), 2));
-    }
     Ok(())
 }

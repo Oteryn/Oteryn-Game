@@ -288,6 +288,57 @@ mod tests {
     use super::*;
 
     #[test]
+    fn tarun_shop_uses_the_existing_catalogue_offers_and_requires_the_report()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let (npc, entry) = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == "oteryn:npc.tarun")
+            .ok_or("Tarun")?;
+        let offers: Vec<_> = entry
+            .services
+            .iter()
+            .flat_map(|service| &model.services()[service].offers)
+            .collect();
+        assert_eq!(offers.len(), 24);
+        assert_eq!(
+            offers
+                .iter()
+                .find(|offer| offer.item.key == "oteryn:item.tibia.i2874")
+                .and_then(|offer| offer.sub_type),
+            Some(0),
+            "Crystal's vial offer trades only empty vials"
+        );
+        for offer in offers {
+            let gated = required(
+                shops()?,
+                &npc.key,
+                &offer.item,
+                offer.direction,
+                offer.unit_price,
+                offer.count.unwrap_or(1),
+            )?
+            .ok_or("Tarun quest gate")?;
+            assert!(!eligible(gated, |_| None));
+            assert!(!eligible(gated, |_| Some(2)));
+            assert!(eligible(gated, |requirement| {
+                assert_eq!(
+                    requirement.track,
+                    "oteryn:quest-progress/quest/u10_80/the_lost_brother_quest"
+                );
+                Some(3)
+            }));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn black_bert_retained_stock_requires_the_completed_guild_track()
     -> Result<(), Box<dyn std::error::Error>> {
         let model = crate::content::NpcDataCatalogue::load(

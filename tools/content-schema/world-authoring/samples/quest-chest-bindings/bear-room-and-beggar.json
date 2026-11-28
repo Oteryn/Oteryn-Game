@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.bear_chest1",
+      "position": [
+        32146,
+        32097,
+        11
+      ],
+      "appearance": 2472,
+      "unique": 6114,
+      "source_line": 1458
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.bear_chest2",
+      "position": [
+        32144,
+        32096,
+        11
+      ],
+      "appearance": 2472,
+      "unique": 6115,
+      "source_line": 1467
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.bear_chest3",
+      "position": [
+        32141,
+        32097,
+        11
+      ],
+      "appearance": 2472,
+      "unique": 6116,
+      "source_line": 1474
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.simon_the_beggars_favorite_staff",
+      "position": [
+        33167,
+        31600,
+        15
+      ],
+      "appearance": 2482,
+      "unique": 6189,
+      "source_line": 2067
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id4601",
+      "position": [
+        32150,
+        32112,
+        12
+      ],
+      "appearance": 2472,
+      "unique": 5013,
+      "source_line": 468
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}

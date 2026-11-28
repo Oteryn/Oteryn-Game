@@ -1,11 +1,179 @@
-//! Observe an existing native action; never repeat its terrain or Item writes.
+//! Prove native terrain actions from their receipts, including uncommitted
+//! receipts in the transaction that just changed the terrain.
+use super::super::{item_transfer::CurrentCharacterItemFence, terrain_tool::TerrainMutation};
 use crate::durability::db::commit_semantic_read;
 use super::*;
-use oteryn_gameplay_quests::quest::authored_bindings::terrain_use::TerrainUse;
+use oteryn_gameplay_quests::quest::{
+    authored_bindings::{Trigger, terrain_use::TerrainUse},
+    npc_rules::legacy_defaults,
+};
+
+const DRAGON_CORPSE: &str = "oteryn:quest.dragon_corpse_quest";
+
+pub(in crate::durability) fn dragon_corpse_binding<'a>(
+    catalogue: &'a QuestStateCatalogue,
+    mutation: &TerrainMutation,
+) -> Option<&'a TerrainUse> {
+    catalogue
+        .authored_bindings()?
+        .quests
+        .iter()
+        .find(|quest| quest.quest == DRAGON_CORPSE)?
+        .stages
+        .iter()
+        .find_map(|stage| {
+            let Trigger::TerrainUse { usage } = &stage.trigger else {
+                return None;
+            };
+            (usage.result == mutation.after
+                && usage.matches_placement(&mutation.placement)
+                && usage.tools.iter().any(|tool| {
+                    tool.key == mutation.tool_key && tool.revision == mutation.tool_revision
+                }))
+            .then_some(usage.as_ref())
+        })
+}
+
+/// The caller holds the complete item/command fence and the Character root lock.
+/// The same transaction owns the terrain CAS and any gathering outputs.
+pub(in crate::durability) async fn credit_dragon_corpse(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    catalogue: &QuestStateCatalogue,
+    mutation: &TerrainMutation,
+) -> StoredResult<()> {
+    let usage =
+        dragon_corpse_binding(catalogue, mutation).ok_or(DurabilityError::InvalidStoredState)?;
+    let transition = catalogue
+        .transition(&usage.key)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if transition.completes
+        || transition.experience.is_some()
+        || transition.world_change.is_some()
+        || super::authored_admission::requires_premium(catalogue, transition, false)
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let character = fence.character_id;
+    let id = character.as_bytes().as_slice();
+    let (revision, level): (String, i64) = sqlx::query_as(
+        "SELECT r.character_revision::text, p.level
+         FROM game_character_roots r JOIN game_character_progression_state p USING(character_id)
+         WHERE r.character_id=encode($1,'hex')::uuid
+           AND r.character_revision=p.character_revision
+           AND r.content_revision=$2 AND p.content_revision=$2",
+    )
+    .bind(id)
+    .bind(catalogue.content_revision())
+    .fetch_one(&mut **tx)
+    .await?;
+    let root_revision = revision
+        .parse()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let request = QuestTransitionRequest {
+        transition_key: usage.key.clone(),
+        cause: QuestCause::Command(command),
+    };
+    if !super::authored_admission::permits_level(catalogue, DRAGON_CORPSE, level)
+        || !super::authored_admission::prerequisites_hold(tx, id, catalogue, DRAGON_CORPSE).await?
+    {
+        return Ok(());
+    }
+    let mut keys: Vec<_> = transition
+        .effects
+        .iter()
+        .map(|effect| effect.track.as_str())
+        .collect();
+    keys.sort_unstable();
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT track_key, value FROM game_character_quest_tracks
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND track_key=ANY($3)
+         ORDER BY track_key FOR UPDATE",
+    )
+    .bind(id)
+    .bind(DRAGON_CORPSE)
+    .bind(&keys)
+    .fetch_all(&mut **tx)
+    .await?;
+    let stored: BTreeMap<_, _> = rows.into_iter().collect();
+    // Both Dragon Corpse actions have only fixed storage comparisons and assignments.
+    let changes = match catalogue.evaluate(transition, &stored, 0) {
+        Ok(changes) => changes,
+        Err(QuestRefusal::StageMismatch) => return Ok(()),
+        Err(_) => return Err(DurabilityError::InvalidStoredState),
+    };
+    let state: Option<(String, Vec<u8>, bool)> = sqlx::query_as(
+        "SELECT pinned_content_revision, definition_hash, completed_character_revision IS NOT NULL
+         FROM game_character_quest_states
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE",
+    )
+    .bind(id)
+    .bind(DRAGON_CORPSE)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let current_hash = catalogue
+        .definition_hash(DRAGON_CORPSE)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let (pin, hash) = match &state {
+        Some((pin, hash, completed)) => {
+            let hash = <[u8; 32]>::try_from(hash.as_slice())
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if hash != current_hash
+                && !completed
+                && legacy_defaults(catalogue, DRAGON_CORPSE, &hash).is_none()
+            {
+                return Ok(());
+            }
+            (pin.as_str(), hash)
+        }
+        None => {
+            if !super::capacity::new_state_fits(tx, character).await? {
+                return Ok(());
+            }
+            (catalogue.content_revision(), current_hash)
+        }
+    };
+    if !super::capacity::tracks_fit(tx, character, &keys, stored.len()).await? {
+        return Ok(());
+    }
+    if !matches_receipt(tx, fence, &request, DRAGON_CORPSE, usage).await? {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    super::persist::persist(
+        tx,
+        super::persist::QuestWrite {
+            character,
+            root_revision,
+            request: &request,
+            transition,
+            pin,
+            hash: &hash,
+            changes: &changes,
+            binding: &super::request_binding(character, &request),
+            state_exists: state.is_some(),
+        },
+    )
+    .await?;
+    Ok(())
+}
 
 pub(super) async fn admit(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: CurrentCharacterGameplayFence,
+    request: &QuestTransitionRequest,
+    quest: &str,
+    usage: &TerrainUse,
+) -> StoredResult<bool> {
+    if quest == DRAGON_CORPSE {
+        return Ok(false);
+    }
+    matches_receipt(tx, fence.item_fence(), request, quest, usage).await
+}
+
+async fn matches_receipt(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterItemFence,
     request: &QuestTransitionRequest,
     quest: &str,
     usage: &TerrainUse,

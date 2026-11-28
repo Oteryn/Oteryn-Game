@@ -185,16 +185,17 @@ fn capture_grave_objectives(
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn refresh_native_objective_snapshot(&self, session: GameSessionId) {
+        let queue = self.states.attack.lock().await.kills().clone();
         let runtime = self.runtime.lock().await;
-        self.refresh_native_objective_snapshot_in_runtime(&runtime, session)
-            .await;
+        self.refresh_native_objective_snapshot_in_runtime(&runtime, session, &queue);
     }
 
     /// Publish capture eligibility while the callback already holds the runtime owner.
-    pub(super) async fn refresh_native_objective_snapshot_in_runtime(
+    pub(super) fn refresh_native_objective_snapshot_in_runtime(
         &self,
         runtime: &ChannelRuntimeV1,
         session: GameSessionId,
+        queue: &KillSettlementQueue,
     ) {
         let snapshot = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
@@ -234,8 +235,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect(),
             })
         });
-        let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().3.lock() else {
+        let Ok(mut cache) = queue.3.lock() else {
             return;
         };
         if snapshot.as_ref().is_some_and(|new| {

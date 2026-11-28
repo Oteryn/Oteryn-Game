@@ -327,6 +327,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
     // a missing corpse is different from an authored but inadmissible corpse.
     // Change these source-qualification expectations only with admitted content.
     let newly_admitted = [
+        "oteryn:creature.amenef_the_burning",
         "oteryn:creature.an_observer_eye",
         "oteryn:creature.arachir_the_ancient_one",
         "oteryn:creature.arbaziloth",
@@ -599,6 +600,9 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 if policy.definition_key == "oteryn:creature.sugar_daddy" {
                     // W02 admits the unchanged source table and all its 22 Items.
                     assert_eq!(table.entries.len(), 22);
+                } else if policy.definition_key == "oteryn:creature.amenef_the_burning" {
+                    assert_eq!(corpse.key, "oteryn:item.tibia.i31646");
+                    assert_eq!(table.entries.len(), 37);
                 } else if policy.definition_key == "oteryn:creature.demodras" {
                     assert_eq!(table.entries.len(), 17);
                 } else if policy.definition_key == "oteryn:creature.the_primal_menace" {

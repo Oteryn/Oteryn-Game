@@ -4,14 +4,24 @@ import re
 from key_door_item_profiles import CLASSIC_QUEST_DOORS, IDS
 
 
+M01C_IDS = {5097, 5106, 6248, 7033, 7034, 7035}
+
+
 def refresh(source, packet):
-    identities = [row['production_definition']['production_key'] for row in packet['records']]
-    if (packet['schema'] != 'OTERYN_NATIVE_KEY_DOOR_ITEM_PROFILES/v1'
-            or len(identities) != len(IDS)
-            or set(identities) != {f'oteryn:item.tibia.i{i}' for i in IDS}
-            or not {5097, 5106, 6248, 6251, 7711, 7714} <= IDS):
-        raise ValueError('M01C_KEY_DOOR_COHORT')
-    for cohort, count in [('M01C-KEY-DOORS', 4), ('CLASSIC-QUEST-DOORS', len(CLASSIC_QUEST_DOORS))]:
+    identities = [
+        row["production_definition"]["production_key"] for row in packet["records"]
+    ]
+    if (
+        packet["schema"] != "OTERYN_NATIVE_KEY_DOOR_ITEM_PROFILES/v1"
+        or len(identities) != len(IDS)
+        or set(identities) != {f"oteryn:item.tibia.i{i}" for i in IDS}
+        or not (M01C_IDS | {6251, 7711, 7714}) <= IDS
+    ):
+        raise ValueError("M01C_KEY_DOOR_COHORT")
+    for cohort, count in [
+        ("M01C-KEY-DOORS", len(M01C_IDS | {5291, 5292})),
+        ("CLASSIC-QUEST-DOORS", len(CLASSIC_QUEST_DOORS)),
+    ]:
         line = f'    ("{cohort}", {count}),'
         matches = list(re.finditer(rf'^[ \t]*\("{cohort}",\s*\d+\),$', source, re.MULTILINE))
         if len(matches) > 1:

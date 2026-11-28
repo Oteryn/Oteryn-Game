@@ -10,6 +10,10 @@
     "imports/canary/items-xml/items.xml#17449-17450",
     "content/creatures/definitions/spell-native-profiles.json#exact-ordinary-creature-corpse-bindings",
     "imports/canary/items-xml/items.xml#corpse-capacity-and-decay",
+    "imports/canary/items-xml/items.xml#34734-34739",
+    "imports/canary/items-xml/items.xml#35347-35352",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/feverish_citizen.lua:32,90-95",
+    "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humanoids/swamp_troll.lua:33,90",
     "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L36910",
     "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/humans/{acolyte,adept,enlightened,novice}_of_the_cult.lua",
     "imports/canary/items-xml/items.xml#36498,36540,36936,37349",
@@ -247,17 +251,20 @@
     "oteryn:creature.armadile": 15868,
     "oteryn:creature.behemoth": 5999,
     "oteryn:creature.bonebeast": 6030,
+    "oteryn:creature.crystalcrusher": 16197,
     "oteryn:creature.bride_of_night": 18210,
     "oteryn:creature.crazed_beggar": 18070,
     "oteryn:creature.crazed_dwarf": 6007,
     "oteryn:creature.crystal_spider": 7344,
     "oteryn:creature.dark_monk": 18281,
     "oteryn:creature.dipthrah": 6031,
+    "oteryn:creature.drillworm": 17425,
     "oteryn:creature.dwarf": 6007,
     "oteryn:creature.dworc_voodoomaster": 6055,
     "oteryn:creature.enlightened_of_the_cult": 18110,
     "oteryn:creature.execowtioner": 21004,
     "oteryn:creature.faun": 25815,
+    "oteryn:creature.feverish_citizen": 18114,
     "oteryn:creature.frost_dragon": 7091,
     "oteryn:creature.glooth_powered_minotaur": 20996,
     "oteryn:creature.gnome_pack_crawler": 15991,
@@ -290,6 +297,7 @@
     "oteryn:creature.reflection_of_mawhawk": 21004,
     "oteryn:creature.rotworm": 5967,
     "oteryn:creature.souleater": 11675,
+    "oteryn:creature.swamp_troll": 6018,
     "oteryn:creature.stalker": 18230,
     "oteryn:creature.thalas": 6025,
     "oteryn:creature.tortoise": 6072,
@@ -303,5 +311,18 @@
     "oteryn:creature.red_butterfly": 4991,
     "oteryn:creature.cockroach": 7763,
     "oteryn:creature.orc_sambackpack": 5966
+  },
+  "source_loot_probabilities_ppm": {
+    "oteryn:creature.feverish_citizen": {
+      "oteryn:item.tibia.i12551": 16600,
+      "oteryn:item.tibia.i12552": 17200,
+      "oteryn:item.tibia.i12553": 22900,
+      "oteryn:item.tibia.i12554": 20060,
+      "oteryn:item.tibia.i12555": 20600,
+      "oteryn:item.tibia.i12556": 22900
+    },
+    "oteryn:creature.swamp_troll": {
+      "oteryn:item.tibia.i12517": 21600
+    }
   }
 }

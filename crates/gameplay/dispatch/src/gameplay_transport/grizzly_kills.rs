@@ -45,16 +45,41 @@ struct NativeCounterCapture {
     definition_hash: Option<[u8; 32]>,
     death_area: Option<oteryn_gameplay_quests::quest::authored_bindings::kills::DeathArea>,
     encounter_source: Option<String>,
+    creditable: bool,
 }
 
 fn capture_native(
     catalogue: &oteryn_gameplay_quests::quest::QuestStateCatalogue,
     tracks: &std::collections::BTreeMap<String, i64>,
 ) -> Vec<NativeCounterCapture> {
-    use oteryn_gameplay_quests::quest::native_kills;
-    native_kills::active_for(catalogue, tracks)
+    use oteryn_gameplay_quests::quest::{authored_bindings::Trigger, native_kills};
+    let active = native_kills::active_for(catalogue, tracks)
         .into_iter()
-        .filter_map(|key| {
+        .map(|key| (key, true));
+    // A cleared, repeatable room still needs a fenced roster for its next visit.
+    // The capped counter is admission evidence only.
+    let value = |key: &str| {
+        catalogue
+            .track(key)
+            .map(|track| tracks.get(key).copied().unwrap_or(track.initial))
+    };
+    let cleared = catalogue
+        .authored_bindings()
+        .into_iter()
+        .flat_map(|bindings| &bindings.quests)
+        .flat_map(|quest| &quest.stages)
+        .filter_map(|stage| {
+            let Trigger::Kill { counter } = &stage.trigger else {
+                return None;
+            };
+            (counter.encounter_source.is_some()
+                && value(&counter.gate) == Some(counter.gate_value)
+                && value(&counter.track) == Some(counter.maximum))
+            .then(|| (counter.key.clone(), false))
+        });
+    active
+        .chain(cleared)
+        .filter_map(|(key, creditable)| {
             let counter = native_kills::counter_for(catalogue, &key)?;
             let definition_hash = if native_kills::counter(&key).is_some() {
                 None
@@ -62,11 +87,12 @@ fn capture_native(
                 Some(catalogue.definition_hash(counter.quest)?)
             };
             Some(NativeCounterCapture {
-                transition: key.clone(),
+                transition: key,
                 creature: counter.creature.into(),
                 definition_hash,
                 death_area: counter.death_area,
                 encounter_source: counter.encounter_source.map(str::to_owned),
+                creditable,
             })
         })
         .collect()
@@ -189,12 +215,31 @@ fn freeze_at(
             continue;
         }
         for counter in &snapshot.native_counters {
+            let spike =
+                oteryn_gameplay_quests::quest::kill_objectives::party_hunt(&counter.transition);
             if counter.creature == creature
                 && counter.encounter_source.is_none()
-                && counter.death_area.is_none_or(|area| {
-                    death_position.is_some_and(|position| area.contains(position))
-                })
+                && spike.map_or_else(
+                    || {
+                        counter.death_area.is_none_or(|area| {
+                            death_position.is_some_and(|position| area.contains(position))
+                        })
+                    },
+                    |hunt| corpse.is_some_and(|at| hunt.contains(at.x, at.y, at.floor)),
+                )
             {
+                use crate::durability::quest_state::native_kills::NativeDeathSource;
+                let source = if spike.is_some() {
+                    let Some(at) = corpse.and_then(super::quest_callbacks::native) else {
+                        continue;
+                    };
+                    NativeDeathSource::PositionedParty {
+                        source: Arc::clone(&native_source),
+                        position: (at.x, at.y, at.floor),
+                    }
+                } else {
+                    NativeDeathSource::Party(Arc::clone(&native_source))
+                };
                 native.push(super::quest_kills::Recipient {
                     actor: snapshot.actor,
                     session: snapshot.session,
@@ -205,10 +250,7 @@ fn freeze_at(
                         definition_hash: counter.definition_hash,
                         creature: creature.into(),
                         observed_revision: snapshot.observed_revision,
-                        source:
-                            crate::durability::quest_state::native_kills::NativeDeathSource::Party(
-                                Arc::clone(&native_source),
-                            ),
+                        source,
                     },
                 });
             }
@@ -421,11 +463,9 @@ pub(super) fn capture(
                     ))
                 });
             frozen.native.retain_mut(|recipient| {
-                if !recipient
-                    .death
-                    .transition
-                    .starts_with("oteryn:quest-transition/native-kills/m31/")
-                {
+                if !oteryn_gameplay_quests::quest::world_change_journals::requires_death_position(
+                    &recipient.death.transition,
+                ) {
                     return true;
                 }
                 if !oteryn_gameplay_quests::quest::world_change_journals::admits_position(
@@ -477,20 +517,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// database await holds these guards; a task must be visible before a later death can
     /// capture it. The durable owner also rejects a task run restarted after this revision.
     pub(super) async fn refresh_grizzly_kill_snapshot(&self, session: GameSessionId) {
+        let queue = self.states.attack.lock().await.kills().clone();
         let runtime = self.runtime.lock().await;
-        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session)
-            .await;
+        self.refresh_grizzly_kill_snapshot_in_runtime(&runtime, session, &queue);
     }
 
     /// Publish capture eligibility while the callback already holds the runtime owner.
-    pub(super) async fn refresh_grizzly_kill_snapshot_in_runtime(
+    pub(super) fn refresh_grizzly_kill_snapshot_in_runtime(
         &self,
         runtime: &ChannelRuntimeV1,
         session: GameSessionId,
+        queue: &KillSettlementQueue,
     ) {
         let (snapshot, hit_snapshot) = self.grizzly_kill_snapshots_in_turn(runtime, session);
-        let attack = self.states.attack.lock().await;
-        let Ok(mut cache) = attack.kills().1.lock() else {
+        let Ok(mut cache) = queue.1.lock() else {
             return;
         };
         if !cache.hits.install(runtime, session, hit_snapshot) {

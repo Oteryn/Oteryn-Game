@@ -29,6 +29,10 @@
       "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
     },
     {
+      "path": "data-global/startup/tables/corpse.lua",
+      "sha256": "51373610aa6f9d73b6e5a3496db2e70d93b3d3b914d54d84fcbfb08e6c844039"
+    },
+    {
       "path": "data-global/lib/core/storages.lua",
       "sha256": "9e7edb4f311cd62424f129526e95e32c4b455e74755599197de629d3e5e63160"
     },
@@ -429,6 +433,30 @@
       "action": 50022,
       "source": "data-global/startup/tables/tile.lua",
       "line": 1204
+    },
+    {
+      "position": [
+        32991,
+        32642,
+        8
+      ],
+      "item": 21412,
+      "attribute": "action",
+      "action": 50806,
+      "source": "data-global/startup/tables/corpse.lua",
+      "line": 35
+    },
+    {
+      "position": [
+        33007,
+        32607,
+        8
+      ],
+      "item": 21412,
+      "attribute": "action",
+      "action": 50806,
+      "source": "data-global/startup/tables/item.lua",
+      "line": 3391
     },
     {
       "position": [

@@ -3,6 +3,13 @@ use super::{Attrs, TilePos};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
+/// Crystal items.xml:1002–1006 defines the dug Bear Cave ground's down flag.
+pub(super) const DRAGON_CORPSE_HOLE: TilePos = TilePos {
+    x: 32166,
+    y: 32216,
+    floor: -8,
+};
+
 #[derive(Deserialize)]
 struct Capture {
     bindings: Vec<Binding>,
@@ -13,6 +20,25 @@ struct Binding {
     item: u16,
     attribute: String,
     value: u16,
+}
+
+/// Crystal door_key.lua:9–62 assigns the carried number to these loose silver keys.
+pub(super) fn loose_draconia_key(position: TilePos, attrs: &Attrs) -> Option<u16> {
+    let number = match (position.x, position.y, position.floor) {
+        (32794, 31572, -7) => 3001,
+        (32790, 31593, -7) => 3003,
+        (32807, 31576, -6) => 3004,
+        (32792, 31590, -6) => 3005,
+        (32801, 31579, -6) => 3006,
+        (32813, 31576, -5) => 3007,
+        _ => return None,
+    };
+    (*attrs
+        == Attrs {
+            action: Some(number),
+            ..Attrs::default()
+        })
+    .then_some(number)
 }
 
 pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut Attrs) {

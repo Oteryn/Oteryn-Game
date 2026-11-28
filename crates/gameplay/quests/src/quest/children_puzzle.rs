@@ -67,7 +67,7 @@ pub(crate) fn callbacks() -> Vec<Callback> {
             );
             callback.quest = "oteryn:quest.children_of_the_revolution_quest".into();
             callback.selector.native = None;
-            callback.selector.action = None;
+            callback.selector.action = Some(8013);
             callback.selector.appearance = Some(9125);
             callback.selector.position = Some(Position {
                 x: 33349,

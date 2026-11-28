@@ -7,6 +7,7 @@ mod registry;
 pub use registry::{CounterRef, active_for, counter_for, tracks_creature_for};
 
 mod fugue;
+pub(crate) mod great_dragon_hunt;
 mod phase_settlements;
 
 pub const PREFIX: &str = "oteryn:quest-transition/native-kills/";
@@ -31,6 +32,9 @@ impl Counter {
     pub fn gate_bounds(self) -> (i64, i64) {
         if fugue::matches(&self) {
             (2, 2)
+        } else if great_dragon_hunt::owns(self.transition) {
+            // Crystal credits the party even before the explorer is searched.
+            (0, 2)
         } else {
             phase_settlements::gate_bounds(&self).unwrap_or((self.gate_value(), self.gate_value()))
         }
@@ -65,6 +69,22 @@ impl Counter {
                 key: self.transition.into(),
                 quest: self.quest.into(),
                 effects,
+                completes: false,
+                experience: None,
+            };
+        }
+        if great_dragon_hunt::owns(self.transition) {
+            // The native writer fences the skeleton revision so an older kill
+            // cannot cross the explorer's reset. A kill only changes the count.
+            return QuestTransition {
+                world_change: None,
+                key: self.transition.into(),
+                quest: self.quest.into(),
+                effects: vec![QuestEffect {
+                    track: self.track.into(),
+                    from: QuestComparison::Between(0, self.maximum - 1),
+                    effect: QuestEffectKind::Add(1),
+                }],
                 completes: false,
                 experience: None,
             };
@@ -239,6 +259,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
         .iter()
         .chain(qworld::counters().unwrap_or_default())
         .chain(fugue::COUNTERS)
+        .chain(great_dragon_hunt::COUNTERS)
         .chain(
             super::world_change_journals::counters()
                 .into_iter()
@@ -251,6 +272,7 @@ pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Coun
     Ok(COUNTERS
         .iter()
         .chain(fugue::COUNTERS)
+        .chain(great_dragon_hunt::COUNTERS)
         .chain(phase_settlements::COUNTERS)
         .chain(qworld::counters()?)
         .chain(super::world_change_journals::counters()?))
@@ -342,7 +364,11 @@ mod tests {
     fn eligibility_requires_an_active_trial_and_an_unsaturated_counter() {
         let counter = &COUNTERS[0];
         let mut tracks = BTreeMap::new();
-        assert!(active(&tracks).is_empty());
+        let unconditional = [
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon",
+            "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon_lord",
+        ];
+        assert_eq!(active(&tracks), unconditional);
         tracks.insert(counter.gate.into(), 1);
         assert!(active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), counter.maximum);
@@ -351,7 +377,7 @@ mod tests {
         assert!(!active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), 0);
         tracks.insert(counter.gate.into(), 2);
-        assert!(active(&tracks).is_empty());
+        assert_eq!(active(&tracks), unconditional);
         assert!(!tracks_creature("oteryn:creature.rat"));
     }
     #[test]
@@ -467,6 +493,58 @@ mod qworld_tests {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn great_dragon_hunt_loads_both_species_and_only_credits_source_areas() -> Result<(), String> {
+    let loaded = super::loader::load_embedded_quest_state("great-dragon-hunt")
+        .map_err(|error| format!("{error:?}"))?;
+    for species in ["dragon", "dragon_lord"] {
+        let key = format!("oteryn:quest-transition/native-kills/great-dragon-hunt/{species}");
+        let counter = counter_for(loaded.catalogue(), &key).ok_or("native hunt counter")?;
+        assert_eq!(counter.creature, format!("oteryn:creature.{species}"));
+        assert_eq!(
+            counter.track,
+            "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/dragon_counter"
+        );
+        assert_eq!(
+            counter_for(loaded.catalogue(), &key).map(|c| c.maximum),
+            Some(i64::from(i32::MAX))
+        );
+        assert!(
+            active_for(loaded.catalogue(), &BTreeMap::new()).contains(&key),
+            "Crystal credits kills before the explorer resets the count"
+        );
+        for position in [
+            (33085, 32589, -4),
+            (33069, 32674, -5),
+            (33031, 32713, -4),
+            (33061, 32646, -6),
+            (33027, 32634, -7),
+            (32983, 32616, -7),
+            (33007, 32612, -6),
+            (32987, 32621, -6),
+            (33002, 32614, -5),
+            (32993, 32632, -7),
+        ] {
+            assert!(super::world_change_journals::admits_position(
+                &key,
+                Some(position)
+            ));
+        }
+        for position in [
+            None,
+            Some((33061, 32646, -8)),
+            Some((32982, 32616, -7)),
+            Some((33061, 32627, -6)),
+        ] {
+            assert!(!super::world_change_journals::admits_position(
+                &key, position
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

@@ -60,7 +60,7 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     let base = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
-    // Arrange Sven's external accepted state with one sip left and the winning streak at 8.
+    // Arrange Sven's external accepted state with one sip left and the winning streak at 9.
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             base.content_revision(),
@@ -75,7 +75,7 @@ pub(super) async fn exercise(
     owner.quest_catalogue = Some(catalogue.clone());
     let prerequisites = mead::TRACKS
         .into_iter()
-        .zip([2, 2, 8, 20])
+        .zip([2, 2, 9, 19])
         .map(|(key, value)| (key.to_owned(), value))
         .collect::<Vec<_>>();
     super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
@@ -104,7 +104,7 @@ pub(super) async fn exercise(
     // Randomness stays server-owned. Exercise both branches with a bounded number of real uses.
     for attempt in 0..128 {
         if attempt > 0 {
-            super::qm47_mead_fixtures::seed_sven_state(h, owner, admitted, [2, 2, 8, 20]).await?;
+            super::qm47_mead_fixtures::seed_sven_state(h, owner, admitted, [2, 2, 9, 19]).await?;
         }
         let command = attempt + 1;
         let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
@@ -172,9 +172,9 @@ pub(super) async fn exercise(
         assert_eq!(
             values,
             if draw == 1 {
-                vec![2, 2, 0, 21]
+                vec![2, 2, 0, 20]
             } else {
-                vec![3, 3, 9, 20]
+                vec![3, 3, 10, 20]
             }
         );
         let expected: Vec<_> = if draw == 1 {

@@ -10,6 +10,7 @@ fn trial() -> Result<Callback, String> {
     c.effects = Default::default();
     c.requires_world_admission = true;
     c.world_requirements = vec![WorldRequirement {
+        hidden: false,
         ground: None,
         position: c.selector.position.ok_or("sample position")?,
         appearance: 2523,
@@ -23,10 +24,12 @@ fn encode(c: &Callback) -> String {
 
 #[test]
 fn m07_native_trial_level_guard_composes_with_exact_world_requirements() -> Result<(), String> {
-    let mut callback = load()?
-        .into_iter()
-        .find(|c| c.key == "oteryn:quest-callback/m07/realm-trial")
-        .ok_or("native trial")?;
+    let mut callback = trial()?;
+    callback.selector.native = Some(NativeSelector {
+        position: callback.selector.position.ok_or("sample position")?,
+        ordinal: 1,
+        appearance: callback.selector.appearance.ok_or("sample appearance")?,
+    });
     callback.minimum_level = Some(50);
     parse(&encode(&callback))?;
     for invalid in 0..4 {
@@ -350,7 +353,7 @@ fn m07_clear_area_extra_floors_are_explicit_bounded_and_bound_to_admission() -> 
         serde_json::json!([-4, -4]),
         serde_json::json!([-16]),
         serde_json::json!([1]),
-        serde_json::json!([-7, -6, -5, -4]),
+        serde_json::json!([-8, -7, -6, -5, -4]),
     ] {
         let mut bad = v.clone();
         bad["effects"]["clear_area"]["additional_floors"] = floors;

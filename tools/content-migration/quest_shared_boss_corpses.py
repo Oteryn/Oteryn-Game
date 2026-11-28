@@ -1,5 +1,15 @@
 """Exact source bodies of the already active shared reward-boss policies."""
+# Crystal 201189f8 data-global/monster/{quests/kilmaresh,bosses}/{boss}.lua.
+# Their Item XML decay chains match the retained canonical source.
+QUEST_REWARD_BOSSES = {
+    'amenef_the_burning': 31646,
+    'neferi_the_spy': 36982,
+    'sister_hetai': 31419,
+    'the_flaming_orchid': 21987,
+}
+
 BODIES = {
+    **QUEST_REWARD_BOSSES,
     'an_observer_eye': 5995,
     'arbaziloth': 50029,
     'arachir_the_ancient_one': 8109,

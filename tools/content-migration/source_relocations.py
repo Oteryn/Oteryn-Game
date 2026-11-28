@@ -47,7 +47,7 @@ QUEST_PLAN_PLACEMENT_RELOCATIONS = {
         "86d294671104ff928bc6070e4fab19b68c2f1598fbddbf9e0496ee37eee33197",
     ): (
         "content/world/placements/index.json",
-        "e414fa9257ca4470a71567a3e0f1feda5f793620a3fd9e777e7b13bad2ad87c5",
+        "4097e58acbcbcf8ee4effcf7c555c07d206d2e9003144a1d437b290ba0b16db7",
     ),
     (
         "content/world/placements/region-z07-x130-y127.b3",
@@ -87,21 +87,21 @@ RELOCATIONS = {
         "ce986ca83b92f5ea2b7aeaa5bdc75b591cb28d63ab1a93dce0077215ce90979f",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "bb5e66f244a6a512baf9044e7accca7e4c74dfc642debc5d2ab28ea224cf0262",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "d8e971242c7d7a973d5f66e15879801017da041a291eced360e33d42f0355344",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "96b24f0cbedb168d73aeca26644536693d97b7fe2d2f49ecbd150bdfd4f3037b",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "d8e971242c7d7a973d5f66e15879801017da041a291eced360e33d42f0355344",
     ),
     # The source-qualified Anomaly ground retains its pre-existing Item route;
     # the complete terrain row otherwise remains byte-identical.
@@ -119,7 +119,7 @@ RELOCATIONS = {
         "704991a60238795986358b6d2bcb7ac25f2172a04723b541e3f959a50eb9d768",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/terrain-05500-05999.json",
@@ -133,7 +133,7 @@ RELOCATIONS = {
         "db9150a3639c4d6bcd596c040b7d2ad39047fbc3f51c925761bebfbb6def26fd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "d8e971242c7d7a973d5f66e15879801017da041a291eced360e33d42f0355344",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -189,21 +189,21 @@ RELOCATIONS = {
         "a3c59faa4b6ccab7e0b4029004c0a1bbe22a8e246c6029ae479d63029972d0f9",
     ): (
         "docs/agents/evidence/OTV2-20261002-item-name-promotion-v1.json",
-        "fd6f0d451bac28ba61a5dc079bf233d82fde28703987f375e2e6050cf4a4252a",
+        "7542c378f380e72547abb43f6411a40dcee29b1b381336aa10d240f8bcb17725",
     ),
     (
         "crates/gameplay/content/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
+        "0695d53aefa6dd9e5dff4ba59a8841fcc6457cc42be345cff00198c41943f07e",
     ),
     (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
         "36b822f96bab04e4ac6566a5742ee29f8616d6c283fb67e92f1528ee8e8eee0d",
     ): (
         "crates/gameplay/content-promotion/src/content/item_name_promotion.rs",
-        "cee3ea944c8d2db4f72b16436d4c955b3f6bbb6199d368e87f701e851ef1da0a",
+        "0695d53aefa6dd9e5dff4ba59a8841fcc6457cc42be345cff00198c41943f07e",
     ),
     # QMINT3's tree-first reference view changes only the Forge289 compiler and
     # mapper fingerprints. All454 binding rows and289 literal promotions are
@@ -255,42 +255,42 @@ RELOCATIONS = {
         "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/index.json",
         "22cb600cca441ac68526501c8e3576ec9c1dd07f77b276db470c70b996028fec",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/index.json",
         "360e65beb939450179cb6c99b5c19a0e2842051fd9c3beaf21e6366b9c9245a4",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/index.json",
         "89ae879da01b6a81e1e6a1c6a06b2632a2678066e0eb71404a5a7882bd516c44",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/index.json",
         "abffe2dd83dfec1ce1afd657bd0fcaae3760a10a509f8e1034e35834a714ba79",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/index.json",
         "baf9f79b334c9478895ae824c67aad32e06eb4e7b09435570389dd64ad455836",
     ): (
         "content/world/terrain/index.json",
-        "a70c44e3dcd9c09d5bcc9bae6079cfc391e4a56f659ff8ec10123da89aa7401b",
+        "692e2c9a493268482db5aaa03a9ccedc44edb008ee4eac5e67dd6aa14c655555",
     ),
     (
         "content/world/terrain/terrain-08614-08668.json",
@@ -304,21 +304,21 @@ RELOCATIONS = {
         "00878d28eb56c84f57734956505f60eb1fe7d248b7d1002c19209172a5125cfd",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "d8e971242c7d7a973d5f66e15879801017da041a291eced360e33d42f0355344",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "8e41e838db44b527e4a243d4be1dc5245fe74def7145d9a68cdfc1436d609d5c",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "d8e971242c7d7a973d5f66e15879801017da041a291eced360e33d42f0355344",
     ),
     (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
         "ae1a4f2c09345efbda4293eee96a93f9054bb33e40f658ab483b8b0c88027477",
     ): (
         "tools/content-schema/item-authoring/historical_world_owner_context.py",
-        "9da46301c8805ae2a1db85de498172383cc8e177ee3de78898c2319f0c4d1898",
+        "d8e971242c7d7a973d5f66e15879801017da041a291eced360e33d42f0355344",
     ),
     (
         "tools/content-schema/item-authoring/lower_wiki_stack_default_packet.py",
@@ -461,6 +461,52 @@ def read_pinned(root: Path, path: str, expected: str) -> bytes | None:
     data = target.read_bytes()
     if digest(data) == current_digest:
         return data
+    if (
+        current
+        == "tools/content-schema/item-authoring/historical_world_owner_context.py"
+    ):
+        # The earlier receipt pins the helper before its exact Bear Cave witness.
+        start = data.find(b"    import classic_quest_ground\n")
+        end = data.find(b"    for note in (\n", start)
+        if 0 <= start < end:
+            previous = data[:start] + data[end:]
+            if digest(previous) == current_digest:
+                return previous
+    if current == "content/world/terrain/index.json":
+        import sys
+
+        sys.path.insert(
+            0,
+            str(
+                Path(__file__).resolve().parents[1]
+                / "content-schema/world-object-authoring"
+            ),
+        )
+        try:
+            import classic_quest_ground
+        finally:
+            sys.path.pop(0)
+        try:
+            marker = json.loads(data)
+        except ValueError:
+            return None
+        notes = marker.get("notes") if isinstance(marker, dict) else None
+        if not isinstance(notes, str):
+            return None
+        note = classic_quest_ground.NOTE
+        shard = Path(root) / classic_quest_ground.SHARD
+        if notes.count(note) == 1 and shard.is_file():
+            generated = classic_quest_ground.outputs(Path(root), terrain_index=data)
+            if (
+                generated[current].encode() == data
+                and generated[classic_quest_ground.SHARD].encode() == shard.read_bytes()
+            ):
+                marker["notes"] = notes.replace(note, "", 1)
+                previous = (
+                    json.dumps(marker, indent=2, ensure_ascii=False) + "\n"
+                ).encode()
+                if digest(previous) == current_digest:
+                    return previous
     if current == "imports/tibiawiki/facts/items-stats.json":
         historical = historical_wiki_snapshot(data)
         if historical is not None and digest(historical) == current_digest:

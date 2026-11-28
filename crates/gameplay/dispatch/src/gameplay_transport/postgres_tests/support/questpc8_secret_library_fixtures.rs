@@ -686,7 +686,7 @@ async fn install_npcs(
     refs.try_into().map_err(|_| "exact NPC refs".into())
 }
 
-async fn raise_level(
+pub(super) async fn raise_level(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     level: u32,

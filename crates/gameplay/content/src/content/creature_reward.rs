@@ -1529,6 +1529,52 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn wanted_bosses_load_native_corpses_and_issavi_addon_loot()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (boss, corpse) in [
+            ("amenef_the_burning", 31646),
+            ("neferi_the_spy", 36982),
+            ("sister_hetai", 31419),
+        ] {
+            let boss = format!("oteryn:creature.{boss}");
+            let row = table
+                .row(&boss)
+                .map_err(|reason| format!("{boss}: {}", reason.as_str()))?;
+            let corpse = format!("oteryn:item.tibia.i{corpse}");
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(corpse.as_str()),
+            );
+            for (item, expected_ppm) in match boss.as_str() {
+                "oteryn:creature.amenef_the_burning" => [(37002, 2538), (37003, 1900)],
+                "oteryn:creature.neferi_the_spy" => [(37002, 1748), (37003, 1870)],
+                _ => [(37002, 520), (37003, 1560)],
+            } {
+                let key = format!("oteryn:item.tibia.i{item}");
+                let drop = row
+                    .loot_table
+                    .entries
+                    .iter()
+                    .find(|entry| entry.item.production_key == key)
+                    .ok_or_else(|| format!("{boss}: missing {key}"))?;
+                assert_eq!(
+                    (drop.probability_ppm, drop.min_count, drop.max_count),
+                    (Some(expected_ppm), 1, 1)
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn slice_three_tables_load_every_qualified_yield() -> Result<(), Box<dyn std::error::Error>> {
         fn missing_yields<'a>(
             entries: &'a [SectionLootEntry],

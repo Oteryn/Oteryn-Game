@@ -820,6 +820,7 @@ fn scenario_with_voice(
             crate::foundation::CommandId::new(3).map_err(debug)?,
         );
         let mutation = crate::durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
             tool: id(71),
             tool_key: shovel.into(),
             tool_revision: "definition-r1".into(),
@@ -848,6 +849,7 @@ fn scenario_with_voice(
             .ok_or("stale fence outcome")?;
         assert_eq!(result, UseDisposition::Rejected);
         let absent_tool = crate::durability::terrain_tool::TerrainMutation {
+            quest_catalogue: None,
             tool: id(99),
             ..mutation.clone()
         };
@@ -988,6 +990,7 @@ async fn recover_dead_archer(
                 payload,
                 owner.terrain_scope().ok_or("terrain scope")?,
                 Some(TerrainMutation {
+                    quest_catalogue: None,
                     tool: id(71),
                     tool_key: "oteryn:item.tibia.i3457".into(),
                     tool_revision: "definition-r1".into(),

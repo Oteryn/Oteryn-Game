@@ -247,6 +247,27 @@ class QuestChestBindings(unittest.TestCase):
                 ]
                 self.assertEqual(matches, [value])
 
+    def test_children_grease_shelf_uid_in_published_region(self):
+        position = (33327, 31410, 8)
+        root = chests.ROOT
+        index = json.loads((root / chests.INDEX).read_bytes())
+        x, y, z = position
+        path = (
+            root / "content/world/placements" / codec.region_name(z, x // 256, y // 256)
+        )
+        (tile,) = [
+            tile
+            for _, tiles in codec.decode_region(path.read_bytes())[3]
+            for tile in tiles
+            if tile[:2] == (x, y)
+        ]
+        (shelf,) = [
+            attrs
+            for palette, depth, attrs in tile[-1]
+            if depth == 0 and index["palette"][palette]["source_item_id"] == 1895
+        ]
+        self.assertEqual((shelf or {}).get("unique"), 6290)
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 

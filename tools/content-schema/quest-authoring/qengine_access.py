@@ -139,6 +139,26 @@ def document():
                 teleport=position(x + 1, 32131, 9),
             )
         )
+    rows.append(
+        callback(
+            "bear-room-stone-switch",
+            "bear_room_quest",
+            "use",
+            "data-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_stone.lua:1-15",
+            action=30006,
+            appearance=2772,
+            at=position(32148, 32105, 11),
+            lever=[2772, 2773],
+            reversible=True,
+            passages=[
+                dict(
+                    position=position(32145, 32101, 11),
+                    appearance=1791,
+                    require_state=True,
+                )
+            ],
+        )
+    )
     for name, at, to, facing, splash in [
         ("cliff", (32966, 32626, 5), (32968, 32626, 5), None, (32968, 32626, 5)),
         ("splash", (32968, 32630, 7), None, None, (32968, 32630, 7)),

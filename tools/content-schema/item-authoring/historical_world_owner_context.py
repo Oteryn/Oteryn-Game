@@ -155,6 +155,18 @@ def original_marker(root):
         ):
             raise ValueError("source digest drift: Crystal spawn ground witness")
         marker["notes"] = marker["notes"].replace(MARKER_NOTE, "")
+    import classic_quest_ground
+
+    classic_ground = root / classic_quest_ground.SHARD
+    if classic_quest_ground.NOTE in marker["notes"] or classic_ground.exists():
+        if (
+            marker["notes"].count(classic_quest_ground.NOTE) != 1
+            or not classic_ground.is_file()
+            or classic_ground.read_bytes()
+            != classic_quest_ground.outputs(root)[classic_quest_ground.SHARD].encode()
+        ):
+            raise ValueError("source digest drift: Bear Cave Terrain witness")
+        marker["notes"] = marker["notes"].replace(classic_quest_ground.NOTE, "")
     for note in (
         " Additionally M49 Earth altar ground7748 retains its canonical Item identity.",
         " Additionally one source-qualified Rafzan elevator ground; total 8694 Terrain records.",

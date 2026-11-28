@@ -698,9 +698,10 @@ fn storage_owner_preserves_order_and_rejects_unowned_effects() -> Result<(), Npc
 
 // The accepted source cohorts from both parents retain these exact predecessors.
 // Draconia has no historical definition; Stag and schema2 have separate owners.
-const EXPECTED_LEGACY_QUESTS: [&str; 29] = [
+const EXPECTED_LEGACY_QUESTS: [&str; 30] = [
     "oteryn:quest.a_father_s_burden_quest",
     "oteryn:quest.a_pirates_tail",
+    "oteryn:quest.adventurers_guild",
     "oteryn:quest.bigfoot_s_burden_quest",
     "oteryn:quest.blood_brothers_quest",
     "oteryn:quest.cults_of_tibia_quest",
@@ -835,6 +836,7 @@ fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_ro
     let expected_programmes = std::collections::BTreeSet::from([
         "oteryn:quest.a_father_s_burden_quest",
         "oteryn:quest.a_pirates_tail",
+        "oteryn:quest.adventurers_guild",
         "oteryn:quest.bigfoot_s_burden_quest",
         "oteryn:quest.demon_oak",
         "oteryn:quest.cults_of_tibia_quest",
@@ -1797,6 +1799,37 @@ fn m54_citizen_source_aliases_require_both_local_sagas() -> Result<(), NpcRuleEr
         plan.track_changes[0].key,
         "oteryn:quest-progress/source-completion/outfit_and_addon_quests/citizen-rook"
     );
+    Ok(())
+}
+
+#[test]
+fn tarun_program_and_remains_share_loaded_adventurers_guild_tracks() -> Result<(), String> {
+    let catalogue = crate::quest::loader::load_embedded_quest_state("lost-brother")
+        .map_err(|error| format!("{error:?}"))?;
+    let source = NpcRuleCatalog::runtime().map_err(|error| error.to_string())?;
+    let program = source
+        .program("oteryn:quest.adventurers_guild")
+        .ok_or("Tarun runtime program")?;
+    let remains = catalogue
+        .catalogue()
+        .transition("oteryn:quest-callback/the-lost-brother-remains")
+        .ok_or("remains transition")?;
+    assert_eq!(program.document.quest, remains.quest);
+    let track = &remains.effects.first().ok_or("remains track write")?.track;
+    let writes = program
+        .document
+        .rules
+        .iter()
+        .flat_map(|rule| &rule.effects)
+        .filter_map(|effect| match effect {
+            NpcRuleEffect::Set {
+                track: written,
+                value,
+            } if written == track => Some(*value),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(writes, [3, 1]);
     Ok(())
 }
 

@@ -11,6 +11,83 @@ import world_region_codec as codec
 
 
 class AsuraChambers(unittest.TestCase):
+    def test_orchid_encounter_and_treasures_use_native_placements(self):
+        from engenc_asura_entry import entry_binding
+
+        (quest,) = entry_binding()["quests"]
+        stages = {row["key"]: row for row in quest["stages"]}
+        entry = stages["orchid-entry"]["trigger"]
+        self.assertEqual(entry["kind"], "map_use")
+        callback = entry["callback"]
+        self.assertEqual(
+            callback["selector"]["native"]["position"],
+            {"x": 32959, "y": 32679, "floor": -2},
+        )
+        self.assertEqual(
+            callback["effects"]["encounter"]["monsters"],
+            [
+                {
+                    "position": {"x": 32955, "y": 32679, "floor": -2},
+                    "creature": "oteryn:creature.the_flaming_orchid",
+                }
+            ],
+        )
+        self.assertEqual(
+            callback["storage"][0]["track"],
+            "oteryn:quest-progress/engenc/asura/hydra/count",
+        )
+        counter = stages["orchid-kill"]["trigger"]["counter"]
+        self.assertEqual(counter["encounter_source"], callback["key"])
+        self.assertEqual(counter["maximum"], 1)
+        for name, item, entrance in (("sapphire", 3029, 2472), ("ruby", 3030, 1993)):
+            claim = stages[f"orchid-{name}"]["trigger"]["callback"]
+            self.assertEqual(claim["selector"]["native"]["appearance"], entrance)
+            self.assertEqual(
+                claim["storage"],
+                [
+                    {
+                        "track": f"oteryn:quest-progress/engenc/asura/orchid/{name}",
+                        "minimum": 0,
+                        "maximum": 0,
+                        "set": 1,
+                    }
+                ],
+            )
+            self.assertEqual(
+                claim["effects"]["item_reward"],
+                {
+                    "item": f"oteryn:item.tibia.i{item}",
+                    "count": 3,
+                },
+            )
+        self.assertTrue(stages["orchid-ruby"]["completes"])
+        door = stages["orchid-library-door"]["trigger"]["callback"]
+        self.assertEqual(
+            door["selector"]["native"],
+            {
+                "position": {"x": 32962, "y": 32674, "floor": -2},
+                "ordinal": 1,
+                "appearance": 1676,
+            },
+        )
+        milestone, clock, hydra, fire = counter["on_defeat"]
+        self.assertEqual(hydra["effect"], {"kind": "add", "value": -3})
+        hunt = stages["hydra"]["trigger"]["counter"]
+        self.assertEqual(hunt["creature"], "oteryn:creature.cave_hydra")
+        self.assertEqual(hunt["maximum"], 3)
+        self.assertEqual(hunt["track"], hydra["track"])
+        self.assertEqual(
+            stages["s3-entry"]["trigger"]["callback"]["storage"][0]["track"],
+            "oteryn:quest-progress/authored/asura_palace_quest/s1",
+        )
+        self.assertEqual(door["storage"][0]["track"], milestone["track"])
+        self.assertNotEqual(counter["track"], milestone["track"])
+        self.assertEqual(clock["track"], callback["state_ops"][0]["track"])
+        self.assertEqual(callback["state_ops"][0]["from"]["seconds"], 72000)
+        self.assertEqual(fire["effect"], {"kind": "add", "value": -2})
+        self.assertEqual(door["minimum_level"], 250)
+        self.assertEqual(door["teleport"], {"x": 32962, "y": 32673, "floor": -2})
+
     def test_authored_rosters_have_two_distinct_native_tiles_and_exact_doors(self):
         document = json.loads(
             (Path(__file__).parent / "samples/engenc/asura-chambers.json").read_text()

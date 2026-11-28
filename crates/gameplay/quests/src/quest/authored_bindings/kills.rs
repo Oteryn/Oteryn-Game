@@ -1,6 +1,7 @@
 //! Native counter bindings use the existing death queue and its fenced quest writer.
 //! Threshold gate effects reuse questpc3 262618b3's original-snapshot operation.
 use super::BoundQuest;
+use crate::quest::reward_callbacks::StateOperation;
 use crate::quest::{QuestComparison, QuestEffect, QuestEffectKind};
 use serde::{Deserialize, Serialize};
 
@@ -47,6 +48,9 @@ pub struct KillCounter {
     /// Exact native encounter callback; absent for ordinary party hunts.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub encounter_source: Option<String>,
+    /// Personal settlement of one source-owned boss death, in the kill transaction.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub on_defeat: Vec<StateOperation>,
 }
 
 impl KillCounter {
@@ -72,12 +76,27 @@ impl KillCounter {
         {
             return Err("authored kill identity/owner/bounds".into());
         }
+        if !self.on_defeat.is_empty() {
+            let mut written = std::collections::BTreeSet::from([&self.track, &self.gate]);
+            if self.encounter_source.is_none()
+                || self.maximum != 1
+                || self.advance_gate_to.is_some()
+                || self.on_defeat.len() > 8
+                || self.on_defeat.iter().any(|op| {
+                    !written.insert(&op.track) || !super::state_operations::valid(quest, op)
+                })
+            {
+                return Err("authored boss death settlement".into());
+            }
+        }
         if let Some(source) = &self.encounter_source {
             let encounter = quest
                 .stages
                 .iter()
                 .find_map(|stage| match &stage.trigger {
-                    super::Trigger::MapUse { callback } if callback.key == *source => {
+                    super::Trigger::MapUse { callback } | super::Trigger::StepIn { callback }
+                        if callback.key == *source =>
+                    {
                         callback.effects.encounter.as_ref()
                     }
                     _ => None,
@@ -106,11 +125,13 @@ impl KillCounter {
         if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
             // The source/epoch owner checks the gate without rewriting its revision
             // for every death queued from the same admission.
-            return vec![QuestEffect {
+            let mut effects = vec![QuestEffect {
                 track: self.track.clone(),
                 from: QuestComparison::Between(self.minimum, self.maximum - 1),
                 effect: QuestEffectKind::Add(1),
             }];
+            effects.extend(self.on_defeat.iter().map(StateOperation::quest_effect));
+            return effects;
         }
         vec![
             QuestEffect {

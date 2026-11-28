@@ -74,6 +74,12 @@ pub struct CallbackEffects {
     /// Source-authored renewable pickup: one mint for each admitted USE command.
     #[serde(default, skip_serializing_if = "is_false")]
     pub item_reward_per_use: bool,
+    /// Equally likely alternatives to the primary per-use reward.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alternative_rewards: Vec<super::super::reward_callbacks::ItemReward>,
+    /// Evaluate the achievement on the post-transition value of an incremented track.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub achievement_at: Option<super::super::reward_callbacks::TrackRequirement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quest_completion: Option<QuestCompletion>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -98,6 +104,9 @@ pub struct CallbackEffects {
     pub passages_reset_after_ms: Option<u32>,
     pub facing: Option<Facing>,
     pub magic: Option<MagicEffect>,
+    /// Repeat the committed magic cue independently of any item transform.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub magic_repeat_after_ms: Option<u32>,
     /// One cue at a committed landing, or at the restored STEP origin on refusal.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub teleport_effect: Option<u16>,
@@ -500,6 +509,32 @@ pub(super) fn valid(callback: &Callback) -> bool {
     {
         return false;
     }
+    if !effects.alternative_rewards.is_empty()
+        && (!effects.item_reward_per_use
+            || effects.alternative_rewards.len() > 7
+            || callback.item_reward.is_some()
+            || !callback.state_operations.is_empty()
+            || callback.storage.iter().any(|s| s.add.is_some())
+            || !effects
+                .alternative_rewards
+                .iter()
+                .all(super::super::reward_callbacks::valid_item_reward))
+    {
+        return false;
+    }
+    if effects.achievement_at.as_ref().is_some_and(|guard| {
+        callback.achievements.is_empty()
+            || guard.minimum != guard.maximum
+            || guard.minimum < 1
+            || !callback.storage.iter().any(|s| {
+                s.track == guard.track
+                    && s.increment
+                    && s.set == 1
+                    && (s.minimum..=s.maximum).contains(&(guard.minimum - 1))
+            })
+    }) {
+        return false;
+    }
     if effects.item_reward_per_use && !super::per_use_reward::admitted(callback) {
         return false;
     }
@@ -675,18 +710,22 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
         })
+        || effects.magic_repeat_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay) || effects.magic.is_none() || callback.reversible
+        })
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || (effects.transform.is_none()
                     && callback.lever.is_none()
                     && !callback.item_on_target.as_ref().is_some_and(|tool| {
-                        tool.selected_instance
-                            && tool.target_remove
-                            && (!tool.reusable
-                                || (callback.requires_world_admission
-                                    && callback.trigger == Trigger::Use
-                                    && callback.passages.is_empty()))
+                        tool.target_replacement.is_some()
+                            || (tool.selected_instance
+                                && tool.target_remove
+                                && (!tool.reusable
+                                    || (callback.requires_world_admission
+                                        && callback.trigger == Trigger::Use
+                                        && callback.passages.is_empty())))
                     }))
                 || (callback
                     .item_on_target
@@ -705,7 +744,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
                 || callback.trigger != Trigger::Use
-                || callback.reversible
+                || (callback.reversible && !callback.chayenne_timed_lever())
                 || callback.passages.is_empty()
                 || callback
                     .passages
@@ -928,6 +967,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && super::spike_mound::chances(callback).is_none()
                 && !super::court_warlock::exact(callback)
                 && !exact_arbaziloth
                 && !callback.starts_merchant_wave()
@@ -998,7 +1038,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || if let Some(timing) = encounter.timing {
                 !encounter.players.is_empty()
                     || !callback.offerings.is_empty()
-                    || (callback.item_on_target.is_some() && !callback.starts_merchant_wave())
+                    || (callback.item_on_target.is_some()
+                        && !callback.starts_merchant_wave()
+                        && super::spike_mound::chances(callback).is_none())
                     || callback.experience.is_some()
                     || callback.monk_reward.is_some()
                     || callback.native_rule.is_some()

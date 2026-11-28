@@ -208,6 +208,7 @@ fn matches(
         overlay,
         facts,
         &[WorldRequirement {
+            hidden: false,
             ground: None,
             position: Position {
                 x: pos.x,
@@ -298,7 +299,8 @@ mod tests {
             }
             assert!(tracks.get(saved_stage).is_some_and(|stage| *stage > 0));
             assert_eq!(
-                unique_eligible([supplemental, authored], &tracks).map(|callback| &callback.key),
+                unique_eligible([supplemental, authored], &tracks, None)
+                    .map(|callback| &callback.key),
                 Some(&authored.key),
                 "{} must own the authored save",
                 authored.key
@@ -307,13 +309,14 @@ mod tests {
                 let lever = "oteryn:quest-progress/chosen/ape-city/lever-1";
                 tracks.insert(lever.into(), 0);
                 assert!(
-                    unique_eligible([authored, supplemental], &tracks).is_none(),
+                    unique_eligible([authored, supplemental], &tracks, None).is_none(),
                     "the supplemental gate must not bypass the authored switches"
                 );
             }
             tracks.insert(saved_stage.into(), 0);
             assert_eq!(
-                unique_eligible([authored, supplemental], &tracks).map(|callback| &callback.key),
+                unique_eligible([authored, supplemental], &tracks, None)
+                    .map(|callback| &callback.key),
                 Some(&supplemental.key),
                 "{} must own the supplemental save",
                 supplemental.key
@@ -353,10 +356,10 @@ mod tests {
         }
         let tracks = std::collections::BTreeMap::new();
         assert!(
-            unique_eligible(callbacks, &tracks).is_none(),
+            unique_eligible(callbacks, &tracks, None).is_none(),
             "two eligible callbacks refuse without physical advice"
         );
-        assert!(unique_eligible(std::iter::empty(), &tracks).is_none());
+        assert!(unique_eligible(std::iter::empty(), &tracks, None).is_none());
         let index = ItemDefinitionIndex::decode(&serde_json::to_vec(&serde_json::json!({
             "schema": "OTERYN_NATIVE_ITEM_KEYS/v1",
             "records": [
@@ -412,11 +415,11 @@ mod tests {
         let personal = layout(&[(33215, &[2471]), (33216, &[2471, 2904]), (33217, &[2471])]);
         let stateless = layout(&[(33215, &[2471, 2471, 2904]), (33216, &[2471, 2471, 2904])]);
         assert_eq!(
-            unique_eligible(eligible(&personal), &tracks).map(|c| c.key.as_str()),
+            unique_eligible(eligible(&personal), &tracks, None).map(|c| c.key.as_str()),
             Some(callbacks[0].key.as_str())
         );
         assert_eq!(
-            unique_eligible(eligible(&stateless), &tracks).map(|c| c.key.as_str()),
+            unique_eligible(eligible(&stateless), &tracks, None).map(|c| c.key.as_str()),
             Some(callbacks[1].key.as_str())
         );
         assert!(eligible(&[]).is_empty());

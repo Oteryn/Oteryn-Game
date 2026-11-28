@@ -33,6 +33,8 @@ SPECS = (
     # World change returns: the Fury Dungeon archway (fury_gates.lua) and the
     # Nightmare Isle exit (nightmare_isles.lua uid 35020).
     ("item.lua", "ItemAction", 9715, "action"),
+    ("item.lua", "ItemAction", 50806, "action"),
+    ("corpse.lua", "CorpseAction", 50806, "action"),
     ("teleport.lua", "TeleportUnique", 35020, "unique"),
 )
 

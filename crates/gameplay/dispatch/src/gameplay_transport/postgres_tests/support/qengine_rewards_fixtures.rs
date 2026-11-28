@@ -44,9 +44,19 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::tower_defence_journey_fixtures::START
             } else if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name.starts_with("qengine-rewards-l12-cave-explorer") {
+                Position {
+                    x: 32246,
+                    y: 32600,
+                    floor: -14,
+                }
             } else if name == cq29_quest_contacts::THIEVES {
                 cq29_quest_contacts::VASE
-            } else if name == super::newhaven_gustavo_fixtures::NAME {
+            } else if matches!(
+                name,
+                super::newhaven_gustavo_fixtures::NAME
+                    | super::newhaven_gustavo_fixtures::PUBLISHED_SAVE
+            ) {
                 super::newhaven_gustavo_fixtures::START
             } else if matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy") {
                 EROTH_CRYSTAL
@@ -145,7 +155,7 @@ pub(super) async fn talk_outcome(
             },
         )
         .await;
-    assert!(!outcome.unknown, "NPC command must have a known outcome");
+    assert!(!outcome.unknown, "NPC command {id} ({text}) must have a known outcome");
     Ok(outcome)
 }
 
@@ -283,7 +293,8 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         | "l10-nightmare-officer"
         | "l10-brotherhood-dread-lord"
         | "l10-brotherhood-leader"
-        | "l10-nightmare-leader" => &["advancement"],
+        | "l10-nightmare-leader"
+        | "l10-nightmare-lord-protector" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
         "l10-golden-boots" => &["outfit", "yes", "boots"],
         "l10-golden-helmet" => &["outfit", "yes", "helmet"],
@@ -1039,6 +1050,15 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-cartography-held" {
+        return Box::pin(super::qengine_level_stories_fixtures::cartography_held(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == super::afflicted_loot_fixtures::HUNT {
+        return Box::pin(super::afflicted_loot_fixtures::hunt(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-black-bert-arthei" {
         return Box::pin(questl2_djinn_journeys::black_bert(owner, admitted, h)).await;
     }
@@ -1085,8 +1105,17 @@ pub(super) async fn exercise(
     if name == cq29_quest_contacts::THIEVES || name == cq29_quest_contacts::SENTRY {
         return Box::pin(cq29_quest_contacts::exercise(owner, admitted, h, name)).await;
     }
-    if name == super::newhaven_gustavo_fixtures::NAME {
-        return Box::pin(super::newhaven_gustavo_fixtures::exercise(owner, admitted, h)).await;
+    if matches!(
+        name,
+        super::newhaven_gustavo_fixtures::NAME | super::newhaven_gustavo_fixtures::PUBLISHED_SAVE
+    ) {
+        return Box::pin(super::newhaven_gustavo_fixtures::exercise(
+            owner,
+            admitted,
+            h,
+            name == super::newhaven_gustavo_fixtures::PUBLISHED_SAVE,
+        ))
+        .await;
     }
     if name == "qengine-rewards-l2-white-raven" {
         return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;

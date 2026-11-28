@@ -718,7 +718,7 @@ impl DurabilityRoot {
                 .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
             || oteryn_gameplay_quests::quest::source_deaths::rule(&request.transition_key)
                 .is_some()
-            || oteryn_gameplay_quests::quest::native_kills::counter(&request.transition_key)
+            || oteryn_gameplay_quests::quest::native_kills::counter_for(&catalogue, &request.transition_key)
                 .is_some();
         if native_key != native.is_some()
             || native
@@ -1436,10 +1436,13 @@ impl DurabilityRoot {
                     };
                     // Reused from PC3 add7faf92: authoritative locked progression,
                     // after historical receipt lookup and before any fresh write.
-                    if let Some(minimum)=reward_callback.as_ref().and_then(|c|c.minimum_level)
-                        && state.try_get::<i64,_>("level")? < i64::from(minimum) {
-                        tx.rollback().await?;
-                        return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                    if let Some(callback) = reward_callback.as_ref()
+                        && let Some(minimum) = callback.minimum_level {
+                        let maximum = callback.maximum_level.unwrap_or(u32::MAX);
+                        if !(i64::from(minimum)..=i64::from(maximum)).contains(&state.try_get::<i64,_>("level")?) {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
                     }
                     if !super::authored_admission::permits_level(&catalogue, &transition.quest, state.try_get("level")?) {
                         tx.rollback().await?;
@@ -1867,10 +1870,25 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx).await?;
                         Some(u8::try_from(draw).map_err(|_| DurabilityError::InvalidStoredState)?)
                     } else { None };
+                    // Keep the real personal before/after values for the collection receipt.
+                    // The atomic stock reservation below checks the interval under its channel key.
+                    let shared_chest = callback.as_ref().is_some_and(|world|
+                        world.key == "oteryn:quest-callback/captain-iglues-left-chest");
+                    let mut collection;
+                    let evaluation = if shared_chest {
+                        collection = transition.clone();
+                        let [stamp] = collection.effects.as_mut_slice() else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        stamp.from = oteryn_gameplay_quests::quest::QuestComparison::Any;
+                        &collection
+                    } else {
+                        transition
+                    };
                     let mut changes = match refusal
                         .map_or_else(|| grizzly_plan.as_ref().map_or_else(
                             || counter_reset_plan.as_ref().map_or_else(
-                                || catalogue.evaluate_with_roll(transition, &stored, now, roll),
+                                || catalogue.evaluate_with_roll(evaluation, &stored, now, roll),
                                 |plan| Ok(plan.clone())),
                             |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
@@ -1991,6 +2009,38 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((permit, context, _))) = (&callback, &context)
                         && !super::super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, &changes, context, (&recovery, &node)).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
+                    // The native left chest is shared by this Channel. Reserve its stock
+                    // in the reward transaction so a refused mint returns the entire bundle.
+                    if let Some(world) = &callback
+                        && world.key == "oteryn:quest-callback/captain-iglues-left-chest"
+                    {
+                        let Some(channel) = fence.runtime_scope.channel_id() else {
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        };
+                        use oteryn_gameplay_quests::quest::reward_callbacks::StateCondition;
+                        let [clock] = world.state_ops.as_slice() else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        let StateCondition::ElapsedAtLeast { seconds } = clock.from else {
+                            return Err(DurabilityError::InvalidStoredState);
+                        };
+                        let updated = sqlx::query(
+                            "INSERT INTO game_captain_iglue_chest_stock (world_id, channel_id, collected_at)
+                             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)
+                             ON CONFLICT (world_id, channel_id) DO UPDATE SET collected_at = EXCLUDED.collected_at
+                             WHERE game_captain_iglue_chest_stock.collected_at <= EXCLUDED.collected_at - $4::bigint"
+                        )
+                        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                        .bind(channel.as_bytes().as_slice())
+                        .bind(now)
+                        .bind(i64::from(seconds))
+                        .execute(&mut *tx)
+                        .await?;
+                        if updated.rows_affected() != 1 {
+                            tx.rollback().await?;
+                            return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
+                        }
+                    }
                     if native_claim {
                         let Some((permit, world, _)) = &context else { return Err(DurabilityError::InvalidStoredState); };
                         if !super::super::quest_world_callback::context_is_current(&mut tx, permit, fence, world).await? {
@@ -2012,7 +2062,7 @@ impl DurabilityRoot {
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
-                        let claim = if world.has_fenced_regrowth_reward() {
+                        let claim = if shared_chest || world.has_fenced_regrowth_reward() {
                             super::super::reward_claim_mint::quest::QuestMintClaim::SourceUse
                         } else if let Some(track) = world.effects.item_reward_cycle.as_deref() {
                             let initial = catalogue.track(track).ok_or(DurabilityError::InvalidStoredState)?.initial;
@@ -2025,6 +2075,16 @@ impl DurabilityRoot {
                         } else if world.effects.item_reward_per_use {
                             super::super::reward_claim_mint::quest::QuestMintClaim::WorldUse
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
+                        let alternatives = &world.effects.alternative_rewards;
+                        let reward = if alternatives.is_empty() {
+                            reward
+                        } else {
+                            let outcomes = i32::try_from(alternatives.len() + 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let index: i32 = sqlx::query_scalar("SELECT floor(random() * $1::integer)::integer")
+                                .bind(outcomes).fetch_one(&mut *tx).await?;
+                            std::iter::once(reward).chain(alternatives).nth(usize::try_from(index).map_err(|_| DurabilityError::InvalidStoredState)?)
+                                .ok_or(DurabilityError::InvalidStoredState)?
+                        };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
                             || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission,legacy_world_claim).await?.is_none()
@@ -2116,7 +2176,9 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if let Some(world) = &callback && !world.achievements.is_empty() {
+                    if let Some(world) = &callback && !world.achievements.is_empty()
+                        && world.effects.achievement_at.as_ref().is_none_or(|guard| changes.iter().any(|change|
+                            change.track == guard.track && change.after == guard.minimum && change.before < change.after)) {
                         let (cause, ordinal) = request.cause.key();
                         let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
                         let occurrence = sha2::Sha256::digest(&occurrence);
@@ -2379,6 +2441,9 @@ impl DurabilityRoot {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    }
+                    if request.transition_key == super::lost_palace_raider::ORCHID {
+                        super::lost_palace_raider::earn(&mut tx, character).await?;
                     }
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
                     super::world_change_journal_rewards::earn(&mut tx, fence, &request, &catalogue,

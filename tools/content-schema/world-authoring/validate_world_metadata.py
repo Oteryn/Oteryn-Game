@@ -12,7 +12,11 @@ import json
 import sys
 from pathlib import Path
 
-from convert_world_metadata import SCRIPT_TELEPORTS
+from convert_world_metadata import (
+    CLASSIC_QUEST_CAPTURE,
+    MAP_NAMESPACE,
+    SCRIPT_TELEPORTS,
+)
 from jsonschema import Draft202012Validator
 from quest_chest_bindings import REVISION as STARTUP_REVISION
 from quest_chest_bindings import STARTUP_TELEPORT_NAMESPACE
@@ -77,6 +81,32 @@ def positions(declaration: dict):
             yield declaration[name]
 
 
+def classic_quest_sources(root: Path, summary: dict, errors: list[str]) -> dict:
+    pin = summary.get("classic_quest_teleports")
+    if pin is None and not (root / CLASSIC_QUEST_CAPTURE).is_file():
+        return {}
+    raw = (root / CLASSIC_QUEST_CAPTURE).read_bytes()
+    capture = json.loads(raw)
+    if pin != {
+        "path": CLASSIC_QUEST_CAPTURE,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "revision": capture["revision"],
+    }:
+        errors.append(
+            "Transition.Teleport: classic quest source pin differs from capture"
+        )
+    return {
+        f"{x},{y},{z}:{row['appearance']}": (
+            (x, y, z),
+            tuple(row["attributes"]["teleport"]),
+            capture["revision"],
+        )
+        for row in capture["placements"]
+        if "teleport" in row.get("attributes", {})
+        for x, y, z in [row["position"]]
+    }
+
+
 def family_records(
     root: Path, family: str, summary: dict, map_extent: dict, errors: list[str]
 ) -> list[dict]:
@@ -130,6 +160,11 @@ def family_records(
     keys = [r.get("declaration", {}).get("identity", {}).get("key") for r in records]
     if keys != sorted(keys) or len(set(keys)) != len(keys):
         errors.append(f"{family}: keys must be unique and sorted")
+    startup = (
+        classic_quest_sources(root, summary, errors)
+        if family == "Transition.Teleport"
+        else {}
+    )
     for record in records:
         declaration = record.get("declaration", {})
         key = declaration.get("identity", {}).get("key")
@@ -146,7 +181,18 @@ def family_records(
                 and bound.get("identity_namespace") == STARTUP_TELEPORT_NAMESPACE
                 else summary["source"].get("revision")
             )
-            if (
+            ext = bound.get("external_id")
+            if ext in startup and bound.get("identity_namespace") == MAP_NAMESPACE:
+                source, target, revision = startup.pop(ext)
+                if (
+                    bound.get("source_revision") != revision
+                    or _coordinates(declaration["from"]) != source
+                    or _coordinates(declaration["to"]) != target
+                ):
+                    errors.append(
+                        f"{key}: classic quest teleport differs from its source"
+                    )
+            elif (
                 family not in OWN_SOURCE_REVISION
                 and bound.get("identity_namespace") != WIKI_NAMESPACE
                 and bound.get("source_revision") != expected_revision
@@ -157,6 +203,10 @@ def family_records(
         for pos in positions(declaration):
             if not (pos["x"] < map_extent["width"] and pos["y"] < map_extent["height"]):
                 errors.append(f"{key}: position outside the source map extent")
+    if startup:
+        errors.append(
+            f"{family}: missing classic quest teleport sources {sorted(startup)}"
+        )
     return records
 
 

@@ -71,6 +71,30 @@ pub(super) async fn exercise(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     name: &str,
 ) -> TestResult {
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 4, 6, 11, 15, 18, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
+    owner.states.chat.admit(
+        admitted.game_session_id,
+        "Qualified witness",
+        owner.owner_now(),
+    );
+    owner.admit_premium(super::fixture::id(40), admitted.game_session_id);
+    if name == "qengine-rewards-l11-makeshift-story" {
+        return makeshift(owner, admitted, h).await;
+    }
     let winter = name == "qengine-rewards-l11-dream-warrior-winter-story";
     let (family, prefix, npc_key, level, items, stages): (
         &str,
@@ -95,14 +119,6 @@ pub(super) async fn exercise(
             250,
             [37003, 37002],
             &["base", "first", "second"],
-        ),
-        "qengine-rewards-l11-makeshift-story" => (
-            "makeshift_warrior",
-            "makeshift",
-            "oteryn:npc.gnomadness",
-            100,
-            [27657, 27656],
-            &["start", "base", "first", "second"],
         ),
         _ => return Err("unknown level story".into()),
     };
@@ -335,13 +351,10 @@ pub(super) async fn exercise(
         assert_eq!(receipts(h).await?, before + 1, "literal NPC replay");
         Ok(())
     };
-    if prefix == "makeshift" {
-        npc_step(owner, admitted, find("start")?).await?;
-    }
     npc_step(owner, admitted, find("base")?).await?;
     let key = format!("oteryn:outfit.{family}");
     super::qengine_voucher_stories_fixtures::mask(owner, admitted, &key, 0).await?;
-    if prefix != "makeshift" {
+    {
         let base_receipts = receipts(h).await?;
         let (result, _, _) =
             super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, find("base")?, false).await?;
@@ -428,6 +441,23 @@ pub(super) async fn exercise(
         );
         mask |= bit;
         super::qengine_voucher_stories_fixtures::mask(owner, admitted, &key, mask).await?;
+        if prefix == "issavi" {
+            let achievements: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievements
+                 WHERE achievement_key='oteryn:achievement/citizen_of_issavi'",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(achievements, i64::from(mask == 3));
+            let completed: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                 WHERE quest_key='oteryn:quest.authored.citizen_of_issavi_outfits_quest'
+                   AND completed_character_revision IS NOT NULL)",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(completed, mask == 3);
+        }
         if prefix == "dream-warrior" {
             let earned: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/dream_warrior'",
@@ -468,7 +498,7 @@ pub(super) async fn exercise(
         i64::from(count),
         "owned addon retains its input"
     );
-    if prefix != "makeshift" {
+    {
         let mut tx = h.pool.begin().await?;
         sqlx::query("INSERT INTO game_character_quest_receipts SELECT (jsonb_populate_record(NULL::game_character_quest_receipts,to_jsonb(r)||jsonb_build_object('cause_ordinal',999996,'original_character_revision',999995,'committed_character_revision',999996,'created_xact_id',pg_current_xact_id()::text))).* FROM game_character_quest_receipts r WHERE r.transition_key LIKE 'oteryn:quest-reward/l11-%-base' LIMIT 1").execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_quest_reward_sources SELECT (jsonb_populate_record(NULL::game_quest_reward_sources,to_jsonb(s)||jsonb_build_object('cause_ordinal',999996,'plan',s.plan-'forbids_outfits','created_xact_id',pg_current_xact_id()::text))).* FROM game_quest_reward_sources s WHERE s.transition_key LIKE 'oteryn:quest-reward/l11-%-base' LIMIT 1").execute(&mut *tx).await?;
@@ -482,5 +512,81 @@ pub(super) async fn exercise(
         );
         tx.rollback().await?;
     }
+    Ok(())
+}
+
+async fn makeshift(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_voucher_stories_fixtures::{mask, quantity, use_native};
+
+    const OUTFIT: &str = "oteryn:outfit.makeshift_warrior";
+    let achievement = || async {
+        let count: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cobbled_and_patched'",
+        ).fetch_one(&h.pool).await?;
+        TestResult::Ok(count)
+    };
+    let mut ordinal = 800;
+    for item in [27655, 27656, 27657] {
+        material(owner, admitted, item, 1, &mut ordinal).await?;
+    }
+    use_native(owner, admitted, 27656, UseDisposition::RequirementNotMet).await?;
+    assert_eq!(quantity(h, 27656).await?, 1);
+    assert_eq!(achievement().await?, 0);
+    for (item, addons, achievements) in [(27655, 0, 0), (27656, 2, 0), (27657, 3, 1)] {
+        use_native(owner, admitted, item, UseDisposition::Committed).await?;
+        assert_eq!(quantity(h, item).await?, 0);
+        mask(owner, admitted, OUTFIT, addons).await?;
+        assert_eq!(achievement().await?, achievements);
+    }
+    material(owner, admitted, 27657, 1, &mut ordinal).await?;
+    use_native(owner, admitted, 27657, UseDisposition::Committed).await?;
+    assert_eq!(quantity(h, 27657).await?, 1);
+    assert_eq!(achievement().await?, 1);
+    let grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_appearance_unlock_receipts WHERE source_kind='item_action'",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(grants, 3);
+    assert_eq!(receipts(h).await?, 0);
+    Ok(())
+}
+
+pub(super) async fn cartography_held(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::m39_bone_journey_fixtures::{carried, stage};
+    use super::qengine_rewards_fixtures::talk_outcome;
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[3],
+        )
+        .ok_or("Cartography NPC capability")?;
+    let [rotem] =
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.rotem_valos"])
+            .await?;
+    let track = "oteryn:quest-progress/cartography-101/assignment";
+    assert_eq!(stage(h, track).await?, None);
+    assert_eq!(carried(h, 22107).await?, 0);
+    assert_eq!(receipts(h).await?, 0);
+    let command = admitted.continuity.next_command_id;
+    let greeting = talk_outcome(owner, admitted, rotem, command, "hi").await?;
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    assert!(
+        greeting
+            .conversation
+            .is_some_and(|reply| reply.open.is_some())
+    );
+    let attempt = talk_outcome(owner, admitted, rotem, command + 1, "map").await?;
+    assert!(attempt.conversation.is_none());
+    assert!(!attempt.inventory_changed);
+    assert_eq!(stage(h, track).await?, None);
+    assert_eq!(carried(h, 22107).await?, 0);
+    assert_eq!(receipts(h).await?, 0);
     Ok(())
 }

@@ -633,6 +633,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     reset_epoch: i64::try_from(self.reset_epoch).ok()?,
                 },
                 mutation: crate::durability::terrain_tool::TerrainMutation {
+                    quest_catalogue: None,
                     tool: source,
                     tool_key: tool.item.definition.production_key.clone(),
                     tool_revision: tool.item.definition.revision_ref.clone(),

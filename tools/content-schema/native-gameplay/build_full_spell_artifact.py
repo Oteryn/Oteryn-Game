@@ -714,7 +714,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         import protected_loot_yields
         quest_yields = protected_loot_yields.ITEMS
         import quest_loot_profiles
-        quest_loot_profiles.apply_loot_facts(facts, ROOT, creatures, tables)
+
         import loot_slice_one
         slice_creatures = loot_slice_one.creatures(ROOT)
         loot_slice_one.project_tables(definitions, tables, facts)
@@ -726,12 +726,21 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
             ('adept', 6089, 7000),
             ('enlightened', 6090, 4900),
         ):
-            key = f'oteryn:loot.creature.{rank}_of_the_cult'
-            entries = [entry for entry in tables[key]['entries']
-                       if entry['item']['key'] == f'oteryn:item.tibia.i{source_id}']
-            if len(entries) != 1 or (entries[0]['min_count'], entries[0]['max_count']) != (1, 1):
-                raise ValueError(f'Hunter music sheet source binding differs: {key}')
-            entries[0]['probability_ppm'] = ppm
+            key = f"oteryn:loot.creature.{rank}_of_the_cult"
+            entries = [
+                entry
+                for entry in tables[key]["entries"]
+                if entry["item"]["key"] == f"oteryn:item.tibia.i{source_id}"
+            ]
+            if len(entries) != 1 or (
+                entries[0]["min_count"],
+                entries[0]["max_count"],
+            ) != (1, 1):
+                raise ValueError(f"Hunter music sheet source binding differs: {key}")
+            entries[0]["probability_ppm"] = ppm
+        quest_loot_profiles.apply_loot_facts(
+            facts, ROOT, creatures, tables, native_item_profiles
+        )
         import nrwicked_profiles
         nrwicked_profiles.bind_hard_loot(ROOT, creatures, definitions, tables)
         import cloot3_item_profiles

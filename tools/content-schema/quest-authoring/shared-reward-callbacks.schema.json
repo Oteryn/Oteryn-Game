@@ -67,32 +67,7 @@
           "required": {
             "type": "integer"
           },
-          "restore": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "x",
-              "y",
-              "floor"
-            ],
-            "properties": {
-              "x": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 65535
-              },
-              "y": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 65535
-              },
-              "floor": {
-                "type": "integer",
-                "minimum": -15,
-                "maximum": 0
-              }
-            }
-          },
+          "restore": {"$ref": "#/$defs/position"},
           "sources": {
             "type": "array",
             "minItems": 1,
@@ -127,6 +102,41 @@
     }
   },
   "$defs": {
+    "surveyArea": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minimum", "maximum"],
+          "properties": {
+            "minimum": {"$ref": "#/$defs/position"},
+            "maximum": {"$ref": "#/$defs/position"}
+          }
+        },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "floor"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "floor": {
+          "type": "integer",
+          "minimum": -15,
+          "maximum": 0
+        }
+      }
+    },
     "item": {
       "type": "object",
       "additionalProperties": false,
@@ -682,6 +692,19 @@
             }
           }
         },
+        "survey": {
+          "type": "object",
+          "required": ["selection", "areas"],
+          "additionalProperties": false,
+          "properties": {
+            "selection": {"enum": ["personal", "world_reset"]},
+            "areas": {
+              "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true,
+              "items": {"$ref": "#/$defs/surveyArea"}
+            }
+          }
+        },
+        "npc_area": {"$ref": "#/$defs/surveyArea"},
         "carried_item": {
           "type": "string",
           "pattern": "^oteryn:item\\.[a-z0-9._/:-]+$",
@@ -703,6 +726,11 @@
           }
         },
         "minimum_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "maximum_level": {
           "type": "integer",
           "minimum": 1,
           "maximum": 4294967295

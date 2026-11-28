@@ -6,6 +6,9 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CharacterId, CharacterLease, CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_quests::quest::world_callbacks::Trigger;
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTrack, QuestTransition,
+};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
     encode_step_intent,
@@ -49,9 +52,37 @@ pub(super) async fn exercise(
         )
         .map_err(debug)?;
 
-    // Same baseline seed used by the existing liquid-black scenario. No quest
-    // progress is inserted by SQL, and no new per-quest file is a helper dependency.
+    // Write a fixture-owned control track through the durable Quest writer.
+    // The Liquid Black visitor track is owned by its NPC and World callbacks.
+    const QUEST: &str = "oteryn:quest.postgres_stateless_control";
+    const TRACK: &str = "oteryn:quest-progress/postgres/stateless-control";
+    const SEED: &str = "oteryn:quest-transition/postgres/stateless-control";
     let catalogue = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
+    let catalogue = std::sync::Arc::new(
+        catalogue
+            .with_quest(
+                vec![QuestTrack {
+                    key: TRACK.into(),
+                    quest: QUEST.into(),
+                    initial: 0,
+                    min: 0,
+                    max: 1,
+                }],
+                vec![QuestTransition {
+                    key: SEED.into(),
+                    quest: QUEST.into(),
+                    effects: vec![QuestEffect {
+                        track: TRACK.into(),
+                        from: QuestComparison::Eq(0),
+                        effect: QuestEffectKind::Set(1),
+                    }],
+                    completes: false,
+                    experience: None,
+                    world_change: None,
+                }],
+            )
+            .map_err(debug)?,
+    );
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
     let seeded = slot
         .commit_quest_transition(
@@ -60,8 +91,7 @@ pub(super) async fn exercise(
             owner.holder,
             fence,
             QuestTransitionRequest {
-                transition_key:
-                    "oteryn:quest-transition/quest/u9_4/liquid_black_quest/visitor/npc_1".into(),
+                transition_key: SEED.into(),
                 cause: QuestCause::Command(CommandRef::new(
                     admitted.game_session_id,
                     CommandId::new(901).map_err(debug)?,
@@ -78,13 +108,10 @@ pub(super) async fn exercise(
         .read_character_quest_state(owner.character, fence.character_id)
         .await
         .map_err(debug)?;
-    assert!(
-        !before.tracks().is_empty(),
-        "non-empty durable control state"
-    );
+    assert_eq!(before.tracks().get(TRACK), Some(&1), "durable control state");
     let receipts_before = receipt_count(h, fence).await?;
 
-    let reply = wire(
+    let command = wire(
         owner,
         admitted,
         1,
@@ -96,8 +123,11 @@ pub(super) async fn exercise(
                 StepDirection::East
             },
         ),
-    )
-    .await?;
+    );
+    let reply = if oteryn_gameplay_quests::quest::carried_step::RECIPES.iter()
+        .any(|recipe| recipe.unique == callback.selector.unique.unwrap_or_default()) {
+        super::while_blocked(owner, h, "LOCK game_carried_step_receipts IN SHARE MODE", command).await?
+    } else { command.await? };
     assert_eq!(
         decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved

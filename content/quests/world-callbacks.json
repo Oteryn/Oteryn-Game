@@ -2844,6 +2844,75 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/draconia-exit-35011",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32805,
+          "y": 31587,
+          "floor": -1
+        },
+        "unique": 35011,
+        "action": null,
+        "appearance": 1949
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32701,
+        "y": 31639,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "failure_teleport": {
+        "x": 32803,
+        "y": 31587,
+        "floor": -1
+      },
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32802,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2772
+        },
+        {
+          "position": {
+            "x": 32803,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2773
+        },
+        {
+          "position": {
+            "x": 32804,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2772
+        },
+        {
+          "position": {
+            "x": 32805,
+            "y": 31584,
+            "floor": -1
+          },
+          "appearance": 2773
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-36"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/draconia-lever-30006",
       "quest": "oteryn:quest.draconia_quest",
       "trigger": "use",
@@ -2919,6 +2988,122 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/action-lever.lua:20-33",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1027-1030"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32802",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32802,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32803",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32803,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32804",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32804,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/draconia-tower-lever-32805",
+      "quest": "oteryn:quest.draconia_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32805,
+          "y": 31584,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-6"
       ]
     },
     {
@@ -5364,6 +5549,98 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/galthen-forest-entry",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32424,
+          "y": 32500,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": {
+        "x": 32405,
+        "y": 32497,
+        "floor": -10
+      },
+      "effects": {
+        "teleport_effect": 11
+      },
+      "minimum_level": 250,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/galthen/forest-of-life-visited",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/galthen/forest-of-life-visited": 0
+      },
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You need at least level 250 to enter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_yselda_entrances.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-forest-return",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32405,
+          "y": 32498,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "requires_world_admission": true,
+      "passages": [],
+      "teleport": {
+        "x": 32424,
+        "y": 32498,
+        "floor": -10
+      },
+      "effects": {
+        "teleport_effect": 11
+      },
+      "minimum_level": 250,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/galthen/forest-of-life-visited",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/galthen/forest-of-life-visited": 0
+      },
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You need at least level 250 to enter.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_yselda_entrances.lua:1-29"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/galthen-iksupan-exit-1",
       "quest": "oteryn:quest.adventures_of_galthen_quest",
       "trigger": "step_in",
@@ -5423,6 +5700,74 @@
       "failure_message": null,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_exit.lua:2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-iksupan-internal-1",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 34038,
+          "y": 31726,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 33017
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34000,
+        "y": 31733,
+        "floor": -9
+      },
+      "effects": {
+        "teleport_effect": 11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_teleports.lua:1-26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/galthen-iksupan-internal-2",
+      "quest": "oteryn:quest.adventures_of_galthen_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 34000,
+          "y": 31732,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 33017
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 34038,
+        "y": 31727,
+        "floor": -10
+      },
+      "effects": {
+        "teleport_effect": 11
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/adventures_of_galthen/actions_iksupan_teleports.lua:1-26"
       ]
     },
     {

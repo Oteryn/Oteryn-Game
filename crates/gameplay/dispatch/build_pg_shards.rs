@@ -45,7 +45,8 @@ pub fn configure(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
         // in the same shard so that the proof-bearing source stays intact.
         if matches!(
             module,
-            "mod m35_claim_sets;"
+            "mod bear_room_beggar_battle_axe;"
+                | "mod m35_claim_sets;"
                 | "mod qa_global_reward_corrections;"
                 | "mod qready1_reward_claims;"
         ) {

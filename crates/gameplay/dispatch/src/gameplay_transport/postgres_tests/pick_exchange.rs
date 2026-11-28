@@ -90,7 +90,7 @@ fn pick_exchange_atomic_confirmation_refusal_and_replay() -> TestResult {
 }
 
 #[test]
-fn obsidian_knife_uzgod_atomic_exchange_cooldown_and_replay() -> TestResult {
+fn obsidian_knife_uzgod_atomic_exchange_once_and_replay() -> TestResult {
     execute(&KNIFE_CASE, false)
 }
 
@@ -406,6 +406,30 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
                 .map(|(key, n)| ((*key).to_owned(), *n))
                 .collect::<Vec<_>>()
         );
+        if case.npc == KNIFE_CASE.npc {
+            let mut tx = h.pool.begin().await?;
+            // Model a historical receipt without changing the production clock or guards.
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let changed = sqlx::query(
+                "UPDATE game_npc_trades SET committed_at=committed_at-75600000 WHERE side=3 AND npc_key=$1",
+            )
+            .bind(case.npc)
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(changed.rows_affected(), 1);
+            tx.commit().await?;
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+            let replies = wire(&owner, &mut admitted, &[
+                (12, 7, talk("hi")?), (13, 7, talk(case.keyword)?), (14, 7, talk("yes")?),
+            ]).await?;
+            assert_eq!(decode_npc_intent_result(&replies[2].1).map_err(debug)?, NpcIntentDisposition::Ok);
+            assert_eq!(counts(&h, case).await?, (0, 2, 2, 2));
+            assert!(remaining_inputs(&h,case).await?.is_empty());
+        }
+        let before_replay = counts(&h, case).await?;
+        let inputs_before_replay = remaining_inputs(&h, case).await?;
         drop(owner);
         // Lose every volatile conversation and command cache. The production command
         // handler still reconciles the committed occurrence before requiring live dialogue.
@@ -428,14 +452,8 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
         assert_eq!(replay.disposition, NpcIntentDisposition::Ok);
         assert!(replay.inventory_changed);
         assert!(replay.conversation.is_none());
-        assert_eq!(counts(&h, case).await?, (case.after, 1, 1, 1));
-        assert_eq!(
-            remaining_inputs(&h, case).await?,
-            case.expected_inputs
-                .iter()
-                .map(|(key, n)| ((*key).to_owned(), *n))
-                .collect::<Vec<_>>()
-        );
+        assert_eq!(counts(&h, case).await?, before_replay);
+        assert_eq!(remaining_inputs(&h, case).await?, inputs_before_replay);
         drop(cold);
         drop(authority);
         drop(seal);

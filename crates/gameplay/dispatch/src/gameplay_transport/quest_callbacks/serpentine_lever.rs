@@ -10,6 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: &Callback,
         map: &BundleMap,
         target: &super::super::world_map::MapObjectTarget<()>,
+        actor: ExactActorRef,
         session: GameSessionId,
     ) -> Option<&Callback> {
         if source.key != SOURCE {
@@ -37,8 +38,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .copy
             .as_ref()?
             .read_tracks(self.quest_catalogue.as_deref()?)?;
+        let actor_at = self.runtime.lock().await.read_actor_position(actor).ok()?;
         // Selection is advisory. The durable Quest owner rechecks stage and Premium.
-        if unique_eligible([journey], &tracks).is_none()
+        if unique_eligible([journey], &tracks, Some(actor_at.position())).is_none()
             || !self.session_premium_gate(session).await.premium_current()
         {
             return None;

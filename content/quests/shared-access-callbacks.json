@@ -187,6 +187,53 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/bear-room-stone-switch",
+      "quest": "oteryn:quest.bear_room_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32148,
+          "y": 32105,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 30006,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32145,
+            "y": 32101,
+            "floor": -11
+          },
+          "appearance": 1791,
+          "require_state": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_stone.lua:1-15"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/desert-dungeon-party-rite",
       "quest": "oteryn:quest.desert_dungeon_quest",
       "trigger": "use",
@@ -595,7 +642,7 @@
         "encounter": null
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/47/definition:sha256:3a91013e45892a6be4f6b074901ed87067a8163464bc00eb81809d6f89312980",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/47/definition:sha256:95b86dc7e38753e566ba46dfa0228ffaff3aeb2ba036cfe1a82475b584fd0393",
         "https://tibia.fandom.com/index.php?curid=23373",
         "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
       ],
@@ -632,7 +679,7 @@
         "encounter": null
       },
       "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/49/definition:sha256:3a91013e45892a6be4f6b074901ed87067a8163464bc00eb81809d6f89312980",
+        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/49/definition:sha256:95b86dc7e38753e566ba46dfa0228ffaff3aeb2ba036cfe1a82475b584fd0393",
         "https://tibia.fandom.com/index.php?curid=29702",
         "tools/content-schema/world-authoring/samples/quest-chest-bindings/classic-quests.json"
       ],

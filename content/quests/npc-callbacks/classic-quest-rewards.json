@@ -1,0 +1,2816 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 7,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:90-193:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 20,
+      "writable": true,
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/upper/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/middle/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/nests/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 6,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/nests/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/nests/transformed_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/release/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/release/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/release/digs",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2147483647,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/temperature/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/temperature/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/tracking/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/tracking/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/progress",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:92-103,150-179"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/reported_at",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:92-103,150-179"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/32157-32521-15",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/32171-32644-13",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/32181-32660-14",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/32295-32512-14",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/32325-32590-13",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-base",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 21,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Here is your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169"
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": false
+      },
+      "minimum_level": 25,
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": 0
+              }
+            }
+          ]
+        }
+      ],
+      "forbids_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-first",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 22,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Here is your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169",
+        "tibiawiki:Cave Completionist:846114"
+      ],
+      "fee": {
+        "gold": 2000,
+        "include_bank": false
+      },
+      "minimum_level": 50,
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": 0
+              }
+            }
+          ]
+        }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-legacy-addon-1",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer addon 1"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
+        "tibiawiki:Cave Completionist:846114"
+      ],
+      "fee": {
+        "gold": 2000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-legacy-addon-2",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer addon 2"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b",
+        "tibiawiki:Cave Completionist:846114"
+      ],
+      "fee": {
+        "gold": 3000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 2
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
+      ],
+      "requires_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-legacy-report",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "cave explorer report"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen-trial/cave_explorer/kills",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "owner:chosen-trial:cave_explorer:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
+      ],
+      "fee": {
+        "gold": 1000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "forbids_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-cave-explorer-second",
+      "quest": "oteryn:quest.cave_explorer_outfits_quest",
+      "npc": "oteryn:npc.gnommander",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 23,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.cave_explorer",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Here is your reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnommander.lua:75-169",
+        "tibiawiki:Cave Completionist:846114"
+      ],
+      "fee": {
+        "gold": 3000,
+        "include_bank": false
+      },
+      "minimum_level": 80,
+      "requires_premium": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.spike_task",
+          "storage": [],
+          "state_ops": [
+            {
+              "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+              "from": {
+                "kind": "between",
+                "minimum": 100,
+                "maximum": 2147483647
+              },
+              "effect": {
+                "kind": "add",
+                "value": 0
+              }
+            }
+          ]
+        }
+      ],
+      "requires_outfits": [
+        "oteryn:outfit.cave_explorer"
+      ],
+      "forbids_addons": [
+        {
+          "outfit": "oteryn:outfit.cave_explorer",
+          "addons": 2
+        }
+      ],
+      "achievement_progress": [
+        {
+          "key": "oteryn:achievement/cave_completionist",
+          "target": 2
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-lower-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ],
+      "minimum_level": 80,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-lower-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua"
+      ],
+      "experience": 3500,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-middle-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ],
+      "minimum_level": 50,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "maximum_level": 79
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-middle-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "killing",
+        "kill"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/middle/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnombold.lua"
+      ],
+      "experience": 2000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/middle/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-nests-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-nests-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnombold",
+      "keywords": [
+        "nests"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/progress",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/nests/transformed_at",
+          "minimum": 0,
+          "maximum": 9223372036854775807,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "experience": 2000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-32157-32521-15",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnome_trooper",
+      "keywords": [
+        "something"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32157-32521-15",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19219",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the parcel from the Spike!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "npc_area": {
+        "minimum": {
+          "x": 32152,
+          "y": 32516,
+          "floor": -15
+        },
+        "maximum": {
+          "x": 32162,
+          "y": 32526,
+          "floor": -15
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-32171-32644-13",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnome_trooper",
+      "keywords": [
+        "something"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32171-32644-13",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19219",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the parcel from the Spike!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "npc_area": {
+        "minimum": {
+          "x": 32166,
+          "y": 32639,
+          "floor": -13
+        },
+        "maximum": {
+          "x": 32176,
+          "y": 32649,
+          "floor": -13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-32181-32660-14",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnome_trooper",
+      "keywords": [
+        "something"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32181-32660-14",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19219",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the parcel from the Spike!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "npc_area": {
+        "minimum": {
+          "x": 32176,
+          "y": 32655,
+          "floor": -14
+        },
+        "maximum": {
+          "x": 32186,
+          "y": 32665,
+          "floor": -14
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-32295-32512-14",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnome_trooper",
+      "keywords": [
+        "something"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32295-32512-14",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19219",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the parcel from the Spike!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "npc_area": {
+        "minimum": {
+          "x": 32290,
+          "y": 32507,
+          "floor": -14
+        },
+        "maximum": {
+          "x": 32300,
+          "y": 32517,
+          "floor": -14
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-32325-32590-13",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnome_trooper",
+      "keywords": [
+        "something"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32325-32590-13",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19219",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the parcel from the Spike!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "npc_area": {
+        "minimum": {
+          "x": 32320,
+          "y": 32585,
+          "floor": -13
+        },
+        "maximum": {
+          "x": 32330,
+          "y": 32595,
+          "floor": -13
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19219",
+        "count": 4,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here are the four parcels. Give one to each outpost."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:92-103,150-179"
+      ],
+      "minimum_level": 80,
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "delivery",
+        "deliver"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32157-32521-15",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32171-32644-13",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32181-32660-14",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32295-32512-14",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32325-32590-13",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your deliveries earned one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:92-103,150-179"
+      ],
+      "experience": 3500,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-release-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "minimum_level": 25,
+      "maximum_level": 49,
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/release/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-release-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "release",
+        "releasing"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
+      ],
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/release/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-temperature-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 32,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/temperature/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19206",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "minimum_level": 80,
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/temperature/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-temperature-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "temperature"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/temperature/progress",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "experience": 3500,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/temperature/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-temperature-survey-1",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/temperature/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19206",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Report your findings."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "carried_item": "oteryn:item.tibia.i19206",
+      "survey": {
+        "selection": "world_reset",
+        "areas": [
+          {
+            "minimum": {
+              "x": 32263,
+              "y": 32481,
+              "floor": -13
+            },
+            "maximum": {
+              "x": 32274,
+              "y": 32490,
+              "floor": -13
+            }
+          },
+          {
+            "minimum": {
+              "x": 32163,
+              "y": 32558,
+              "floor": -13
+            },
+            "maximum": {
+              "x": 32173,
+              "y": 32567,
+              "floor": -13
+            }
+          },
+          {
+            "minimum": {
+              "x": 32201,
+              "y": 32667,
+              "floor": -13
+            },
+            "maximum": {
+              "x": 32211,
+              "y": 32672,
+              "floor": -13
+            }
+          },
+          {
+            "minimum": {
+              "x": 32135,
+              "y": 32606,
+              "floor": -14
+            },
+            "maximum": {
+              "x": 32143,
+              "y": 32614,
+              "floor": -14
+            }
+          },
+          {
+            "minimum": {
+              "x": 32330,
+              "y": 32519,
+              "floor": -14
+            },
+            "maximum": {
+              "x": 32339,
+              "y": 32521,
+              "floor": -14
+            }
+          },
+          {
+            "minimum": {
+              "x": 32260,
+              "y": 32697,
+              "floor": -14
+            },
+            "maximum": {
+              "x": 32272,
+              "y": 32705,
+              "floor": -14
+            }
+          },
+          {
+            "minimum": {
+              "x": 32176,
+              "y": 32493,
+              "floor": -15
+            },
+            "maximum": {
+              "x": 32186,
+              "y": 32502,
+              "floor": -15
+            }
+          },
+          {
+            "minimum": {
+              "x": 32341,
+              "y": 32577,
+              "floor": -15
+            },
+            "maximum": {
+              "x": 32347,
+              "y": 32586,
+              "floor": -15
+            }
+          },
+          {
+            "minimum": {
+              "x": 32220,
+              "y": 32643,
+              "floor": -15
+            },
+            "maximum": {
+              "x": 32223,
+              "y": 32652,
+              "floor": -15
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-tracking-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 32,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19205",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "minimum_level": 25,
+      "maximum_level": 49,
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-tracking-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "track",
+        "tracking"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/progress",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-tracking-survey-1",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The detector signals another presence."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i19205",
+          "count": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i19205",
+      "survey": {
+        "selection": "personal",
+        "areas": [
+          {
+            "minimum": {
+              "x": 32193,
+              "y": 32523,
+              "floor": -8
+            },
+            "maximum": {
+              "x": 32201,
+              "y": 32531,
+              "floor": -8
+            }
+          },
+          {
+            "minimum": {
+              "x": 32323,
+              "y": 32568,
+              "floor": -8
+            },
+            "maximum": {
+              "x": 32331,
+              "y": 32576,
+              "floor": -8
+            }
+          },
+          {
+            "minimum": {
+              "x": 32213,
+              "y": 32657,
+              "floor": -8
+            },
+            "maximum": {
+              "x": 32221,
+              "y": 32665,
+              "floor": -8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-tracking-survey-2",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/progress",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The detector signals another presence."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i19205",
+          "count": 1
+        }
+      ],
+      "carried_item": "oteryn:item.tibia.i19205",
+      "survey": {
+        "selection": "personal",
+        "areas": [
+          {
+            "minimum": {
+              "x": 32273,
+              "y": 32582,
+              "floor": -9
+            },
+            "maximum": {
+              "x": 32281,
+              "y": 32590,
+              "floor": -9
+            }
+          },
+          {
+            "minimum": {
+              "x": 32167,
+              "y": 32665,
+              "floor": -9
+            },
+            "maximum": {
+              "x": 32175,
+              "y": 32673,
+              "floor": -9
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-tracking-survey-3",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "use"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/progress",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19205",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Report your findings."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Spike_Tasks_Quest/Spoiler"
+      ],
+      "carried_item": "oteryn:item.tibia.i19205",
+      "survey": {
+        "selection": "personal",
+        "areas": [
+          {
+            "minimum": {
+              "x": 32276,
+              "y": 32578,
+              "floor": -10
+            },
+            "maximum": {
+              "x": 32284,
+              "y": 32586,
+              "floor": -10
+            }
+          },
+          {
+            "minimum": {
+              "x": 32301,
+              "y": 32523,
+              "floor": -10
+            },
+            "maximum": {
+              "x": 32309,
+              "y": 32531,
+              "floor": -10
+            }
+          },
+          {
+            "minimum": {
+              "x": 32092,
+              "y": 32733,
+              "floor": -10
+            },
+            "maximum": {
+              "x": 32100,
+              "y": 32741,
+              "floor": -10
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-upper-accept",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 24,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Hunt seven of the local targets and then report back."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ],
+      "minimum_level": 25,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/reported_at",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72001
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ],
+      "maximum_level": 49
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-upper-report",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "killing",
+        "kill"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/upper/kills",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your report earns one point of Spike fame."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua"
+      ],
+      "experience": 1000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/upper/reported_at",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 2147483646
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-base",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "check"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/small_islands/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/liquid_death/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/darashia/questline",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 8,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 0
+      },
+      "achievement": "oteryn:achievement/battle_mage",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/dedoras.lua:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-book",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "book",
+        "books",
+        "sturdy books"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "count": 5
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28792",
+          "minimum": 5,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-epaulettes",
+      "quest": "oteryn:quest.battle_mage_outfits_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "epaulette",
+        "epaulettes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon2",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "count": 20
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.battle_mage",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:198-216:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "minimum": 7,
+          "maximum": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/battle_mage_outfits/addon1",
+          "minimum": -1,
+          "maximum": 0
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i28793",
+          "minimum": 20,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Bring more of the required materials before we trade."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-asuri",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "asuri"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:142-153:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-desert",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "desert"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/darashia/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:114-124:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-fishmen",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "fishmen"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/liquid_death/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:119-131:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-isle",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "isle"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/small_islands/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:153-165:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-museum",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "museum"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/mo_ta/questline",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:104-115:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-battle-mage-report-order",
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "npc": "oteryn:npc.dedoras",
+      "keywords": [
+        "order"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/falcon_bastion/questline",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/questlog",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I will add your findings to the library research."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dedoras.lua:131-142:sha256:75b3c6e0215ce23ab7f2f6812a77d71a80d3f4ff1565a33eb3308f3c21310fd1"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/quest/u11_80/the_secret_library/library_permission",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 5
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-bear-report",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "hug",
+        "bear hugging"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Your last test is to push the mammoth northwest of town. Come back when you succeed."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:96-105:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-honeycomb",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mead_success_sips",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mead_total_sips",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5902",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That buys twenty attempts at the mead barrel. Report back once you pass."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:144-152:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-mammoth-report",
+      "quest": "oteryn:quest.barbarian_test",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "mammoth",
+        "mammoth pushing"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/native/barbarian_test/completed",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": "oteryn:achievement/honorary_barbarian",
+      "reply": [
+        "You passed all three tests. Welcome as an honorary barbarian."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:107-115:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ],
+      "completes": true,
+      "participants": [
+        {
+          "quest": "oteryn:quest.the_ice_islands_quest",
+          "storage": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+              "minimum": 7,
+              "maximum": 7,
+              "set": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-mead-report",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "mead",
+        "barbarian mead"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7140",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this horn, fill it at the barrel, and use it to calm the bear before hugging it."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:84-94:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/sven-start",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "npc": "oteryn:npc.sven",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Bring me a honeycomb and ask about mead."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:129-143:sha256:885076bfc128330b5ab9c41599bc6e604e710927b75367f9945d5cd3034bbe95"
+      ]
+    }
+  ]
+}

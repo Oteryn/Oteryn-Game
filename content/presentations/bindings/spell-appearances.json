@@ -13002,6 +13002,43 @@
         }
       },
       "qualification_sha256": "18c15a2531baba2fec904a5e6267baaff142d28ca0d5637d65b0cd23a72a1133"
+    },
+    {
+      "addons": 0,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.cave_hydra",
+        "revision": "definition-r1"
+      },
+      "look_type": 121,
+      "mount_key": null,
+      "outfit_key": "oteryn:outfit.source.canary.look121",
+      "outfit_revision": "source-outfit-r1",
+      "source": {
+        "defaulted_fields": [
+          "lookTypeEx"
+        ],
+        "explicit_fields": {
+          "lookAddons": 0,
+          "lookBody": 0,
+          "lookFeet": 0,
+          "lookHead": 0,
+          "lookLegs": 0,
+          "lookMount": 0,
+          "lookType": 121
+        },
+        "git_blob": "bed09ae14613c241a5173f12e68b43c3dcac7e2f",
+        "path": "data-otservbr-global/monster/dragons/hydra.lua",
+        "revision": "99902524e052f37574194466c2949c576e4ab269",
+        "sha256": "58f2c032ee3ae85242eb4d244907e91da6aef6f2b2aff113b114725f38238569"
+      },
+      "qualification_sha256": "3d36dba969d72367f817e6f317782adde417a466d3919d72e6e959f0544654c7"
     }
   ],
   "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1"

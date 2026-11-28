@@ -15,7 +15,7 @@ fn production_draconia_binds_native_key_3012_without_completing_the_route() -> R
         .attach(&crate::quest::QuestStateCatalogue::empty("draconia-native").ok_or("catalogue")?)?;
     for (x, y) in [(32675_u64, 31649_u64), (32676, 31671)] {
         let mut placement = vec![19; 32];
-        placement.extend_from_slice(&((x << 32) | (y << 16) | (246 << 8) | 1).to_be_bytes());
+        placement.extend_from_slice(&((x << 32) | (y << 16) | (10 << 8) | 1).to_be_bytes());
         let candidates =
             bindings.door_use_candidates(&catalogue, &BTreeMap::new(), &placement, 3012);
         assert_eq!(candidates.len(), 1);
@@ -101,6 +101,7 @@ fn door_use_binding_rejects_ambiguous_unbounded_or_foreign_guards() -> Result<()
     for (field, value) in [
         ("key_number", serde_json::json!(0)),
         ("native_placement_key", serde_json::json!(u64::MAX)),
+        ("native_placement_key", serde_json::json!(16 << 8)),
         ("storage", serde_json::json!([])),
     ] {
         let mut doc =

@@ -488,10 +488,20 @@ pub(super) fn counters() -> Result<impl Iterator<Item = &'static Counter>, Strin
         .flat_map(|p| p.counters.iter().filter_map(|c| c.compiled.as_ref())))
 }
 
+/// Party counters that need the victim's exact position in their receipt.
+#[must_use]
+pub fn requires_death_position(transition: &str) -> bool {
+    transition.starts_with("oteryn:quest-transition/native-kills/m31/")
+        || super::native_kills::great_dragon_hunt::owns(transition)
+}
+
 /// Position is captured from the actual dead actor; a player's later position is irrelevant.
 #[must_use]
 pub fn admits_position(transition: &str, position: Option<(u16, u16, i8)>) -> bool {
-    if !transition.starts_with("oteryn:quest-transition/native-kills/m31/") {
+    if super::native_kills::great_dragon_hunt::owns(transition) {
+        return super::native_kills::great_dragon_hunt::admits_position(position);
+    }
+    if !requires_death_position(transition) {
         return true;
     }
     let Ok(document) = document() else {
@@ -687,6 +697,16 @@ pub(super) fn append_journals(entries: &mut Vec<super::log::QuestLogQuest>) -> R
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn great_dragon_hunt_credits_the_native_middle_lair_dragon_lord() {
+        let transition = "oteryn:quest-transition/native-kills/great-dragon-hunt/dragon_lord";
+        assert!(super::admits_position(transition, Some((33055, 32676, -7))));
+        assert!(!super::admits_position(
+            transition,
+            Some((33055, 32676, -8))
+        ));
+    }
+
     #[test]
     fn personal_egress_requires_prior_admission_and_cannot_carry_value() -> Result<(), String> {
         let mut value: serde_json::Value = serde_json::from_str(include_str!(

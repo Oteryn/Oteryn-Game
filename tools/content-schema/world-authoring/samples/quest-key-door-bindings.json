@@ -167,6 +167,20 @@
     },
     {
       "position": [
+        32475,
+        31946,
+        13
+      ],
+      "item": 1648,
+      "attribute": "action",
+      "value": 1035,
+      "source_path": "data-global/startup/tables/door_level.lua",
+      "source_line": 66,
+      "map_path": "content/world/placements/region-z13-x126-y124.b3",
+      "map_sha256": "2ea81595cb75e6998ecbdf20c7e241e5398373c81978c0bde8701c80b64d7708"
+    },
+    {
+      "position": [
         32479,
         31903,
         4
@@ -178,6 +192,34 @@
       "storage_line": 361,
       "map_path": "content/world/placements/region-z04-x126-y124.b3",
       "map_sha256": "1a35ab2ff9381ead1a2984710f723559ccabe495cb275d2a97f543275da3c155"
+    },
+    {
+      "position": [
+        32483,
+        31722,
+        15
+      ],
+      "item": 5111,
+      "attribute": "action",
+      "value": 1060,
+      "source_path": "data-global/startup/tables/door_level.lua",
+      "source_line": 132,
+      "map_path": "content/world/placements/region-z15-x126-y123.b3",
+      "map_sha256": "5917bb9163e0fe31ddb6d7581081046ade75f4730f353c4d22d552347eb85f92"
+    },
+    {
+      "position": [
+        32510,
+        31956,
+        13
+      ],
+      "item": 1648,
+      "attribute": "action",
+      "value": 1032,
+      "source_path": "data-global/startup/tables/door_level.lua",
+      "source_line": 61,
+      "map_path": "content/world/placements/region-z13-x126-y124.b3",
+      "map_sha256": "2ea81595cb75e6998ecbdf20c7e241e5398373c81978c0bde8701c80b64d7708"
     },
     {
       "position": [
@@ -205,7 +247,7 @@
       "source_line": 130,
       "storage_line": 360,
       "map_path": "content/world/placements/region-z14-x127-y124.b3",
-      "map_sha256": "dfa362ee88cd8e9d4b587c05403ab4317ec097604074387c2f3555590f681b28"
+      "map_sha256": "ddc1485c21b8d7913335133d23c583d14923b5cc036d902f493374194f41ca85"
     },
     {
       "position": [
@@ -219,7 +261,7 @@
       "source_line": 130,
       "storage_line": 360,
       "map_path": "content/world/placements/region-z14-x127-y124.b3",
-      "map_sha256": "dfa362ee88cd8e9d4b587c05403ab4317ec097604074387c2f3555590f681b28"
+      "map_sha256": "ddc1485c21b8d7913335133d23c583d14923b5cc036d902f493374194f41ca85"
     },
     {
       "position": [

@@ -34,6 +34,7 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-programmes.json"),
     include_str!("../../../../content/quests/npc-callbacks/ape-city.json"),
     include_str!("../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../content/quests/npc-callbacks/battle-mage-completions.json"),
@@ -1549,6 +1550,13 @@ mod tests {
             assert!(!entry.greeting_reply.is_empty());
             source_dialogue_tests::assert_reward_lore(name, entry);
         }
+        let rotem = "oteryn:npc.rotem_valos";
+        assert!(!reward_callback_npc(rotem));
+        let native_book = NpcTalkBook::from_model_with_native_quests(&model, &[rotem]);
+        let entry = native_book.get(rotem).ok_or("Rotem's conversation")?;
+        assert!(entry.admitted_dialogue);
+        assert!(entry.dialogue_keywords.is_empty());
+        assert!(!entry.matches_focus_or_dialogue("map"));
         assert!(!reward_callback_npc("oteryn:npc.unqualified"));
         Ok(())
     }

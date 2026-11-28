@@ -31,8 +31,8 @@ CORPSE_CAPACITY_MAX = 48
 BUTTERFLY_CORPSES = {4991, 4992, 4993}
 BUTTERFLY_REMAINS = 4378
 GROUPS = ("physical", "stack", "container", "temporal", "classification")
-# The admitted Dwarf Letter bodies share one additional source root, Item 6007.
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 73, 8, 256
+# The Dwarf Letter and classic quest sources qualify 81 corpse roots and 282 decay stages.
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 81, 8, 282
 
 
 def item_id(reference):
@@ -73,7 +73,14 @@ def required_with_loot_scope(root, creatures):
     if (
         not {"schema", "objectives", "sources"} <= set(ordinary)
         or set(ordinary)
-        - {"schema", "objectives", "sources", "capacity_projections", "loot_creatures"}
+        - {
+            "schema",
+            "objectives",
+            "sources",
+            "capacity_projections",
+            "loot_creatures",
+            "source_loot_probabilities_ppm",
+        }
         or ordinary.get("schema") != 1
         or not isinstance(ordinary["objectives"], list)
         or len(ordinary["objectives"]) > MAX_RULES
