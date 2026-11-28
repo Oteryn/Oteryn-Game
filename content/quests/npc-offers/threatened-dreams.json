@@ -3,7 +3,9 @@
   "offers": [
     {
       "npc": "oteryn:npc.ahmet",
-      "keywords": ["book"],
+      "keywords": [
+        "book"
+      ],
       "topic": 0,
       "any_topic": true,
       "next_topic": 5,
@@ -17,6 +19,76 @@
       ],
       "reply": [
         "I can add a warning about the white deer for 5000 gold. Shall I?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ikassis",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "Alkestios sent you at a good time. A wolf mother needs help on Cormaya, and I can't cross the sea in this form. Will you help her?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.ikassis",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Then not."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "fur"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/threatened-dreams/poacher-notes",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "I can sell you the wolf whelp’s fur for 1,000 gold. Do you want it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.irmana",
+      "keywords": [
+        "no"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "All right."
       ]
     }
   ]

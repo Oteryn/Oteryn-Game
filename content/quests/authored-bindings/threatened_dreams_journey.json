@@ -16,6 +16,48 @@
           "initial": 0,
           "minimum": 0,
           "maximum": 16
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/poacher-notes",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/swan-feather-1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/swan-feather-2",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/swan-feather-3",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/swan-feather-4",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/swan-feather-5",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/threatened-dreams/wolf-fur-report",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
         }
       ],
       "stages": [
@@ -74,7 +116,243 @@
               "failure_reply": [
                 "You need 5000 gold and the book with ancient legends."
               ]
-            }
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/threatened-dreams/fae-talisman",
+                "quest": "oteryn:quest.threatened_dreams_quest",
+                "npc": "oteryn:npc.ikassis",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 1,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                    "minimum": 4,
+                    "maximum": 4,
+                    "set": 5
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                    "minimum": 0,
+                    "maximum": 16,
+                    "set": 5
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i25295",
+                  "count": 1
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Take this talisman so you can speak to the wolf. Look for her at night by the weeping stone in southern Cormaya."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/threatened-dreams/wolf-fur",
+                "quest": "oteryn:quest.threatened_dreams_quest",
+                "npc": "oteryn:npc.irmana",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 8,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                    "minimum": 7,
+                    "maximum": 7,
+                    "set": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                    "minimum": 0,
+                    "maximum": 16,
+                    "set": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/poacher-notes",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": {
+                  "item": "oteryn:item.tibia.i25238",
+                  "count": 1
+                },
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Here is the fur. Bring it back to the wolf."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/irmana.lua:208-215",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/irmana.lua:247-253"
+                ],
+                "fee": {
+                  "gold": 1000,
+                  "include_bank": false
+                },
+                "failure_reply": [
+                  "You need 1,000 gold for the fur."
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/threatened-dreams/tereban-cloak",
+                "quest": "oteryn:quest.threatened_dreams_quest",
+                "npc": "oteryn:npc.tereban",
+                "keywords": [
+                  "cloak"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                    "minimum": 12,
+                    "maximum": 12,
+                    "set": 13
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                    "minimum": 0,
+                    "maximum": 16,
+                    "set": 13
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "The cloak came apart on my flight to Darashia. Look for feathers along the route from Edron."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tereban_functions.lua:114-127"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/threatened-dreams/swan-feather-return",
+                "quest": "oteryn:quest.threatened_dreams_quest",
+                "npc": "oteryn:npc.a_swan",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                    "minimum": 13,
+                    "maximum": 13,
+                    "set": 15
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                    "minimum": 0,
+                    "maximum": 16,
+                    "set": 15
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/swan-feather-1",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/swan-feather-2",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/swan-feather-3",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/swan-feather-4",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/swan-feather-5",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i25244",
+                    "count": 5
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "These feathers will let me mend the cloak. Thank you."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_swan.lua:65-75"
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/threatened-dreams/wolf-fur-report",
+                "quest": "oteryn:quest.threatened_dreams_quest",
+                "npc": "oteryn:npc.ghostly_wolf",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                    "minimum": 8,
+                    "maximum": 8,
+                    "set": 8
+                  },
+                  {
+                    "track": "oteryn:quest-progress/threatened-dreams/wolf-fur-report",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "present": [
+                  {
+                    "item": "oteryn:item.tibia.i25238",
+                    "count": 1
+                  }
+                ],
+                "reply": [
+                  "Lay the fur in the mouth of the weeping stone."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf"
+                ]
+              }
+            ]
           }
         },
         {
@@ -180,6 +458,642 @@
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_book.lua:3-19",
                 "https://tibia.fandom.com/index.php?curid=81363&oldid=1202454"
               ]
+            }
+          }
+        },
+        {
+          "key": "wolf-tent",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/wolf-tent",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 32949,
+                  "y": 31811,
+                  "floor": -7
+                },
+                "position_aliases": [
+                  {
+                    "x": 32950,
+                    "y": 31811,
+                    "floor": -7
+                  },
+                  {
+                    "x": 32951,
+                    "y": 31811,
+                    "floor": -7
+                  }
+                ]
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 6,
+                  "maximum": 6,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 7
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_poacher_notes.lua:8-17"
+              ],
+              "success_message": "You spot a sleeping wolf in the tent."
+            }
+          }
+        },
+        {
+          "key": "poacher-notes",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/poacher-notes",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32951,
+                  "y": 31810,
+                  "floor": -7
+                },
+                "appearance": 25241,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 7,
+                  "maximum": 7,
+                  "set": 7
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/poacher-notes",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_poacher_notes.lua:2-12"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i25242",
+                  "count": 1
+                }
+              },
+              "success_message": "You find the poacher’s notes."
+            }
+          }
+        },
+        {
+          "key": "weeping-stone",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/weeping-stone",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33339,
+                  "y": 32052,
+                  "floor": -7
+                },
+                "appearance": 25237,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 8,
+                  "maximum": 8,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
+                  "minimum": 0,
+                  "maximum": 16,
+                  "set": 9
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/wolf-fur-report",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Ghost_of_a_Wolf",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/action_whelp_fur.lua:3-17"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i25238",
+                "count": 1,
+                "selected_instance": true
+              },
+              "success_message": "You lay the wolf whelp’s fur to rest."
+            }
+          }
+        },
+        {
+          "key": "swan-feather-1",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/swan-feather-1",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33200,
+                  "y": 31893,
+                  "floor": -7
+                },
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/swan-feather-1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:25-45"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i25244",
+                  "count": 1
+                }
+              },
+              "success_message": "You pick up a tattered feather."
+            }
+          }
+        },
+        {
+          "key": "swan-feather-2",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/swan-feather-2",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33266,
+                  "y": 32422,
+                  "floor": -7
+                },
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/swan-feather-2",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:25-45"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i25244",
+                  "count": 1
+                }
+              },
+              "success_message": "You pick up a tattered feather."
+            }
+          }
+        },
+        {
+          "key": "swan-feather-3",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/swan-feather-3",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33263,
+                  "y": 32378,
+                  "floor": -7
+                },
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/swan-feather-3",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:25-45"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i25244",
+                  "count": 1
+                }
+              },
+              "success_message": "You pick up a tattered feather."
+            }
+          }
+        },
+        {
+          "key": "swan-feather-4",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/swan-feather-4",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33258,
+                  "y": 32315,
+                  "floor": -7
+                },
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/swan-feather-4",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:25-45"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i25244",
+                  "count": 1
+                }
+              },
+              "success_message": "You pick up a tattered feather."
+            }
+          }
+        },
+        {
+          "key": "swan-feather-5",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/swan-feather-5",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "step_in",
+              "selector": {
+                "position": {
+                  "x": 33250,
+                  "y": 32267,
+                  "floor": -6
+                },
+                "ordinal": 0
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": null,
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 13,
+                  "maximum": 13,
+                  "set": 13
+                },
+                {
+                  "track": "oteryn:quest-progress/threatened-dreams/swan-feather-5",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/threatened_dreams_quest/movement_swan_feathers.lua:25-45"
+              ],
+              "effects": {
+                "item_reward": {
+                  "item": "oteryn:item.tibia.i25244",
+                  "count": 1
+                }
+              },
+              "success_message": "You pick up a tattered feather."
+            }
+          }
+        },
+        {
+          "key": "feyrist-ice",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/feyrist-ice",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32194,
+                  "y": 31418,
+                  "floor": -2
+                },
+                "appearance": 150,
+                "ordinal": 2
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33430,
+                "y": 32278,
+                "floor": -7
+              },
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 16
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:5-33"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3029",
+                "count": 1,
+                "selected_instance": true
+              }
+            }
+          }
+        },
+        {
+          "key": "feyrist-fire",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/feyrist-fire",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32910,
+                  "y": 32338,
+                  "floor": -15
+                },
+                "appearance": 146,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33586,
+                "y": 32263,
+                "floor": -7
+              },
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 16
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:5-33"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3030",
+                "count": 1,
+                "selected_instance": true
+              }
+            }
+          }
+        },
+        {
+          "key": "feyrist-earth",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/feyrist-earth",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 32973,
+                  "y": 32225,
+                  "floor": -7
+                },
+                "appearance": 158,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33539,
+                "y": 32209,
+                "floor": -7
+              },
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 16
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:5-33"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3032",
+                "count": 1,
+                "selected_instance": true
+              }
+            }
+          }
+        },
+        {
+          "key": "feyrist-energy",
+          "completes": false,
+          "trigger": {
+            "kind": "map_use",
+            "callback": {
+              "key": "oteryn:quest-callback/authored-threatened-dreams/feyrist-energy",
+              "quest": "oteryn:quest.threatened_dreams_quest",
+              "trigger": "use",
+              "selector": {
+                "position": {
+                  "x": 33060,
+                  "y": 32713,
+                  "floor": -5
+                },
+                "appearance": 154,
+                "ordinal": 1
+              },
+              "lever": null,
+              "reversible": false,
+              "passages": [],
+              "teleport": {
+                "x": 33527,
+                "y": 32301,
+                "floor": -4
+              },
+              "requires_world_admission": true,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/crystalserver/quest/u11_40/threatened_dreams/mission01/troubled_animals",
+                  "minimum": 16,
+                  "maximum": 16,
+                  "set": 16
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "https://tibia.fandom.com/wiki/Threatened_Dreams_Quest/Spoiler#The_Swan_Maiden",
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/gems.lua:5-33"
+              ],
+              "item_on_target": {
+                "item": "oteryn:item.tibia.i3033",
+                "count": 1,
+                "selected_instance": true
+              }
             }
           }
         }

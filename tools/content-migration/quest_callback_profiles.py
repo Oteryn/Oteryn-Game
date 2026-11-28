@@ -450,6 +450,8 @@ def _requested_inputs(root, extra_keys=()):
     authored_keys.update(
         f"oteryn:item.tibia.i{number}" for number in (3452, 6093, 6105, 6119, 9843)
     )
+    # Troubled Animals grants the notes, whelp fur, feathers, and Fae Talisman.
+    authored_keys.update(f"oteryn:item.tibia.i{number}" for number in (25238, 25242, 25244, 25295))
     keys.update(authored_keys)
     authored_callbacks = []
     explorer_npc = root / "content/quests/npc-callbacks/explorer-society.json"

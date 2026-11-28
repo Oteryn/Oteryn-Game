@@ -2,22 +2,36 @@
 use super::Callback;
 
 impl Callback {
-    /// The native amphora ring is a fenced physical STEP reward, never a command grant.
+    /// The native amphora ring and tattered feathers grant through fenced movement.
     pub fn has_fenced_step_reward(&self) -> bool {
         self.trigger == super::Trigger::StepIn
             && self.actor_kind == super::ActorKind::Player
             && self.requires_world_admission
-            && self.selector.native.is_some()
-            && self.effects.target_transform.is_some()
             && self.effects.item_reward.is_some()
+            && (self.selector.native.is_some()
+                && self.effects.target_transform.is_some()
+                && self
+                    .key
+                    .strip_prefix("oteryn:quest-callback/m44-lions-amphora-")
+                    .is_some_and(|tail| {
+                        tail.len() == 1
+                            && tail.as_bytes()[0].is_ascii_digit()
+                            && tail.as_bytes()[0] <= b'7'
+                    })
+                || self.is_tattered_feather_step())
+    }
+
+    fn is_tattered_feather_step(&self) -> bool {
+        self.quest == "oteryn:quest.threatened_dreams_quest"
+            && self.selector.position.is_some()
+            && self.selector.ordinal == Some(0)
+            && self.effects.item_reward.as_ref().is_some_and(|reward| {
+                reward.item == "oteryn:item.tibia.i25244" && reward.count == 1
+            })
             && self
                 .key
-                .strip_prefix("oteryn:quest-callback/m44-lions-amphora-")
-                .is_some_and(|tail| {
-                    tail.len() == 1
-                        && tail.as_bytes()[0].is_ascii_digit()
-                        && tail.as_bytes()[0] <= b'7'
-                })
+                .strip_prefix("oteryn:quest-callback/authored-threatened-dreams/swan-feather-")
+                .is_some_and(|number| matches!(number, "1" | "2" | "3" | "4" | "5"))
     }
     /// Each new native flower revision may grant again after its shared regrowth.
     pub fn has_fenced_regrowth_reward(&self) -> bool {
