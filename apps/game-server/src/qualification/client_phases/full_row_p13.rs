@@ -7,41 +7,42 @@
 //!    base skills and loyalty-adjusted skills agree.
 //! 2. Send a malformed LOYALTY_SKILLS_QUERY and expect a rejected reply with
 //!    no payload; then send another valid query to prove refusal is inert.
-//! 3. Walk through the compiled world to a rat, select/attack it, and wait for
-//!    the real damage, death, corpse, use and loot state deltas. This is the
-//!    available legitimate player progression action; no fixture or SQL state
-//!    is used to award account loyalty.
-//! 4. Query again and expect newly earned loyalty points plus the corresponding
-//!    skill/magic projection. If the observed points do not advance, report the
-//!    exercised Game seam as MISSING-SERVER: its owner is explicitly read-only
-//!    and the Platform earning writer has no native player command.
+//! 3. Give the disposable Platform account a completed Premium interval and
+//!    let the production Game stream puller import the real Platform export.
+//! 4. Query again and require the new points, title, bonus and unchanged base skills.
 //! 5. Log out normally, make a fresh admission, query again, and require the
 //!    post-action points and every projected level to remain identical.
 use super::*;
+use crate::durability::platform_streams::PlatformStream;
+use crate::premium::client::PremiumClientConfig;
 use oteryn_dev_client::DevClientSession;
+use oteryn_gameplay_social::platform_streams::{LOYALTY_IDENTITY_VAR, PlatformStreams, StreamPuller};
 use oteryn_protocol_oteryn::loyalty_skills::{
     CAPABILITY_LOYALTY_SKILLS_V1, COMMAND_TYPE_LOYALTY_SKILLS_QUERY, LoyaltySkills,
 };
+use sha2::{Digest, Sha256};
 
-const OWNER_GAP: &str = "step=loyalty-earning need=platform-loyalty-ingestion source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57";
+// One spent Premium day per point. At 360 points Global grants 5% and Steward of Tibia.
+const SPENT_PREMIUM_DAYS: i32 = 360;
 
-fn loyalty_status(before: u32, after: u32) -> &'static str {
-    match after.cmp(&before) {
-        std::cmp::Ordering::Greater => "PASS",
-        std::cmp::Ordering::Equal => "MISSING-SERVER",
-        std::cmp::Ordering::Less => "FAIL",
+fn verify_award(before: &LoyaltySkills, after: &LoyaltySkills) -> TestResult {
+    if (after.points, after.bonus_percent, after.title.as_deref())
+        != (u32::try_from(SPENT_PREMIUM_DAYS)?, 5, Some("Steward of Tibia"))
+        || before.skills.map(|skill| skill.base) != after.skills.map(|skill| skill.base)
+    {
+        return Err(format!(
+            "step=loyalty-award observed=before-{before:?}-after-{after:?} need=spent-premium-points-title-and-bonus-with-unchanged-base-skills"
+        )
+        .into());
     }
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
     let (status, gap) =
         match verdict::indexed_timeout(Duration::from_secs(210), journey(clients)).await {
-            Ok(Ok((before, after))) if before == after => (
-                loyalty_status(before, after),
-                Some(format!("{OWNER_GAP} observed=points-{before}-to-{after}")),
-            ),
-            Ok(Ok((before, after))) => (loyalty_status(before, after), None),
+            Ok(Ok(())) => ("PASS", None),
             Ok(Err(error)) => ("FAIL", Some(error.to_string())),
             Err(_) => (
                 "FAIL",
@@ -51,7 +52,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     if let Some(gap) = &gap {
         evidence(&format!("P13_GAP {gap}"));
     }
-    let detail = verdict_detail(status, gap);
+    let detail = gap.map_or_else(String::new, |gap| format!(" evidence={gap}"));
     evidence(&format!(
         "e2e_all scenario=P13.full status={status} seconds={:.3}{detail}",
         started.elapsed().as_secs_f64()
@@ -123,16 +124,97 @@ async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
     }
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
+/// The enclosing node-boot harness owns both disposable databases and the
+/// purpose-specific mTLS identity. Seed only Platform's earning input.
+async fn platform_update(clients: &SeamClients<'_>) -> TestResult<PlatformStreams> {
+    // connect_world uses the second packet Account, seeded as accountD.
+    let account = &clients.accounts[1];
+    let output = std::path::PathBuf::from(required("PORTAL_E2E_OUT")?);
+    let report: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        output.with_file_name("portal-report.json"),
+    )?)?;
+    let database = report["database"]
+        .as_str()
+        .and_then(|name| name.strip_prefix("portal_e2e_"))
+        .filter(|suffix| suffix.len() == 12 && suffix.bytes().all(|b| b.is_ascii_hexdigit()))
+        .ok_or("step=platform-fixture need=disposable-portal-database")?;
+    let mut admin = reqwest::Url::parse(&required("PORTAL_E2E_ADMIN_DATABASE_URL")?)
+        .map_err(|_| "step=platform-fixture need=valid-admin-route")?;
+    let origin = reqwest::Url::parse(
+        report["baseUrls"]["internal"]
+            .as_str()
+            .ok_or("step=platform-fixture need=internal-origin")?,
     )?;
+    if report["status"] != "ready"
+        || report["outputDirectory"].as_str() != output.to_str()
+        || report["seed"]["accountD"]["accountId"].as_str() != Some(account.as_str())
+        || admin.scheme() != "postgresql"
+        || admin.host_str() != Some("127.0.0.1")
+        || admin.path() != "/postgres"
+        || origin.scheme() != "https"
+        || origin.host_str() != Some("127.0.0.1")
+    {
+        return Err("step=platform-fixture need=ready-local-portal-harness".into());
+    }
+    admin.set_path(&format!("/portal_e2e_{database}"));
+
+    let certs = output.join("certs");
+    let mut identity = std::fs::read(certs.join("clients/loyalty-stream.pem"))?;
+    identity.extend(std::fs::read(certs.join("clients/loyalty-stream.key"))?);
+    let puller = StreamPuller::new(
+        &PremiumClientConfig {
+            origin: origin.to_string(),
+            identity_pem: identity,
+            platform_ca_pem: std::fs::read(certs.join("ca.pem"))?,
+        },
+        PlatformStream::Loyalty,
+        LOYALTY_IDENTITY_VAR,
+    )?;
+
+    let (_, runtime_url) = group_login(clients.url, "oteryn_game_runtime").await?;
+    let root = DurabilityRoot::connect_test_runtime(&runtime_url)?;
+    if !root.maintain_ready_once().await? {
+        return Err("step=loyalty-ingestion need=ready-durability-root".into());
+    }
+
+    let mut platform = sqlx::PgConnection::connect(admin.as_str())
+        .await
+        .map_err(|_| "step=platform-fixture need=reachable-disposable-portal-database")?;
+    let mut tx = platform.begin().await?;
+    sqlx::query("INSERT INTO premium_authority (account_id) VALUES ($1::uuid) ON CONFLICT DO NOTHING")
+        .bind(account)
+        .execute(&mut *tx)
+        .await?;
+    let interval = sqlx::query(
+        "WITH authority AS (\
+             UPDATE premium_authority SET authority_revision = 1 \
+             WHERE account_id = $1::uuid AND authority_revision = 0 RETURNING account_id\
+         ), spent AS (\
+             SELECT date_trunc('second', now()) - interval '1 hour' AS ended\
+         ) \
+         INSERT INTO premium_ledger (request_id, account_id, actor_id, event_type, duration_days, \
+             reason_sha256, entitlement_id, lifecycle_revision, delta_seconds, effective_from, effective_until) \
+         SELECT $2::uuid, account_id, account_id, 'GRANT', $3::integer, $4, $5::uuid, 1, \
+             ($3::integer)::bigint * 86400, ended - $3::integer * interval '24 hours', ended \
+         FROM authority CROSS JOIN spent",
+    )
+    .bind(account)
+    .bind(uuid_text(&crate::node::operator_files::uuid_v7()?))
+    .bind(SPENT_PREMIUM_DAYS)
+    .bind(Sha256::digest(b"P13 spent Premium Time qualification").as_slice())
+    .bind(uuid_text(&crate::node::operator_files::uuid_v7()?))
+    .execute(&mut *tx)
+    .await?;
+    if interval.rows_affected() != 1 {
+        return Err("step=platform-fixture need=fresh-premium-authority".into());
+    }
+    tx.commit().await?;
+    platform.close().await?;
+
+    Ok(PlatformStreams::spawn(&root, vec![puller], evidence))
+}
+
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xd3).await?;
     if !client
         .selected_capabilities()
@@ -144,6 +226,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
     }
     let initial_session = client.join_snapshot().game_session_id;
     let before = snapshot(&mut client, "baseline-query").await?;
+    if before.points != 0 {
+        return Err(format!("step=baseline observed={before:?} need=fresh-loyalty-account").into());
+    }
 
     let (status, payload) = query(&mut client, &[0]).await?;
     if status != CommandStatus::Rejected || !payload.is_empty() {
@@ -158,26 +243,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
     }
     evidence("P13_CHECK malformed-refusal PASS rejected-empty-and-state-inert");
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
-        .await
-        .map_err(|error| {
-            verdict::record_error(verdict::IndexedError::as_error(&error));
-            verdict::context(
-                format!("step=walk-to-training observed={error} need=reachable-rat"),
-                error,
-            )
-        })?;
-    client_hunt::hunt(&mut client).await.map_err(|error| {
-        verdict::record_error(verdict::IndexedError::as_error(&error));
-        verdict::context(
-            format!(
-                "step=combat-training observed={error} need=attack-damage-corpse-and-loot-deltas"
-            ),
-            error,
-        )
-    })?;
-    evidence("P13_CHECK combat-training PASS attack-damage-corpse-use-loot-deltas");
-    let after = snapshot(&mut client, "post-training-query").await?;
+    let _pullers = platform_update(clients).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let after = loop {
+        let current = snapshot(&mut client, "platform-update-query").await?;
+        if current.points != before.points {
+            verify_award(&before, &current)?;
+            evidence("P13_CHECK platform-update PASS spent-premium-points-title-and-bonus");
+            break current;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=loyalty-ingestion observed=unchanged-points need=platform-stream-update".into());
+        }
+        client.service_liveness(Duration::from_millis(500)).await?;
+        client.take_events();
+    };
 
     accepted_logout(&mut client).await?;
     drop(client);
@@ -194,58 +274,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<(u32, u32)> {
         .into());
     }
     cleanup?;
+    verify_award(&before, &durable)?;
     evidence("P13_CHECK fresh-admission PASS projection-identical-after-logout");
-    if after.points < before.points {
-        return Err(format!(
-            "step=loyalty-earning observed=regressed-points-{}-to-{}",
-            before.points, after.points
-        )
-        .into());
-    }
-    Ok((before.points, after.points))
-}
-
-fn verdict_detail(status: &str, gap: Option<String>) -> String {
-    if status == "MISSING-SERVER" {
-        return " evidence=source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57".into();
-    }
-    gap.map_or_else(String::new, |gap| format!(" evidence={gap}"))
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn missing_server_evidence_is_only_a_source_coordinate() {
-        assert_eq!(
-            super::verdict_detail("MISSING-SERVER", Some("points unchanged".into())),
-            " evidence=source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57"
-        );
-    }
-
-    #[test]
-    fn unchanged_loyalty_is_a_missing_server_verdict() {
-        assert_eq!(loyalty_status(0, 0), "MISSING-SERVER");
-        assert_eq!(loyalty_status(2, 3), "PASS");
-        assert_eq!(loyalty_status(3, 2), "FAIL");
-    }
-
-    use super::*;
-
-    #[test]
-    fn missing_server_verdict_identifies_the_platform_ingestion_gap() {
-        assert_eq!(
-            OWNER_GAP,
-            "step=loyalty-earning need=platform-loyalty-ingestion source:crates/gameplay/dispatch/src/gameplay_transport/loyalty_skills.rs:57"
-        );
-    }
-
-    #[test]
-    fn missing_server_evidence_is_a_report_compatible_source() {
-        assert!(OWNER_GAP.contains(" source:"));
-        assert!(
-            OWNER_GAP
-                .rsplit_once(':')
-                .is_some_and(|(_, line)| line.parse::<u32>().is_ok())
-        );
-    }
+    Ok(())
 }
