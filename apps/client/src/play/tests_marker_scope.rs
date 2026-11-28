@@ -665,9 +665,9 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                 let mut view = None;
                 let mut held = Vec::new();
                 oteryn_session::test_support::p19_session(&root.join(folder), |session, target, stacks, event, final_state| {
-                    let label = match (fiendish, stacks) {
-                        (true, 15) => "[Fiendish] Rat".to_owned(),
-                        (false, 1..=5) => format!("[Influenced {stacks}] Rat"),
+                    let prefix = match (fiendish, stacks) {
+                        (true, 15) => "[Fiendish]".to_owned(),
+                        (false, 1..=5) => format!("[Influenced {stacks}]"),
                         _ => return Err(format!("{folder}: wrong Forge class {stacks}").into()),
                     };
 
@@ -683,13 +683,19 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                     if must_be_live && entity.is_none() || death && final_state && entity.is_some() {
                         return Err(format!("{folder}: exact actor violates its live/death boundary").into());
                     }
-                    let expected = if let Some(entity) = entity {
+                    let label = entity.map(|entity| {
+                        let name = entity.display_name.as_ref()
+                            .and_then(|name| name.as_str().ok())
+                            .ok_or("P19 nameplate target lacks its wire name")?;
+                        Ok::<_, Box<dyn std::error::Error>>(format!("{prefix} {name}"))
+                    }).transpose()?;
+                    let expected = if let Some((entity, label)) = entity.zip(label.as_deref()) {
                         let health = match entity.detail {
                             oteryn_session::EntityDetail::Actor { health_percent, .. }
                             | oteryn_session::EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
                             _ => return Err("P19 nameplate target is not an actor".into()),
                         };
-                        Some((oteryn_renderer::TileCoord::new(entity.position.x, entity.position.y), label.as_str(), health))
+                        Some((oteryn_renderer::TileCoord::new(entity.position.x, entity.position.y), label, health))
                     } else {
                         None
                     };
