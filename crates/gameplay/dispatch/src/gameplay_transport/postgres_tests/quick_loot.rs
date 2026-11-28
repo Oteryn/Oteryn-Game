@@ -30,15 +30,25 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("quick-pouch", || {
-        scenario_with_pouch(true)
+        scenario_with_loot(true, false)
     })
 }
 
 fn scenario() -> TestResult {
-    scenario_with_pouch(false)
+    scenario_with_loot(false, false)
 }
 
-fn scenario_with_pouch(pouch: bool) -> TestResult {
+#[test]
+fn quick_loot_postgres_dispatch_nested_corpse_items_keep_rights_order_and_custody() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("quick-loot-nested", || {
+        scenario_with_loot(false, true)
+    })
+}
+
+fn scenario_with_loot(pouch: bool, nested: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -279,6 +289,21 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
             .is_some(),
             "pinned move content"
         );
+        if nested {
+            quick_loot_nested(
+                &owner,
+                &mut admitted,
+                &harness.pool,
+                corpse_id,
+                &items,
+                assign,
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let mut plain = admitted;
         plain.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[6])
@@ -601,6 +626,174 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+async fn quick_loot_nested(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    pool: &sqlx::PgPool,
+    corpse: [u8; 16],
+    items: &[[u8; 16]],
+    assign: QuickLootRequest,
+) -> TestResult {
+    let [direct, nested] = items else {
+        return Err("expected two loot mints".into());
+    };
+    let [outer, inner] = [id(74), id(75)];
+    // Provision the same custody shape as the nested kill-loot MINT owner.
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for seed in [74, 75] {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            crate::durability::item_fee_burn::test_support::item(
+                seed,
+                "oteryn:item.tibia.i2854",
+                "definition-r1",
+                1,
+            ),
+        ))
+        .execute(&mut *tx)
+        .await?;
+    }
+    sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(nested.as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,encode($1,'hex')::uuid)")
+        .bind(outer.as_slice()).bind(id(42).as_slice()).bind(corpse.as_slice()).execute(&mut *tx).await?;
+    for (item, parent) in [(inner, outer), (*nested, inner)] {
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)")
+            .bind(item.as_slice()).bind(id(42).as_slice()).bind(parent.as_slice()).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO game_character_quick_loot_filters(character_id,accepted,item_production_key) VALUES(encode($1,'hex')::uuid,false,'oteryn:item.tibia.i2854')")
+        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+
+    let near = crate::durability::map_item_mint_audit::map_item_spatial_position(7, 0, 7)
+        .try_into()
+        .map_err(|_| "near cell")?;
+    let loot = request(QuickLootAction::LootAll);
+    fixture_corpse(pool, corpse, near, id(99), 0).await?;
+    let denied = wire_requests(owner, admitted, &[(1, assign), (2, loot)]).await?;
+    assert_eq!(denied[0].0, CommandStatus::Accepted);
+    assert_eq!(denied[1].0, CommandStatus::Accepted);
+    assert!(denied[1].1.items.iter().all(|item| !item.accepted));
+    assert!(
+        denied[1].1.items.iter().any(|item| item.item == *nested),
+        "a nested coin is reported as refused while the corpse is exclusive"
+    );
+    let parent: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(nested.as_slice()).fetch_one(pool).await?;
+    assert_eq!(parent, inner);
+
+    fixture_corpse(pool, corpse, near, id(41), 0).await?;
+    let fence = admitted.item_fence.ok_or("item fence")?;
+    let schedule = owner
+        .root
+        .read_scoped_corpse_decay_schedule(owner.character, fence.runtime_scope)
+        .await?;
+    assert!(
+        schedule
+            .corpses
+            .iter()
+            .any(|entry| entry.corpse_item_instance_id == corpse)
+    );
+
+    sqlx::query("UPDATE game_character_quick_loot_filters SET item_production_key='oteryn:item.tibia.i3031' WHERE character_id=encode($1,'hex')::uuid AND NOT accepted")
+        .bind(id(41).as_slice()).execute(pool).await?;
+    let skipped = wire_requests(owner, admitted, &[(3, loot)]).await?;
+    assert_eq!(skipped[0].0, CommandStatus::Accepted);
+    assert!(
+        skipped[0].1.items.iter().all(|item| !item.accepted),
+        "moving a bag must not bypass its contents' filter"
+    );
+
+    sqlx::query("UPDATE game_character_quick_loot_filters SET item_production_key='oteryn:item.tibia.i2854' WHERE character_id=encode($1,'hex')::uuid AND NOT accepted")
+        .bind(id(41).as_slice()).execute(pool).await?;
+    let replies = wire_requests(owner, admitted, &[(4, loot)]).await?;
+    assert_eq!(replies[0].0, CommandStatus::Accepted);
+    assert_eq!(
+        replies[0].1.items,
+        [
+            (*direct, true),
+            (*nested, true),
+            (inner, false),
+            (outer, false)
+        ]
+        .map(|(item, accepted)| QuickLootItemResult { item, accepted }),
+        "Loot All takes both coins and leaves the skipped bags in the corpse",
+    );
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: 4,
+        item_fence: Some(fence),
+    };
+    assert_eq!(
+        owner.quick_loot(*admitted, command, loot).await,
+        Some(replies[0].clone())
+    );
+    let corpse_items = owner
+        .root
+        .read_corpse_contents(owner.character, corpse)
+        .await?
+        .ok_or("corpse contents")?;
+    assert_eq!(
+        corpse_items
+            .iter()
+            .map(|entry| entry.item.item_instance_id)
+            .collect::<Vec<_>>(),
+        [outer]
+    );
+    assert!(
+        owner
+            .root
+            .read_item_source_location(owner.character, *direct)
+            .await?
+            .is_none()
+    );
+    let after = owner
+        .root
+        .read_scoped_corpse_decay_schedule(owner.character, fence.runtime_scope)
+        .await?;
+    assert_eq!(after.corpses, schedule.corpses);
+    let target = owner
+        .root
+        .read_item_loop_container(owner.character, fence.character_id, id(71))
+        .await?
+        .ok_or("loot destination")?;
+    assert_eq!(target.parent, Some(id(70)));
+    let mut quantities: Vec<_> = target
+        .entries
+        .iter()
+        .map(|entry| entry.item.quantity)
+        .collect();
+    quantities.sort_unstable();
+    assert_eq!(quantities, [20, 100]);
+    assert!(
+        target
+            .entries
+            .iter()
+            .any(|entry| entry.item.item_instance_id == *nested)
+    );
+    let proofs: Vec<(i16, i16)> = sqlx::query_as(
+        "SELECT r.quick_loot_ordinal,l.from_kind
+           FROM game_item_loop_move_receipts r
+           JOIN game_item_loop_move_lines l USING (transaction_id)
+          WHERE r.command_id=$1::text::numeric AND l.from_kind=5 ORDER BY r.quick_loot_ordinal",
+    )
+    .bind(command.command_id.to_string())
+    .fetch_all(pool)
+    .await?;
+    assert_eq!(
+        proofs,
+        [(1, 5), (2, 5)],
+        "both moves have one corpse-source proof after replay"
+    );
+
+    let parent: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(inner.as_slice()).fetch_one(pool).await?;
+    assert_eq!(parent, outer);
+    Ok(())
 }
 
 async fn quick_loot_destination_management(

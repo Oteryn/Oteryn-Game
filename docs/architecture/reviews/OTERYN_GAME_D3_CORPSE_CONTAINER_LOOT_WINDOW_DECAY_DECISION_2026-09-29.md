@@ -236,9 +236,21 @@ renumbering). New `RESOURCE_LIMITS_REGISTRY.json` rows (owner: this document):
 | Row | Value | Basis |
 |---|---|---|
 | `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` | **16** | Not invented: equal by construction to the already-accepted `COMBAT01-LOOT-PLAN-ITEMS` and `COMBAT01-ITEMS-PER-CORPSE` (both 16, `reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md` §4.1 row 6). This row is the GAME-ITEM-01 §7.1 container-legality mirror of that already-accepted combat-domain ceiling; the two must never diverge, and this document sets both the content capacity (§4.8) and this row to the same value they already imply. |
-| `GAMEITEM01-CORPSE-PLACEMENT-DEPTH` | 1 | Loot entries are direct children of the corpse item only; no bags inside corpses in this slice (mirrors `GAMEITEM01-PLACEMENT-DEPTH`). |
+| `GAMEITEM01-CORPSE-PLACEMENT-DEPTH` | 1 | Direct corpse placement remains one level. Quick Loot also reaches the existing nested kill-loot entries beneath those direct entries. |
 | `GAMEITEM01-CORPSE-REACHABLE-ITEMS` | 17 | The corpse item (1) plus its 16 entries, mirroring `GAMEITEM01-REACHABLE-ITEMS`. |
 | `COMBAT01-CORPSES-PER-SCOPE` | **64 (already accepted; not re-decided here)** | `reviews/OTERYN_GAME_VSL_COMBAT_RESOURCE_ROWS_DECISION_2026-09-28.md` §4.1 row 6, matching the D57 creature envelope ("64, jak potwory", D78). This is the *one* bound on concurrent corpses per scope; no `GAMEITEM01-CORPSES-PER-SCOPE-MAX` or other competing/derived row is introduced. The 64th-plus-one overflow rule is likewise reused verbatim, not re-decided: "reject the projection; the death still commits and loot follows D52" (exact overflow behaviour below). |
+
+**Quick Loot amendment (owner decision, 2026-11-28).** Quick Loot reads up to
+eight placement levels under the selected corpse and applies the existing transfer
+limit, filters and destination rules. Siblings retain ascending placement order.
+The command considers a container after its contents and may move it once empty.
+Every transfer must still prove current loot rights at the live Ground corpse
+root. The existing session and scope fences, transaction, audit causes, receipts
+and replay rules apply to each batch.
+
+“The Loot All feature sends all the items inside a creature's
+corpse to the corresponding loot containers once the corpse is clicked.”
+[TibiaWiki Quick Looting, Fandom archive](https://web.archive.org/web/20250120091530id_/https://tibia.fandom.com/wiki/Quick_Looting).
 
 **Whole-plan preflight, not partial commit.** Because a death's loot plan is itself capped at 16
 accepted entries (`COMBAT01-LOOT-PLAN-ITEMS`) and a corpse's own capacity is also 16, an accepted
