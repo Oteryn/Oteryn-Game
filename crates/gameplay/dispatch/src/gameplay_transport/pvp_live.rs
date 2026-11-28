@@ -666,8 +666,8 @@ mod locks;
 #[cfg(test)]
 pub(super) use locks::lock_mut;
 pub(super) use locks::{
-    CombatLockCause, PvpBlocker, log_combat_lock_renewal, logout_blocked, pz_blocked, record_pvp_hit,
-    tracked,
+    CombatLockCause, PvpBlocker, log_combat_lock_renewal, logout_blocked, pz_blocked,
+    record_pvp_hit, tracked,
 };
 
 #[cfg(test)]
