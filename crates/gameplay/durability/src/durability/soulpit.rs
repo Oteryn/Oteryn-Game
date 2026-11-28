@@ -125,12 +125,11 @@ pub(super) async fn write_shared_entry(
 
 pub const SOULPIT_ACTIVITY_KEY: &str = "oteryn:activity.soulpit";
 
-/// Level, position and current trusted staff group are independently read inside the shared
-/// transaction. The compatibility hint is not authority for a level exemption.
+/// Party identity and staging position are verified in the shared transaction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SoulpitParticipantFact {
     pub character: CharacterId,
-    /// Non-authoritative compatibility hint; the entry writer always resolves current staff.
+    /// Non-authoritative compatibility hint. Soulseal staff exemptions use the current roster.
     pub game_master: bool,
 }
 
