@@ -1355,6 +1355,24 @@ node_complete_assignment() {
   node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
+  # G33's calendar is a fixture input. Seed before the assigned node loads it.
+  local g33_season= g33_date g33_epoch
+  if [[ "${NODE_BOOT_E2E_ONLY:-}/${OTERYN_E2E_ROW_BATCH:-}/$NODE_BOOT_WORLD" == rows/265:1/1 ]]; then
+    g33_season="${OTERYN_G33_FIXTURE_SEASON:-piece_of_cake}"
+    case "$g33_season" in
+      piece_of_cake) g33_date=2025-02-21 ;;
+      christmas) g33_date=2025-12-12 ;;
+      *) fail "invalid G33 fixture season"; return 1 ;;
+    esac
+    g33_epoch="$({
+      echo 'PREPARE node_boot_g33(UUID, UUID, TEXT, TEXT, TIMESTAMPTZ, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/g33_epoch.sql"
+      printf "EXECUTE node_boot_g33('%s', '%s', '%s', '%s', '%s 06:00 Europe/Berlin', '%s');\n" \
+        "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST" "$MAP_REVISION" "$g33_date" "$g33_season"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$g33_epoch" == 1 ]] || { fail "G33 epoch fixture"; return 1; }
+    evidence "world_epoch=1 source=qualification_fixture row=G33.full seasonal_event=$g33_season activated_date=$g33_date"
+  fi
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
@@ -1381,8 +1399,13 @@ node_complete_assignment() {
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
-    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    if [[ -n "${g33_season:-}" ]]; then
+      [[ "$epoch_result" == $'f\nf' ]] || fail "G33 fixture epoch zero replay"
+      evidence "world_epoch_history=0 source=qualification_fixture row=G33.full replay=idempotent"
+    else
+      [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+      evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    fi
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
