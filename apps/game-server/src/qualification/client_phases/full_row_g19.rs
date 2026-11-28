@@ -171,9 +171,14 @@ fn judge(rows: &[wire::PlayerMetadata], player: EntityRef, expected: u8) -> Test
         )
         .into());
     }
-    if rows.iter().any(|row| {
-        row.entity == unknown_entity() && (row.vocation.is_some() || row.same_guild.is_some())
-    }) {
+    let unknown = rows
+        .iter()
+        .find(|row| row.entity == unknown_entity())
+        .ok_or("step=metadata observed=no-row-for-unknown-entity")?;
+    if rows.len() != 2 {
+        return Err("step=metadata observed=unexpected-reply-row-count".into());
+    }
+    if unknown.vocation.is_some() || unknown.same_guild.is_some() {
         return Err("step=metadata observed=data-for-unknown-entity".into());
     }
     Ok(())
@@ -256,9 +261,16 @@ mod tests {
             vocation,
             same_guild: None,
         };
-        assert!(judge(&[row(player, Some(2))], player, 2).is_ok());
-        assert!(judge(&[row(player, None)], player, 0).is_err());
-        assert!(judge(&[row(player, Some(1))], player, 2).is_err());
+        let visible = || row(player, Some(2));
+        let unknown = || row(unknown_entity(), None);
+        assert!(judge(&[visible(), unknown()], player, 2).is_ok());
+        assert!(judge(&[visible()], player, 2).is_err());
+        assert!(judge(&[visible(), unknown(), visible()], player, 2).is_err());
+        let mut guild_leak = unknown();
+        guild_leak.same_guild = Some(false);
+        assert!(judge(&[visible(), guild_leak], player, 2).is_err());
+        assert!(judge(&[row(player, None), unknown()], player, 0).is_err());
+        assert!(judge(&[row(player, Some(1)), unknown()], player, 2).is_err());
         assert!(judge(&[], player, 2).is_err());
         assert!(
             judge(
