@@ -65,43 +65,27 @@ impl Outbox {
         &self,
         session: &mut impl crate::play::Stepper,
     ) -> Result<(), oteryn_session::SessionError> {
-        use oteryn_client_ui::quick_loot::Action;
-        use oteryn_session::{CommandStatus, quick_loot::*};
+        use oteryn_client_ui::quick_loot::apply_destinations;
+        use oteryn_session::quick_loot::*;
         if !session.server_mechanic_selected(CAPABILITY_QUICK_LOOT_DESTINATIONS_V1) {
             return Ok(());
         }
         let Ok(payload) = encode_quick_loot_request(&quick_loot_filter_review_request()) else {
             return Ok(());
         };
-        let response = session.server_mechanic(&ServerMechanicCommand {
-            capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
-            command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
-            payload,
-        }).await?;
-        if response.status != CommandStatus::Accepted {
-            if matches!(
-                response.status,
-                CommandStatus::Rejected | CommandStatus::DuplicateReplay
-            ) && decode_quick_loot_refusal(&response.payload).is_ok()
-            {
-                lock(&self.0).discovery.loot.feedback = tr!("The server refused the request").into();
-            }
-            return Ok(());
-        }
-        if let Ok(saved) = decode_quick_loot_destinations(&response.payload) {
-            let mut mailbox = lock(&self.0);
-            let panel = &mut mailbox.discovery.loot;
-            panel.destinations = saved.loot.into_iter().map(|row| Action::Destination {
-                category: row.category,
-                recipient: row.recipient,
-                id: row.recipient_id,
-                fallback: saved.fallback_to_main,
-            }).collect();
-            if let Some(filters) = saved.filters {
-                panel.filter_mode = Some(filters.mode);
-                panel.skipped = filters.skipped.into_iter().collect();
-                panel.accepted = filters.accepted.into_iter().collect();
-            }
+        let response = session
+            .server_mechanic(&ServerMechanicCommand {
+                capability: CAPABILITY_QUICK_LOOT_DESTINATIONS_V1,
+                command_type: COMMAND_TYPE_QUICK_LOOT_DESTINATIONS,
+                payload,
+            })
+            .await?;
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.discovery.loot;
+        if let Err(message) = apply_destinations(panel, &response)
+            && panel.pending.is_none()
+        {
+            panel.feedback = message.into();
         }
         Ok(())
     }

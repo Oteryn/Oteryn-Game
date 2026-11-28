@@ -4,7 +4,7 @@ mod protocol;
 mod state;
 mod view;
 pub use input::{nearby_key, open_key};
-pub use protocol::{Action, apply_result, request};
+pub use protocol::{Action, apply_destinations, apply_result, request};
 pub use state::{Discovery, Panel};
 pub use view::{panel_text, result_notice};
 #[cfg(test)]

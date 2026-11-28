@@ -1,3 +1,5 @@
+mod destinations;
+
 use super::*;
 use crate::{
     combat_input::PlayCommand,
@@ -18,8 +20,12 @@ type Fixture = (
 );
 pub(crate) fn fixture(selected: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
-    link.use_shared_frontend();
     outbox.bevy_quick_loot_selected(selected);
+    Ok((app_with_link(link)?, commands, outbox))
+}
+
+fn app_with_link(link: crate::play::PlayLink) -> Result<App, Box<dyn std::error::Error>> {
+    link.use_shared_frontend();
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -36,7 +42,7 @@ pub(crate) fn fixture(selected: bool) -> Result<Fixture, Box<dyn std::error::Err
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
-    Ok((app, commands, outbox))
+    Ok(app)
 }
 pub(crate) fn open(app: &mut App) -> TestResult {
     use oteryn_input_actions::{Modifier, Modifiers};

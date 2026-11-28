@@ -2,18 +2,19 @@
   "mechanic": "0607-quick-loot-destinations",
   "kind": "handlers",
   "id": "0607-quick-loot-destinations-server-commands",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
-    6376,
-    6377
+    6376
   ],
   "direction": "client_to_server",
-  "reason": "Client wiring is delivered in its own lane.",
+  "capability": 607,
+  "entry": "gated_command.rs::gated_command",
+  "entry_owner": "session",
   "not_applicable": {
-    "state": "The native client has not integrated the new server command.",
-    "protocol": "The protocol-oteryn crate owns the wire grammar.",
-    "view": "The native client lane owns the corresponding view.",
-    "input": "The native client lane owns the corresponding input.",
-    "settings": "The server command introduces no local settings."
+    "state": "Confirmed destinations are projected by 0098-quick-loot.",
+    "protocol": "The protocol-oteryn crate owns the destination wire grammar.",
+    "view": "0098-quick-loot owns the Manage Loot Containers panel.",
+    "input": "0098-quick-loot owns the Manage Loot Containers controls.",
+    "settings": "Loot and Obtain routes are owned by the server."
   }
 }

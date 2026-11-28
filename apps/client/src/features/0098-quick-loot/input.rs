@@ -25,6 +25,8 @@ impl PlayLink {
         command.is_some_and(|command| self.discovery_send(command))
     }
 
+    /// Sends a Quick Loot action. Container row callers supply the selected live handle
+    /// to `Action::Distribute`; the server resolves its ownership and contents.
     pub fn quick_loot_action(&self, action: oteryn_client_ui::quick_loot::Action) -> bool {
         let command =
             oteryn_client_ui::quick_loot::request(&mut lock(&self.mailbox).discovery.loot, action);

@@ -18,6 +18,10 @@ pub struct Panel {
     pub confirmed: Vec<Action>,
     /// Saved destinations, at most one per category.
     pub destinations: Vec<Action>,
+    pub obtain_destinations: Vec<QuickLootDestination>,
+    /// Live source displayed by the native Manage Loot Containers panel.
+    pub distribution_source: Option<oteryn_client_runtime::inventory::ItemHandle>,
+    pub distribution_result: Option<QuickLootResult>,
     pub managed: bool,
     pub destinations_selected: bool,
     pub filter_mode: Option<QuickLootFilterMode>,

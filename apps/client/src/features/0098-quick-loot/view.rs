@@ -77,6 +77,14 @@ impl PlayLink {
 /// The existing panel projection, including the player's loot-message visibility choice.
 fn loot_panel(mailbox: &crate::play::mailbox::Mailbox) -> oteryn_client_ui::quick_loot::Panel {
     let mut panel = mailbox.discovery.loot.clone();
+    if panel.destinations_selected && !mailbox.inventory_shutdown {
+        panel.distribution_source = mailbox
+            .inventory
+            .inventory
+            .as_ref()
+            .and_then(|inventory| inventory.main_backpack)
+            .map(|backpack| backpack.handle);
+    }
     if !mailbox.local_preferences.game_window.loot_messages {
         panel.result = None;
     }
@@ -218,6 +226,8 @@ impl PlayLink {
         }
         let allowed = match &action {
             Action::LootAll | Action::Select(_) | Action::Clear(_) => true,
+            Action::ReviewDestinations => panel.destinations_selected,
+            Action::Distribute(source) => expected.distribution_source == Some(*source),
             Action::Destination { category, recipient, id, fallback } =>
                 (*recipient == QuickLootRecipient::MainContainer && id.is_none())
                 || quick_loot_pouch_route(panel, pouch, *category, *fallback).as_ref() == Some(&action)

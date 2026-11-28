@@ -1,0 +1,13 @@
+{
+  "mechanic": "0607-quick-loot-destinations",
+  "kind": "handlers",
+  "id": "0607-quick-loot-destinations-distribute",
+  "status": "supported",
+  "commands": [
+    6377
+  ],
+  "direction": "client_to_server",
+  "capability": 607,
+  "entry": "gated_command.rs::gated_command",
+  "entry_owner": "session"
+}

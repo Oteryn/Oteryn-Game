@@ -21,6 +21,8 @@ pub enum Action {
     },
     Clear(QuickLootFilterMode),
     Select(QuickLootFilterMode),
+    ReviewDestinations,
+    Distribute(oteryn_client_runtime::inventory::ItemHandle),
     Destination {
         category: Option<QuickLootCategory>,
         recipient: QuickLootRecipient,
@@ -73,6 +75,8 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             wire.action = QuickLootAction::FilterSelect;
             wire.filter_mode = Some(*mode);
         }
+        Action::ReviewDestinations => wire = quick_loot_filter_review_request(),
+        Action::Distribute(_) => wire.action = QuickLootAction::Distribute,
         Action::Destination {
             category,
             recipient,
@@ -90,7 +94,19 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
             wire.fallback_to_main = *fallback;
         }
     }
-    let payload = match encode_quick_loot_request(&wire) {
+    let command_type = wire.action.command_type();
+    let capability = if command_type == COMMAND_TYPE_QUICK_LOOT {
+        CAPABILITY_QUICK_LOOT_V1
+    } else if panel.destinations_selected {
+        CAPABILITY_QUICK_LOOT_DESTINATIONS_V1
+    } else {
+        return None;
+    };
+    let encoded = match action {
+        Action::Distribute(source) => encode_quick_loot_view_request(&wire, source),
+        _ => encode_quick_loot_request(&wire),
+    };
+    let payload = match encoded {
         Ok(payload) => payload,
         Err(_) => {
             panel.feedback = tr!("Choose valid loot details").into();
@@ -101,12 +117,8 @@ pub fn request(panel: &mut Panel, action: Action) -> Option<ServerMechanicComman
     panel.feedback = tr!("Waiting for the server").into();
     panel.item_feedback = None;
     Some(ServerMechanicCommand {
-        capability: if wire.action == QuickLootAction::AssignLoot {
-            CAPABILITY_QUICK_LOOT_DESTINATIONS_V1
-        } else {
-            CAPABILITY_QUICK_LOOT_V1
-        },
-        command_type: wire.action.command_type(),
+        capability,
+        command_type,
         payload,
     })
 }
@@ -118,6 +130,14 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
     let Some(action) = panel.pending.take() else {
         return false;
     };
+    if action == Action::ReviewDestinations {
+        panel.feedback = match apply_destinations(panel, response) {
+            Ok(()) => tr!("Confirmed by the server"),
+            Err(message) => message,
+        }
+        .into();
+        return false;
+    }
     let can_confirm = matches!(response.status, Accepted | DuplicateReplay);
     if let Action::CorpseItem { corpse, .. } = action {
         let message = if can_confirm
@@ -136,6 +156,11 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         return false;
     }
     if can_confirm && let Ok(result) = decode_quick_loot_result(&response.payload) {
+        if matches!(action, Action::Distribute(_)) {
+            panel.distribution_result = Some(result);
+            panel.feedback = tr!("Confirmed by the server").into();
+            return false;
+        }
         let looted = matches!(
             action,
             Action::LootAll | Action::LootAllFrom(_) | Action::Corpse(_)
@@ -190,13 +215,48 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> boo
         panel.feedback = tr!("Confirmed by the server").into();
         return looted;
     }
-    panel.feedback = if refusal(response).is_some() {
+    panel.feedback = failure_message(response).into();
+    false
+}
+
+/// Apply the saved Loot and Obtain routes from a destination review.
+pub fn apply_destinations(
+    panel: &mut Panel,
+    response: &ServerMechanicResponse,
+) -> Result<(), &'static str> {
+    if !matches!(
+        response.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) {
+        return Err(failure_message(response));
+    }
+    let saved =
+        decode_quick_loot_destinations(&response.payload).map_err(|_| failure_message(response))?;
+    panel.destinations = saved
+        .loot
+        .into_iter()
+        .map(|row| Action::Destination {
+            category: row.category,
+            recipient: row.recipient,
+            id: row.recipient_id,
+            fallback: saved.fallback_to_main,
+        })
+        .collect();
+    panel.obtain_destinations = saved.obtain;
+    if let Some(filters) = saved.filters {
+        panel.filter_mode = Some(filters.mode);
+        panel.skipped = filters.skipped.into_iter().collect();
+        panel.accepted = filters.accepted.into_iter().collect();
+    }
+    Ok(())
+}
+
+fn failure_message(response: &ServerMechanicResponse) -> &'static str {
+    if refusal(response).is_some() {
         tr!("The server refused the request")
     } else {
         tr!("Loot request refused or invalid reply; try again")
     }
-    .into();
-    false
 }
 
 fn refusal(response: &ServerMechanicResponse) -> Option<QuickLootRefusal> {
@@ -212,6 +272,21 @@ fn refusal(response: &ServerMechanicResponse) -> Option<QuickLootRefusal> {
 #[cfg(test)]
 mod destination_request_tests {
     use super::*;
+
+    #[test]
+    fn quick_loot_gap_0607_legacy_rejects_managed_actions_without_changing_bytes() {
+        let mut panel = Panel {
+            selected: true,
+            ..Panel::default()
+        };
+        assert!(request(&mut panel, Action::ReviewDestinations).is_none());
+        assert!(request(&mut panel, Action::Distribute(std::num::NonZeroU64::MIN)).is_none());
+        assert!(panel.pending.is_none());
+        assert_eq!(
+            request(&mut panel, Action::LootAll).map(|command| command.payload),
+            Some(vec![8, 2])
+        );
+    }
 
     #[test]
     fn destination_assignment_uses_the_negotiated_wire() -> Result<(), &'static str> {
@@ -236,6 +311,9 @@ mod destination_request_tests {
                 },
             )
             .ok_or("destination request")?;
+            if !destinations_selected {
+                assert_eq!(command.payload, [8, 3, 24, 1, 32, 3, 48, 1]);
+            }
             assert_eq!(
                 (command.capability, command.command_type),
                 (capability, command_type)

@@ -1,5 +1,5 @@
 use super::*;
-use crate::play::feature_0098_quick_loot::view::quick_loot_pouch_route;
+mod destinations;
 use bevy::{
     input_focus::tab_navigation::TabGroup, ui::InteractionDisabled, ui_widgets::ScrollArea,
 };
@@ -69,7 +69,7 @@ pub(super) fn render(
     widgets: &mut Widgets,
     key: Key,
     panel: &Panel,
-    (pouch, store_selected, inbox_has_next): (Option<[u8; 16]>, bool, bool),
+    inbox: (Option<[u8; 16]>, bool, bool),
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -103,139 +103,7 @@ pub(super) fn render(
         ))
         .id();
     commands.entity(body).add_child(destinations);
-    text(commands, skins, destinations, "Loot containers");
-    if panel.destinations_selected && store_selected && pouch.is_none() {
-        let kind = if inbox_has_next {
-            Kind::NextInboxPage
-        } else {
-            Kind::RefreshInbox
-        };
-        let label = if inbox_has_next {
-            "Next Store Inbox page"
-        } else {
-            "Check Store Inbox"
-        };
-        button(commands, skins, destinations, key, kind, label, 190., panel);
-    }
-    for category in std::iter::once(None).chain(Category::ALL.into_iter().map(Some)) {
-        if !panel.destinations_selected
-            && category.is_some_and(|category| category as u8 > Category::Other as u8)
-        {
-            continue;
-        }
-        let label = match category {
-            None => "Unassigned".into(),
-            Some(Category::CreatureProduct) => "Creature products".into(),
-            Some(Category::DistanceWeapon) => "Distance weapons".into(),
-            Some(Category::FistWeapon) => "Fist weapons".into(),
-            Some(Category::Armor) => "Armors".into(),
-            Some(category) => format!("{category:?}"),
-        };
-        let row = column(commands, destinations);
-        text(commands, skins, row, label);
-        let confirmed = panel
-            .destinations
-            .iter()
-            .find(|action| matches!(action,Action::Destination {category:c,..} if *c==category));
-        if let Some(Action::Destination {
-            recipient,
-            fallback,
-            ..
-        }) = confirmed
-        {
-            let recipient = match recipient {
-                Recipient::MainContainer => "Main backpack",
-                Recipient::Container => "Container",
-                Recipient::GoldPouch => "Gold pouch",
-            };
-            text(
-                commands,
-                skins,
-                row,
-                format!(
-                    "Confirmed: {recipient}; fallback {}",
-                    if *fallback { "on" } else { "off" }
-                ),
-            );
-        } else {
-            text(commands, skins, row, "Saved destination not available");
-        }
-        let buttons = row_node(commands, row);
-        if matches!(
-            confirmed,
-            Some(Action::Destination {
-                recipient: Recipient::MainContainer,
-                ..
-            })
-        ) {
-            button(
-                commands,
-                skins,
-                buttons,
-                key,
-                Kind::OpenDestination(category),
-                "Open",
-                60.,
-                panel,
-            );
-        }
-        for (fallback, label) in [(false, "Use main"), (true, "Main + fallback")] {
-            button(
-                commands,
-                skins,
-                buttons,
-                key,
-                Kind::Request(Action::Destination {
-                    category,
-                    recipient: Recipient::MainContainer,
-                    id: None,
-                    fallback,
-                }),
-                label,
-                102.,
-                panel,
-            );
-        }
-        for (fallback, label) in [(false, "Use gold pouch"), (true, "Gold pouch + fallback")] {
-            if let Some(assignment) = quick_loot_pouch_route(panel, pouch, category, fallback)
-                && confirmed != Some(&assignment)
-            {
-                button(
-                    commands,
-                    skins,
-                    row,
-                    key,
-                    Kind::Request(assignment),
-                    label,
-                    175.,
-                    panel,
-                );
-            }
-        }
-        if let Some(Action::Destination {
-            category,
-            recipient,
-            id,
-            fallback,
-        }) = confirmed
-        {
-            button(
-                commands,
-                skins,
-                row,
-                key,
-                Kind::Request(Action::Destination {
-                    category: *category,
-                    recipient: *recipient,
-                    id: *id,
-                    fallback: !*fallback,
-                }),
-                "Toggle confirmed fallback",
-                190.,
-                panel,
-            );
-        }
-    }
+    destinations::render(commands, skins, destinations, key, panel, inbox);
     let filters = commands
         .spawn((
             ScrollArea,
@@ -353,6 +221,18 @@ pub(super) fn render(
             },
         );
     }
+    if let Some(result) = &panel.distribution_result {
+        text(
+            commands,
+            skins,
+            content,
+            format!(
+                "Distributed {} of {} items",
+                result.items.iter().filter(|item| item.accepted).count(),
+                result.items.len()
+            ),
+        );
+    }
     if !panel.selected {
         text(
             commands,
@@ -370,6 +250,18 @@ pub(super) fn render(
         column_gap: px(8.),
         ..default()
     });
+    if let Some(source) = panel.distribution_source {
+        button(
+            commands,
+            skins,
+            footer,
+            key,
+            Kind::Request(Action::Distribute(source)),
+            "Distribute backpack contents",
+            210.,
+            panel,
+        );
+    }
     button(
         commands,
         skins,
