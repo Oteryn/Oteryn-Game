@@ -153,7 +153,7 @@ async fn scenario(
         } else {
             "oteryn:item.tibia.i3607"
         },
-        if contents { 1 } else { 3 },
+        if quest_hand_in { 100 } else if contents { 1 } else { 3 },
     )
     .await?;
     seed_trade_backpack(
@@ -417,7 +417,7 @@ async fn scenario(
     };
     assert!(initialized, "real source-map initialization");
     let check_container_preview =
-        !contents && !check_capacity && !inspection && !offer_contention && !read_priority;
+        !quest_hand_in && !contents && !check_capacity && !inspection && !offer_contention && !read_priority;
     for a in &mut admitted {
         owner.admit_loop_training(a).await;
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
@@ -500,6 +500,17 @@ async fn scenario(
             None
         };
 
+        let custody = || async {
+            sqlx::query_as::<_, (i64, i64)>(
+                "SELECT (SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances
+                         WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1),
+                        (SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances
+                         WHERE definition_production_key='oteryn:item.tibia.i7290' AND lifecycle=1)",
+            ).bind(id(91).as_slice()).fetch_one(&h.pool).await
+        };
+        if quest_hand_in {
+            assert_eq!(custody().await?, (100, 0), "starting custody");
+        }
         let offer_a = Intent::Offer {
             partner: targets[1],
             item: 2,
@@ -565,14 +576,6 @@ async fn scenario(
                 "the eligible hand-in must refuse the open trade"
             );
             assert_eq!(status, CommandStatus::Rejected);
-            let custody = || async {
-                sqlx::query_as::<_, (i64, i64)>(
-                    "SELECT (SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances
-                             WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1),
-                            (SELECT coalesce(sum(quantity), 0)::bigint FROM game_item_instances
-                             WHERE definition_production_key='oteryn:item.tibia.i7290' AND lifecycle=1)",
-                ).bind(id(91).as_slice()).fetch_one(&h.pool).await
-            };
             assert_eq!(custody().await?, (100, 0));
             if owner.states.player_trades.open(session) {
                 assert_eq!(b.trade(Intent::Cancel).await?, ResultCode::Cancelled.payload());

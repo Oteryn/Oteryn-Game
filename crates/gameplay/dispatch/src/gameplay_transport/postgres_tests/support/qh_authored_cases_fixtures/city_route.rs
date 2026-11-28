@@ -1,3 +1,4 @@
+use super::super::admitted_wire_fixtures::{Peer, drive};
 use super::{
     AdmittedSession, ComposedFreshAdmission, IRIANA, JIMMY, Position, TestResult, debug, target,
     use_target,
@@ -6,7 +7,9 @@ use crate::content::{CollisionClass, LogicalCell};
 use crate::map::floor::{BundleDoors, Cell, CellBlocker, Ground, resolve_landing, table_of};
 use crate::map::overlay::TilePos;
 use crate::movement::CardinalStep;
-use oteryn_protocol_oteryn::world_object::UseDisposition;
+use oteryn_protocol_oteryn::world_object::{
+    COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result, encode_use_intent,
+};
 use oteryn_protocol_oteryn::world_spatial::{
     StepDirection, StepDisposition, decode_step_result_profile, encode_step_intent,
 };
@@ -86,40 +89,59 @@ pub(super) async fn roof_to_door(
         cell(super::city_start())
     );
 
-    // Walk onto Iriana's north-facing stair (Crystal items.xml:14781-14783).
-    walk_to(owner, admitted, (32845, 31300, 7), deadline).await?;
-    step_to(
-        owner,
-        admitted,
-        StepDirection::East,
-        (32846, 31299, 6),
-        deadline,
-    )
-    .await?;
+    let session = *admitted;
+    let owner = &*owner;
+    drive(owner, admitted, async |peer| {
+        let walk =
+            async |peer: &mut Peer, stop| walk_path(owner, &session, peer, stop, deadline).await;
+        // Walk onto Iriana's north-facing stair (Crystal items.xml:14781-14783).
+        walk(peer, (32845, 31300, 7)).await?;
+        framed_step(
+            owner,
+            &session,
+            peer,
+            StepDirection::East,
+            (32846, 31299, 6),
+            deadline,
+        )
+        .await?;
+        for stop in [
+            (32837, 31315, 6),
+            BRIDGE_WEST_SOUTH,
+            BRIDGE_SOUTH_EAST,
+            (32834, 31331, 6),
+        ] {
+            walk(peer, stop).await?;
+        }
 
-    walk_to(owner, admitted, (32837, 31315, 6), deadline).await?;
-    walk_to(owner, admitted, BRIDGE_WEST_SOUTH, deadline).await?;
-    walk_to(owner, admitted, BRIDGE_SOUTH_EAST, deadline).await?;
-    // The west ladder is disconnected on the pinned map. Use its reachable east ladder.
-    walk_to(owner, admitted, (32834, 31331, 6), deadline).await?;
-    assert_eq!(
-        use_placement(owner, admitted, LADDER_UP, deadline).await?,
-        UseDisposition::Committed
-    );
-    assert_eq!(actor_cell(owner, admitted).await?, (32833, 31332, 5));
-    for bridge in UPPER_BRIDGES.into_iter().chain([LAST_BRIDGE]) {
-        walk_to(owner, admitted, bridge, deadline).await?;
-    }
-    walk_to(owner, admitted, (32856, 31362, 5), deadline).await?;
-    step_to(
-        owner,
-        admitted,
-        StepDirection::South,
-        (32856, 31363, 6),
-        deadline,
-    )
-    .await?;
-    walk_to(owner, admitted, DOOR_APPROACH, deadline).await
+        // The west ladder is disconnected on the pinned map. Use its reachable east ladder.
+        let ladder = encode_use_intent(&target(owner, LADDER_UP)?).map_err(debug)?;
+        let reply = timeout_at(
+            command_deadline(deadline),
+            peer.send(peer.next, COMMAND_TYPE_USE_INTENT, &ladder),
+        )
+        .await??;
+        assert_eq!(
+            decode_use_result(&reply).map_err(debug)?,
+            UseDisposition::Committed
+        );
+        assert_eq!(actor_cell(owner, &session).await?, (32833, 31332, 5));
+        for bridge in UPPER_BRIDGES.into_iter().chain([LAST_BRIDGE]) {
+            walk(peer, bridge).await?;
+        }
+        walk(peer, (32856, 31362, 5)).await?;
+        framed_step(
+            owner,
+            &session,
+            peer,
+            StepDirection::South,
+            (32856, 31363, 6),
+            deadline,
+        )
+        .await?;
+        walk(peer, DOOR_APPROACH).await
+    })
+    .await
 }
 
 pub(super) async fn use_jimmy_door(
@@ -426,6 +448,21 @@ async fn walk_to(
     stop: Cell,
     deadline: Instant,
 ) -> TestResult {
+    let session = *admitted;
+    let owner = &*owner;
+    drive(owner, admitted, async |peer| {
+        walk_path(owner, &session, peer, stop, deadline).await
+    })
+    .await
+}
+
+async fn walk_path(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    peer: &mut Peer,
+    stop: Cell,
+    deadline: Instant,
+) -> TestResult {
     let start = timeout_at(command_deadline(deadline), actor_cell(owner, admitted))
         .await
         .map_err(|_| format!("STEP_INTENT approach to {stop:?} timed out"))??;
@@ -507,7 +544,50 @@ async fn walk_to(
         cursor = parent;
     }
     for (expected, direction) in path.into_iter().rev() {
-        step_to(owner, admitted, direction, expected, deadline).await?;
+        framed_step(owner, admitted, peer, direction, expected, deadline).await?;
     }
+    Ok(())
+}
+
+async fn framed_step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    peer: &mut Peer,
+    direction: StepDirection,
+    expected: Cell,
+    deadline: Instant,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("city actor")?;
+    let caps = admitted.continuity.selected_capabilities;
+    let diagonal =
+        caps.contains(oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1);
+    let before = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    let command = peer.next;
+    let reply = timeout_at(
+        command_deadline(deadline),
+        peer.send(command, 1, &encode_step_intent(direction)),
+    )
+    .await
+    .map_err(|_| format!("STEP_INTENT {command} to {expected:?} timed out"))??;
+    let result = decode_step_result_profile(&reply, caps.contains(13), diagonal).map_err(debug)?;
+    assert_eq!(result.disposition, StepDisposition::Moved);
+    let after = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?;
+    let position = after.position();
+    assert_eq!(
+        (position.x, position.y, i32::from(position.floor)),
+        expected,
+        "STEP {direction:?}"
+    );
+    assert_eq!(after.revision(), before.revision() + 1);
     Ok(())
 }

@@ -549,7 +549,9 @@ pub(super) async fn exercise_perfume_finish(
     let fence = owner.current_quest_fence(admitted.game_session_id).await
         .map_err(|()| "perfume fence")?.ok_or("perfume fence")?.item_fence();
     let command = |id| UseCommand { game_session_id: fence.game_session_id, command_id: id, item_fence: Some(fence) };
-    super::m44_source_lifecycle_fixtures::wait_for_world_action(owner, admitted).await?;
+    owner.clock_origin = owner.clock_origin
+        .checked_sub(crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN)
+        .ok_or("USE-WITH clock")?;
     let outcome = owner.tame_mount_impl(actor, command(77001), gas, Some(instance(17672).await?), None, true)
         .await.map_err(|()| "gas tool dispatch")?.ok_or("gas route")?;
     assert_eq!(outcome.disposition, UseDisposition::Committed);

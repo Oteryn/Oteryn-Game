@@ -695,7 +695,7 @@ async fn top_of_the_city(
     .await?;
     assert_eq!(track(h, CITY_STAGE).await?, 1);
     city_route::assert_door_watchdog(owner, admitted).await?;
-    // The route rebuilds framed snapshots throughout hundreds of movement commands.
+    // Bound the complete pursuit, including paced movement and dialogue.
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(300);
     city_route::lose_trail(owner, admitted, deadline).await?;
     assert_eq!(

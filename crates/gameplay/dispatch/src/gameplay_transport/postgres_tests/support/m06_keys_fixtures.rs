@@ -235,7 +235,6 @@ pub(super) fn scenario(source: Option<(u16, u16, i8, u16, u16)>) -> TestResult {
         let cells = map
             .movement_cells(pin.qualified_room().movement_cells())
             .map_err(debug)?;
-        let frame_binding = map.frame_binding_digest(deps.admitted.world_id);
         let frame = map.frame_binding_digest(deps.admitted.world_id);
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,

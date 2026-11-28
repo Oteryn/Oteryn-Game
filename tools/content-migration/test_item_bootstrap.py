@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Exercise the shared Item writer without native, Prey, or World generation."""
 
 import importlib.util
@@ -287,6 +288,10 @@ class ItemBootstrapTests(unittest.TestCase):
                 [row["definition"]["identity"] for row in rows], expected_identities
             )
             self.assertTrue(rows[0]["definition"]["materializable"])
+            for row in rows[3:-3]:
+                self.assertTrue(
+                    row["definition"]["materializable"], row["definition"]["identity"]
+                )
             self.assertTrue(rows[-1]["definition"]["materializable"])
             for row, appearance in zip(rows[-3:-1], galthen.APPEARANCES, strict=True):
                 self.assertEqual(

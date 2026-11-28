@@ -1892,11 +1892,8 @@ fn scenario_case(
                 4
             } else if too_hot_research {
                 3
-            } else if name == "classic-quests-npc" {
+            } else if name == "classic-quests-npc" || twenty_miles {
                 6
-
-            } else if twenty_miles {
-                6 // One player, three quest contacts, and two event contacts.
             } else if classic_npc || qd_world {
                 5
             } else if monk {

@@ -33,7 +33,7 @@ async fn assert_qa_lantern_uses(
     pool: &sqlx::PgPool,
     mut admitted: super::AdmittedSession,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
-    item: [u8; 16],
+    mut item: [u8; 16],
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_object::{UseIntent, UseTarget, encode_item_use_intent};
 
@@ -88,14 +88,30 @@ async fn assert_qa_lantern_uses(
         )
         .await?;
         assert_eq!(disposition, UseDisposition::Committed, "{from} -> {to}");
-        let current: (String, i64) = sqlx::query_as(
-            "SELECT definition_production_key, quantity::bigint FROM game_item_instances \
-             WHERE item_instance_id=encode($1,'hex')::uuid",
+        // A carried lantern USE consumes the selected instance and mints its successor.
+        let rows: Vec<(Vec<u8>, String, i64)> = sqlx::query_as(
+            "SELECT uuid_send(i.item_instance_id), i.definition_production_key, i.quantity
+             FROM game_item_consume_transform_records r
+             JOIN game_item_instances source ON source.item_instance_id = r.source_item_instance_id
+             JOIN game_item_instances i ON i.minted_transaction_id = r.transaction_id
+             JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id
+             WHERE r.source_item_instance_id = encode($1,'hex')::uuid
+               AND r.game_session_id = encode($2,'hex')::uuid AND r.command_id = $3::text::numeric
+               AND source.definition_production_key = $4 AND source.quantity = 0 AND source.lifecycle = 2
+               AND i.lifecycle = 1 AND e.character_id = r.character_id
+               AND e.parent_item_instance_id = r.parent_item_instance_id",
         )
         .bind(item.as_slice())
-        .fetch_one(pool)
+        .bind(admitted.game_session_id.as_bytes().as_slice())
+        .bind(admitted.continuity.next_command_id.to_string())
+        .bind(from)
+        .fetch_all(pool)
         .await?;
-        assert_eq!(current, (to.into(), 1), "minted lantern {from} -> {to}");
+        let [(successor, key, count)] = rows.as_slice() else {
+            return Err("expected one carried successor of the exact lantern USE".into());
+        };
+        assert_eq!((key.as_str(), *count), (to, 1), "minted lantern {from} -> {to}");
+        item = successor.as_slice().try_into()?;
         admitted = next;
     }
     Ok(())
@@ -421,7 +437,10 @@ fn scenario_case(
             (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
         };
         let pinned_source = pinned_completion_chest || committed || classic_region.is_some();
-        let world = if committed && classic_region.is_none() {
+        let corrected_reward = committed && matches!(unique, 6196 | 6202 | 6310);
+        let world = if corrected_reward {
+            super::qc_pinned_world::world_near(native, &[(chest.0, chest.1)])?
+        } else if committed && classic_region.is_none() {
             use oteryn_gameplay_quests::quest::world_callbacks::Position;
             let floor = chest.2;
             super::qc_pinned_world::crop(
@@ -479,6 +498,20 @@ fn scenario_case(
                 }
             };
             source_world(chest, unique, appearance, 0)?
+        };
+        let start = if corrected_reward && unique == 6196 {
+            // The loose book blocks boot on this approach, but its ground is walkable.
+            assert!(world.base().tile(start.0, start.1, chest.2).is_some_and(|tile| tile.walkable()));
+            start
+        } else if corrected_reward {
+            // Boot uses the published entry. Stage USE at an enterable neighbor.
+            let at = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, 1), (1, 1), (-1, -1), (1, -1)]
+                .into_iter().map(|(dx, dy)| crate::map::overlay::TilePos {
+                    x: chest.0.saturating_add_signed(dx), y: chest.1.saturating_add_signed(dy), floor: chest.2,
+                }).find(|at| world.enterable(*at)).ok_or("no enterable chest approach")?;
+            (at.x, at.y)
+        } else {
+            start
         };
         let mut authored_shard = None;
         let report = if production_forgemaster {
@@ -672,7 +705,21 @@ fn scenario_case(
                     .base()
                     .tile(x, chest.1, chest.2)
                     .ok_or("live chest tile")?;
-                super::qc_pinned_world::ordinal(tile, source.appearance, Some(unique))?
+                if committed && unique == 6310 {
+                    // This source UID binds through the shipped alias on a wholly untagged tile.
+                    let ordinal = super::qc_pinned_world::ordinal(tile, source.appearance, None)?;
+                    assert!(tile.unique(ordinal).is_none());
+                    let bound = report.served.iter().find(|row| row.key.as_str() == claim)
+                        .and_then(|row| row.placements.iter().find(|p| (p.cell.x, p.cell.y, p.cell.floor) == chest))
+                        .ok_or("Ghostsilver source alias")?;
+                    assert_eq!(
+                        oteryn_world_bundle::bundle::placement_key(chest.2, x, chest.1, ordinal),
+                        Some(bound.bundle_placement_key),
+                    );
+                    ordinal
+                } else {
+                    super::qc_pinned_world::ordinal(tile, source.appearance, Some(unique))?
+                }
             } else if production_forgemaster {
                 2
             } else {
