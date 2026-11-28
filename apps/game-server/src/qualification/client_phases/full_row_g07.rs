@@ -85,36 +85,38 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn prepare_chair(clients: &SeamClients<'_>) -> TestResult<[u8; 16]> {
-    let position: Vec<_> = CHAIR_TILE.into_iter().flat_map(i32::to_be_bytes).collect();
+async fn prepare_chair(
+    client: &DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<[u8; 16]> {
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "house-g07-chair".into(),
+    )
+    .await?;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let key: Vec<u8> = sqlx::query_scalar(
-        "WITH item AS (
-            INSERT INTO game_item_instances
-                (item_instance_id,world_id,definition_family,definition_production_key,
-                 definition_revision_ref,quantity,lifecycle,minted_transaction_id)
-            VALUES (game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',$2,
-                    'definition-r1',1,1,game_character_uuid_v7())
-            RETURNING item_instance_id,world_id
-        ), placed AS (
-            INSERT INTO game_item_house_interior_locations
-                (item_instance_id,world_id,house_key,spatial_position,stack_ordinal,placed_transaction_id)
-            SELECT item_instance_id,world_id,$3,$4,1,game_character_uuid_v7() FROM item
-            RETURNING item_instance_id,world_id,house_key,placed_transaction_id
-        )
-        INSERT INTO game_item_house_reclaim_provenance
-            (item_instance_id,world_id,house_key,reclaim_subject_character_id,
-             placement_transaction_id,provenance_revision)
-        SELECT item_instance_id,world_id,house_key,encode($5,'hex')::uuid,placed_transaction_id,1
-        FROM placed RETURNING uuid_send(item_instance_id)",
+    let keys: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(i.item_instance_id)
+         FROM game_item_instances i JOIN game_item_house_interior_locations h
+             USING (item_instance_id,world_id)
+         WHERE i.world_id=encode($1,'hex')::uuid AND h.house_key=$2 AND h.spatial_position=$3
+           AND i.definition_production_key=$4 AND i.quantity=1 AND i.lifecycle=1 LIMIT 2",
     )
     .bind(clients.world.as_slice())
-    .bind(CHAIR_BEFORE)
     .bind(full_row_g01::HOUSE)
-    .bind(position)
-    .bind(clients.characters[0].as_slice())
-    .fetch_one(&mut database)
+    .bind(
+        CHAIR_TILE
+            .into_iter()
+            .flat_map(i32::to_be_bytes)
+            .collect::<Vec<_>>(),
+    )
+    .bind(CHAIR_BEFORE)
+    .fetch_all(&mut database)
     .await?;
+    let [key] = keys.as_slice() else {
+        return Err("G07 fixture expected exactly one chair at its authored tile".into());
+    };
     evidence("G07_CHECK step=fixture-input item=2358 tile=32359,32253,7");
     Ok(key.as_slice().try_into()?)
 }
@@ -263,7 +265,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let clients = &dedicated.clients(clients);
     let mut client = full_row_g01::prepare_owned_house_live(clients, 0xc9).await?;
     assign_fixture_scope(clients).await?;
-    let key = prepare_chair(clients).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1)
@@ -275,7 +276,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    character_prep::grant_item(&client, character_prep::item_id(CHAIR_BEFORE)?, 1).await?;
     enter_house(&mut client, clients).await?;
+    let key = prepare_chair(&client, clients).await?;
     let before = first_entry_with(&mut client, &key).await?;
     if chair_definition(clients, &key).await? != CHAIR_BEFORE {
         return Err("step=before-rotate observed=wrong-chair-orientation".into());
