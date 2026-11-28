@@ -3,6 +3,16 @@ use super::*;
 use crate::durability::character_revision_sequencer::RevisionSlot;
 use crate::map::facts::QuestCallbackProjection;
 
+fn nest_creature(draw: u8) -> Option<&'static str> {
+    match draw {
+        61..=70 => Some("oteryn:creature.spider"),
+        71..=80 => Some("oteryn:creature.larva"),
+        81..=90 => Some("oteryn:creature.scarab"),
+        91..=100 => Some("oteryn:creature.tarantula"),
+        _ => None,
+    }
+}
+
 fn shared_projection_target(
     projection: Option<&QuestCallbackProjection>,
     source: u64,
@@ -209,6 +219,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !ingress_settled
                 && !states.get(runtime, actor, session).is_some_and(|state| {
                     state.owned_conditions().outfit_at(self.owner_now().get()) == Some(307)
+                }))
+            || (callback
+                .key
+                .starts_with("oteryn:quest-callback/spike/transform-")
+                && !states.get(runtime, actor, session).is_some_and(|state| {
+                    state
+                        .owned_conditions()
+                        .outfit_at(self.owner_now().get())
+                        .is_none()
                 }))
             || (callback.requires_live_drunk()
                 && !states.get(runtime, actor, session).is_some_and(|state| {
@@ -2258,6 +2277,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, snapshot.position()),
             );
         }
+        if fresh_effects
+            && callback
+                .key
+                .starts_with("oteryn:quest-callback/spike/nest-")
+            && let QuestCause::Use(command) = cause
+        {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            use std::hash::{BuildHasher, RandomState};
+            static DRAW: OnceLock<RandomState> = OnceLock::new();
+            let draw =
+                1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100) as u8;
+            if let Some(creature) = nest_creature(draw)
+                && let Some(native) = self.active_generation.and_then(|g| g.native_gameplay())
+                && native.install_companion_policies(runtime).is_ok()
+                && let Ok(policy) = runtime.companion_policy(creature)
+            {
+                let monster = (creature, policy.maximum_health, expected.position());
+                let _ = runtime.commit_quest_creature_spawn(&[monster]);
+            }
+        }
         if callback.effects.loot_merchant {
             map.facts.emit_movement_effect(pos, 46);
         }
@@ -2325,6 +2364,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nest_draws_match_the_four_equiprobable_source_spawns() {
+        assert_eq!(nest_creature(60), None);
+        for (draw, species) in [
+            (61, "spider"),
+            (71, "larva"),
+            (81, "scarab"),
+            (91, "tarantula"),
+        ] {
+            assert_eq!(
+                nest_creature(draw),
+                Some(format!("oteryn:creature.{species}").as_str())
+            );
+        }
+    }
 
     #[test]
     fn timed_removal_reserves_source_and_resets_at_publication() {

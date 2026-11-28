@@ -53,6 +53,11 @@ pub(super) fn world(
                     counted_entry: None,
                 }],
             },
+            NativeCrop {
+                bytes: include_bytes!("../../../../../../../content/world/placements/region-z07-x129-y127.b3"),
+                region: (7, 129, 127), bounds: (33055, 32675, 33057, 32678), start: (33056, 32676),
+                expected: vec![ExpectedTile { position: (33055, 32676), ids: vec![103], counted_entry: None }],
+            },
         ],
         &[],
         &[],
@@ -118,6 +123,7 @@ pub(super) async fn exercise(
         (49, 9, 3, UseDisposition::Rejected),
         (50, 9, 4, UseDisposition::Committed),
     ] {
+        if count == 49 {
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
             h,
             owner,
@@ -129,6 +135,18 @@ pub(super) async fn exercise(
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
+        } else {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            let native = owner.active_generation.and_then(|g| g.native_gameplay()).ok_or("native content")?;
+            native.install_companion_policies(&mut *owner.runtime.lock().await).map_err(super::fixture::debug)?;
+            let at = crate::map::overlay::TilePos { x: 33056, y: 32676, floor: -7 };
+            super::questpc8_mystery_geometry_fixtures::arrive(owner, admitted, at).await?;
+            let spawn = crate::foundation::MovementLocalPosition { x: 33055, y: 32676, floor: 7 };
+            super::qengine_kill_stories_fixtures::queue_death_at(owner, admitted, "oteryn:creature.dragon_lord", 24001, None, Some(spawn)).await?;
+            super::qengine_kill_stories_fixtures::drain_deaths(owner, admitted, &[]).await?;
+            assert_eq!(progress(owner, admitted, authority, kills).await?, 50);
+            super::questpc8_mystery_geometry_fixtures::arrive(owner, admitted, crate::map::overlay::TilePos { x: 33014, ..hoard }).await?;
+        }
         assert_eq!(
             super::questpc8_authored_programmes_fixtures::use_target(
                 owner,

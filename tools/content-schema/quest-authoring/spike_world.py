@@ -19,7 +19,7 @@ def dialogue(add, storage, callbacks, offers, declare, elapsed, stamp, fame):
     phase, clock, transformed = (
         BASE + part for part in ("progress", "reported_at", "transformed_at")
     )
-    declare(phase, 9, SOURCE)
+    declare(phase, 6, SOURCE)
     declare(clock, 9_223_372_036_854_775_807, SOURCE)
     declare(transformed, 9_223_372_036_854_775_807, SOURCE)
     offers.append(
@@ -54,7 +54,7 @@ def dialogue(add, storage, callbacks, offers, declare, elapsed, stamp, fame):
         "gnombold",
         ["nests"],
         [
-            storage(phase, 9, 0),
+            storage(phase, 6, 0),
             storage(transformed, 0, 0, maximum=9_223_372_036_854_775_807),
         ],
         topic=1,
@@ -219,7 +219,7 @@ def world(root):
                                 "requires_world_admission": True,
                                 "reversible": False,
                                 "passages": [],
-                                "return_on_failure": False,
+                                "return_on_failure": pad,
                                 "offerings": [],
                                 "sources": [
                                     SOURCE,
@@ -235,7 +235,7 @@ def world(root):
                                     {
                                         "track": phase,
                                         "minimum": 1,
-                                        "maximum": 8,
+                                        "maximum": 5,
                                         "set": 1,
                                         ("preserve" if pad else "increment"): True,
                                     }
@@ -260,7 +260,10 @@ def world(root):
                             else:
                                 row.update(
                                     lever=[19209, 19210],
-                                    effects={"reset_after_ms": 120000},
+                                    effects={
+                                        "reset_after_ms": 120000,
+                                        "magic": {"position": pos, "effect": 17},
+                                    },
                                     success_message="You have destroyed a monster nest.",
                                 )
                             callbacks.append(row)

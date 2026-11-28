@@ -112,6 +112,8 @@ pub(super) struct PendingCallbacks {
     personal: personal_encounter::Cohorts,
     scene_item_receipts: scene_items::SceneItemReceipts,
     #[cfg(test)]
+    pub(super) mound_draw: std::sync::atomic::AtomicU8,
+    #[cfg(test)]
     pub(super) delay_scene_commit_ack: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) lose_coffin_delivery_ack: std::sync::atomic::AtomicBool,
@@ -1467,6 +1469,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command.command_id,
                     resolved.placement_key,
                 )) % 100) as u8;
+            #[cfg(test)]
+            let sample = match self
+                .states
+                .quest_callbacks
+                .mound_draw
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                0 => sample,
+                forced => forced,
+            };
             selected.retain(|c| {
                 world_callbacks::spike_mound::chances(c)
                     .is_some_and(|range| range.contains(&sample))

@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/qc-obsidian-draconian-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3416",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5889",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Obsidian_Knife_Quest/Spoiler&oldid=880658",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L141-L149"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/qc/friends/draconian-steel-uses",
+        "maximum": 1000000000000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/qc-friends-hell-steel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3356",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5888",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L152-L166"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/qc/friends/hell-steel-uses",
+        "maximum": 1000000000000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/qc-friends-crude-iron",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3281",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i5892",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L170-L184"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/qc/friends/crude-iron-uses",
+        "maximum": 1000000000000
+      }
+    }
+  ]
+}

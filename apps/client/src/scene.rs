@@ -259,25 +259,33 @@ impl Scene {
         let Some(picked) = pick_target(tile, &self.visible) else {
             return Ok(None);
         };
-        // Repeated selections walk the server-projected item stack in draw order.
-        let picked = if picked.kind == TargetKind::Object {
-            let mut stack = self
-                .visible
-                .iter()
-                .rev()
-                .filter(|entry| entry.tile == tile && entry.item.is_some());
-            self.target
-                .and_then(|selected| {
-                    stack.find(|entry| **entry == selected)?;
-                    stack.next().copied()
-                })
-                .unwrap_or(picked)
-        } else {
-            picked
-        };
+        if picked.kind == TargetKind::Object && picked.item.is_some() {
+            self.cycle_stack(tile)?;
+            return Ok(self.target);
+        }
         self.target = Some(picked);
         self.rebuild_sprites()?;
         Ok(Some(picked))
+    }
+
+    /// Select the next observed item even when an actor occupies the same cell.
+    pub(crate) fn cycle_stack(&mut self, tile: TileCoord) -> Result<(), BatchError> {
+        let mut stack = self
+            .visible
+            .iter()
+            .rev()
+            .filter(|entry| entry.tile == tile && entry.item.is_some());
+        let Some(top) = stack.clone().next().copied() else {
+            return Ok(());
+        };
+        let next = match self.target {
+            Some(current) => stack
+                .find(|entry| **entry == current)
+                .and_then(|_| stack.next().copied()),
+            None => None,
+        };
+        self.target = Some(next.unwrap_or(top));
+        self.rebuild_sprites()
     }
 
     /// Keeps a selection only while that exact visible identity still exists.

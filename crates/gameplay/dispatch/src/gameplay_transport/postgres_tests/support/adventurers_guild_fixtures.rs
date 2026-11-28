@@ -11,6 +11,7 @@ use std::sync::Arc;
 #[derive(Clone, Copy)]
 pub(super) enum Quest {
     GreatDragonHunt,
+    Spike,
     LostBrother,
 }
 
@@ -44,6 +45,10 @@ async fn exercise(h: &Harness, quest: Quest) -> TestResult {
         Quest::GreatDragonHunt => (
             super::great_dragon_hunt_fixtures::world(native)?,
             super::great_dragon_hunt_fixtures::START,
+        ),
+        Quest::Spike => (
+            super::spike::world(native)?,
+            super::spike::START,
         ),
         Quest::LostBrother => (
             native_crop(
@@ -199,6 +204,7 @@ async fn exercise(h: &Harness, quest: Quest) -> TestResult {
         Quest::GreatDragonHunt => {
             super::great_dragon_hunt_fixtures::exercise(&mut owner, &admitted, h, &authority).await
         }
+        Quest::Spike => super::spike::exercise(&mut owner, &mut admitted, h, &authority).await,
         Quest::LostBrother => {
             super::lost_brother_fixtures::exercise(&mut owner, &admitted, h, &authority).await
         }

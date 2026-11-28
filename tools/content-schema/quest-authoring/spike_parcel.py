@@ -24,8 +24,8 @@ def append(root, add, storage, callbacks, offers, declare, elapsed, stamp, fame_
                 and 13 <= cell["floor"] <= 15
             ):
                 sites.append((cell["x"], cell["y"], cell["floor"]))
-    if len(set(sites)) < 4 or len(sites) != len(set(sites)):
-        raise ValueError("Lower Spike needs four distinct parcel outposts")
+    if len(set(sites)) != 5 or len(sites) != len(set(sites)):
+        raise ValueError("Lower Spike needs five distinct parcel outposts")
     receipts = []
     for x, y, floor in sorted(sites):
         track = base + f"{x}-{y}-{floor}"

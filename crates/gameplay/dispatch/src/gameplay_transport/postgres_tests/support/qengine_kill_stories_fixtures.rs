@@ -54,6 +54,19 @@ pub(super) async fn queue_death_with_departure(
         crate::durability::character_progression::CurrentCharacterGameplayFence,
     >,
 ) -> TestResult<crate::foundation::ExactActorRef> {
+    queue_death_at(owner, admitted, creature, command, departed_top_damager, None).await
+}
+
+pub(super) async fn queue_death_at(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    creature: &str,
+    command: u64,
+    departed_top_damager: Option<
+        crate::durability::character_progression::CurrentCharacterGameplayFence,
+    >,
+    position: Option<crate::foundation::MovementLocalPosition>,
+) -> TestResult<crate::foundation::ExactActorRef> {
     use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
     use crate::gameplay_transport::kill_reward::KillSink;
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -78,7 +91,7 @@ pub(super) async fn queue_death_with_departure(
             .admit_encounter_actor(
                 creature,
                 policy.maximum_health,
-                MovementLocalPosition { x: at.x + 1, ..at },
+                position.unwrap_or(MovementLocalPosition { x: at.x + 1, ..at }),
             )
             .map_err(debug)?;
         runtime

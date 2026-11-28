@@ -73,6 +73,12 @@ impl MouseActions {
                 ));
             }
         }
+        bindings.push(Binding::new(
+            gameplay.clone(),
+            InputChord::new(Modifiers::one(oteryn_input_actions::Modifier::Super), vec![InputAtom::Mouse(MouseButton::PRIMARY)])?,
+            ActionId::new("client.cycle_stack".to_owned())?,
+            RepeatPolicy::Ignore,
+        ));
         let map = BindingMap::new(
             vec![
                 ContextDefinition::new(gameplay.clone(), ContextKind::Gameplay, 0),
@@ -153,6 +159,7 @@ impl MouseActions {
                     action.action().as_str(),
                     CLICK_ACTION
                         | ATTACK_TOGGLE_ACTION
+                        | "client.cycle_stack"
                         | "client.context"
                         | "client.look"
                         | "client.use"
@@ -161,6 +168,7 @@ impl MouseActions {
                     && let Some((x, y)) = self.pointer
                 {
                     let shortcut = match action.action().as_str() {
+                        "client.cycle_stack" => Some(oteryn_input_actions::Modifier::Super),
                         "client.look" => Some(oteryn_input_actions::Modifier::Shift),
                         "client.use" => Some(oteryn_input_actions::Modifier::Control),
                         ATTACK_TOGGLE_ACTION => Some(oteryn_input_actions::Modifier::Alt),

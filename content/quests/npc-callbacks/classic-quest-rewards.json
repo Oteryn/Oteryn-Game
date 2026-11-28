@@ -83,7 +83,7 @@
       "quest": "oteryn:quest.spike_task",
       "initial": 0,
       "min": 0,
-      "max": 9,
+      "max": 6,
       "writable": true,
       "sources": [
         "https://www.tibiawiki.com.br/wiki/Spike_Tasks"
@@ -208,6 +208,17 @@
       "writable": true,
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomargery.lua:92-103,150-179"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/spike/lower/parcel/32157-32521-15",
+      "quest": "oteryn:quest.spike_task",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
       ]
     },
     {
@@ -859,8 +870,8 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
-          "minimum": 9,
-          "maximum": 9,
+          "minimum": 6,
+          "maximum": 6,
           "set": 0
         },
         {
@@ -904,6 +915,65 @@
           }
         }
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/l12-spike-parcel-32157-32521-15",
+      "quest": "oteryn:quest.spike_task",
+      "npc": "oteryn:npc.gnome_trooper",
+      "keywords": [
+        "something"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32157-32521-15",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i19219",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the parcel from the Spike!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnome_trooper.lua:65-108"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "from": {
+            "kind": "between",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ],
+      "npc_area": {
+        "minimum": {
+          "x": 32152,
+          "y": 32516,
+          "floor": -15
+        },
+        "maximum": {
+          "x": 32162,
+          "y": 32526,
+          "floor": -15
+        }
+      }
     },
     {
       "key": "oteryn:quest-reward/l12-spike-parcel-32171-32644-13",
@@ -1203,6 +1273,12 @@
           "track": "oteryn:quest-progress/spike/lower/parcel/progress",
           "minimum": 5,
           "maximum": 5,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/32157-32521-15",
+          "minimum": 0,
+          "maximum": 1,
           "set": 0
         },
         {
