@@ -27,6 +27,7 @@ pub enum LogoutReply {
 #[cfg(test)]
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum ReleaseRetryStage {
+    Conditions,
     ConditionsHolder,
 }
 
@@ -377,7 +378,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break step;
             };
             #[cfg(test)]
-            if stage == "conditions_holder" {
+            if matches!(stage, "conditions" | "conditions_holder") {
                 let _ = LOGOUT_RELEASE_PROBE.try_with(|probe| {
                     probe
                         .retry_count
