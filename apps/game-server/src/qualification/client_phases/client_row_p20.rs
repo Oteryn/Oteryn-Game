@@ -62,11 +62,11 @@ pub(super) async fn talk(
     Ok((payload, lines))
 }
 
-async fn capture_talk(
+async fn talk_command(
     client: &mut DevClientSession,
     npc: EntityRef,
     text: &str,
-) -> TestResult<(Vec<u8>, Vec<String>, u64)> {
+) -> TestResult<(CommandStatus, wire::NpcIntentDisposition, u64)> {
     tokio::time::sleep(Duration::from_millis(260)).await;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: npc,
@@ -83,15 +83,36 @@ async fn capture_talk(
         .await?;
     let disposition = wire::decode_npc_intent_result(&reply.payload)
         .map_err(|error| format!("{text} reply decode: {error:?}"))?;
-    if disposition != wire::NpcIntentDisposition::Ok {
-        return Err(format!("talk {text:?} refused: {disposition:?}").into());
+    Ok((reply.status, disposition, reply.server_sequence))
+}
+
+fn expect_talk_result(
+    text: &str,
+    status: CommandStatus,
+    disposition: wire::NpcIntentDisposition,
+    expected: wire::NpcIntentDisposition,
+) -> TestResult<()> {
+    if status != CommandStatus::Accepted || disposition != expected {
+        return Err(format!(
+            "talk {text:?} observed={status:?}/{disposition:?} expected=Accepted/{expected:?}"
+        ).into());
     }
+    Ok(())
+}
+
+async fn capture_talk(
+    client: &mut DevClientSession,
+    npc: EntityRef,
+    text: &str,
+) -> TestResult<(Vec<u8>, Vec<String>, u64)> {
+    let (status, disposition, reply_sequence) = talk_command(client, npc, text).await?;
+    expect_talk_result(text, status, disposition, wire::NpcIntentDisposition::Ok)?;
     loop {
         let delta = client
             .session_mut()
             .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
             .await?;
-        if delta.server_sequence <= reply.server_sequence {
+        if delta.server_sequence <= reply_sequence {
             continue;
         }
         let conversation = wire::decode_npc_conversation(&delta.payload)
@@ -261,6 +282,32 @@ async fn approach_king(
         .ok_or_else(|| "King Tibianus not visible after walking up the castle stairs".into())
 }
 
+fn expect_royal_greeting(lines: &[String]) -> TestResult<()> {
+    if lines != ["I greet thee, my loyal subject."] {
+        return Err(format!("Hail King! greeting observed={lines:?}").into());
+    }
+    Ok(())
+}
+
+fn expect_unpromoted(stage: &str, purchase: Option<String>) -> TestResult<()> {
+    if let Some(occurrence) = purchase {
+        return Err(format!("P20 {stage} found durable promotion occurrence={occurrence}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn p20_rejects_audit_false_positives() {
+    use wire::NpcIntentDisposition::{NoConversation, Ok};
+    assert!(expect_talk_result("hi", CommandStatus::Accepted, Ok, NoConversation).is_err());
+    assert!(expect_talk_result("Hail King!", CommandStatus::Rejected, Ok, Ok).is_err());
+    assert!(expect_talk_result("Hail King!", CommandStatus::Accepted, Ok, Ok).is_ok());
+    assert!(expect_royal_greeting(&["Greetings, Packet One.".into()]).is_err());
+    assert!(expect_royal_greeting(&["I greet thee, my loyal subject.".into()]).is_ok());
+    assert!(expect_unpromoted("after relog", Some("illicit-occurrence".into())).is_err());
+    assert!(expect_unpromoted("after relog", None).is_ok());
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
     let capture_dir = Path::new(&capture_dir);
@@ -275,10 +322,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let mut client = connect_character(clients, 0x52, 0).await?;
     let npc = approach_king(&mut client, world, &metadata.npcs).await?;
-    let (greeting_bytes, greeting, greeting_sequence) = capture_talk(&mut client, npc, "hi").await?;
-    if greeting.is_empty() {
-        return Err("hi produced an empty conversation".into());
-    }
+    let (status, disposition, _) = talk_command(&mut client, npc, "hi").await?;
+    expect_talk_result("hi", status, disposition, wire::NpcIntentDisposition::NoConversation)?;
+    let (greeting_bytes, greeting, greeting_sequence) =
+        capture_talk(&mut client, npc, "Hail King!").await?;
+    expect_royal_greeting(&greeting)?;
     let (quote_bytes, quote, quote_sequence) = capture_talk(&mut client, npc, "promotion").await?;
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("promotion quote observed={quote:?}").into());
@@ -288,6 +336,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let vocation = super::full_row_p20::vocation(&mut client).await?;
     let session = client.join_snapshot().game_session_id;
     let position = client.world_spatial().actor_position;
+    let character = &clients.characters[0];
+    expect_unpromoted("before confirmation", super::full_row_p20::promotion_record(clients.url, character).await?)?;
     let (confirm_bytes, confirm, confirm_sequence) = capture_talk(&mut client, npc, "yes").await?;
     if confirm != ["You need current Premium for this service."] {
         return Err(format!("promotion confirmation observed={confirm:?}").into());
@@ -323,6 +373,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("P20 relog did not retain refused character state at the saved position".into());
     }
+    expect_unpromoted("after relog", super::full_row_p20::promotion_record(clients.url, character).await?)?;
     let logout = fresh.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("P20 relog logout refused: {logout:?}").into());

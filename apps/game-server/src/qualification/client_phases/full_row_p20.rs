@@ -107,11 +107,15 @@ pub(super) async fn vocation(client: &mut DevClientSession) -> TestResult<String
 }
 
 async fn promotion(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
+    promotion_record(clients.url, &clients.characters[1]).await
+}
+
+pub(super) async fn promotion_record(url: &str, character: &[u8; 16]) -> TestResult<Option<String>> {
     use sqlx::Connection as _;
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let mut db = sqlx::PgConnection::connect(url).await?;
     let purchase = sqlx::query_scalar(
         "SELECT purchase_occurrence_id::text FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
-    ).bind(clients.characters[1].as_slice()).fetch_optional(&mut db).await?;
+    ).bind(character.as_slice()).fetch_optional(&mut db).await?;
     db.close().await?;
     Ok(purchase)
 }

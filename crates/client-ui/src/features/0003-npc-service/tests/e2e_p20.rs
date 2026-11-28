@@ -63,7 +63,7 @@ fn p20_dialogue_replay() -> Result<(), Error> {
         ..DialoguePanel::default()
     };
     for (text, bytes, key) in [
-        ("hi", &replay.greeting, "greeting"),
+        ("Hail King!", &replay.greeting, "greeting"),
         ("promotion", &replay.quote, "quote"),
         ("yes", &replay.confirm, "confirm"),
     ] {
@@ -72,6 +72,9 @@ fn p20_dialogue_replay() -> Result<(), Error> {
         assert!(panel.pending);
         panel.apply(decode(bytes)?);
         let lines: Vec<&str> = value(&replay.expected, key)?.split('|').collect();
+        if key == "greeting" {
+            assert_eq!(lines, ["I greet thee, my loyal subject."]);
+        }
         assert_eq!(panel.lines, lines);
         assert_eq!(panel.text(), lines.join("\n"));
         assert!(!panel.pending);
