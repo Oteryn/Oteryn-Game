@@ -1,5 +1,5 @@
-//! Capture the real C14 skill-display reply and spell-catalog snapshot after `full_e2ef18` has
-//! driven combat experience, skill progression, a level-up, and automatic spell learning.
+//! Drive C14 combat progression and capture skill-display and spell-catalog frames
+//! from the same admitted client session after the kills.
 
 use super::*;
 use oteryn_protocol_oteryn::{actor_spell_catalog, skill_display};
@@ -37,6 +37,7 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
 
     let mut client = connect_character(clients, 0xc1, 0).await?;
     let session = client.join_snapshot().game_session_id;
+    let (expected_level, expected_xp) = full_e2ef18::train_for_capture(clients, &mut client).await?;
     let before_sequence = client.last_server_sequence();
     let reply = client
         .session_mut()
@@ -51,6 +52,9 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
     }
     let display = skill_display::SkillDisplay::decode(&reply.payload)
         .ok_or("C14 skill-display payload was malformed")?;
+    if (display.level, display.experience) != (expected_level, expected_xp) {
+        return Err(format!("C14 skill-display progression mismatch: got level {} XP {}, expected {expected_level}/{expected_xp}", display.level, display.experience).into());
+    }
     let catalog = client
         .session_mut()
         .spell_catalog()?
@@ -85,9 +89,6 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         "C14_CLIENT_CAPTURE session={session:?} skill_sequence={} catalog_revision={} level={} experience={}",
         reply.server_sequence, catalog_snapshot.revision, display.level, display.experience,
     ));
-    if display.level == 1 && display.experience == 0 {
-        return Err("C14 live capture has no progression: level 1, experience 0".into());
-    }
     Ok(())
 }
 

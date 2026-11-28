@@ -309,9 +309,89 @@ async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+pub(super) async fn train_for_capture(
+    clients: &SeamClients<'_>,
+    client: &mut DevClientSession,
+) -> TestResult<(u32, u64)> {
+    let baseline = progress(client).await?;
+    let reached = train_on_rats(clients, client, baseline, None, "C14.client").await?;
+    Ok((reached.stats.level, reached.stats.experience))
+}
+
+async fn fixture_rat(
+    client: &mut DevClientSession,
+    scenario: &str,
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session.clone(), "oteryn:creature.rat".into()).await?;
+    let entity = parse_spawned_entity(&answer)?;
+    evidence(&format!("C14_FIXTURE scenario={scenario} session={session} species=oteryn:creature.rat response={answer}"));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        let here = client.world_spatial().actor_position;
+        if let Some(entry) = client.world_entities().and_then(|view| view.get(&entity))
+            && adjacent_rat(entry, here)
+        {
+            return Ok(*entry);
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err(format!("step=fixture-rat observed=not-adjacent target={entity:?} actor={here:?}").into());
+        }
+        client.service_liveness(remaining.min(Duration::from_millis(100))).await?;
+        client.take_events();
+    }
+}
+
+async fn train_on_rats(
+    clients: &SeamClients<'_>,
+    client: &mut DevClientSession,
+    baseline: Progress,
+    mut row: Option<&mut Row>,
+    scenario: &str,
+) -> TestResult<Progress> {
+    // Global Rat grants 5 base XP. The fresh free account has the +100%
+    // novice bonus and normal stamina. Global level 2 requires 100 XP.
+    const RAT_XP: u64 = 10;
+    const LEVEL_TWO_XP: u64 = 100;
+    if baseline.stats.level != 1 || baseline.stats.experience != 0 || baseline.stats.stamina_minutes <= 840 {
+        return Err(format!("step=exact-kill-experience expected=level-1-zero-xp-normal-stamina observed={:?}", baseline.stats).into());
+    }
     let world = qualification_world(clients)?;
     let positions = rat_spawns()?;
+    let mut target = approach_rat(client, world, &positions).await?;
+    if let Some(row) = row.as_deref_mut() {
+        row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
+    for expected in (RAT_XP..=LEVEL_TWO_XP).step_by(RAT_XP as usize) {
+        if expected > RAT_XP {
+            target = fixture_rat(client, scenario).await?;
+        }
+        kill(client, target).await?;
+        let after = progress(client).await?;
+        let level = if expected == LEVEL_TWO_XP { 2 } else { 1 };
+        if after.stats.experience != expected || after.stats.level != level {
+            return Err(format!("step=exact-kill-experience target={:?} observed={:?} expected-xp={expected} expected-level={level}", target.entity, after.stats).into());
+        }
+        evidence(&format!("C14_KILL scenario={scenario} target={:?} award={RAT_XP} total={expected} level={level}", target.entity));
+        if let Some(row) = row.as_deref_mut() {
+            row.pass("exact-kill-experience", format!("creature=oteryn:creature.rat target={:?} delta={RAT_XP}", target.entity));
+            if melee_progress(&baseline.skills, &after.skills) {
+                row.pass("melee-skill-progress", format!("before={:?} after={:?}", baseline.skills.skills, after.skills.skills));
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step=level-and-maxima observed=timeout level={level} xp={expected}").into());
+        }
+        if expected == LEVEL_TWO_XP {
+            return Ok(after);
+        }
+    }
+    Err("step=level-and-maxima observed=no-level".into())
+}
+
+async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_character(clients, 0xe2, 0).await?;
     let old_session = client.join_snapshot().game_session_id;
     let baseline = progress(&mut client).await?;
@@ -335,39 +415,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("non-attackable-refusal", format!("reply={:?}", refusal.disposition));
 
-    let mut previous = baseline;
-    // Global Rat: 5 base XP. The fresh free-account row starts at level 1
-    // with the Global +100% low-level bonus and no other XP modifiers.
-    const RAT_XP: u64 = 10;
-    if baseline.stats.level != 1 || baseline.stats.stamina_minutes <= 840 {
-        return Err(format!("step=exact-kill-experience expected=level-1-normal-stamina observed={:?}", baseline.stats).into());
-    }
-    let mut levelled = None;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
-    while levelled.is_none() {
-        let target = approach_rat(&mut client, world, &positions).await?;
-        row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
-        kill(&mut client, target).await?;
-        let after = progress(&mut client).await?;
-        let delta = after.stats.experience.checked_sub(previous.stats.experience).ok_or(
-            "step=exact-kill-experience observed=experience-regressed need=positive-delta",
-        )?;
-        if delta != RAT_XP {
-            return Err(format!("step=exact-kill-experience target={:?} observed={delta} expected={RAT_XP}", target.entity).into());
-        }
-        row.pass("exact-kill-experience", format!("creature=oteryn:creature.rat target={:?} delta={delta}", target.entity));
-        if melee_progress(&baseline.skills, &after.skills) {
-            row.pass("melee-skill-progress", format!("before={:?} after={:?}", baseline.skills.skills, after.skills.skills));
-        }
-        if after.stats.level > baseline.stats.level {
-            levelled = Some(after);
-        }
-        previous = after;
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=level-and-maxima observed=timeout level={} xp={} need=next-level", after.stats.level, after.stats.experience).into());
-        }
-    }
-    let reached = levelled.ok_or("step=level-and-maxima observed=no-level")?;
+    let reached = train_on_rats(clients, &mut client, baseline, Some(row), "C14.full").await?;
     if reached.stats.level != baseline.stats.level + 1
         || reached.vitals.max_health <= baseline.vitals.max_health
         || reached.vitals.max_mana < baseline.vitals.max_mana
