@@ -56,6 +56,9 @@ const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
 const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000025";
 
 #[cfg(feature = "qualification-spawn")]
+const N07A_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000026";
+
+#[cfg(feature = "qualification-spawn")]
 fn lane_spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "n07a-titles" => Some(("sorcerer", 50)),
