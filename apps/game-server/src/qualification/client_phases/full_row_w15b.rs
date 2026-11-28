@@ -223,6 +223,51 @@ async fn quest_receipts(
         .bind(clients.characters[1].as_slice()).bind(transition).fetch_one(database).await?)
 }
 
+use oteryn_dev_client::client_runtime::quest_log as journal;
+
+fn quest_state(client: &mut DevClientSession) -> TestResult<journal::QuestState> {
+    let selected = client.selected_capabilities().to_vec();
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(journal::STATE_DOMAIN_QUEST_LOG);
+    journal::QuestState::from_snapshot(&selected, snapshot)
+        .map_err(|error| format!("quest snapshot reducer: {error:?}").into())
+}
+
+async fn quest_list(
+    client: &mut DevClientSession,
+    state: &mut journal::QuestState,
+) -> TestResult<Vec<oteryn_protocol_oteryn::quest_log::QuestListEntry>> {
+    let command = state
+        .command(&journal::QuestLogQuery::List)
+        .map_err(|error| format!("quest list command: {error:?}"))?;
+    let result = journal::send(client.session_mut(), &command).await?;
+    state
+        .record_result(result.status, &result.payload)
+        .map_err(|error| format!("quest list result: {error:?}"))?;
+    if result.status != CommandStatus::Accepted {
+        return Err("quest journal List was refused".into());
+    }
+    let delta = client
+        .session_mut()
+        .read_gated_delta(journal::STATE_DOMAIN_QUEST_LOG, 1)
+        .await?;
+    let log = journal::decode_quest_log(&delta.payload)
+        .map_err(|error| format!("quest list codec: {error:?}"))?;
+    if !matches!(log.view, Some(journal::QuestLogView::List(_))) {
+        return Err("quest list reply did not contain a List view".into());
+    }
+    state
+        .apply(&oteryn_dev_client::AppliedDelta {
+            server_sequence: delta.server_sequence,
+            base_revision: delta.base_revision,
+            new_revision: delta.new_revision,
+            value: log,
+        })
+        .map_err(|error| format!("quest list reducer: {error:?}"))?;
+    Ok(state.list.clone())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -233,7 +278,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_at_battle_axe(clients, 0xb5, 1, "W15b.full").await?;
-    let before_quests = query_quest_journal(&mut client, false).await?;
+    let mut journal = quest_state(&mut client)?;
+    let before_quests = quest_list(&mut client, &mut journal).await?;
     let before_items = custody(&client)?;
 
     let chest = quest_chests(world)?
@@ -274,7 +320,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    let advanced = query_quest_journal(&mut client, false).await?;
+    let advanced = quest_list(&mut client, &mut journal).await?;
     let receipts_after = quest_receipts(&mut database, clients, &chest.transition).await?;
     if receipts_after != (receipts_before.0 + 1, receipts_before.1 + 1) {
         return Err(format!("step-3: exact quest receipt missing or unrelated transition committed: expected={} before={receipts_before:?} after={receipts_after:?}", chest.transition).into());
@@ -295,12 +341,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    if custody(&client)? != awarded || query_quest_journal(&mut client, false).await? != advanced {
+    if custody(&client)? != awarded || quest_list(&mut client, &mut journal).await? != advanced {
         return Err("step-4: refused duplicate changed inventory or quest state".into());
     }
 
     let mut fresh = fresh_admission(&mut client, clients).await?;
-    if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
+    let mut fresh_journal = quest_state(&mut fresh)?;
+    if custody(&fresh)? != awarded || quest_list(&mut fresh, &mut fresh_journal).await? != advanced
+    {
         return Err(
             "step-5: reward custody or quest advance did not survive fresh admission".into(),
         );
@@ -312,7 +360,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if after_relog != UseDisposition::NothingToUse {
         return Err(format!("step-5: post-relog duplicate USE reply={after_relog:?}").into());
     }
-    if custody(&fresh)? != awarded || query_quest_journal(&mut fresh, false).await? != advanced {
+    if custody(&fresh)? != awarded || quest_list(&mut fresh, &mut fresh_journal).await? != advanced
+    {
         return Err("step-5: post-relog refusal changed durable inventory or quest state".into());
     }
     if quest_receipts(&mut database, clients, &chest.transition).await? != receipts_after {
