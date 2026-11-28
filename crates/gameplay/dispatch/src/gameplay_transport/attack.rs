@@ -1128,6 +1128,26 @@ fn swing_plan(
 ) -> Option<EffectPlan> {
     let issuer = actor_atom(attacker);
     let target_atom = target_identity.to_owned();
+    let occurrence = swing_ability_occurrence(attacker, lineage, ordinal, content_digest, formula)?;
+    let proposal = AbilityIntent::resolve(
+        ProposalSource::Client,
+        &issuer,
+        &[&target_atom],
+        &[&target_atom],
+    )
+    .ok()?;
+    let effect = Effect::damage(&target_atom, magnitude).ok()?;
+    let group = CommitGroup::atomic("channel-owner", occurrence.id().as_str()).ok()?;
+    EffectPlan::immediate(occurrence, proposal, vec![effect], Vec::new(), group).ok()
+}
+
+fn swing_ability_occurrence(
+    attacker: ExactActorRef,
+    lineage: CommandRef,
+    ordinal: u16,
+    content_digest: &[u8; 32],
+    formula: &str,
+) -> Option<AbilityOccurrence> {
     let occurrence_id = format!(
         "auto-attack:{}:{}:{}:{ordinal}",
         hex(&attacker.placement_identity()),
@@ -1142,17 +1162,7 @@ fn swing_plan(
         "simulation:v1",
     )
     .ok()?;
-    let occurrence = AbilityOccurrence::new(&occurrence_id, revisions).ok()?;
-    let proposal = AbilityIntent::resolve(
-        ProposalSource::Client,
-        &issuer,
-        &[&target_atom],
-        &[&target_atom],
-    )
-    .ok()?;
-    let effect = Effect::damage(&target_atom, magnitude).ok()?;
-    let group = CommitGroup::atomic("channel-owner", &occurrence_id).ok()?;
-    EffectPlan::immediate(occurrence, proposal, vec![effect], Vec::new(), group).ok()
+    AbilityOccurrence::new(&occurrence_id, revisions).ok()
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

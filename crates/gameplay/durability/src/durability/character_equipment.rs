@@ -398,6 +398,51 @@ pub(super) async fn activity_clock_origin_in_transaction(
     ).await?.channel)
 }
 
+/// Read and lock the actual victim equipment before staging a charged swing.
+pub async fn read_combat_equipment_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+) -> Result<(EquipmentAuthority, EquipmentSnapshot)> {
+    let recovery = recovery.record_for(root).map_err(|_| rejected("combat equipment recovery"))?;
+    let authority =
+        assert_current_equipment_in_transaction(tx, &recovery, node, fence, None, content_digest).await?;
+    let equipment = read_equipment_in_transaction(tx, &authority).await?;
+    Ok((authority, equipment))
+}
+
+pub(super) async fn combat_charge_fence(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &EquipmentAuthority,
+    request: &super::item_timed_runtime::TimedRequest,
+) -> std::result::Result<super::character_progression::CurrentCharacterGameplayFence, super::item_timed_state::TimedWriteError> {
+    use super::item_timed_runtime::TimedOperation;
+    use super::item_timed_state::TimedWriteError;
+    same_transaction(tx, authority).await.map_err(|_| TimedWriteError::AuthorityRejected)?;
+    if request.content_digest != authority.content_digest
+        || !matches!(request.operation, TimedOperation::Use { elapsed_ms: 0 })
+        || request.definition.full.remaining_ms().is_some()
+        || request.definition.full.charges().is_none()
+        || request.target.is_some()
+    {
+        return Err(TimedWriteError::InvalidInput);
+    }
+    let fence = authority.fence;
+    Ok(super::character_progression::CurrentCharacterGameplayFence {
+        character_id: fence.character_id,
+        game_session_id: fence.game_session_id,
+        connection_generation: fence.connection_generation,
+        character_lease_generation: fence.character_lease_generation,
+        runtime_scope: fence.runtime_scope,
+        scope_ownership_generation: fence.scope_ownership_generation,
+        expected_character_revision: crate::domain::CharacterRevision::new(authority.character_revision)
+            .map_err(|_| TimedWriteError::InvalidInput)?,
+    })
+}
+
 /// Read paths may use a real activity Instance. The Channel-only writer
 /// authority above remains unchanged and no Instance authority is returned.
 /// Read portable equipment under the actual current tagged session in the

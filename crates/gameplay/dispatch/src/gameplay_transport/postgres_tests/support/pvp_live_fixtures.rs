@@ -313,6 +313,32 @@ async fn melee_fault(
     Ok(())
 }
 
+async fn seed_protective_charges(
+    h: &Harness,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    for (item, slot, source) in [(180, 7_i16, 3081), (183, 8_i16, 3048)] {
+        let policy = native.item_policy_for_source_id(source).ok_or("charged protection")?;
+        let definition = &policy.record().production_definition;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
+            .bind(id(item).as_slice()).bind(id(42).as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).bind(id(item+1).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid)")
+            .bind(id(101).as_slice()).bind(slot).bind(id(item).as_slice()).bind(id(42).as_slice()).bind(id(item+2).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision) VALUES(encode($1,'hex')::uuid,2,1)")
+            .bind(id(item).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn protective_charges(h: &Harness) -> TestResult<Vec<(i16, i32, bool)>> {
+    Ok(sqlx::query_as(
+        "SELECT i.lifecycle,t.charges,EXISTS(SELECT 1 FROM game_character_equipment_slots s WHERE s.item_instance_id=i.item_instance_id) FROM game_item_instances i JOIN game_item_timed_states t USING(item_instance_id) WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid) ORDER BY item_instance_id",
+    ).bind(id(180).as_slice()).bind(id(183).as_slice()).fetch_all(&h.pool).await?)
+}
+
 pub(super) fn scenario(mode: i16) -> TestResult {
     // One mechanic uses one database bootstrap at a time on the owner's shared cluster.
     static CASES: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -591,6 +617,9 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             h.cleanup().await?;
             return Ok(());
         }
+        if mode == 17 {
+            seed_protective_charges(&h, native).await?;
+        }
         let original_health = health(&owner, target).await?;
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let serving = async { serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await };
@@ -609,7 +638,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     break;
                 }
             }
-            if mode >= 7 {
+            if (7..17).contains(&mode) {
                 let domains =
                     oteryn_protocol_oteryn::decode_snapshot_body(&snapshot_body).map_err(debug)?;
                 let expert = domains.iter().find(|d| d.domain_id == 52);
@@ -639,7 +668,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     );
                 }
             }
-            if mode >= 7 {
+            if (7..17).contains(&mode) {
                 expert_cases::drive(
                     &mut client,
                     &owner,
@@ -654,7 +683,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 client.shutdown().await?;
                 return Ok::<_, Box<dyn std::error::Error>>(());
             }
-            let target_command = if mode != 2 && mode != 6 {
+            let target_command = if !matches!(mode, 2 | 6 | 17) {
                 let result = command(
                     &mut client,
                     1,
@@ -687,7 +716,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 attack::decode_attack_intent_result(&result).map_err(debug)?,
                 attack::AttackIntentDisposition::Rejected
             );
-            if mode != 2 && mode != 6 {
+            if !matches!(mode, 2 | 6 | 17) {
                 client.shutdown().await?;
                 return Ok::<_, Box<dyn std::error::Error>>(());
             }
@@ -725,6 +754,35 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 !forfeited,
                 "rolled-back aggression keeps Adventurer's Blessing"
             );
+            if mode == 17 {
+                assert_eq!(protective_charges(&h).await?, vec![(1, 2, true); 2]);
+                melee_fault(&mut client, &owner, 4, &payload, Point::AfterCommit).await?;
+                assert_eq!(protective_charges(&h).await?, vec![(1, 1, true); 2]);
+                assert_eq!(health(&owner, target).await?, original_health, "the two items fully absorb the swing");
+                melee_fault(&mut client, &owner, 5, &payload, Point::AfterCommit).await?;
+                assert_eq!(protective_charges(&h).await?, vec![(2, 1, false); 2]);
+                let receipts: (i64, i64) = sqlx::query_as(
+                    "SELECT count(*), count(DISTINCT (w.game_session_id,w.command_id,w.ordinal)) FROM game_pvp_swing_charge_writes w JOIN game_character_pvp_harm h USING(game_session_id,command_id,ordinal,victim) WHERE h.created_xact_id=w.created_xact_id AND h.damage=0",
+                ).fetch_one(&h.pool).await?;
+                assert_eq!(receipts, (4, 2));
+                let revision: String = sqlx::query_scalar("SELECT revision::text FROM game_character_equipment_state WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(101).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(revision, "3", "both expiries update the equipment projection");
+                assert!(owner.take_newhaven_inventory_changed(target_session));
+                assert!(!owner.take_newhaven_inventory_changed(target_session));
+                assert!(
+                    owner.observe_character_equipment(target, target_session).await
+                        .ok_or("fenced equipment after combat expiry")?.is_empty()
+                );
+                let published: bool = sqlx::query_scalar(
+                    "SELECT COALESCE((SELECT payload->0->'slots' @> '[{\"slot\":\"Ring\"}]'::jsonb OR payload->0->'slots' @> '[{\"slot\":\"Necklace\"}]'::jsonb FROM game_public_v2_heads WHERE family='character_equipment' AND world_id='' AND subject=encode($1,'hex')::uuid::text), true)",
+                ).bind(id(101).as_slice()).fetch_one(&h.pool).await?;
+                assert!(!published, "the public equipment capture observes both slot removals");
+                melee_fault(&mut client, &owner, 6, &payload, Point::AfterCommit).await?;
+                assert!(health(&owner, target).await? < original_health, "a subsequent swing no longer sees the spent protection");
+                client.shutdown().await?;
+                return Ok::<_, Box<dyn std::error::Error>>(());
+            }
             melee_fault(&mut client, &owner, 4, &payload, Point::AfterCommit).await?;
             assert!(
                 health(&owner, target).await? < original_health,
@@ -922,7 +980,9 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
             .fetch_one(&h.pool)
             .await?;
-        if matches!(mode, 7 | 11 | 13..=15) {
+        if mode == 17 {
+            assert!(receipt_count >= 2);
+        } else if matches!(mode, 7 | 11 | 13..=15) {
             assert!(receipt_count > 0);
             assert!(health(&owner, target).await? < original_health);
         } else if mode != 2 && mode != 6 {

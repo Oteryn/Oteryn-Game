@@ -244,8 +244,11 @@ A live item's checkpoint is put on its lane:
 - before a death settlement: the dying actor's runtime stops every live item and submits the
   settlement only after the lanes are empty.
 
-**Charges are checkpointed, never written per spend.** Spending a charge changes only the live
-value; the next checkpoint commits it.
+**Charges normally use checkpoints.** A protective charge spent by an ordinary PvP swing
+commits with the exact victim's fenced swing receipt. The transaction uses the existing timed
+checkpoint or expiry cause, including the expiry audit and slot removal on the last charge.
+Reconciliation installs the retained hit only after proving its receipt and never spends again.
+The existing field-cycle transaction continues to own field charges.
 
 ### 6.2 Crash bound (R2)
 
@@ -263,8 +266,9 @@ OFFLINE-0's checkpoint loss.
   cause `training`) in one transaction under the actor's `character_root` lock. Lock order: the
   item writer's fence and session-generation fence, `character_root`, the build state, the timed
   row. The receipt advances the `CharacterRevision` exactly as a plain build checkpoint does. A
-  revision mismatch on either writes nothing (EXERCISE-0 §5.1, never split). This is the only
-  composed checkpoint admitted; any other composition needs its own decision.
+  revision mismatch on either writes nothing (EXERCISE-0 §5.1, never split). The field cycle
+  and ordinary PvP swing may also compose their protective charge spend as described above.
+  Other compositions require their own decision.
 
 ## 7. Charge use (TIMED-RT-1)
 
@@ -273,6 +277,12 @@ OFFLINE-0's checkpoint loss.
   one live charge for that hit. Several charged items protecting against the same hit each lose
   one. The spend is part of the hit's Effect Plan, ordered by EQUIP-0 §3.3's slot order, so it is
   deterministic. `PARITY_PENDING` against TibiaWiki (TIMED-PARITY-1).
+  Owner decision 2026-11-28 applies this rule to the durable PvP swing above. Only charged
+  protective items in their own equipment slots contribute. A multi-component swing spends
+  at most one charge per item, including when the item absorbs the entire hit.
+  The Fandom Charges archive says “a charge will automatically be used every time your
+  character receives Earth damage” for a worn Silver Amulet and “When all charges are spent,
+  the item will dissappear.” [Fandom archive](https://web.archive.org/web/20251209092421/https://tibia.fandom.com/wiki/Charges)
 - **Exercise charges:** EXERCISE-0 §4.2, one per 2 s tick, on the weapon's lane.
 - **No other consumer.** A later charge consumer needs its own decision; it uses this lane and
   checkpoint.
@@ -557,7 +567,7 @@ registered by its child with max and max+1 tests.
 | TIMED-ITEM-0 §5 condition | Answered by | Tests (TIMED-RT-1 unless named) |
 |---|---|---|
 | 1. per-item serialization of checkpoint and expiry | §5.2 | a checkpoint in flight when charges reach 0: the expiry is issued at the checkpoint's new revision and commits; crash after the checkpoint, restart: the checkpointed value loads; after the expiry commits and a restart the item has no charge and is not active; a second write in flight on one lane is impossible (RL-05 max+1); an ambiguous write found by its record is not retried |
-| 2. checkpoints at the A13 cadence, at logout and handoff, one per changed item, charges never written per spend | §6 | unchanged values write nothing; logout waits for every lane; spending a charge writes nothing until the next checkpoint; a first checkpoint inserts at expected revision 0 and a second insert at 0 writes nothing |
+| 2. checkpoints at the A13 cadence, at logout and handoff, one per changed item outside the named compositions | §6 | unchanged values write nothing; logout waits for every lane; an uncomposed spend writes nothing until the next checkpoint; a first checkpoint inserts at expected revision 0 and a second insert at 0 writes nothing |
 | 3. stop before leaving the slot | §9.1 | unequipping 59 s after a checkpoint stores the live value, so re-equipping never adds time; a failed unequip restarts the clock from the row; a death drop writes no timed line |
 | 4. expiry as one atomic one-item shape, never storing 0 | §8 | a ring without a decay target is burned at 0 with its event and its row left inert; soft boots become worn soft boots with a spent row and revision + 1; a charge-only item with `transform {trigger: decay}` transforms and is burned only without a target; an expiry transform at 1 / 1 passes and 2 / 1 is refused; a replayed or stale `Expire` writes nothing |
 | 5. equip forms with move and swap ceilings, `SWAP_TIMED_BOTH` as `BLOCKED` | §9.2 | unequip then re-equip keeps the remaining time; a fresh ring has no row until its first checkpoint; a ring-for-ring swap answers `BLOCKED` and writes nothing; a ring onto an empty or a non-timed slot works; both ceiling rows at max and max+1 |
@@ -579,8 +589,8 @@ item; each §10.5 row at max and max+1; more than 64 overdue items expire over s
 
 ## 16. Rejected options
 
-- **A write per charge or per second.** A13 checkpoints bound the write rate and the crash loss;
-  TIMED-ITEM-0 §4 forbids writes per spend.
+- **A standalone write per charge or per second.** A13 checkpoints bound the normal write rate and
+  crash loss. The composed protective spends in §6 already have a fenced hit transaction.
 - **Expiry keyed only by the revision it saw, without a lane.** That is the round 12 race: a
   checkpoint commits in between, the expiry is stale, and the live zero is lost (D285).
 - **Live values written inside moves.** Every move shape would need a timed line; stopping first

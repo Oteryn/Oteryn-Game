@@ -45,7 +45,7 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     Some(())
 }
 
-/// Publish a committed Newhaven kit through the ordinary inventory/container delta owner.
+/// Publish a committed background inventory change, including a Newhaven kit or combat expiry.
 /// A failed read retains the existing pending-refresh retry; no lane/Runtime lock is held.
 pub(in crate::gameplay_transport) async fn refresh_newhaven_inventory<
     S: AsyncWrite + Unpin,

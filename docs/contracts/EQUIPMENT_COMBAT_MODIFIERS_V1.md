@@ -60,10 +60,10 @@ The native source owners already reject repeated or superseded source casts befo
 calling the reflection hook. Source stream clocks must remain strictly increasing;
 callers must not reuse a stream for unrelated operations at the same clock.
 
-Equipped PvP targets still fail the existing `unarmoured_pvp_target_in_transaction`
-admission gate. This task does not broaden that authority. Spell magnitude's strict
-advanced-equipment qualification, timed item charge consumption, quivers and client
-presentation remain with their existing owners; parity is not claimed for those paths.
+Ordinary PvP swings may also target a player whose only worn items qualify for charged
+protection under TIMED-ITEM-0B. The existing unarmoured gate still applies to direct PvP
+spells and unqualified equipment. Spell magnitude, quivers and client presentation
+remain with their existing owners.
 
 Qualification: `eqmod2` unit tests in content, combat-rules and entities, plus
 `eqmod2_postgres_content_cleave_reflection_perfect_shot_and_amplification` in the

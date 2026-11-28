@@ -58,7 +58,7 @@ pub(super) struct PvpSwing {
     pub(super) ordinal: u16,
     // PvP halving and outgoing conditions have already shaped both components.
     pub(super) components: (i64, i64, crate::content::ProjectV2RangedElement),
-    pub(super) black: bool,
+    pub(super) target_protection: super::super::pvp_live::PvpSwingTarget,
     pub(super) revision: &'static str,
     pub(super) weapon: WeaponFacts,
     pub(super) attacker: CharacterId,
@@ -471,7 +471,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 selected.skills.shielding =
                     selected.skills.shielding.saturating_add(bonuses.shielding);
             }
-            let pvp_black = if !runtime.contains_live_creature(selected.target) {
+            let pvp_target = if !runtime.contains_live_creature(selected.target) {
                 let legality = self
                     .pvp_target_legal(
                         &pvp_permit,
@@ -489,7 +489,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await;
                 match legality {
-                    Ok(Some(black)) => Some(black),
+                    Ok(Some(target)) => Some(target),
                     Err(DurabilityError::RootUnavailable) => {
                         entry.state = state_before;
                         entry.next_ordinal = ordinal_before;
@@ -837,7 +837,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 };
                 if !runtime.contains_live_creature(target) {
-                    let black = if extension {
+                    let target_protection = if extension {
                         self.pvp_target_legal(
                             &pvp_permit,
                             &runtime,
@@ -856,14 +856,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .ok()
                         .flatten()
                     } else {
-                        pvp_black
+                        pvp_target.clone()
                     };
-                    let Some(black) = black else {
+                    let Some(target_protection) = target_protection else {
                         continue;
                     };
-                    let Some(components) =
-                        pvp_swing_components((raw[0], raw[1], element), black, retained)
-                    else {
+                    let Some(components) = pvp_swing_components(
+                        (raw[0], raw[1], element),
+                        target_protection.black,
+                        retained,
+                    ) else {
                         continue;
                     };
                     // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
@@ -882,7 +884,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         lineage: swing.lineage,
                         ordinal,
                         components,
-                        black,
+                        target_protection,
                         revision,
                         weapon: selected.weapon.clone(),
                         attacker: lease.character_id(),
@@ -1857,6 +1859,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         };
+        // An earlier queued impact can spend the victim's last charge before this swing lands.
+        let target_protection = if hit.target_protection.equipment.is_some() {
+            let Ok(Some(current)) = self
+                .pvp_target_legal(
+                    permit,
+                    runtime,
+                    states,
+                    room,
+                    objects,
+                    hit.actor,
+                    hit.target,
+                    hit.lineage,
+                    hit.modes,
+                )
+                .await
+            else {
+                return;
+            };
+            if current.black != hit.target_protection.black {
+                return;
+            }
+            current
+        } else {
+            hit.target_protection.clone()
+        };
         let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
             self.ranged_player_damage(
                 permit,
@@ -1993,9 +2020,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(target) = states.get(runtime, hit.target, target_session) else {
             return;
         };
+        let mut spends = std::collections::BTreeSet::new();
+        let charges = if let Some(equipment) = &target_protection.equipment {
+            let Some(charges) = super::super::equipment_move::equipment_effects_owner::combat_charges::CombatCharges::qualify(
+                equipment, content,
+            ) else { return; };
+            Some(charges)
+        } else {
+            None
+        };
         let mut after_equipment = |magnitude: u32, kind: crate::player_lethal::PlayerHitKind| {
             use crate::content::ReferenceResistanceKind as Kind;
             use crate::player_lethal::PlayerHitKind;
+            let magnitude = if let Some(charges) = &charges {
+                charges.mitigate(&mut spends, magnitude, kind)?
+            } else {
+                magnitude
+            };
             let kind = match kind {
                 PlayerHitKind::Physical => Kind::Physical,
                 PlayerHitKind::Death => Kind::Death,
@@ -2003,6 +2044,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 PlayerHitKind::Energy => Kind::Energy,
                 PlayerHitKind::Fire => Kind::Fire,
                 PlayerHitKind::Ice => Kind::Ice,
+                PlayerHitKind::Holy => Kind::Holy,
                 _ => return None,
             };
             let sum = ranged_damage
@@ -2051,7 +2093,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let magnitude = i64::from(damage.magnitude());
-        if magnitude <= 0 {
+        if magnitude == 0 && spends.is_empty() {
             if !hit.extension {
                 publish_hit_sound(states, runtime, content, hit.actor, &hit.weapon);
             }
@@ -2059,21 +2101,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         let atom = actor_atom(hit.target);
-        let Some(plan) = swing_plan(
-            hit.actor,
-            hit.lineage,
-            hit.ordinal,
-            magnitude,
-            digest,
-            &atom,
-            hit.revision,
-        ) else {
+        let Some(occurrence) =
+            swing_ability_occurrence(hit.actor, hit.lineage, hit.ordinal, digest, hit.revision)
+        else {
             return;
         };
         let poison = hit
             .weapon
             .ranged
             .as_ref()
+            .filter(|_| magnitude > 0)
             .and_then(|r| r.scripted_arrow())
             .filter(|arrow| *arrow == ranged::ScriptedArrow::Poison)
             .and_then(|_| ranged::poison_definition())
@@ -2088,7 +2125,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attacker: hit.attacker,
             current_lease_generation: hit.generation,
             command: hit.lineage,
-            occurrence: plan.occurrence().clone().into(),
+            occurrence: occurrence.into(),
             binding: b"oteryn:pvp-melee:v1".to_vec(),
             anchor: None,
             now_us: Some(now),
@@ -2113,7 +2150,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 batch,
                 hit.ordinal,
                 hit.modes,
-                hit.black,
+                super::super::pvp_live::PvpSwingProtection {
+                    target: target_protection,
+                    spends,
+                },
                 damage,
                 poison,
             )

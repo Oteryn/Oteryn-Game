@@ -113,6 +113,29 @@ pub async fn consume_field_protection_in_transaction(
     Ok(result)
 }
 
+/// Spend a charge on the exact victim proven by the swing and equipment owner.
+pub async fn consume_combat_protection_in_transaction(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    equipment: &super::character_equipment::EquipmentAuthority,
+    hit: crate::foundation::CommandRef,
+    ordinal: u16,
+    request: &TimedRequest,
+) -> Result<bool> {
+    let fence = super::character_equipment::combat_charge_fence(tx, equipment, request).await?;
+    let equipped: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid)")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(request.item.as_slice()).fetch_one(&mut ***tx).await?;
+    if !equipped {
+        return Err(TimedWriteError::NotHeld);
+    }
+    sqlx::query("INSERT INTO game_pvp_swing_charge_writes(game_session_id,command_id,ordinal,victim,victim_session,item_instance_id,expected_revision) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7::text::numeric)")
+        .bind(hit.game_session_id().as_bytes().as_slice()).bind(hit.command_id().get().to_string()).bind(i32::from(ordinal)).bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.item.as_slice()).bind(request.expected_revision.to_string()).execute(&mut ***tx).await?;
+    let result = apply(tx, &fence, request, None).await?;
+    if result.disposition != TimedDisposition::Ok {
+        return Err(TimedWriteError::ConflictingWrite);
+    }
+    Ok(result.retired)
+}
+
 impl DurabilityRoot {
     /// A bounded lazy-row read under current gameplay authority; used by the owner clock.
     pub async fn read_timed_row(

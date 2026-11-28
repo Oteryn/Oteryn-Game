@@ -606,7 +606,7 @@ pub trait FreshAdmissionAuthority {
         std::future::pending()
     }
 
-    /// A durable Newhaven kit changed carried items; consume its bounded display notification.
+    /// Consume the bounded display notification for a background inventory change.
     fn take_newhaven_inventory_changed(&self, _session: GameSessionId) -> bool {
         false
     }

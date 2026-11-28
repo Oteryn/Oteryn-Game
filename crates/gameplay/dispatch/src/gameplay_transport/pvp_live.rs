@@ -1,4 +1,5 @@
 //! PvP joins the existing exact-actor combat batch and source SQL owners.
+use super::equipment_move::equipment_effects_owner::combat_charges::CombatCharges;
 use super::{
     ComposedFreshAdmission,
     actor_spell::{
@@ -6,8 +7,10 @@ use super::{
     },
 };
 use crate::content::QualifiedNativeEntryRoom;
+use crate::durability::character_equipment::{self, EquipmentAuthority, EquipmentSnapshot};
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, pvp_live as storage, spell_item_transaction as item_tx};
+use crate::foundation::GameSessionId;
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef, StagedSpellBatch};
 use crate::spell::combat_batch::OwnerCombatBatch;
 use crate::world_runtime::LocalObjectRuntime;
@@ -15,6 +18,8 @@ use oteryn_gameplay_combat_rules::pvp::{PvpActor, PvpTarget, check_pvp_legality}
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
+use std::collections::BTreeSet;
+use std::sync::Arc;
 
 pub(super) const POISON_ARROW_CONDITION: &str = "oteryn:weapon.poison_arrow";
 
@@ -39,7 +44,17 @@ pub(super) async fn legal_player(
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     legal_player_at(
-        tx, root, authority, runtime, states, room, objects, actor, target, modes, None,
+        tx,
+        root,
+        authority,
+        runtime,
+        states,
+        room,
+        objects,
+        actor,
+        target,
+        modes,
+        PvpDamage::Spell,
     )
     .await
 }
@@ -97,9 +112,16 @@ pub(super) async fn legal_player_field(
             },
             expert: oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist,
         },
-        Some(destination),
+        PvpDamage::Field(destination),
     )
     .await
+}
+
+#[derive(Clone, Copy)]
+enum PvpDamage {
+    Spell,
+    Swing,
+    Field(crate::foundation::MovementLocalPosition),
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -114,8 +136,12 @@ async fn legal_player_at(
     actor: ExactActorRef,
     target: ExactActorRef,
     modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    field_destination: Option<crate::foundation::MovementLocalPosition>,
+    damage: PvpDamage,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
+    let field_destination = match damage {
+        PvpDamage::Field(position) => Some(position),
+        _ => None,
+    };
     let reject = || SpellCastDisposition::TargetIllegal;
     if runtime.actor_staff_visibility(actor).is_ok_and(|f| f.0)
         || runtime.actor_staff_visibility(target).is_ok_and(|f| f.0)
@@ -191,7 +217,7 @@ async fn legal_player_at(
         marked: facts.marked,
     };
     check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|_| reject())?;
-    if field_destination.is_none()
+    if matches!(damage, PvpDamage::Spell)
         && !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
             .await
             .map_err(|_| reject())?
@@ -201,6 +227,17 @@ async fn legal_player_at(
     Ok(facts)
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct PvpSwingTarget {
+    pub(super) black: bool,
+    pub(super) equipment: Option<Arc<EquipmentSnapshot>>,
+}
+
+pub(super) struct PvpSwingProtection {
+    pub(super) target: PvpSwingTarget,
+    pub(super) spends: BTreeSet<[u8; 16]>,
+}
+
 /// Exact staged swing retained across a cancelled or unknown SQL COMMIT.
 #[derive(Debug)]
 pub struct PendingPvpHit {
@@ -208,6 +245,7 @@ pub struct PendingPvpHit {
     physical: StagedSpellBatch,
     player: PlayerBatchPreflight,
     target_character: [u8; 16],
+    expired_equipment_of: Option<GameSessionId>,
     ordinal: u16,
     binding: [u8; 32],
 }
@@ -274,7 +312,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: ExactActorRef,
         command: CommandRef,
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-    ) -> Result<Option<bool>, DurabilityError> {
+    ) -> Result<Option<PvpSwingTarget>, DurabilityError> {
         let Some(fence) = self
             .current_quest_fence_durable(command.game_session_id())
             .await?
@@ -299,18 +337,88 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-                let result = legal_player(
-                    &mut tx, owner.root, &authority, runtime, states, room, objects, actor, target,
+                let facts = legal_player_at(
+                    &mut tx,
+                    owner.root,
+                    &authority,
+                    runtime,
+                    states,
+                    room,
+                    objects,
+                    actor,
+                    target,
                     modes,
+                    PvpDamage::Swing,
                 )
-                .await
-                .ok()
-                .map(|f| f.target_black);
+                .await;
+                let result = if let Ok(facts) = facts {
+                    if storage::unarmoured_pvp_target_in_transaction(&mut tx, &facts)
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?
+                    {
+                        Some(PvpSwingTarget {
+                            black: facts.target_black,
+                            equipment: None,
+                        })
+                    } else {
+                        let session = states
+                            .actors
+                            .iter()
+                            .find(|(actor, _, _)| *actor == target)
+                            .ok_or(DurabilityError::Unavailable)?
+                            .1;
+                        owner
+                            .read_charge_protection(
+                                &mut tx,
+                                session,
+                                runtime.content_pin().server_artifact_digest(),
+                            )
+                            .await
+                            .ok()
+                            .map(|(_, equipment, _)| PvpSwingTarget {
+                                black: facts.target_black,
+                                equipment: Some(Arc::new(equipment)),
+                            })
+                    }
+                } else {
+                    None
+                };
                 tx.rollback().await?;
                 Ok(result)
             })
         })
         .await
+    }
+
+    async fn read_charge_protection(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        session: GameSessionId,
+        digest: [u8; 32],
+    ) -> Result<(EquipmentAuthority, EquipmentSnapshot, CombatCharges), DurabilityError> {
+        let current =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_in_transaction(tx, session)
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+        let fence = super::item_fence_of(current).ok_or(DurabilityError::Unavailable)?;
+        let (authority, equipment) = character_equipment::read_combat_equipment_in_transaction(
+            tx,
+            self.root,
+            self.character,
+            self.holder,
+            &fence,
+            digest,
+        )
+        .await
+        .map_err(|_| DurabilityError::Unavailable)?;
+        let native = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or(DurabilityError::Unavailable)?;
+        let charges =
+            CombatCharges::qualify(&equipment, native).ok_or(DurabilityError::Unavailable)?;
+        Ok((authority, equipment, charges))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -324,7 +432,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         batch: OwnerCombatBatch,
         ordinal: u16,
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
-        expected_black: bool,
+        protection: PvpSwingProtection,
         damage: crate::spell::cast::PreparedWheelAttackHit,
         condition: Option<(
             crate::foundation::ConditionDefinition,
@@ -384,6 +492,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut binding = Sha256::new();
         binding.update(format!("{batch:?}").as_bytes());
+        for item in &protection.spends {
+            binding.update(item);
+        }
         if let Some((definition, occurrence)) = condition {
             binding.update(format!("{definition:?}{occurrence:?}").as_bytes());
         }
@@ -393,6 +504,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             physical,
             player,
             target_character,
+            expired_equipment_of: None,
             ordinal,
             binding,
         };
@@ -404,7 +516,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .run_with_context(&mut context, move |holder, deadline, ctx| {
                 Box::pin(async move {
                     let (owner, runtime, states, objects, window) = ctx;
-                    let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                    let mut tx = item_tx::begin_field_owner_transaction(holder, deadline).await?;
                     let hit = window.attempt();
                     let authority = item_tx::assert_spell_item_authority_in_transaction(
                         &mut tx,
@@ -418,7 +530,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let facts = legal_player(
+                    let facts = legal_player_at(
                         &mut tx,
                         owner.root,
                         &authority,
@@ -429,10 +541,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         hit.batch.caster,
                         target,
                         modes,
+                        PvpDamage::Swing,
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    if facts.target_black != expected_black {
+                    if facts.target_black != protection.target.black {
                         return Err(DurabilityError::Unavailable);
                     }
                     let source = hit.batch.caster;
@@ -443,6 +556,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .find(|(a, _, _)| *a == target)
                         .ok_or(DurabilityError::Unavailable)?
                         .1;
+                    if let Some(expected) = &protection.target.equipment {
+                        let digest = runtime.content_pin().server_artifact_digest();
+                        let (equipment_authority, current, charges) = owner
+                            .read_charge_protection(&mut tx, target_session, digest)
+                            .await?;
+                        if &current != expected.as_ref() {
+                            return Err(DurabilityError::Unavailable);
+                        }
+                        let expired = charges
+                            .spend(
+                                &mut tx,
+                                &equipment_authority,
+                                (hit.batch.command, ordinal, hit.binding),
+                                digest,
+                                &protection.spends,
+                            )
+                            .await?;
+                        if expired {
+                            window.attempt_mut().expired_equipment_of = Some(target_session);
+                        }
+                    } else if !storage::unarmoured_pvp_target_in_transaction(&mut tx, &facts)
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     window.attempt_mut().player.pvp_locks = vec![
                         (
                             source,
@@ -475,7 +614,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if faults::take(faults::Point::BeforeCommit) {
                         return Err(DurabilityError::Unavailable);
                     }
-                    storage::commit_live_pvp_transaction(tx, deadline, window).await?;
+                    storage::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
                     Ok(())
                 })
             })
@@ -496,7 +635,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(false);
         };
         let hit = window.install();
-        Ok(install_owner_batch(runtime, states, hit.physical, Some(hit.player), checked).applied)
+        Ok(self.install_pvp_hit(runtime, states, hit, checked))
     }
 
     pub(super) async fn resolve_pvp_hit(&self, permit: &mut SpellLanePermit, hit: PendingPvpHit) {
@@ -555,13 +694,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return;
                 };
                 let hit = window.install();
-                install_owner_batch(
-                    &mut runtime,
-                    &mut states,
-                    hit.physical,
-                    Some(hit.player),
-                    checked,
-                );
+                self.install_pvp_hit(&mut runtime, &mut states, hit, checked);
             }
             Ok(false) => {
                 if runtime
@@ -575,6 +708,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
+impl ComposedFreshAdmission<'_, '_, '_> {
+    fn install_pvp_hit(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        hit: PendingPvpHit,
+        checked: super::actor_spell::CheckedOwnerBatch,
+    ) -> bool {
+        let applied =
+            install_owner_batch(runtime, states, hit.physical, Some(hit.player), checked).applied;
+        if applied && let Some(session) = hit.expired_equipment_of {
+            self.states.tutorial_sessions.inventory_changed(session);
+        }
+        applied
+    }
+}
+
 /// Native spells write harm in their existing cost/training SQL transaction.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn record_spell_harm(
