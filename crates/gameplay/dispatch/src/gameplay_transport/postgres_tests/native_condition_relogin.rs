@@ -49,11 +49,29 @@ fn pve_logout_block_survives_fresh_admission_until_original_deadline_postgres() 
     on_thread(admin, Case::PveLogout)
 }
 
+#[test]
+fn g05_single_cleanup_logout_retries_late_condition_holder_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, Case::G05Cleanup)
+}
+
+#[test]
+fn c20c_first_logout_retries_late_monk_fence_checkout_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    on_thread(admin, Case::C20cFirstLogout)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Condition,
     Environment,
     PveLogout,
+    G05Cleanup,
+    C20cFirstLogout,
 }
 
 fn on_thread(admin: String, case: Case) -> TestResult {
@@ -177,6 +195,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             GraceExpiryResult::Released
         );
         Some(retry_after_ms)
+    } else if case == Case::C20cFirstLogout {
+        logout_with_late_contention(h, &owner, admitted, case).await?;
+        return Ok(());
     } else {
         assert_eq!(
             owner.logout_session(admitted).await,
@@ -257,6 +278,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     );
     let fresh_fence = fresh.item_fence.ok_or("fresh lease fence")?;
     assert!(fresh_fence.character_lease_generation > saved.lease_generation);
+    if case == Case::G05Cleanup {
+        logout_with_late_contention(h, &fresh_owner, fresh, case).await?;
+        return Ok(());
+    }
     if let Some(original_retry) = original_retry {
         let actor = fresh.runtime_actor.ok_or("fresh actor")?;
         assert!(
@@ -340,6 +365,72 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert_eq!(current.lease_generation, saved.lease_generation);
         assert_eq!(current.conditions, saved.conditions);
     }
+    Ok(())
+}
+
+async fn logout_with_late_contention(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    case: Case,
+) -> TestResult {
+    use crate::durability::ROOT_RECOVERY_WINDOW;
+    use crate::gameplay_transport::logout::LOGOUT_CHECKOUT_BARRIER;
+    use crate::gameplay_transport::{RECONCILE_ATTEMPTS, RECONCILE_BACKOFF};
+    use std::cell::Cell;
+    use std::future::{Future, poll_fn};
+    use std::sync::Arc;
+    use std::task::Poll;
+    use tokio::sync::Notify;
+
+    let cleanup = case == Case::G05Cleanup;
+    let stage = if cleanup {
+        "condition_holder"
+    } else {
+        "wheel_monk"
+    };
+    let barrier = Arc::new((Notify::new(), Notify::new()));
+    let reply = tokio::time::timeout(ROOT_RECOVERY_WINDOW * 3, async {
+        let mut logout = std::pin::pin!(LOGOUT_CHECKOUT_BARRIER.scope(
+            (Cell::new(Some(stage)), barrier.clone()),
+            owner.logout_command(admitted, 1),
+        ));
+        tokio::select! {
+            () = barrier.0.notified() => {}
+            reply = &mut logout => return Err(format!("logout ended before {stage}: {reply:?}").into()),
+        }
+        h.root.await_ready().await?;
+        // Age the release without ageing a running SQL pass. The stage itself
+        // has not had a chance to attempt its checkout yet.
+        tokio::time::pause();
+        tokio::time::advance(ROOT_RECOVERY_WINDOW).await;
+        let condition_holder = if cleanup { Some(owner.states.attack.lock().await) } else { None };
+        let durable_holder = if cleanup { None } else { Some(h.root.try_issue_semantic_pass()?) };
+        barrier.1.notify_one();
+        let checks = if cleanup { 1 } else { RECONCILE_ATTEMPTS };
+        for _ in 0..checks {
+            assert!(poll_fn(|cx| Poll::Ready(logout.as_mut().poll(cx))).await.is_pending());
+            tokio::time::advance(RECONCILE_BACKOFF + Duration::from_millis(1)).await;
+        }
+        tokio::time::resume();
+        drop(condition_holder);
+        if let Some(held) = durable_holder {
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
+        TestResult::Ok(logout.await)
+    }).await??;
+    assert_eq!(
+        reply,
+        LogoutReply::Result(LogoutResult::Accepted),
+        "one logout must release after {stage} contention clears"
+    );
+    assert_eq!(
+        FreshAdmissionStore::from_root(h.root.clone())
+            .current_session(admitted.game_session_id)
+            .await?
+            .session_state(),
+        crate::foundation::GameSessionState::Terminal
+    );
     Ok(())
 }
 

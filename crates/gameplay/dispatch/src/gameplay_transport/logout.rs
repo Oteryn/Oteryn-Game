@@ -364,9 +364,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             break token;
         };
+        drop(budget);
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
+        // A slow earlier stage must not use up the first retry of a later
+        // stage. Keep each stage's original deadline across re-entry so
+        // alternating deferrals cannot renew the release indefinitely.
+        let mut stage_budgets = std::collections::HashMap::new();
         let step = loop {
             let step = Box::pin(self.release_attempt(
                 &admitted,
@@ -377,13 +382,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut kills,
             ))
             .await;
+            let ReleaseAttempt::Retry(stage) = step else {
+                break step;
+            };
             // Familiar and training have their own checkout retries. A familiar
             // write with an unknown outcome must retain its original snapshot.
             if channel_switch
-                || !matches!(step, ReleaseAttempt::Retry(stage) if stage != "release_familiar_save" && stage != "release_offline_training")
-                || !budget
-                    .retries_unavailable(AdmissionRefusal::Unavailable)
-                    .await
+                || matches!(stage, "release_familiar_save" | "release_offline_training")
+            {
+                break step;
+            }
+            let stage_budget = stage_budgets
+                .entry(stage)
+                .or_insert_with(|| AdmissionRetryBudget::for_root(&session, self.root));
+            if !stage_budget
+                .retries_unavailable(AdmissionRefusal::Unavailable)
+                .await
             {
                 break step;
             }
@@ -393,6 +407,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(reply);
             }
         };
+        drop(stage_budgets);
         Ok(match step {
             ReleaseAttempt::Done(GraceExpiryResult::Released) => {
                 LogoutReply::Result(LogoutResult::Accepted)

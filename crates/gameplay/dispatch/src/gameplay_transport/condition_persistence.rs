@@ -155,6 +155,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return true;
             };
             let dead = states.is_dead(actor);
+            #[cfg(test)]
+            super::logout::pause_logout_checkout("condition_holder").await;
             let Ok(attack) = self.states.attack.try_lock() else {
                 return false;
             };

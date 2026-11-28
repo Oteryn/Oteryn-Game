@@ -1131,9 +1131,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !same_familiar_writer(original.fence, fresh) {
             return None;
         }
-        let resolution = self
-            .root
-            .reconcile_familiar_clean_end(self.character, original.fence, original.request.clone())
+        let resolution = AdmissionRetryBudget::for_root(&session, self.root)
+            .retry_holder(
+                || {
+                    self.root.reconcile_familiar_clean_end(
+                        self.character,
+                        original.fence,
+                        original.request.clone(),
+                    )
+                },
+                |error| {
+                    matches!(
+                        error,
+                        CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)
+                    )
+                },
+            )
             .await
             .ok()?;
         // The historical receipt is never current authority. Re-read the

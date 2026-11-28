@@ -212,6 +212,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
         // before the release can end the Character lease.
+        #[cfg(test)]
+        super::super::logout::pause_logout_checkout("wheel_monk").await;
         if !self.save_wheel_gift(actor, session, true).await
             || self.save_monk_state(admitted, actor).await == monk_save::MonkSave::Unknown
         {

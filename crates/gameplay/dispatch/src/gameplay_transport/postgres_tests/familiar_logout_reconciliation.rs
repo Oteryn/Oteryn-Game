@@ -56,6 +56,15 @@ fn logout_retries_busy_offline_training_fence_and_releases_postgres() -> TestRes
 }
 
 #[test]
+fn w12_logout_retries_offline_training_revision_after_session_read_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(false, Finish::HolderBusy("offline_training_revision"))
+}
+
+#[test]
 fn logout_retries_busy_condition_checkpoint_and_releases_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -191,6 +200,13 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                     reply = &mut logout => return Err(format!("logout ended before {stage}: {reply:?}").into()),
                 }
                 h.root.await_ready().await?;
+                if stage == "offline_training_revision" {
+                    // The first read has returned; only the old combined
+                    // budget should age before the second checkout starts.
+                    tokio::time::pause();
+                    tokio::time::advance(crate::durability::ROOT_RECOVERY_WINDOW).await;
+                    tokio::time::resume();
+                }
                 let held = h.root.try_issue_semantic_pass()?;
                 barrier.1.notify_one();
                 assert!(poll_fn(|cx| Poll::Ready(logout.as_mut().poll(cx))).await.is_pending());
@@ -198,15 +214,23 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                 TestResult::Ok(logout.await)
             })
             .await??;
-            assert_eq!(reply, LogoutReply::Result(LogoutResult::Accepted), "the first logout must release after {stage} contention clears");
+            assert_eq!(
+                reply,
+                LogoutReply::Result(LogoutResult::Accepted),
+                "the first logout must release after {stage} contention clears"
+            );
             assert_eq!(
                 store.current_session(session).await?.session_state(),
                 GameSessionState::Terminal,
             );
             if stage.starts_with("familiar") {
-                assert_eq!(receipt_count_for(&h, None).await?, 1, "familiar clean end commits once");
+                assert_eq!(
+                    receipt_count_for(&h, None).await?,
+                    1,
+                    "familiar clean end commits once"
+                );
             }
-            if stage == "offline_training" {
+            if stage.starts_with("offline_training") {
                 let markers: i64 = sqlx::query_scalar(
                     "SELECT count(*) FROM game_character_training_markers \
                      WHERE game_session_id=encode($1,'hex')::uuid AND cause='logout'",
@@ -375,10 +399,7 @@ fn scenario(committed: bool, finish: Finish) -> TestResult {
                         GameSessionState::Active
                     );
                 }
-                Finish::Logout
-                | Finish::Loss
-                | Finish::TrainingRefused
-                | Finish::HolderBusy(_) => {
+                Finish::Logout | Finish::Loss | Finish::TrainingRefused | Finish::HolderBusy(_) => {
                     return Err("not a refusal case".into());
                 }
             }

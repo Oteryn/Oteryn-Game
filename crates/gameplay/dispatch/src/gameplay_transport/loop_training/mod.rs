@@ -113,30 +113,56 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         expected: CurrentCharacterItemFence,
     ) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
+        self.read_training_fence(expected, false).await
+    }
+
+    async fn read_training_fence(
+        &self,
+        expected: CurrentCharacterItemFence,
+        logout: bool,
+    ) -> Result<Option<CurrentCharacterGameplayFence>, crate::durability::DurabilityError> {
         use crate::durability::character_authority::CharacterAuthorityError;
-        let current = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session(expected.game_session_id)
-            .await?;
+        let session = expected.game_session_id;
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let read_session = || store.current_session(session);
+        let current = if logout {
+            AdmissionRetryBudget::for_root(&session, self.root)
+                .retry_durability("offline_training", read_session)
+                .await?
+        } else {
+            read_session().await?
+        };
         if current.session_state() == crate::foundation::GameSessionState::Terminal
             || super::item_fence_of(current) != Some(expected)
         {
             return Ok(None);
         }
-        let revision = self
-            .root
-            .read_current_character(self.character, expected.character_id)
-            .await
-            .map_err(|error| match error {
-                CharacterAuthorityError::Unavailable(error) => error,
-                CharacterAuthorityError::Rejected
-                | CharacterAuthorityError::Conflict
-                | CharacterAuthorityError::NameUnavailable => {
-                    crate::durability::DurabilityError::CommitRejected
-                }
-            })?
-            .revision;
+        let read_character = async || {
+            self.root
+                .read_current_character(self.character, expected.character_id)
+                .await
+                .map_err(|error| match error {
+                    CharacterAuthorityError::Unavailable(error) => error,
+                    CharacterAuthorityError::Rejected
+                    | CharacterAuthorityError::Conflict
+                    | CharacterAuthorityError::NameUnavailable => {
+                        crate::durability::DurabilityError::CommitRejected
+                    }
+                })
+        };
+        let character = if logout {
+            #[cfg(test)]
+            super::logout::pause_logout_checkout("offline_training_revision").await;
+            // A busy second checkout must not replay the session read or spend
+            // only the time left by that earlier read's retry window.
+            AdmissionRetryBudget::for_root(&session, self.root)
+                .retry_durability("offline_training", read_character)
+                .await?
+        } else {
+            read_character().await?
+        };
         Ok(Some(CurrentCharacterGameplayFence {
-            expected_character_revision: revision,
+            expected_character_revision: character.revision,
             character_id: expected.character_id,
             game_session_id: expected.game_session_id,
             connection_generation: expected.connection_generation,
@@ -258,11 +284,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         super::logout::pause_logout_checkout("offline_training").await;
         // These reads prepare the release but write nothing. A busy holder
         // can recover within the command budget without repeating any save.
-        let fence = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root)
-            .retry_durability("offline_training", || self.training_fence_durable(item))
-            .await
-            .ok()
-            .flatten()?;
+        let fence = self.read_training_fence(item, true).await.ok().flatten()?;
         let selected = selected.map(|(_, skill)| skill);
         let house = if let Some(actor) = admitted.runtime_actor {
             let runtime = self.runtime.lock().await;
