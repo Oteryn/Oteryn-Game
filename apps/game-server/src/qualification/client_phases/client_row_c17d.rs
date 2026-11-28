@@ -77,6 +77,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let answer = request_spawn(session, "oteryn:creature.rat".into()).await?;
     let rat = parse_spawned_entity(&answer)?;
     evidence(&format!("C17d.client FIXTURE rat={rat:?} victim_at={victim_at:?}"));
+    let hit = full_e2ef5::monster_hit(&mut victim, &mut caster, rat, 10).await?;
+    evidence(&format!("C17d.client FIXTURE rat-to-victim damage_frames={hit}"));
     let rat_at = full_e2ef5::with_observer_liveness(&mut caster, async {
         tokio::time::timeout(Duration::from_secs(3), async {
             loop {
@@ -102,18 +104,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fixture rat outside Challenge range: rat={rat_at:?} caster={caster_at:?}").into());
     }
     let caster_ref = own(&caster)?;
-    let victim_ref = own(&victim)?;
-    if !victim.take_events().into_iter().any(|event| {
-        matches!(event, SessionEvent::Presentation(delta) if delta.value.iter().any(|event| {
-            matches!(event.kind, PresentationEventKind::ValueText {
-                attacker: Some(source), target, primary,
-                kind: oteryn_protocol_oteryn::presentation::PresentationValueKind::DamageReceived,
-                ..
-            } if source == rat && target == victim_ref && primary.value > 0)
-        }))
-    }) {
-        return Err("Challenge pre-state lacks damage from the same rat to the victim".into());
-    }
+    full_e2ef5::monster_hit(&mut victim, &mut caster, rat, 10).await?;
     caster.take_events();
     let book = spell_book()?;
     let before = caster.actor_vitals().copied().ok_or("caster vitals absent")?;

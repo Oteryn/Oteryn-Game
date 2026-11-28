@@ -2661,7 +2661,7 @@ async fn combat_rejoin(
     Ok(())
 }
 
-async fn monster_hit(
+pub(super) async fn monster_hit(
     victim: &mut DevClientSession,
     observer: &mut DevClientSession,
     monster: oteryn_dev_client::EntityRef,
