@@ -4,6 +4,7 @@ use oteryn_gameplay_economy::guild_bank::{ACCOUNT_HARD_MAX, GUILD_BALANCE_MAX};
 pub(super) const DEPOSIT: &str = "GUILD_DEPOSIT";
 pub(super) const WITHDRAW: &str = "GUILD_WITHDRAW";
 pub(super) const PAYOUT: &str = "GUILD_DISBAND_PAYOUT";
+pub(super) const TRANSFER: &str = "GUILD_TRANSFER";
 pub(super) const CLAIM: &str = "GUILD_DISBAND_CLAIM";
 
 #[derive(Clone, Copy, Default)]

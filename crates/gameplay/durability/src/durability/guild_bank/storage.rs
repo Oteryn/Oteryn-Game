@@ -88,16 +88,7 @@ pub(super) async fn store_success(
     };
     insert_operation(tx, op, v, &reply).await?;
     if v.guild_before != v.guild_after {
-        let entry = derived(op.operation, b"guild-entry");
-        let ordinal = guild
-            .try_get::<i64, _>("ordinal")?
-            .checked_add(1)
-            .ok_or_else(invalid)?;
-        sqlx::query("INSERT INTO game_guild_bank_entries(entry_id,operation_id,guild_id,ordinal,kind,amount,balance_before,balance_after,previous_entry_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9::text::uuid)")
-            .bind(entry.as_slice()).bind(op.operation.as_slice()).bind(op.guild.as_slice()).bind(ordinal).bind(op.kind).bind(to_i64(op.amount)?)
-            .bind(to_i64(v.guild_before)?).bind(to_i64(v.guild_after)?).bind(guild.try_get::<Option<String>,_>("last_entry_id")?).execute(&mut **tx).await?;
-        sqlx::query("UPDATE game_guild_bank_balances SET balance=$2,last_entry_id=encode($3,'hex')::uuid,ordinal=$4 WHERE guild_id=encode($1,'hex')::uuid")
-            .bind(op.guild.as_slice()).bind(to_i64(v.guild_after)?).bind(entry.as_slice()).bind(ordinal).execute(&mut **tx).await?;
+        append_guild_entry(tx, op, op.guild, guild, [v.guild_before, v.guild_after], b"guild-entry").await?;
     }
     if v.bank_before != v.bank_after {
         let entry = derived(op.operation, b"bank-entry");
@@ -115,19 +106,43 @@ pub(super) async fn store_success(
         sqlx::query("UPDATE game_guild_disband_claims SET amount=$2,last_operation_id=encode($3,'hex')::uuid WHERE guild_id=encode($1,'hex')::uuid")
             .bind(op.guild.as_slice()).bind(to_i64(v.claim_after)?).bind(op.operation.as_slice()).execute(&mut **tx).await?;
     }
+    store_audits(tx, op).await?;
+    Ok(reply)
+}
+pub(super) async fn append_guild_entry(
+    tx: &mut Transaction<'_, Postgres>,
+    op: &Operation,
+    guild_id: [u8; 16],
+    guild: &PgRow,
+    [before, after]: [u64; 2],
+    tag: &[u8],
+) -> Result<()> {
+        let entry = derived(op.operation, tag);
+        let ordinal = guild
+            .try_get::<i64, _>("ordinal")?
+            .checked_add(1)
+            .ok_or_else(invalid)?;
+        sqlx::query("INSERT INTO game_guild_bank_entries(entry_id,operation_id,guild_id,ordinal,kind,amount,balance_before,balance_after,previous_entry_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9::text::uuid)")
+            .bind(entry.as_slice()).bind(op.operation.as_slice()).bind(guild_id.as_slice()).bind(ordinal).bind(op.kind).bind(to_i64(op.amount)?)
+            .bind(to_i64(before)?).bind(to_i64(after)?).bind(guild.try_get::<Option<String>,_>("last_entry_id")?).execute(&mut **tx).await?;
+        sqlx::query("UPDATE game_guild_bank_balances SET balance=$2,last_entry_id=encode($3,'hex')::uuid,ordinal=$4 WHERE guild_id=encode($1,'hex')::uuid")
+            .bind(guild_id.as_slice()).bind(to_i64(after)?).bind(entry.as_slice()).bind(ordinal).execute(&mut **tx).await?;
+    Ok(())
+}
+pub(super) async fn store_audits(tx: &mut Transaction<'_, Postgres>, op: &Operation) -> Result<()> {
     // SQL reconstructs the exact closed native proposal from immutable operation columns.
     // Two owner records for transfers/payout, BANK only for custody delivery; all bounded by PK.
-    let owners: &[&str] = if op.kind == audit::CLAIM {
-        &["BANK"]
-    } else {
-        &["BANK", "GUILD"]
+    let owners: &[&str] = match op.kind {
+        audit::CLAIM => &["BANK"],
+        audit::TRANSFER => &["GUILD"],
+        _ => &["BANK", "GUILD"],
     };
     for owner in owners {
         sqlx::query("INSERT INTO game_guild_bank_event_outbox(operation_id,owner,payload,payload_sha256,occurred_at,expires_at) SELECT operation_id,$2,convert_to(game_guild_bank_payload(o,$2)::text,'UTF8'),sha256(convert_to(game_guild_bank_payload(o,$2)::text,'UTF8')),occurred_at,occurred_at+2592000000 FROM game_guild_bank_operations o WHERE operation_id=encode($1,'hex')::uuid")
             .bind(op.operation.as_slice()).bind(*owner).execute(&mut **tx).await?;
     }
-    Ok(reply)
+    Ok(())
 }
-fn to_i64(n: u64) -> Result<i64> {
+pub(super) fn to_i64(n: u64) -> Result<i64> {
     i64::try_from(n).map_err(|_| invalid())
 }

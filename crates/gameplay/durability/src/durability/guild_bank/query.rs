@@ -93,7 +93,7 @@ async fn answer(
         next_claim: None,
     };
     if member {
-        let rows=sqlx::query("SELECT e.ordinal,e.kind,e.amount,e.balance_before,e.balance_after,o.actor::text FROM game_guild_bank_entries e JOIN game_guild_bank_operations o USING(operation_id) WHERE e.guild_id=encode($1,'hex')::uuid AND ($2::bigint IS NULL OR e.ordinal<$2) AND ($3 OR e.kind NOT LIKE 'GUILDHALL_%') AND o.occurred_at>=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-2592000000 ORDER BY e.ordinal DESC LIMIT 101")
+        let rows=sqlx::query("SELECT e.ordinal,e.kind,e.amount,e.balance_before,e.balance_after,o.actor::text FROM game_guild_bank_entries e JOIN game_guild_bank_operations o USING(operation_id) WHERE e.guild_id=encode($1,'hex')::uuid AND ($2::bigint IS NULL OR e.ordinal<$2) AND e.kind<>'GUILD_TRANSFER' AND ($3 OR e.kind NOT LIKE 'GUILDHALL_%') AND o.occurred_at>=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-2592000000 ORDER BY e.ordinal DESC LIMIT 101")
             .bind(guild.as_slice()).bind(query.before.map(i64::try_from).transpose().map_err(|_|GuildError::InvalidInput)?).bind(include_guildhall).fetch_all(&mut **tx).await?;
         let more = rows.len() > wire::MAX_LEDGER_ENTRIES;
         for row in rows.into_iter().take(wire::MAX_LEDGER_ENTRIES) {

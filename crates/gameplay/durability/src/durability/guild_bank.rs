@@ -21,8 +21,10 @@ type Result<T> = std::result::Result<T, GuildError>;
 mod payout;
 mod query;
 mod storage;
+mod transfer;
 pub(super) use payout::{PayoutProgress, ensure_disband_payout};
 use storage::*;
+pub use transfer::{GuildBankTransfer, GuildBankTransferResult};
 
 #[derive(Debug, Clone)]
 pub struct GuildBankRequest {

@@ -50,6 +50,7 @@ mod endgame;
 mod fire_feathered;
 mod grizzly;
 mod grizzly_shop;
+mod guild_bank;
 mod healing;
 mod hero_of_bounac;
 #[path = "hireling_services.rs"]
@@ -100,6 +101,7 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    guild_bank: Option<guild_bank::Pending>,
     robbery: Option<crate::durability::world_event::bank_robbery::RecognizedBag>,
     #[cfg(test)]
     interrupt_robbery_after_commit: Option<u64>,
@@ -234,6 +236,7 @@ impl NpcConversations {
             && let Some(state) = sessions.get_mut(&session)
         {
             state.bank = None;
+            state.guild_bank = None;
             state.exchange = None;
         }
     }
@@ -1261,6 +1264,21 @@ pub(super) async fn npc_bank_talk(
     let (Some(fence), Some(reference)) = (command.item_fence, reference) else {
         return rejected();
     };
+    if let Some(outcome) = guild_bank::talk(
+        admission,
+        guild_bank::Conversation {
+            intent: &intent,
+            command: reference,
+            fence,
+            catalogue_revision,
+            conversation_generation,
+            npc_key: &npc_key,
+        },
+    )
+    .await
+    {
+        return outcome;
+    }
     let world_id = fence.runtime_scope.world_id();
     let Ok(world) = crate::domain::WorldId::from_bytes(*world_id.as_bytes()) else {
         return rejected();
@@ -1516,7 +1534,7 @@ pub(super) async fn resume_bank_talk(
         .resume_npc_bank(admission.character, admission.holder, fence, reference)
         .await
     {
-        Ok(None) => None,
+        Ok(None) => guild_bank::resume(admission, fence, reference).await,
         Ok(Some(completion)) => {
             let intent = NpcTalkIntent {
                 npc_actor: EntityRef {
