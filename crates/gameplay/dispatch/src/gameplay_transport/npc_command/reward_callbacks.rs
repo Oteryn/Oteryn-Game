@@ -507,6 +507,12 @@ pub(super) fn prepare(
                     && matches_reward_keyword(c, &text)
             });
             let callback = matching.next()?;
+            // Iriana greets normally until a wrong bridge has actually lost the pursuit.
+            if callback.key == "oteryn:quest-reward/authored/top-of-the-city/restart-pursuit"
+                && !eligible(&callback.storage)
+            {
+                return None;
+            }
             if let Some(other) = matching.next() {
                 // Eroth uses "mission" both before accepting and for the terminal
                 // report. When neither stage applies, the terminal source owns
