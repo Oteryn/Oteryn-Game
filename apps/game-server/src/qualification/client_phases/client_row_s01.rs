@@ -119,21 +119,37 @@ async fn check_peer_shield(
     observer: &mut DevClientSession,
     target: EntityRef,
     expected: u8,
+    watermark: u64,
+    mut events: Vec<oteryn_dev_client::SessionEvent>,
 ) -> TestResult {
-    use oteryn_protocol_oteryn::party_skull::{
-        CAPABILITY_PARTY_SKULL_V1, COMMAND_TYPE_PARTY_SKULL_QUERY, decode_party_icons,
-    };
-    let command = runtime::PartyCommand {
-        kind: COMMAND_TYPE_PARTY_SKULL_QUERY,
-        payload: Vec::new(),
-    };
-    let (_, payload) = capture_reply(observer, &command, CAPABILITY_PARTY_SKULL_V1).await?;
-    let icons = decode_party_icons(&payload).map_err(|error| format!("S01 Party icons: {error:?}"))?;
-    let observed = icons.iter().find(|icon| icon.entity == target).map(|icon| icon.shield);
-    if observed != Some(expected) {
-        return Err(format!("S01 Party shield mismatch: expected={expected} observed={observed:?}").into());
+    use oteryn_dev_client::SessionEvent;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
+    loop {
+        events.extend(observer.take_events());
+        let mut matched = None;
+        for event in events {
+            match event {
+                SessionEvent::PartyIcons(delta) if delta.server_sequence > watermark => {
+                    matched = Some((delta.server_sequence, delta.value.iter()
+                        .find(|icon| icon.entity == target).map(|icon| icon.shield)));
+                }
+                SessionEvent::PartyMembershipNotice(delta) => {
+                    return Err(format!("S01 unexpected Party notice during shield observation: {delta:?}").into());
+                }
+                _ => {}
+            }
+        }
+        if let Some((sequence, Some(shield))) = matched
+            && shield == expected
+        {
+            evidence(&format!("S01_SHIELD sequence={sequence} watermark={watermark} shield={shield} target={target:?}"));
+            return Ok(());
+        }
+        events = observer
+            .wait_for_events(deadline.saturating_duration_since(tokio::time::Instant::now()))
+            .await
+            .map_err(|error| format!("S01 pushed Party shield missing: target={target:?} expected={expected} watermark={watermark} error={error}"))?;
     }
-    Ok(())
 }
 
 async fn send(client: &mut DevClientSession, intent: Option<PartyIntent>) -> TestResult<Sent> {
@@ -256,15 +272,18 @@ async fn expect_notices(
     actor: &str,
     watermark: u64,
     expected: &[(runtime::party::PartyMembershipChange, [u8; 16])],
-) -> TestResult {
+) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let mut remaining = expected;
     let mut events = client.take_events();
+    let mut icons = Vec::new();
     let mut domains = std::collections::BTreeSet::new();
     loop {
         for event in events {
             domains.insert(event.domain_id());
-            if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
+            if matches!(event, oteryn_dev_client::SessionEvent::PartyIcons(_)) {
+                icons.push(event);
+            } else if let oteryn_dev_client::SessionEvent::PartyMembershipNotice(delta) = event {
                 check_notice(watermark, delta.server_sequence, delta.value.change, remaining.first().map(|(change, _)| change))?;
                 let handle = expected_member_handle(client, remaining[0].1);
                 if delta.value.member_handle != handle {
@@ -281,7 +300,7 @@ async fn expect_notices(
             }
         }
         if remaining.is_empty() {
-            return Ok(());
+            return Ok(icons);
         }
         let budget = deadline.saturating_duration_since(tokio::time::Instant::now());
         match client.wait_for_events(budget).await {
@@ -351,6 +370,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     check_state(&leader_view, &before_pass, None)?;
     use oteryn_protocol_oteryn::chat::{CAPABILITY_CHAT_V1, ChatDisposition, decode_chat_intent_result};
     let toggle = runtime::PartyCommand::shared_experience(true).map_err(|error| format!("S01 shared XP wire: {error:?}"))?;
+    let leader_before_toggle = leader.last_server_sequence();
+    let peer_before_toggle = peer.last_server_sequence();
     let (toggle_receipt, payload) = capture_reply(&mut leader, &toggle, CAPABILITY_CHAT_V1).await?;
     let receipt = decode_chat_intent_result(&payload).map_err(|error| format!("S01 shared XP reply: {error:?}"))?;
     if receipt.disposition != ChatDisposition::Ok || receipt.wait_seconds != 0 {
@@ -360,14 +381,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     check_state_with_xp(&leader_shared, &before_pass, None, true)?;
     check_state_with_xp(&send(&mut peer, None).await?, &before_pass, None, true)?;
     // Neither fixture character has contributed in combat, so both shared-XP shields blink.
-    check_peer_shield(&mut leader, own(&peer)?, 7).await?;
-    check_peer_shield(&mut peer, own(&leader)?, 8).await?;
+    check_peer_shield(&mut leader, own(&peer)?, 7, leader_before_toggle, Vec::new()).await?;
+    check_peer_shield(&mut peer, own(&leader)?, 8, peer_before_toggle, Vec::new()).await?;
     let member = leader_shared
         .result
         .members
         .iter()
         .find(|m| m.name == "Packet Two")
         .ok_or("peer absent from leader view")?;
+    let leader_before_pass = leader.last_server_sequence();
+    let peer_before_pass = peer.last_server_sequence();
     let passed = send(
         &mut leader,
         Some(PartyIntent::PassLeadership(member.handle)),
@@ -378,8 +401,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let peer_view = send(&mut peer, None).await?;
     check_state_with_xp(&peer_view, &after_pass, None, true)?;
 
-    check_peer_shield(&mut leader, own(&peer)?, 8).await?;
-    check_peer_shield(&mut peer, own(&leader)?, 7).await?;
+    check_peer_shield(&mut leader, own(&peer)?, 8, leader_before_pass, Vec::new()).await?;
+    check_peer_shield(&mut peer, own(&leader)?, 7, peer_before_pass, Vec::new()).await?;
 
     let leader_before_leave = leader.last_server_sequence();
     let peer_before_leave = peer.last_server_sequence();
@@ -388,11 +411,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         &[],
         None,
     )?;
-    expect_notices(&mut leader, "leader", leader_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
-    expect_notices(&mut peer, "peer", peer_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
+    let leader_leave_icons = expect_notices(&mut leader, "leader", leader_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
+    let peer_leave_icons = expect_notices(&mut peer, "peer", peer_before_leave, &[(Left, clients.characters[0]), (Disbanded, clients.characters[1])]).await?;
     check_state(&send(&mut peer, None).await?, &[], None)?;
-    check_peer_shield(&mut leader, own(&peer)?, 0).await?;
-    check_peer_shield(&mut peer, own(&leader)?, 0).await?;
+    check_peer_shield(&mut leader, own(&peer)?, 0, leader_before_leave, leader_leave_icons).await?;
+    check_peer_shield(&mut peer, own(&leader)?, 0, peer_before_leave, peer_leave_icons).await?;
     for client in [&mut leader, &mut peer] {
         reject_extra_notices(client)?;
         let logout = client.session_mut().logout().await?;
