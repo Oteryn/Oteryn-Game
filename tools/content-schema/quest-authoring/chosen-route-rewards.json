@@ -1220,6 +1220,65 @@
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
       ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/machinery-war-plans-request",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "npc": "oteryn:npc.baxter",
+      "keywords": [
+        "war plans"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/machinery-of-war/war-plans",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "minimum_level": 50,
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Study the chalk board in the Orc Fortress and tell me what the orcs are planning."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=25591&oldid=898558",
+        "https://www.tibiawiki.com.br/wiki/Machinery_of_War_Quest"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/machinery-war-plans-report",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "npc": "oteryn:npc.baxter",
+      "keywords": [
+        "war plans"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/machinery-of-war/war-plans",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great job. I must discuss their plans with the king."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=25591&oldid=898558"
+      ],
+      "experience": 1000
     }
   ],
   "offers": [

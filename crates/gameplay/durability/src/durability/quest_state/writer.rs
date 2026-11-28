@@ -2017,23 +2017,16 @@ impl DurabilityRoot {
                         let Some(channel) = fence.runtime_scope.channel_id() else {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         };
-                        use oteryn_gameplay_quests::quest::reward_callbacks::StateCondition;
-                        let [clock] = world.state_ops.as_slice() else {
-                            return Err(DurabilityError::InvalidStoredState);
-                        };
-                        let StateCondition::ElapsedAtLeast { seconds } = clock.from else {
-                            return Err(DurabilityError::InvalidStoredState);
-                        };
                         let updated = sqlx::query(
                             "INSERT INTO game_captain_iglue_chest_stock (world_id, channel_id, collected_at)
                              VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)
                              ON CONFLICT (world_id, channel_id) DO UPDATE SET collected_at = EXCLUDED.collected_at
-                             WHERE game_captain_iglue_chest_stock.collected_at <= EXCLUDED.collected_at - $4::bigint"
+                             WHERE ((to_timestamp(game_captain_iglue_chest_stock.collected_at) AT TIME ZONE 'Europe/Berlin') - interval '6 hours')::date
+                                 < ((to_timestamp(EXCLUDED.collected_at) AT TIME ZONE 'Europe/Berlin') - interval '6 hours')::date"
                         )
                         .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
                         .bind(channel.as_bytes().as_slice())
                         .bind(now)
-                        .bind(i64::from(seconds))
                         .execute(&mut *tx)
                         .await?;
                         if updated.rows_affected() != 1 {

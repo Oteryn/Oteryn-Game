@@ -69,17 +69,9 @@ pub struct KillObjective {
 
 impl KillObjective {
     pub fn contains(self, x: i32, y: i32, floor: i16) -> bool {
-        self.in_drillworm_caves(x, y, floor)
-            || (self.minimum.0..=self.maximum.0).contains(&x)
-                && (self.minimum.1..=self.maximum.1).contains(&y)
-                && (self.minimum.2..=self.maximum.2).contains(&floor)
-    }
-
-    fn in_drillworm_caves(self, x: i32, y: i32, floor: i16) -> bool {
-        self.transition == "oteryn:quest-transition/spike/lower/kill"
-            && floor == 15
-            && (32525..=32698).contains(&x)
-            && (32000..=32082).contains(&y)
+        (self.minimum.0..=self.maximum.0).contains(&x)
+            && (self.minimum.1..=self.maximum.1).contains(&y)
+            && (self.minimum.2..=self.maximum.2).contains(&floor)
     }
 
     fn effects(self) -> Vec<QuestEffect> {
@@ -258,9 +250,11 @@ mod tests {
     use std::collections::BTreeMap;
 
     #[test]
-    fn kazordoon_drillworm_deaths_count_only_for_the_lower_hunt() {
+    fn lower_spike_counts_only_deaths_inside_the_source_bounds() {
         let lower = party_hunt("oteryn:quest-transition/spike/lower/kill").expect("lower Spike");
-        assert!(lower.contains(32539, 32000, 15));
+        assert!(lower.contains(32120, 32470, 13));
+        assert!(lower.contains(32345, 32710, 15));
+        assert!(!lower.contains(32539, 32000, 15));
         assert!(!lower.contains(32539, 32000, 14));
         assert!(!lower.contains(32539, 32400, 15));
         assert!(!SPIKE_HUNTS[1].contains(32539, 32000, 15));

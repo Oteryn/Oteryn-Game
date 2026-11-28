@@ -150,13 +150,16 @@ def document():
             at=position(32148, 32105, 11),
             lever=[2772, 2773],
             reversible=True,
-            passages=[
-                dict(
-                    position=position(32145, 32101, 11),
-                    appearance=1791,
-                    require_state=True,
-                )
-            ],
+            scene={
+                "open": [{"position": position(32145, 32101, 11), "remove": 1791}],
+                "close": [{"position": position(32145, 32101, 11), "create": 1791, "passable": False}],
+                "evacuate_close": [{
+                    "from": position(32145, 32101, 11),
+                    "players_to": position(32145, 32102, 11),
+                    "creatures_to": position(32145, 32102, 11),
+                    "all": False,
+                }],
+            },
         )
     )
     for name, at, to, facing, splash in [

@@ -4264,6 +4264,11 @@ fn scenario_case(
                 );
             }
             if !lever_fixture {
+                let bear_occupant = if bear_switch {
+                    assert!(world.enterable(crate::map::overlay::TilePos { x: 32145, y: 32101, floor: -11 }));
+                    Some(owner.runtime.lock().await.admit_encounter_actor("oteryn:creature.rat", 20,
+                        local(Position { x: 32145, y: 32101, floor: -11 })).map_err(debug)?)
+                } else { None };
                 for passage in &callback.passages {
                     assert!(world.enterable(crate::map::overlay::TilePos {
                         x: passage.position.x,
@@ -4294,6 +4299,11 @@ fn scenario_case(
                     }
                 );
                 if callback.reversible {
+                    if let Some(occupant) = bear_occupant {
+                        assert_eq!(owner.runtime.lock().await.read_actor_position(occupant).map_err(debug)?.position(),
+                            local(Position { x: 32145, y: 32102, floor: -11 }));
+                        assert!(!world.enterable(crate::map::overlay::TilePos { x: 32145, y: 32101, floor: -11 }));
+                    }
                     for passage in &callback.passages {
                         assert!(!world.enterable(crate::map::overlay::TilePos {
                             x: passage.position.x,

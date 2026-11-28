@@ -32,7 +32,9 @@ pub(super) async fn exercise(
     h: &Harness,
     callback: &Callback,
 ) -> TestResult {
-    let epoch = 1_700_000_000;
+    let captain = callback.key == "oteryn:quest-callback/captain-iglues-left-chest";
+    // 2023-11-15 05:59:59 in the Berlin server-save calendar.
+    let epoch = if captain { 1_700_024_399 } else { 1_700_000_000 };
     h.root.set_test_quest_clock(epoch)?;
     let wait = match callback.state_ops[0].from {
         oteryn_gameplay_quests::quest::reward_callbacks::StateCondition::ElapsedAtLeast {
@@ -40,7 +42,6 @@ pub(super) async fn exercise(
         } => i64::from(seconds),
         _ => return Err("production clock predicate".into()),
     };
-    let captain = callback.key == "oteryn:quest-callback/captain-iglues-left-chest";
     if captain {
         assert_eq!(wait, 86_400);
     }
@@ -67,7 +68,7 @@ pub(super) async fn exercise(
         sqlx::query("INSERT INTO game_captain_iglue_chest_stock(world_id, channel_id, collected_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
             .bind(admitted.world_id.as_bytes().as_slice())
             .bind(admitted.channel_id.as_bytes().as_slice())
-            .bind(epoch - wait + 1)
+            .bind(epoch - 1)
             .execute(&h.pool)
             .await?;
         assert_eq!(use_command(owner, admitted, &target, 1).await?, UseDisposition::Rejected);

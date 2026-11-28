@@ -106,6 +106,8 @@ def capture_sources(source_root):
                                 "line": field["line"],
                             }
                         )
+    # The capture appended TeleportUnique after the original source groups.
+    bindings.sort(key=lambda row: row["source"].endswith("/teleport.lua") and row["attribute"] == "unique")
     expected_exact = {
         (cell, appearance)
         for positions in exact.values()

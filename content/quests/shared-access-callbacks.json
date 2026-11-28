@@ -205,17 +205,7 @@
         2773
       ],
       "reversible": true,
-      "passages": [
-        {
-          "position": {
-            "x": 32145,
-            "y": 32101,
-            "floor": -11
-          },
-          "appearance": 1791,
-          "require_state": true
-        }
-      ],
+      "passages": [],
       "teleport": null,
       "storage": [],
       "offerings": [],
@@ -227,7 +217,50 @@
         "magic": null,
         "portals": null,
         "item_cycle": null,
-        "encounter": null
+        "encounter": null,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32145,
+                "y": 32101,
+                "floor": -11
+              },
+              "remove": 1791
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32145,
+                "y": 32101,
+                "floor": -11
+              },
+              "create": 1791,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "from": {
+                "x": 32145,
+                "y": 32101,
+                "floor": -11
+              },
+              "players_to": {
+                "x": 32145,
+                "y": 32102,
+                "floor": -11
+              },
+              "creatures_to": {
+                "x": 32145,
+                "y": 32102,
+                "floor": -11
+              },
+              "all": false
+            }
+          ]
+        }
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/rookgaard/bear_room_quest/bear_room_quest_stone.lua:1-15"

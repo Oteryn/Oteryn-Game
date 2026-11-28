@@ -238,6 +238,22 @@ impl NativeQuestDeath {
         let counter =
             oteryn_gameplay_quests::quest::native_kills::counter_for(catalogue, &self.transition)
                 .ok_or(DurabilityError::InvalidStoredState)?;
+        if counter.track == "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/dragon_counter" {
+            // Each hoard collection advances this track, even after the achievement unlocks.
+            let collected_since_death: bool = sqlx::query_scalar(
+                "SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2
+                 AND committed_character_revision > $3::text::numeric)",
+            )
+            .bind(character.as_bytes().as_slice())
+            .bind("oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement")
+            .bind(self.observed_revision.to_string())
+            .fetch_one(&mut **tx)
+            .await?;
+            if collected_since_death {
+                return Ok(false);
+            }
+        }
         let initial_gate = catalogue
             .track(counter.gate)
             .ok_or(DurabilityError::InvalidStoredState)?

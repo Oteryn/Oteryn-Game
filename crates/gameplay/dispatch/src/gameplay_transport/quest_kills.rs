@@ -137,6 +137,32 @@ pub(super) async fn settle(
             )
             .await;
         drop(slot);
+        if let Ok(QuestTransitionOutcome::Committed(receipt)) = &outcome
+            && let Some(hunt) =
+                oteryn_gameplay_quests::quest::kill_objectives::party_hunt(&receipt.transition_key)
+            && let Some((track, maximum)) = hunt.counter
+            && let Some(change) = receipt.changes.iter().find(|change| change.track == track)
+        {
+            let (species, npc) = match hunt.creature {
+                "oteryn:creature.demon_skeleton" => ("Demon Skeletons", "Gnomilly"),
+                "oteryn:creature.crystalcrusher" => ("Crystalcrushers", "Gnombold"),
+                "oteryn:creature.drillworm" => ("Drillworms", "Gnomargery"),
+                _ => unreachable!("known Spike hunt"),
+            };
+            owner.states.chat.push_quest_feedback(
+                recipient.session,
+                &format!(
+                    "You have slayed {} out of {maximum} {species}.",
+                    change.after
+                ),
+            );
+            if change.after == maximum {
+                owner
+                    .states
+                    .chat
+                    .push_quest_feedback(recipient.session, &format!("Report the task to {npc}."));
+            }
+        }
         match outcome {
             Ok(
                 QuestTransitionOutcome::Committed(receipt)
