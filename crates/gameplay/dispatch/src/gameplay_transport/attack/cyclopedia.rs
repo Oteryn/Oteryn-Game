@@ -5,6 +5,8 @@
 mod augments;
 use super::*;
 use crate::durability::cyclopedia_character::combat::{CombatSnapshot, CombatSnapshotReceipt};
+use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::gameplay_transport::equipment_move::equipment_effects_owner as equipment_owner;
 use crate::spell::cast::PlayerSpellState;
 use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
@@ -27,12 +29,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|g| g.native_gameplay())
             .ok_or(())?;
-        let current =
-            crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
-                .current_session_at(session)
+        // Keep the foreground request registered through snapshot capture and publication.
+        // A tab can arrive while a background pass holds the durability holder.
+        let retry = expected_fence.map(|_| AdmissionRetryBudget::for_command(self.root));
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let current = if let Some(retry) = &retry {
+            retry
+                .retry_durability("cyclopedia_combat_session", || {
+                    store.current_session_at(session)
+                })
                 .await
-                .map_err(|_| ())?
-                .0;
+        } else {
+            store.current_session_at(session).await
+        }
+        .map_err(|_| ())?
+        .0;
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or(())?;
         if expected_fence.is_some_and(|expected| expected != fence) {
             return Err(());

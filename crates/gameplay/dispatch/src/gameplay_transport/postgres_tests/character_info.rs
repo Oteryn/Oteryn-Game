@@ -4,6 +4,78 @@ use super::{TestResult, debug, prepare_current_session};
 use oteryn_protocol_oteryn::character_info::CharacterTitle;
 
 #[test]
+fn first_character_info_self_query_waits_for_holder_and_awards_cyclopscamper() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async |admin| {
+        use crate::durability::DurabilityError;
+        use crate::foundation::AuthenticatedTransportRefV1;
+        use crate::gameplay_transport::capabilities::SelectedCapabilities;
+        use crate::gameplay_transport::character_info::{CharacterInfoReply, decode, offered};
+        use crate::gameplay_transport::connection::FirstEntryOutcome;
+        use oteryn_protocol_oteryn::character_info::CAPABILITY_CHARACTER_INFO_V1;
+
+        let h = Harness::create_with_admission_seed(admin, "first_character_info", true, false)
+            .await?;
+        let level = 100;
+        super::m01b_explore_fixtures::koshei::seed_level(&h, level).await?;
+        let request = prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let deps = super::Dependencies::new()?;
+        let owner = deps.owner(&h, &authority);
+        let mut admitted = deps.admitted;
+        let (first_entry, fence, _) = Box::pin(owner.initialize_first_entry(
+            &request,
+            admitted.game_session_id,
+            AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(debug)?,
+            deps.actor,
+        ))
+        .await;
+        assert_eq!(first_entry, FirstEntryOutcome::Positioned);
+        admitted.first_entry = first_entry;
+        admitted.item_fence = Some(fence.ok_or("first-entry item fence")?);
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(&offered(&[], true), &[CAPABILITY_CHARACTER_INFO_V1])
+                .ok_or("Character Info capability")?;
+        let operation = decode(&[0, 0, 0, 50]).map_err(debug)?;
+        let reply = {
+            // Keep the holder busy through the automatic title refresh's first checkout.
+            let held = h.root.try_issue_background_semantic_pass()?;
+            assert!(matches!(
+                h.root.try_issue_semantic_pass(),
+                Err(DurabilityError::RootUnavailable)
+            ));
+            let mut query = std::pin::pin!(owner.character_info_command(admitted, operation));
+            let first = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(std::future::Future::poll(query.as_mut(), cx))
+            })
+            .await;
+            assert!(first.is_pending(), "first QuerySelf returned {first:?} while the holder was busy");
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            query.await
+        };
+        let CharacterInfoReply::Payload(bytes) = reply else {
+            return Err(format!("first QuerySelf returned {reply:?}").into());
+        };
+        let (summary, title_block) = bytes.split_at_checked(1 + 8 * 8 + 2 * 2).ok_or("summary")?;
+        assert_eq!(summary[0], 0);
+        assert_eq!(i64::from_le_bytes(summary[1..9].try_into()?), level);
+        let (&count, titles) = title_block.split_first().ok_or("title count")?;
+        let (&selected, titles) = titles.split_last().ok_or("selected title")?;
+        assert_eq!(titles.len(), usize::from(count));
+        assert!(titles.contains(&CharacterTitle::Cyclopscamper.id()));
+        assert_eq!(selected, 0);
+        eprintln!("POSTGRES_CASE_COMPLETED first_character_info");
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
+#[test]
 fn character_title_unlock_and_selection_are_durable_and_referential() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
