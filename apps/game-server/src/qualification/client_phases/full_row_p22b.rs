@@ -60,6 +60,13 @@ fn contains_boss(snapshot: &tr::TrackerSnapshot) -> bool {
         .any(|entry| entry.creature_key == BOSS)
 }
 
+fn has_seeded_credit(snapshot: &tr::TrackerSnapshot) -> bool {
+    snapshot
+        .entries
+        .iter()
+        .any(|entry| entry.creature_key == BOSS && entry.kill_count == 1)
+}
+
 async fn read(client: &mut DevClientSession, command: u32) -> TestResult<tr::TrackerSnapshot> {
     let (status, list) = call(client, command, &tr::TrackerRequest::Read).await?;
     expect(status == CommandStatus::Accepted, "read", status)?;
@@ -74,15 +81,48 @@ async fn progress(clients: &SeamClients<'_>) -> TestResult<i64> {
         "SELECT count(*) FROM game_character_bosstiary_progress \
          WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 AND kill_count::bigint > 0",
     )
-    .bind(clients.characters[1].as_slice())
+    .bind(clients.characters[0].as_slice())
     .bind(BOSS)
     .fetch_one(&mut connection)
     .await?;
     Ok(rows)
 }
 
+async fn seed_boss_credit(clients: &SeamClients<'_>) -> TestResult {
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    // One unboosted Nemesis kill reaches Prowess (10 points).
+    let (kills, points): (i64, i64) = sqlx::query_as(
+        "INSERT INTO game_character_bosstiary_progress
+         (character_id, boss_key, kill_count, boss_points)
+         VALUES (encode($1,'hex')::uuid, $2, 1, 10)
+         RETURNING kill_count, boss_points",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(BOSS)
+    .fetch_one(&mut connection)
+    .await?;
+    expect(
+        (kills, points) == (1, 10),
+        "fixture-credit",
+        (kills, points),
+    )?;
+    evidence(&format!(
+        "FIXTURE row=P22b.full account=q_p22b boss={BOSS} kill_count={kills} boss_points={points}"
+    ));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
-    let mut client = connect_world(clients, 0xd2).await?;
+    let dedicated = character_prep::dedicated_named_character(
+        clients,
+        "NODE_BOOT_P22B_ACCOUNT",
+        Some("Prowess Hunter"),
+    )
+    .await?;
+    let scoped = dedicated.clients(clients);
+    let clients = &scoped;
+    seed_boss_credit(clients).await?;
+    let mut client = connect_character(clients, 0xd2, 0).await?;
     selected(&client)?;
     let boss = tr::COMMAND_TYPE_BOSSTIARY_TRACKER;
     let before = read(&mut client, boss).await?;
@@ -112,20 +152,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     }
     expect(
         status == CommandStatus::Accepted
-            && list.as_ref().is_some_and(contains_boss)
+            && list.as_ref().is_some_and(has_seeded_credit)
             && credited > 0,
         "boss-add",
         (status, credited),
     )?;
     let list = read(&mut client, boss).await?;
-    expect(contains_boss(&list), "read-after-add", "boss-missing")?;
+    expect(has_seeded_credit(&list), "read-after-add", "boss-missing")?;
     // Durable: the entry survives logout and a fresh admission.
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xd3).await?;
+    let mut client = connect_character(clients, 0xd3, 0).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
-        contains_boss(&list),
+        has_seeded_credit(&list),
         "relog-with-entry",
         "boss-lost-after-relog",
     )?;
@@ -143,7 +183,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     // Durable: the removal also survives logout and a fresh admission.
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xd4).await?;
+    let mut client = connect_character(clients, 0xd4, 0).await?;
     selected(&client)?;
     let list = read(&mut client, boss).await?;
     expect(
