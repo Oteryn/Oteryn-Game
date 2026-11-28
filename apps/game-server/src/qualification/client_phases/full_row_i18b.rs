@@ -267,6 +267,47 @@ async fn pick_up_rope(
     Ok(())
 }
 
+// Store the untouched server domain payload. Session metadata stays outside the wire bytes.
+fn capture_view(
+    client: &mut DevClientSession,
+    phase: &str,
+    view_id: u8,
+    rope: NonZeroU32,
+) -> TestResult {
+    use std::io::Write;
+
+    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
+        return Ok(());
+    };
+    let root = Path::new(&root);
+    let run = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or("capture run name")?;
+    let id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let sequence = client.last_server_sequence();
+    let selected = client.selected_capabilities();
+    let house = u8::from(selected.contains(&tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2));
+    let appearances = u8::from(
+        selected.contains(&oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+    );
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(tree::STATE_DOMAIN_CONTAINER_VIEWS)
+        .ok_or("capture container views absent")?;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join(format!("i18b-{phase}.bin")))?;
+    writeln!(
+        file,
+        "{run} {id} {sequence} {} {view_id} {rope} {house} {appearances}",
+        snapshot.revision
+    )?;
+    file.write_all(&snapshot.payload)?;
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let rope = provisioning::item_reference(&provisioning::item_index()?, 3003)?;
     let mut client = connect_world(clients, 0xf2).await?;
@@ -280,7 +321,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let field = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
-    // Crystal's virtual browse container is locked. The tile is the deposit target.
+    // Global: https://tibia.fandom.com/wiki/Browse_Field (drag out only).
+    // The physical tile remains the deposit target.
     let entry = carried_rope(&client, rope)?;
     move_rope(
         &mut client,
@@ -297,8 +339,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("step=locked-browse-refusal observed=state-changed".into());
     }
+    capture_view(&mut client, "before-drop", field.view_id, rope)?;
     let dropped = drop_rope(&mut client, &field, at, rope).await?;
+    capture_view(&mut client, "after-drop", field.view_id, rope)?;
     pick_up_rope(&mut client, &field, at, rope, dropped).await?;
+    capture_view(&mut client, "after-pickup", field.view_id, rope)?;
 
     let before = view_revision(&mut client)?;
     let outcome = client

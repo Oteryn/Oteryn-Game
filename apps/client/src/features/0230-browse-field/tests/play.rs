@@ -256,3 +256,100 @@ impl crate::play::Outbox {
         self.browse_field_result(response);
     }
 }
+
+#[test]
+#[ignore = "requires fresh I18b.full capture from a live qualification run"]
+fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::ItemMoveDestination;
+
+    let root = std::path::PathBuf::from(
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory required")?,
+    );
+    let run = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or("capture run name")?;
+    let (link, _, outbox) = play_channel();
+    outbox.browse_field_initialize(true);
+    let mut prior = None;
+    let mut tile = None;
+    for (phase, expected) in [("before-drop", 0), ("after-drop", 1), ("after-pickup", 0)] {
+        let bytes = std::fs::read(root.join(format!("i18b-{phase}.bin")))?;
+        let end = bytes
+            .iter()
+            .position(|&byte| byte == b'\n')
+            .ok_or("capture header missing")?;
+        let fields: Vec<_> = std::str::from_utf8(&bytes[..end])?
+            .split_ascii_whitespace()
+            .collect();
+        let &[
+            captured_run,
+            session,
+            sequence,
+            revision,
+            view,
+            rope,
+            house,
+            appearances,
+        ] = fields.as_slice()
+        else {
+            return Err("invalid capture header".into());
+        };
+        assert_eq!(captured_run, run);
+        let sequence = sequence.parse::<u64>()?;
+        let revision = revision.parse::<u64>()?;
+        let view = view.parse::<u8>()?;
+        let rope = rope.parse::<u32>()?;
+        assert!(matches!(house, "0" | "1") && matches!(appearances, "0" | "1"));
+        let identity = (
+            session.to_owned(),
+            view,
+            rope,
+            house == "1",
+            appearances == "1",
+        );
+        if let Some((old_identity, old_sequence, old_revision)) = &prior {
+            assert_eq!(&identity, old_identity);
+            assert!(sequence > *old_sequence && revision > *old_revision);
+        } else {
+            assert!(!session.is_empty() && sequence > 0 && revision > 0);
+            outbox.container_initialize_with_house_capacity(None, identity.3);
+        }
+        outbox.browse_field_views(&bytes[end + 1..], identity.4);
+        let mut panel = link.browse_field_panel();
+        assert!(panel.feedback.is_none());
+        let field = panel
+            .views
+            .views
+            .iter()
+            .find(|field| field.view_id == view && field.browse.is_some())
+            .ok_or("captured browse view missing from the client panel")?;
+        let position = field.browse.ok_or("captured tile absent")?.position;
+        if let Some(previous) = tile.replace(position) {
+            assert_eq!(position, previous);
+        }
+        let row = field
+            .entries
+            .iter()
+            .position(|entry| entry.item_definition_ref.get() == rope);
+        let count: u32 = field
+            .entries
+            .iter()
+            .filter(|entry| entry.item_definition_ref.get() == rope)
+            .map(|entry| entry.count.get())
+            .sum();
+        assert_eq!(count, expected);
+        if let Some(row) = row {
+            let handle = field.entries[row].handle;
+            panel.view_id = view;
+            let command = native::item_command(&mut panel, 105, &row.to_string(), "");
+            assert!(
+                matches!(command, Some(crate::combat_input::PlayCommand::BrowseFieldMove(intent))
+                if intent.source == handle && intent.destination == ItemMoveDestination::MainBackpack)
+            );
+        }
+        prior = Some((identity, sequence, revision));
+    }
+    println!("I18B_CLIENT_REPLAY PASS run={run} phases=3");
+    Ok(())
+}
