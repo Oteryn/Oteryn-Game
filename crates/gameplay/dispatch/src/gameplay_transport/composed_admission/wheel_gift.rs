@@ -10,7 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
-    pub(super) async fn load_wheel_gift_for_transport(
+    pub(in crate::gameplay_transport) async fn load_wheel_gift_for_transport(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
