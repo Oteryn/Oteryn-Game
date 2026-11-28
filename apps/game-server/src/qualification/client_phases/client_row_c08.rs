@@ -3,7 +3,9 @@
 //! `crates/session/src/domain_dispatch.rs` through `Session::apply_state_delta` and exposed by
 //! `Session::actor_vitals` in `session_access.rs`. The session owns domain 3 and does not retain
 //! raw delta bytes, so each capture is the applied vitals value encoded by the production codec.
-use super::full_row_c08::{poison_status, poison_tick_fact, travel_to_poison_spider, walk_c08};
+use super::full_row_c08::{
+    poison_status, poison_tick_fact, travel_to_poison_spider, wait_for_c08_logout, walk_c08,
+};
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::actor_spell::{
@@ -175,26 +177,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .ok_or("C08 replay cleanup has no reachable logout tile")?;
     walk_c08(&mut client, world, &safe).await?;
 
-    // A normal InFight refusal carries the remaining combat hold. Other refusals fail.
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        use oteryn_protocol_oteryn::logout::LogoutResult;
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(LogoutResult::Accepted) => break,
-            Some(LogoutResult::InFight { retry_after_ms }) => {
-                let ready =
-                    tokio::time::Instant::now() + Duration::from_millis(retry_after_ms.into());
-                if ready >= deadline {
-                    return Err("C08 combat hold exceeds logout deadline".into());
-                }
-                while tokio::time::Instant::now() < ready {
-                    client.service_liveness(Duration::from_millis(250)).await?;
-                    client.take_events();
-                }
-            }
-            _ => return Err(format!("C08 cleanup logout refused: {reply:?}").into()),
-        }
+    wait_for_c08_logout(&mut client, Some(spider)).await?;
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C08 cleanup logout refused: {reply:?}").into());
     }
     Ok(format!(
         "health={}>{}>{} mana={}>{}",

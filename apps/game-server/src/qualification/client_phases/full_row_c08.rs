@@ -55,7 +55,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 1,
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(720), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(720),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!(
@@ -94,9 +98,14 @@ pub(super) async fn poison_status(client: &mut DevClientSession) -> TestResult<b
 
 async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i64>> {
     use oteryn_protocol_oteryn::condition_status as wire;
-    let reply = client.session_mut().gated_command(
-        wire::CAPABILITY_CONDITION_STATUS_V1, wire::COMMAND_TYPE_CONDITION_STATUS_QUERY, &[],
-    ).await?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CONDITION_STATUS_V1,
+            wire::COMMAND_TYPE_CONDITION_STATUS_QUERY,
+            &[],
+        )
+        .await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=poison-status observed={reply:?} need=ConditionStatus").into());
     }
@@ -105,8 +114,14 @@ async fn poison_remaining(client: &mut DevClientSession) -> TestResult<Option<i6
     Ok(poison_duration(&status))
 }
 
-fn poison_duration(status: &oteryn_protocol_oteryn::condition_status::ConditionStatus) -> Option<i64> {
-    status.conditions.iter().find(|condition| condition.icon == 1 && condition.sub_id == 0).map(|condition| condition.remaining_ms)
+fn poison_duration(
+    status: &oteryn_protocol_oteryn::condition_status::ConditionStatus,
+) -> Option<i64> {
+    status
+        .conditions
+        .iter()
+        .find(|condition| condition.icon == 1 && condition.sub_id == 0)
+        .map(|condition| condition.remaining_ms)
 }
 
 async fn poison(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
@@ -125,10 +140,17 @@ async fn poison(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
 }
 
 fn require_poison_attribution(client: &DevClientSession) -> TestResult {
-    use oteryn_protocol_oteryn::analyser::{CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1, CAPABILITY_ANALYSER_V1};
+    use oteryn_protocol_oteryn::analyser::{
+        CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1, CAPABILITY_ANALYSER_V1,
+    };
     let caps = client.selected_capabilities();
-    if !caps.contains(&CAPABILITY_ANALYSER_V1) || !caps.contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1) {
-        return Err("step=poison observed=no-attributed-analyser need=creature-condition-damage-evidence".into());
+    if !caps.contains(&CAPABILITY_ANALYSER_V1)
+        || !caps.contains(&CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err(
+            "step=poison observed=no-attributed-analyser need=creature-condition-damage-evidence"
+                .into(),
+        );
     }
     Ok(())
 }
@@ -136,7 +158,10 @@ fn require_poison_attribution(client: &DevClientSession) -> TestResult {
 fn poison_tick_sequence(events: Vec<SessionEvent>, after: u64) -> Option<u64> {
     events.into_iter().find_map(|event| match event {
         SessionEvent::AnalyserAttributedFacts(delta)
-            if delta.server_sequence > after && delta.value.iter().any(poison_tick_fact) => Some(delta.server_sequence),
+            if delta.server_sequence > after && delta.value.iter().any(poison_tick_fact) =>
+        {
+            Some(delta.server_sequence)
+        }
         _ => None,
     })
 }
@@ -221,7 +246,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let damage = poison(&mut client).await?;
     row.pass(damage);
 
-    let before_refusal = client.actor_vitals().copied().ok_or("step=logout-refusal observed=no-vitals")?;
+    let before_refusal = client
+        .actor_vitals()
+        .copied()
+        .ok_or("step=logout-refusal observed=no-vitals")?;
     let position_before_refusal = client.world_spatial().actor_position;
     let session_before_refusal = client.join_snapshot().game_session_id;
     let initial_refusal = client.session_mut().logout().await?;
@@ -231,14 +259,18 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         || client.join_snapshot().game_session_id != session_before_refusal
         || !poison_status(&mut client).await?
     {
-        return Err(format!("step=logout-refusal observed={initial_refusal:?} need=InFight-during-poison-combat").into());
+        return Err(format!(
+            "step=logout-refusal observed={initial_refusal:?} need=InFight-during-poison-combat"
+        )
+        .into());
     }
 
     let (spell, mana_cost) = antidote(&mut client)?;
     let dispel_site = walk_to_dispel_site(&mut client, world).await?;
     let sampled = tokio::time::Instant::now();
-    let remaining = poison_remaining(&mut client).await?
-        .ok_or("step=dispel observed=poison-expired-before-cast need=live-poison-at-isolated-site")?;
+    let remaining = poison_remaining(&mut client).await?.ok_or(
+        "step=dispel observed=poison-expired-before-cast need=live-poison-at-isolated-site",
+    )?;
     if remaining <= 0 || !poison_survived_window(remaining, sampled.elapsed()) {
         return Err("step=dispel observed=poison-near-natural-expiry-before-cast".into());
     }
@@ -268,7 +300,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     loop {
         require_isolated_poison_site(&mut client, dispel_site, "dispel")?;
         if poison_tick_sequence(client.take_events(), cast.result_server_sequence).is_some() {
-            return Err("step=dispel observed=post-cast-poison-tick need=immediate-tick-cessation".into());
+            return Err(
+                "step=dispel observed=post-cast-poison-tick need=immediate-tick-cessation".into(),
+            );
         }
         if tokio::time::Instant::now() >= clean_until {
             break;
@@ -284,8 +318,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass(initial_refusal.result);
 
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| tile.protection_zone())
-    }).ok_or("step=regeneration observed=no-reachable-protection-zone need=retreat-from-spider")?;
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| tile.protection_zone())
+    })
+    .ok_or("step=regeneration observed=no-reachable-protection-zone need=retreat-from-spider")?;
     walk_c08(&mut client, world, &safe).await?;
     let damaged = client
         .actor_vitals()
@@ -303,24 +341,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if poison_status(&mut client).await? {
         return Err("C08 second exposure started with pre-existing poison".into());
     }
-    travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
+    let aggressor = travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let second = poison(&mut client).await?;
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
         is_logout_rest_tile(world, at)
-    }).ok_or("step=poison-persistence observed=no-safe-retreat-route")?;
+    })
+    .ok_or("step=poison-persistence observed=no-safe-retreat-route")?;
     walk_c08(&mut client, world, &safe).await?;
     let old_session = client.join_snapshot().game_session_id;
     let saved_position = client.world_spatial().actor_position;
     if tile(saved_position)? == TOWN {
         return Err("C08 persistence logout position equals the default town entry".into());
     }
-    // Crystal allows normal logout in protection even while a PvE fight flag is active.
-    let in_fight = client.session_mut().combat_state().ok_or("C08 combat state absent")?.in_fight;
+    wait_for_c08_logout(&mut client, Some(aggressor)).await?;
+    let in_fight = client
+        .session_mut()
+        .combat_state()
+        .ok_or("C08 combat state absent")?
+        .in_fight;
     let sampled = tokio::time::Instant::now();
-    let saved_remaining = poison_remaining(&mut client).await?
+    let saved_remaining = poison_remaining(&mut client)
+        .await?
         .filter(|remaining| *remaining > 0)
         .ok_or("step=poison-persistence observed=no-finite-live-poison-at-save")?;
-    evidence(&format!("C08_PERSISTENCE_PRELOGOUT position={saved_position:?} remaining_ms={saved_remaining} in_fight={in_fight}"));
+    evidence(&format!(
+        "C08_PERSISTENCE_PRELOGOUT position={saved_position:?} remaining_ms={saved_remaining} in_fight={in_fight}"
+    ));
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=poison-persistence first logout refused: {reply:?}").into());
@@ -341,7 +387,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=poison-persistence remaining-at-save={saved_remaining} restored={restored} elapsed={:?}", sampled.elapsed()).into());
     }
     let tick = resumed_poison_tick(&mut client, world).await?;
-    wait_until_out_of_combat(&mut client).await?;
+    wait_for_c08_logout(&mut client, None).await?;
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=poison-persistence final logout refused: {reply:?}").into());
@@ -356,11 +402,33 @@ fn retained_duration(before: i64, restored: i64, elapsed: Duration) -> bool {
         && (before - restored) as u128 <= elapsed.as_millis().saturating_add(2)
 }
 
-async fn wait_until_out_of_combat(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+pub(super) async fn wait_for_c08_logout(
+    client: &mut DevClientSession,
+    aggressor: Option<oteryn_dev_client::EntityRef>,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
-        let combat = client.session_mut().combat_state().ok_or("C08 combat state absent")?;
-        if !combat.in_fight && combat.target.is_none() {
+        let combat = client
+            .session_mut()
+            .combat_state()
+            .ok_or("C08 combat state absent")?;
+        let clear = !combat.in_fight && combat.target.is_none();
+        let position = client.world_spatial().actor_position;
+        let entities = client
+            .world_entities()
+            .ok_or("C08 logout visibility absent")?;
+        let aggressor_near = aggressor
+            .and_then(|id| entities.get(&id))
+            .is_some_and(|actor| {
+                actor.position.floor == position.floor
+                    && actor
+                        .position
+                        .x
+                        .abs_diff(position.x)
+                        .max(actor.position.y.abs_diff(position.y))
+                        <= 8
+            });
+        if clear && !aggressor_near && !creature_can_interfere(client, position) {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
@@ -493,7 +561,63 @@ pub(super) async fn walk_c08(
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, from, direction).ok_or("C08 route landing absent")?;
-        let outcome = client.step(direction).await?;
+        let mut outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Blocked {
+            let occupant = client
+                .world_entities()
+                .and_then(|entities| {
+                    entities
+                        .others()
+                        .find(|actor| tile(actor.position).ok() == Some(expected))
+                })
+                .ok_or_else(|| {
+                    format!(
+                        "BLOCKER-SERVER C08 blocked unoccupied landing {expected:?}: {outcome:?}"
+                    )
+                })?;
+            if occupant.kind != oteryn_dev_client::EntityKind::Creature {
+                return Err(
+                    format!("C08 blocked by non-creature at {expected:?}: {occupant:?}").into(),
+                );
+            }
+            let id = occupant.entity;
+            evidence(&format!(
+                "C08_MOVEMENT_BLOCKED occupant={id:?} landing={expected:?} first={outcome:?}"
+            ));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            while client
+                .world_entities()
+                .ok_or("C08 movement visibility absent")?
+                .get(&id)
+                .is_some_and(|actor| tile(actor.position).ok() == Some(expected))
+            {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("C08 creature {id:?} did not leave {expected:?}").into());
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+                client.take_events();
+            }
+            if tile(client.world_spatial().actor_position)? != from
+                || c08_visible_occupants(client).contains(&expected)
+            {
+                return Err(format!(
+                    "C08 blocked movement changed before retry: {from:?} -> {expected:?}"
+                )
+                .into());
+            }
+            evidence(&format!(
+                "C08_MOVEMENT_CLEARED occupant={id:?} landing={expected:?}"
+            ));
+            outcome = client.step(direction).await?;
+            if outcome.disposition == StepDisposition::Blocked
+                && !c08_visible_occupants(client).contains(&expected)
+            {
+                return Err(format!(
+                    "BLOCKER-SERVER C08 blocked unoccupied landing {expected:?}: {outcome:?}"
+                )
+                .into());
+            }
+        }
         let actual = tile(client.world_spatial().actor_position)?;
         if outcome.disposition != StepDisposition::Moved
             || outcome.world_spatial_delta.is_none()
@@ -508,12 +632,22 @@ pub(super) async fn walk_c08(
 }
 
 fn creature_can_interfere(client: &DevClientSession, at: ActorPosition) -> bool {
-    client.world_entities().is_none_or(|entities| entities.iter().any(|entry| {
-        entry.entity.identity != *entities.own_identity()
-            && matches!(entry.kind, oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Player)
-            && entry.position.floor == at.floor
-            && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) <= 8
-    }))
+    client.world_entities().is_none_or(|entities| {
+        entities.iter().any(|entry| {
+            entry.entity.identity != *entities.own_identity()
+                && matches!(
+                    entry.kind,
+                    oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Player
+                )
+                && entry.position.floor == at.floor
+                && entry
+                    .position
+                    .x
+                    .abs_diff(at.x)
+                    .max(entry.position.y.abs_diff(at.y))
+                    <= 8
+        })
+    })
 }
 
 fn require_isolated_poison_site(
@@ -684,16 +818,25 @@ fn restored_poison_amount(fact: &oteryn_protocol_oteryn::analyser::AttributedFac
 }
 
 pub(super) fn poison_tick_fact(fact: &oteryn_protocol_oteryn::analyser::AttributedFact) -> bool {
-    use oteryn_protocol_oteryn::{analyser::{AnalyserFact, AnalyserDamageSource}, damage_element::DamageElement};
-    fact.attacker.is_none() && matches!(fact.fact, AnalyserFact::DamageInput {
-        element: DamageElement::Earth,
-        source: AnalyserDamageSource::Creature(None),
-        ..
-    })
+    use oteryn_protocol_oteryn::{
+        analyser::{AnalyserDamageSource, AnalyserFact},
+        damage_element::DamageElement,
+    };
+    fact.attacker.is_none()
+        && matches!(
+            fact.fact,
+            AnalyserFact::DamageInput {
+                element: DamageElement::Earth,
+                source: AnalyserDamageSource::Creature(None),
+                ..
+            }
+        )
 }
 
 fn poison_survived_window(remaining: i64, elapsed: Duration) -> bool {
-    remaining == -1 || u64::try_from(remaining).is_ok_and(|ms| elapsed + Duration::from_millis(1) < Duration::from_millis(ms))
+    remaining == -1
+        || u64::try_from(remaining)
+            .is_ok_and(|ms| elapsed + Duration::from_millis(1) < Duration::from_millis(ms))
 }
 
 #[cfg(test)]
@@ -707,14 +850,49 @@ mod tests {
             damage_element::DamageElement,
         };
         let fact = |element, source, attacker| AttributedFact {
-            fact: AnalyserFact::DamageInput { value: NonZeroU32::MIN, element, source },
+            fact: AnalyserFact::DamageInput {
+                value: NonZeroU32::MIN,
+                element,
+                source,
+            },
             attacker,
         };
-        assert_eq!(restored_poison_amount(&fact(DamageElement::Earth, AnalyserDamageSource::None, None)), Some(1));
-        assert_eq!(restored_poison_amount(&fact(DamageElement::Earth, AnalyserDamageSource::Creature(None), None)), None);
-        assert_eq!(restored_poison_amount(&fact(DamageElement::Physical, AnalyserDamageSource::None, None)), None);
-        let source = oteryn_dev_client::EntityRef { identity: [1; 16], generation: 1 };
-        assert_eq!(restored_poison_amount(&fact(DamageElement::Earth, AnalyserDamageSource::None, Some(source))), None);
+        assert_eq!(
+            restored_poison_amount(&fact(
+                DamageElement::Earth,
+                AnalyserDamageSource::None,
+                None
+            )),
+            Some(1)
+        );
+        assert_eq!(
+            restored_poison_amount(&fact(
+                DamageElement::Earth,
+                AnalyserDamageSource::Creature(None),
+                None
+            )),
+            None
+        );
+        assert_eq!(
+            restored_poison_amount(&fact(
+                DamageElement::Physical,
+                AnalyserDamageSource::None,
+                None
+            )),
+            None
+        );
+        let source = oteryn_dev_client::EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        assert_eq!(
+            restored_poison_amount(&fact(
+                DamageElement::Earth,
+                AnalyserDamageSource::None,
+                Some(source)
+            )),
+            None
+        );
     }
 
     #[test]
@@ -740,36 +918,69 @@ mod tests {
     #[test]
     fn dispel_window_detects_residual_tick_in_first_post_cast_batch() {
         use oteryn_dev_client::AppliedDelta;
-        use oteryn_protocol_oteryn::{analyser::{AnalyserFact, AnalyserDamageSource, AttributedFact}, damage_element::DamageElement};
-        let tick = |server_sequence| SessionEvent::AnalyserAttributedFacts(AppliedDelta {
-            server_sequence, base_revision: 0, new_revision: 1,
-            value: vec![AttributedFact {
-                fact: AnalyserFact::DamageInput {
-                    value: NonZeroU32::MIN, element: DamageElement::Earth,
-                    source: AnalyserDamageSource::Creature(None),
-                },
-                attacker: None,
-            }],
-        });
+        use oteryn_protocol_oteryn::{
+            analyser::{AnalyserDamageSource, AnalyserFact, AttributedFact},
+            damage_element::DamageElement,
+        };
+        let tick = |server_sequence| {
+            SessionEvent::AnalyserAttributedFacts(AppliedDelta {
+                server_sequence,
+                base_revision: 0,
+                new_revision: 1,
+                value: vec![AttributedFact {
+                    fact: AnalyserFact::DamageInput {
+                        value: NonZeroU32::MIN,
+                        element: DamageElement::Earth,
+                        source: AnalyserDamageSource::Creature(None),
+                    },
+                    attacker: None,
+                }],
+            })
+        };
         assert_eq!(poison_tick_sequence(vec![tick(9), tick(11)], 10), Some(11));
         assert_eq!(poison_tick_sequence(vec![tick(9), tick(10)], 10), None);
     }
 
     #[test]
     fn independent_review_c08_rejects_unproven_evidence() {
-        use oteryn_protocol_oteryn::{analyser::{AnalyserFact, AnalyserDamageSource, AttributedFact}, damage_element::DamageElement};
+        use oteryn_protocol_oteryn::{
+            analyser::{AnalyserDamageSource, AnalyserFact, AttributedFact},
+            damage_element::DamageElement,
+        };
         let value = std::num::NonZeroU32::MIN;
-        let hit = |element, source| AttributedFact { fact: AnalyserFact::DamageInput { value, element, source }, attacker: None };
-        assert!(!poison_tick_fact(&hit(DamageElement::Physical, AnalyserDamageSource::Creature(None))));
-        assert!(!poison_tick_fact(&hit(DamageElement::Earth, AnalyserDamageSource::None)));
-        assert!(poison_tick_fact(&hit(DamageElement::Earth, AnalyserDamageSource::Creature(None))));
+        let hit = |element, source| AttributedFact {
+            fact: AnalyserFact::DamageInput {
+                value,
+                element,
+                source,
+            },
+            attacker: None,
+        };
+        assert!(!poison_tick_fact(&hit(
+            DamageElement::Physical,
+            AnalyserDamageSource::Creature(None)
+        )));
+        assert!(!poison_tick_fact(&hit(
+            DamageElement::Earth,
+            AnalyserDamageSource::None
+        )));
+        assert!(poison_tick_fact(&hit(
+            DamageElement::Earth,
+            AnalyserDamageSource::Creature(None)
+        )));
     }
 
     use oteryn_protocol_oteryn::condition_status::{ActiveCondition, ConditionStatus};
 
     #[test]
     fn burning_does_not_prove_poison() {
-        let mut status = ConditionStatus { conditions: vec![ActiveCondition { icon: 2, sub_id: 0, remaining_ms: 1000 }] };
+        let mut status = ConditionStatus {
+            conditions: vec![ActiveCondition {
+                icon: 2,
+                sub_id: 0,
+                remaining_ms: 1000,
+            }],
+        };
         assert!(poison_duration(&status).is_none());
         status.conditions[0].icon = 1;
         assert!(poison_duration(&status).is_some());
