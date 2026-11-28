@@ -176,6 +176,20 @@ fn core_count(client: &DevClientSession, core: std::num::NonZeroU32) -> TestResu
         .sum())
 }
 
+fn obelisk_result(
+    payload: &[u8],
+) -> TestResult<(
+    oteryn_protocol_oteryn::world_object::UseDisposition,
+    Option<oteryn_protocol_oteryn::refusal_detail::RefusalDetail>,
+)> {
+    use oteryn_protocol_oteryn::{refusal_detail, world_object};
+    let (body, detail) = refusal_detail::split_refusal_detail(payload)
+        .map_err(|error| format!("W08 obelisk refusal detail: {error:?}"))?;
+    let disposition = world_object::decode_use_result(body)
+        .map_err(|error| format!("W08 obelisk USE result: {error:?}"))?;
+    Ok((disposition, detail))
+}
+
 async fn enter_soulpit(
     clients: &SeamClients<'_>,
     client: &mut DevClientSession,
@@ -233,13 +247,13 @@ async fn enter_soulpit(
     .map_err(|error| format!("W08 obelisk USE encoding: {error:?}"))?;
     let source = client.join_snapshot().game_session_id;
     let reply = client.session_mut().world_context_use(&payload).await?;
-    let disposition = world_object::decode_use_result(&reply.payload);
+    let result = obelisk_result(&reply.payload);
     if reply.status != CommandStatus::Accepted
-        || !matches!(disposition, Ok(UseDisposition::Committed))
+        || !matches!(result, Ok((UseDisposition::Committed, None)))
     {
         return Err(format!(
-            "W08 obelisk USE status={:?} disposition={disposition:?}",
-            reply.status
+            "W08 obelisk USE status={:?} result={result:?} payload={:02x?}",
+            reply.status, reply.payload
         )
         .into());
     }
@@ -410,6 +424,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn obelisk_result_preserves_negotiated_refusal() -> TestResult {
+        use oteryn_protocol_oteryn::refusal_detail::{
+            CAPABILITY_REFUSAL_DETAIL_V1, RefusalDetail, append_refusal_detail,
+        };
+        use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_use_result};
+        let mut rejected = encode_use_result(UseDisposition::Rejected)
+            .map_err(|error| format!("encode rejection: {error:?}"))?;
+        append_refusal_detail(
+            &mut rejected,
+            &[CAPABILITY_REFUSAL_DETAIL_V1],
+            Some(RefusalDetail::NotPossible),
+        );
+        assert_eq!(
+            obelisk_result(&rejected)?,
+            (UseDisposition::Rejected, Some(RefusalDetail::NotPossible)),
+        );
+        let committed = encode_use_result(UseDisposition::Committed)
+            .map_err(|error| format!("encode commit: {error:?}"))?;
+        assert_eq!(
+            obelisk_result(&committed)?,
+            (UseDisposition::Committed, None)
+        );
+        Ok(())
+    }
 
     #[test]
     fn evidence_is_one_report_token() {
