@@ -80,8 +80,8 @@ pub enum Refusal {
 pub trait PodiumContent {
     fn has_outfit(&self, key: &str) -> bool;
     fn has_mount(&self, key: &str) -> bool;
-    /// A creature the podium may show; `boss` is true for the podium of vigour.
-    fn has_creature(&self, key: &str, boss: bool) -> bool;
+    /// Kills required to display a known boss or Bestiary race.
+    fn creature_kill_threshold(&self, key: &str, boss: bool) -> Option<u64>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -115,8 +115,12 @@ pub fn admit_kind<C: PodiumContent>(
     let known = match (podium, display.kind) {
         (PodiumKind::Renown, DisplayKind::Outfit) => content.has_outfit(display.key),
         (PodiumKind::Renown, DisplayKind::Mount) => content.has_mount(display.key),
-        (PodiumKind::Vigour, DisplayKind::Creature) => content.has_creature(display.key, true),
-        (PodiumKind::Tenacity, DisplayKind::Creature) => content.has_creature(display.key, false),
+        (PodiumKind::Vigour, DisplayKind::Creature) => {
+            content.creature_kill_threshold(display.key, true).is_some()
+        }
+        (PodiumKind::Tenacity, DisplayKind::Creature) => content
+            .creature_kill_threshold(display.key, false)
+            .is_some(),
         _ => return Err(Refusal::WrongDisplayKind),
     };
     known.then_some(podium).ok_or(Refusal::UnknownContent)
@@ -133,12 +137,13 @@ mod tests {
         fn has_mount(&self, k: &str) -> bool {
             k == "oteryn:content.mount.widow_queen"
         }
-        fn has_creature(&self, k: &str, boss: bool) -> bool {
-            if boss {
-                k == "oteryn:creature.ferumbras"
+        fn creature_kill_threshold(&self, k: &str, boss: bool) -> Option<u64> {
+            let known = if boss {
+                "oteryn:creature.ferumbras"
             } else {
-                k == "oteryn:creature.rat"
-            }
+                "oteryn:creature.rat"
+            };
+            (k == known).then_some(1)
         }
     }
     #[test]

@@ -8,6 +8,90 @@ pub const MAX_KEY_BYTES: usize = 160;
 /// Capability 489: command 175 and the 174/176 projections carry the podium visibility flags.
 pub const CAPABILITY_HOUSE_PODIUM_FLAGS_V1: u32 = 489;
 
+/// Negotiates the extended Renown appearance on the existing podium commands.
+pub const CAPABILITY_HOUSE_PODIUM_PROJECTION_V2: u32 = 631;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutfitSex {
+    Female,
+    Male,
+}
+
+/// The primary key is the outfit when both components are set.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenownAppearance {
+    pub outfit_sex: Option<OutfitSex>,
+    pub addons: u8,
+    pub illuminated: bool,
+    pub mount_key: Option<String>,
+}
+
+impl RenownAppearance {
+    pub fn valid_for(&self, display_kind: u8) -> bool {
+        match display_kind {
+            1 => {
+                self.outfit_sex.is_some()
+                    && self.addons <= 3
+                    && self
+                        .mount_key
+                        .as_ref()
+                        .is_none_or(|key| !key.is_empty() && key.len() <= MAX_KEY_BYTES)
+            }
+            2 => self.outfit_sex.is_none() && self.addons == 0 && self.mount_key.is_none(),
+            _ => false,
+        }
+    }
+
+    fn append(&self, bytes: &mut Vec<u8>, display_kind: u8) -> Option<()> {
+        if !self.valid_for(display_kind) {
+            return None;
+        }
+        let sex = match self.outfit_sex {
+            None => 0,
+            Some(OutfitSex::Female) => 1,
+            Some(OutfitSex::Male) => 2,
+        };
+        let mount = self.mount_key.as_deref().unwrap_or_default();
+        bytes.extend([
+            sex,
+            self.addons,
+            u8::from(self.illuminated),
+            u8::try_from(mount.len()).ok()?,
+        ]);
+        bytes.extend_from_slice(mount.as_bytes());
+        Some(())
+    }
+
+    fn decode(bytes: &[u8], display_kind: u8) -> Option<Self> {
+        let [sex, addons, illuminated, len, mount @ ..] = bytes else {
+            return None;
+        };
+        if usize::from(*len) != mount.len() {
+            return None;
+        }
+        let appearance = Self {
+            outfit_sex: match sex {
+                0 => None,
+                1 => Some(OutfitSex::Female),
+                2 => Some(OutfitSex::Male),
+                _ => return None,
+            },
+            addons: *addons,
+            illuminated: match illuminated {
+                0 => false,
+                1 => true,
+                _ => return None,
+            },
+            mount_key: if mount.is_empty() {
+                None
+            } else {
+                Some(std::str::from_utf8(mount).ok()?.to_owned())
+            },
+        };
+        appearance.valid_for(display_kind).then_some(appearance)
+    }
+}
+
 /// Which parts of a podium display are shown (Crystal `PODIUM_SHOW_PLATFORM`,
 /// `PODIUM_SHOW_OUTFIT`, `PODIUM_SHOW_MOUNT`). Each flag is one byte, `0` or `1`, in that order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,6 +198,26 @@ impl SetRequest {
     }
 }
 
+impl SetRequest {
+    pub fn encode_full(
+        &self,
+        flags: DisplayFlags,
+        appearance: &RenownAppearance,
+    ) -> Option<Vec<u8>> {
+        let mut bytes = self.encode_flagged(flags)?;
+        appearance.append(&mut bytes, self.display_kind)?;
+        Some(bytes)
+    }
+
+    pub fn decode_full(bytes: &[u8]) -> Option<(Self, DisplayFlags, RenownAppearance)> {
+        let split = 27 + usize::from(*bytes.get(26)?) + DisplayFlags::BYTES;
+        let (request, appearance) = bytes.split_at_checked(split)?;
+        let (request, flags) = Self::decode_selected(true, request)?;
+        let appearance = RenownAppearance::decode(appearance, request.display_kind)?;
+        Some((request, flags?, appearance))
+    }
+}
+
 /// Commands 174 and 176 carry only the podium item UUID.
 pub fn decode_item(v: &[u8]) -> Option<[u8; 16]> {
     v.try_into().ok()
@@ -188,6 +292,51 @@ impl Projection {
             Self::decode(projection)??,
             DisplayFlags::decode(flags)?,
         )))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FullProjection {
+    pub display: Projection,
+    pub flags: DisplayFlags,
+    pub renown: Option<RenownAppearance>,
+}
+
+impl FullProjection {
+    pub fn encode(projection: Option<Self>) -> Option<Vec<u8>> {
+        let Some(projection) = projection else {
+            return Some(vec![0]);
+        };
+        let mut bytes = Projection::encode_flagged(Some((&projection.display, projection.flags)))?;
+        if let Some(appearance) = projection.renown {
+            if projection.display.podium_kind != 1 {
+                return None;
+            }
+            appearance.append(&mut bytes, projection.display.display_kind)?;
+        }
+        Some(bytes)
+    }
+
+    pub fn decode(bytes: &[u8]) -> Option<Option<Self>> {
+        if bytes == [0] {
+            return Some(None);
+        }
+        let split = 13 + usize::from(*bytes.get(12)?) + DisplayFlags::BYTES;
+        let (legacy, appearance) = bytes.split_at_checked(split)?;
+        let (display, flags) = Projection::decode_flagged(legacy)??;
+        let renown = if appearance.is_empty() {
+            None
+        } else {
+            if display.podium_kind != 1 {
+                return None;
+            }
+            Some(RenownAppearance::decode(appearance, display.display_kind)?)
+        };
+        Some(Some(Self {
+            display,
+            flags,
+            renown,
+        }))
     }
 }
 

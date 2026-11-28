@@ -35,9 +35,9 @@ struct Bestiary {
     bosses: Vec<crate::domain::bosstiary::BosstiaryBoss>,
 }
 
-/// W18: a podium of tenacity shows only a canonical Bestiary race.
-pub(super) fn bestiary_race_known(key: &str) -> bool {
-    bestiary().is_some_and(|bestiary| bestiary.races.iter().any(|race| race.key() == key))
+/// W18: the finished Bestiary entry required to select a Tenacity display.
+pub(super) fn bestiary_race_completion_threshold(key: &str) -> Option<u32> {
+    bestiary()?.races.iter().find(|race| race.key() == key).map(BestiaryRace::final_kill_threshold)
 }
 
 fn bestiary() -> Option<&'static Bestiary> {

@@ -25,6 +25,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::house as house_wire;
+use sqlx::Connection;
 
 const TOWN_KEY: &str = "oteryn:content.area.city.thais";
 
@@ -171,7 +172,61 @@ fn auction_is_open(ends_ms: Option<u64>, now_ms: u64) -> bool {
     ends_ms.is_some_and(|deadline| deadline > now_ms)
 }
 
+/// Populate the disposable World through the control database, as G01 does for
+/// settled ownership. An authored House is only metadata until a property exists.
+async fn prepare_open_auctions(clients: &SeamClients<'_>) -> TestResult<Vec<String>> {
+    let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../content/houses/houses-00000-00499.json"
+    ))?;
+    let mut houses: Vec<_> = catalogue["houses"].as_array()
+        .ok_or("W18 authored House catalogue")?
+        .iter()
+        .filter(|house| house["town"]["key"] == TOWN_KEY && house["kind"] == "private_house")
+        .filter_map(|house| Some((
+            house["identity"]["key"].as_str()?,
+            house["rent_gold"].as_i64().filter(|rent| *rent > 0)?,
+        )))
+        .collect();
+    houses.sort_unstable_by_key(|(key, _)| *key);
+    let [(first, first_rent), (second, second_rent), ..] = houses.as_slice() else {
+        return Err("W18 needs two authored Thais houses with rent".into());
+    };
+    let keys = vec![(*first).to_owned(), (*second).to_owned()];
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let mut tx = database.begin().await?;
+    // One hour is the existing PG fixture's observation window. The fixture is
+    // initialized after activation so the query sees the exact live digest.
+    sqlx::query(
+        "WITH activation AS (
+             SELECT world_id,server_artifact_digest FROM game_content_activations
+              WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid
+              ORDER BY activation_sequence DESC LIMIT 1
+         ), properties AS (
+             INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest)
+             SELECT a.world_id,h.key,'private_house',2,h.rent,a.server_artifact_digest
+             FROM activation a CROSS JOIN unnest($3::text[],$4::bigint[]) AS h(key,rent)
+             ON CONFLICT(world_id,house_key) DO NOTHING
+             RETURNING world_id,house_key,rent_gold,ownership_generation
+         ), anchors AS (
+             INSERT INTO game_house_ownership(world_id,house_key,ownership_revision,acquisition_receipt_ref)
+             SELECT world_id,house_key,ownership_generation,game_character_uuid_v7() FROM properties
+         )
+         INSERT INTO game_house_auctions(auction_id,world_id,house_key,first_rent,ends_at)
+         SELECT game_character_uuid_v7(),world_id,house_key,rent_gold,statement_timestamp()+interval '1 hour'
+           FROM properties",
+    )
+    .bind(clients.world.as_slice())
+    .bind(clients.channel.as_slice())
+    .bind(&keys)
+    .bind([*first_rent, *second_rent].as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(keys)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let auction_keys = prepare_open_auctions(clients).await?;
     let mut client = connect_character(clients, 0xc8, 1).await?;
     if !client
         .selected_capabilities()
@@ -219,6 +274,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         page.rows.len(),
         page.rows.iter().filter(|row| row.owned).count()
     ));
+    let now_ms = u64::try_from(
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis(),
+    )?;
+    for key in &auction_keys {
+        if !page.rows.iter().any(|row| {
+            &row.key == key && row.state == 2 && auction_is_open(row.auction_ends_ms, now_ms)
+        }) {
+            return Err(format!("step-1 HOUSE QUERY omitted the open Thais auction {key}").into());
+        }
+    }
+    evidence(&format!("W18_CHECK step=1 open_catalogue_auctions={}", auction_keys.len()));
     if let Some(owned) = page.rows.iter().find(|row| row.owned) {
         let mut transfer = vec![8, 1];
         push_bytes(&mut transfer, 2, owned.key.as_bytes());
@@ -250,9 +316,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let now_ms = u64::try_from(
-        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis(),
-    )?;
     let Some(auction) = page.rows.iter().find(|row| auction_is_open(row.auction_ends_ms, now_ms)) else {
         return Err(format!(
             "step-1 HOUSE QUERY observed Accepted/Ok with {} rows and 0 owned/open-auction houses; server needs an open auction or a house already won by the player",

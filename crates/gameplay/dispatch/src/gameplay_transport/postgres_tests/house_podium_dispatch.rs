@@ -34,11 +34,13 @@ use tokio::io::AsyncWriteExt;
 
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const POSITION: [i32; 3] = [32310, 32804, 7];
+const BOSS: &str = "oteryn:creature.ferumbras";
 const RAT: &str = "oteryn:creature.rat";
 
 #[derive(Clone, Copy)]
 enum Case {
-    Roundtrip,
+    Roundtrip { boss: bool },
+    FullRenown,
     Refusals,
     MissingCapability,
     Walk,
@@ -52,7 +54,25 @@ enum Case {
 
 #[test]
 fn house_podium_dispatch_query_set_projection_roundtrip_postgres() -> TestResult {
-    postgres_case("house_podium_roundtrip", Case::Roundtrip)
+    postgres_case("house_podium_roundtrip", Case::Roundtrip { boss: false })
+}
+
+#[test]
+fn house_podium_dispatch_vigour_requires_expertise_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_podium_vigour", Case::Roundtrip { boss: true })
+}
+
+#[test]
+fn house_podium_dispatch_full_renown_roundtrip_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    postgres_case("house_podium_renown", Case::FullRenown)
 }
 
 #[test]
@@ -179,6 +199,17 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     };
     let mut packet = cosmetics_test_packet();
     packet["authoring"]["document"]["content_revision"] = "content-1".into();
+    let full_renown = matches!(case, Case::FullRenown);
+    let mount_key = "oteryn:content.mount.proposed";
+    if full_renown {
+        packet = serde_json::from_str(&serde_json::to_string(&packet)?
+            .replace("oteryn:outfit.proposed", "oteryn:content.outfit.proposed")
+            .replace("oteryn:mount.proposed", mount_key))?;
+        packet["authoring"]["document"]["grant_mappings"] = serde_json::json!([
+            {"grant_key":"podium-mount", "target":{"kind":"Mount","mount_key":mount_key},
+             "compatible_provenance":["content-1"]}
+        ]);
+    }
     let outfit_key = packet["authoring"]["document"]["outfits"][0]["key"]
         .as_str()
         .ok_or("cosmetics outfit key")?
@@ -228,6 +259,8 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             id: 150,
             requires: &[49],
         },
+        crate::gameplay_transport::capabilities::OfferedCapability { id: 489, requires: &[150] },
+        crate::gameplay_transport::capabilities::OfferedCapability { id: 631, requires: &[489] },
     ];
     owner.required_capabilities = crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
         &[], crate::foundation::RuntimeScopeRefV1::channel(deps.admitted.world_id, deps.admitted.channel_id), 1, "policy-1", OFFERS,
@@ -289,6 +322,8 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     let selected: &[u32] = if matches!(case, Case::MissingCapability) {
         &[4, 6, 49, 86]
+    } else if full_renown {
+        &[4, 6, 49, 86, 150, 489, 631]
     } else {
         &[4, 6, 49, 86, 150]
     };
@@ -303,13 +338,21 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .ok_or("house transfer outcome")?;
     let mut admitted = inside.ok_or("house transfer admission")?;
 
+    let boss = matches!(case, Case::Roundtrip { boss: true });
+    let (item_key, podium_kind, display_key) = if full_renown {
+        ("oteryn:item.tibia.i35973", 1, RAT)
+    } else if boss {
+        ("oteryn:item.tibia.i38707", 2, BOSS)
+    } else {
+        ("oteryn:item.tibia.i42367", 3, RAT)
+    };
     super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i42367','definition-r1',1,1,encode($3,'hex')::uuid)")
-        .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,'definition-r1',1,1,encode($3,'hex')::uuid)")
+        .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).bind(item_key).execute(&mut *tx).await?;
     let position = if walks {
         let actor = admitted.runtime_actor.ok_or("house actor")?;
         let state = owner
@@ -349,12 +392,15 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     tx.commit().await?;
     admitted.continuity.next_command_id = 1;
 
+    if full_renown {
+        return renown_roundtrip(&owner, h, admitted, &outfit_key, mount_key).await;
+    }
     let set = wire::SetRequest {
         item: id(71),
         expected_revision: 0,
         display_kind: 3,
         direction: 2,
-        key: RAT.into(),
+        key: display_key.into(),
     }
     .encode()
     .ok_or("rat set payload")?;
@@ -511,6 +557,31 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert_eq!((house.position.x, house.position.y), (32311, 32804));
         return Ok(());
     }
+    let threshold = if boss {
+        let rewards = active.native_gameplay().ok_or("native podium")?.reward_table();
+        let category = &rewards.boss(BOSS).ok_or("Ferumbras Bosstiary entry")?.category;
+        let [_, expertise, _] = crate::domain::bosstiary::kill_thresholds(category)
+            .ok_or("expertise threshold")?;
+        i64::try_from(expertise)?
+    } else {
+        i64::from(crate::gameplay_transport::charm_progression::bestiary_race_completion_threshold(RAT)
+            .ok_or("Rat completion threshold")?)
+    };
+    if matches!(case, Case::Roundtrip { .. }) {
+        seed_kills(h, display_key, threshold - 1, boss).await?;
+        let command = admitted.continuity.next_command_id;
+        let (status, payload) = exchange(&owner, &mut admitted, command, wire::COMMAND_SET, &set)
+            .await?.ok_or("locked display result")?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            wire::SetResult::decode(&payload),
+            Some(wire::SetResult::Refused(wire::SetRefusal::NotOwned))
+        );
+        let displays: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_podium_displays")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(displays, 0);
+    }
+    seed_kills(h, display_key, threshold, boss).await?;
     let command = admitted.continuity.next_command_id;
     let (status, payload) = exchange(&owner, &mut admitted, command, wire::COMMAND_SET, &set)
         .await?
@@ -521,14 +592,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         Some(wire::SetResult::Accepted { revision: 1 })
     );
     let expected = Some(wire::Projection {
-        podium_kind: 3,
+        podium_kind,
         display_kind: 3,
         direction: 2,
         revision: 1,
-        key: RAT.into(),
+        key: display_key.into(),
     });
 
-    if matches!(case, Case::Roundtrip) {
+    if matches!(case, Case::Roundtrip { .. }) {
         let command = admitted.continuity.next_command_id;
         let result = exchange(
             &owner,
@@ -545,7 +616,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             sqlx::query_as("SELECT revision::text,display_key FROM game_house_podium_displays")
                 .fetch_one(&h.pool)
                 .await?;
-        assert_eq!(stored, ("1".into(), RAT.into()));
+        assert_eq!(stored, ("1".into(), display_key.into()));
         return Ok(());
     }
 
@@ -594,6 +665,102 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     .ok_or("unchanged projection result")?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(wire::Projection::decode(&payload), Some(expected));
+    Ok(())
+}
+
+async fn renown_roundtrip(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    mut admitted: AdmittedSession,
+    outfit_key: &str,
+    mount_key: &str,
+) -> TestResult {
+    let flags = wire::DisplayFlags::default();
+    let mut appearance = wire::RenownAppearance {
+        outfit_sex: Some(wire::OutfitSex::Male),
+        addons: 1,
+        illuminated: true,
+        mount_key: Some(mount_key.into()),
+    };
+    let mut set = wire::SetRequest {
+        item: id(71),
+        expected_revision: 0,
+        display_kind: 1,
+        direction: 2,
+        key: outfit_key.into(),
+    };
+    let command = admitted.continuity.next_command_id;
+    let locked = set.encode_full(flags, &appearance).ok_or("full podium SET")?;
+    let (status, reply) = exchange(owner, &mut admitted, command, wire::COMMAND_SET, &locked)
+        .await?.ok_or("unowned mount refusal")?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(wire::SetResult::decode(&reply), Some(wire::SetResult::Refused(wire::SetRefusal::NotOwned)));
+
+    sqlx::query("INSERT INTO game_account_appearance_unlock_receipts VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'podium-mount','content-1',encode($3,'hex')::uuid,'quest',$1)")
+        .bind(id(70).as_slice()).bind(id(40).as_slice()).bind(id(41).as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_account_appearance_unlocks VALUES(encode($1,'hex')::uuid,'podium-mount',encode($2,'hex')::uuid)")
+        .bind(id(40).as_slice()).bind(id(70).as_slice()).execute(&h.pool).await?;
+
+    for (sex, illuminated, mounted) in [
+        (Some(wire::OutfitSex::Male), true, true),
+        (Some(wire::OutfitSex::Female), false, false),
+        (None, true, false),
+    ] {
+        appearance.outfit_sex = sex;
+        appearance.addons = u8::from(sex == Some(wire::OutfitSex::Male));
+        appearance.illuminated = illuminated;
+        appearance.mount_key = mounted.then(|| mount_key.to_owned());
+        if sex.is_none() {
+            set.display_kind = 2;
+            set.key = mount_key.into();
+        }
+        let command = admitted.continuity.next_command_id;
+        let payload = set.encode_full(flags, &appearance).ok_or("full podium SET")?;
+        let (status, reply) = exchange(owner, &mut admitted, command, wire::COMMAND_SET, &payload)
+            .await?.ok_or("full podium SET result")?;
+        let revision = set.expected_revision + 1;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(wire::SetResult::decode(&reply), Some(wire::SetResult::Accepted { revision }));
+        let projection = wire::Projection {
+            podium_kind: 1, display_kind: set.display_kind, direction: set.direction,
+            revision, key: set.key.clone(),
+        };
+        for command_type in [wire::COMMAND_QUERY, wire::COMMAND_PROJECTION, wire::COMMAND_PROJECTION] {
+            let command = admitted.continuity.next_command_id;
+            let (status, reply) = exchange(owner, &mut admitted, command, command_type, &set.item)
+                .await?.ok_or("full podium projection")?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(wire::FullProjection::decode(&reply), Some(Some(wire::FullProjection {
+                display: projection.clone(), flags, renown: Some(appearance.clone()),
+            })));
+        }
+        set.expected_revision = revision;
+    }
+    Ok(())
+}
+
+async fn seed_kills(h: &Harness, key: &str, kills: i64, boss: bool) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let sql = if boss {
+        "INSERT INTO game_character_bosstiary_progress(character_id,boss_key,kill_count)
+         VALUES(encode($1,'hex')::uuid,$2,$3)
+         ON CONFLICT (character_id,boss_key) DO UPDATE SET kill_count=EXCLUDED.kill_count"
+    } else {
+        "INSERT INTO game_character_bestiary_progress(character_id,race_key,kill_count,
+             committed_character_revision,last_bestiary_occurrence_id)
+         VALUES(encode($1,'hex')::uuid,$2,$3,2,'018f0000-0000-7000-8000-000000000001')
+         ON CONFLICT (character_id,race_key) DO UPDATE SET kill_count=EXCLUDED.kill_count"
+    };
+    sqlx::query(sql)
+        .bind(id(41).as_slice())
+        .bind(key)
+        .bind(kills)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     Ok(())
 }
 

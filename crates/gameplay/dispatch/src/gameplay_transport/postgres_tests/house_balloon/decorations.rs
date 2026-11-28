@@ -15,6 +15,12 @@ pub(super) async fn scenario(
         Case::NativeNoop(source) => (source, source),
         _ => return Err("not a decoration case".into()),
     };
+    if source_id == 2976 {
+        return birdcage(owner, h, admitted, before, after_id == 2975, body).await;
+    }
+    if matches!(source_id, 2963 | 2964) {
+        return harp(owner, h, admitted, before, body).await;
+    }
     let before_key = before["definition_production_key"]
         .as_str()
         .ok_or("source key")?;
@@ -59,25 +65,10 @@ pub(super) async fn scenario(
     } else {
         body.to_vec()
     };
-    let command = if source_id == 2976 {
-        (1..=10_000)
-            .find(|&command| {
-                oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
-                    *admitted.game_session_id.as_bytes(),
-                    command,
-                    id(71),
-                    0xd9,
-                    100,
-                ) == Some(0)
-            })
-            .ok_or("deterministic empty cage")?
-    } else {
-        1
-    };
     let request = crate::durability::consume_transform::ConsumeTransformRequest {
         command: crate::foundation::CommandRef::new(
             admitted.game_session_id,
-            crate::foundation::CommandId::new(command).map_err(debug)?,
+            crate::foundation::CommandId::new(1).map_err(debug)?,
         ),
         source: id(71),
         target: None,
@@ -171,19 +162,7 @@ pub(super) async fn scenario(
         return Ok(());
     }
     assert!(result.fresh);
-    let expected_after = if source_id == 2976 {
-        let selected = result.effects["house_after"]["key"]
-            .as_str()
-            .ok_or("bird result")?;
-        assert_eq!(selected, "oteryn:item.tibia.i2975");
-        assert_eq!(
-            result.effects["cues"].as_array().ok_or("bird cues")?.len(),
-            usize::from(selected.ends_with("2976"))
-        );
-        selected
-    } else {
-        after_key
-    };
+    let expected_after = after_key;
     assert_eq!(item(h).await?["definition_production_key"], expected_after);
     let expected_revision = if before_key == expected_after { 1 } else { 2 };
     assert_eq!(item(h).await?["state_revision"], expected_revision);
@@ -248,18 +227,129 @@ pub(super) async fn scenario(
         )
         .await?;
     }
-    if source_id == 2976 {
-        let award: (i64, i64) = sqlx::query_as(
-            "SELECT (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/oops'), (SELECT count(*) FROM game_account_achievement_grant_requests g JOIN game_item_consume_transform_records r ON g.source_event_id=uuid_send(r.event_id) WHERE g.achievement_key='oteryn:achievement/oops' AND g.source_kind='oteryn:item-use')",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!(award, (1, 1));
-    }
     assert_eq!(item(h).await?["state_revision"], expected_revision);
     eprintln!(
         "W18 POSTGRES_CASE_COMPLETED source={source_id} native_owner_custody_cooldown_replay"
     );
+    Ok(())
+}
+
+async fn harp(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    before: &Value,
+    body: &[u8],
+) -> TestResult {
+    use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
+    let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+        admitted.continuity.selected_capabilities.as_slice(), body,
+    ).map_err(debug)?;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id: admitted.continuity.next_command_id,
+        item_fence: admitted.item_fence,
+    };
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    let use_harp = |source| owner.use_event_item(actor, command, intent.clone(), source, true);
+    for source in [Some(ItemKey::Instance(id(71))), None] {
+        assert_eq!(
+            use_harp(source).await.map_err(|()| "harp USE unavailable")?
+                .ok_or("harp USE unhandled")?.disposition,
+            UseDisposition::Committed
+        );
+    }
+    let cues: Value = sqlx::query_scalar(
+        "SELECT effects->'cues' FROM game_item_consume_transform_records",
+    ).fetch_one(&h.pool).await?;
+    assert_eq!(cues, serde_json::json!([{
+        "effect_id":19,"binding":"canary.appearance:effect/sound_green"
+    }]));
+    assert_eq!(super::scenario::receipts(h).await?, 1);
+    assert_eq!(super::scenario::item(h).await?, *before);
+    Ok(())
+}
+
+async fn birdcage(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: AdmittedSession,
+    before: &Value,
+    dies: bool,
+    body: &[u8],
+) -> TestResult {
+    use crate::gameplay_transport::{connection::UseCommand, item_view::ItemKey};
+    use super::scenario::{custody, item, receipts};
+    let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+        admitted.continuity.selected_capabilities.as_slice(),
+        body,
+    )
+    .map_err(debug)?;
+    let draw = |command, upper| {
+        oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+            *admitted.game_session_id.as_bytes(),
+            command,
+            id(71),
+            0xd9,
+            upper,
+        )
+    };
+    // Require a draw that also succeeds at the old odds. The singing case then
+    // fails on the old recipe instead of just relying on a statistically rare difference.
+    let command_id = (1..=100_000)
+        .find(|&command| draw(command, 100) == Some(0) && (draw(command, 1000) == Some(0)) == dies)
+        .ok_or("deterministic birdcage draw")?;
+    let command = UseCommand {
+        game_session_id: admitted.game_session_id,
+        command_id,
+        item_fence: admitted.item_fence,
+    };
+    let actor = admitted.runtime_actor.ok_or("House actor")?;
+    let location = custody(h).await?;
+    let use_cage = |source| owner.use_event_item(actor, command, intent.clone(), source, true);
+    let disposition = use_cage(Some(ItemKey::Instance(id(71))))
+        .await
+        .map_err(|()| "birdcage USE unavailable")?
+        .ok_or("birdcage USE unhandled")?
+        .disposition;
+    assert_eq!(disposition, UseDisposition::Committed);
+    let stored = item(h).await?;
+    if dies {
+        assert_eq!(stored["definition_production_key"], "oteryn:item.tibia.i2975");
+        assert_eq!(stored["state_revision"], 2);
+        assert_eq!(stored["minted_transaction_id"], before["minted_transaction_id"]);
+    } else {
+        assert_eq!(stored, *before);
+    }
+    let cues: Value = sqlx::query_scalar(
+        "SELECT effects->'cues' FROM game_item_consume_transform_records",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    if dies {
+        assert_eq!(cues, serde_json::json!([]));
+    } else {
+        assert_eq!(cues[0]["effect_id"], 22);
+        assert_eq!(cues.as_array().ok_or("birdcage cues")?.len(), 1);
+    }
+    assert_eq!(custody(h).await?, location);
+    assert_eq!(receipts(h).await?, 1);
+    assert_eq!(
+        use_cage(None)
+            .await
+            .map_err(|()| "birdcage replay unavailable")?
+            .ok_or("birdcage replay unhandled")?
+            .disposition,
+        UseDisposition::Committed
+    );
+    assert_eq!(item(h).await?, stored);
+    assert_eq!(receipts(h).await?, 1);
+    let awards: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/oops'), (SELECT count(*) FROM game_account_achievement_grant_requests g JOIN game_item_consume_transform_records r ON g.source_event_id=uuid_send(r.event_id) WHERE g.achievement_key='oteryn:achievement/oops' AND g.source_kind='oteryn:item-use')",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(awards, (i64::from(dies), i64::from(dies)));
     Ok(())
 }
 

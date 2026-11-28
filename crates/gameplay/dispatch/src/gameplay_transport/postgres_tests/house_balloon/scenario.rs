@@ -105,6 +105,15 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
+    } else if let Case::CarpetWire { neighbor, .. } = case {
+        let world_id = base.admitted.world_id;
+        let channel_id = base.admitted.channel_id;
+        let fixture = match neighbor {
+            CarpetNeighbor::Diagonal => super::super::house_wrap_fixtures::walkable_house_bundle,
+            CarpetNeighbor::TiedWithBase => super::super::house_wrap_fixtures::carpet_top_tie_bundle,
+            _ => super::super::house_wrap_fixtures::wrap_bundle,
+        };
+        fixture(world_id, channel_id)?
     } else if case == Case::StaticWindow {
         super::super::house_wrap_fixtures::static_decoration_bundle(
             base.admitted.world_id,
@@ -551,19 +560,20 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         .bind(id(72).as_slice())
         .execute(&mut *tx)
         .await?;
-        let adjacent = matches!(case, Case::CarpetWire { same_tile: false, .. });
-        let other_position = if adjacent { actor_position } else { POSITION };
-        if adjacent {
-            assert_eq!(
-                [
-                    other_position[0].abs_diff(POSITION[0]),
-                    other_position[1].abs_diff(POSITION[1]),
-                ]
-                .into_iter()
-                .max(),
-                Some(1)
-            );
-            assert_eq!(other_position[2], POSITION[2]);
+        let other_position = match case {
+            Case::CarpetWire { neighbor: CarpetNeighbor::Adjacent, .. } => {
+                assert_eq!(actor_position, [POSITION[0] - 1, POSITION[1], POSITION[2]]);
+                actor_position
+            }
+            Case::CarpetWire { neighbor: CarpetNeighbor::Diagonal, .. } => {
+                [POSITION[0] + 1, POSITION[1] - 1, POSITION[2]]
+            }
+            _ => POSITION,
+        };
+        if other_position != POSITION && other_position != actor_position {
+            sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+                .bind(id(42).as_slice()).bind(HOUSE).bind(other_position.map(i32::to_be_bytes).concat())
+                .execute(&mut *tx).await?;
         }
         let position = other_position.map(i32::to_be_bytes).concat();
         sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,2,encode($5,'hex')::uuid)")

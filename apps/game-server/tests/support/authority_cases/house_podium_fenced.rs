@@ -62,8 +62,8 @@ impl PodiumContent for Content {
     fn has_mount(&self, key: &str) -> bool {
         key == MOUNT || key == ZEBRA
     }
-    fn has_creature(&self, key: &str, boss: bool) -> bool {
-        key == if boss { BOSS } else { RAT }
+    fn creature_kill_threshold(&self, key: &str, boss: bool) -> Option<u64> {
+        (key == if boss { BOSS } else { RAT }).then_some(1)
     }
 }
 
@@ -96,6 +96,13 @@ fn house_podium_runtime_path_is_fenced_checked_and_survives_restart() -> TestRes
             sqlx::query("INSERT INTO game_account_appearance_unlocks VALUES(encode($1,'hex')::uuid,'zebra',encode($2,'hex')::uuid)")
                 .bind(id(ACCOUNT).as_slice()).bind(id(70).as_slice())
                 .execute(&h.pool).await?;
+            let mut progress = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *progress).await?;
+            sqlx::query("INSERT INTO game_character_bosstiary_progress(character_id,boss_key,kill_count) VALUES(encode($1,'hex')::uuid,$2,1)")
+                .bind(id(CHARACTER).as_slice()).bind(BOSS).execute(&mut *progress).await?;
+            sqlx::query("INSERT INTO game_character_bestiary_progress VALUES(encode($1,'hex')::uuid,$2,1,2,'018f0000-0000-7000-8000-000000000001')")
+                .bind(id(CHARACTER).as_slice()).bind(RAT).execute(&mut *progress).await?;
+            progress.commit().await?;
             let house = current_house()?;
             let fence = house_fence()?;
             let put = |request| h.root.set_house_podium(&h.node, fence, house.clone(), request, Content);

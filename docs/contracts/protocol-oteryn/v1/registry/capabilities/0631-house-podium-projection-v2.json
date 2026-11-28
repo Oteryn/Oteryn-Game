@@ -1,0 +1,11 @@
+{
+  "id": 631,
+  "name": "HOUSE_PODIUM_PROJECTION_V2",
+  "owner_decision": "W18 coordinator allocation 631",
+  "owner": "Game named-House podium display store and W18 podium transport",
+  "requires": [489],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle World with HOUSE_PODIUM_FLAGS_V1. Extends Renown SET and query/projection on commands 174 through 176."
+}

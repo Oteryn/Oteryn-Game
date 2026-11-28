@@ -32,7 +32,6 @@ struct Effect {
 struct Birdcage {
     item_id: u32,
     target: u32,
-    success_out_of: u64,
     effect_id: u16,
     effect_binding: String,
     donor: String,
@@ -266,12 +265,14 @@ pub(super) async fn plan(
                         let Some(order) = attributes.always_on_top_order else {
                             return Ok(Some(Err(UseDisposition::NotPossible)));
                         };
-                        if top
-                            .as_ref()
-                            .is_none_or(|(prior, _, _)| (order, ordinal.0, ordinal.1) > *prior)
-                        {
+                        // Crystal (Global silent), tile.cpp:1101-1114 and
+                        // 1697-1709: runtime items insert before equal orders;
+                        // authored items retain load order. The top is the last.
+                        let (placed, stack) = *ordinal;
+                        let rank = (order, !placed, if placed { u64::MAX - stack } else { stack });
+                        if top.as_ref().is_none_or(|(prior, _, _)| rank > *prior) {
                             top = Some((
-                                (order, ordinal.0, ordinal.1),
+                                rank,
                                 attributes.blocks_movement,
                                 attributes.has_height,
                             ));
@@ -362,7 +363,14 @@ pub(super) async fn plan(
     {
         family = "music";
         donor = &rule.donor;
-        cues.push(json!({"effect_id":rule.effect_id,"binding":rule.effect_binding}));
+        // Both harp forms emit Green Notes in Tibia GLOBAL.
+        // https://tibia.fandom.com/wiki/Harp
+        let (effect_id, binding) = if matches!(id, 2963 | 2964) {
+            (19, "canary.appearance:effect/sound_green")
+        } else {
+            (rule.effect_id, rule.effect_binding.as_str())
+        };
+        cues.push(json!({"effect_id":effect_id,"binding":binding}));
         // Crystal music.lua:65-66: every instrument advances Rockstar and emits notes.
         if let Some(progress) = &rule.achievement_progress {
             achievement_progress.push(progress.clone());
@@ -370,8 +378,8 @@ pub(super) async fn plan(
     } else if id == rules.birdcage.item_id && context.rotation.is_none() {
         family = "birdcage";
         donor = &rules.birdcage.donor;
-        // Crystal birdcage.lua:3-9: one in 100 frees the bird; other draws emit notes.
-        if draw(0xd9, rules.birdcage.success_out_of)? == 0 {
+        // https://tibia.fandom.com/wiki/Birdcage: 0.1% die; other draws emit yellow notes.
+        if draw(0xd9, 1000)? == 0 {
             target = rules.birdcage.target;
         } else {
             cues.push(json!({"effect_id":rules.birdcage.effect_id,"binding":rules.birdcage.effect_binding}));

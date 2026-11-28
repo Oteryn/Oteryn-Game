@@ -5,17 +5,17 @@
 //! and node-holder fence; this module adds the node-incarnation proof in the same
 //! transaction and, for an outfit or mount, the Character's ownership of it.
 use crate::durability::db::commit_semantic_read;
-use super::character_appearance::podium_cosmetic_owned;
+use super::character_appearance::cosmetic_owned_for_sex;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::house_scope_handoff::HouseId;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
-use crate::domain::appearance::{AppearanceContent, EarnedCosmetic};
+use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, Sex};
 use oteryn_gameplay_housing::house_podium::{
     Display, DisplayKind, PodiumContent, PodiumKind, Refusal, admit_kind,
 };
-use oteryn_protocol_oteryn::house_podium::DisplayFlags;
+use oteryn_protocol_oteryn::house_podium::{DisplayFlags, OutfitSex, RenownAppearance};
 use sqlx::Row;
 
 /// Displays per House read in one bounded query (0339 `LIMIT 2000`).
@@ -31,6 +31,7 @@ pub struct HousePodiumDisplay {
     pub revision: u64,
     /// Capability 489 visibility flags; a display stored without them shows every part.
     pub flags: DisplayFlags,
+    pub renown: Option<RenownAppearance>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +41,12 @@ pub struct HousePodiumSet {
     pub display_kind: u8,
     pub display_key: String,
     pub direction: u8,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct HousePodiumDisplayOptions {
+    pub flags: Option<DisplayFlags>,
+    pub renown: Option<RenownAppearance>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -136,11 +143,33 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<HousePodiumDisplay, DurabilityE
         show_outfit: flag("show_outfit")?,
         show_mount: flag("show_mount")?,
     };
+    let podium_kind = u8::try_from(row.try_get::<i16, _>("podium_kind")?).map_err(|_| invalid())?;
+    let display_kind = u8::try_from(row.try_get::<i16, _>("display_kind")?).map_err(|_| invalid())?;
+    let renown = variant.get("renown").map(|value| {
+        let appearance = RenownAppearance {
+            outfit_sex: match value.get("outfit_sex") {
+                Some(serde_json::Value::Null) => None,
+                Some(value) if value.as_str() == Some("female") => Some(OutfitSex::Female),
+                Some(value) if value.as_str() == Some("male") => Some(OutfitSex::Male),
+                _ => return Err(invalid()),
+            },
+            addons: value["addons"].as_u64().and_then(|v| u8::try_from(v).ok()).ok_or_else(invalid)?,
+            illuminated: value["illuminated"].as_bool().ok_or_else(invalid)?,
+            mount_key: match value.get("mount_key") {
+                Some(serde_json::Value::Null) => None,
+                Some(value) => Some(value.as_str().ok_or_else(invalid)?.to_owned()),
+                None => return Err(invalid()),
+            },
+        };
+        if podium_kind != PodiumKind::Renown.ordinal() || !appearance.valid_for(display_kind) {
+            return Err(invalid());
+        }
+        Ok(appearance)
+    }).transpose()?;
     Ok(HousePodiumDisplay {
         item_instance_id: item.try_into().map_err(|_| invalid())?,
-        podium_kind: u8::try_from(row.try_get::<i16, _>("podium_kind")?).map_err(|_| invalid())?,
-        display_kind: u8::try_from(row.try_get::<i16, _>("display_kind")?)
-            .map_err(|_| invalid())?,
+        podium_kind,
+        display_kind,
         display_key: row.try_get("display_key")?,
         direction,
         revision: row
@@ -148,6 +177,7 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<HousePodiumDisplay, DurabilityE
             .parse()
             .map_err(|_| invalid())?,
         flags,
+        renown,
     })
 }
 
@@ -204,7 +234,28 @@ impl DurabilityRoot {
     where
         C: AppearanceContent<String> + PodiumContent + Send + Sync + 'static,
     {
-        if fence.runtime_scope != house.runtime_scope()? || request.direction > 3 {
+        self.set_house_podium_variant(
+            node, fence, house, request, HousePodiumDisplayOptions { flags, renown: None }, content,
+        ).await
+    }
+
+    pub async fn set_house_podium_variant<C>(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+        request: HousePodiumSet,
+        options: HousePodiumDisplayOptions,
+        content: C,
+    ) -> Result<Result<u64, HousePodiumRefusal>, DurabilityError>
+    where
+        C: AppearanceContent<String> + PodiumContent + Send + Sync + 'static,
+    {
+        if fence.runtime_scope != house.runtime_scope()? || request.direction > 3
+            || options.renown.as_ref().is_some_and(|appearance| {
+                options.flags.is_none() || !appearance.valid_for(request.display_kind)
+            })
+        {
             return Ok(Err(HousePodiumRefusal::InvalidInput));
         }
         let node = node.clone();
@@ -255,13 +306,63 @@ impl DurabilityRoot {
                         2 => Some(EarnedCosmetic::Mount(&request.display_key)),
                         _ => None,
                     };
+                    let renown = options.renown.as_ref();
+                    let sex = renown.and_then(|appearance| appearance.outfit_sex).map(|sex| match sex {
+                        OutfitSex::Female => Sex::Female,
+                        OutfitSex::Male => Sex::Male,
+                    });
                     if let Some(target) = target
-                        && !podium_cosmetic_owned(&mut tx, fence.character_id, &content, target)
-                            .await?
+                        && !cosmetic_owned_for_sex(&mut tx, fence.character_id, &content, target, sex).await?
                     {
                         return Ok(Err(HousePodiumRefusal::NotOwned));
                     }
-                    let flags = match flags {
+                    if let Some(appearance) = renown {
+                        if kind != PodiumKind::Renown {
+                            return Ok(Err(HousePodiumRefusal::WrongDisplay));
+                        }
+                        if let Some(mount) = appearance.mount_key.as_ref() {
+                            if !content.has_mount(mount) {
+                                return Ok(Err(HousePodiumRefusal::UnknownContent));
+                            }
+                            if !cosmetic_owned_for_sex(
+                                &mut tx, fence.character_id, &content, EarnedCosmetic::Mount(mount), None,
+                            ).await? {
+                                return Ok(Err(HousePodiumRefusal::NotOwned));
+                            }
+                        }
+                        for addon in [1, 2] {
+                            if appearance.addons & (1 << (addon - 1)) != 0
+                                && !cosmetic_owned_for_sex(
+                                    &mut tx, fence.character_id, &content,
+                                    EarnedCosmetic::Addon(&request.display_key, addon), sex,
+                                ).await?
+                            {
+                                return Ok(Err(HousePodiumRefusal::NotOwned));
+                            }
+                        }
+                    }
+                    if display.kind == DisplayKind::Creature {
+                        let boss = kind == PodiumKind::Vigour;
+                        let Some(threshold) = content.creature_kill_threshold(&request.display_key, boss) else {
+                            return Ok(Err(HousePodiumRefusal::UnknownContent));
+                        };
+                        let sql = if boss {
+                            "SELECT kill_count FROM game_character_bosstiary_progress WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2"
+                        } else {
+                            "SELECT kill_count FROM game_character_bestiary_progress WHERE character_id=encode($1,'hex')::uuid AND race_key=$2"
+                        };
+                        let kills: Option<i64> = sqlx::query_scalar(sql)
+                            .bind(fence.character_id.as_bytes().as_slice())
+                            .bind(&request.display_key)
+                            .fetch_optional(&mut *tx)
+                            .await?;
+                        let kills = u64::try_from(kills.unwrap_or(0))
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        if kills < threshold {
+                            return Ok(Err(HousePodiumRefusal::NotOwned));
+                        }
+                    }
+                    let flags = match options.flags {
                         Some(flags) => flags,
                         None => {
                             let rows = match fenced(LOAD, &node, &fence, &house)
@@ -289,11 +390,23 @@ impl DurabilityRoot {
                             stored
                         }
                     };
+                    let mut display_variant = variant(request.direction, flags);
+                    if let Some(appearance) = renown {
+                        display_variant["renown"] = serde_json::json!({
+                            "outfit_sex": appearance.outfit_sex.map(|sex| match sex {
+                                OutfitSex::Female => "female",
+                                OutfitSex::Male => "male",
+                            }),
+                            "addons": appearance.addons,
+                            "illuminated": appearance.illuminated,
+                            "mount_key": appearance.mount_key,
+                        });
+                    }
                     let result = fenced(SET, &node, &fence, &house)
                         .bind(request.item_instance_id.to_vec())
                         .bind(i16::from(request.display_kind))
                         .bind(request.display_key.clone())
-                        .bind(variant(request.direction, flags))
+                        .bind(display_variant)
                         .bind(request.expected_revision.to_string())
                         .fetch_one(&mut *tx)
                         .await;

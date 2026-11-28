@@ -23,6 +23,13 @@ pub(super) fn static_decoration_bundle(
     static_decoration_bundle_with(world,channel,&[("oteryn:item.tibia.i5302",7,0)])
 }
 
+pub(super) fn carpet_top_tie_bundle(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    static_decoration_bundle_with(world, channel, &[("oteryn:item.tibia.i1947", 7, 0)])
+}
+
 pub(super) fn static_timed_decoration_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,

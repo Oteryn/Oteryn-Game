@@ -195,9 +195,17 @@ pub(super) enum Case {
     CarpetTile { other: u32, removed: bool },
     CarpetWire {
         other: u32,
-        same_tile: bool,
+        neighbor: CarpetNeighbor,
         result: CarpetResult,
     },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum CarpetNeighbor {
+    SameTile,
+    Adjacent,
+    Diagonal,
+    TiedWithBase,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

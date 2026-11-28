@@ -94,13 +94,34 @@ fn w18_house_music_advances_existing_achievement_without_mutating_instrument() -
 }
 
 #[test]
+fn w18_house_both_harp_forms_emit_global_green_notes() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    for form in [2963, 2964] {
+        run_case(Case::Decoration(form, form))?;
+    }
+    Ok(())
+}
+
+#[test]
 fn w18_house_fish_tank_retains_exact_plunging_fish_effect() -> TestResult {
     run_case(Case::Decoration(23691, 23691))
 }
 
 #[test]
 fn w18_house_birdcage_audits_source_outcome_without_minting() -> TestResult {
-    run_case(Case::Decoration(2976, 0))
+    run_case(Case::Decoration(2976, 2975))
+}
+
+#[test]
+fn w18_house_birdcage_sings_on_old_false_positive_draw() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_case(Case::Decoration(2976, 2976))
 }
 
 #[test]

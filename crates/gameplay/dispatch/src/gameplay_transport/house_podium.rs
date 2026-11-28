@@ -3,7 +3,7 @@ use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection:
 use crate::content::creature_reward::CreatureRewardTable;
 use crate::content::native_gameplay::NativeCosmeticsView;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, Sex, UnlockFact};
-use crate::durability::house_podium::{HousePodiumRefusal, HousePodiumSet};
+use crate::durability::house_podium::{HousePodiumDisplayOptions, HousePodiumRefusal, HousePodiumSet};
 use crate::durability::house_scope_handoff::HouseId;
 use oteryn_gameplay_housing::house_podium::PodiumContent;
 use oteryn_protocol_oteryn::house_podium as wire;
@@ -36,6 +36,7 @@ pub enum Request {
     Set(wire::SetRequest),
     /// Command 175 from a session that selected capability 489.
     FlaggedSet(wire::SetRequest, wire::DisplayFlags),
+    FullSet(wire::SetRequest, wire::DisplayFlags, wire::RenownAppearance),
     Projection([u8; 16]),
 }
 
@@ -172,11 +173,13 @@ impl PodiumContent for PodiumContentView {
     fn has_mount(&self, key: &str) -> bool {
         self.cosmetics.mount_exists(&key.to_owned())
     }
-    fn has_creature(&self, key: &str, boss: bool) -> bool {
+    fn creature_kill_threshold(&self, key: &str, boss: bool) -> Option<u64> {
         if boss {
-            self.rewards.boss(key).is_some()
+            let boss = self.rewards.boss(key)?;
+            let [_, expertise, _] = crate::domain::bosstiary::kill_thresholds(&boss.category)?;
+            Some(expertise)
         } else {
-            super::charm_progression::bestiary_race_known(key)
+            super::charm_progression::bestiary_race_completion_threshold(key).map(u64::from)
         }
     }
 }
@@ -264,13 +267,23 @@ pub(super) async fn execute(
         .continuity
         .selected_capabilities
         .contains(wire::CAPABILITY_HOUSE_PODIUM_FLAGS_V1);
-    let (set, flags) = match request {
+    let full = admitted.continuity.selected_capabilities
+        .contains(wire::CAPABILITY_HOUSE_PODIUM_PROJECTION_V2);
+    let (set, options) = match request {
         Request::Preview(_) => return None,
-        Request::Set(set) => (set, None),
-        Request::FlaggedSet(set, flags) if flagged => (set, Some(flags)),
-        Request::FlaggedSet(..) => return None,
+        Request::Set(set) => (set, HousePodiumDisplayOptions::default()),
+        Request::FlaggedSet(set, flags) if flagged => (set, HousePodiumDisplayOptions {
+            flags: Some(flags), renown: None,
+        }),
+        Request::FullSet(set, flags, renown) if full && flagged => (set, HousePodiumDisplayOptions {
+            flags: Some(flags), renown: Some(renown),
+        }),
+        Request::FlaggedSet(..) | Request::FullSet(..) => return None,
         Request::Query(item) | Request::Projection(item) => {
-            return project(owner, fence, house, item, flagged).await;
+            let encoding = if full { ProjectionEncoding::Full } else if flagged {
+                ProjectionEncoding::Flagged
+            } else { ProjectionEncoding::Legacy };
+            return project(owner, fence, house, item, encoding).await;
         }
     };
     let gameplay = owner.active_generation?.native_gameplay()?;
@@ -287,7 +300,7 @@ pub(super) async fn execute(
     };
     let result = owner
         .root
-        .set_house_podium_flagged(owner.holder, fence, house, request, flags, content)
+        .set_house_podium_variant(owner.holder, fence, house, request, options, content)
         .await
         .ok()?;
     Some(
@@ -299,6 +312,12 @@ pub(super) async fn execute(
     )
 }
 
+enum ProjectionEncoding {
+    Legacy,
+    Flagged,
+    Full,
+}
+
 /// The committed display of `item` (commands 174 and 176); with capability 489 selected a
 /// shown display carries its visibility flags.
 async fn project(
@@ -306,7 +325,7 @@ async fn project(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     house: HouseId,
     item: [u8; 16],
-    flagged: bool,
+    encoding: ProjectionEncoding,
 ) -> Option<Vec<u8>> {
     let displays = owner
         .root
@@ -317,21 +336,24 @@ async fn project(
     let projection = displays
         .into_iter()
         .find(|display| display.item_instance_id == item)
-        .map(|display| {
-            (
-                wire::Projection {
-                    podium_kind: display.podium_kind,
-                    display_kind: display.display_kind,
-                    direction: display.direction,
-                    revision: display.revision,
-                    key: display.display_key,
-                },
-                display.flags,
-            )
+        .map(|display| wire::FullProjection {
+            display: wire::Projection {
+                podium_kind: display.podium_kind,
+                display_kind: display.display_kind,
+                direction: display.direction,
+                revision: display.revision,
+                key: display.display_key,
+            },
+            flags: display.flags,
+            renown: display.renown,
         });
-    if flagged {
-        wire::Projection::encode_flagged(projection.as_ref().map(|(view, flags)| (view, *flags)))
-    } else {
-        wire::Projection::encode(projection.as_ref().map(|(view, _)| view))
+    match encoding {
+        ProjectionEncoding::Full => wire::FullProjection::encode(projection),
+        ProjectionEncoding::Flagged => wire::Projection::encode_flagged(
+            projection.as_ref().map(|view| (&view.display, view.flags)),
+        ),
+        ProjectionEncoding::Legacy => wire::Projection::encode(
+            projection.as_ref().map(|view| &view.display),
+        ),
     }
 }

@@ -66,6 +66,34 @@ a podium's first display set without flags takes Crystal's new-podium default,
 platform shown and outfit and mount hidden. A display stored before capability
 489 has no flags and reads as all three shown. Flags are presentation only:
 they grant no ownership and do not change the content or ownership checks.
-Sessions without 489 send and receive byte-identical V1 payloads. The command
-175 registry bound is 190 bytes: a V1 request is at most 187 bytes and the
+Sessions without 489 send and receive byte-identical V1 payloads. A legacy command
+175 request is at most 190 bytes: a V1 request is at most 187 bytes and the
 flags add 3.
+
+## Renown appearance (capability 631)
+
+Capability 631 requires 489. A Renown SET may append four bytes after the
+flagged request, followed by the optional secondary mount key.
+
+| Field | Encoding |
+| --- | --- |
+| Outfit sex | 0 absent, 1 female, 2 male |
+| Addons | Two-bit mask, allowed only with an outfit |
+| Illumination | 0 off, 1 on |
+| Secondary mount length | 0 absent, otherwise 1–160 UTF-8 bytes follow |
+
+The primary key selects the outfit when both components are present. A
+mount-only display uses mount kind and the primary key, with absent sex and
+zero addons. The server checks cosmetic ownership, including every selected
+addon, and persists the appearance in the same fenced revision as the
+primary display. A full SET is at most 354 bytes.
+
+For selections including 631, both query and projection append the same
+Renown appearance suffix when the committed display carries one. An empty
+projection stays `0`. The shorter flagged encoding describes a projection
+without a stored Renown appearance. Legacy readers receive the V1 projection
+for the primary display and the flags they negotiated.
+
+Vigour requires the boss's Expertise stage. Tenacity requires the finished
+Bestiary entry. Both use the character's durable kill count and the existing
+catalogue thresholds before writing a display.
