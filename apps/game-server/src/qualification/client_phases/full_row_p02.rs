@@ -8,7 +8,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::boss_encounter;
-use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+use oteryn_protocol_oteryn::attack::{ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 use oteryn_protocol_oteryn::bosstiary_slots::{
     BossSlotReply, BossSlotRequest, COMMAND_TYPE_BOSSTIARY_SLOTS,
 };
@@ -222,7 +222,29 @@ async fn prepare_boss_ground(c: &mut DevClientSession, w: &BundleWorld) -> TestR
     Ok(())
 }
 
-async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
+async fn observe_combat(
+    client: &mut DevClientSession,
+    after_sequence: u64,
+    matches: impl Fn(&ActorCombatState) -> bool,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    verdict::Harness::global().bounded_wait(deadline, "p02-combat-state");
+    loop {
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::ActorCombatState(delta) = event
+                && delta.server_sequence > after_sequence && matches(&delta.value)
+            {
+                return Ok(());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("P02 missing combat state delta after sequence {after_sequence}: {:?}", client.session_mut().combat_state()).into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+pub(super) async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
     let session = uuid_text(c.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, key.to_owned())
         .await
@@ -250,12 +272,11 @@ async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
         c.take_events();
     }
     let r = c.session_mut().attack_target(Some(&target)).await?;
-    if r.disposition != AttackIntentDisposition::Ok
-        || c.session_mut().combat_state().is_none_or(|state| state.target != Some(target))
-    {
+    if r.disposition != AttackIntentDisposition::Ok {
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(90);
+    observe_combat(c, r.result_server_sequence, |state| state.target == Some(target)).await?;
     verdict::Harness::global().bounded_wait(until, "bounded-observation");
     let mut last_seen = None;
     loop {
@@ -272,17 +293,17 @@ async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
                 if vitals.is_none_or(|vitals| vitals.health == 0) {
                     return Err(format!("step boss-kill {key}: player not alive when boss left visibility").into());
                 }
-                let clear = c.session_mut().attack_target(None).await?;
-                if clear.disposition != AttackIntentDisposition::Ok
-                    || c.session_mut().combat_state().is_none_or(|state| state.target.is_some())
-                {
-                    return Err(format!("step boss-kill {key}: target clear reply={clear:?}").into());
+                if c.session_mut().combat_state().is_some_and(|state| state.target.is_some()) {
+                    let clear = c.session_mut().attack_target(None).await?;
+                    if clear.disposition != AttackIntentDisposition::Ok {
+                        return Err(format!("step boss-kill {key}: target clear reply={clear:?}").into());
+                    }
+                    observe_combat(c, clear.result_server_sequence, |state| state.target.is_none()).await?;
                 }
                 return Ok(());
             }
         }
         if tokio::time::Instant::now() >= until {
-            c.session_mut().attack_target(None).await?;
             return Err(
                 format!("step boss-kill {key}: death frame timeout target={target:?} last_seen={last_seen:?}").into(),
             );
@@ -311,7 +332,9 @@ fn boosted_exclusion_slot(
         .map(|index| index + 1)
 }
 
-async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+pub(super) const ORDINARY_BOSS: &str = "oteryn:creature.rotworm_queen";
+
+pub(super) async fn prepare_combat(clients: &SeamClients<'_>, row: &str, tag: u8) -> TestResult<DevClientSession> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -321,12 +344,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     character_prep::declare_seeded(
-        "P02.full",
+        row,
         "level 100, axe, boss placement",
         "combat inputs are prepared; credit and slots must come from live gameplay",
     );
-    let client = connect_world(clients, 0xb2).await?;
+    let client = connect_world(clients, tag).await?;
     let mut c = provisioning::provision_fixture(client, clients, 1, 100).await?;
+    prepare_boss_ground(&mut c, world).await?;
+    let modes = FightModes {
+        fight_mode: FightMode::Offensive,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    if c.session_mut().combat_state().is_none_or(|state| state.modes == modes) {
+        return Err("P02 needs a different combat mode before enabling offensive chase".into());
+    }
+    let reply = c.session_mut().set_fight_modes(&modes).await?;
+    if reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("P02 offensive chase refused: {reply:?}").into());
+    }
+    observe_combat(&mut c, reply.result_server_sequence, |state| state.modes == modes).await?;
+    evidence("P02_COMBAT modes=offensive,chase change=confirmed");
+    Ok(c)
+}
+
+async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let mut c = prepare_combat(clients, "P02.full", 0xb2).await?;
     let mut before = snapshot(&mut c).await?;
     let initial_slot = slot(
         &mut c,
@@ -360,28 +403,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("daily boosted boss is not an Archfoe: {daily_boss}").into());
     }
     // Global Bosstiary lists Rotworm Queen as a Nemesis (one kill, ten points).
-    let boss = "oteryn:creature.rotworm_queen".to_owned();
+    let boss = ORDINARY_BOSS.to_owned();
     catalog
         .iter()
         .find(|entry| entry.key == boss && entry.category.eq_ignore_ascii_case("nemesis"))
         .ok_or("P02 Global ordinary boss absent from Nemesis catalogue")?;
-    prepare_boss_ground(&mut c, world).await?;
-    // Ekatrix keeps her distance. Use the player's automatic chase before selecting a target.
-    let modes = FightModes {
-        fight_mode: FightMode::Offensive,
-        chase: ChaseMode::Chase,
-        ..FightModes::DEFAULT
-    };
-    if c.session_mut().combat_state().is_none_or(|state| state.modes == modes) {
-        return Err("P02 needs a different combat mode before enabling offensive chase".into());
-    }
-    let mode_reply = c.session_mut().set_fight_modes(&modes).await?;
-    if mode_reply.disposition != AttackIntentDisposition::Ok
-        || c.session_mut().combat_state().is_none_or(|state| state.modes != modes)
-    {
-        return Err(format!("P02 offensive chase did not take effect: {mode_reply:?}").into());
-    }
-    evidence("P02_COMBAT modes=offensive,chase change=confirmed");
     let previous = counts(&before).get(&boss).copied().unwrap_or(0);
     kill(&mut c, &boss).await?;
     let credited = snapshot(&mut c).await?;
@@ -510,6 +536,23 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step slot-refusal: reply={refused:?}").into());
     }
     row.pass("slot-refusal", &refused);
+    let session = logout(&mut c).await?;
+    drop(c);
+    let mut c = connect_world(clients, 0xb3).await?;
+    let durable = snapshot(&mut c).await?;
+    let ds = slot(&mut c, BossSlotRequest::Query).await?;
+    if c.join_snapshot().game_session_id == session
+        || durable.progress != before.progress
+        || durable.points != before.points
+        || ds != equipped
+    {
+        return Err(format!("step fresh-admission: progress={durable:?}, slot={ds:?}").into());
+    }
+    row.pass("fresh-admission", (&durable.progress, durable.points, &ds));
+    Ok(())
+}
+
+pub(super) async fn logout(c: &mut DevClientSession) -> TestResult<crate::foundation::GameSessionId> {
     let deadline = tokio::time::Instant::now()
         + Duration::from_millis(u64::from(
             oteryn_protocol_oteryn::logout::MAX_LOGOUT_RETRY_AFTER_MS,
@@ -542,19 +585,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step logout: {logout:?}").into());
     }
-    drop(c);
-    let mut c = connect_world(clients, 0xb3).await?;
-    let durable = snapshot(&mut c).await?;
-    let ds = slot(&mut c, BossSlotRequest::Query).await?;
-    if c.join_snapshot().game_session_id == session
-        || durable.progress != before.progress
-        || durable.points != before.points
-        || ds != equipped
-    {
-        return Err(format!("step fresh-admission: progress={durable:?}, slot={ds:?}").into());
-    }
-    row.pass("fresh-admission", (&durable.progress, durable.points, &ds));
-    Ok(())
+    Ok(session)
 }
 #[cfg(test)]
 mod tests {
