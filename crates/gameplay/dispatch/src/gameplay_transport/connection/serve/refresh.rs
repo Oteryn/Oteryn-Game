@@ -447,7 +447,21 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    // ATTACK-1b: due swings run; a changed domain 10 state sends a delta.
+    // Expiry is a clock read. Publish it before the Channel's attack and reward work.
+    if session
+        .admitted
+        .continuity
+        .combat
+        .sent
+        .is_some_and(|state| state.in_fight)
+        && let Some(expired) = authority
+            .observe_combat_state(session.actor, session.admitted.game_session_id)
+            .await
+        && !expired.in_fight
+    {
+        combat_state(stream, session, expired).await?;
+    }
+    // ATTACK-1b: due swings can renew the lock or change the held target.
     pvp_expert::refresh(stream, authority, session).await?;
     let Some(state) = authority
         .tick_combat(session.actor, session.admitted.game_session_id)

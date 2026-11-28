@@ -102,12 +102,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<oteryn_protocol_oteryn::attack::ActorCombatState> {
-        let now = self.owner_now();
         // ATTACK-1b lock order: runtime, spell states, attack.
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.settle_pacified_target(&runtime, &states, actor, game_session_id);
+        let now = self.owner_now();
         let mut state = attack.combat_state(actor, game_session_id, now);
         state.in_fight |= pvp_live::logout_blocked(&states, actor, game_session_id, now);
         Some(state)

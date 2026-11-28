@@ -4,11 +4,18 @@ use super::*;
 use crate::gameplay_transport::actor_spell;
 use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
 use crate::gameplay_transport::world_spatial::ActorPosition;
+use oteryn_gameplay_combat_rules::{
+    attack::{AttackConstants, AttackState},
+    pvp::CombatLock,
+};
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, decode_state_delta, encode_client_command,
+    ClientCommandValue,
+    attack::{CAPABILITY_ATTACK_V1, decode_actor_combat_state},
+    decode_state_delta, encode_client_command,
     world_clock::{STATE_DOMAIN_WORLD_CLOCK, decode_world_clock},
     world_spatial::encode_step_intent,
 };
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::cell::Cell;
 use std::time::Duration;
 
@@ -158,6 +165,148 @@ fn run<F: Future<Output = TestResult> + 'static>(scenario: fn() -> F) -> TestRes
 #[test]
 fn slow_serene_and_slow_input_keep_clock_and_liveness_progressing() -> TestResult {
     run(live_clock)
+}
+
+struct CombatExpiry {
+    attack: AttackState<u8, u8>,
+    pvp: CombatLock,
+    now: Cell<SemanticTimeMicros>,
+    deadline: SemanticTimeMicros,
+    received_clear: tokio::sync::Notify,
+}
+
+impl FreshAdmissionAuthority for CombatExpiry {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+        Some(observation())
+    }
+
+    async fn observe_combat_state(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<ActorCombatState> {
+        let now = self.now.get();
+        Some(ActorCombatState {
+            target: None,
+            modes: FightModes::DEFAULT,
+            in_fight: self.attack.in_fight(now) || self.pvp.blocks_logout(now, None),
+        })
+    }
+
+    async fn tick_combat(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<ActorCombatState> {
+        if self.now.get() == self.deadline {
+            // Model outstanding Channel attack/reward work at the expiry boundary.
+            self.received_clear.notified().await;
+        }
+        self.observe_combat_state(actor, session).await
+    }
+}
+
+#[test]
+fn combat_expiry_reaches_client_before_pending_channel_work() -> TestResult {
+    run(|| async {
+        check_combat_expiry(false).await?;
+        check_combat_expiry(true).await
+    })
+}
+
+async fn check_combat_expiry(last_hit_is_pvp: bool) -> TestResult {
+    let interval = AttackConstants::checked_in()
+        .ok_or("combat constants")?
+        .in_fight_micros();
+    let initial = SemanticTimeMicros::from_micros(0);
+    let last = SemanticTimeMicros::from_micros(interval / 2);
+    let mut attack = AttackState::default();
+    let mut pvp = CombatLock::default();
+    attack.record_hit(initial, interval);
+    let deadline = if last_hit_is_pvp {
+        pvp.on_pvp_hit(last);
+        pvp.logout_until()
+    } else {
+        attack.record_hit(last, interval);
+        attack.in_fight_until()
+    }
+    .ok_or("last hit deadline")?;
+    let authority = CombatExpiry {
+        attack,
+        pvp,
+        now: Cell::new(SemanticTimeMicros::from_micros(deadline.get() - 1)),
+        deadline,
+        received_clear: tokio::sync::Notify::new(),
+    };
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let mut admitted = admitted()?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[6, CAPABILITY_ATTACK_V1],
+    )
+    .ok_or("select combat fixture capabilities")?;
+    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+    let mut session = setup::prepare(
+        &mut server,
+        &mut admitted,
+        &authority,
+        IDLE_LIVENESS,
+        actor,
+        observation(),
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "prepare combat connection")?;
+    let mut frames = FrameReader::default();
+    loop {
+        let frame = frames.next(&mut client).await?;
+        if decode_wire_envelope(&frame)?.message_type() == MessageType::SnapshotCommit {
+            break;
+        }
+    }
+    let before = session.admitted.continuity.combat;
+    assert!(before.sent.is_some_and(|state| state.in_fight));
+    inbound::receive(&mut server, &authority, &mut session, Next::Combat)
+        .await
+        .map_err(|_| "refresh before expiry")?;
+    assert_eq!(session.admitted.continuity.combat, before);
+
+    authority.now.set(deadline);
+    let peer = async {
+        let frame = frames.next(&mut client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        assert_eq!(envelope.message_type(), MessageType::StateDelta);
+        let delta = decode_state_delta(envelope.payload())?;
+        assert_eq!(delta.domain_id, STATE_DOMAIN_ACTOR_COMBAT_STATE);
+        assert_eq!(delta.base_revision, before.revision);
+        assert_eq!(delta.new_revision, before.revision + 1);
+        assert!(
+            !decode_actor_combat_state(delta.payload)
+                .map_err(|e| format!("{e:?}"))?
+                .in_fight
+        );
+        authority.received_clear.notify_one();
+        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+    };
+    let refresh = inbound::receive(&mut server, &authority, &mut session, Next::Combat);
+    let (result, received) =
+        tokio::time::timeout(COMBAT_REFRESH, async { tokio::join!(refresh, peer) })
+            .await
+            .map_err(|_| "expired combat state did not reach the client before Channel work")?;
+    result.map_err(|_| "refresh at expiry")?;
+    received?;
+    assert_eq!(
+        session.admitted.continuity.combat.revision,
+        before.revision + 1
+    );
+    Ok(())
 }
 
 async fn live_clock() -> TestResult {
