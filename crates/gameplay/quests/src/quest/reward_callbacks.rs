@@ -2446,6 +2446,21 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 #[cfg(test)]
 mod tests {
     #[test]
+    fn djinn_lamp_confirmations_match_yes_in_a_phrase() -> Result<(), String> {
+        let callbacks = super::load()?;
+        for faction in ["efreet", "marid"] {
+            for (action, topic) in [("lamp-mission", 1), ("finish", 2)] {
+                let key = format!("oteryn:quest-reward/l2-{faction}-{action}");
+                let callback = callbacks.iter().find(|row| row.key == key).ok_or(key)?;
+                assert_eq!(callback.topic, topic);
+                assert!(callback.matches_keyword("yes please"));
+                assert!(!callback.matches_keyword("eyes"));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
         let callbacks = super::load()?;
         let catalogue = super::super::loader::load_embedded_quest_state("content-1")

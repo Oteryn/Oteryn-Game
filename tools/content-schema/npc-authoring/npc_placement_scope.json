@@ -133,10 +133,8 @@
     "oteryn:npc.brodraem_orcbeard",
     "oteryn:npc.brodrosch",
     "oteryn:npc.broken_servant_sentry",
-    "oteryn:npc.brom",
     "oteryn:npc.bron",
     "oteryn:npc.bruce",
-    "oteryn:npc.brutus",
     "oteryn:npc.buddel",
     "oteryn:npc.buddel_helheim",
     "oteryn:npc.buddel_okolnir",
@@ -679,7 +677,6 @@
     "oteryn:npc.ross",
     "oteryn:npc.roswitha",
     "oteryn:npc.rottin_wood",
-    "oteryn:npc.roughington",
     "oteryn:npc.rowenna",
     "oteryn:npc.rudolph",
     "oteryn:npc.ruprecht",
@@ -701,7 +698,6 @@
     "oteryn:npc.servant_sentry",
     "oteryn:npc.sessek",
     "oteryn:npc.seymour",
-    "oteryn:npc.shadowpunch",
     "oteryn:npc.shalmar",
     "oteryn:npc.shanar",
     "oteryn:npc.sharai",
@@ -825,7 +821,6 @@
     "oteryn:npc.vascalir",
     "oteryn:npc.velvet",
     "oteryn:npc.vescu",
-    "oteryn:npc.victor",
     "oteryn:npc.vincent",
     "oteryn:npc.viola",
     "oteryn:npc.virgil",
@@ -871,7 +866,31 @@
     "oteryn:npc.zoltan",
     "oteryn:npc.zora"
   ],
-  "position_conflicts": [],
+  "position_conflicts": [
+    {
+      "npc": "oteryn:npc.doctor_marrow",
+      "evidence": [
+        {
+          "source": "crystal:summer-update:data-global/world/world-npc.xml",
+          "position": {
+            "x": 34010,
+            "y": 32641,
+            "z": 6
+          },
+          "evidence": "OTS_HYPOTHESIS_ONLY"
+        },
+        {
+          "source": "make-believe-reference",
+          "position": {
+            "x": 33992,
+            "y": 32662,
+            "z": 6
+          },
+          "evidence": "REFERENCE_PRISON_CELL"
+        }
+      ]
+    }
+  ],
   "placement_cells": {
     "oteryn:npc.a_swan": [
       {
@@ -976,7 +995,6 @@
     "oteryn:npc.chuck_the_worker",
     "oteryn:npc.corym_butler",
     "oteryn:npc.corym_worker_5",
-    "oteryn:npc.doctor_marrow",
     "oteryn:npc.doubleday",
     "oteryn:npc.dream_butterfly",
     "oteryn:npc.eclesius",
@@ -9890,63 +9908,6 @@
         }
       ]
     },
-    "oteryn:npc.brom": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact Global NPC XML contact for Brom. Engine default north.",
-      "placements": [
-        {
-          "position": {
-            "x": 32703,
-            "y": 31832,
-            "z": 12
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
-    "oteryn:npc.brutus": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact Global NPC XML contact for Brutus. Engine default north.",
-      "placements": [
-        {
-          "position": {
-            "x": 33153,
-            "y": 32984,
-            "z": 8
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
-    "oteryn:npc.doctor_marrow": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact Global NPC XML contact for Doctor Marrow. Engine default north.",
-      "placements": [
-        {
-          "position": {
-            "x": 34010,
-            "y": 32641,
-            "z": 6
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
     "oteryn:npc.ellipses": {
       "source": {
         "origin": "crystal",
@@ -10004,44 +9965,6 @@
         }
       ]
     },
-    "oteryn:npc.roughington": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact Global NPC XML contact for Roughington. Engine default north.",
-      "placements": [
-        {
-          "position": {
-            "x": 33535,
-            "y": 31832,
-            "z": 9
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
-    "oteryn:npc.shadowpunch": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact Global NPC XML contact for Shadowpunch. Engine default north.",
-      "placements": [
-        {
-          "position": {
-            "x": 33377,
-            "y": 31832,
-            "z": 9
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
     "oteryn:npc.skullfrost": {
       "source": {
         "origin": "crystal",
@@ -10056,25 +9979,6 @@
             "x": 32549,
             "y": 32622,
             "z": 11
-          },
-          "direction": "NORTH"
-        }
-      ]
-    },
-    "oteryn:npc.victor": {
-      "source": {
-        "origin": "crystal",
-        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
-        "path": "data-global/world/world-npc.xml",
-        "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029"
-      },
-      "basis": "Exact Global NPC XML contact for Victor. Engine default north.",
-      "placements": [
-        {
-          "position": {
-            "x": 32255,
-            "y": 32216,
-            "z": 8
           },
           "direction": "NORTH"
         }

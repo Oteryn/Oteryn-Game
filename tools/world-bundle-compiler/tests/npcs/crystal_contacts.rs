@@ -8,10 +8,7 @@ fn crystal_npc_contacts_are_admitted_at_their_world_anchors() -> TestResult {
     let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
     let expected = [
         ("a_sleeping_dragon", (33242, 31213, 10)),
-        ("brom", (32703, 31832, 12)),
-        ("brutus", (33153, 32984, 8)),
         ("death_npc", (32570, 32574, 11)),
-        ("doctor_marrow", (34010, 32641, 6)),
         ("ellipses", (33449, 32805, 11)),
         ("eustacios_spy_rat", (33857, 31334, 9)),
         ("habdel", (33225, 32434, 7)),
@@ -20,12 +17,9 @@ fn crystal_npc_contacts_are_admitted_at_their_world_anchors() -> TestResult {
         ("palimuth", (32801, 31223, 7)),
         ("rafzan", (33052, 32095, 6)),
         ("raymond_striker", (32350, 32588, 7)),
-        ("roughington", (33535, 31832, 9)),
-        ("shadowpunch", (33377, 31832, 9)),
         ("sinatuki", (32425, 31085, 7)),
         ("skullfrost", (32549, 32622, 11)),
         ("the_first_dragon", (33617, 31017, 13)),
-        ("victor", (32255, 32216, 8)),
         ("wyrdins_apprentice", (32434, 31985, 7)),
         ("zalamon", (33354, 31410, 8)),
     ];
@@ -48,6 +42,21 @@ fn crystal_npc_contacts_are_admitted_at_their_world_anchors() -> TestResult {
     };
     let (spawns, _) = realize_spawns(&input, &resolver)?;
     let (npcs, report) = realize_npcs(&input, &resolver, &spawns)?;
+    for name in [
+        "brom",
+        "brutus",
+        "roughington",
+        "shadowpunch",
+        "victor",
+        "doctor_marrow",
+    ] {
+        let key = format!("oteryn:npc.{name}");
+        assert!(
+            project.families.npc_placements.iter().all(|p| p.npc != key),
+            "{key}"
+        );
+        assert!(npcs.npcs.iter().all(|npc| npc.key != key), "{key}");
+    }
     let mut missing = Vec::new();
     for (name, (x, y, z)) in expected {
         let key = format!("oteryn:npc.{name}");

@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn regional_guide_and_merchant_use_their_catalogue_dialogue_and_offers() {
+    fn regional_contacts_use_their_catalogue_dialogue_and_offers() {
         let model = model();
         let book = NpcTalkBook::from_model(&model);
         let at = ChatPosition {
@@ -277,6 +277,10 @@ mod tests {
             floor: 7,
         };
         for (key, keyword, trade) in [
+            ("oteryn:npc.doctor_marrow", "prison", false),
+            ("oteryn:npc.eustacios_spy_rat", "disguise", false),
+            ("oteryn:npc.harlow", "busy", false),
+            ("oteryn:npc.harlow", "job", false),
             ("oteryn:npc.guide_elena", "temple", false),
             ("oteryn:npc.gorn", "job", true),
         ] {

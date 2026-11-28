@@ -104,6 +104,7 @@ def append(add, state, callbacks, offers, inputs, pin):
         grant('lamp-mission', faction, npc, ['yes'], [s(faction, 'mission03', 0, 1)],
               'Once you have' if faction == 'efreet' else 'Once you have acquired', topic=1,
               requires=[requirement(faction, 'mission02', prior)])
+        callbacks[-1]["msg_contains"] = True
         # The source has one global ReceivedLamp flag; exclusive faction starts
         # make the active faction's exact DoorToLamp flag an equivalent once key.
         lamp_topic = 31 if faction == 'efreet' else 32
@@ -119,6 +120,7 @@ def append(add, state, callbacks, offers, inputs, pin):
               'permission to trade' if faction == 'efreet' else 'welcome to trade', topic=2,
               requires=[requirement(faction, 'start', 1)],
               achievement=f'oteryn:achievement/{faction}_ally')
+        callbacks[-1]["msg_contains"] = True
         _, achievement_witness = text(npc, faction.capitalize() + ' Ally')
         callbacks[-1]['sources'].append(achievement_witness)
 

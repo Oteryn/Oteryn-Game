@@ -586,6 +586,33 @@
       "source_path": "data-global/npc/dane.lua",
       "source_sha256": "293fe726b706903838d9c01a1c49724ebdd82fa342d1c5b492cf559c62a50cb9"
     },
+    "oteryn:npc.doctor_marrow": {
+      "greet": "catalogue",
+      "farewell": "catalogue",
+      "keywords": [
+        "abomination",
+        "believers",
+        "capable",
+        "creation",
+        "explain",
+        "failure",
+        "god",
+        "helping",
+        "hesitate",
+        "interaction",
+        "job",
+        "moonsilver",
+        "name",
+        "prison",
+        "purpose",
+        "samples",
+        "stopped",
+        "unpleasant",
+        "wayland"
+      ],
+      "source_path": "data-global/npc/doctor_marrow.lua",
+      "source_sha256": "af1ff19264525f2b0726211c05f54ec4e244eee797d4fa919ed8dfd82a874135"
+    },
     "oteryn:npc.donald_mcronald": {
       "greet": "handler_default",
       "farewell": "handler_default",
@@ -730,6 +757,21 @@
       ],
       "source_path": "data-global/npc/eroth.lua",
       "source_sha256": "a3ac2ea476eeae5fd9ba97a5347af9a510b854e0a4243511e491a6d096899836"
+    },
+    "oteryn:npc.eustacios_spy_rat": {
+      "greet": "catalogue",
+      "farewell": "catalogue",
+      "keywords": [
+        "advantage",
+        "assistance",
+        "convincing",
+        "disguise",
+        "job",
+        "loud",
+        "people"
+      ],
+      "source_path": "data-global/npc/eustacios_spy_rat.lua",
+      "source_sha256": "8ab58c88432b7c4b76947fa1c95233dcb43940c711cc904d25aba9864129d1f7"
     },
     "oteryn:npc.faluae": {
       "greet": "handler_default",
@@ -962,6 +1004,16 @@
       ],
       "source_path": "data-global/npc/hardek.lua",
       "source_sha256": "5c12ad50a23fc7656e2ecd89494705e50f585cf219b4f76c04ddcd5f135b6334"
+    },
+    "oteryn:npc.harlow": {
+      "greet": "catalogue",
+      "farewell": "catalogue",
+      "keywords": [
+        "busy",
+        "job"
+      ],
+      "source_path": "data-global/npc/harlow.lua",
+      "source_sha256": "a7b39edd4830c79d07e02ca715260a48577184cea2463002506b62796f6109e3"
     },
     "oteryn:npc.hector_the_mentor": {
       "greet": "catalogue",

@@ -1,1 +1,1 @@
-{"coordinate_frame":"global-target-2026-09-27","family":"Npc.Placement","held":[],"schema":"OTERYN_NPC_PLACEMENT_HELD/v1"}
+{"coordinate_frame":"global-target-2026-09-27","family":"Npc.Placement","held":[{"evidence":[{"evidence":"OTS_HYPOTHESIS_ONLY","position":{"x":34010,"y":32641,"z":6},"source":"crystal:summer-update:data-global/world/world-npc.xml"},{"evidence":"REFERENCE_PRISON_CELL","position":{"x":33992,"y":32662,"z":6},"source":"make-believe-reference"}],"npc":"oteryn:npc.doctor_marrow","reason":"POSITION_CONFLICT"}],"schema":"OTERYN_NPC_PLACEMENT_HELD/v1"}
