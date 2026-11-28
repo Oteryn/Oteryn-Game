@@ -162,14 +162,10 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         .sources
         .iter()
         .flat_map(|source| {
-            source.points.iter().flat_map(move |point| {
-                (point.x.saturating_sub(4)..=point.x.saturating_add(4)).flat_map(move |x| {
-                    (point.y.saturating_sub(4)..=point.y.saturating_add(4)).map(move |y| TilePos {
-                        x,
-                        y,
-                        floor: source.floor,
-                    })
-                })
+            source.points.iter().map(|point| TilePos {
+                x: point.x,
+                y: point.y,
+                floor: source.floor,
             })
         })
         .collect();
