@@ -1,7 +1,7 @@
 //! N05 (client-local, no server): export, import into a fresh store, backup, defaults and a corrupt
 //! import, driven through the production `SettingsState` / `PreferenceStore` path and checked
 //! against the exact JSON the files hold.
-use crate::play::{PreferenceStore, ReferencePreferences, SettingsState};
+use crate::play::{BarAction, PreferenceStore, ReferencePreferences, SettingsState};
 use serde_json::{Value, json};
 
 type Error = Box<dyn std::error::Error>;
@@ -69,6 +69,15 @@ fn e2e_n05_settings_export_import_backup_defaults_and_corrupt_file() -> Result<(
     changed.audio.master_volume = 37;
     changed.audio.muted = true;
     changed.english = true;
+    changed.bar_layout.rows[0].locked = false;
+    changed.bar_layout.rows[0].count = 10;
+    changed.bar_actions.0.insert(
+        0,
+        BarAction::Text {
+            text: "G05 settings transfer".into(),
+            send_automatically: false,
+        },
+    );
     changed.visible_panels = vec!["battle".into(), "wheel".into()];
     state.apply(changed.clone());
     assert_eq!(state.feedback, "Applied and saved");
