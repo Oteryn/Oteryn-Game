@@ -1,11 +1,14 @@
-//! Canary-compatible weekday placement and availability for the travelling trader Rashid.
+//! Server-save weekday placement and availability for the travelling trader Rashid.
+
+use jiff::{Timestamp, tz::TimeZone};
+use std::sync::LazyLock;
 
 use crate::{MovementFacing, MovementLocalPosition, NpcPlacement, NpcPlacementTable};
 
 /// The catalogue identity whose placement rotates each weekday.
 pub const RASHID_NPC_KEY: &str = "oteryn:npc.rashid";
 
-/// Rashid's Canary weekday destination.
+/// Rashid's destination for a Tibia weekday.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RashidDestination {
     pub city: &'static str,
@@ -24,11 +27,20 @@ const fn destination(city: &'static str, x: u16, y: u16, z: i8) -> RashidDestina
     }
 }
 
-/// Destination at a UTC Unix timestamp. Canary uses the host calendar day; Oteryn deliberately
-/// fixes that otherwise deployment-dependent clock to UTC.
+/// Rashid switches at 10:00 CET/CEST, the start of the next Tibia day.
 pub fn destination_at(unix_ms: i64) -> RashidDestination {
-    // 1970-01-01 was Thursday. `rem_euclid` also gives a defined answer before the epoch.
-    match (unix_ms.div_euclid(86_400_000) + 3).rem_euclid(7) {
+    // The Fandom Rashid schedule uses CET with DST from the last Sunday in March
+    // to the last Sunday in October. An explicit zone keeps host settings out of it.
+    static TIBIA_ZONE: LazyLock<TimeZone> =
+        LazyLock::new(|| TimeZone::posix("CET-1CEST,M3.5.0,M10.5.0/3").unwrap_or(TimeZone::UTC));
+    let utc = Timestamp::from_millisecond(unix_ms).unwrap_or(if unix_ms < 0 {
+        Timestamp::MIN
+    } else {
+        Timestamp::MAX
+    });
+    let local = utc.to_zoned(TIBIA_ZONE.clone());
+    let weekday = local.weekday().to_monday_zero_offset() - i8::from(local.hour() < 10);
+    match weekday.rem_euclid(7) {
         0 => destination("Monday", 32_207, 31_155, 7),
         1 => destination("Tuesday", 32_300, 32_837, 7),
         2 => destination("Wednesday", 32_577, 32_753, 7),
@@ -39,7 +51,7 @@ pub fn destination_at(unix_ms: i64) -> RashidDestination {
     }
 }
 
-/// Retain only today's Canary placement for Rashid. Other NPCs and their ordering are unchanged.
+/// Retain only today's placement for Rashid. Other NPCs and their ordering are unchanged.
 pub fn rotate_placements(table: &mut NpcPlacementTable, unix_ms: i64) {
     let expected = destination_at(unix_ms).placement;
     if let Some(rashid) = table.npcs.iter_mut().find(|npc| npc.key == RASHID_NPC_KEY) {
@@ -53,7 +65,7 @@ pub fn rotate_placements(table: &mut NpcPlacementTable, unix_ms: i64) {
         .retain(|npc| npc.key != RASHID_NPC_KEY || !npc.placements.is_empty());
 }
 
-/// Whether a visible Rashid actor is within his destination's wander area this UTC weekday.
+/// Whether a visible Rashid actor is within his destination's wander area this Tibia weekday.
 /// Canary 47dfd51f and Crystal 201189f8 npc/rashid.lua:10-11 set a 2000 ms
 /// interval and radius 3. Canary src/creatures/npcs/npc.cpp:1190-1196 bounds
 /// walking around masterPos; trading must remain available after those steps.
@@ -74,7 +86,7 @@ mod tests {
 
     #[test]
     fn canary_week_rotates_all_seven_destinations() {
-        let monday = 4 * 86_400_000;
+        let monday = 4 * 86_400_000 + 9 * 3_600_000;
         let expected = [
             ("Monday", 32_207, 31_155, -7),
             ("Tuesday", 32_300, 32_837, -7),
@@ -98,32 +110,48 @@ mod tests {
         }
     }
 
-    // Crystal 201189f8 data-global/scripts/globalevents/spawn/rashid.lua:2-8 (Canary 47dfd51f
-    // identical) teleports Rashid to the weekday destination, so trading follows his position.
-    // Crystal rotates at host-local 00:01; Oteryn rotates at UTC 00:00.
     #[test]
-    fn crystal_trade_follows_the_weekday_destination() {
-        let thursday = 0;
-        let position = |x: i32, y: i32, floor: i16| MovementLocalPosition { x, y, floor };
-        let ankrahmun = position(33_066, 32_879, 6);
-        assert!(trade_available(RASHID_NPC_KEY, ankrahmun, thursday));
-        assert!(trade_available(RASHID_NPC_KEY, ankrahmun, 86_400_000 - 1));
-        assert!(!trade_available(RASHID_NPC_KEY, ankrahmun, 86_400_000));
-        assert!(trade_available(
-            RASHID_NPC_KEY,
-            position(33_235, 32_483, 7),
-            86_400_000
-        ));
+    fn rashid_placement_and_trade_switch_at_server_save_in_winter_and_summer() {
+        let friday = destination("Friday", 33_235, 32_483, 7);
+        let saturday = destination("Saturday", 33_166, 31_810, 6);
+        let position = |day: RashidDestination| MovementLocalPosition {
+            x: i32::from(day.placement.x),
+            y: i32::from(day.placement.y),
+            floor: -i16::from(day.placement.floor),
+        };
+        const WINTER_SAVE: i64 = 1_795_856_400_000; // Saturday 2026-11-28, 09:00 UTC
+        const SUMMER_SAVE: i64 = 1_785_571_200_000; // Saturday 2026-08-01, 08:00 UTC
+        for save in [WINTER_SAVE, SUMMER_SAVE] {
+            for (now, active, inactive) in [(save - 1, friday, saturday), (save, saturday, friday)]
+            {
+                let mut table = NpcPlacementTable {
+                    npcs: vec![NpcPlacements {
+                        key: RASHID_NPC_KEY.into(),
+                        placements: vec![friday.placement, saturday.placement],
+                    }],
+                };
+                rotate_placements(&mut table, now);
+                assert_eq!(
+                    table.npcs[0].placements,
+                    [active.placement],
+                    "placement at {now}"
+                );
+                assert!(
+                    trade_available(RASHID_NPC_KEY, position(active), now),
+                    "trade at {now}"
+                );
+                assert!(!trade_available(RASHID_NPC_KEY, position(inactive), now));
+            }
+        }
         assert!(!trade_available(
             RASHID_NPC_KEY,
-            position(33_066, 32_879, 7),
-            thursday
+            MovementLocalPosition {
+                floor: 6,
+                ..position(friday)
+            },
+            WINTER_SAVE - 1
         ));
-        assert!(trade_available(
-            "oteryn:npc.alice",
-            position(0, 0, 0),
-            thursday
-        ));
+        assert!(trade_available("oteryn:npc.alice", position(friday), 0));
     }
 
     // Both pinned donors configure Rashid with walkRadius = 3 (npc/rashid.lua:11).

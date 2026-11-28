@@ -150,7 +150,7 @@ impl NpcPlacementTable {
 }
 
 impl ChannelRuntimeV1 {
-    /// Move an already admitted Rashid actor when the UTC weekday destination changes.
+    /// Move an already admitted Rashid actor when the server-save weekday changes.
     /// The pinned donor schedule teleports his existing actor and resets masterPos.
     /// Preserve the actor identity while advancing the ordinary visibility position revision.
     pub fn rotate_rashid_at(&mut self, unix_ms: i64) -> Result<bool, NpcPlacementError> {
@@ -538,8 +538,10 @@ mod tests {
 
     #[test]
     fn rashid_weekday_rotation_preserves_actor_and_does_not_recentre_wandering() {
+        let thursday_save = 9 * 3_600_000;
+        let friday_save = thursday_save + 86_400_000;
         let mut runtime = runtime(2);
-        let thursday = crate::rashid_schedule::destination_at(0).placement;
+        let thursday = crate::rashid_schedule::destination_at(thursday_save).placement;
         let actor = runtime
             .place_npcs(
                 &table(vec![npc(
@@ -564,7 +566,7 @@ mod tests {
             .borrow_movement_position()
             .commit_cardinal(original, wandered)
             .expect("wander");
-        assert_eq!(runtime.rotate_rashid_at(0), Ok(false));
+        assert_eq!(runtime.rotate_rashid_at(friday_save - 1), Ok(false));
         assert_eq!(
             runtime
                 .borrow_movement_position()
@@ -573,8 +575,8 @@ mod tests {
                 .position(),
             wandered
         );
-        assert_eq!(runtime.rotate_rashid_at(86_400_000), Ok(true));
-        let friday = crate::rashid_schedule::destination_at(86_400_000).placement;
+        assert_eq!(runtime.rotate_rashid_at(friday_save), Ok(true));
+        let friday = crate::rashid_schedule::destination_at(friday_save).placement;
         let moved = runtime
             .borrow_movement_position()
             .read(actor)
@@ -588,7 +590,7 @@ mod tests {
             }
         );
         assert_eq!(moved.revision(), 3);
-        assert_eq!(runtime.rotate_rashid_at(86_400_001), Ok(false));
+        assert_eq!(runtime.rotate_rashid_at(friday_save + 1), Ok(false));
     }
 
     #[test]
