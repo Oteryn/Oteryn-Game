@@ -113,7 +113,7 @@ pub(super) async fn dialogue(
             .ok_or("regional hunt rule")
     };
     let (ask_key, hunt) = match name {
-        "regional-hunt-dialogue-daniel" => ("cyclops/ask", "rotworms"),
+        "regional-hunt-dialogue-daniel" => ("rotworms/ask", "rotworms"),
         "regional-hunt-dialogue-lugri" => ("necromancers/ask", "necromancers"),
         _ => ("pirates/ask", "pirates"),
     };
@@ -145,12 +145,28 @@ pub(super) async fn dialogue(
         assert_eq!(talk(owner, admitted, npc, 122, "task").await?, ask.reply);
     }
     if name == "regional-hunt-dialogue-daniel" {
-        assert_eq!(
-            talk(owner, admitted, npc, 123, "no").await?,
-            rule("cyclops/decline")?.reply
+        // At level 30 declining rotworms cannot quote or start the level-40 hunt.
+        talk(owner, admitted, npc, 123, "no").await?;
+        assert_ne!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            3
         );
         assert_eq!(
-            talk(owner, admitted, npc, 124, "yes cyclops").await?,
+            progress(
+                owner,
+                admitted,
+                owner.character,
+                "oteryn:quest-progress/hunting-tasks/cyclops/phase"
+            )
+            .await?,
+            0
+        );
+        assert_eq!(talk(owner, admitted, npc, 124, "task").await?, ask.reply);
+        assert_eq!(
+            talk(owner, admitted, npc, 125, "yes cyclops").await?,
             rule("rotworms/accept")?.reply
         );
         assert_eq!(progress(owner, admitted, owner.character, &phase).await?, 1);

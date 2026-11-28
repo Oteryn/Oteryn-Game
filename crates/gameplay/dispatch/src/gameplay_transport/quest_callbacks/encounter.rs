@@ -538,12 +538,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return UseDisposition::Rejected;
                 };
                 // The server-owned movement occurrence selects one boss consistently on replay.
-                let index = step.command_id().get() % (1 + monster.alternatives.len() as u64);
-                std::iter::once(&monster.creature)
-                    .chain(&monster.alternatives)
-                    .nth(index as usize)
-                    .map(String::as_str)
-                    .unwrap_or(&monster.creature)
+                let choice = oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
+                    *step.game_session_id().as_bytes(),
+                    step.command_id().get(),
+                    *b"PirateBossChoice",
+                    1,
+                    1 + monster.alternatives.len() as u64,
+                );
+                let Some(selected) = choice.and_then(|index| {
+                    std::iter::once(&monster.creature)
+                        .chain(&monster.alternatives)
+                        .nth(index as usize)
+                }) else {
+                    return UseDisposition::Rejected;
+                };
+                selected.as_str()
             };
             let Ok(policy) = runtime.companion_policy(creature) else {
                 return UseDisposition::Rejected;

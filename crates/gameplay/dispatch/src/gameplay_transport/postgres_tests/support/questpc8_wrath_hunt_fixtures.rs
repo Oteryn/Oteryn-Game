@@ -106,6 +106,16 @@ async fn refused(
     Ok(())
 }
 
+async fn noble_counter(h: &Harness) -> TestResult<Option<i64>> {
+    Ok(sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2",
+    )
+    .bind(id(41).as_slice())
+    .bind(NOBLE)
+    .fetch_optional(&h.pool)
+    .await?)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -175,7 +185,7 @@ pub(super) async fn exercise(
     refused(owner, admitted, npc, 8002, "imperial report").await?;
     talk(owner, admitted, npc, 8003, "imperial hunt").await?;
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 0);
-    assert_eq!(progress(owner, admitted, authority, NOBLE).await?, -1);
+    assert_eq!(noble_counter(h).await?, None);
     super::questpc8_mystery_geometry_fixtures::arrive(
         owner,
         admitted,
@@ -227,8 +237,8 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(progress(owner, admitted, authority, MAG).await?, 3);
     assert_eq!(
-        progress(owner, admitted, authority, NOBLE).await?,
-        -1,
+        noble_counter(h).await?,
+        None,
         "noble kills before the Office Job report earn no credit"
     );
     super::questpc8_mystery_geometry_fixtures::arrive(
