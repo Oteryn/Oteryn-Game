@@ -65,8 +65,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
             return Err(DurabilityError::Unavailable);
         };
-        // Every attempt re-proves the fences and transport. The unique ingress
-        // marker can be inserted again after an ambiguous commit acknowledgement.
+        // Retry only pre-commit contention. An unknown COMMIT must reach the
+        // command loop so it leaves the reserved command outstanding.
         let budget =
             crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
@@ -75,8 +75,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .note_house_transfer_input(self.holder, fence, controller.transport)
                     .await
                     .map_err(|error| match error {
-                        DurabilityError::Database(SqlxFailureClass::RetryableStatement)
-                        | DurabilityError::CommitOutcomeUnknown => DurabilityError::RootUnavailable,
+                        DurabilityError::Database(SqlxFailureClass::RetryableStatement) => {
+                            DurabilityError::RootUnavailable
+                        }
                         _ => error,
                     })
             })

@@ -7,6 +7,8 @@ use crate::gameplay_transport::connection::{
     AdmissionRefusal, ConnectionEnd, FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS,
     ResumeAttempt, serve_admitted,
 };
+use crate::gameplay_transport::session_ingress::SessionCommands;
+use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use crate::gameplay_transport::{StepOutcome, WorldSpatialObservation};
 use oteryn_protocol_oteryn::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
@@ -18,6 +20,7 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
+const LATE_ACK: &str = "house_input_late_ack_preserves_outstanding_podium_command";
 const MARKER_ONCE: &str = "house_input_marker_written_once_for_transfer_destination";
 const OLD_VIEWS: &str = "house_recovery_fences_old_vitals_and_cooldowns";
 const OLD_TRANSPORT: &str = "house_input_old_transport_refused_after_replacement";
@@ -35,6 +38,15 @@ fn house_input_old_transport_refused_after_replacement() -> TestResult {
 #[test]
 fn house_recovery_fences_old_vitals_and_cooldowns() -> TestResult {
     scenario(OLD_VIEWS)
+}
+
+#[test]
+fn house_input_late_ack_preserves_outstanding_podium_command_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    scenario(LATE_ACK)
 }
 
 fn scenario(name: &'static str) -> TestResult {
@@ -72,7 +84,7 @@ async fn exercise(h: &Harness, name: &str) -> TestResult {
         .house_transfer(source, 1, &body)
         .await
         .ok_or("house transfer")?;
-    let destination = destination.ok_or("house transfer destination")?;
+    let mut destination = destination.ok_or("house transfer destination")?;
     assert_ne!(source.game_session_id, destination.game_session_id);
     assert_eq!(marker_count(h, destination.game_session_id).await?, 0);
 
@@ -80,10 +92,36 @@ async fn exercise(h: &Harness, name: &str) -> TestResult {
         return check_replaced_views(h, &owner, destination).await;
     }
 
+    let late_ack = name == LATE_ACK;
+    if late_ack {
+        use crate::gameplay_transport::capabilities::{
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+        };
+        use oteryn_protocol_oteryn::{
+            house::CAPABILITY_HOUSE_V1, house_podium::CAPABILITY_HOUSE_PODIUM_V1,
+            house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+        };
+        destination.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[
+                CAPABILITY_HOUSE_V1,
+                CAPABILITY_HOUSE_TRANSFER_V1,
+                CAPABILITY_HOUSE_PODIUM_V1,
+            ],
+        )
+        .ok_or("podium selection")?;
+        assert!(
+            destination
+                .continuity
+                .selected_capabilities
+                .command_selected(oteryn_protocol_oteryn::house_podium::COMMAND_PROJECTION)
+        );
+    }
     let probe = Probe {
         owner: &owner,
         h,
         steps: Cell::new(0),
+        late_ack: late_ack.then(LateAck::default),
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
@@ -94,7 +132,24 @@ async fn exercise(h: &Harness, name: &str) -> TestResult {
     let commands = async {
         read_message(&mut client, MessageType::SnapshotCommit).await?;
         let generation = destination.continuity.connection_generation;
-        if name == OLD_TRANSPORT {
+        if late_ack {
+            let frame = encode_client_command(
+                generation,
+                &ClientCommandValue {
+                    command_id: 1,
+                    command_type: oteryn_protocol_oteryn::house_podium::COMMAND_PROJECTION,
+                    payload: &super::fixture::id(71),
+                },
+            )?;
+            write_frame(&mut client, &frame).await?;
+            assert!(
+                matches!(
+                    read_frame(&mut client).await,
+                    Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof
+                ),
+                "an unknown first-input COMMIT must close without a result"
+            );
+        } else if name == OLD_TRANSPORT {
             let token = RecoverySource::token(7)?;
             let replacement = owner
                 .resume(ResumeAttempt {
@@ -139,13 +194,37 @@ async fn exercise(h: &Harness, name: &str) -> TestResult {
         matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
         "{end:?}"
     );
+    if let Some(late_ack) = &probe.late_ack {
+        let ConnectionEnd::AdmittedThenDisconnected(current) = end else {
+            return Err("expected House transport to close".into());
+        };
+        assert!(
+            late_ack.stalled.get(),
+            "the receipt COMMIT must reach the ack stall"
+        );
+        assert_eq!(marker_count(h, destination.game_session_id).await?, 1);
+        assert_eq!(current.continuity.house_input_pending, Some(true));
+        let command = crate::foundation::CommandRef::new(
+            destination.game_session_id,
+            crate::foundation::CommandId::new(1)?,
+        );
+        assert!(late_ack.commands.reconcilable(command));
+        assert!(!late_ack.commands.original_terminalized(command));
+    }
     Ok(())
+}
+
+#[derive(Default)]
+struct LateAck {
+    commands: SessionCommands,
+    stalled: Cell<bool>,
 }
 
 struct Probe<'a, A> {
     owner: &'a A,
     h: &'a Harness,
     steps: Cell<usize>,
+    late_ack: Option<LateAck>,
 }
 
 impl<A: FreshAdmissionAuthority> FreshAdmissionAuthority for Probe<'_, A> {
@@ -167,11 +246,24 @@ impl<A: FreshAdmissionAuthority> FreshAdmissionAuthority for Probe<'_, A> {
         self.owner.house_scope_ack(admitted).await
     }
 
+    fn session_commands(&self) -> Option<&SessionCommands> {
+        self.late_ack.as_ref().map(|late_ack| &late_ack.commands)
+    }
+
     async fn house_transfer_input(
         &self,
         admitted: AdmittedSession,
     ) -> Result<(), crate::durability::DurabilityError> {
-        self.owner.house_transfer_input(admitted).await
+        if let Some(late_ack) = &self.late_ack {
+            let (result, stalled) = crate::durability::with_stalled_commit_response(
+                self.owner.house_transfer_input(admitted),
+            )
+            .await;
+            late_ack.stalled.set(stalled);
+            result
+        } else {
+            self.owner.house_transfer_input(admitted).await
+        }
     }
 
     async fn paced_step(
