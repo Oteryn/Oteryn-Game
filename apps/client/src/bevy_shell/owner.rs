@@ -671,6 +671,13 @@ impl N07dHost {
         super::game_ui::minimap::replay::open_menu(&mut self.0, cell)
     }
 
+    pub(crate) fn hovered_mark_description(
+        &mut self,
+        cell: [i32; 2],
+    ) -> Result<Option<String>, String> {
+        super::game_ui::minimap::replay::hovered_description(&mut self.0, cell)
+    }
+
     pub(crate) fn enter_mark_description(&mut self, label: &str) -> Result<(), String> {
         super::game_ui::minimap::replay::description(&mut self.0, label)
     }

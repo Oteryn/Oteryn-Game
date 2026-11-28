@@ -788,6 +788,8 @@ async fn check_markers(
         );
         wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
         assert_saved_terrain(path, &expected_terrain)?;
+        assert_eq!(host.hovered_mark_description(cell)?.as_deref(), Some(label));
+        assert_eq!(host.hovered_mark_description([cell[0], cell[1] + 1])?, None);
     }
 
     host.open_mark_menu_at_cell(cell)?;
@@ -826,6 +828,7 @@ async fn check_markers(
     wait_for_saved_marks(host, path, std::slice::from_ref(&marker)).await?;
     assert_saved_terrain(path, &expected_terrain)?;
 
+    assert_eq!(host.hovered_mark_description(cell)?, None);
     host.open_mark_menu_at_cell(cell)?;
     host.click_minimap_button("Delete Mark")?;
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());

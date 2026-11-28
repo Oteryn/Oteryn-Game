@@ -195,15 +195,32 @@ pub(super) fn click(app: &mut App, point: Vec2, mouse: MouseButton) -> Result<()
     Ok(())
 }
 
-pub(in crate::bevy_shell) fn open_menu(app: &mut App, cell: [i32; 2]) -> Result<(), String> {
+fn cell_point(app: &mut App, cell: [i32; 2]) -> Result<Vec2, String> {
     let entity = image(app.world_mut())?;
     let (center, size) = bounds(app.world(), entity)?;
     let point = (Vec2::new(cell[0] as f32, cell[1] as f32) + Vec2::splat(0.5)) * 4.;
-    click(
-        app,
-        center + (point / SIZE.as_vec2() - 0.5) * size,
-        MouseButton::Right,
-    )
+    Ok(center + (point / SIZE.as_vec2() - 0.5) * size)
+}
+
+pub(in crate::bevy_shell) fn open_menu(app: &mut App, cell: [i32; 2]) -> Result<(), String> {
+    let point = cell_point(app, cell)?;
+    click(app, point, MouseButton::Right)
+}
+
+pub(in crate::bevy_shell) fn hovered_description(
+    app: &mut App,
+    cell: [i32; 2],
+) -> Result<Option<String>, String> {
+    let point = cell_point(app, cell)?;
+    let window = window(app)?;
+    move_pointer(app, window, point)?;
+    app.update();
+    let world = app.world_mut();
+    let (text, visibility) = world
+        .query_filtered::<(&Text, &Visibility), With<MarkDescription>>()
+        .single(world)
+        .map_err(|error| error.to_string())?;
+    Ok((*visibility == Visibility::Visible).then(|| text.0.clone()))
 }
 
 pub(in crate::bevy_shell) fn description(app: &mut App, label: &str) -> Result<(), String> {
