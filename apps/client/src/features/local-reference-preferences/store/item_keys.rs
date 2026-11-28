@@ -60,10 +60,18 @@ fn catalogue() -> io::Result<&'static Catalogue> {
             let mut train_a = original.clone();
             train_a.extend(TRAIN_A);
             train_a.sort_unstable();
+            // ef4c9e9d also wrote bare indices, with the two 7b keys but without 7a.
+            let mut review_base = original.clone();
+            review_base.extend(["oteryn:item.tibia.i36547", "oteryn:item.tibia.i36548"]);
+            review_base.sort_unstable();
             train_a
                 .into_iter()
                 .enumerate()
-                .map(|(i, key)| original.get(i).is_none_or(|old| *old == key).then_some(key))
+                .map(|(i, key)| {
+                    (original.get(i).is_none_or(|old| *old == key)
+                        && review_base.get(i).is_none_or(|old| *old == key))
+                    .then_some(key)
+                })
                 .collect()
         } else {
             Vec::new()

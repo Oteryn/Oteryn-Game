@@ -78,7 +78,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.scene_receipt_pending(map, key) {
             return UseDisposition::Rejected;
         }
-        if may_debit(callback)
+        if (may_debit(callback)
+            || callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY)
             && !self.paid_callback_can_start(session, session, |pending| {
                 pending.cause == cause && pending.callback == callback.key
             })
@@ -1489,6 +1490,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             (runtime, states) = (&mut **current_runtime, &mut **current_states);
             if let Some(tomb) = &tomb {
+                #[cfg(test)]
+                if matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)))
+                    && self
+                        .states
+                        .quest_callbacks
+                        .interrupt_after_commit
+                        .swap(false, std::sync::atomic::Ordering::AcqRel)
+                {
+                    return UseDisposition::Rejected;
+                }
                 if matches!(&outcome, Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_))) {
                     return UseDisposition::Rejected;
                 }

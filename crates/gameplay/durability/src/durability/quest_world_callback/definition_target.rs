@@ -118,12 +118,12 @@ impl crate::durability::DurabilityRoot {
 impl crate::durability::DurabilityRoot {
     /// Direct encounter USE borrows the same fresh-mint predicate while the
     /// caller holds the Channel item lane against decay and custody writers.
-    pub async fn koshei_corpse_remaining(
+    pub async fn koshei_corpse_deadline(
         &self,
         permit: &SpellLanePermit,
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
         item: [u8; 16],
-    ) -> Result<Option<std::time::Duration>, DurabilityError> {
+    ) -> Result<Option<tokio::time::Instant>, DurabilityError> {
         let crate::foundation::RuntimeScopeRefV1::Channel {
             world_id,
             channel_id,
@@ -137,6 +137,9 @@ impl crate::durability::DurabilityRoot {
                 Box::pin(async move {
                     let mut tx =
                         super::super::db::begin_semantic_transaction(holder, deadline).await?;
+                    // Pair the local lower bound with the freshness statement, after BEGIN
+                    // and its timeout setup. Response and commit time still consume lifetime.
+                    let observed = tokio::time::Instant::now();
                     let millis: Option<i64> = sqlx::query_scalar(
                         "SELECT s.expires_at_unix_ms - ceil(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id,world_id) JOIN game_spell_field_temporal_schedules s ON s.item_instance_id=i.item_instance_id AND s.source_transaction_id=i.minted_transaction_id AND s.source_stage=1 AND s.source_ordinal=0
                  WHERE g.item_instance_id=encode($1,'hex')::uuid
@@ -151,7 +154,9 @@ impl crate::durability::DurabilityRoot {
                     .fetch_optional(&mut *tx)
                     .await?;
                     super::super::db::commit_semantic_transaction(tx, deadline).await?;
-                    Ok(millis.and_then(|ms| u64::try_from(ms).ok()).map(std::time::Duration::from_millis))
+                    Ok(millis
+                        .and_then(|ms| u64::try_from(ms).ok())
+                        .and_then(|ms| observed.checked_add(std::time::Duration::from_millis(ms))))
                 })
             })
             .await

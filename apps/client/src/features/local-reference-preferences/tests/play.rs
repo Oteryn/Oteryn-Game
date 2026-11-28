@@ -424,6 +424,8 @@ fn portable_shortcuts_keep_koshei_item_key_across_catalogues()
     let path = root.join("legacy.json");
     let mut file = serde_json::to_value(ReferencePreferences::default())?;
     file["item_hotkeys"]["bindings"][0] = 31455.into();
+    file["item_hotkeys"]["bindings"][2] = 34131.into();
+    file["item_hotkeys"]["bindings"][3] = 34132.into();
     file["bar_actions"]["0"] = serde_json::json!({"kind":"Multi","actions":[
         {"kind":"Use","definition":31455,"mode":"Use"},
         {"kind":"Equip","definition":31455}
@@ -434,6 +436,8 @@ fn portable_shortcuts_keep_koshei_item_key_across_catalogues()
     // e2750951 used 31455 for the amulet. 7a used it for i7526.
     let invalidated = PreferenceStore::read_transfer(&path)?;
     assert!(invalidated.item_hotkeys.bindings[0].is_none());
+    assert!(invalidated.item_hotkeys.bindings[2].is_none());
+    assert!(invalidated.item_hotkeys.bindings[3].is_none());
     assert!(invalidated.bar_actions.0.is_empty());
     assert!(!invalidated.custom_hotkeys.contains_key("CTRL+9"));
     // Stable keys exported from either catalogue resolve to the currently shipped index.

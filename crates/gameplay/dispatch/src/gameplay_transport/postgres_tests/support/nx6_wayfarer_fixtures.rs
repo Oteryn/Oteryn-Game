@@ -204,6 +204,11 @@ pub(super) async fn exercise(
         assert!(!reconciled.unknown);
         assert_eq!(reconciled.disposition, NpcIntentDisposition::Rejected);
     }
+    // The earlier dialogue was read directly by talk(), outside the frame writer.
+    while let Some((id, _)) = owner.recovered_npc_reply(admitted.game_session_id) {
+        assert!(id < 6200);
+        owner.recovered_npc_reply_delivered(admitted.game_session_id, id);
+    }
     owner
         .states
         .npc_conversations
@@ -244,6 +249,13 @@ pub(super) async fn exercise(
     assert_eq!(recovered.disposition, NpcIntentDisposition::Ok);
     assert!(!recovered.unknown);
     let lines = recovered.conversation.ok_or("final speech")?.lines;
+    let session = command.game_session_id;
+    owner.recovered_npc_reply_delivered(session, command.command_id - 1);
+    let (id, reply) = owner.recovered_npc_reply(session).ok_or("undelivered finale")?;
+    assert_eq!(id, command.command_id);
+    assert_eq!(reply.lines, lines);
+    owner.recovered_npc_reply_delivered(session, id);
+    assert!(owner.recovered_npc_reply(session).is_none());
     assert_eq!(
         lines.len(),
         7,

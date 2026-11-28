@@ -1033,8 +1033,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
     }
 
-    /// A debit receipt belongs to the original World occurrence. Keep the
-    /// actor and its reservation available until that occurrence is projected.
+    fn callback_needs_end_path_settlement(&self, pending: &Pending) -> bool {
+        pending.tomb.is_some()
+            || self
+                .callback_content()
+                .iter()
+                .any(|callback| callback.key == pending.callback && may_debit(callback))
+    }
+
+    /// Both a paid occurrence and tomb entry need their original actors for settlement.
     pub(super) fn has_pending_paid_quest_callback(&self, session: GameSessionId) -> bool {
         self.states
             .quest_callbacks
@@ -1043,10 +1050,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_or(true, |records| {
                 records.values().any(|pending| {
                     (pending.session == session || pending.participants.contains(&session))
-                        && self
-                            .callback_content()
-                            .iter()
-                            .any(|callback| callback.key == pending.callback && may_debit(callback))
+                        && self.callback_needs_end_path_settlement(pending)
                 })
             })
     }
@@ -1061,15 +1065,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Called with the common node input gate quiesced. Enumerate the
-    /// initiators directly so an untracked actor cannot strand a party payment.
+    /// initiators directly, including those that no longer have a transport.
     pub(super) async fn drain_paid_quest_callbacks(&self) -> usize {
         let sessions = match self.states.quest_callbacks.records.lock() {
             Ok(records) => records
                 .values()
                 .filter_map(|pending| {
-                    self.callback_content()
-                        .iter()
-                        .any(|callback| callback.key == pending.callback && may_debit(callback))
+                    self.callback_needs_end_path_settlement(pending)
                         .then_some(pending.session)
                 })
                 .collect::<Vec<_>>(),

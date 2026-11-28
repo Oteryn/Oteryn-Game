@@ -56,7 +56,7 @@ mod hero_of_bounac;
 pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
-mod jimmy;
+pub(super) mod jimmy;
 mod liquid_black;
 mod magic_effects;
 mod marriage;
@@ -1046,13 +1046,23 @@ pub(super) async fn npc_bank_talk(
     if context
         .as_ref()
         .is_some_and(|context| context.2 == "oteryn:npc.jimmy")
-        && matches!(
-            intent.text.trim().to_ascii_lowercase().as_str(),
-            "hi" | "hello"
-        )
-        && let Some(outcome) = jimmy::greet(admission, &mut runtime, session, &intent)
+        && admission
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get("oteryn:npc.jimmy"))
+            .is_some_and(|entry| entry.matches_greeting(&intent.text))
+        && let Some(remaining) = admission
+            .states
+            .quest_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| jimmy::remaining(sessions.get(&session)?.copy.as_ref()?.tracks()))
     {
-        return outcome;
+        return match jimmy::greet(admission, &mut runtime, remaining) {
+            Ok(line) => NpcConversations::bank_reply(&intent, line.into()),
+            Err(disposition) => NpcTalkOutcome::only(disposition),
+        };
     }
     let alternate_opening = context
         .as_ref()

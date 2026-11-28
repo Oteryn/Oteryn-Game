@@ -491,7 +491,7 @@ async fn framed_talk(
             != MessageType::SnapshotCommit
         {}
         let first = before.continuity.next_command_id;
-        let greeting = (text != "hi").then_some("hi");
+        let greeting = (!matches!(text, "hi" | "hello Jimmy")).then_some("hi");
         for (offset, words) in greeting.into_iter().chain([text]).enumerate() {
             let command_id = first + u64::try_from(offset)?;
             let payload = encode_npc_talk_intent(&NpcTalkIntent {
@@ -867,17 +867,29 @@ async fn jimmy_ambush(
     h: &Harness,
     jimmy: EntityRef,
 ) -> TestResult {
+    use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode};
+    let session = admitted.game_session_id;
+    owner.open_npc_session(session).await;
+    let say = ChatIntent::Say { mode: ChatSpeechMode::Say, text: "hi".into() };
+    let result = owner.chat_speak(admitted.runtime_actor.ok_or("player")?, session,
+        admitted.continuity.next_command_id, &say).await;
+    assert_eq!(result.disposition, ChatDisposition::Ok);
+    assert!(owner.states.chat.drain(session).iter().any(|line|
+        matches!(line, ChatLine::Local { text, .. } if text == "Get him!!")));
+    let wave = owner.states.npc_conversations.jimmy_roster_for_fixture()?;
+    assert_eq!(wave.len(), 3);
     framed_talk(
         owner,
         admitted,
         jimmy,
-        "hi",
+        "hello Jimmy",
         NpcIntentDisposition::Ok,
         Some("Get him!!"),
     )
     .await?;
     let assassins = owner.states.npc_conversations.jimmy_roster_for_fixture()?;
     assert_eq!(assassins.len(), 3);
+    assert_eq!(assassins, wave);
     framed_talk(
         owner,
         admitted,

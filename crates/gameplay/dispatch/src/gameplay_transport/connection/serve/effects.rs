@@ -162,6 +162,7 @@ pub(super) async fn npc_trade<S, A: FreshAdmissionAuthority>(
     authority: &A,
     stream: &mut S,
     session: &mut ServeState,
+    command: u64,
     update: NpcUpdate,
     deltas: Vec<ItemViewDelta>,
 ) -> Result<(), ServeEnd>
@@ -180,33 +181,14 @@ where
             return Err(ServeEnd::Disconnected);
         }
     }
-    let Some(update_frames) = npc_update_frames(
-        authority,
-        (
-            session.admitted.game_session_id,
-            session.selected_capabilities,
-        ),
-        session.generation,
-        &mut session.sequence,
-        &mut session.admitted.continuity.npc,
-        &update,
-        &mut session.npc_shown,
-    ) else {
-        return Err(ServeEnd::Disconnected);
-    };
-    session.admitted.continuity.server_sequence = session.sequence;
-    for frame in update_frames {
-        if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
-        }
-    }
-    Ok(())
+    npc(authority, stream, session, command, update).await
 }
 
 pub(super) async fn npc<S, A: FreshAdmissionAuthority>(
     authority: &A,
     stream: &mut S,
     session: &mut ServeState,
+    command: u64,
     update: NpcUpdate,
 ) -> Result<(), ServeEnd>
 where
@@ -227,9 +209,17 @@ where
         return Err(ServeEnd::Disconnected);
     };
     session.admitted.continuity.server_sequence = session.sequence;
-    for frame in update_frames {
+    for (index, frame) in update_frames.into_iter().enumerate() {
         if write_frame(stream, &frame).await.is_err() {
             return Err(ServeEnd::Disconnected);
+        }
+        if index == 0
+            && update
+                .conversation
+                .as_ref()
+                .is_some_and(|reply| !reply.lines.is_empty())
+        {
+            authority.recovered_npc_reply_delivered(session.admitted.game_session_id, command);
         }
     }
     Ok(())

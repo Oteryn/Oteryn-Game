@@ -6,26 +6,25 @@ use oteryn_gameplay_quests::quest::top_of_the_city as quest;
 
 const ASSASSIN: &str = "oteryn:creature.assassin";
 
-pub(super) fn greet(
+pub(in crate::gameplay_transport) fn remaining(
+    tracks: &std::collections::BTreeMap<String, i64>,
+) -> Option<usize> {
+    if tracks.get(quest::STAGE) != Some(&1)
+        || tracks.get(quest::PURSUIT) != Some(&quest::PURSUIT_COMPLETE)
+    {
+        return None;
+    }
+    let kills = usize::try_from(*tracks.get(quest::ASSASSINS).unwrap_or(&0)).ok()?;
+    3usize.checked_sub(kills).filter(|count| *count > 0)
+}
+
+pub(in crate::gameplay_transport) fn greet(
     admission: &super::super::ComposedFreshAdmission<'_, '_, '_>,
     runtime: &mut ChannelRuntimeV1,
-    session: GameSessionId,
-    intent: &NpcTalkIntent,
-) -> Option<NpcTalkOutcome> {
-    let kills = {
-        let sessions = admission.states.quest_sessions.lock().ok()?;
-        let tracks = sessions.get(&session)?.copy.as_ref()?.tracks();
-        if tracks.get(quest::STAGE) != Some(&1)
-            || tracks.get(quest::PURSUIT) != Some(&quest::PURSUIT_COMPLETE)
-        {
-            return None;
-        }
-        usize::try_from(*tracks.get(quest::ASSASSINS).unwrap_or(&0)).ok()?
-    };
-    let remaining = 3usize.checked_sub(kills).filter(|count| *count > 0)?;
-    let refuse = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
+    remaining: usize,
+) -> Result<&'static str, NpcIntentDisposition> {
     let Ok(mut roster) = admission.states.npc_conversations.jimmy_assassins.lock() else {
-        return Some(refuse());
+        return Err(NpcIntentDisposition::Rejected);
     };
     // A repeated greeting cannot replace defenders lured out of the room. After a
     // channel restart the character's committed deaths determine the missing wave.
@@ -33,10 +32,10 @@ pub(super) fn greet(
     let missing = remaining.saturating_sub(roster.len());
     if missing > 0 {
         let Ok(policy) = runtime.companion_policy(ASSASSIN) else {
-            return Some(refuse());
+            return Err(NpcIntentDisposition::Rejected);
         };
         let Ok(occupied) = runtime.positioned_melee_census() else {
-            return Some(refuse());
+            return Err(NpcIntentDisposition::Rejected);
         };
         let mut placements = Vec::new();
         for y in 31379..=31384 {
@@ -56,14 +55,14 @@ pub(super) fn greet(
             }
         }
         if placements.len() < missing {
-            return Some(refuse());
+            return Err(NpcIntentDisposition::Rejected);
         }
         let Ok(spawned) = runtime.commit_quest_creature_spawn(&placements[..missing]) else {
-            return Some(refuse());
+            return Err(NpcIntentDisposition::Rejected);
         };
         roster.extend(spawned);
     }
-    Some(NpcConversations::bank_reply(intent, "Get him!!".into()))
+    Ok("Get him!!")
 }
 
 #[cfg(test)]

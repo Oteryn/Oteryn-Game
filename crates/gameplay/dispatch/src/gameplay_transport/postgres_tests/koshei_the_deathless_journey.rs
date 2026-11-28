@@ -1,6 +1,6 @@
 use super::{
     TestResult,
-    koshei_the_deathless_journey_fixtures::{CRYPT_GATE, NAME, SPATIAL},
+    koshei_the_deathless_journey_fixtures::{CRYPT_GATE, KICK, LOSS, NAME, SPATIAL},
     quest_world_callbacks_fixtures::use_with_commit_probe,
 };
 
@@ -12,6 +12,16 @@ fn koshei_the_deathless_full_journey() -> TestResult {
 #[test]
 fn koshei_spatial_corpse_on_first_visit() -> TestResult {
     journey(SPATIAL)
+}
+
+#[test]
+fn koshei_committed_gate_staff_retirement() -> TestResult {
+    journey(KICK)
+}
+
+#[test]
+fn koshei_cancelled_gate_grace_expiry() -> TestResult {
+    journey(LOSS)
 }
 
 fn journey(name: &'static str) -> TestResult {

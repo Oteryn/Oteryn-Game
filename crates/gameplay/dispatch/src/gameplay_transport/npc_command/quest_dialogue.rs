@@ -40,7 +40,7 @@ pub(super) struct State {
     // A failed offer does not advance the topic, but still owns its confirmation.
     pub(super) reward_request: Option<Context>,
     pending: Option<Pending>,
-    recovered_lines: Vec<String>,
+    undelivered_replies: BTreeMap<u64, Vec<String>>,
     #[cfg(test)]
     interrupt_after_commit: Option<u64>,
 }
@@ -49,23 +49,24 @@ impl NpcConversations {
     pub(in crate::gameplay_transport) fn recovered_quest_lines(
         &self,
         session: GameSessionId,
-    ) -> Vec<String> {
-        self.sessions
-            .lock()
-            .ok()
-            .and_then(|sessions| {
-                sessions
-                    .get(&session)
-                    .map(|s| s.quest_dialogue.recovered_lines.clone())
-            })
-            .unwrap_or_default()
+    ) -> Option<(u64, Vec<String>)> {
+        self.sessions.lock().ok().and_then(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|s| s.quest_dialogue.undelivered_replies.first_key_value())
+                .map(|(&command, lines)| (command, lines.clone()))
+        })
     }
 
-    pub(in crate::gameplay_transport) fn quest_lines_delivered(&self, session: GameSessionId) {
+    pub(in crate::gameplay_transport) fn quest_lines_delivered(
+        &self,
+        session: GameSessionId,
+        command: u64,
+    ) {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(state) = sessions.get_mut(&session)
         {
-            state.quest_dialogue.recovered_lines.clear();
+            state.quest_dialogue.undelivered_replies.remove(&command);
         }
     }
 }
@@ -287,7 +288,6 @@ fn publish_committed_reply(
 
 enum Completion {
     Committed,
-    Recovered,
     Refused,
     ClearTopic,
     RefusedAt(Topic),
@@ -303,9 +303,15 @@ fn finish(
         && let Some(pending) = state.quest_dialogue.pending.take()
     {
         let next_topic = match completion {
-            Completion::Committed => pending.next_topic,
-            Completion::Recovered => {
-                state.quest_dialogue.recovered_lines = pending.reply;
+            Completion::Committed => {
+                if let QuestCause::Command(original) = pending.request.cause
+                    && !pending.reply.is_empty()
+                {
+                    state
+                        .quest_dialogue
+                        .undelivered_replies
+                        .insert(original.command_id().get(), pending.reply);
+                }
                 pending.next_topic
             }
             Completion::Refused => return,
@@ -717,7 +723,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Clearing the NPC request and retaining its command result have no
         // suspension point between them.
         let completion = if receipt.is_some() {
-            Completion::Recovered
+            Completion::Committed
         } else {
             pending.failure_topic.map_or(Completion::Refused, |topic| {
                 Completion::RefusedAt(Topic::from(topic))
