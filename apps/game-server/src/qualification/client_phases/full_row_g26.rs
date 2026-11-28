@@ -87,14 +87,6 @@ async fn prepare_owned_house(seller: &SeamClients<'_>, buyer: &SeamClients<'_>) 
     if result.rows_affected() != 1 {
         return Err("step=fixture observed=missing-vacant-authored-house-or-seller".into());
     }
-    sqlx::query(
-        "INSERT INTO game_house_bed_revisions(world_id,house_key,revision)
-                 VALUES(encode($1,'hex')::uuid,$2,1)",
-    )
-    .bind(world)
-    .bind(HOUSE)
-    .execute(&mut *tx)
-    .await?;
     sqlx::query(include_str!("g26_bank_fixture.sql"))
         .bind(&buyer.accounts[0])
         .bind(world)
