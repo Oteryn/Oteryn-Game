@@ -59,6 +59,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+fn require_purchase_balance(purchase: u64, reloaded: u64) -> TestResult {
+    if purchase != reloaded {
+        return Err(format!(
+            "C12 purchase balance changed after relog: purchased={purchase} reloaded={reloaded}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_purchase_balance_rejects_a_refunded_debit() -> TestResult {
+    require_purchase_balance(100, 100)?;
+    assert!(require_purchase_balance(100, 20_100).is_err());
+    Ok(())
+}
+
 async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> TestResult {
     use full_row_c12::hex_bytes;
 
@@ -71,6 +88,7 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         route,
         previous,
         position: prior_position,
+        purchase_balance,
     } = full_row_c12::prepare_client_capture(clients).await?;
     let clients = &SeamClients {
         accounts: &accounts,
@@ -190,6 +208,11 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
     ) {
         return Err("C12 successor lost equipped Fists or has an occupied off hand".into());
     }
+    let reloaded_balance = full_e2ef7::player_gold(&mut fresh).await?;
+    require_purchase_balance(purchase_balance, reloaded_balance)?;
+    evidence(&format!(
+        "C12_CLIENT_PURCHASE_BALANCE purchased={purchase_balance} reloaded={reloaded_balance}"
+    ));
     full_row_c12::require_fists_damage_perks(clients).await?;
     let catalyst = provisioning::item_reference(
         &provisioning::item_index()?,
@@ -349,6 +372,8 @@ async fn capture(clients: &SeamClients<'_>, received: Arc<Mutex<Vec<u8>>>) -> Te
         y = position.y,
         floor = position.floor,
     );
+    full_row_c12::require_global_harmony_scale(1, 107)?;
+    full_row_c12::require_global_harmony_scale(5, 212)?;
     let frames = frame_capture::envelopes(&bytes, id)
         .map_err(|error| error as Box<dyn std::error::Error>)?;
     let frames = serde_json::to_vec(&frames)?;
@@ -670,8 +695,9 @@ async fn build_harmony<S: SessionStream>(
     // Swift Jab's authored attack-group cooldown is two seconds.
     session.service_liveness(Duration::from_secs(2)).await?;
     let trailing = session.take_events();
-    if !(validate_cast_timers(session, &events, spell, 2_000)?
-        || validate_cast_timers(session, &trailing, spell, 2_000)?)
+    let cast_at_us = owner_cast_clock(session, &path, offset, reply.command_id)?;
+    if !(validate_client_cast_timers(session, &events, spell, 2_000, cast_at_us)?
+        || validate_client_cast_timers(session, &trailing, spell, 2_000, cast_at_us)?)
     {
         return Err("C12 Swift Jab cooldown projection missing".into());
     }
@@ -689,6 +715,7 @@ async fn build_harmony<S: SessionStream>(
 /// Exercise the original authored hunt before the isolated damage controls.
 pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     session: &mut Session<S>,
+    bps: u64,
 ) -> TestResult {
     // The authored route just descended a floor. STEP pacing does not cover stairhop exhaust.
     let floor_exhaust = Duration::from_micros(oteryn_gameplay_spell_rules::cast::STAIRHOP_MICROS);
@@ -746,6 +773,9 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
     let before = *session
         .actor_vitals()
         .ok_or("C12 authored cast pre-state missing")?;
+    let path = PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
+    let offset = std::fs::metadata(&path)?.len();
+    session.take_events();
     let command = session.next_command_id();
     let outcome = tokio::time::timeout(
         COMMAND_BUDGET,
@@ -791,22 +821,94 @@ pub(super) async fn cast_at_authored_spawn<S: SessionStream>(
             format!("C12 authored cast did not commit its 50 mana debit: {outcome:?}").into(),
         );
     }
-    let mut damage = events
-        .iter()
-        .any(|event| full_row_c12::cast_damage_in(event, own, target, spell.get()) > 0);
+    let marker = damage_marker(session, target, outcome.command_id);
+    let damage = full_row_c12::committed_authored_damage(&path, offset, &marker, bps)?;
+    let mut hits = Vec::new();
+    collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;
-    while !damage {
+    while hits.is_empty() {
         if tokio::time::Instant::now() >= until {
             return Err("C12 authored Tarantula did not receive attributed cast damage".into());
         }
         session.service_liveness(Duration::from_millis(50)).await?;
-        damage = session
-            .take_events()
-            .iter()
-            .any(|event| full_row_c12::cast_damage_in(event, own, target, spell.get()) > 0);
+        collect_hits(&session.take_events(), own, target, spell, &mut hits);
+    }
+    if !frame_capture::exact_hit(&hits, damage.committed) {
+        return Err(format!(
+            "C12 authored cast damage differs from committed HP loss: expected={} served={hits:?}",
+            damage.committed
+        )
+        .into());
     }
     evidence("C12_CLIENT_AUTHORED_CAST spawn=32294,32333,-8 cast=32295,32334,-8 mana_debit=50");
     Ok(())
+}
+
+// Attack is the first entry in the authored cooldown group registry, whose wire IDs are 1-based.
+const ATTACK_GROUP_ID: u32 = 1;
+
+fn require_attack_group(groups: &[u32]) -> TestResult {
+    if groups != [ATTACK_GROUP_ID] {
+        return Err(format!(
+            "C12 expected attack cooldown group {ATTACK_GROUP_ID}, got {groups:?}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_cooldown_rejects_wrong_attack_group() -> TestResult {
+    require_attack_group(&[1])?;
+    assert!(require_attack_group(&[2]).is_err());
+    Ok(())
+}
+
+fn owner_cast_clock<S: SessionStream>(
+    session: &Session<S>,
+    path: &Path,
+    offset: u64,
+    command: u64,
+) -> TestResult<u64> {
+    let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
+    let marker = format!("SEAM_EVIDENCE c12_cast_clock session={id} command={command} cast_at_us=");
+    full_row_c12::committed_cast_clock(path, offset, &marker)
+}
+
+fn validate_client_cast_timers<S: SessionStream>(
+    session: &Session<S>,
+    events: &[SessionEvent],
+    spell: NonZeroU32,
+    spell_ms: u64,
+    cast_at_us: u64,
+) -> TestResult<bool> {
+    if !validate_cast_timers(session, events, spell, spell_ms)? {
+        return Ok(false);
+    }
+    use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
+    for event in events {
+        if let SessionEvent::ActorCooldowns(update) = event {
+            let exact = |kind, id, duration| {
+                update.value.entries.iter().any(|entry| {
+                    entry.kind == kind
+                        && entry.id == id
+                        && full_row_c12::authored_cooldown(
+                            entry.expires_at_ms,
+                            update.value.server_now_ms,
+                            cast_at_us,
+                            duration,
+                        )
+                })
+            };
+            if !exact(ActorCooldownKind::Group, ATTACK_GROUP_ID, 2_000)
+                || !exact(ActorCooldownKind::Spell, spell.get(), spell_ms)
+            {
+                return Err(format!("C12 cooldown deadlines differ from authored durations at cast clock {cast_at_us}us: {:?}", update.value).into());
+            }
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 pub(super) fn validate_cast_timers<S: SessionStream>(
@@ -818,16 +920,14 @@ pub(super) fn validate_cast_timers<S: SessionStream>(
     let catalog = session
         .spell_catalog()?
         .ok_or("C12 cooldown catalogue absent")?;
-    let [group] = catalog
-        .entries
-        .iter()
-        .find(|entry| entry.cast_index == spell.get())
-        .ok_or("C12 cooldown spell is missing")?
-        .cooldown_groups
-        .as_slice()
-    else {
-        return Err("C12 expects exactly one attack group".into());
-    };
+    require_attack_group(
+        &catalog
+            .entries
+            .iter()
+            .find(|entry| entry.cast_index == spell.get())
+            .ok_or("C12 cooldown spell is missing")?
+            .cooldown_groups,
+    )?;
     let timers = events.iter().find_map(|event| match event {
         SessionEvent::ActorCooldowns(update) => Some(&update.value),
         _ => None,
@@ -835,7 +935,12 @@ pub(super) fn validate_cast_timers<S: SessionStream>(
     match timers {
         None => Ok(false),
         Some(timers)
-            if frame_capture::exact_cast_cooldowns(timers, spell.get(), *group, spell_ms) =>
+            if frame_capture::exact_cast_cooldowns(
+                timers,
+                spell.get(),
+                ATTACK_GROUP_ID,
+                spell_ms,
+            ) =>
         {
             Ok(true)
         }
@@ -951,14 +1056,15 @@ async fn cast_checked<S: SessionStream>(
     let mut hits = Vec::new();
     collect_hits(&events, own, target, spell, &mut hits);
     let until = tokio::time::Instant::now() + COMMAND_BUDGET;
-    let mut timers = validate_cast_timers(session, &events, spell, 8_000)?;
+    let cast_at_us = owner_cast_clock(session, &path, offset, reply.command_id)?;
+    let mut timers = validate_client_cast_timers(session, &events, spell, 8_000, cast_at_us)?;
     while hits.is_empty() || !timers {
         if tokio::time::Instant::now() >= until {
             return Err("C12 attributed damage missing after CAST".into());
         }
         session.service_liveness(Duration::from_millis(25)).await?;
         let trailing = session.take_events();
-        timers |= validate_cast_timers(session, &trailing, spell, 8_000)?;
+        timers |= validate_client_cast_timers(session, &trailing, spell, 8_000, cast_at_us)?;
         collect_hits(&trailing, own, target, spell, &mut hits);
     }
     let cast = CheckedCast {
@@ -985,13 +1091,20 @@ fn committed_damage<S: SessionStream>(
     offset: u64,
     bps: u64,
 ) -> TestResult<full_row_c12::CommittedDamage> {
+    full_row_c12::committed_base_damage(path, offset, &damage_marker(session, target, command), bps)
+}
+
+fn damage_marker<S: SessionStream>(
+    session: &Session<S>,
+    target: EntityRef,
+    command: u64,
+) -> String {
     let id = full_row_c12::hex_bytes(session.join_snapshot().game_session_id.as_bytes());
     let target_id = full_row_c12::hex_bytes(&target.identity);
-    let marker = format!(
-        "SEAM_EVIDENCE c12_base_damage session={id} command={} target={target_id} generation={} ",
-        command, target.generation
-    );
-    full_row_c12::committed_base_damage(path, offset, &marker, bps)
+    format!(
+        "SEAM_EVIDENCE c12_base_damage session={id} command={command} target={target_id} generation={} ",
+        target.generation
+    )
 }
 
 const SELECTED_DAMAGE_PERKS: [Option<u8>; 4] = [Some(0), None, Some(0), None];

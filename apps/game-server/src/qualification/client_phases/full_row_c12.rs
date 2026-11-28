@@ -535,7 +535,7 @@ pub(super) struct CommittedDamage {
     pub(super) committed: u64,
 }
 
-fn committed_cast_clock(path: &Path, offset: u64, marker: &str) -> TestResult<u64> {
+pub(super) fn committed_cast_clock(path: &Path, offset: u64, marker: &str) -> TestResult<u64> {
     use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
     let mut file = std::fs::File::open(path)?;
     file.seek(SeekFrom::Start(offset))?;
@@ -550,7 +550,7 @@ fn committed_cast_clock(path: &Path, offset: u64, marker: &str) -> TestResult<u6
     clock.ok_or_else(|| format!("missing C12 applied cast clock for {marker}").into())
 }
 
-fn authored_cooldown(
+pub(super) fn authored_cooldown(
     expires_at_ms: u64,
     read_at_ms: u64,
     cast_at_us: u64,
@@ -615,13 +615,46 @@ pub(super) fn committed_base_damage(
     use std::io::{Read, Seek, SeekFrom};
     let mut file = std::fs::File::open(path)?;
     file.seek(SeekFrom::Start(start))?;
-    read_base_damage(std::io::BufReader::new(file.take(512 * 1024)), marker, bps)
+    read_damage_evidence(
+        std::io::BufReader::new(file.take(512 * 1024)),
+        marker,
+        bps,
+        true,
+    )
 }
 
+pub(super) fn committed_authored_damage(
+    path: &Path,
+    offset: u64,
+    marker: &str,
+    bps: u64,
+) -> TestResult<CommittedDamage> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut file = std::fs::File::open(path)?;
+    file.seek(SeekFrom::Start(offset))?;
+    // The authored Tarantula has mitigation; compare the exact augment before mitigation.
+    read_damage_evidence(
+        std::io::BufReader::new(file.take(512 * 1024)),
+        marker,
+        bps,
+        false,
+    )
+}
+
+#[cfg(test)]
 fn read_base_damage(
     reader: impl std::io::BufRead,
     marker: &str,
     bps: u64,
+) -> TestResult<CommittedDamage> {
+    read_damage_evidence(reader, marker, bps, true)
+}
+
+fn read_damage_evidence(
+    reader: impl std::io::BufRead,
+    marker: &str,
+    bps: u64,
+    neutral: bool,
 ) -> TestResult<CommittedDamage> {
     let mut observed = None;
     for line in reader.lines() {
@@ -696,10 +729,26 @@ fn read_base_damage(
     } else {
         after
     };
-    if committed != expected {
+    if (neutral && committed != expected) || (!neutral && committed > expected) {
         return Err(format!("C12 committed HP loss {committed} differs from downstream damage {expected} for {damage:?}").into());
     }
     Ok(damage)
+}
+
+#[test]
+fn c12_authored_damage_rejects_missing_augment_before_mitigation() -> TestResult {
+    let marker = "SEAM_EVIDENCE c12_base_damage ";
+    let sample = |after| {
+        format!(
+            "{marker}before=50 after={after} critical=false element=physical committed=40 committed_hits=1 augment_bps=800"
+        )
+    };
+    assert_eq!(
+        read_damage_evidence(sample(54).as_bytes(), marker, 800, false)?.committed,
+        40
+    );
+    assert!(read_damage_evidence(sample(50).as_bytes(), marker, 800, false).is_err());
+    Ok(())
 }
 
 /// Damage to `victim` in presentation batches that also carry `own`'s SpellWords in the same decision.
@@ -1975,6 +2024,7 @@ pub(super) struct ClientCaptureSetup {
     pub route: Vec<(StepDirection, TilePos)>,
     pub previous: oteryn_protocol_oteryn::GameSessionId,
     pub position: TilePos,
+    pub purchase_balance: u64,
 }
 
 pub(super) const CLIENT_TARGET_NAME: &str = "Tarantula";
@@ -2226,7 +2276,15 @@ async fn prove_authored_hunt(
     if tile(client.world_spatial().actor_position)? != CLIENT_CAST_TILE {
         return Err("C12 did not reach the authored cast tile".into());
     }
-    super::client_row_c12::cast_at_authored_spawn(client.session_mut()).await?;
+    super::client_row_c12::cast_at_authored_spawn(
+        client.session_mut(),
+        if observe_return_occupants {
+            0
+        } else {
+            AUGMENT_BPS
+        },
+    )
+    .await?;
     let cleared = client.session_mut().attack_target(None).await?;
     require_mechanic_acceptance(cleared.status, "C12 authored target clear")?;
     if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
@@ -2330,7 +2388,8 @@ pub(super) async fn prepare_client_capture(
     )?;
     let portals = guild_portals(&read_json("content/quests/world-callbacks.json")?)?;
     enter_guild(&mut client, world, dedicated_clients).await?;
-    acquire_pema(&mut client, world, &metadata.npcs, definition, portals).await?;
+    let purchase_balance =
+        acquire_pema(&mut client, world, &metadata.npcs, definition, portals).await?;
     leave_guild(&mut client, world, &metadata.npcs, dedicated_clients).await?;
     select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
     equip_right(&mut client, definition).await?;
@@ -2352,6 +2411,7 @@ pub(super) async fn prepare_client_capture(
         route,
         previous,
         position,
+        purchase_balance,
     })
 }
 
@@ -2392,14 +2452,14 @@ fn c12_rejects_success_after_holder_contention() {
     ));
 }
 
-fn require_global_five_harmony_scale() -> TestResult {
+pub(super) fn require_global_harmony_scale(charges: u8, percent: u64) -> TestResult {
     use oteryn_gameplay_spell_rules::harmony::{HarmonyMultiplier, MULTIPLIER_DENOMINATOR};
     // Global Harmony lists +112% at five charges without a virtue or Ascetic.
-    let multiplier = HarmonyMultiplier::new(80, 5, false, false)
+    let multiplier = HarmonyMultiplier::new(80, charges, false, false)
         .ok_or("C12 five Harmony multiplier unavailable")?;
-    if multiplier.numerator() * 100 != MULTIPLIER_DENOMINATOR * 212 {
+    if multiplier.numerator() * 100 != MULTIPLIER_DENOMINATOR * percent {
         return Err(format!(
-            "BLOCKER-SERVER C12 unbuffed five Harmony scale: expected 212/100, server rule gives {}/{}",
+            "BLOCKER-SERVER C12 unbuffed Harmony scale for {charges} charges: expected {percent}/100, server rule gives {}/{}",
             multiplier.numerator(), MULTIPLIER_DENOMINATOR
         ).into());
     }
@@ -2408,7 +2468,7 @@ fn require_global_five_harmony_scale() -> TestResult {
 
 #[test]
 fn c12_global_five_harmony_scale_matches_server_rule() -> TestResult {
-    require_global_five_harmony_scale()
+    require_global_harmony_scale(5, 212)
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -2576,7 +2636,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     logout(&mut fresh, false).await?;
-    require_global_five_harmony_scale()?;
+    require_global_harmony_scale(5, 212)?;
     row.pass("augment-attribution", (ITEM_ID, augment));
     Ok(())
 }
