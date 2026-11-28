@@ -188,7 +188,12 @@ where
         Dispatch::Reply(status, payload)
             if routing::store::is_committed_claim(command.command_type, *status, payload)
     );
-    if committed_store_claim {
+    let committed_arena_entry = matches!(
+        &dispatch,
+        Dispatch::Reply(CommandStatus::Accepted, payload)
+            if routing::arena_match::is_committed_entry(command, payload)
+    );
+    if committed_store_claim || committed_arena_entry {
         session.inventory_capacity_refresh_at = None;
     }
     match dispatch {
@@ -355,7 +360,8 @@ where
                     == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
                     && payload.as_slice()
                         == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8])
-                || (committed_store_claim && session.item_view.is_some()) =>
+                || ((committed_store_claim || committed_arena_entry)
+                    && session.item_view.is_some()) =>
         {
             if command.command_type
                 == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH

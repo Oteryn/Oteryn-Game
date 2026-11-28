@@ -2,7 +2,7 @@
 use crate::bestiary_postgres_harness::{CHANNEL, Harness, TestResult, WORLD, debug, id, runtime};
 use crate::content::ProductionKey;
 use crate::durability::raid_schedule::{
-    CalendarRaidScheduleCandidate, RaidScheduleCandidate, RaidSchedulerCheck,
+    CalendarRaidScheduleCandidate, CalendarRaidTiming, RaidScheduleCandidate, RaidSchedulerCheck,
 };
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use oteryn_gameplay_encounter_rules::raid::{CatalogueSchedule, RaidCatalogue};
@@ -76,6 +76,7 @@ async fn exercise(h: &Harness, active_june: bool) -> TestResult {
         window,
         interval_ms,
         repeat,
+        ..
     } = &raid.schedule
     else {
         return Err("flower calendar".into());
@@ -97,8 +98,10 @@ async fn exercise(h: &Harness, active_june: bool) -> TestResult {
             lua: None,
             calendar_window: Some(CalendarRaidScheduleCandidate {
                 window: window.ok_or("window")?.window(),
-                interval_ms: interval_ms.ok_or("interval")?,
+                timing: CalendarRaidTiming::Interval {
+interval_ms: interval_ms.ok_or("interval")?,
                 repeat: *repeat,
+},
             }),
         }],
     };

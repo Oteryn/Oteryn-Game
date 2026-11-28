@@ -34,15 +34,24 @@ impl DromeCreatureRole {
             None
         }
     }
+    pub(super) const ALL: [Self; 5] = [
+        Self::Domestikion,
+        Self::Hoodinion,
+        Self::Mearidion,
+        Self::Murmillion,
+        Self::Scissorion,
+    ];
+    pub const fn key(self) -> &'static str {
+        match self {
+            Self::Domestikion => "oteryn:creature.domestikion",
+            Self::Hoodinion => "oteryn:creature.hoodinion",
+            Self::Mearidion => "oteryn:creature.mearidion",
+            Self::Murmillion => "oteryn:creature.murmillion",
+            Self::Scissorion => "oteryn:creature.scissorion",
+        }
+    }
     pub(in crate::carrier) fn from_key(key: &str) -> Option<Self> {
-        Some(match key {
-            "oteryn:creature.domestikion" => Self::Domestikion,
-            "oteryn:creature.hoodinion" => Self::Hoodinion,
-            "oteryn:creature.mearidion" => Self::Mearidion,
-            "oteryn:creature.scissorion" => Self::Scissorion,
-            "oteryn:creature.murmillion" => Self::Murmillion,
-            _ => return None,
-        })
+        Self::ALL.into_iter().find(|role| role.key() == key)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

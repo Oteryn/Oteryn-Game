@@ -12,7 +12,9 @@ use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand}
 
 use crate::gameplay_transport::npc_talk::NpcTalkBook;
 
-use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
+use oteryn_protocol_oteryn::npc_service::{
+    NpcConversationState, NpcIntentDisposition, NpcTalkIntent,
+};
 
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
@@ -101,7 +103,7 @@ async fn talk(
     npc: EntityRef,
     command_id: u64,
     text: &str,
-) -> TestResult {
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -129,7 +131,7 @@ async fn talk(
         !outcome.unknown,
         "native royal dialogue must have a definitive outcome"
     );
-    Ok(())
+    Ok(outcome)
 }
 
 async fn achievements(h: &Harness) -> TestResult<i64> {
@@ -171,7 +173,17 @@ pub(super) async fn exercise(
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1)
     );
-    talk(owner, admitted, npc, 30000, "hi").await?;
+    for (command, plain) in [(29998, "hi"), (29999, "hello")] {
+        let refusal = talk(owner, admitted, npc, command, plain).await?;
+        assert_eq!(refusal.disposition, NpcIntentDisposition::NoConversation);
+        assert!(refusal.conversation.is_none());
+        assert!(!refusal.inventory_changed);
+    }
+    let greeting = talk(owner, admitted, npc, 30000, "Hail King!").await?;
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    let conversation = greeting.conversation.ok_or("royal greeting reply")?;
+    assert_eq!(conversation.open, Some((npc, NpcConversationState::Open)));
+    assert_eq!(conversation.lines, ["I greet thee, my loyal subject."]);
     talk(owner, admitted, npc, 30001, "hail the king").await?;
     assert_eq!(super::engworldchg_journals_fixtures::value(h, PHASE).await?, 0);
     assert_eq!(
@@ -183,7 +195,7 @@ pub(super) async fn exercise(
     assert_eq!(super::engworldchg_journals_fixtures::value(h, PHASE).await?, 0);
     super::engworldchg_journals_fixtures::step(owner, admitted, 2, StepDirection::East).await?;
     owner.open_npc_session(admitted.game_session_id).await;
-    talk(owner, admitted, npc, 30002, "hi").await?;
+    talk(owner, admitted, npc, 30002, "Hail King!").await?;
     talk(owner, admitted, npc, 30003, "hail the king").await?;
     assert_eq!(super::engworldchg_journals_fixtures::value(h, PHASE).await?, 0);
     assert_eq!(achievements(h).await?, 0);

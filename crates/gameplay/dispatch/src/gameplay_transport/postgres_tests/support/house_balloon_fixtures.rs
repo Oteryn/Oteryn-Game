@@ -193,6 +193,18 @@ pub(super) enum Case {
     ContainerMove,
     ContainerCapacity,
     CarpetTile { other: u32, removed: bool },
+    CarpetWire {
+        other: u32,
+        same_tile: bool,
+        result: CarpetResult,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum CarpetResult {
+    Refused,
+    Folded,
+    Removed,
 }
 
 pub(super) fn run_case(case: Case) -> TestResult {

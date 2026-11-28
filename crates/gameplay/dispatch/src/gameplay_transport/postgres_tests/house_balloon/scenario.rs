@@ -28,7 +28,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             "oteryn:item.tibia.i3375".into(),
             "oteryn:item.tibia.i3375".into(),
         ),
-        Case::CarpetTile { .. } => (
+        Case::CarpetTile { .. } | Case::CarpetWire { .. } => (
             "oteryn:item.tibia.i22736".to_owned(),
             "oteryn:item.tibia.i22737".to_owned(),
         ),
@@ -55,7 +55,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         _ => (BEFORE.to_owned(), AFTER.to_owned()),
     };
     let other_key = match case {
-        Case::CarpetTile { other, .. } => format!("oteryn:item.tibia.i{other}"),
+        Case::CarpetTile { other, .. } | Case::CarpetWire { other, .. } => {
+            format!("oteryn:item.tibia.i{other}")
+        }
         _ => String::new(),
     };
     let before_key = before_key.as_str();
@@ -74,6 +76,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ContainerMove
             | Case::ContainerCapacity
             | Case::CarpetTile { .. }
+            | Case::CarpetWire { .. }
     );
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -326,9 +329,11 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ContainerMove => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 510],
         Case::ContainerCapacity => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 446],
         Case::BedKit(_) => &[4, 6, 11, 15, 18, 49, 86],
-        Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::CarpetTile { .. } => {
-            &[4, 6, 11, 15, 18, 49, 86]
-        }
+        Case::Placed
+        | Case::Decoration(_, _)
+        | Case::StaticWindow
+        | Case::CarpetTile { .. }
+        | Case::CarpetWire { .. } => &[4, 6, 11, 15, 18, 49, 86],
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
         Case::ResidentTick => &[
             3, 4, 6, 13, 15, 25, 49, 51, 86, 115, 165, 502, 508, 509, 511,
@@ -351,7 +356,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     let offered = crate::gameplay_transport::server_info::offered(&offered, true);
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(&offered, capabilities).ok_or("House USE offers")?;
-    let contents = if matches!(case, Case::CarpetTile { .. }) {
+    let contents = if matches!(case, Case::CarpetTile { .. } | Case::CarpetWire { .. }) {
         vec![(before_key, 1), (other_key.as_str(), 1)]
     } else if matches!(case, Case::Container | Case::ContainerMove | Case::ContainerCapacity) {
         vec![(before_key, 1), (INNER, 1), ("oteryn:item.tibia.i3031", 10)]
@@ -407,6 +412,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::TimedWrap
             | Case::BedKit(_)
             | Case::CarpetTile { .. }
+            | Case::CarpetWire { .. }
     ) {
         let (next, refused, _) = super::super::rust_lottery_fixtures::exchange(
             &owner,
@@ -538,17 +544,28 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
             .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(72).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
     }
-    if matches!(case, Case::CarpetTile { .. }) {
+    if matches!(case, Case::CarpetTile { .. } | Case::CarpetWire { .. }) {
         sqlx::query(
             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
         )
         .bind(id(72).as_slice())
         .execute(&mut *tx)
         .await?;
-        let position: Vec<u8> = POSITION
-            .iter()
-            .flat_map(|value| value.to_be_bytes())
-            .collect();
+        let adjacent = matches!(case, Case::CarpetWire { same_tile: false, .. });
+        let other_position = if adjacent { actor_position } else { POSITION };
+        if adjacent {
+            assert_eq!(
+                [
+                    other_position[0].abs_diff(POSITION[0]),
+                    other_position[1].abs_diff(POSITION[1]),
+                ]
+                .into_iter()
+                .max(),
+                Some(1)
+            );
+            assert_eq!(other_position[2], POSITION[2]);
+        }
+        let position = other_position.map(i32::to_be_bytes).concat();
         sqlx::query("INSERT INTO game_item_house_interior_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,2,encode($5,'hex')::uuid)")
             .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(position).bind(id(75).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1)")
@@ -612,6 +629,12 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::NativeNoop(_) | Case::Decoration(2358, _) | Case::Decoration(34278, _)
     ) {
         return super::rotation::scenario(&owner, h, admitted, case, &before).await;
+    }
+    if let Case::CarpetWire { result, .. } = case {
+        return super::decorations::carpet_wire(
+            &owner, h, admitted, (before_ref, after_ref), &body, result,
+        )
+        .await;
     }
     if matches!(
         case,

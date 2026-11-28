@@ -16,9 +16,20 @@ pub(super) async fn talk(
     sequence: &mut u64,
     words: &str,
 ) -> TestResult<NpcIntentDisposition> {
+    talk_with_greeting(owner, admitted, npc, sequence, "hi", words).await
+}
+
+pub(super) async fn talk_with_greeting(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    sequence: &mut u64,
+    greeting: &str,
+    words: &str,
+) -> TestResult<NpcIntentDisposition> {
     let hi = *sequence;
     *sequence = sequence.checked_add(1).ok_or("NPC command overflow")?;
-    super::classic_quests_fixtures::talk(owner, admitted, npc, hi, "hi").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, npc, hi, greeting).await?;
     let command = *sequence;
     *sequence = sequence.checked_add(1).ok_or("NPC command overflow")?;
     super::qengine_rewards_fixtures::talk(owner, admitted, npc, command, words).await

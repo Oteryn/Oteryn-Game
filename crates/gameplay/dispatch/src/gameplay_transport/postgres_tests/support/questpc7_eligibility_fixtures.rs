@@ -88,6 +88,9 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("QUESTPC7_ELIGIBILITY POSTGRES_STARTED version={version}");
+    if name == "questpc7-eligibility-make-believe-high" {
+        return make_believe_contacts(owner, admitted, h).await;
+    }
     let [elane, wayland] = super::classic_quests_fixtures::install(
         owner,
         admitted,
@@ -272,5 +275,114 @@ pub(super) async fn exercise(
             "denied eligibility creates no quest receipt or progress"
         );
     }
+    Ok(())
+}
+
+async fn make_believe_contacts(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use crate::gameplay_transport::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
+    };
+    use crate::gameplay_transport::quest_log::QuestLogObservation;
+    use oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS;
+    use oteryn_protocol_oteryn::npc_service::{
+        CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, MAX_TALK_INTENTS_PER_SECOND,
+        NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
+    };
+
+    const QUEST: &str = "oteryn:quest.authored.make_believe_quest";
+    const START: &str = "oteryn:quest-reward/make-believe/accept";
+    const READY: &str = "oteryn:quest-reward/make-believe/storehouse-ready";
+    const DEFENCE: &str = "oteryn:quest-reward/make-believe/salgadara-defence";
+    let [wayland, pocaro] = super::classic_quests_fixtures::install(
+        owner,
+        admitted,
+        ["oteryn:npc.wayland_smythers", "oteryn:npc.mayor_pocaro"],
+    )
+    .await?;
+    let mut supported = admitted.continuity.selected_capabilities.as_slice().to_vec();
+    supported.push(CAPABILITY_NPC_SERVICE_V1);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &supported)
+            .ok_or("NPC capability selection")?;
+    let actor = admitted.runtime_actor.ok_or("Make Believe player")?;
+    let session = admitted.game_session_id;
+    let words = [
+        (pocaro, "hi"),
+        (pocaro, "help"),
+        (pocaro, "bye"),
+        (wayland, "hi"),
+        (wayland, "further"),
+        (wayland, "yes"),
+        (wayland, "infiltration"),
+        (wayland, "yes"),
+        (wayland, "further"),
+        (wayland, "yes"),
+        (wayland, "bye"),
+        (pocaro, "hi"),
+        (pocaro, "help"),
+        (pocaro, "help"),
+    ];
+    let commands = words
+        .into_iter()
+        .zip(admitted.continuity.next_command_id..)
+        .map(|((npc_actor, text), id)| {
+            let payload = encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor,
+                text: text.into(),
+            })
+            .map_err(debug)?;
+            Ok((id, COMMAND_TYPE_NPC_TALK_INTENT, payload))
+        })
+        .collect::<TestResult<_>>()?;
+    let replies = super::questl2_fixture::wire_sequence_observed(
+        owner,
+        admitted,
+        commands,
+        async |index, reply| {
+            if matches!(index, 3..=7 | 11..=12) {
+                assert_eq!(decode_npc_intent_result(reply).map_err(debug)?, NpcIntentDisposition::Ok);
+            }
+            let receipts = sqlx::query_scalar::<_, String>(
+                "SELECT transition_key FROM game_character_quest_receipts
+                 WHERE quest_key=$1 AND transition_key IN ($2, $3, $4)
+                 ORDER BY committed_character_revision LIMIT 4",
+            )
+            .bind(QUEST)
+            .bind(START)
+            .bind(READY)
+            .bind(DEFENCE)
+            .fetch_all(&h.pool)
+            .await?;
+            let expected: &[&str] = match index {
+                0..=4 => &[],
+                5..=6 => &[START],
+                7..=11 => &[START, READY],
+                _ => &[START, READY, DEFENCE],
+            };
+            assert_eq!(receipts, expected, "progress after NPC command {index}");
+            let QuestLogObservation::Changed(journal) =
+                owner.quest_log_observation(actor, session, None).await
+            else {
+                return Err("Make Believe journal unavailable".into());
+            };
+            assert_eq!(
+                journal.titles().iter().any(|(_, name)| name == "Make Believe"),
+                !expected.is_empty(),
+                "journal visibility follows mission acceptance",
+            );
+            assert!(journal.copy.quest_state(QUEST).is_none_or(|state| !state.completed));
+            if (index + 1).is_multiple_of(MAX_TALK_INTENTS_PER_SECOND as usize) {
+                // Wait for the production admission window to expire.
+                tokio::time::sleep(std::time::Duration::from_micros(RATE_WINDOW_MICROS)).await;
+            }
+            Ok(())
+        },
+    )
+    .await?;
+    assert_eq!(replies.len(), words.len());
     Ok(())
 }

@@ -49,7 +49,9 @@
       "selector": "full_store_price, male_look_type, female_look_type"
     },
     "mount_looks": {
+      "oteryn:content.mount.arctic_unicorn": 1018,
       "oteryn:content.mount.armoured_war_horse": 426,
+      "oteryn:content.mount.batcat": 728,
       "oteryn:content.mount.battle_werewolf": 1873,
       "oteryn:content.mount.boisterous_bull": 1672,
       "oteryn:content.mount.crimson_ray": 521,
@@ -58,6 +60,7 @@
       "oteryn:content.mount.flamesteed": 626,
       "oteryn:content.mount.jade_lion": 627,
       "oteryn:content.mount.jade_pincer": 628,
+      "oteryn:content.mount.jungle_tiger": 1093,
       "oteryn:content.mount.magma_skull": 1686,
       "oteryn:content.mount.nethersteed": 629,
       "oteryn:content.mount.obstinate_ox": 1674,
@@ -102,6 +105,10 @@
       "oteryn:outfit.celestial_avenger": [
         1725,
         1726
+      ],
+      "oteryn:outfit.ceremonial_garb": [
+        695,
+        694
       ],
       "oteryn:outfit.darklight_evoker": [
         1675,
@@ -222,6 +229,22 @@
       "oteryn:outfit.pumpkin_mummy": [
         1127,
         1128
+      ],
+      "oteryn:outfit.retro_citizen": [
+        974,
+        975
+      ],
+      "oteryn:outfit.retro_hunter": [
+        972,
+        973
+      ],
+      "oteryn:outfit.retro_knight": [
+        970,
+        971
+      ],
+      "oteryn:outfit.retro_mage": [
+        968,
+        969
       ],
       "oteryn:outfit.retro_nobleman": [
         966,
@@ -361,6 +384,18 @@
     "record": "oteryn:content.outfit.field_surgeon_outfits",
     "revision": "wiki:108239:1181114",
     "selector": "full_store_price, male_look_type, female_look_type",
+    "tibia_fandom_archive": {
+      "offer_urls": {
+        "store:mount:arctic-unicorn": "https://tibia.fandom.com/wiki/Arctic_Unicorn",
+        "store:mount:batcat": "https://tibia.fandom.com/wiki/Batcat",
+        "store:mount:jungle-tiger": "https://tibia.fandom.com/wiki/Jungle_Tiger",
+        "store:outfit:ceremonial-garb": "https://tibia.fandom.com/wiki/Ceremonial_Garb_Outfits",
+        "store:outfit:retro-citizen": "https://tibia.fandom.com/wiki/Retro_Citizen_Outfits",
+        "store:outfit:retro-hunter": "https://tibia.fandom.com/wiki/Retro_Hunter_Outfits",
+        "store:outfit:retro-knight": "https://tibia.fandom.com/wiki/Retro_Knight_Outfits",
+        "store:outfit:retro-mage": "https://tibia.fandom.com/wiki/Retro_Mage_Outfits"
+      }
+    },
     "tibiawiki_br": {
       "offer_revisions": {
         "store:mount:battle-werewolf": {
@@ -398,6 +433,19 @@
   },
   "offers": [
     {
+      "key": "store:mount:arctic-unicorn",
+      "category": "cosmetics.mounts",
+      "title": "Arctic Unicorn",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.arctic_unicorn",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.arctic_unicorn"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:mount:armoured-war-horse",
       "category": "cosmetics.mounts",
       "title": "Armoured War Horse",
@@ -409,6 +457,19 @@
         "key": "oteryn:content.mount.armoured_war_horse"
       },
       "source_line": 1146
+    },
+    {
+      "key": "store:mount:batcat",
+      "category": "cosmetics.mounts",
+      "title": "Batcat",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.batcat",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.batcat"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:battle-werewolf",
@@ -513,6 +574,19 @@
         "key": "oteryn:content.mount.jade_pincer"
       },
       "source_line": 1694
+    },
+    {
+      "key": "store:mount:jungle-tiger",
+      "category": "cosmetics.mounts",
+      "title": "Jungle Tiger",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jungle_tiger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jungle_tiger"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:magma-skull",
@@ -721,6 +795,19 @@
         "key": "oteryn:outfit.celestial_avenger"
       },
       "source_line": 3127
+    },
+    {
+      "key": "store:outfit:ceremonial-garb",
+      "category": "cosmetics.outfits",
+      "title": "Ceremonial Garb (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.ceremonial_garb",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.ceremonial_garb"
+      },
+      "source_line": 0
     },
     {
       "key": "store:outfit:darklight-evoker",
@@ -1111,6 +1198,58 @@
         "key": "oteryn:outfit.pumpkin_mummy"
       },
       "source_line": 2690
+    },
+    {
+      "key": "store:outfit:retro-citizen",
+      "category": "cosmetics.outfits",
+      "title": "Retro Citizen",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_citizen",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_citizen"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:outfit:retro-hunter",
+      "category": "cosmetics.outfits",
+      "title": "Retro Hunter",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_hunter",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_hunter"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:outfit:retro-knight",
+      "category": "cosmetics.outfits",
+      "title": "Retro Knight",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_knight",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_knight"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:outfit:retro-mage",
+      "category": "cosmetics.outfits",
+      "title": "Retro Mage",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.retro_mage",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.retro_mage"
+      },
+      "source_line": 0
     },
     {
       "key": "store:outfit:retro-nobleman",

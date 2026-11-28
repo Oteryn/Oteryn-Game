@@ -566,9 +566,10 @@ def calendar_schedule(observation: dict) -> dict:
 
 # Terrain cells from the archived Mapper Coords (region * 256 + cell offset).
 # Pumpkin's creature page gives three alternatives for the four-hour firing.
+HALLOWEEN_HARE_KEY = "oteryn:raid.kazordoon_raids.the_halloween_hare"
 HALLOWEEN = {
-    "oteryn:raid.kazordoon_raids.the_halloween_hare": (
-        24 * 3_600_000,
+    HALLOWEEN_HARE_KEY: (
+        None,
         [(32624, 32018, 7)],
         "wiki:20165:1135570",
     ),
@@ -585,8 +586,8 @@ def halloween_variant(record: dict, facts: dict) -> None:
     (name,) = facts["creatures"]["value"]
     observation = facts["schedule"]["value"]
     timeline = facts["broadcast_timeline"]["value"]
-    if any(
-        wiki_milliseconds(event["offset"]) != index * interval
+    if (interval is None and len(timeline) != 1) or any(
+        wiki_milliseconds(event["offset"]) != index * (interval or 0)
         or event["message"] != timeline[0]["message"]
         for index, event in enumerate(timeline)
     ):
@@ -594,15 +595,15 @@ def halloween_variant(record: dict, facts: dict) -> None:
     schedule = calendar_schedule(observation)
     if not schedule["window"] or (schedule["interval_ms"] or interval) != interval:
         raise ValueError("HALLOWEEN_ARCHIVE_SCHEDULE")
-    anchor = (
-        "immediate_post_save" if record["key"].endswith(".the_halloween_hare") else "server_open"
-    )
-    # Preserve the observed dates and waves for an owner that can prove the anchor.
     schedule.update(interval_ms=None, repeat=False)
+    post_save = record["key"] == HALLOWEEN_HARE_KEY
+    if post_save:
+        # Kazordoon Raids (Fandom oldid 1135570): one wave right after the October 31 save.
+        schedule["anchor"] = "immediate_post_save"
     record.update(
         schedule=schedule,
         end={"kind": "until_reset", "despawn_after_ms": None},
-        inactive_reasons=[f"calendar_firing_anchor_unbound:{anchor}"],
+        inactive_reasons=[] if post_save else ["calendar_firing_anchor_unbound:server_open"],
         variants=[],
     )
     message_source = {

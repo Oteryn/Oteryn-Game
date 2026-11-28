@@ -275,6 +275,18 @@ pub(in super::super) fn runtime_at_generation(
     start: crate::foundation::MovementLocalPosition,
     generation: u64,
 ) -> TestResult {
+    runtime_at_generation_with_policies(deps, active, pin, map, start, generation, None)
+}
+
+pub(in super::super) fn runtime_at_generation_with_policies(
+    deps: &mut Dependencies,
+    active: &crate::content::ActiveGeneration,
+    pin: &crate::content::NativeEntryContentPin,
+    map: &crate::map::boot::BundleWorld,
+    start: crate::foundation::MovementLocalPosition,
+    generation: u64,
+    policies: Option<crate::foundation::CompiledCreaturePolicies>,
+) -> TestResult {
     deps.room = pin.qualified_room().clone();
     let cells = map
         .movement_cells(deps.room.movement_cells())
@@ -314,11 +326,15 @@ pub(in super::super) fn runtime_at_generation(
         content_pin,
     )
     .map_err(debug)?;
-    active
-        .native_gameplay()
-        .ok_or("native")?
-        .install_companion_policies(&mut runtime)
-        .map_err(debug)?;
+    if let Some(policies) = policies {
+        runtime.install_companion_policies(policies).map_err(debug)?;
+    } else {
+        active
+            .native_gameplay()
+            .ok_or("native")?
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+    }
     let reservation = runtime
         .reserve_fresh_session(deps.admitted.game_session_id)
         .map_err(debug)?;

@@ -20,7 +20,7 @@ fn s10_travel_postgres_source_keywords_and_free_arrival() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, None).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, None, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 travel PostgreSQL thread panicked")??;
     eprintln!(
@@ -37,10 +37,29 @@ fn regional_travel_postgres_tarak_phrases_and_gulliver_fares() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, None).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, None, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "regional travel PostgreSQL thread panicked")??;
     eprintln!("POSTGRES_CASE_COMPLETED regional_travel tarak_and_gulliver");
+    Ok(())
+}
+
+#[test]
+fn s10_petros_postgres_pays_once_and_arrives_in_venore() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, None, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Petros travel PostgreSQL thread panicked")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED S10 Petros duration={:?}",
+        started.elapsed()
+    );
     Ok(())
 }
 
@@ -67,7 +86,7 @@ fn regional_travel_postgres_confirmation_regressions() -> TestResult {
                 ConfirmationCase::CancelFree,
             ]
             .into_iter()
-            .filter_map(|case| match scenario(true, Some(case)) {
+            .filter_map(|case| match scenario(true, Some(case), false) {
                 Ok(()) => {
                     eprintln!("POSTGRES_CASE_COMPLETED regional_travel {case:?}");
                     None
@@ -82,7 +101,11 @@ fn regional_travel_postgres_confirmation_regressions() -> TestResult {
     Ok(())
 }
 
-fn scenario(regional: bool, confirmation: Option<ConfirmationCase>) -> TestResult {
+fn scenario(
+    regional: bool,
+    confirmation: Option<ConfirmationCase>,
+    petros_arrival: bool,
+) -> TestResult {
     run(async move |admin| {
         reset();
         let h =
@@ -205,7 +228,10 @@ fn scenario(regional: bool, confirmation: Option<ConfirmationCase>) -> TestResul
                 .actors
         };
         let coins: &[_] = if regional {
-            &[("oteryn:item.tibia.i3031", 100), ("oteryn:item.tibia.i3035", 2)]
+            &[
+                ("oteryn:item.tibia.i3031", 100),
+                ("oteryn:item.tibia.i3035", 2),
+            ]
         } else {
             &[("oteryn:item.tibia.i3031", 100)]
         };
@@ -220,7 +246,9 @@ fn scenario(regional: bool, confirmation: Option<ConfirmationCase>) -> TestResul
                     generation: actor.actor_local_generation(),
                 })
                 .collect::<Vec<_>>();
-            let result = if let Some(case) = confirmation {
+            let result = if petros_arrival {
+                verify_petros_arrival(&owner, &deps, &h.pool, actors[1]).await
+            } else if let Some(case) = confirmation {
                 confirmation_case(&owner, &deps, &h.pool, &book, &actors, case).await
             } else {
                 regional_quotes(&mut owner, &deps, &h.pool, &book, &actors).await
@@ -446,7 +474,19 @@ async fn regional_quotes(
     let mut command = 100;
     for (index, stem, slugs) in [
         (0, "captain_gulliver", &["issavi", "thais", "krailos"][..]),
-        (1, "petros", &["issavi"][..]),
+        (
+            1,
+            "petros",
+            &[
+                "ankrahmun",
+                "gray_island",
+                "issavi",
+                "krailos",
+                "liberty_bay",
+                "port_hope",
+                "venore",
+            ][..],
+        ),
         (2, "tarak_inner", &["monument_tower", "passage", "trip"][..]),
         (3, "tarak_sunken", &["passage"][..]),
     ] {
@@ -456,7 +496,11 @@ async fn regional_quotes(
         talk(owner, deps, npc, command, "hi").await?;
         command += 1;
         for slug in slugs {
-            let route = entry.travel_routes.iter().find(|route| route.route.key == *slug)
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            let route = entry
+                .travel_routes
+                .iter()
+                .find(|route| route.route.key == *slug)
                 .ok_or("regional travel route")?;
             let key = format!("{}/{slug}", route.service);
             if stem == "tarak_sunken" {
@@ -488,25 +532,32 @@ async fn regional_quotes(
             let reply = line(&outcome);
             command += 1;
             let (expected, expected_state) = if route.held {
-                // PARTIAL: Petros still requires the donor cheese guard.
                 (
                     "I'm sorry but I don't sail there.".to_owned(),
                     NpcConversationState::Open,
                 )
             } else {
-                let fare = if stem.starts_with("tarak_") {
+                let fare = if stem.starts_with("tarak_") || stem == "petros" {
                     route.route.price
                 } else {
-                    source_rows.iter().find(|row| row["key"] == key)
-                        .and_then(|row| row["donor_cost"].as_u64()).ok_or("donor fare")?
+                    source_rows
+                        .iter()
+                        .find(|row| row["key"] == key)
+                        .and_then(|row| row["donor_cost"].as_u64())
+                        .ok_or("donor fare")?
                 };
                 (
-                    format!("Do you seek a passage to {} for {fare} gold?", route.keyword),
+                    format!(
+                        "Do you seek a passage to {} for {fare} gold?",
+                        route.keyword
+                    ),
                     NpcConversationState::Confirming,
                 )
             };
             if reply != expected {
-                failures.push(format!("{stem} {input:?}: expected {expected:?}, got {reply:?}"));
+                failures.push(format!(
+                    "{stem} {input:?}: expected {expected:?}, got {reply:?}"
+                ));
             }
             let state = outcome.conversation.as_ref().and_then(|reply| reply.open);
             if state != Some((npc, expected_state)) {
@@ -821,6 +872,80 @@ async fn regional_quotes(
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+    Ok(())
+}
+
+async fn verify_petros_arrival(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    pool: &sqlx::PgPool,
+    npc: EntityRef,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service::{
+        CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition,
+        NpcTalkIntent, decode_npc_intent_result, encode_npc_talk_intent,
+    };
+
+    let mut admitted = deps.admitted;
+    let selected = [CAPABILITY_NPC_SERVICE_V1];
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &selected,
+        )
+        .ok_or("NPC capability")?;
+    assert!(
+        admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_NPC_SERVICE_V1)
+    );
+    admitted.item_fence = Some(
+        owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "current travel fence")?
+            .ok_or("travel fence")?
+            .item_fence(),
+    );
+    let mut commands = ["hi", "venore", "yes"]
+        .into_iter()
+        .zip(admitted.continuity.next_command_id..)
+        .map(|(text, command)| {
+            let payload = encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor: npc,
+                text: text.into(),
+            })
+            .map_err(debug)?;
+            Ok((command, COMMAND_TYPE_NPC_TALK_INTENT, payload))
+        })
+        .collect::<TestResult<Vec<_>>>()?;
+    commands.push(commands.last().ok_or("travel confirmation")?.clone());
+    let replies = super::questl2_fixture::wire_sequence(owner, &mut admitted, commands).await?;
+    assert_eq!(replies.len(), 4);
+    assert_eq!(replies[2], replies[3], "confirmation replay");
+    for reply in replies {
+        assert_eq!(
+            decode_npc_intent_result(&reply).map_err(debug)?,
+            NpcIntentDisposition::Ok
+        );
+    }
+    let (count, fare, arrived): (i64, i64, bool) = sqlx::query_as(
+        "SELECT count(*), COALESCE(sum(fare_gold_units),0)::bigint,
+                COALESCE(bool_and(arrived_at IS NOT NULL), false) FROM game_newhaven_travel_receipts
+         WHERE route='oteryn:service.travel.petros/venore'",
+    )
+    .fetch_one(pool)
+    .await?;
+    assert_eq!((count, fare, arrived), (1, 60, true));
+    let position = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!((position.x, position.y, position.floor), (32954, 32022, 6));
     Ok(())
 }
 

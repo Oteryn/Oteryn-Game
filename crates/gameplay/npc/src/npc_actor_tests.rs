@@ -217,11 +217,13 @@ fn s10_crystal_only_wander_profiles_reach_the_production_book() {
         .expect("service model");
     let book = NpcWalkBook::from_catalogue(&catalogue, &model).expect("source-bound walk book");
     // Crystal 201189f8 data-global/npc/<stem>.lua:10-11,24-25.
+    assert!(book.profile("oteryn:npc.ambassador_manop").is_none());
     for (stem, radius) in [
         ("wyrdins_apprentice", 2),
         ("taya", 2),
         ("fernlor", 1),
         ("captain_coohan", 1),
+        ("flickering_soul", 2),
     ] {
         let key = format!("oteryn:npc.{stem}");
         let profile = book.profile(&key).expect(&key);

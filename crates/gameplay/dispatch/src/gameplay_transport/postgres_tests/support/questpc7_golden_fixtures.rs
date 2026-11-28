@@ -28,7 +28,7 @@ pub(super) async fn legacy(
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
         .execute(&h.pool).await?;
     seed_bank(h).await?;
-    for (command, word) in [(800, "hi"), (801, "outfit"), (802, "yes")] {
+    for (command, word) in [(800, "Hail King!"), (801, "outfit"), (802, "yes")] {
         talk(owner, admitted, king, command, word).await?;
     }
     for (index, (keyword, price, stage)) in [
@@ -84,7 +84,7 @@ pub(super) async fn exercise(
     assert!(admitted.continuity.selected_capabilities.contains(25));
     let callbacks = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
     let [king] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.king_tibianus"]).await?;
-    super::classic_quests_fixtures::talk(owner, admitted, king, 800, "hi").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, king, 800, "Hail King!").await?;
     super::classic_quests_fixtures::talk(owner, admitted, king, 801, "golden commission").await?;
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 0);
     let base = callbacks.iter().find(|c| c.key == "oteryn:quest-reward/questpc7-golden-base").ok_or("base donation")?;
@@ -116,7 +116,7 @@ pub(super) async fn exercise(
         assert_eq!(money(h).await?, 0);
         assert_eq!(bank(h).await?, before_payment - price, "replay cannot debit the bank twice");
     }
-    super::classic_quests_fixtures::talk(owner, admitted, king, 899, "hi").await?;
+    super::classic_quests_fixtures::talk(owner, admitted, king, 899, "Hail King!").await?;
     super::classic_quests_fixtures::talk(owner, admitted, king, 900, "complete commission").await?;
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, TRACK).await?, 4);
     let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.golden_outfits_quest'")

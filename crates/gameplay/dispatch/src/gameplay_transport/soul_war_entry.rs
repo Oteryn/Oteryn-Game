@@ -6,7 +6,7 @@ use crate::content::bosses::activity_template::{
 use crate::durability::activity_handoff::{
     ActivityHandoffOwner, ActivityRefusal, boss_room::BossRoomDefinition,
 };
-use crate::foundation::MovementLocalPosition;
+use crate::foundation::{ChannelContentPin, MovementLocalPosition};
 
 pub(super) fn is_soul_war(key: &str) -> Option<&'static str> {
     Some(match key {
@@ -98,13 +98,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .effective_rooms()
             .gate_field_step_ingress()
             .ok_or(ActivityRefusal::ContentUnavailable)?;
-        // Both accepted paths authenticate the real current map, never raw XYZ.
-        let runtime = self.runtime.lock().await;
-        let qualified = origin.pinned_activity_source_room() == source(key)
-            || active
-                .qualify_published_world_context(origin, runtime.content_pin())
-                .is_some();
-        drop(runtime);
+        // Bind the publication to the carrier's map. The private template
+        // still supplies the destination and its separate runtime pin.
+        let origin_pin = {
+            let runtime = self.runtime.lock().await;
+            let pin = runtime.content_pin();
+            let start = pin.entry_start();
+            ChannelContentPin::from_activation(
+                pin.world_id(),
+                pin.activation_sequence(),
+                pin.server_artifact_digest(),
+                pin.client_artifact_digest(),
+                pin.frame_binding_digest(),
+                pin.map_revision_digest(),
+                (start.x, start.y, start.floor),
+            )
+        };
+        let world_origin = active.qualify_published_world_context(origin, &origin_pin);
+        let qualified =
+            origin.pinned_activity_source_room() == source(key) || world_origin.is_some();
         if !qualified {
             return Err(ActivityRefusal::ContentUnavailable);
         }
@@ -116,7 +128,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 eprintln!("PR3056_SOUL_WAR_ENTRY stage=source_fence refusal=AuthorityRejected");
             })?;
         if !ActivityHandoffOwner::new(self.root.clone())
-            .activate_soul_war_boss_catalogue(self.character, self.holder, fence, active, &template)
+            .activate_soul_war_boss_catalogue(
+                self.character,
+                self.holder,
+                fence,
+                active,
+                &template,
+                world_origin.as_ref().map(|_| (origin, &origin_pin)),
+            )
             .await
             .map_err(|_error| {
                 #[cfg(test)]

@@ -4,9 +4,9 @@ use super::TestResult;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 fn run_case(name: &'static str) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, || {
         super::quest_world_callbacks_fixtures::scenario(
@@ -43,4 +43,9 @@ fn questpc7_reward_requirements_high_level_and_readonly_parent() -> TestResult {
 #[test]
 fn questpc7_wayland_outfit_repeats_full_menu_with_one_intro_receipt() -> TestResult {
     run_case("questpc7-eligibility-outfit-high")
+}
+
+#[test]
+fn w16_make_believe_wayland_and_pocaro_advance_once_in_order() -> TestResult {
+    run_case("questpc7-eligibility-make-believe-high")
 }

@@ -7,6 +7,7 @@ use crate::durability::tibiadrome::{self as rules, Record};
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
+use oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::drome_wave_opponent;
 use oteryn_protocol_oteryn::arena::{self as wire, DromeAction as A};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -20,6 +21,8 @@ pub(super) struct Drome {
     pub(super) mechanics_test_context: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) mechanics_test_hazards: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) mechanics_test_native_pool: std::sync::atomic::AtomicBool,
     command: tokio::sync::Mutex<()>,
     live: Mutex<HashMap<GameSessionId, Live>>,
 }
@@ -694,9 +697,8 @@ pub(in crate::gameplay_transport) fn tick_at(
             battle.deadline = now + Duration::from_secs(u64::from(rules::PREPARATION_SECONDS));
         }
         if battle.preparing && now >= battle.deadline {
-            // STOPPED W17 content: these legacy arena profiles do not qualify as
-            // the five Drome monsters or the nine accepted modifier consumers.
-            // Exact native identities/speeds/attack clocks remain source-pending.
+            // STOPPED W17 content: production needs the five admitted Creature profiles
+            // and a qualified Drome room before this wave can be reached publicly.
             let count = rules::monster_count(players).unwrap_or(0);
             let placements: Vec<_> = battle_cells(owner, runtime, battle.center)
                 .into_iter()
@@ -704,11 +706,16 @@ pub(in crate::gameplay_transport) fn tick_at(
                 .take(count)
                 .collect();
             for (index, at) in placements.into_iter().enumerate() {
-                let key = format!(
-                    "oteryn:creature.{}",
-                    crate::durability::arena_match::donor::OPPONENTS[0][index % 5]
-                );
-                if let Ok(target) = runtime.spawn_arena_opponent(&key, at, |r, p| {
+                let Some(role) = drome_wave_opponent(current.run, battle.wave, index as u64) else {
+                    break;
+                };
+                let key = role.key();
+                #[cfg(test)]
+                let fixture_key =
+                    modifiers::mechanics_test_opponent(&owner.states.tibiadrome, index);
+                #[cfg(test)]
+                let key = fixture_key.as_deref().unwrap_or(key);
+                if let Ok(target) = runtime.spawn_arena_opponent(key, at, |r, p| {
                     Some(walkable(owner, r, p) && r.native_summon_cell_free(p))
                 }) {
                     if runtime

@@ -13,3 +13,9 @@ The owner's instruction is to populate the data using explicit project assumptio
 Payloads are staged under admission-evidence/ with an apply plan because content-tree seals, generated slots and World Bundle inputs cannot be changed in this task. The staged record values themselves are populated.
 
 Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
+
+## W17 creature candidates
+
+The [five Creature authoring profiles](admission-evidence/tibiadrome-creature-candidates.json) record the Fandom archive values for HP, XP, conditions, targeting, summoning and observed attacks. Speed, armor, exact resistances and executable attack clocks require source values before the profiles can be materialized. The runtime candidate also needs an exact Presentation binding and an admitted Drome room.
+
+The pinned Crystal tree at `201189f871d23597b82caf88fd611454a2ddefb8` supplies five initial corpse Item definitions. Their positive decay links identify the start of each named Item chain. The per-creature source IDs and XML lines are recorded as **Crystal (Global silent)**. The Crystal tree contains no corresponding monster registrations establishing which corpse, if any, the encounter places on a kill. The IDs remain source observations.

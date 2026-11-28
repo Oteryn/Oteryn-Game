@@ -54,6 +54,68 @@ their transfer of ownership are authored separately.
 [Native mount definition](../../../crates/gameplay/content/src/content/native_gameplay/cosmetics_loader.rs#L101)
 [Store offers](../../../rulesets/economy/store/cosmetics.json)
 
+## Global source review on staging `43a8b036a`
+
+The census below records the original matching method. This review uses the Tibia
+Fandom archive to verify the 23 World leads and the two unresolved identities.
+A verified source becomes reachable only through the corresponding production
+acquisition owner.
+
+| Mounts | Global acquisition | Staging binding |
+| --- | --- | --- |
+| Antelope, Tidal Seawater Predator, Ashen Coast Predator, Crimson Bay Predator | “145,000 Hunting Task Points” each in the Task Board shop. [Antelope](https://tibia.fandom.com/wiki/Antelope) · [Tidal](https://tibia.fandom.com/?curid=110351) · [Ashen](https://tibia.fandom.com/?curid=110355) · [Crimson](https://tibia.fandom.com/?curid=110345) | Production offers 9, 6, 7 and 8 respectively, with exact looks and grant mappings. [Offers](../../../crates/gameplay/quests/src/quest/task_board_catalogue.rs#L94) · [PG](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/task_board.rs#L237) |
+| Lady Bug | “Use a Four-Leaf Clover on a Ladybug.” Look 447. [Lady Bug](https://tibia.fandom.com/wiki/Lady_Bug) · [Four-Leaf Clover](https://tibia.fandom.com/wiki/Four-Leaf_Clover) | Existing taming route uses `lady_bug` and item 14143. |
+| Phant | “Trade 8000 Drome points with a Tibiadrome NPC.” Look 1417. [Phant](https://tibia.fandom.com/wiki/Phant) | Native Tibiadrome selector 17 admits `phant_mount`. [Binding](../../../crates/gameplay/content/src/content/native_gameplay/cosmetics_view.rs#L145) |
+| Pegasus | “Use this item to receive the Pegasus mount.” Item 48424. [Pegasus Feather](https://tibia.fandom.com/wiki/Pegasus_Feather) | Existing ordinary USE and appearance grant. [PG](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs#L20) |
+| Gloothomotive | “Use a Wind-Up Key on a Wind-Up Loco.” Key 37397, separate loco 37398, look 1459. The key currently comes from Retros Treasure. [Gloothomotive](https://tibia.fandom.com/wiki/Gloothomotive) · [Key](https://tibia.fandom.com/wiki/Wind-Up_Key) · [Loco](https://tibia.fandom.com/wiki/Wind-Up_Loco) | Current `wind_up_loco` route self-targets item 37397. Needs distinct carried-item custody and an atomic action regression. |
+| Alpha Demonosaur | “Use this item to receive the Alpha Demonosaur mount.” Item 50063, dropped by Rotrender. Look 1827. [Box](https://tibia.fandom.com/?curid=107913) · [Mount](https://tibia.fandom.com/?curid=108459) | Look 1827 is under `ancient_demonosaur`. Item 50063 needs custody and a production acquisition action. |
+| Blue, Green and Red Rolling Barrels | Beer Tap on a Super Cask with the corresponding Decorative Sheet in inventory. Looks 1257, 1259 and 1258. [Blue](https://tibia.fandom.com/?curid=90023) · [Green](https://tibia.fandom.com/?curid=90024) · [Red](https://tibia.fandom.com/?curid=90025) | Needs targeted cask action with the carried sheet predicate. |
+| Bright, Cold and Dark Percht Sleighs | “Deliver a Percht Skull to Frosty.” Looks 1164, 1163 and 1165. [Frosty](https://tibia.fandom.com/wiki/Frosty) · [Bright](https://tibia.fandom.com/wiki/Bright_Percht_Sleigh) · [Cold](https://tibia.fandom.com/wiki/Cold_Percht_Sleigh) · [Dark](https://tibia.fandom.com/wiki/Dark_Percht_Sleigh) | Needs the seasonal NPC exchange and Global selection rules for the colour. |
+| Krakoloss | “Defeat Tentugly's Head during A Pirate's Tail Quest.” Look 1363. [Krakoloss](https://tibia.fandom.com/wiki/Krakoloss) | Needs an active Tentugly completion and mount grant. |
+| Mutated Abomination | “Use the lever in the room south of Geoffray in Doctor Marrow's laboratory after defeating The Monster.” Also requires quest completion. Look 1599. [Mutated Abomination](https://tibia.fandom.com/?curid=101339) | Existing Cradle item work does not supply the lever grant. |
+| Mystic Jaguar | “Use a Polished Idol of Tukh on a Mystic Jaguar.” Item 44437 can break. Look 1721. [Mount](https://tibia.fandom.com/?curid=104411) · [Idol](https://tibia.fandom.com/wiki/Polished_Idol_of_Tukh) | Needs the source creature and taming rule. The exact draw and failure distribution need Global evidence. |
+| Rented Horse | “Rent from Appaloosa (Venore) or Palomino (Thais).” 500 gold for 24 hours after the horse-station world change. [Rented Horse](https://tibia.fandom.com/wiki/Rented_Horse) | Global lists four looks. The dark-brown row and its expiry need explicit binding evidence. |
+| Rift Runner | “Using a Mysterious Scroll” after completing Ferumbras' Ascension. Look 848. [Rift Runner](https://tibia.fandom.com/wiki/Rift_Runner) | Needs the completion-gated item action. |
+| Ripptor | “Unlock hazard level 6 in Gnomprona and request the mount to Gnomadness.” Look 1577. [Ripptor](https://tibia.fandom.com/wiki/Ripptor) | Needs NPC grant with the hazard predicate. |
+| Shellodon | “Deliver an Eldritch Crystal to Gnomevisor” after Too Hot to Handle. Look 1430. [Shellodon](https://tibia.fandom.com/?curid=94808) | Needs completion-gated NPC exchange. |
+| Stampor | Chondur asks for “30 Hollow Stampor Hoof, 50 Stampor Horn and 100 Stampor Talons.” Look 378. [Stampor](https://tibia.fandom.com/wiki/Stampor_(Mount)) | Needs atomic NPC exchange. |
+| Gloom Maw | “Completing the Bloody Tusks Quest.” The quest lists the mount as the reward and Global identifies look 1866. [Mount](https://tibia.fandom.com/?curid=108892) · [Quest](https://tibia.fandom.com/wiki/Bloody_Tusks_Quest) | The native catalogue has 1866 under `white_gloom_maw` and 1867 under `gloom_maw_mount`. Use the 1866 identity when wiring the reachable finale. |
+| Hell Demonosaur | The archive comments out the Red Box grant with “Not Confirmed, remove comment if confirmed.” [Demon in a Red Box](https://tibia.fandom.com/?curid=107912) | Global source needed. |
+
+### Store and event availability
+
+| Source | Availability and evidence |
+| --- | --- |
+| Arctic Unicorn | Global reports “Buying it on Tibia.com or via the Store,” look 1018 and 870 Tibia Coins. Added to the native Store. [Arctic Unicorn](https://tibia.fandom.com/wiki/Arctic_Unicorn) |
+| Batcat | Global reports “Buying it on Tibia.com or via the Store,” look 728 and 870 Tibia Coins. Added to the native Store. [Batcat](https://tibia.fandom.com/wiki/Batcat) |
+| Jungle Tiger | Global reports “Buying it via the Store,” look 1093 and 750 Tibia Coins. Added to the native Store. [Jungle Tiger](https://tibia.fandom.com/wiki/Jungle_Tiger) |
+| Ceremonial Garb | Global lists the full outfit for 750 Tibia Coins, with male look 695 and female look 694. The full offer grants the base and both addons. The separately priced base (570) and addons (120 each) need separate offer support. [Ceremonial Garb](https://tibia.fandom.com/wiki/Ceremonial_Garb_Outfits) |
+| Retro Citizen, Retro Hunter, Retro Knight and Retro Mage | Base outfits cost 870 Tibia Coins each. Global says addons are “unavailable.” Male/female looks are 974/975, 972/973, 970/971 and 968/969 respectively. [Citizen](https://tibia.fandom.com/wiki/Retro_Citizen_Outfits) · [Hunter](https://tibia.fandom.com/wiki/Retro_Hunter_Outfits) · [Knight](https://tibia.fandom.com/wiki/Retro_Knight_Outfits) · [Mage](https://tibia.fandom.com/wiki/Retro_Mage_Outfits) |
+| Benevolent Coral Rhea, Eventide Nandu and Savanna Ostrich | Time-limited Store offers. Each archive entry says “in a specific period of time” and quotes 500 Tibia Coins. Global source needed for a current sale window. [Rhea](https://tibia.fandom.com/?curid=91059) · [Nandu](https://tibia.fandom.com/?curid=91060) · [Ostrich](https://tibia.fandom.com/?curid=91061) |
+| Blazebringer | Seasonal event reward. Light all 10 basins in a successful Lightbearer, then ask Santa Claus for a “very special present.” [Blazebringer](https://tibia.fandom.com/?curid=50266) |
+| Percht Sleigh upgrades | Seasonal Frosty exchanges. An additional Percht Skull upgrades each base sleigh to its variant one year after acquisition. [Frosty](https://tibia.fandom.com/wiki/Frosty) · [Bright](https://tibia.fandom.com/?curid=90297) · [Cold](https://tibia.fandom.com/?curid=90296) · [Dark](https://tibia.fandom.com/?curid=90298) |
+
+### Quest outfit and addon sources
+
+Warmaster and Wayfarer have active wardrobe rewards in
+`shared-outfit-callbacks.json`. Their outfit pages identify quest acquisition
+for Premium players. Citizen and Warrior addon hand-ins have active NPC
+bindings and existing tests that traverse the story. These sources retain
+their quest or NPC grant keys. [Warmaster](https://tibia.fandom.com/wiki/Warmaster_Outfits) ·
+[Wayfarer](https://tibia.fandom.com/wiki/Wayfarer_Outfits) ·
+[Citizen](https://tibia.fandom.com/wiki/Citizen_Outfits_Quest) ·
+[Warrior](https://tibia.fandom.com/wiki/Warrior_Outfits_Quest) ·
+[Wardrobe bindings](../../../content/quests/shared-outfit-callbacks.json) ·
+[NPC evidence](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qb_outfit_placements.rs#L159)
+
+Global lists Soul War as the Revenant base source and Rotten Blood as the
+Decaying Defender base source. Keep distinct base and addon sources in the
+reachability audit. The placement tests already cover Flickering Soul for
+Revenant and identify the Bloodshade placement gap for Decaying Defender.
+[Revenant](https://tibia.fandom.com/wiki/Revenant_Outfits) ·
+[Decaying Defender](https://tibia.fandom.com/wiki/Decaying_Defender_Outfits) ·
+[Placement evidence](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qb_outfit_placements.rs#L117)
+
 ## Previously unmatched by key
 
 | World catalogue key | Class | Evidence |

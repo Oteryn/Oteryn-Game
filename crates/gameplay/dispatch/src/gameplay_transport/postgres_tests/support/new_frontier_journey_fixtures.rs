@@ -381,9 +381,9 @@ pub(super) async fn exercise(
     travel_to(owner, a, king_approach).await?;
     assert_eq!(carried(h, 10009).await?, 0);
     if name == POLISHER_RETRY {
-        say(owner, a, king, &["hi", "farmine", "plea"], Spoken).await?;
+        say(owner, a, king, &["Hail King!", "farmine", "plea"], Spoken).await?;
         state(h, 14, ("mission05/king_tibianus", 2), 0).await?;
-        say(owner, a, king, &["hi", "farmine", "yes"], Spoken).await?;
+        say(owner, a, king, &["Hail King!", "farmine", "yes"], Spoken).await?;
         state(h, 14, ("mission05/king_tibianus", 2), 0).await?;
     }
     let fence = owner
@@ -407,13 +407,13 @@ pub(super) async fn exercise(
     }
     assert_eq!(carried(h, 10009).await?, 2);
     if name == POLISHER_RETRY {
-        say(owner, a, king, &["hi", "farmine", "yes"], Spoken).await?;
+        say(owner, a, king, &["Hail King!", "farmine", "yes"], Spoken).await?;
         state(h, 14, ("mission05/king_tibianus_prepaid", 1), 0).await?;
         assert_eq!(carried(h, 10009).await?, 1);
-        say(owner, a, king, &["hi", "farmine", "plea"], Spoken).await?;
+        say(owner, a, king, &["Hail King!", "farmine", "plea"], Spoken).await?;
         assert_eq!(carried(h, 10009).await?, 1);
     } else {
-        say(owner, a, king, &["hi", "farmine", "reason"], Spoken).await?;
+        say(owner, a, king, &["Hail King!", "farmine", "reason"], Spoken).await?;
         assert_eq!(carried(h, 10009).await?, 2);
     }
     state(h, 14, ("mission05/king_tibianus", 3), 0).await?;

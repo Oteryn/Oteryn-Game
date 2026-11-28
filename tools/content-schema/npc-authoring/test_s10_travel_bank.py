@@ -13,6 +13,17 @@ CORRECTIONS = (
 )
 
 
+# Global fare evidence supersedes the historical Crystal quote, even on a held route.
+# https://tibia.fandom.com/wiki/Magic_Carpet and https://tibia.fandom.com/wiki/Petros
+GLOBAL_FARES = {
+    "chemar": {"edron": 40, "femor_hills": 60, "issavi": 100, "kazordoon": 80, "svargrond": 60},
+    "petros": {
+        "ankrahmun": 100, "gray_island": 150, "krailos": 110,
+        "liberty_bay": 200, "port_hope": 180, "venore": 60,
+    },
+}
+
+
 def read(path):
     return json.loads(path.read_bytes())
 
@@ -27,10 +38,12 @@ class S10TravelBankTests(unittest.TestCase):
         routes = {route["key"]: route for route in read(CORRECTIONS)}
         for source in read(SOURCE)["routes"]:
             service = f"oteryn:service.travel.{source['npc']}"
-            key = f"{service}/{canonical_keyword(source['keyword'])}"
+            slug = canonical_keyword(source["keyword"])
+            key = f"{service}/{slug}"
+            global_fare = GLOBAL_FARES.get(source["npc"], {}).get(slug)
             with self.subTest(route=key, source=source["source"]):
                 route = routes.get(key)
-                if source["hold"] == "quest gate":
+                if source["hold"] == "quest gate" and source["npc"] not in {"chemar", "petros"}:
                     for keyword in [source["keyword"], *source.get("aliases", [])]:
                         alias = f"{service}/{canonical_keyword(keyword)}"
                         self.assertTrue(
@@ -38,6 +51,15 @@ class S10TravelBankTests(unittest.TestCase):
                         )
                     continue
                 self.assertIsNotNone(route, f"Missing route {key}")
+                if (source["npc"], slug) == ("chemar", "farmine"):
+                    self.assertEqual(route["aliases"], ["zao"])
+                    self.assertEqual(route["quest_tracks"], [{
+                        "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+                        "minimum": 2,
+                        "maximum": 2,
+                    }])
+                if (source["npc"], slug) == ("petros", "yalahar"):
+                    self.assertEqual(route["yalahar_town_gate"], "darashia")
                 self.assertTrue(route["native_addition"])
                 self.assertFalse(route.get("use_authored_fare_and_premium", False))
                 self.assertNotIn("premium_override", route)
@@ -56,12 +78,12 @@ class S10TravelBankTests(unittest.TestCase):
                     (
                         source["keyword"],
                         source["destination"],
-                        source["price"],
-                        source["premium"],
+                        source["price"] if global_fare is None else global_fare,
+                        (slug != "marapur" if source["npc"] == "chemar" else source["premium"]),
                         source["min_level"],
                         source["postman"],
                         source["carpet"],
-                        bool(source["hold"]),
+                        (slug == "marapur" if source["npc"] in {"chemar", "petros"} else bool(source["hold"])),
                     ),
                 )
 
