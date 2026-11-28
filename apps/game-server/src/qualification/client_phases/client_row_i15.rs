@@ -1,9 +1,9 @@
-//! Captures the real actor-vitals payload consumed by the native session reducer for I15.
+//! Qualifies the Energy Ring's live actor-vitals change and durable state.
 use super::*;
 use oteryn_dev_client::{
     DevClientSession, SessionEvent, native_session::item_movement::MoveRequest,
 };
-use oteryn_protocol_oteryn::{actor_spell, item_view as items, logout::LogoutResult};
+use oteryn_protocol_oteryn::{item_view as items, logout::LogoutResult};
 
 const FIELD: TilePos = TilePos {
     x: 32474,
@@ -19,22 +19,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .await;
     match result {
         Ok(Ok(())) => evidence(
-            "e2e_all scenario=I15.client status=PASS evidence=actor-vitals-2-to-1-mana-shield",
+            "e2e_all scenario=I15.client status=FAIL evidence=original-frame-replay-unavailable",
         ),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=I15.client status=FAIL evidence={error}"
         )),
         Err(_) => evidence("e2e_all scenario=I15.client status=FAIL evidence=damage-delta-timeout"),
     }
-}
-
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    use std::io::Write;
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = Path::new(&path).join(name);
-        std::fs::File::create_new(path)?.write_all(bytes)?;
-    }
-    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -187,17 +178,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
     };
 
+    let hit_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    let before = actor_spell::encode_actor_vitals(&before)
-        .map_err(|error| format!("I15 before encode: {error:?}"))?;
-    let after_payload = actor_spell::encode_actor_vitals(&after)
-        .map_err(|error| format!("I15 after encode: {error:?}"))?;
-    capture("i15-before.bin", &before)?;
-    capture("i15-after.bin", &after_payload)?;
-    capture(
-        "i15-expected.txt",
-        format!("{} {}\n", after.health, expected_mana).as_bytes(),
-    )?;
+    drop(client);
+
+    let mut client = connect_character(&clients, 0xb2, 0).await?;
+    let durable_position = tile(client.world_spatial().actor_position)?;
+    let durable_vitals = client
+        .actor_vitals()
+        .ok_or("I15 post-hit relog vitals absent")?;
+    if hit_session == client.join_snapshot().game_session_id
+        || durable_position != FIELD
+        || (durable_vitals.health, durable_vitals.mana) != (after.health, after.mana)
+    {
+        return Err(format!(
+            "I15 post-hit relog expected position={FIELD:?} health={} mana={}, got position={durable_position:?} vitals={durable_vitals:?}",
+            after.health, after.mana,
+        )
+        .into());
+    }
+    logout(&mut client).await?;
     Ok(())
 }
 
