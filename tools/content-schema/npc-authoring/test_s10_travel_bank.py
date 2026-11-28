@@ -24,6 +24,11 @@ GLOBAL_FARES = {
 }
 
 
+PETROS_PREMIUM_DESTINATIONS = {
+    "ankrahmun", "gray_island", "issavi", "krailos", "liberty_bay", "port_hope",
+}
+
+
 def read(path):
     return json.loads(path.read_bytes())
 
@@ -64,6 +69,11 @@ class S10TravelBankTests(unittest.TestCase):
                 self.assertFalse(route.get("use_authored_fare_and_premium", False))
                 self.assertNotIn("premium_override", route)
                 self.assertNotIn("quest_gate", route)
+                expected_premium = source["premium"]
+                if source["npc"] == "chemar":
+                    expected_premium = slug != "marapur"
+                elif source["npc"] == "petros":
+                    expected_premium = slug in PETROS_PREMIUM_DESTINATIONS
                 self.assertEqual(
                     (
                         route["keyword"],
@@ -79,13 +89,28 @@ class S10TravelBankTests(unittest.TestCase):
                         source["keyword"],
                         source["destination"],
                         source["price"] if global_fare is None else global_fare,
-                        (slug != "marapur" if source["npc"] == "chemar" else source["premium"]),
+                        expected_premium,
                         source["min_level"],
                         source["postman"],
                         source["carpet"],
                         (slug == "marapur" if source["npc"] in {"chemar", "petros"} else bool(source["hold"])),
                     ),
                 )
+
+    def test_petros_premium_destinations_require_current_entitlement(self):
+        # Fandom Petros lists the routes. Boat lists the Free Account cities.
+        prefix = "oteryn:service.travel.petros/"
+        routes = {
+            row["key"].removeprefix(prefix): row["premium"]
+            for row in read(CORRECTIONS)
+            if row["key"].startswith(prefix)
+        }
+        self.assertEqual(
+            {name for name, premium in routes.items() if premium},
+            PETROS_PREMIUM_DESTINATIONS,
+        )
+        self.assertFalse(routes["venore"])
+        self.assertFalse(routes["yalahar"])
 
     def test_s10_placed_crystal_bankers_have_a_bank_binding(self):
         placements = {

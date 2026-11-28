@@ -882,7 +882,7 @@ mod tests {
                 ),
                 (
                     donor["donor_cost"].as_u64().ok_or("donor fare")?,
-                    npc != "petros" && donor["donor_premium"].as_bool().ok_or("donor premium")?,
+                    npc == "petros" || donor["donor_premium"].as_bool().ok_or("donor premium")?,
                     held,
                     true
                 ),

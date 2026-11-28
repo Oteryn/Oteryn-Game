@@ -20,7 +20,7 @@ fn s10_travel_postgres_source_keywords_and_free_arrival() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, None, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, None, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "S10 travel PostgreSQL thread panicked")??;
     eprintln!(
@@ -37,7 +37,7 @@ fn regional_travel_postgres_tarak_phrases_and_gulliver_fares() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, None, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, None, None).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "regional travel PostgreSQL thread panicked")??;
     eprintln!("POSTGRES_CASE_COMPLETED regional_travel tarak_and_gulliver");
@@ -53,13 +53,37 @@ fn s10_petros_postgres_pays_once_and_arrives_in_venore() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, None, true).map_err(|error| error.to_string()))?
+        .spawn(|| {
+            scenario(true, None, Some(PetrosCase::Arrival)).map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "Petros travel PostgreSQL thread panicked")??;
     eprintln!(
         "POSTGRES_CASE_COMPLETED S10 Petros duration={:?}",
         started.elapsed()
     );
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+enum PetrosCase {
+    Arrival,
+    Expired,
+}
+
+#[test]
+fn s10_petros_expired_premium_refuses_confirmation_without_charging() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario(true, None, Some(PetrosCase::Expired)).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Petros Premium PostgreSQL thread panicked")??;
     Ok(())
 }
 
@@ -86,7 +110,7 @@ fn regional_travel_postgres_confirmation_regressions() -> TestResult {
                 ConfirmationCase::CancelFree,
             ]
             .into_iter()
-            .filter_map(|case| match scenario(true, Some(case), false) {
+            .filter_map(|case| match scenario(true, Some(case), None) {
                 Ok(()) => {
                     eprintln!("POSTGRES_CASE_COMPLETED regional_travel {case:?}");
                     None
@@ -104,7 +128,7 @@ fn regional_travel_postgres_confirmation_regressions() -> TestResult {
 fn scenario(
     regional: bool,
     confirmation: Option<ConfirmationCase>,
-    petros_arrival: bool,
+    petros: Option<PetrosCase>,
 ) -> TestResult {
     run(async move |admin| {
         reset();
@@ -133,6 +157,7 @@ fn scenario(
             for (npc, key) in [
                 ("oteryn:npc.tarak_inner", "passage"),
                 ("oteryn:npc.captain_gulliver", "thais"),
+                ("oteryn:npc.petros", "issavi"),
             ] {
                 let entry = book.get(npc).ok_or(npc)?;
                 let route = entry
@@ -179,6 +204,12 @@ fn scenario(
             crate::spell::cast::v1_spell_book().map_err(debug)?,
             if regional { 5 } else { 4 },
         )?;
+        let premium = if matches!(petros, Some(PetrosCase::Expired)) {
+            use crate::gameplay_transport::spell_premium_coordinator::purchase_fixture;
+            Some(purchase_fixture::expiring_travel(id(40), &h.root).await?)
+        } else {
+            None
+        };
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = room.movement_cells().into();
@@ -246,7 +277,10 @@ fn scenario(
                     generation: actor.actor_local_generation(),
                 })
                 .collect::<Vec<_>>();
-            let result = if petros_arrival {
+            let result = if let Some((coordinator, expire)) = &premium {
+                owner.premium_coordinator = Some(coordinator);
+                verify_petros_expiry(&mut owner, &deps, &h.pool, actors[1], expire).await
+            } else if matches!(petros, Some(PetrosCase::Arrival)) {
                 verify_petros_arrival(&owner, &deps, &h.pool, actors[1]).await
             } else if let Some(case) = confirmation {
                 confirmation_case(&owner, &deps, &h.pool, &book, &actors, case).await
@@ -534,6 +568,11 @@ async fn regional_quotes(
             let (expected, expected_state) = if route.held {
                 (
                     "I'm sorry but I don't sail there.".to_owned(),
+                    NpcConversationState::Open,
+                )
+            } else if stem == "petros" && *slug != "venore" {
+                (
+                    "I'm sorry, but you need a premium account in order to travel.".to_owned(),
                     NpcConversationState::Open,
                 )
             } else {
@@ -872,6 +911,74 @@ async fn regional_quotes(
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+    Ok(())
+}
+
+async fn verify_petros_expiry(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    pool: &sqlx::PgPool,
+    npc: EntityRef,
+    expire: impl FnOnce(),
+) -> TestResult {
+    use super::npc_paid_travel_fixtures::{line, talk};
+
+    let before = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    talk(owner, deps, npc, 1, "hi").await?;
+    let quote = talk(owner, deps, npc, 2, "issavi").await?;
+    assert_eq!(
+        quote.conversation.and_then(|reply| reply.open),
+        Some((npc, NpcConversationState::Confirming))
+    );
+    expire();
+    let refusal = talk(owner, deps, npc, 3, "yes").await?;
+    assert_eq!(
+        line(&refusal),
+        "I'm sorry, but you need a premium account in order to travel."
+    );
+    assert!(!refusal.inventory_changed);
+    let after = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!(after, before);
+    let writes: (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_newhaven_travel_receipts),
+                (SELECT count(*) FROM game_item_fee_burns WHERE cause_kind=8)",
+    )
+    .fetch_one(pool)
+    .await?;
+    assert_eq!(writes, (0, 0));
+
+    for (command, destination) in (4..).zip([
+        "ankrahmun",
+        "gray island",
+        "issavi",
+        "krailos",
+        "liberty bay",
+        "port hope",
+    ]) {
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let refusal = talk(owner, deps, npc, command, destination).await?;
+        assert_eq!(
+            line(&refusal),
+            "I'm sorry, but you need a premium account in order to travel.",
+            "{destination}"
+        );
+        assert_eq!(
+            refusal.conversation.and_then(|reply| reply.open),
+            Some((npc, NpcConversationState::Open))
+        );
+    }
     Ok(())
 }
 
