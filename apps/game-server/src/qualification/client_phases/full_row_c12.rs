@@ -2207,15 +2207,60 @@ async fn wait_for_return_clear(
     Ok(())
 }
 
+fn detour_return(
+    client: &DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    occupied: TilePos,
+    remaining: &VecDeque<StepDirection>,
+) -> Option<Vec<StepDirection>> {
+    let occupied_tiles = client
+        .world_entities()?
+        .others()
+        .filter_map(|entity| {
+            matches!(
+                entity.kind,
+                EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+            )
+            .then(|| tile(entity.position).ok())
+            .flatten()
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    route_around_occupant(
+        from,
+        from,
+        occupied,
+        remaining,
+        |at| !occupied_tiles.contains(&at),
+        |from, direction| destination(world, from, direction),
+    )
+}
+
 async fn walk_authored_return(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
+    allow_detour: bool,
 ) -> TestResult {
-    for &direction in path {
+    let mut path = VecDeque::from(path.to_vec());
+    let mut detours = 0;
+    while let Some(direction) = path.pop_front() {
         let from = tile(client.world_spatial().actor_position)?;
         let at = destination(world, from, direction).ok_or("C12 return STEP has no landing")?;
         let occupants = return_occupants(client, at)?;
+        if allow_detour
+            && detours < 8
+            && !occupants.is_empty()
+            && let Some(detour) = detour_return(client, world, from, at, &path)
+        {
+            detours += 1;
+            evidence(&format!(
+                "C12_RETURN_DETOUR count={detours} tile={at:?} occupants={occupants:?} steps={}",
+                detour.len()
+            ));
+            path = detour.into();
+            continue;
+        }
         wait_for_return_clear(client, at, occupants).await?;
         let mut step = tokio::time::timeout(COMMAND_BUDGET, client.step(direction)).await??;
         if step.disposition == StepDisposition::Blocked
@@ -2238,6 +2283,18 @@ async fn walk_authored_return(
                 "C12_RETURN_BLOCKED command={original} target={at:?} occupants={occupants:?} projected_ground_speed={:?}",
                 projected_return_ground(client, at)
             ));
+            if allow_detour
+                && detours < 8
+                && let Some(detour) = detour_return(client, world, from, at, &path)
+            {
+                detours += 1;
+                evidence(&format!(
+                    "C12_RETURN_DETOUR count={detours} tile={at:?} occupants={occupants:?} steps={}",
+                    detour.len()
+                ));
+                path = detour.into();
+                continue;
+            }
             wait_for_return_clear(client, at, occupants).await?;
             step = tokio::time::timeout(COMMAND_BUDGET, client.step(direction)).await??;
         }
@@ -2266,6 +2323,7 @@ async fn prove_authored_hunt(
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
     augment_bps: u64,
+    allow_return_detour: bool,
 ) -> TestResult {
     let home = tile(client.world_spatial().actor_position)?;
     let authored = authored_client_cast_route(world, spawns, home)?;
@@ -2329,7 +2387,7 @@ async fn prove_authored_hunt(
     evidence("C12_AUTHORED_RETURN rope=32296,32334,-8 landing=32296,32335,-7");
     let back = route(world, upstairs, |at| at == home)
         .ok_or("C12 no surface return route from the authored rope exit")?;
-    walk_authored_return(client, world, &back).await?;
+    walk_authored_return(client, world, &back, allow_return_detour).await?;
     Ok(())
 }
 
@@ -2383,7 +2441,7 @@ pub(super) async fn prepare_client_capture(
     select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
     equip_right(&mut client, definition).await?;
 
-    prove_authored_hunt(&mut client, world, &metadata.spawns, AUGMENT_BPS).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, AUGMENT_BPS, false).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
     let route = client_cast_route(world, position)?;
@@ -2611,7 +2669,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let offset = std::fs::metadata(&use_log)?.len();
     select_fists_damage_perks(&mut client, clients, definition).await?;
     require_no_use_holder_wait(&use_log, offset, "catalyst_")?;
-    prove_authored_hunt(&mut client, world, &metadata.spawns, 0).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, 0, true).await?;
     row.pass("acquire-50271", (acquired, purchase_balance));
 
     require_current_premium(client.session_mut()).await?;
