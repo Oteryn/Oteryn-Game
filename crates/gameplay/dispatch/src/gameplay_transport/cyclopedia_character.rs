@@ -80,14 +80,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
-        let now = super::character_info::unix_now_ms();
+        let badge_now = || crate::world_clock::now_utc_ms().and_then(|ms| i64::try_from(ms).ok()).ok_or(());
         match command_type {
             wire::COMMAND_TYPE_CYCLOPEDIA_BADGES => {
                 if payload.first() == Some(&wire::badge_visibility::PREFIX) {
                     let request =
                         wire::badge_visibility::Request::decode(payload).map_err(|_| ())?;
                     self.root
-                        .refresh_account_badges(self.character, self.holder, fence, now)
+                        .refresh_account_badges(self.character, self.holder, fence, badge_now()?)
                         .await
                         .map_err(|_| ())?;
                     return self
@@ -107,7 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::decode_badges_request(payload).map_err(|_| ())?;
                 let badges = self
                     .root
-                    .refresh_account_badges(self.character, self.holder, fence, now)
+                    .refresh_account_badges(self.character, self.holder, fence, badge_now()?)
                     .await
                     .map_err(|_| ())?;
                 wire::encode_badges(&badges).map_err(|_| ())
@@ -239,7 +239,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                     if target == fence.character_id {
                         self.root
-                            .refresh_account_badges(self.character, self.holder, fence, now)
+                            .refresh_account_badges(self.character, self.holder, fence, badge_now()?)
                             .await
                             .map_err(|_| ())?;
                     }
@@ -300,6 +300,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await?;
                 }
+                let now = super::character_info::unix_now_ms();
                 let (view, mut extension) = AdmissionRetryBudget::for_command(self.root)
                     .retry_unavailable(async || {
                         self.root

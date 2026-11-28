@@ -122,11 +122,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.bundle_map().map(|map| &map.overlay.base().subareas),
             )
             .await;
-        // PAR-P12b: badges share the trigger points (Crystal checks both at login).
-        let _ = self
-            .root
-            .refresh_account_badges(self.character, self.holder, item_fence, now)
-            .await;
+        // Account badges are earned when the conditions are met, including at login.
+        if let Some(now) = crate::world_clock::now_utc_ms().and_then(|ms| i64::try_from(ms).ok()) {
+            let _ = self
+                .root
+                .refresh_account_badges(self.character, self.holder, item_fence, now)
+                .await;
+        }
     }
 
     /// The actor-cadence leg of [`Self::refresh_session_titles`] for a Character marked by a

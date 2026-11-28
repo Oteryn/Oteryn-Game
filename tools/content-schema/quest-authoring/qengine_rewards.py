@@ -913,6 +913,7 @@ def build():
         take=[(139, 1)],
         give=(875, 1),
     )
+    sam_spoiler = "https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest/Spoiler#Sam_on_Thais"
     add(
         "sam-backpack",
         "sam_s_old_backpack_quest",
@@ -922,6 +923,12 @@ def build():
         take=[(3244, 1)],
         topic=1,
     )
+    callbacks[-1]["sources"].append(sam_spoiler)
+    callbacks[-1]["reply"] = [
+        "Thank you very much! This brings back good old memories! Please, as a reward, travel "
+        "to Kazordoon and ask my old friend Kroox to provide you a special dwarven armor. ...",
+        "I will mail him about you immediately. Just tell him, his old buddy Sam is sending you.",
+    ]
     # Offers bind confirmation to this NPC and the common conversation topic.
     offers = [
         {
@@ -944,8 +951,20 @@ def build():
             "npc": "oteryn:npc.sam",
             "keywords": ["old backpack", "backpack"],
             "topic": 0,
+            # Topic 1 is already bound into the durable hand-in rule.
+            "next_topic": 2,
+            "reply": ["What? Are you telling me you found my old adventurer's backpack that I lost years ago??"],
+            "storage": callbacks[-1]["storage"],
+        },
+        {
+            "npc": "oteryn:npc.sam",
+            "keywords": ["yes"],
+            "topic": 2,
             "next_topic": 1,
-            "reply": ["Did you find my old backpack?"],
+            "reply": [
+                "Is it in pristine condition? I'll throw away any items I find inside. "
+                "Did you check if there's anything left in there you want to keep?",
+            ],
             "storage": callbacks[-1]["storage"],
         },
     ]

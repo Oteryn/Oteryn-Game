@@ -190,6 +190,7 @@ async fn sams_old_backpack(
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
     const ARMOR: &str = "oteryn:item.tibia.i3397";
+    const BACKPACK: &str = "oteryn:item.tibia.i3244";
     super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 35).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -260,23 +261,25 @@ async fn sams_old_backpack(
                 y: 31966,
                 floor: -14,
             },
-            item: "oteryn:item.tibia.i3244".into(),
+            item: BACKPACK.into(),
             count: 1,
         },
         53000,
         true,
     )
     .await?;
+    assert_eq!(count(h, BACKPACK).await?, 1);
     let (result, _, _) = talk(
         owner,
         admitted,
         sam_npc,
         sam,
         false,
-        vec!["hi", "backpack", "yes"],
+        vec!["hi", "backpack", "yes", "yes"],
     )
     .await?;
     assert_eq!(result, NpcIntentDisposition::Ok);
+    assert_eq!(count(h, BACKPACK).await?, 0);
     assert_eq!(
         super::classic_quests_fixtures::progress(owner, admitted, authority, SAMS_NPC).await?,
         1

@@ -18,16 +18,52 @@ fn character_profile_postgres_real_dispatch_and_privacy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
+    run_scenario(false)
+}
+
+#[cfg(feature = "qualification-clock")]
+#[test]
+fn p12b_badges_use_world_clock_at_admission_and_on_request() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    const PROBE: &str = "OTERYN_P12B_BADGE_CLOCK_PROBE";
+    if std::env::var_os(PROBE).is_some() {
+        return run_scenario(true);
+    }
+
+    // The offset is process-wide. Keep it out of the other dispatch tests.
+    let mut account_time = [0; 8];
+    account_time[2..].copy_from_slice(&id(40)[..6]);
+    let two_years_ms = 2 * 365 * 86_400_000i64;
+    let wall = crate::gameplay_transport::character_info::unix_now_ms();
+    let offset = i64::from_be_bytes(account_time) + two_years_ms - wall;
+    let path = std::env::temp_dir().join(format!("oteryn-p12b-clock-{}", std::process::id()));
+    std::fs::write(&path, offset.to_string())?;
+    let (_, module) = module_path!().split_once("::").ok_or("test module")?;
+    let case = format!("{module}::p12b_badges_use_world_clock_at_admission_and_on_request");
+    let status = std::process::Command::new(std::env::current_exe()?)
+        .args(["--exact", &case, "--nocapture"])
+        .env(PROBE, "1")
+        .env("OTERYN_QUALIFICATION_CLOCK_FILE", &path)
+        .status();
+    std::fs::remove_file(path)?;
+    assert!(status?.success(), "qualification-clock badges");
+    Ok(())
+}
+
+fn run_scenario(check_badge_clock: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(check_badge_clock).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Character profile scenario panicked")??;
     Ok(())
 }
-fn scenario() -> TestResult {
+fn scenario(check_badge_clock: bool) -> TestResult {
     use super::cyclopedia_fixtures::support::exchange;
-    run(async |admin| {
+    use oteryn_protocol_oteryn::cyclopedia_character::{Badge, COMMAND_TYPE_CYCLOPEDIA_BADGES};
+    run(async move |admin| {
         super::reset();
         let h =
             Harness::create_with_admission_seed(admin, "character_profile", true, false).await?;
@@ -70,7 +106,47 @@ fn scenario() -> TestResult {
             &[CAP],
         )
         .ok_or("capability")?;
-        let (status, own) = exchange(&owner, &mut admitted, 1, TAB, &query).await?;
+        let mut next_command = 1;
+        if check_badge_clock {
+            let clock = || -> Result<i64, Box<dyn std::error::Error>> {
+                Ok(i64::try_from(crate::world_clock::now_utc_ms().ok_or("World clock")?)?)
+            };
+            let before_login = clock()?;
+            owner.refresh_session_titles(admitted.game_session_id).await;
+            let earned_at = "SELECT earned_at_unix_ms FROM game_account_badges
+                WHERE account_id=encode($1,'hex')::uuid AND badge=$2";
+            let age: i64 = sqlx::query_scalar(earned_at)
+                .bind(id(40).as_slice())
+                .bind(i16::from(Badge::FledgelingHero.id()))
+                .fetch_one(&h.pool)
+                .await?;
+            assert!((before_login..=clock()?).contains(&age));
+            sqlx::query("INSERT INTO game_account_loyalty_projections
+                         (account_id, loyalty_points, platform_revision)
+                         VALUES(encode($1,'hex')::uuid, 101, 1)")
+                .bind(id(40).as_slice())
+                .execute(&h.pool)
+                .await?;
+            let before_request = clock()?;
+            let (status, badges) = exchange(
+                &owner,
+                &mut admitted,
+                next_command,
+                COMMAND_TYPE_CYCLOPEDIA_BADGES,
+                &[],
+            )
+            .await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(badges, [2, Badge::FledgelingHero.id(), Badge::TibiaLoyalistGrade1.id()]);
+            let loyalty: i64 = sqlx::query_scalar(earned_at)
+                .bind(id(40).as_slice())
+                .bind(i16::from(Badge::TibiaLoyalistGrade1.id()))
+                .fetch_one(&h.pool)
+                .await?;
+            assert!((before_request..=clock()?).contains(&loyalty));
+            next_command += 1;
+        }
+        let (status, own) = exchange(&owner, &mut admitted, next_command, TAB, &query).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(Profile::decode(&own).map_err(debug)?.character, id(41));
         sqlx::query(

@@ -350,7 +350,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-pirate-hat-start" => &["addon", "task", "yes"],
         "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
-        "sam-backpack" => &["old backpack"],
+        "sam-backpack" => &["old backpack", "yes"],
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],

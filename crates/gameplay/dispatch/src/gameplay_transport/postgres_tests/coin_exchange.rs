@@ -314,6 +314,17 @@ fn scenario() -> TestResult {
                     "round {round} {text}"
                 );
                 let line = outcome.conversation.ok_or("reply")?.lines;
+                if text == "1" || text == "1 crystal" {
+                    let quote = match (input, output) {
+                        ("3031", "3035") => "So you would like me to change 100 of your gold coins into 1 platinum coins?",
+                        ("3035", "3031") => "So you would like me to change 1 of your platinum coins into 100 gold coins for you?",
+                        ("3035", "3043") => "So you would like me to change 100 of your platinum coins into 1 crystal coins for you?",
+                        ("3043", "3035") => "So you would like me to change 1 of your crystal coins into 100 platinum coins for you?",
+                        _ => return Err("unexpected coin direction".into()),
+                    };
+                    assert_eq!(line, [quote], "round {round} quote");
+                    assert_eq!(inventory(&h).await?, before, "the quote does not exchange");
+                }
                 if text == "yes" || text == "yes please" || text == "0" {
                     assert_eq!(line, [expected], "round {round}");
                 }

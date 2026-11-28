@@ -71,24 +71,21 @@ fn bank_command_precedes_exchange(has_pending_exchange: bool, text: &str) -> boo
     has_pending_exchange && super::super::bank_npc::parse(text).is_ok()
 }
 fn quote(exchange: CoinExchange, amount: u64) -> String {
-    // Preserve the two reversed-quantity confirmation strings in pinned Canary. The actual
-    // conversion uses the correct 100:1 amounts, independently of this dialogue text.
+    // The parsed amount counts exchanges of the smaller stack in either direction.
+    let input = exchange.input().1 * amount;
+    let output = exchange.output().1 * amount;
     match exchange {
         CoinExchange::GoldToPlatinum => format!(
-            "So you would like me to change {} of your gold coins into {amount} platinum coins?",
-            amount * 100
+            "So you would like me to change {input} of your gold coins into {output} platinum coins?"
         ),
         CoinExchange::PlatinumToGold => format!(
-            "So you would like me to change {} of your platinum coins into {amount} gold coins for you?",
-            amount * 100
+            "So you would like me to change {input} of your platinum coins into {output} gold coins for you?"
         ),
         CoinExchange::PlatinumToCrystal => format!(
-            "So you would like me to change {} of your platinum coins into {amount} crystal coins for you?",
-            amount * 100
+            "So you would like me to change {input} of your platinum coins into {output} crystal coins for you?"
         ),
         CoinExchange::CrystalToPlatinum => format!(
-            "So you would like me to change {} of your crystal coins into {amount} platinum coins for you?",
-            amount * 100
+            "So you would like me to change {input} of your crystal coins into {output} platinum coins for you?"
         ),
     }
 }

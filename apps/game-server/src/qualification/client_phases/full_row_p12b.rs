@@ -86,9 +86,7 @@ async fn stored_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
 async fn expected_badges(clients: &SeamClients<'_>) -> TestResult<Vec<u8>> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let now_ms = i64::try_from(
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_millis(),
+        oteryn_gameplay_world::world_clock::now_utc_ms().ok_or("World clock unavailable")?,
     )?;
     let row = sqlx::query(FACTS_SQL)
         .bind(clients.characters[1].as_slice())
