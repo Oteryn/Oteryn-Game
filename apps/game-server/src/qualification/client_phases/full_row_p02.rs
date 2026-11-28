@@ -1,6 +1,6 @@
 //! P02 full-row scenario, derived from its audit/matrix row and Bosstiary owners:
 //! 1. Send BOSS_COOLDOWNS; require an accepted progress/points snapshot.
-//! 2. Walk to a compiled-world boss, ATTACK until death, and require kill/point deltas.
+//! 2. Walk to open ground, place a boss fixture, ATTACK until death, and require kill/point deltas.
 //! 3. Earn prowess by those kills; Equip slot one and require unlock/bonus/slot deltas.
 //! 4. Repeat Equip and require a refusal reply with unchanged state.
 //! 5. ATTACK the daily boosted boss and require its three-kill delta and slot refusal.
@@ -126,41 +126,27 @@ fn bosses() -> TestResult<Vec<crate::domain::bosstiary::BosstiaryBoss>> {
     };
     Ok(crate::content::canonical_title_catalogue(l)?.bosstiary)
 }
-async fn kill(
-    c: &mut DevClientSession,
-    w: &BundleWorld,
-    s: &oteryn_world_bundle::spawn::Table,
-    key: &str,
-) -> TestResult {
-    let points: Vec<_> = s
-        .sources
-        .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(move |point| {
-                s.creatures
-                    .get(point.creature as usize)
-                    .filter(|creature| creature.key == key)
-                    .map(|_| TilePos {
-                        x: point.x,
-                        y: point.y,
-                        floor: source.floor,
-                    })
-            })
-        })
-        .collect();
-    let adjacent = |at: TilePos, point: TilePos| {
-        at != point
-            && at.floor == point.floor
-            && at.x.abs_diff(point.x).max(at.y.abs_diff(point.y)) == 1
-    };
-    let from = tile(c.world_spatial().actor_position)?;
-    let path = route(w, from, |at| {
+async fn prepare_boss_ground(c: &mut DevClientSession, w: &BundleWorld) -> TestResult {
+    let open = |at: TilePos| {
         w.base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|cell| !cell.protection_zone())
-            && points.iter().any(|&point| adjacent(at, point))
+    };
+    let from = tile(c.world_spatial().actor_position)?;
+    let path = route(w, from, |at| {
+        open(at)
+            && [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .filter(|direction| destination(w, at, *direction).is_some_and(open))
+            .count()
+                >= 3
     })
-    .ok_or_else(|| format!("step boss-route {key}: no reachable authored spawn"))?;
+    .ok_or("P02 no reachable open ground for fixture placement")?;
     for direction in path {
         let before = tile(c.world_spatial().actor_position)?;
         let expected = destination(w, before, direction).ok_or("boss route landing missing")?;
@@ -228,36 +214,41 @@ async fn kill(
             || actual == before
             || actual != expected
         {
-            return Err(format!("step boss-route {key}: before={before:?} expected={expected:?} observed={actual:?} outcome={outcome:?}").into());
+            return Err(format!("step boss-route: before={before:?} expected={expected:?} observed={actual:?} outcome={outcome:?}").into());
         }
         verdict::Harness::global().progress("p02-boss-route");
     }
-    let at = tile(c.world_spatial().actor_position)?;
-    let point = points
-        .into_iter()
-        .find(|&point| adjacent(at, point))
-        .ok_or("boss spawn missing at planned approach")?;
+    Ok(())
+}
+
+async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
+    let session = uuid_text(c.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, key.to_owned())
+        .await
+        .map_err(|error| format!("P02 FIXTURE boss placement refused key={key}: {error}"))?;
+    let target = parse_spawned_entity(&answer)?;
+    evidence(&format!(
+        "P02 FIXTURE input=boss_placement key={key} receipt={answer}"
+    ));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(95);
-    verdict::Harness::global().bounded_wait(deadline, "p02-authored-boss-spawn");
-    let target = loop {
-        if let Some(target) = c.world_entities().and_then(|entities| {
-            entities
-                .iter()
-                .find(|entity| {
-                    entity.kind == oteryn_dev_client::EntityKind::Creature
-                        && tile(entity.position).is_ok_and(|position| position == point)
-                })
-                .copied()
-        }) {
-            break target;
+    verdict::Harness::global().bounded_wait(deadline, "p02-fixture-boss-visible");
+    loop {
+        if c.world_entities()
+            .and_then(|entities| entities.get(&target))
+            .is_some_and(|entity| entity.kind == oteryn_dev_client::EntityKind::Creature)
+        {
+            break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step boss-spawn {key}: no creature at {point:?}").into());
+            return Err(format!(
+                "step boss-spawn {key}: exact placed entity {target:?} not visible"
+            )
+            .into());
         }
         c.service_liveness(Duration::from_millis(50)).await?;
         c.take_events();
-    };
-    let r = c.session_mut().attack_target(Some(&target.entity)).await?;
+    }
+    let r = c.session_mut().attack_target(Some(&target)).await?;
     if r.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
     }
@@ -267,7 +258,7 @@ async fn kill(
         c.service_liveness(Duration::from_millis(50)).await?;
         c.take_events();
         if c.world_entities()
-            .is_some_and(|es| es.get(&target.entity).is_none())
+            .is_some_and(|es| es.get(&target).is_none())
         {
             c.session_mut().attack_target(None).await?;
             return Ok(());
@@ -304,7 +295,6 @@ fn boosted_exclusion_slot(
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,
@@ -312,7 +302,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut c = connect_world(clients, 0xb2).await?;
+    character_prep::declare_seeded(
+        "P02.full",
+        "level 100, axe, boss placement",
+        "combat inputs are prepared; credit and slots must come from live gameplay",
+    );
+    let client = connect_world(clients, 0xb2).await?;
+    let mut c = provisioning::provision_fixture(client, clients, 1, 100).await?;
     let mut before = snapshot(&mut c).await?;
     let initial_slot = slot(
         &mut c,
@@ -339,55 +335,30 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("daily boosted boss is not an Archfoe: {daily_boss}").into());
     }
-    let from = tile(c.world_spatial().actor_position)?;
-    let spawned = catalog
+    // Global Bosstiary lists Arachir as a Nemesis (Prowess at one kill).
+    let boss = "oteryn:creature.arachir_the_ancient_one".to_owned();
+    let ordinary = catalog
         .iter()
-        .filter(|boss| full_row_p05::has_reachable_spawn(world, from, &meta.spawns, &boss.key));
-    let mut ordinary = None;
-    let mut boosted = None;
-    for b in spawned {
-        kill(&mut c, world, &meta.spawns, &b.key).await?;
-        let after = snapshot(&mut c).await?;
-        let d = counts(&after)
-            .get(&b.key)
-            .copied()
-            .unwrap_or(0)
-            .saturating_sub(counts(&before).get(&b.key).copied().unwrap_or(0));
-        match (b.key == daily_boss, d) {
-            (false, 1) => {
-                let prowess = crate::domain::bosstiary::kill_thresholds(&b.category)
-                    .ok_or_else(|| format!("step=prowess unknown boss category={}", b.category))?
-                    [0];
-                if ordinary
-                    .as_ref()
-                    .is_none_or(|(_, _, _, goal)| prowess < *goal)
-                {
-                    ordinary = Some((b.key.clone(), b.category.clone(), after.clone(), prowess));
-                }
-            }
-            (true, 3) => boosted = Some((b.key.clone(), after.clone())),
-            _ => {
-                return Err(format!(
-                    "step boss-kill {}: progress delta={d}, reply={after:?}",
-                    b.key
-                )
-                .into());
-            }
-        }
-        before = after;
-        if ordinary.is_some() && boosted.is_some() {
-            break;
-        }
+        .find(|entry| entry.key == boss && entry.category.eq_ignore_ascii_case("nemesis"))
+        .ok_or("P02 Global ordinary boss absent from Nemesis catalogue")?;
+    let prowess = crate::domain::bosstiary::kill_thresholds(&ordinary.category)
+        .ok_or("P02 ordinary boss thresholds missing")?[0];
+    prepare_boss_ground(&mut c, world).await?;
+    let previous = counts(&before).get(&boss).copied().unwrap_or(0);
+    kill(&mut c, &boss).await?;
+    let credited = snapshot(&mut c).await?;
+    let current = counts(&credited).get(&boss).copied().unwrap_or(0);
+    if previous.checked_add(1) != Some(current) || credited.points <= before.points {
+        return Err(format!("step boss-kill {boss}: expected +1 and Prowess points, observed kills={previous}->{current} points={} -> {}", before.points, credited.points).into());
     }
-    let (boss, _, credited, prowess) =
-        ordinary.ok_or("step boss-kill: no reachable compiled Bosstiary boss produced delta=1")?;
+    before = credited.clone();
     row.pass(
         "boss-kill-progress",
         (&boss, &credited.progress, credited.points),
     );
     while counts(&before).get(&boss).copied().unwrap_or(0) < prowess {
         let previous = counts(&before).get(&boss).copied().unwrap_or(0);
-        kill(&mut c, world, &meta.spawns, &boss).await.map_err(|error| {
+        kill(&mut c, &boss).await.map_err(|error| {
             verdict::record_error(error.as_ref());
             verdict::context(format!("step=prowess boss={boss} kills={previous}/{prowess} need=another-live-boss {error}"), error)
         })?;
@@ -400,8 +371,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             .into());
         }
     }
-    let (boosted_key, boosted_state) =
-        boosted.ok_or("step=boosted-kill no reachable boss produced delta=3")?;
+    let boosted_key = daily_boss;
+    let previous = counts(&before).get(&boosted_key).copied().unwrap_or(0);
+    kill(&mut c, &boosted_key).await?;
+    let boosted_state = snapshot(&mut c).await?;
+    let current = counts(&boosted_state)
+        .get(&boosted_key)
+        .copied()
+        .unwrap_or(0);
+    if previous.checked_add(3) != Some(current) {
+        return Err(format!(
+            "step boosted-kill {boosted_key}: expected +3, observed={previous}->{current}"
+        )
+        .into());
+    }
+    before = boosted_state.clone();
     let boosted_category = catalog
         .iter()
         .find(|entry| entry.key == boosted_key)
@@ -410,7 +394,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=boosted-exclusion boosted boss prowess threshold missing")?[0];
     let mut boosted_kills = counts(&before).get(&boosted_key).copied().unwrap_or(0);
     while boosted_kills < threshold {
-        kill(&mut c, world, &meta.spawns, &boosted_key).await?;
+        kill(&mut c, &boosted_key).await?;
         before = snapshot(&mut c).await?;
         let next = counts(&before).get(&boosted_key).copied().unwrap_or(0);
         if boosted_kills.checked_add(3) != Some(next) {
