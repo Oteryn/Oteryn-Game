@@ -6,7 +6,9 @@ use super::quest_container_chests_fixtures::{Case, scenario};
 use super::TestResult;
 use crate::durability::reward_claim_mint::with_stalled_reward_chest_commit;
 use crate::gameplay_transport::ComposedFreshAdmission;
-use crate::gameplay_transport::bundle_chest::with_busy_reward_mint_holder;
+use crate::gameplay_transport::bundle_chest::{
+    with_busy_reward_mint_holder, with_expiring_reward_preflight,
+};
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -61,12 +63,12 @@ pub(super) async fn exercise(
     let committed = (CommandStatus::Accepted, UseDisposition::Committed);
     let (command_id, charged_units) = match case {
         Scenario::Brief => {
-            let (results, held) = with_busy_reward_mint_holder(
+            let (results, waited) = with_busy_reward_mint_holder(
                 Duration::from_millis(200),
                 wire_use_targets(owner, admitted, &[(1, target), (1, target)]),
             )
             .await;
-            assert!(held, "fixture must check out the real mint holder");
+            assert!(waited.is_some_and(|elapsed| elapsed >= Duration::from_millis(200)));
             assert_eq!(
                 results?,
                 [committed, (CommandStatus::DuplicateReplay, UseDisposition::Committed)],
@@ -74,12 +76,15 @@ pub(super) async fn exercise(
             (1_i64, 1_i16)
         }
         Scenario::Exhausted => {
-            let (results, held) = with_busy_reward_mint_holder(
+            let (results, waited) = with_busy_reward_mint_holder(
                 Duration::from_millis(1_200),
                 wire_use_targets(owner, admitted, &[(1, target), (1, target), (2, target)]),
             )
             .await;
-            assert!(held, "fixture must check out the real mint holder");
+            assert!(
+                waited.is_some_and(|elapsed| elapsed >= Duration::from_secs(1)),
+                "the busy refusal must wait for the full checkout budget",
+            );
             assert_eq!(
                 results?,
                 [
@@ -158,8 +163,10 @@ async fn lost_commit_reply(
     )
     .ok_or("reward occurrence capability")?;
     let payload = encode_use_intent(target).map_err(debug)?;
-    let (result, stalled) = with_stalled_reward_chest_commit(exchange(
-        owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &payload,
+    // The existing USE preflight watchdog expires while COMMIT's response
+    // is withheld. The issued mint still has to finish receipt recovery.
+    let (result, stalled) = with_expiring_reward_preflight(with_stalled_reward_chest_commit(
+        exchange(owner, &mut admitted, 1, COMMAND_TYPE_USE_INTENT, &payload),
     ))
     .await;
     assert!(stalled, "PostgreSQL COMMIT must land before its response is withheld");
