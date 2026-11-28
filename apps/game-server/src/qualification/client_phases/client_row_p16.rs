@@ -235,8 +235,13 @@ async fn sail(
     if before == arrival {
         return Err(format!("P16 {keyword} departure already at arrival {arrival:?}").into());
     }
-    let _ = talk(client, npc, "hi").await?;
-    let _ = talk(client, npc, keyword).await?;
+    for text in ["hi", keyword] {
+        let (_, lines) = talk(client, npc, text).await?;
+        evidence(&format!(
+            "P16_FERRY_DIALOGUE route={keyword} sent={text:?} server_sequence={} lines={lines:?}",
+            client.last_server_sequence()
+        ));
+    }
     tokio::time::sleep(Duration::from_millis(260)).await;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: npc,
@@ -253,11 +258,16 @@ async fn sail(
         .await?;
     let disposition = wire::decode_npc_intent_result(&reply.payload)
         .map_err(|error| format!("P16 {keyword} confirmation decode: {error:?}"))?;
+    evidence(&format!(
+        "P16_FERRY_CONFIRM route={keyword} sent=\"yes\" server_sequence={} status={:?} disposition={disposition:?}",
+        reply.server_sequence, reply.status
+    ));
     if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
         return Err(
             format!("P16 {keyword} confirmation refused: {reply:?} {disposition:?}").into(),
         );
     }
+    let mut confirmation_dialogue = false;
     tokio::time::timeout(Duration::from_secs(8), async {
         loop {
             let delta = client
@@ -269,11 +279,16 @@ async fn sail(
             }
             let response = wire::decode_npc_conversation(&delta.payload)
                 .map_err(|error| format!("P16 {keyword} departure decode: {error:?}"))?;
+            evidence(&format!(
+                "P16_FERRY_DIALOGUE route={keyword} sent=\"yes\" server_sequence={} lines={:?} open={:?}",
+                delta.server_sequence, response.lines, response.open
+            ));
             if response.open.is_some() || response.lines != ["Set the sails!"] {
                 return Err(
                     format!("P16 {keyword} departure response: {:?}", response.lines).into(),
                 );
             }
+            confirmation_dialogue = true;
             break;
         }
         while tile(client.world_spatial().actor_position)? != arrival
@@ -286,8 +301,9 @@ async fn sail(
     .await
     .map_err(|_| {
         format!(
-            "P16 {keyword} expected arrival={arrival:?} observed={:?}",
-            client.world_spatial().actor_position
+            "P16 {keyword} confirmation_dialogue={confirmation_dialogue} expected arrival={arrival:?} observed={:?} server_sequence={}",
+            client.world_spatial().actor_position,
+            client.last_server_sequence()
         )
     })??;
     evidence(&format!(
