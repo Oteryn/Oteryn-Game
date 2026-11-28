@@ -1,8 +1,9 @@
 //! Permanent promotion read by fenced owners; absence means never purchased.
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
+use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, observe_recovery_fence};
+use super::character_progression::{CharacterProgressionError, assert_item_only_fence, observe_item_only_fence};
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_observation_transaction, begin_semantic_transaction, bound_periodic_lock_wait,
+    commit_semantic_read, commit_semantic_transaction, lock_admission_relations,
 };
 use super::item_transfer::CurrentCharacterItemFence;
 use super::npc_purchase::PurchaseReceipt;
@@ -81,10 +82,21 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_item_only_fence(&mut tx, &fence, &node).await? {
+                    let (mut tx, fenced) = if command.is_some() {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        let fenced = assert_item_only_fence(&mut tx, &fence, &node).await?;
+                        (tx, fenced)
+                    } else {
+                        // Login and display only need a consistent, fenced observation.
+                        let mut tx = begin_observation_transaction(holder, deadline).await?;
+                        bound_periodic_lock_wait(&mut tx).await?;
+                        observe_recovery_fence(&mut tx, &recovery).await?;
+                        let fenced = observe_item_only_fence(&mut tx, &fence, &node).await?;
+                        (tx, fenced)
+                    };
+                    if let Err(error) = fenced {
                         return Ok(Err(error));
                     }
                     let promoted = read_durable_promotion(&mut tx, fence.character_id).await?;
@@ -98,7 +110,11 @@ impl DurabilityRoot {
                         .map(|(_, receipt)| receipt),
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    if command.is_some() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    } else {
+                        commit_semantic_read(tx, deadline).await?;
+                    }
                     Ok(Ok((promoted, receipt)))
                 })
             })

@@ -121,6 +121,7 @@ const HOLDER_WAIT_STALE: Duration = ROOT_RECOVERY_WINDOW;
 /// One call site's refused checkouts since its last successful one (LOGDBG-C).
 struct PendingWait {
     waiter: Site,
+    waiting_task: holder_queue::OwnerKey,
     first: Instant,
     last: Instant,
     attempts: u64,
@@ -136,12 +137,19 @@ fn note_wait_refused(
     owner: Option<Site>,
     now: Instant,
 ) {
+    // A reserved idle holder or a pool returning/reconnecting a connection can
+    // refuse checkout without a live semantic pass. That is not pass contention.
+    let Some(owner) = owner else {
+        return;
+    };
+    let waiting_task = holder_queue::current_owner();
     let index = waits
         .iter()
         .position(|wait| std::ptr::eq(wait.waiter, waiter))
         .unwrap_or_else(|| {
             waits.push(PendingWait {
                 waiter,
+                waiting_task,
                 first: now,
                 last: now,
                 attempts: 0,
@@ -150,14 +158,17 @@ fn note_wait_refused(
             waits.len() - 1
         });
     if let Some(wait) = waits.get_mut(index) {
-        if now.duration_since(wait.last) > HOLDER_WAIT_STALE {
+        if wait.waiting_task != waiting_task
+            || now.duration_since(wait.last) > HOLDER_WAIT_STALE
+        {
+            wait.waiting_task = waiting_task;
             wait.first = now;
             wait.attempts = 0;
             wait.owners.clear();
         }
         wait.last = now;
         wait.attempts += 1;
-        tally(&mut wait.owners, owner);
+        tally(&mut wait.owners, Some(owner));
     }
 }
 
@@ -166,6 +177,9 @@ fn finish_wait(waits: &mut Vec<PendingWait>, waiter: Site, now: Instant) -> Opti
     let index = waits
         .iter()
         .position(|wait| std::ptr::eq(wait.waiter, waiter))?;
+    if waits[index].waiting_task != holder_queue::current_owner() {
+        return None;
+    }
     let wait = waits.swap_remove(index);
     (now.duration_since(wait.last) <= HOLDER_WAIT_STALE
         && now.duration_since(wait.first) >= HOLDER_WAIT_REPORT)
