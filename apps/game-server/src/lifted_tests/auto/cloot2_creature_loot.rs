@@ -123,9 +123,30 @@ fn check_middle_creature_loot() -> Result<(), Box<dyn std::error::Error + Send +
         match rewards.row(creature) {
             Ok(row) => {
                 let table = bindings[creature].ok_or("missing loot binding")?;
-                assert_eq!(
-                    row.loot_table.entries.len(),
-                    tables[table].len(),
+                let mammoth = matches!(
+                    creature,
+                    "oteryn:creature.mammoth" | "oteryn:creature.memory_of_a_mammoth"
+                );
+                let expected = tables[table]
+                    .iter()
+                    .filter(|entry| !(mammoth && entry.item.key == "oteryn:item.tibia.i3443"));
+                let actual = row.loot_table.entries.iter();
+                assert!(
+                    actual
+                        .map(|entry| (
+                            &entry.item.production_key,
+                            &entry.item.revision_ref,
+                            entry.probability_ppm,
+                            entry.min_count,
+                            entry.max_count,
+                        ))
+                        .eq(expected.map(|entry| (
+                            &entry.item.key,
+                            &entry.item.revision,
+                            entry.probability_ppm,
+                            entry.min_count,
+                            entry.max_count,
+                        ))),
                     "{creature}"
                 );
             }

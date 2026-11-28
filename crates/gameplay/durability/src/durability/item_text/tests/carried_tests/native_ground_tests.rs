@@ -404,7 +404,7 @@ impl crate::durability::item_loop_move::ItemLoopContent for CorpseLoopContent {
         use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
         let capacity = match definition.production_key.as_str() {
             "oteryn:item.tibia.i2815" => Some(20),
-            "oteryn:item.tibia.i4993" => None,
+            "oteryn:item.tibia.i2983" | "oteryn:item.tibia.i4993" => None,
             _ => return None,
         };
         Some(ItemDefinitionFacts {
@@ -419,7 +419,24 @@ impl crate::durability::item_loop_move::ItemLoopContent for CorpseLoopContent {
 
 #[test]
 fn ordinary_plain_corpse_pickup_uses_current_scope_fence_postgres() -> TestResult {
-    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+    check_scope_handoff(
+        "oteryn:item.tibia.i2983",
+        "ordinary_corpse_pickup_handoff",
+        true,
+    )
+}
+
+#[test]
+fn ground_only_butterfly_pickup_is_refused_after_scope_handoff_postgres() -> TestResult {
+    check_scope_handoff("oteryn:item.tibia.i4993", "butterfly_pickup_handoff", false)
+}
+
+fn check_scope_handoff(
+    item_key: &'static str,
+    database: &'static str,
+    portable: bool,
+) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRefusal, LoopMoveRequest};
     use crate::durability::item_mint::{
         CORPSE_MATERIALIZATION_PURPOSE_KEY, GroundPlacement, ItemMintCause, ItemMintOutcome,
         ItemMintRequest,
@@ -433,7 +450,7 @@ fn ordinary_plain_corpse_pickup_uses_current_scope_fence_postgres() -> TestResul
     let worker = std::thread::Builder::new().stack_size(64 << 20).spawn(
         move || -> std::result::Result<(), String> {
             runtime().map_err(native::debug)?.block_on(async move {
-                let h = Harness::create(admin, "ordinary_corpse_pickup_handoff", true).await?;
+                let h = Harness::create(admin, database, true).await?;
                 let result = async {
                     fixture(&h).await?;
                     let mut fence = native::item_fence()?;
@@ -441,7 +458,7 @@ fn ordinary_plain_corpse_pickup_uses_current_scope_fence_postgres() -> TestResul
                     let (world, channel) = scope_of(&fence)?;
                     let definition = TypedDefinitionRef {
                         family: "Item".into(),
-                        production_key: "oteryn:item.tibia.i4993".into(),
+                        production_key: item_key.into(),
                         revision_ref: "definition-r1".into(),
                     };
                     let seal = h.recovery.seal_current().map_err(native::debug)?;
@@ -506,7 +523,11 @@ fn ordinary_plain_corpse_pickup_uses_current_scope_fence_postgres() -> TestResul
                             destination: LoopDestination::MainBackpack,
                         },
                     ).await.map_err(native::debug)?;
-                    assert!(outcome.is_ok(), "generation 2 pickup returned {outcome:?}");
+                    if portable {
+                        assert!(outcome.is_ok(), "generation 2 pickup returned {outcome:?}");
+                    } else {
+                        assert!(matches!(outcome, Err(LoopMoveRefusal::Rejected)), "{outcome:?}");
+                    }
                     Ok::<(), Box<dyn std::error::Error>>(())
                 }.await;
                 h.cleanup().await?;
@@ -514,5 +535,8 @@ fn ordinary_plain_corpse_pickup_uses_current_scope_fence_postgres() -> TestResul
             }).map_err(native::debug)
         },
     )?;
-    worker.join().map_err(|_| "corpse pickup worker panicked")?.map_err(Into::into)
+    worker
+        .join()
+        .map_err(|_| "corpse pickup worker panicked")?
+        .map_err(Into::into)
 }

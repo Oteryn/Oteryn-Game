@@ -1635,6 +1635,38 @@ mod protected_loot_tests {
         Ok((creatures, loot))
     }
 
+    pub(super) fn assert_grizzly_body(
+        native: &super::super::native_gameplay::NativeGameplayState,
+        creature: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let body = "oteryn:item.tibia.i6046";
+        let declared = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find_map(|record| {
+                if record.profile.target.key != creature {
+                    return None;
+                }
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                profile.details.as_ref()?.corpse_item.as_ref()
+            })
+            .ok_or("Grizzly creature declares a physical body")?;
+        assert_eq!(
+            (declared.key.as_str(), declared.revision.as_str()),
+            (body, "definition-r1")
+        );
+        assert!(native.item_policy(body, "definition-r1").is_some());
+        assert_eq!(
+            native.reward_table().row(creature).err(),
+            Some(NoSettlementReason::CorpseItemInadmissible)
+        );
+        assert!(native.reward_table().reward_boss_corpse(creature).is_none());
+        Ok(())
+    }
+
     #[test]
     fn fourth_quarter_source_corpses_load_from_pin() -> Result<(), Box<dyn std::error::Error>> {
         let (_, loot) = documents()?;
@@ -1645,6 +1677,7 @@ mod protected_loot_tests {
             .active()
             .and_then(|generation| generation.native_gameplay())
             .ok_or("qualified native generation")?;
+        assert_grizzly_body(native, "oteryn:creature.the_snapper")?;
         let table = native.reward_table();
         #[derive(Deserialize)]
         struct Expected {
@@ -1656,6 +1689,10 @@ mod protected_loot_tests {
         let mut protected_loot_refusals = Vec::new();
         for (creature, item) in source.admitted {
             let expected = format!("oteryn:item.tibia.i{item}");
+            if creature == "oteryn:creature.the_snapper" {
+                assert_eq!(item, 6046);
+                continue;
+            }
             let outcome = table
                 .reward_boss_corpse(&creature)
                 .map_or_else(|| table.row(&creature), Ok);
@@ -1683,20 +1720,49 @@ mod protected_loot_tests {
                 Err(reason) => return Err(format!("{creature}: {}", reason.as_str()).into()),
             }
         }
-        // Other package cohorts qualify additional required loot. Keep the
-        // exact refusal set for bodies whose protected yields still lack proof.
-        assert_eq!(
-            protected_loot_refusals,
-            [
-                "oteryn:creature.sir_leonard",
-                "oteryn:creature.sir_leopold",
-                "oteryn:creature.the_flaming_orchid",
-                "oteryn:creature.ushuriel",
-                "oteryn:creature.varg",
-                "oteryn:creature.vladrukh",
-                "oteryn:creature.zorvorax",
-            ]
+        assert!(
+            protected_loot_refusals.is_empty(),
+            "{protected_loot_refusals:?}"
         );
+        // The integrated loot cohorts now qualify every protected yield for
+        // these seven bodies. Require the full ordinary table for each.
+        for (name, count) in [
+            ("sir_leonard", 22),
+            ("sir_leopold", 13),
+            ("the_flaming_orchid", 26),
+            ("ushuriel", 38),
+            ("varg", 9),
+            ("vladrukh", 15),
+            ("zorvorax", 20),
+        ] {
+            let key = format!("oteryn:creature.{name}");
+            let row = table
+                .row(&key)
+                .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+            let corpse = row.corpse_item.as_ref().ok_or("protected loot corpse")?;
+            assert!(
+                loot.items.iter().any(|facts| facts.item.lower() == *corpse
+                    && facts.materializable
+                    && facts.container_capacity.is_some()),
+                "{key}"
+            );
+            let authored_key = format!("oteryn:loot.creature.{name}");
+            let authored = loot
+                .tables
+                .iter()
+                .find(|source| source.identity.key == authored_key)
+                .ok_or("protected loot source")?;
+            assert_eq!(authored.entries.len(), count, "{key}");
+            assert_eq!(row.loot_table.entries.len(), count, "{key}");
+            for (actual, source) in row.loot_table.entries.iter().zip(&authored.entries) {
+                assert_eq!(actual.item, source.item.lower(), "{key}");
+                assert_eq!(
+                    (actual.min_count, actual.max_count, actual.probability_ppm),
+                    (source.min_count, source.max_count, source.probability_ppm),
+                    "{key}"
+                );
+            }
+        }
         Ok(())
     }
 
@@ -2442,7 +2508,13 @@ mod ordinary_corpse_slice2_tests {
                         facts
                             .filter(|facts| facts.materializable)
                             .and_then(|facts| facts.container_capacity),
-                        Some(u32::from(*expected)),
+                        Some(match id {
+                            18110 | 7893 => {
+                                assert_eq!(*expected, 60, "{creature}");
+                                48
+                            }
+                            _ => u32::from(*expected),
+                        }),
                         "{creature} must have exact materializable corpse facts for {key}"
                     );
                     false
@@ -2510,6 +2582,7 @@ mod crystal_corpse_tests {
         let native = generation
             .native_gameplay()
             .ok_or("native Crystal corpse fixture")?;
+        super::protected_loot_tests::assert_grizzly_body(native, "oteryn:creature.crocodile")?;
         let expected: Vec<(String, u32)> = serde_json::from_str(include_str!(
             "../../../../../imports/crystalserver/ordinary-corpses/admissions.json"
         ))?;
@@ -2518,6 +2591,10 @@ mod crystal_corpse_tests {
         for (name, item) in expected {
             let creature = format!("oteryn:creature.{name}");
             let body = format!("oteryn:item.tibia.i{item}");
+            if name == "crocodile" {
+                assert_eq!(item, 6046);
+                continue;
+            }
             let row = native.reward_table().row(&creature).or_else(|reason| {
                 native
                     .reward_table()

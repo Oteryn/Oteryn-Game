@@ -76,7 +76,7 @@ fn embed_trade_shards() -> Result<(), Box<dyn std::error::Error>> {
     if shards.is_empty() {
         return Err("trade family index has no shards".into());
     }
-    let mut includes = String::from("[\n");
+    let mut documents = Vec::with_capacity(shards.len());
     let mut names = BTreeSet::new();
     for shard in shards {
         let relative_path = shard.as_str().ok_or("trade index shard path")?;
@@ -95,13 +95,13 @@ fn embed_trade_shards() -> Result<(), Box<dyn std::error::Error>> {
         }
         let path = repo.join(relative_path);
         emit_cargo_directive("rerun-if-changed", path.display());
-        let include_path = format!("/../../../{relative_path}");
-        includes.push_str(&format!(
-            "    include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), {include_path:?})),\n"
-        ));
+        let document = std::fs::read_to_string(path)?;
+        if document.contains('\0') {
+            return Err(format!("unexpected NUL in trade shard: {relative_path}").into());
+        }
+        documents.push(document);
     }
-    includes.push(']');
-    let output = Path::new(&std::env::var("OUT_DIR")?).join("trade-shards.rs");
-    std::fs::write(output, includes)?;
+    let output = Path::new(&std::env::var("OUT_DIR")?).join("trade-shards.txt");
+    std::fs::write(output, documents.join("\0"))?;
     Ok(())
 }

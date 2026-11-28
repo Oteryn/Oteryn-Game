@@ -202,27 +202,28 @@ pub(super) async fn exercise_drag(
             owner.character,
             owner.holder,
             &fence,
-            CommandRef::new(admitted.game_session_id, CommandId::new(60004).map_err(debug)?),
+            CommandRef::new(
+                admitted.game_session_id,
+                CommandId::new(60004).map_err(debug)?,
+            ),
             native.source_digest(),
         )
         .await
         .map_err(debug)?;
-        let definition = item_tx::current_top_corpse_definition_in_transaction(
-            &mut tx, &authority, &target,
-        )
-        .await
-        .map_err(debug)?;
+        let definition =
+            item_tx::current_top_corpse_definition_in_transaction(&mut tx, &authority, &target)
+                .await
+                .map_err(debug)?;
         let qualified = QualifiedItemDefinition::from_native_policy(
             native
                 .item_policy(&definition.production_key, &definition.revision_ref)
                 .ok_or("relocated corpse policy")?,
         )
         .map_err(debug)?;
-        let corpse = item_tx::prepare_corpse_in_transaction(
-            &mut tx, &authority, &target, &qualified,
-        )
-        .await
-        .map_err(debug)?;
+        let corpse =
+            item_tx::prepare_corpse_in_transaction(&mut tx, &authority, &target, &qualified)
+                .await
+                .map_err(debug)?;
         assert_eq!(corpse.item_instance_id, before.item.item_instance_id);
         let cell = corpse.cell()?;
         assert_eq!((cell.x, cell.y, cell.z), (at.x, at.y, i32::from(at.floor)));
@@ -276,6 +277,7 @@ pub(super) async fn exercise_drag(
         assert!(potion.field_origin.is_none() && potion.creature_field_origin.is_none());
         tx.rollback().await?;
     }
+    use crate::durability::item_loop_move::QuickLootInput;
     use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, QuickLootRequest};
 
     let loot = QuickLootRequest {
@@ -297,7 +299,7 @@ pub(super) async fn exercise_drag(
                 command_id: 60002,
                 item_fence: Some(fence),
             },
-            loot,
+            QuickLootInput::Legacy(loot),
         )
         .await
         .ok_or("quick loot response")?;
@@ -356,7 +358,12 @@ pub(super) async fn exercise_drag(
         Some(crate::gameplay_transport::item_move::LoopMoveReplay::Moved),
     );
     assert!(
-        owner.runtime.lock().await.bound_corpse(before.identity).is_none(),
+        owner
+            .runtime
+            .lock()
+            .await
+            .bound_corpse(before.identity)
+            .is_none(),
         "the committed pickup must publish current custody before replay ACK"
     );
 
@@ -382,10 +389,10 @@ pub(super) async fn exercise_drag(
                 command_id: 60006,
                 item_fence: Some(fence),
             },
-            QuickLootRequest {
+            QuickLootInput::Legacy(QuickLootRequest {
                 corpse: Some(item),
                 ..loot
-            },
+            }),
         )
         .await
         .ok_or("second corpse loot response")?;

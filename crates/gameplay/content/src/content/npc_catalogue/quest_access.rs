@@ -11,7 +11,7 @@ use std::sync::OnceLock;
 
 const SOURCE: &str = include_str!("../../../../../../content/quests/native-service-access.json");
 // Existing canonical evidence, not a separately authored shop or price table.
-const RETAINED: &[&str] = &include!(concat!(env!("OUT_DIR"), "/trade-shards.rs"));
+const RETAINED: &str = include_str!(concat!(env!("OUT_DIR"), "/trade-shards.txt"));
 const HELD_PREFIX: &str = "oteryn:source.npc.trade.held_tuple_";
 
 #[derive(Debug, Deserialize)]
@@ -230,7 +230,7 @@ fn bound_offers() -> Result<&'static BTreeMap<String, Vec<ProjectV2ServiceOffer>
     OFFERS
         .get_or_init(|| {
             let mut records = Vec::new();
-            for shard in RETAINED {
+            for shard in RETAINED.split('\0') {
                 let source: RetainedDocument =
                     serde_json::from_str(shard).map_err(|_| "native service retained catalogue")?;
                 records.extend(source.records);
