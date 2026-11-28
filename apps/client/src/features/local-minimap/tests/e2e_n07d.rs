@@ -328,13 +328,31 @@ async fn verify(
         color: 0,
     };
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
+    host.drag_minimap([4, 0])?;
+    assert_eq!(host.view()?.minimap_camera(), (origin.x + 4, origin.y, origin.floor, 1, false));
+    let before_shortcut = std::fs::read(&cache_path)?;
     host.route(create_mark_key()?);
+    assert!(super::lock(&host.view()?.minimap).markers.is_empty());
+    assert_eq!(std::fs::read(&cache_path)?, before_shortcut);
     host.click_minimap_button("Save mark")?;
     assert_eq!(super::lock(&host.view()?.minimap).markers, std::slice::from_ref(&marker));
     wait_for_saved_marks(host, &cache_path, std::slice::from_ref(&marker)).await?;
-    host.open_mark_menu_at_cell([15, 12])?;
+    host.open_mark_menu_at_cell([11, 12])?;
     host.click_minimap_button("Delete Mark")?;
     wait_for_saved_marks(host, &cache_path, &[]).await?;
+
+    let clicked_mark = Marker { x: origin.x + 2, ..marker.clone() };
+    host.open_mark_menu_at_cell([13, 12])?;
+    host.click_minimap_button("Set Mark")?;
+    assert!(super::lock(&host.view()?.minimap).markers.is_empty());
+    host.click_minimap_button("Save mark")?;
+    assert_eq!(super::lock(&host.view()?.minimap).markers, std::slice::from_ref(&clicked_mark));
+    wait_for_saved_marks(host, &cache_path, std::slice::from_ref(&clicked_mark)).await?;
+    host.open_mark_menu_at_cell([13, 12])?;
+    host.click_minimap_button("Delete Mark")?;
+    wait_for_saved_marks(host, &cache_path, &[]).await?;
+
+    host.click_minimap_button("Rose centre")?;
     host.open_mark_menu_at_cell([15, 12])?;
     host.click_minimap_button("Set Mark")?;
     assert!(super::lock(&host.view()?.minimap).markers.is_empty());
