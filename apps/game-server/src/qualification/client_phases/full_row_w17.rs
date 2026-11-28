@@ -215,6 +215,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     }
     let definitions = provisioning::item_index()?;
     let platinum = provisioning::item_reference(&definitions, 3035)?;
+    let gold = provisioning::item_reference(&definitions, 3031)?;
+    let crystal = provisioning::item_reference(&definitions, 3043)?;
     let sword = provisioning::item_reference(&definitions, 3281)?;
     let trophy = provisioning::item_reference(&definitions, 5807)?;
     if count(&client, platinum)? != 10 || count(&client, trophy)? != 0 {
@@ -257,11 +259,38 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if ready != initial {
         return Err(format!("W17 fixture changed arena state: {ready:?}").into());
     }
+    let currency = |client: &DevClientSession| -> TestResult<u64> {
+        Ok(count(client, gold)? + 100 * count(client, platinum)? + 10_000 * count(client, crystal)?)
+    };
+    let before_gold = currency(&client)?;
+    let expected_gold = before_gold.checked_sub(1_000).ok_or("W17 entry funding absent")?;
     let entered = command(&mut client, ArenaAction::Enter).await?;
     check_pit(entered, 1)?;
     confirm_position(&mut client, pit_position(1)).await?;
-    if count(&client, platinum)? != 0 {
-        return Err("W17 first entry did not consume exactly ten platinum coins".into());
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let fees: Vec<i64> = sqlx::query_scalar(
+        "SELECT fee_gold_units FROM game_item_fee_burns
+         WHERE character_id=$1::uuid AND world_id=$2::uuid AND cause_kind=17 LIMIT 2",
+    )
+    .bind(uuid_text(&clients.characters[0]))
+    .bind(uuid_text(&clients.world))
+    .fetch_all(&mut database).await?;
+    database.close().await?;
+    if fees != [1000] {
+        return Err(format!("W17 PostgreSQL fee expected=[1000] observed={fees:?}").into());
+    }
+    evidence("W17_PG_FEE applied=1000 receipts=1");
+    let fee_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let observed = currency(&client)?;
+        if observed == expected_gold {
+            break;
+        }
+        if tokio::time::Instant::now() >= fee_deadline {
+            return Err(format!("W17 arena fee inventory frame missing: PostgreSQL debit=1000 before={before_gold} expected={expected_gold} observed={observed}").into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
     }
     journey.pass(4, entered)?;
 
@@ -329,7 +358,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     let after = command(&mut fresh, ArenaAction::Status).await?;
     let drome_after = drome(&mut fresh, DromeAction::Status).await?;
     if fresh.join_snapshot().game_session_id == session || after != left
-        || drome_after != drome_before || count(&fresh, trophy)? != 1 || count(&fresh, platinum)? != 0
+        || drome_after != drome_before || count(&fresh, trophy)? != 1 || currency(&fresh)? != expected_gold
     {
         return Err(format!("W17 relog lost arena progress, reward or fee: {after:?}, {drome_after:?}").into());
     }
