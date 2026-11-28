@@ -1043,13 +1043,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("caster-damages-rat", damage)?;
     let session = caster.join_snapshot().game_session_id;
-    let position = caster.world_spatial().actor_position;
-    let durable_vitals = full_e2ef5::with_observer_liveness(
-        &mut observer, wait_rat_combat_end(&mut caster)
-    ).await?;
-    if durable_vitals.0 >= before.mana || durable_vitals.1 != before.soul {
-        return Err("C17b persisted resources disagree with the paid cast".into());
-    }
+    full_e2ef5::with_observer_liveness(&mut observer, wait_rat_combat_end(&mut caster)).await?;
     use tokio::time::Instant;
     let pre_sent = Instant::now();
     let (pre_logout, pre_sequence) = full_e2ef5::with_observer_liveness(
@@ -1058,6 +1052,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let pre_received = Instant::now();
     let pre_logout = pre_logout.ok_or("C17b missing pre-logout Invisible timer")?;
     require_continuous_visibility(&mut observer, caster_ref)?;
+    let position = caster.world_spatial().actor_position;
+    let vitals = caster.actor_vitals().ok_or("C17b pre-logout vitals missing")?;
+    let durable_vitals = (vitals.mana, vitals.soul);
+    if durable_vitals.0 >= before.mana || durable_vitals.1 != before.soul {
+        return Err(format!("C17b pre-logout resources disagree with paid cast: mana={} soul={}", durable_vitals.0, durable_vitals.1).into());
+    }
     let logout_sent = Instant::now();
     full_e2ef5::with_observer_liveness(&mut observer, logout(&mut caster)).await?;
     let logout_received = Instant::now();
@@ -1073,13 +1073,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let login_received = Instant::now();
-    if caster.join_snapshot().game_session_id == session
-        || caster.world_spatial().actor_position != position
-        || caster
-            .actor_vitals()
-            .is_none_or(|v| (v.mana, v.soul) != durable_vitals)
-    {
-        return Err("step=fresh-admission-condition observed=session/position/vitals-mismatch need=durable-condition-state".into());
+    if caster.join_snapshot().game_session_id == session {
+        return Err("C17b fresh admission reused the original session".into());
+    }
+    let admitted_position = caster.world_spatial().actor_position;
+    let admitted_vitals = caster.actor_vitals().map(|v| (v.mana, v.soul));
+    evidence(&format!("C17B_FULL_ADMISSION expected_position={position:?} actual_position={admitted_position:?} expected_mana_soul={durable_vitals:?} actual_mana_soul={admitted_vitals:?} sequence={}", caster.last_server_sequence()));
+    if admitted_position != position || admitted_vitals != Some(durable_vitals) {
+        return Err("C17b fresh admission persisted fields differed; see C17B_FULL_ADMISSION".into());
     }
     let fresh_ref = own(&caster)?;
     if fresh_ref == caster_ref {
