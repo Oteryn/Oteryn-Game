@@ -95,19 +95,24 @@ pub fn spotlight_cards(panel: &DailyBoostPanel) -> Vec<SpotlightCard> {
     ]
     .into_iter()
     .map(|(kind, key)| {
-        let name = key
-            .rsplit(['.', ':'])
-            .next()
-            .unwrap_or(key)
-            .split('_')
-            .map(|word| {
-                let mut chars = word.chars();
-                chars.next().map_or_else(String::new, |first| {
-                    first.to_uppercase().chain(chars).collect::<String>()
+        // Canonical punctuation and casing from the Global boostable-boss list.
+        let name = match key.as_str() {
+            "oteryn:creature.goshnar_s_cruelty" => "Goshnar's Cruelty".into(),
+            "oteryn:creature.timira_the_many_headed" => "Timira The Many-Headed".into(),
+            _ => key
+                .rsplit(['.', ':'])
+                .next()
+                .unwrap_or(key)
+                .split('_')
+                .map(|word| {
+                    let mut chars = word.chars();
+                    chars.next().map_or_else(String::new, |first| {
+                        first.to_uppercase().chain(chars).collect::<String>()
+                    })
                 })
-            })
-            .collect::<Vec<_>>()
-            .join(" ");
+                .collect::<Vec<_>>()
+                .join(" "),
+        };
         SpotlightCard {
             kind,
             key: key.clone(),

@@ -324,21 +324,29 @@ fn w13_audit_rejects_title_cased_boss_names_and_wrong_commands() -> TestResult {
         let selection = ("42".into(), "oteryn:creature.braindeath".into(), key.into());
         let names = expected_names(&selection)?;
         assert_eq!(names[1], canonical);
-        let mut cards = [
-            daily_boost::SpotlightCard {
-                kind: "Boosted creature",
-                key: selection.1.clone(),
-                name: names[0].clone(),
-                reset_epoch: 42,
+        let mut panel = DailyBoostPanel {
+            selected: true,
+            ..Default::default()
+        };
+        panel_query(&mut panel)?;
+        let payload = wire::encode_view(&wire::DailyBoostView {
+            reset_epoch: 42,
+            creature_key: selection.1.clone(),
+            boss_key: selection.2.clone(),
+        })
+        .map_err(|_| "encode canonical-name regression input")?;
+        daily_boost::apply_result(
+            &mut panel,
+            &Reply {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload,
             },
-            daily_boost::SpotlightCard {
-                kind: "Boosted boss",
-                key: selection.2.clone(),
-                name: canonical.into(),
-                reset_epoch: 42,
-            },
-        ];
-        require_card_projection(&cards, &selection, &names)?;
+        );
+        let mut cards = daily_boost::spotlight_cards(&panel);
+        let expected_text = require_card_projection(&cards, &selection, &names)?;
+        assert_eq!(daily_boost::panel_text(&panel), expected_text);
         cards[1].name = wrong.into();
         assert!(require_card_projection(&cards, &selection, &names).is_err());
     }
