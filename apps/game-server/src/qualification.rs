@@ -1315,6 +1315,14 @@ async fn join<A, B>(a: impl Future<Output = A>, b: impl Future<Output = B>) -> (
 #[test]
 #[ignore = "requires the disposable node-boot spell topology and Character-owned cast facts"]
 fn node_boot_spells_against_running_node() -> TestResult {
+    node_boot_spell_client_case(
+        None::<fn(oteryn_dev_client::DevClientSession) -> std::future::Ready<TestResult>>,
+    )
+}
+
+pub(crate) fn node_boot_spell_client_case(
+    probe: Option<impl AsyncFnOnce(oteryn_dev_client::DevClientSession) -> TestResult>,
+) -> TestResult {
     // Reuse the node's issued manifest and the normal client admission. Neither the
     // grant nor this test supplies vocation, progression, resources or targets.
     let manifest = required("NODE_BOOT_SPELL_MANIFEST")?;
@@ -1401,6 +1409,9 @@ fn node_boot_spells_against_running_node() -> TestResult {
             .await?;
             if client.world_spatial().content_generation != room.compiled().client_digest() {
                 return Err("running node did not admit the issued spell content generation".into());
+            }
+            if let Some(probe) = probe {
+                return probe(client).await;
             }
             let owned_vitals = client.actor_vitals().is_some();
             let before_unknown = client.actor_vitals().copied();
@@ -1493,6 +1504,8 @@ fn node_boot_seam_against_running_node() -> TestResult {
                     required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
                     required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
                     required("NODE_BOOT_LIGHT_ACCOUNT_ID")?,
+                    required("NODE_BOOT_W10_ACCOUNT_ID")?,
+                    required("NODE_BOOT_C16C_ACCOUNT_ID")?,
                 ])
             } else {
                 None

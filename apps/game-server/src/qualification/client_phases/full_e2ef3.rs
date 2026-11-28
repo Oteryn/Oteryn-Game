@@ -14,6 +14,8 @@ mod e2ei_c;
 
 #[path = "full_e2ef3_e2ei-b.rs"]
 mod full_e2ef3_e2ei_b;
+#[cfg(test)]
+pub(super) use full_e2ef3_e2ei_b::CHAIR as FULL_I09_CHAIR;
 
 #[path = "full_e2ef3_e2ei-d.rs"]
 mod full_e2ef3_e2ei_d;

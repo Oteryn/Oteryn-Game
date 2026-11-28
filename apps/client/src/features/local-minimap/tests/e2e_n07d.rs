@@ -2,11 +2,13 @@
 //! (`Session::admit`, then `world_map_snapshot()`), feeds the persisted explored minimap through
 //! `Minimap::observe` (`state.rs`); the marker editor (`edit_marker`, `remove_marker`) then works
 //! at the server-reported position. Markers are client-local: no server command carries them.
+//! `n07d-snapshot.bin` supplies walkable coordinates and `n07d-expected.txt` supplies the
+//! server's metadata and counts. The in-memory fixture uses the same payload format.
 use super::*;
 use oteryn_protocol_oteryn::world_map::{
-    CAPABILITY_WORLD_MAP_VIEW_V1, MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
-    STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapViewSnapshot, encode_world_map_snapshot,
-    first_visible_floor_start,
+    CAPABILITY_WORLD_MAP_VIEW_V1, MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader,
+    SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1, STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapViewSnapshot,
+    decode_world_map_snapshot, encode_world_map_snapshot, first_visible_floor_start, in_window,
 };
 use oteryn_protocol_oteryn::world_spatial::{
     ActorPosition, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, WorldSpatialObservation,
@@ -17,8 +19,12 @@ use oteryn_protocol_oteryn::{
     encode_server_accepted, encode_single_chunk_snapshot,
 };
 use oteryn_session::{Admission, CharacterId, Session, read_frame, write_frame};
+use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 use std::time::Duration;
+
+#[path = "e2e_n07d_tests.rs"]
+mod replay_tests;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -85,12 +91,14 @@ fn value<'a>(expected: &'a str, key: &str) -> Result<&'a str, Error> {
         .ok_or_else(|| format!("expected capture line {key} absent").into())
 }
 
-async fn admit(payload: Vec<u8>, revision: u64) -> Result<WorldMapViewSnapshot, Error> {
-    let snapshot = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&payload)
-        .map_err(|error| format!("captured snapshot: {error:?}"))?;
+async fn admit(
+    payload: Vec<u8>,
+    revision: u64,
+    header: MapViewHeader,
+) -> Result<WorldMapViewSnapshot, Error> {
     let spatial = encode_world_spatial(&WorldSpatialObservation {
-        content_generation: snapshot.header.content_generation,
-        actor_position: snapshot.header.origin,
+        content_generation: header.content_generation,
+        actor_position: header.origin,
     });
     let (client, mut server) = tokio::io::duplex(1 << 20);
     let peer = tokio::spawn(async move {
@@ -152,13 +160,33 @@ async fn admit(payload: Vec<u8>, revision: u64) -> Result<WorldMapViewSnapshot, 
         .ok_or_else(|| "admitted session exposes no map snapshot".into())
 }
 
+fn assert_remembered_cells(minimap: &Minimap, walkable: &BTreeSet<CellPosition>) {
+    let remembered: BTreeSet<_> = minimap.cells.keys().copied().collect();
+    assert_eq!(
+        &remembered, walkable,
+        "remembered minimap coordinates differ from captured walkable terrain"
+    );
+}
+
 fn replay() -> Result<(), Error> {
     let (payload, expected) = captured()?;
     let revision: u64 = value(&expected, "revision")?.parse()?;
+    let terrain = decode_world_map_snapshot(&payload)
+        .map_err(|error| format!("captured snapshot: {error:?}"))?;
+    let walkable = terrain
+        .tiles
+        .iter()
+        .filter(|tile| {
+            tile.ground_speed > 0
+                && tile.position.floor >= terrain.header.first_visible_floor
+                && in_window(terrain.header.origin, tile.position)
+        })
+        .map(|tile| (tile.position.floor, tile.position.x, tile.position.y))
+        .collect();
     let map = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(admit(payload, revision))?;
+        .block_on(admit(payload, revision, terrain.header))?;
     let origin: Vec<i32> = value(&expected, "origin")?
         .split(',')
         .map(str::parse)
@@ -177,6 +205,7 @@ fn replay() -> Result<(), Error> {
     let mut minimap = Minimap::default();
     minimap.observe(&map);
     assert_eq!(minimap.cells.len().to_string(), value(&expected, "walkable")?);
+    assert_remembered_cells(&minimap, &walkable);
     let remembered = minimap.cells.clone();
     minimap.observe(&map);
     assert_eq!(minimap.cells, remembered);
@@ -218,11 +247,13 @@ fn replay() -> Result<(), Error> {
 
 #[test]
 fn e2e_n07d_replays_admitted_map_into_the_explored_minimap() -> Result<(), Error> {
-    std::thread::Builder::new()
-        .name("n07d-minimap".into())
-        .stack_size(64 << 20)
-        .spawn(|| replay().map_err(|error| error.to_string()))?
-        .join()
-        .map_err(|_| "N07d minimap test thread panicked")??;
-    Ok(())
+    replay_tests::run()
+}
+
+#[test]
+#[should_panic(expected = "remembered minimap coordinates differ from captured walkable terrain")]
+fn e2e_n07d_rejects_wrong_coordinates_with_the_right_count() {
+    let mut minimap = Minimap::default();
+    minimap.cells.insert((7, 100, 200), 1);
+    assert_remembered_cells(&minimap, &BTreeSet::from([(7, 99, 200)]));
 }

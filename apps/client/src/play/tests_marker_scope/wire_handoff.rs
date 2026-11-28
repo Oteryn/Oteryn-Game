@@ -319,3 +319,200 @@ fn idle_handoff_discards_queued_source_modal_answer() -> Result<(), Error> {
         Ok(())
     })
 }
+
+#[test]
+fn party_membership_notice_from_wire_retries_after_activity_scope_discards_queued_query()
+-> Result<(), Error> {
+    use oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
+    use oteryn_protocol_oteryn::party::{
+        self, CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1, CAPABILITY_PARTY_V1,
+        COMMAND_TYPE_PARTY_QUERY, PartyDisposition, PartyMembershipChange, PartyMembershipNotice,
+        PartyResult,
+    };
+    use oteryn_session::activity_scope::{
+        ActivityScope, ActivityScopeSnapshot, encode_activity_scope,
+    };
+    use std::time::Instant;
+
+    scenario(async {
+        let caps = &[
+            CAPABILITY_PARTY_V1,
+            wire::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
+            CAPABILITY_BOSS_ENCOUNTER_V1,
+            CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
+        ];
+        let (client, mut peer) = tokio::io::duplex(64 * 1024);
+        let (session, joined) = tokio::join!(admit(client, caps), join(&mut peer, caps));
+        joined?;
+        let session = session?;
+        let mut view = super::super::PlayView::from_join(session.join_snapshot())?;
+        let (link, commands, outbox) = play_channel();
+        let task = tokio::spawn(run_session(session, commands, outbox));
+        while !link.party_panel().selected {
+            tokio::task::yield_now().await;
+        }
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        assert!(link.party_panel().pending.is_none());
+
+        let bytes = party::encode_party_membership_notice(PartyMembershipNotice {
+            member_handle: 9,
+            change: PartyMembershipChange::Left,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        write_frame(
+            &mut peer,
+            &wire::encode_state_delta(1, 1, 57, 1, 2, 2, &bytes)?,
+        )
+        .await?;
+        while link.party_panel().pending.is_none() {
+            view.tick(&link).map_err(|error| format!("{error:?}"))?;
+            tokio::task::yield_now().await;
+        }
+        let refused =
+            party::encode_party_result(&PartyResult::refused(PartyDisposition::Unavailable))
+                .map_err(|error| format!("{error:?}"))?;
+        for sequence in 2..=3 {
+            let frame = read_frame(&mut peer).await?;
+            let command = wire::decode_wire_envelope(&frame)?.client_command(1)?;
+            assert_eq!(command.command_type, COMMAND_TYPE_PARTY_QUERY);
+            assert!(command.payload.is_empty());
+            write_frame(
+                &mut peer,
+                &wire::encode_command_result(
+                    1,
+                    sequence,
+                    command.command_id,
+                    wire::CommandStatus::Accepted,
+                    &refused,
+                )?,
+            )
+            .await?;
+            while link.party_panel().pending.is_some() {
+                tokio::task::yield_now().await;
+            }
+            assert!(link.party_panel().state.is_none());
+            if sequence == 2 {
+                link.party_notice_refresh(Instant::now() + Duration::from_secs(1));
+            }
+        }
+
+        // Hold the loop in a source exchange while the third query is queued.
+        link.commands
+            .send(PlayCommand::Step(crate::input::StepDir::North))?;
+        let frame = read_frame(&mut peer).await?;
+        assert_eq!(
+            wire::decode_wire_envelope(&frame)?
+                .client_command(1)?
+                .command_type,
+            1
+        );
+        let retry = Instant::now() + Duration::from_secs(2);
+        link.party_notice_refresh(retry);
+        assert!(link.party_panel().pending.is_some());
+
+        let scope = encode_activity_scope(&ActivityScopeSnapshot {
+            handoff: id(9),
+            source_session: id(1),
+            session: id(5),
+            scope: ActivityScope::Instance {
+                world: id(2),
+                instance: id(6),
+            },
+            scope_generation: 2,
+            connection_generation: 1,
+            lease_generation: 2,
+            selection: caps.to_vec(),
+            requires_ack: false,
+        })
+        .map_err(|error| format!("{error:?}"))?;
+        snapshot(
+            &mut peer,
+            4,
+            &[DomainSnapshot {
+                domain_id: 99,
+                revision: 1,
+                snapshot_type: 1,
+                payload: &scope,
+            }],
+        )
+        .await?;
+        snapshot(
+            &mut peer,
+            0,
+            &[
+                DomainSnapshot {
+                    domain_id: 1,
+                    revision: 1,
+                    snapshot_type: 1,
+                    payload: &spatial(200),
+                },
+                DomainSnapshot {
+                    domain_id: 57,
+                    revision: 1,
+                    snapshot_type: 1,
+                    payload: wire::zones_nologout::SERVER_MESSAGES_EMPTY_SNAPSHOT,
+                },
+                DomainSnapshot {
+                    domain_id: 99,
+                    revision: 1,
+                    snapshot_type: 1,
+                    payload: &scope,
+                },
+            ],
+        )
+        .await?;
+        while !lock(&link.mailbox).scope_pending {
+            tokio::task::yield_now().await;
+        }
+        assert!(link.party_panel().pending.is_none());
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        while !link.party_panel().selected {
+            tokio::task::yield_now().await;
+        }
+        link.party_notice_refresh(retry);
+        assert!(
+            link.party_panel().pending.is_some(),
+            "discarded query spent the last attempt"
+        );
+        let frame = read_frame(&mut peer).await?;
+        let command = wire::decode_wire_envelope(&frame)?.client_command(1)?;
+        assert_eq!(command.command_id, 1);
+        assert_eq!(command.command_type, COMMAND_TYPE_PARTY_QUERY);
+        assert!(command.payload.is_empty());
+
+        let mut roster = PartyResult::refused(PartyDisposition::Ok);
+        roster.members.push(party::PartyEntry {
+            channel: None,
+            list: Vec::new(),
+            handle: 7,
+            name: "Remaining member".into(),
+            leader: true,
+            expires_at: 0,
+            party_spell_remaining_ms: None,
+        });
+        let accepted = party::encode_party_result(&roster).map_err(|error| format!("{error:?}"))?;
+        write_frame(
+            &mut peer,
+            &wire::encode_command_result(
+                1,
+                1,
+                command.command_id,
+                wire::CommandStatus::Accepted,
+                &accepted,
+            )?,
+        )
+        .await?;
+        while link.party_panel().pending.is_some() {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(link.party_panel().state, Some(roster));
+        link.party_notice_refresh(retry + Duration::from_secs(1));
+        assert!(
+            link.party_panel().pending.is_none(),
+            "accepted roster left a refresh owed"
+        );
+        drop(link);
+        task.await?;
+        Ok(())
+    })
+}

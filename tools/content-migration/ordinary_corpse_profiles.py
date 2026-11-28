@@ -15,6 +15,9 @@ PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
 # Native goal/Bank Robbery owns the two late Elf stages. Quest corpse policy
 # owns the three butterfly roots and their terminal remains.
 PUBLISHED_GROUND_PICKUP = {
+    3994: False,
+    3995: False,
+    3996: False,
     4162: False,
     4163: False,
     4378: True,
@@ -126,6 +129,8 @@ def preserve_published_ground_custody(item, prior, record):
 
 
 def admit(root, generated, path, manifest_path, order, canonical, capacity_projections):
+    from quest_corpse_profiles import RAT_STAGES
+
     source = items.source
     raw = (root / CAPTURE / "items.xml").read_bytes()
     appearances = (root / items.CLIENT).read_bytes()
@@ -228,6 +233,16 @@ def admit(root, generated, path, manifest_path, order, canonical, capacity_proje
             raise ValueError(f"Crystal corpse is not a single Item: {item}")
         if unresolved:
             record["semantics"]["temporal"] = source.U
+        if item in RAT_STAGES:
+            # The Global Rat owner qualifies the visible stages before this
+            # Crystal overlay. Keep its floor-only custody and container facts.
+            prior = current[str(item)]["semantics"]
+            record["semantics"]["physical"]["value"]["weight"] = source.K(RAT_STAGES[item][3])
+            record["semantics"]["container"] = copy.deepcopy(prior["container"])
+            if item == 3995:
+                record["semantics"]["classification"]["value"]["item_type"] = copy.deepcopy(
+                    prior["classification"]["value"]["item_type"]
+                )
         preserve_published_ground_custody(item, current.get(str(item)), record)
         # The donor's default zero for Lost Time and its 30-unit red gem differ
         # from the Global items. Keep the canonical weight in both custody paths.

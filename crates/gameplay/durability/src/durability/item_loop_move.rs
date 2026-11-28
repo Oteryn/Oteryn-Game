@@ -166,7 +166,13 @@ pub enum LoopMoveRefusal {
     NotSupported,
     Overweight,
     WeightUnknown,
+    NotPickupable,
     Rejected,
+}
+
+/// The movable Ground stages of the Rat materialization chain.
+pub fn rat_drag_stage(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i3994" | "oteryn:item.tibia.i3995" | "oteryn:item.tibia.i3996")
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1194,12 +1200,14 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                 game_ordinary_corpse_drag_source(i.item_instance_id) AS source_corpse_drag, \
                 game_carried_corpse_transform_source(i.item_instance_id) AS carried_transform, \
                 EXISTS (SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id) AS corpse_has_loot, \
+                EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS materialized_corpse, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 i.definition_production_key=$2 AND game_item_loop_map_mint_source(i.item_instance_id) AS fixed_map_cask, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup, \
-                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
+                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse, \
+                COALESCE(game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$3::text::numeric,g.stack_ordinal),false) AS historical_rat_custody \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1210,6 +1218,7 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
     )
     .bind(request.item.as_slice())
     .bind(super::map_item_mint::MAP_DISPENSER_KEY)
+    .bind(fence.scope_ownership_generation.get().to_string())
     .fetch_one(&mut **tx)
     .await?;
     let entry_character = optional_uuid(row.try_get("entry_character")?)?;
@@ -1237,6 +1246,9 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
             return refuse(LoopMoveRefusal::Stale);
         }
     }
+    let native_corpse: bool = row.try_get("native_corpse")?;
+    let rat_stage = rat_drag_stage(&definition.production_key);
+    let rat_corpse = native_corpse && rat_stage;
     let source = if let Some(quick_loot::MoveSource::Corpse { id, cell }) = quick_source {
         quick_loot::assert_corpse_source(tx, fence, request.item, id, cell).await?;
         SourceKind::Corpse
@@ -1295,11 +1307,14 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         if row.try_get::<bool, _>("fixed_map_cask")? {
             return refuse(LoopMoveRefusal::NotSupported);
         }
-        let native_corpse = row.try_get::<bool, _>("native_corpse")?;
         if !matches!(request.destination, LoopDestination::Ground(_))
-            && (native_corpse || row.try_get::<bool, _>("corpse_has_loot")?)
+            && (native_corpse || row.try_get::<bool, _>("corpse_has_loot")? || (rat_stage && row.try_get::<bool, _>("materialized_corpse")?))
         {
-            return refuse(LoopMoveRefusal::NotSupported);
+            return refuse(if rat_stage {
+                LoopMoveRefusal::NotPickupable
+            } else {
+                LoopMoveRefusal::NotSupported
+            });
         }
         let source_corpse_drag = matches!(request.destination, LoopDestination::Ground(_))
             && row.try_get::<bool, _>("source_corpse_drag")?;
@@ -1325,19 +1340,21 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         if let LoopDestination::Ground(to) = &request.destination {
             let source_map: String = row.try_get("ground_map")?;
             let loop_drop: bool = row.try_get("loop_drop")?;
+            if rat_corpse && loop_drop
+                && row.try_get::<String, _>("ground_generation")?
+                    != fence.scope_ownership_generation.get().to_string()
+                && !row.try_get::<bool, _>("historical_rat_custody")?
+            {
+                return refuse(LoopMoveRefusal::Stale);
+            }
             // A corpse MINT binds the native pin's revision-string digest.
             // Its first loop drop binds the underlying bundle revision instead.
-            let native_map = (native_corpse && !loop_drop)
-                || (source_plain_corpse || source_corpse_drag)
-                    && !loop_drop
-                    && source_map
-                        == format!(
-                            "sha256:{}",
-                            sha2::Sha256::digest(to.map_revision.as_bytes())
-                                .iter()
-                                .map(|byte| format!("{byte:02x}"))
-                                .collect::<String>()
-                        );
+            let native_revision = || {
+                let digest = sha2::Sha256::digest(to.map_revision.as_bytes());
+                format!("sha256:{}", digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>())
+            };
+            let native_map = (native_corpse && !loop_drop && !rat_corpse)
+                || ((rat_corpse || (!loop_drop && (source_plain_corpse || source_corpse_drag))) && source_map == native_revision());
             let source_content: String = row.try_get("ground_content")?;
             let source_context: Vec<u8> = row.try_get("ground_context")?;
             // Same-map ordinary Ground items stay in the overlay across a content-only repin.
@@ -1349,7 +1366,7 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                 && !source_corpse_drag
                 && source_map == to.map_revision
                 && source_content != to.content_revision;
-            if (source_map != to.map_revision && !native_map)
+            if ((rat_corpse || source_map != to.map_revision) && !native_map)
                 || (!retained_drop
                     && (source_content != to.content_revision
                         || ((loop_drop || native_corpse || source_plain_corpse || source_corpse_drag)
@@ -1369,7 +1386,7 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let facts = if row.try_get::<bool, _>("native_corpse")? {
+    let facts = if native_corpse {
         content.loop_native_corpse_facts(&definition)
     } else if source == SourceKind::Ground
         && matches!(request.destination, LoopDestination::Ground(_))
@@ -1459,6 +1476,20 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         None
     };
     let placed_item = fresh_id.unwrap_or(request.item);
+
+    let target = match target {
+        Target::Ground(mut ground) if source == SourceKind::Ground && rat_corpse => {
+            // Rat custody uses the native tile address for both MINT and every move,
+            // so corpse open, loot, and Animate Dead can share the same lookup.
+            let cell = super::spell_items_abi::decode_ground_cell(&ground.spatial_position)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let floor = i16::try_from(-cell.z).map_err(|_| DurabilityError::InvalidStoredState)?;
+            ground.spatial_position[8..].copy_from_slice(&floor.to_be_bytes());
+            ground.map_revision = row.try_get("ground_map")?;
+            Target::Ground(ground)
+        }
+        target => target,
+    };
 
     let (to_kind, to_parent, to_capacity, to_position) = match &target {
         Target::Container {
@@ -2417,7 +2448,8 @@ impl DurabilityRoot {
                        JOIN game_item_instances target ON target.item_instance_id=encode($9,'hex')::uuid \
                       WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 \
                         AND i.world_id=encode($2,'hex')::uuid AND g.scope_kind=$10 AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($11,'hex')::uuid \
-                        AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+                        AND (g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+                             OR game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$4::text::numeric,g.stack_ordinal)) \
                         AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
                             = ($5,$6,$7,$8) \
                         AND (game_item_loop_drop_ref(g.corpse_ref) \
@@ -2551,7 +2583,7 @@ impl DurabilityRoot {
                                LEFT JOIN game_spell_item_audit_outbox sa ON sa.transaction_id=sr.transaction_id \
                                 AND sa.event_id=sr.event_id AND sa.envelope=sr.intent AND sa.envelope_sha256=sr.binding AND sa.created_xact_id=sr.created_xact_id \
                                LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=fl.transaction_id AND fc.source_ordinal=fl.ordinal \
-                                 AND fc.content_digest=fl.content_generation_digest AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
+                                 AND cr.item_instance_id IS NULL AND fc.content_digest=fl.content_generation_digest AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                               WHERE g.world_id = encode($1,'hex')::uuid \
                                 AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
                                 AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \

@@ -11,9 +11,9 @@ use super::fresh_admission::{
     CurrentCapabilityCheck, FreshAdmissionStore, commit_session_use, unused_session_revision,
 };
 use super::house_scope_handoff::{
-    HouseCommitOutcome, HouseEntryCommit, HouseEntryRequest, HouseHandoffDirection, HouseId,
-    HousePrepareOutcome, commit_house_entry_in_transaction, prepare_house_entry_in_transaction,
-    release_house_entry_tile_in_transaction,
+    HouseCommitOutcome, HouseEntryCommit, HouseEntryRefusal, HouseEntryRequest,
+    HouseHandoffDirection, HouseId, HousePrepareOutcome, commit_house_entry_in_transaction,
+    prepare_house_entry_in_transaction, release_house_entry_tile_in_transaction,
 };
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
@@ -39,22 +39,31 @@ pub struct HouseTransferRequest {
     pub last_position: LastPositionRecord,
 }
 
+pub enum HouseTransferOutcome {
+    Committed(HouseTransferAck, Vec<u8>),
+    Refused(HouseEntryRefusal),
+    Failed(DurabilityError),
+}
+
 impl DurabilityRoot {
     /// PREPARE and COMMIT share the source freeze and one transaction. Exit has
     /// its own direction in 0215 and never relaxes 0074's direction CHECK.
+    /// A holder checkout error is returned before any transaction starts.
+    /// Errors from the transaction itself require source proof or recovery.
     pub async fn commit_house_transfer(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         mut request: HouseTransferRequest,
         capabilities: CurrentCapabilityCheck,
-    ) -> Result<(HouseTransferAck, Vec<u8>), DurabilityError> {
+    ) -> Result<HouseTransferOutcome, DurabilityError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let root = self.clone();
-        self.try_issue_semantic_pass()?
+        let result = self
+            .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -63,7 +72,9 @@ impl DurabilityRoot {
                     if !prove_current_incarnation(&mut tx, &node).await? {
                         return Err(DurabilityError::Unavailable);
                     }
-                    prepare(&mut tx, &node, &mut request).await?;
+                    if let Some(refusal) = prepare(&mut tx, &node, &mut request).await? {
+                        return Ok(HouseTransferOutcome::Refused(refusal));
+                    }
                     let payload = encode_house_transfer_ack(&request.ack)
                         .map_err(|_| DurabilityError::Unavailable)?;
                     apply(
@@ -77,10 +88,11 @@ impl DurabilityRoot {
                     )
                     .await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok((request.ack, payload))
+                    Ok(HouseTransferOutcome::Committed(request.ack, payload))
                 })
             })
-            .await
+            .await;
+        Ok(result.unwrap_or_else(HouseTransferOutcome::Failed))
     }
 }
 
@@ -88,12 +100,12 @@ async fn prepare(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     request: &mut HouseTransferRequest,
-) -> Result<(), DurabilityError> {
+) -> Result<Option<HouseEntryRefusal>, DurabilityError> {
     if request.ack.house.is_none() {
-        return Ok(());
+        return Ok(None);
     }
     let fact = node.fact();
-    let generation: String = sqlx::query_scalar(
+    let generation: Option<String> = sqlx::query_scalar(
         "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
          WHERE scope_key=$1 AND state=1 AND holder_node_id=encode($2,'hex')::uuid \
            AND holder_registration_revision=$3::text::numeric FOR SHARE",
@@ -101,19 +113,28 @@ async fn prepare(
     .bind(request.house.scope_key())
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())
-    .fetch_one(&mut **tx)
+    .fetch_optional(&mut **tx)
     .await?;
+    let Some(generation) = generation else {
+        return Ok(Some(HouseEntryRefusal::HouseClosed));
+    };
     request.ack.scope_generation = generation
         .parse()
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let access = sqlx::query(
-        "SELECT acl_revision::text,guild_revisions FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) LIMIT 1",
+        "SELECT acl_revision::text,guild_revisions,content_fenced FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid)",
     )
     .bind(request.house.world_id().as_bytes().as_slice())
     .bind(request.house.house_key())
     .bind(request.fence.character_id.as_bytes().as_slice())
-    .fetch_one(&mut **tx)
+    .fetch_optional(&mut **tx)
     .await?;
+    let Some(access) = access else {
+        return Ok(Some(HouseEntryRefusal::NoAccess));
+    };
+    if access.try_get::<Option<bool>, _>("content_fenced")? != Some(false) {
+        return Ok(Some(HouseEntryRefusal::HouseClosed));
+    }
     let acl: String = access.try_get("acl_revision")?;
     let prepared_at: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -145,8 +166,12 @@ async fn prepare(
         prepared_at,
     };
     match prepare_house_entry_in_transaction(tx, node, &entry).await {
-        Ok(HousePrepareOutcome::Prepared(_) | HousePrepareOutcome::Replayed(_)) => Ok(()),
-        _ => Err(DurabilityError::Unavailable),
+        Ok(HousePrepareOutcome::Prepared(_) | HousePrepareOutcome::Replayed(_)) => Ok(None),
+        Ok(HousePrepareOutcome::Refused(reason)) => Ok(Some(reason)),
+        Err(error) => Err(match error {
+            super::house_scope_handoff::HouseHandoffError::Unavailable(error) => error,
+            _ => DurabilityError::Unavailable,
+        }),
     }
 }
 

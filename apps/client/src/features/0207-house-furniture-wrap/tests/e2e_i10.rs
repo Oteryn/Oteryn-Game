@@ -1,9 +1,20 @@
 //! I10 replay: server house-furniture wrap replies applied by the production client reducer.
 //!
 //! The consumer is `apply` in `apps/client/src/features/0207-house-furniture-wrap/protocol.rs`
-//! (capability 207, command 402). The request is the exact wire form the capture phase sent.
+//! (capability 207, command 402). Live captures include the sent request payload, the observed
+//! command status as a big-endian u32, and the server reply payload.
+use std::path::{Path, PathBuf};
+
 use super::*;
 use oteryn_client_runtime::raw_feature::house_wrap::{Action, Refusal, Reply, Request};
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+const PROBES: [(&str, Action, u64, Refusal); 3] = [
+    ("wrap", Action::Wrap, 0, Refusal::NotInHouse),
+    ("unwrap", Action::Unwrap, 0, Refusal::NotInHouse),
+    ("refusal", Action::Wrap, u64::MAX, Refusal::Stale),
+];
 
 fn hex(text: &str) -> Vec<u8> {
     (0..text.len() / 2)
@@ -11,16 +22,13 @@ fn hex(text: &str) -> Vec<u8> {
         .collect()
 }
 
-/// The refusal text the player must see, stated independently of the reducer.
-fn visible(code: u8) -> &'static str {
-    match code {
-        1 => "Enter your house first",
-        2 => "You cannot edit this house",
-        3 => "This item cannot be wrapped or placed",
-        4 => "Furniture or house access changed. Refresh the list",
-        5 => "The placement is blocked. Move and refresh the list",
-        6 => "Your backpack is full",
-        _ => "unexpected reply code",
+fn decode_status(bytes: &[u8]) -> TestResult<CommandStatus> {
+    match u32::from_be_bytes(bytes.try_into()?) {
+        1 => Ok(CommandStatus::Accepted),
+        2 => Ok(CommandStatus::Rejected),
+        3 => Ok(CommandStatus::DuplicateReplay),
+        4 => Ok(CommandStatus::DuplicateOutcomeExpired),
+        code => Err(format!("unknown command status {code}").into()),
     }
 }
 
@@ -60,57 +68,124 @@ fn apply_reply(command: &FeatureCommand, status: CommandStatus, payload: &[u8]) 
     panel
 }
 
-#[test]
-fn e2e_i10_replays_wrap_unwrap_and_stale_refusals() -> Result<(), Box<dyn std::error::Error>> {
-    // (action, expected revision, server reply payload) for the wrap, unwrap and stale requests.
-    let captured = if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        let expected = std::fs::read_to_string(path.join("i10-expected.txt"))?;
-        let mut replies = Vec::new();
-        for (key, name, action, revision) in [
-            ("wrap", "i10-wrap.bin", Action::Wrap, 0),
-            ("unwrap", "i10-unwrap.bin", Action::Unwrap, 0),
-            ("refusal", "i10-refusal.bin", Action::Wrap, u64::MAX),
-        ] {
-            let payload = std::fs::read(path.join(name))?;
-            let line = expected
+fn replay_probes(capture: Option<&Path>) -> TestResult {
+    let manifest = capture
+        .map(|path| std::fs::read_to_string(path.join("i10-expected.txt")))
+        .transpose()?;
+    let capture = capture.zip(manifest.as_deref());
+    for (key, action, revision, refusal) in PROBES {
+        let (command, status_bytes, payload) = if let Some((path, manifest)) = capture {
+            let command = FeatureCommand {
+                capability: wire::CAPABILITY_HOUSE_FURNITURE_WRAP_V1,
+                kind: wire::COMMAND_WRAP,
+                payload: std::fs::read(path.join(format!("i10-{key}-request.bin")))?,
+            };
+            let status = std::fs::read(path.join(format!("i10-{key}-status.bin")))?;
+            let payload = std::fs::read(path.join(format!("i10-{key}.bin")))?;
+            let line = manifest
                 .lines()
                 .find_map(|line| line.strip_prefix(&format!("{key}=")))
                 .ok_or("expected capture line absent")?;
             assert_eq!(hex(line), payload, "{key} capture disagrees");
-            replies.push((action, revision, payload));
-        }
-        replies
-    } else {
-        vec![
-            (Action::Wrap, 0, Reply::Refused(Refusal::NotInHouse).encode()),
-            (Action::Unwrap, 0, Reply::Refused(Refusal::NotInHouse).encode()),
-            (Action::Wrap, u64::MAX, Reply::Refused(Refusal::Stale).encode()),
-        ]
-    };
-    for (action, revision, payload) in &captured {
-        let [code] = payload.as_slice() else {
-            return Err("captured refusal is not one byte".into());
+            (command, status, payload)
+        } else {
+            (
+                request(action, revision),
+                (CommandStatus::Rejected as u32).to_be_bytes().to_vec(),
+                Reply::Refused(refusal).encode(),
+            )
         };
-        let panel = apply_reply(&request(*action, *revision), CommandStatus::Rejected, payload);
-        assert_eq!(panel.feedback, visible(*code));
+        let decoded = Request::decode(&command.payload)
+            .ok_or_else(|| format!("{key}: invalid furniture request"))?;
+        // The live row supplies the item, access revision and position from its own setup.
+        assert_eq!(decoded.action, action, "{key} request action");
+        assert_eq!(
+            decoded.expected_revision, revision,
+            "{key} request revision"
+        );
+        let status = decode_status(&status_bytes)?;
+        assert_eq!(status, CommandStatus::Rejected, "{key} command status");
+        let reply =
+            Reply::decode(&payload).ok_or_else(|| format!("{key}: invalid furniture reply"))?;
+        if reply != Reply::Refused(refusal) {
+            return Err(format!("{key}: expected {refusal:?}, got {reply:?}").into());
+        }
+        let panel = apply_reply(&command, status, &payload);
+        assert_eq!(panel.feedback, refusal_feedback(refusal), "{key} feedback");
         assert!(panel.catalogue.is_none());
     }
+    Ok(())
+}
+
+#[test]
+fn e2e_i10_rejects_not_in_house_for_the_stale_probe() -> TestResult {
+    let capture = tempfile::tempdir()?;
+    let path = capture.path();
+    std::fs::write(
+        path.join("i10-expected.txt"),
+        "wrap=01\nunwrap=01\nrefusal=01\n",
+    )?;
+    for (key, action, revision, _) in PROBES {
+        std::fs::write(
+            path.join(format!("i10-{key}-request.bin")),
+            request(action, revision).payload,
+        )?;
+        std::fs::write(
+            path.join(format!("i10-{key}-status.bin")),
+            (CommandStatus::Rejected as u32).to_be_bytes(),
+        )?;
+        std::fs::write(
+            path.join(format!("i10-{key}.bin")),
+            Reply::Refused(Refusal::NotInHouse).encode(),
+        )?;
+    }
+    let Err(error) = replay_probes(Some(path)) else {
+        return Err("replay accepted NotInHouse for the stale probe".into());
+    };
+    assert_eq!(
+        error.to_string(),
+        "refusal: expected Stale, got Refused(NotInHouse)"
+    );
+    Ok(())
+}
+
+#[test]
+fn e2e_i10_replays_wrap_unwrap_and_stale_refusals() -> TestResult {
+    let capture = std::env::var_os("E2E_ALL_CAPTURE_DIR").map(PathBuf::from);
+    replay_probes(capture.as_deref())?;
+    assert_eq!(
+        refusal_feedback(Refusal::NotInHouse),
+        "Enter your house first"
+    );
+    assert_eq!(
+        refusal_feedback(Refusal::Stale),
+        "Furniture or house access changed. Refresh the list"
+    );
 
     // The same refusal bytes on an accepted command are not a refusal, and a committed reply on a
     // rejected command is not a success.
     let command = request(Action::Wrap, 0);
-    let refusal = &captured[0].2;
+    let refusal = Reply::Refused(Refusal::NotInHouse).encode();
     assert_eq!(
-        apply_reply(&command, CommandStatus::Accepted, refusal).feedback,
+        apply_reply(&command, CommandStatus::Accepted, &refusal).feedback,
         "Invalid furniture response"
     );
     assert_eq!(
-        apply_reply(&command, CommandStatus::Rejected, &Reply::Committed(7).encode()).feedback,
+        apply_reply(
+            &command,
+            CommandStatus::Rejected,
+            &Reply::Committed(7).encode()
+        )
+        .feedback,
         "Invalid furniture response"
     );
     assert_eq!(
-        apply_reply(&command, CommandStatus::Accepted, &Reply::Committed(7).encode()).feedback,
+        apply_reply(
+            &command,
+            CommandStatus::Accepted,
+            &Reply::Committed(7).encode()
+        )
+        .feedback,
         "Furniture updated (revision 7). Refresh the list"
     );
     // Truncated and unknown replies are invalid.
@@ -135,7 +210,7 @@ fn e2e_i10_replays_wrap_unwrap_and_stale_refusals() -> Result<(), Box<dyn std::e
             command_id: 1,
             server_sequence: 1,
             status: CommandStatus::Rejected,
-            payload: refusal.clone(),
+            payload: refusal,
         },
     );
     assert!(panel.pending && panel.feedback.is_empty());

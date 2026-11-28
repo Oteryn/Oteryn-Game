@@ -115,3 +115,82 @@ pub(in crate::gameplay_transport) async fn initialize_build(
     };
     Ok((facts, after))
 }
+
+/// Predict both block-budget outcomes of the first unarmed swing for a fixture command.
+/// The test chooses an input with the required damage and still dispatches the real swing.
+pub(in super::super) fn fixture_fist_damage(
+    runtime: &ChannelRuntimeV1,
+    (actor, session): (
+        crate::foundation::ExactActorRef,
+        crate::foundation::GameSessionId,
+    ),
+    state: &crate::spell::cast::PlayerSpellState,
+    target: crate::foundation::ExactActorRef,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+) -> TestResult<impl Fn(u64) -> Option<(i64, i64)> + use<>> {
+    use oteryn_gameplay_combat_rules::{
+        attack::{AttackConstants, formulas::player_monk_formula, player_fist_formula},
+        resolution::{
+            creature_melee_mitigation, creature_physical_resistance, swing_draw, swing_mitigated,
+        },
+    };
+    use oteryn_simulation_determinism::GameplayDecisionRoot;
+
+    let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+    let facts = state.character_facts();
+    let skills = state
+        .swing_skills(0, now.get())
+        .flatten()
+        .ok_or("fixture fist skills")?;
+    let formula = if matches!(
+        facts.vocation,
+        crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+    ) {
+        player_monk_formula(constants)
+    } else {
+        player_fist_formula(constants)
+    };
+    let (minimum, maximum) = formula
+        .bounds(&crate::spell::formula::FormulaInputs {
+            level: facts.level,
+            magic_level: facts.magic_level,
+            base_power: None,
+            attack_skill: skills.attack,
+            attack_value: constants.fist.attack,
+            attack_factor: AttackConstants::PLAYER_ATTACK_FACTOR,
+            shielding_skill: skills.shielding,
+            shield_defense: None,
+        })
+        .map_err(debug)?;
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let snapshot = runtime.companion_snapshot(target).map_err(debug)?;
+    let defense = runtime
+        .effective_creature_defense(&snapshot)
+        .map_err(debug)?;
+    let policy = snapshot.state.policy;
+    let armor = policy.armor.ok_or("fixture creature armor")?;
+    Ok(move |command| {
+        let attacker = actor.placement_identity();
+        let lineage = (*session.as_bytes(), command);
+        let raw = swing_draw(
+            &root,
+            attacker,
+            lineage,
+            0,
+            b"damage-draw",
+            "attack.damage",
+            minimum,
+            maximum,
+        )?;
+        let damage = |defense| {
+            let defended =
+                swing_mitigated(&root, constants, attacker, lineage, 0, raw, defense, 0)?;
+            let resisted = creature_physical_resistance(&policy, defended)?;
+            let armored = swing_mitigated(
+                &root, constants, attacker, lineage, 0, resisted, None, armor,
+            )?;
+            creature_melee_mitigation(&policy, armored)
+        };
+        Some((damage(Some((defense / 2, defense)))?, damage(None)?))
+    })
+}

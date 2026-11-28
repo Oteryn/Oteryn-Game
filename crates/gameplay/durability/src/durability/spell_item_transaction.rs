@@ -1364,6 +1364,7 @@ SELECT ARRAY[r.world_id::text,r.channel_id::text,r.creature_actor_generation::te
              g.runtime_scope_ownership_generation=$11::text::numeric
                OR CASE WHEN g.runtime_scope_ownership_generation<$11::text::numeric
                    THEN retained.ordinary_drop
+                       OR COALESCE(game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$11::text::numeric,g.stack_ordinal),false)
                        OR ($9 IS NOT NULL AND game_ordinary_corpse_drag_source(g.item_instance_id))
                    ELSE false END] AS ground_admission,
        g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,
@@ -1547,6 +1548,7 @@ pub async fn locked_tile_rows_for_scope(
         .bind(&target.placement_context)
         .bind(scope_kind)
         .bind(instance.map(|id| id.to_vec()))
+        .bind(authority.ownership_generation.to_string())
         .bind(other_cell)
         .bind(other_map)
         .bind(authority.ownership_generation.to_string())

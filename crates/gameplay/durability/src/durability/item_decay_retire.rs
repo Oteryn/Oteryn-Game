@@ -149,6 +149,26 @@ pub struct CorpseDecayDeadline {
     pub loop_ground_spatial_position: Option<Vec<u8>>,
 }
 
+impl CorpseDecayDeadline {
+    /// Rat drags retain native coordinates. Ordinary drops store the loop floor.
+    pub fn relocated_position(&self) -> Option<crate::foundation::MovementLocalPosition> {
+        let cell = super::spell_items_abi::decode_ground_cell(
+            self.loop_ground_spatial_position.as_deref()?,
+        ).ok()?;
+        let floor = i16::try_from(cell.z).ok()?;
+        let floor = if super::item_loop_move::rat_drag_stage(&self.definition.production_key) {
+            floor
+        } else {
+            floor.checked_neg()?
+        };
+        Some(crate::foundation::MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor,
+        })
+    }
+}
+
 /// The recovery query's result: live Ground corpses and permanent remains,
 /// oldest first, with the database clock from the same snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]

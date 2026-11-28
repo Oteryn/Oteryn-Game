@@ -69,6 +69,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 Ok(_) => {
                     live.retain(|item| *item != corpse.corpse_item_instance_id);
+                    if corpse.loop_ground_spatial_position.is_some() {
+                        self.states.loop_ground.invalidate();
+                    }
                     if let Ok(mut cursors) = self.states.background_cursors.lock() {
                         cursors.insert("corpse", start + 1);
                     }
@@ -101,18 +104,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 }
-                if let Some(bytes) = &corpse.loop_ground_spatial_position
-                    && let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(bytes)
-                    && let Some(floor) = i16::try_from(cell.z).ok().and_then(i16::checked_neg)
-                {
-                    let _ = runtime.relocate_corpse_item(
-                        corpse.corpse_item_instance_id,
-                        crate::foundation::MovementLocalPosition {
-                            x: cell.x,
-                            y: cell.y,
-                            floor,
-                        },
-                    );
+                if let Some(position) = corpse.relocated_position() {
+                    let _ = runtime.relocate_corpse_item(corpse.corpse_item_instance_id, position);
                 }
                 let _ = runtime.refresh_corpse_item(
                     corpse.corpse_item_instance_id,

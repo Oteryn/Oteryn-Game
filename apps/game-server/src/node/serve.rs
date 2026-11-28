@@ -110,6 +110,9 @@ const AUDIT_RUN_CAP: u32 = 64;
 /// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
 /// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
 const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
+#[cfg(feature = "qualification-spawn")]
+const FORGE_CONTROL_REQUEST_BYTES: usize =
+    qualification_fixture::FORGE_SPAWN_PREFIX.len() + 36 + 1 + 128 + 12 + 12 + 7 + 13 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -2977,9 +2980,17 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
 }
 
 async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
-    let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
-    let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
+    #[cfg(feature = "qualification-spawn")]
+    let read_bound = FORGE_CONTROL_REQUEST_BYTES;
+    #[cfg(not(feature = "qualification-spawn"))]
+    let read_bound = CONTROL_REQUEST_BYTES;
+    let mut request = Vec::with_capacity(read_bound);
+    let mut limited = (&mut *stream).take(read_bound as u64 + 1);
     limited.read_to_end(&mut request).await.ok()?;
+    #[cfg(feature = "qualification-spawn")]
+    if request.starts_with(qualification_fixture::FORGE_SPAWN_PREFIX) {
+        return (request.len() <= read_bound).then_some(request);
+    }
     if request.len() > CONTROL_REQUEST_BYTES {
         return None;
     }
@@ -3059,6 +3070,7 @@ async fn control_loop(
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
+    premium: Option<&crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -3088,7 +3100,7 @@ async fn control_loop(
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
                     Box::pin(qualification_fixture::prepare(
-                        root, authority, proof, config, native, &request,
+                        root, authority, proof, config, native, premium, &request,
                     ))
                     .await
                     .to_owned(),
@@ -3103,7 +3115,14 @@ async fn control_loop(
                     .unwrap_or_else(|| "rejected reason=damage_unavailable".to_owned()),
                     "qualification_damage",
                 ),
-                Some(request) if request.starts_with(b"spawn ") => (
+                #[cfg(any(test, feature = "qualification-spawn"))]
+                Some(request) if request.starts_with(b"inspect-forge ") => (
+                    qualification_fixture::inspect_forge(config, spawn, &request)
+                        .await
+                        .unwrap_or_else(|| "rejected reason=forge_census_unavailable".to_owned()),
+                    "qualification_forge",
+                ),
+                Some(request) if is_control_spawn(&request) => (
                     Box::pin(qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
                     ))
@@ -3128,6 +3147,12 @@ async fn control_loop(
             match event_name {
                 "ops_health" => event_traced("event=ops_health result=served", connection),
                 "qualification_damage" => {}
+                "qualification_forge" => {
+                    event_traced(
+                        &format!("event=qualification_forge DIAGNOSTIC marked={answer}"),
+                        connection,
+                    );
+                }
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);
                 }
@@ -3147,6 +3172,24 @@ async fn control_loop(
             );
         }
     }
+}
+
+fn is_control_spawn(request: &[u8]) -> bool {
+    #[cfg(feature = "qualification-spawn")]
+    if request.starts_with(qualification_fixture::FORGE_SPAWN_PREFIX) {
+        return true;
+    }
+    request.starts_with(b"spawn ")
+}
+
+#[cfg(test)]
+#[test]
+fn forge_spawn_control_route_requires_qualification_spawn_feature() {
+    assert_eq!(
+        is_control_spawn(b"spawn-forge "),
+        cfg!(feature = "qualification-spawn")
+    );
+    assert!(is_control_spawn(b"spawn "));
 }
 
 /// Ordinary Character audit expiry at start and then at a fixed interval

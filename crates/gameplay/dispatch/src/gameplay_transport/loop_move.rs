@@ -79,7 +79,8 @@ impl ItemLoopContent for NativeItemWeights<'_> {
                 | "oteryn:item.tibia.i8140"
                 | "oteryn:item.tibia.i8141"
                 | "oteryn:item.tibia.i8106"
-        ) {
+        ) && !crate::durability::item_loop_move::rat_drag_stage(&definition.production_key)
+        {
             return None;
         }
         let mut facts = generation_item_facts(self.0, definition).ok()?;
@@ -1056,18 +1057,9 @@ async fn publish_current_corpse_custody(
     }
     match current {
         Some(corpse) => {
-            if let Some(bytes) = &corpse.loop_ground_spatial_position {
-                let cell = crate::durability::spell_items_abi::decode_ground_cell(bytes).ok()?;
-                let floor = i16::try_from(-cell.z).ok()?;
+            if corpse.loop_ground_spatial_position.is_some() {
                 runtime
-                    .relocate_corpse_item(
-                        item,
-                        crate::foundation::MovementLocalPosition {
-                            x: cell.x,
-                            y: cell.y,
-                            floor,
-                        },
-                    )
+                    .relocate_corpse_item(item, corpse.relocated_position()?)
                     .ok()?;
             }
         }
@@ -1243,6 +1235,13 @@ pub(super) async fn move_loop_item_with_house_capacity(
         .as_ref()
         .and_then(|ground| ground.ground_entry(&item))
         .map(|(pos, _)| (i32::from(pos.x), i32::from(pos.y), i16::from(pos.floor)));
+    let rat_corpse = ground.as_ref().and_then(|ground| {
+        let MapDefinition::Item(reference) = ground.facts.get(&item)?.definition else {
+            return None;
+        };
+        let (key, _) = index?.definition_at(reference)?;
+        Some(crate::durability::item_loop_move::rat_drag_stage(key))
+    }) == Some(true);
     let actor_at = pins.as_ref().map(|(_, at, ..)| *at);
     let pickup_cell = match (pickup, actor_at) {
         (Some(cell), Some(at)) if in_reach(at, cell) => {
@@ -1261,7 +1260,7 @@ pub(super) async fn move_loop_item_with_house_capacity(
             let Some((base, at, content_revision, placement_context)) = &pins else {
                 return refused(LoopMoveRefusal::NotSupported);
             };
-            if let Some(mailbox) = mailbox {
+            if !rat_corpse && let Some(mailbox) = mailbox {
                 if !in_reach(*at, (to.x, to.y, to.floor)) {
                     return LoopMoveResult::TooFar;
                 }
@@ -1273,7 +1272,29 @@ pub(super) async fn move_loop_item_with_house_capacity(
                     return posted;
                 }
             }
-            match drop_cell(base, *at, to) {
+            let cell = if rat_corpse {
+                // Crystal 201189f8 item.hpp:331 and game.cpp:2054: floor-only
+                // items have a two-tile throw range, with a clear source-to-target path.
+                const THROW_RANGE: u32 = 2;
+                if at.2 != to.floor
+                    || at.0.abs_diff(to.x) > THROW_RANGE
+                    || at.1.abs_diff(to.y) > THROW_RANGE
+                {
+                    return LoopMoveResult::TooFar;
+                }
+                let clear = ground
+                    .as_deref()
+                    .zip(admission.bundle_map())
+                    .zip(pickup)
+                    .is_some_and(|((scene, map), from)| rat_throw_clear(scene, map, from, to));
+                if !clear {
+                    return refused(LoopMoveRefusal::Blocked);
+                }
+                source_drop_cell(base, *at, to)
+            } else {
+                drop_cell(base, *at, to)
+            };
+            match cell {
                 Ok(spatial_position) => LoopDestination::Ground(LoopGround {
                     spatial_position,
                     map_revision: map_revision(base),
@@ -1548,6 +1569,42 @@ pub(super) async fn move_loop_item_with_house_capacity(
         Ok(Err(refusal)) => LoopMoveResult::Refused(refusal),
         Err(_) => LoopMoveResult::Unknown,
     }
+}
+
+fn rat_throw_clear(
+    scene: &LoopGroundOverlay,
+    map: &crate::map::boot::BundleMap,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> bool {
+    use crate::foundation::MovementLocalPosition;
+    let start = MovementLocalPosition {
+        x: from.0,
+        y: from.1,
+        floor: from.2,
+    };
+    let end = MovementLocalPosition {
+        x: to.x,
+        y: to.y,
+        floor: to.floor,
+    };
+    crate::spell::world_execution::source_sight_steps(start, end).is_ok_and(|steps| {
+        let facts = scene.facts(&map.facts);
+        steps.into_iter().all(|(position, exempt)| {
+            if exempt {
+                return true;
+            }
+            let (Ok(x), Ok(y), Ok(floor)) = (
+                u16::try_from(position.x),
+                u16::try_from(position.y),
+                i8::try_from(position.floor),
+            ) else {
+                return false;
+            };
+            view::compose_tile(scene.overlay(), &facts, TilePos { x, y, floor })
+                .is_ok_and(|tile| view::RoofFacts::of(tile.as_ref()).look_through)
+        })
+    })
 }
 
 /// The 10-byte cell of a drop onto `to`: a base tile of the bundle in reach of the actor at
