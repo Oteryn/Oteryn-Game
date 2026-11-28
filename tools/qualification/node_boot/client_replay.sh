@@ -1,10 +1,10 @@
 w01c_capture_matches_log() {
-  local log=$1 captures=$2 expected="$2/w01c-expected.txt" frame checkpoint
+  local log=$1 captures=$2 row=${3:-W01c.client} expected="$2/w01c-expected.txt" frame checkpoint
   frame=$(sha256sum < "$captures/w01c-vitals.bin") || return 1
   checkpoint=$(sha256sum < "$captures/w01c-before.bin") || return 1
   grep -Fxq "frame_sha256=${frame%% *}" "$expected" &&
     grep -Fxq "checkpoint_sha256=${checkpoint%% *}" "$expected" &&
-    grep -Fxq "SEAM_EVIDENCE e2e_capture scenario=W01c.client status=CAPTURED evidence=\"$(tr '\n' ';' < "$expected")\"" "$log"
+    grep -Fxq "SEAM_EVIDENCE e2e_capture scenario=$row status=CAPTURED evidence=\"$(tr '\n' ';' < "$expected")\"" "$log"
 }
 
 replay_client() {
@@ -17,7 +17,7 @@ replay_client() {
   fi
   # The live journey and the exact client replay must both reach their assertions.
   if [[ $(grep -cF "e2e_capture scenario=$row status=CAPTURED " "$log") == 1 ]] \
-    && { [[ "$row" != W01c.client ]] || w01c_capture_matches_log "$log" "$captures"; } \
+    && { [[ "$row" != W01c.client && "$row" != W01c.full ]] || w01c_capture_matches_log "$log" "$captures" "$row"; } \
     && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" \
       > "$captures/$row.replay.log" 2>&1 \
     && grep -qE '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$captures/$row.replay.log"; then
@@ -45,6 +45,7 @@ selected_client_replays() {
       printf '%s %s %s\n' "$row" "$package" "$case_name"
     fi
   done <<'REPLAYS'
+40 W01c.full oteryn-session e2e_w01c_creature_attack_vitals_replay
 187 W01c.client oteryn-session e2e_w01c_creature_attack_vitals_replay
 190 W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal
 192 W05c.client oteryn-client-ui w05c_rashid_payloads_replay_into_service_panel
@@ -54,9 +55,11 @@ REPLAYS
 }
 
 node_boot_client_replays() {
-  local log=$1 row package case_name result=0
+  local log=$1 row package case_name captures result=0
   while read -r row package case_name; do
-    replay_client "$log" "$E2E_ALL_CAPTURE_DIR" "$row" "$package" "$case_name" || result=1
+    captures=$E2E_ALL_CAPTURE_DIR
+    [[ "$row" != W01c.full ]] || captures="$captures/w01c-full"
+    replay_client "$log" "$captures" "$row" "$package" "$case_name" || result=1
   done < <(selected_client_replays)
   return "$result"
 }

@@ -747,6 +747,49 @@ class ClientReplayTests(unittest.TestCase):
                     if substitute:
                         substitute.write_bytes(substitute.name.encode())
 
+    def test_w01c_full_replay_requires_its_own_capture_and_runs_once(self):
+        from hashlib import sha256
+        with tempfile.TemporaryDirectory() as temp:
+            work = Path(temp)
+            captures = work / 'w01c-full'
+            captures.mkdir()
+            for name in ('vitals', 'before'):
+                (captures / f'w01c-{name}.bin').write_bytes(name.encode())
+            expected = (
+                f'frame_sha256={sha256(b"vitals").hexdigest()}\n'
+                f'checkpoint_sha256={sha256(b"before").hexdigest()}\n'
+            )
+            (captures / 'w01c-expected.txt').write_text(expected)
+            cargo = work / 'cargo'
+            cargo.write_text(
+                '#!/bin/sh\n'
+                'test "$E2E_ALL_CAPTURE_DIR" = "$PWD/w01c-full" || exit 2\n'
+                'test "$6" = e2e_w01c_creature_attack_vitals_replay || exit 2\n'
+                'echo invoked >> invocations\n'
+                'echo "test result: ok. 1 passed; 0 failed; 0 ignored;"\n'
+            )
+            cargo.chmod(0o700)
+            for row, code in (('W01c.client', 1), ('W01c.full', 0)):
+                marker = f'SEAM_EVIDENCE e2e_capture scenario={row} status=CAPTURED'
+                (work / 'node.log').write_text(f'{marker} evidence="{expected.replace(chr(10), ";")}"\n')
+                result = bash(
+                    'source "$REPLAY_HELPER"; node_boot_client_replays node.log',
+                    {'REPLAY_HELPER': str(HERE / 'client_replay.sh'), 'CARGO': str(cargo),
+                     'E2E_ALL_CAPTURE_DIR': str(work), 'OTERYN_E2E_ROW_BATCH': '40:1'},
+                    cwd=work,
+                )
+                self.assertEqual(result.returncode, code, result.stderr)
+                self.assertIn(f'scenario=W01c.full status={"FAIL" if code else "PASS"}', result.stdout)
+            self.assertEqual((work / 'invocations').read_text(), 'invoked\n')
+
+    def test_w01c_full_replay_is_selected_by_its_registered_batch(self):
+        result = bash(
+            'source "$REPLAY_HELPER"; selected_client_replays',
+            {'REPLAY_HELPER': str(HERE / 'client_replay.sh'), 'OTERYN_E2E_ROW_BATCH': '40:1'},
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, 'W01c.full oteryn-session e2e_w01c_creature_attack_vitals_replay\n')
+
     def test_w01c_replay_is_selected_by_its_registered_batch(self):
         for batch, expected in (
             ('186:1', ''),
