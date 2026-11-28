@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_object::{
 const OBELISK: (u16, u16, i8) = (32375, 31157, -8);
 const ENTRY_SLOT: (u16, u16, i8) = (32375, 31158, -8);
 const CORE: u32 = 47381;
+const INSTANCE: &str = "01934f10-7c05-7020-805b-3b1122334420";
 const ARENA_ENTRY: (u16, u16, i8) = (32373, 31151, -8);
 const LOBBY_RETURN: (u16, u16, i8) = (32373, 31158, -8);
 const OBELISK_KEY: &str = "oteryn:item.tibia.i47367";
@@ -247,6 +248,82 @@ async fn report_entry_inputs(clients: &SeamClients<'_>, client: &DevClientSessio
     Ok(())
 }
 
+async fn provision_instance(clients: &SeamClients<'_>, client: &DevClientSession) -> TestResult {
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor,
+        NodeRegistrationFact, OperationKey, RuntimeScopeAssignmentWriter,
+    };
+    use crate::foundation::{NodeId, RuntimeScopeRefV1};
+
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (holder, revision): (Vec<u8>, String) = sqlx::query_as(
+        "SELECT uuid_send(holder_node_id), holder_registration_revision::text
+           FROM game_runtime_scope_assignments
+          WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1",
+    )
+    .bind(clients.world.as_slice())
+    .bind(clients.channel.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_control_activity_scope_grants (control_role, world_id, instance_id, operation)
+         VALUES ('nb_control', encode($1,'hex')::uuid, $2::text::uuid, 1)",
+    )
+    .bind(clients.world.as_slice())
+    .bind(INSTANCE)
+    .execute(&mut database)
+    .await?;
+    database.close().await?;
+
+    let mut config = crate::node::config::OpsConfig::parse(&std::fs::read(required(
+        "NODE_BOOT_G36_CONTROL_CONFIG",
+    )?)?)?
+    .database;
+    config.password_file = required("NODE_BOOT_G36_CONTROL_PASSWORD_FILE")?.into();
+    config.root_ca_file = required("NODE_BOOT_G36_CONTROL_CA_FILE")?.into();
+    let root =
+        crate::node::connect_root(&config, crate::node::secure_file::effective_uid()).await?;
+    let scope = RuntimeScopeRefV1::instance(
+        WorldId::decode(&clients.world)?,
+        crate::node::uuid_bytes(INSTANCE).ok_or("G36 Instance fixture identity")?,
+    )?;
+    let holder = NodeRegistrationFact::new(NodeId::decode(&holder)?, revision.parse()?);
+    let writer = RuntimeScopeAssignmentWriter::open(root, "node-boot-g36")
+        .await
+        .map_err(|error| format!("G36 Instance writer: {error:?}"))?;
+    let receipt = writer
+        .submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes(crate::node::operator_files::random_bytes()?),
+            actor: ControlActor::new("nb_control")
+                .map_err(|error| format!("G36 control actor: {error:?}"))?,
+            command: AssignmentCommand::Assign {
+                scope,
+                target: holder,
+            },
+        })
+        .await
+        .map_err(|error| format!("G36 Instance assignment: {error:?}"))?;
+    let AssignmentOutcome::Committed(receipt) = receipt else {
+        return Err(format!("G36 Instance assignment refused: {receipt:?}").into());
+    };
+    if receipt.assignment.scope != scope
+        || receipt.assignment.holder != Some(holder)
+        || receipt.assignment.ownership_generation != 1
+    {
+        return Err("G36 Instance assignment receipt mismatch".into());
+    }
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "g36-instance".into(),
+    )
+    .await?;
+    evidence(&format!(
+        "row=G36.full fixture=q_g36 input=ready-instance instance={INSTANCE} generation=1"
+    ));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -283,6 +360,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     stage_position(&clients).await?;
     let mut client = connect_character(&clients, 0xe7, 0).await?;
     require_refusal(&mut client, &payload, definition, true).await?;
+    provision_instance(&clients, &client).await?;
     character_prep::grant_item(&client, CORE, 1).await?;
     evidence("row=G36.full fixture=q_g36 input=soul-core item=47381 count=1");
     logout(&mut client).await?;
