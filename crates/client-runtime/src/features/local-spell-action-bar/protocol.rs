@@ -24,6 +24,7 @@ pub const fn feedback_text(disposition: SpellCastDisposition) -> &'static str {
         SpellCastDisposition::TargetRequired => "Select a target first",
         SpellCastDisposition::TargetIllegal => "Illegal target",
         SpellCastDisposition::Rejected => "Spells unavailable",
+        SpellCastDisposition::Busy => "The game is busy. Try casting again.",
     }
 }
 

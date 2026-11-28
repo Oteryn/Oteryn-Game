@@ -47,16 +47,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::AdmissionRetryBudget::holder_wait_window(),
         );
         budget
-            .retry_command_guard(async || {
-                let result = ActivityHandoffOwner::new(self.root.clone())
-                    .note_transfer_input(self.holder, fence, controller.transport)
-                    .await;
-                #[cfg(test)]
-                if result.as_ref().is_err_and(super::root_holder_busy) {
-                    let _ = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|busy| busy.notify_one());
-                }
-                result
-            })
+            .retry_logged_holder(
+                "activity_transfer_input",
+                async || {
+                    let result = ActivityHandoffOwner::new(self.root.clone())
+                        .note_transfer_input(self.holder, fence, controller.transport)
+                        .await;
+                    #[cfg(test)]
+                    if result.as_ref().is_err_and(super::root_holder_busy) {
+                        let _ = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|busy| busy.notify_one());
+                    }
+                    result
+                },
+                |error| {
+                    matches!(
+                        error,
+                        crate::durability::DurabilityError::RootUnavailable
+                            | crate::durability::DurabilityError::RootPassDeadlineExceeded
+                    )
+                },
+            )
             .await
     }
 

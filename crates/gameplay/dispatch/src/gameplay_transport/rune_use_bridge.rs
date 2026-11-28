@@ -266,7 +266,7 @@ pub(super) fn spell_disposition(disposition: SpellCastDisposition) -> UseDisposi
         | SpellCastDisposition::NotAvailable => UseDisposition::RequirementNotMet,
         SpellCastDisposition::TargetRequired => UseDisposition::NoTarget,
         SpellCastDisposition::TargetIllegal => UseDisposition::TargetIllegal,
-        SpellCastDisposition::Rejected => UseDisposition::Rejected,
+        SpellCastDisposition::Rejected | SpellCastDisposition::Busy => UseDisposition::Rejected,
     }
 }
 

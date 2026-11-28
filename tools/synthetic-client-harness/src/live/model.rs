@@ -133,6 +133,7 @@ impl Notice {
                 SpellCastDisposition::TargetRequired => "spell target required",
                 SpellCastDisposition::TargetIllegal => "spell target illegal",
                 SpellCastDisposition::Rejected => "spell rejected",
+                SpellCastDisposition::Busy => "server busy",
             },
             Self::ChatSent => "chat sent",
             Self::ChatMuted(_) => "muted",

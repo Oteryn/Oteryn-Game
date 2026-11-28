@@ -496,7 +496,11 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 && status == CommandStatus::Rejected
                 && payload.is_empty()
             {
-                encode_spell_cast_result(SpellCastDisposition::Rejected)
+                encode_spell_cast_result(if guard_deferred {
+                    SpellCastDisposition::Busy
+                } else {
+                    SpellCastDisposition::Rejected
+                })
             } else {
                 payload
             };

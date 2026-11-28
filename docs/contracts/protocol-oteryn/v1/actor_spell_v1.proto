@@ -87,6 +87,8 @@ enum SpellCastDisposition {
   SPELL_CAST_DISPOSITION_TARGET_ILLEGAL = 9;
   // Unknown spell index, stale binding or ineligible actor.
   SPELL_CAST_DISPOSITION_REJECTED = 10;
+  // Holder wait exhausted before cast evaluation. No mana or cooldown was spent.
+  SPELL_CAST_DISPOSITION_BUSY = 11;
 }
 
 // SPELL-PRESENT-0 §8 (PRESENT-WIRE-1): which refusal text the client shows. The disposition stays
