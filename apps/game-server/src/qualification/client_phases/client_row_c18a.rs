@@ -639,7 +639,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     ));
 
     // Stay outside a protection zone so only expiry can clear the battle sign.
-    let rest = REST_TILE;
+    let mut rest = REST_TILE;
     let retreat = route_avoiding(
         world,
         CAST_TILE,
@@ -650,8 +650,42 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
                     .is_some_and(|tile| !tile.protection_zone())
         },
     ).ok_or("C18a fixed outdoor retreat route unavailable")?;
-    walk_path(&mut client, world, &spawn_cells, &retreat, rest, Some(&mut observation), None).await?;
+    let mut aggressors = walk_path(
+        &mut client,
+        world,
+        &spawn_cells,
+        &retreat,
+        rest,
+        Some(&mut observation),
+        None,
+    )
+    .await?;
+    let mut evasions = 0;
     loop {
+        if let Some((goal, path)) = outdoor_escape(&client, world, &spawn_cells, &aggressors)? {
+            evasions += 1;
+            if evasions > 2 || fed_since.elapsed() >= MEAT_SATIETY {
+                return Err(format!(
+                    "C18a outdoor retreat could not lose attackers: {aggressors:?}"
+                )
+                .into());
+            }
+            evidence(&format!(
+                "c18a_lock_escape attempt={evasions} from={rest:?} to={goal:?} aggressors={aggressors:?} path={path:?}"
+            ));
+            rest = goal;
+            aggressors = walk_path(
+                &mut client,
+                world,
+                &spawn_cells,
+                &path,
+                rest,
+                Some(&mut observation),
+                None,
+            )
+            .await?;
+            continue;
+        }
         let deadline_ms = lock_trace.deadline_ms()?;
         let state = client
             .session_mut()
@@ -670,7 +704,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             return Err(format!("C18a combat lock kept renewing: last_renewal={:?}", lock_trace.last).into());
         }
         client.service_liveness(Duration::from_millis(200)).await?;
-        collect_events(&mut client, Some(&mut observation), None)?;
+        aggressors = collect_events(&mut client, Some(&mut observation), None)?.aggressors;
         verdict::Harness::global().progress("wait-for-combat-lock");
     }
     require_combat_lock_duration(observation.first_unlock)?;
@@ -1043,6 +1077,62 @@ fn fixed_cast_route(
         |at| !spawn_cells.contains(&at),
     )
     .ok_or_else(|| format!("C18a fixed route unavailable: {start:?} -> {goal:?}").into())
+}
+
+fn outdoor_escape(
+    client: &oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawn_cells: &std::collections::BTreeSet<TilePos>,
+    aggressors: &Aggressors,
+) -> TestResult<Option<(TilePos, Vec<StepDirection>)>> {
+    if aggressors.is_empty() {
+        return Ok(None);
+    }
+    let view = client
+        .world_entities()
+        .ok_or("C18a retreat entity view absent")?;
+    let from = tile(client.world_spatial().actor_position)?;
+    let attackers: Vec<_> = aggressors
+        .iter()
+        .filter_map(|actor| view.get(actor).map(|entity| (*actor, entity.position)))
+        .map(|(actor, position)| tile(position).map(|position| (actor, position)))
+        .collect::<Result<_, _>>()?;
+    evidence(&format!(
+        "c18a_lock_escape_positions from={from:?} aggressors={aggressors:?} visible={attackers:?}"
+    ));
+    if attackers.is_empty() {
+        return Ok(None);
+    }
+    let distance = |a: TilePos, b: TilePos| a.x.abs_diff(b.x).max(a.y.abs_diff(b.y));
+    let path = route_avoiding(
+        world,
+        from,
+        |at| {
+            distance(at, from) >= 4
+                && attackers
+                    .iter()
+                    .all(|(_, attacker)| attacker.floor != at.floor || distance(at, *attacker) >= 8)
+        },
+        |at| {
+            at.floor == from.floor
+                && distance(at, from) <= 12
+                && !spawn_cells.contains(&at)
+                && attackers
+                    .iter()
+                    .all(|(_, attacker)| attacker.floor != at.floor || distance(at, *attacker) > 1)
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| !tile.protection_zone())
+        },
+    )
+    .filter(|path| path.len() <= 16)
+    .ok_or("C18a bounded outdoor escape unavailable")?;
+    let goal = path
+        .iter()
+        .try_fold(from, |at, direction| destination(world, at, *direction))
+        .ok_or("C18a escape route lost its landing")?;
+    Ok(Some((goal, path)))
 }
 
 async fn walk_once(
@@ -1548,16 +1638,23 @@ fn collect_events(
 ) -> TestResult<SetupCombatFrames> {
     let mut frames = SetupCombatFrames::default();
     for event in client.take_events() {
+        use oteryn_protocol_oteryn::analyser::AnalyserFact;
+        let incoming = matches!(&event, SessionEvent::AnalyserAttributedFacts(delta)
+            if delta.value.iter().any(|fact| matches!(fact.fact, AnalyserFact::DamageInput { .. })));
+        if history.is_none() || incoming {
+            trace_setup_combat(client, &event);
+        }
         if let Some(history) = history.as_deref_mut() {
             history.record(&event);
-        } else {
-            trace_setup_combat(client, &event);
-            use oteryn_protocol_oteryn::analyser::AnalyserFact;
-            if let SessionEvent::AnalyserAttributedFacts(delta) = &event {
-                frames.aggressors.extend(delta.value.iter()
+        }
+        if let SessionEvent::AnalyserAttributedFacts(delta) = &event {
+            frames.aggressors.extend(
+                delta
+                    .value
+                    .iter()
                     .filter(|fact| matches!(fact.fact, AnalyserFact::DamageInput { .. }))
-                    .filter_map(|fact| fact.attacker));
-            }
+                    .filter_map(|fact| fact.attacker),
+            );
         }
         match event {
             SessionEvent::WorldClock(delta) => {
