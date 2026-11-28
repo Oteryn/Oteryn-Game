@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     combat_input::PlayCommand,
-    play::{Outbox, PlayView, play_channel},
+    play::{Outbox, PlayLink, PlayView, play_channel},
 };
 use bevy::{asset::AssetPlugin, input_focus::InputFocus};
 use oteryn_client_ui::depot::{DepotAction, DepotOutcome, DepotReply, Intent};
@@ -25,10 +25,8 @@ type Fixture = (
     tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
     Outbox,
 );
-fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
-    let (link, commands, outbox) = play_channel();
+fn depot_app(link: PlayLink) -> Result<App, Box<dyn std::error::Error>> {
     link.use_shared_frontend();
-    outbox.bevy_depot_initialize(true, false);
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -44,6 +42,13 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     super::super::modal::install(&mut app);
     install(&mut app);
     app.update();
+    Ok(app)
+}
+
+fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
+    let (link, commands, outbox) = play_channel();
+    outbox.bevy_depot_initialize(true, false);
+    let mut app = depot_app(link)?;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     app.world_mut().non_send_mut::<HostOwner>().route_input(
         &[NormalizedInputEvent::Key {
@@ -400,4 +405,81 @@ fn depot_town_picker_projects_and_enqueues_named_towns() -> TestResult {
     assert_eq!(request.intent.town, Some(6));
     assert_eq!(request.intent.action, DepotAction::Browse);
     Ok(())
+}
+
+#[test]
+fn cross_town_depot_round_trip_through_bevy_control()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    use crate::bevy_shell::controls::ContainerTool;
+    use crate::play::feature_0037_depot::protocol::test_wire;
+    use std::time::Duration;
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), test_wire::Error> {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async {
+                tokio::time::timeout(Duration::from_secs(5), async {
+                    let (session, mut peer) = test_wire::admit(true).await?;
+                    let selected = session.selected_capabilities().to_vec();
+                    let (link, commands, outbox) = play_channel();
+                    let task = tokio::spawn(crate::play::run_session(session, commands, outbox));
+                    let mut app = depot_app(link).map_err(|error| error.to_string())?;
+                    assert!(
+                        depot_panel_until(&app, |panel| panel.selected)
+                            .await?
+                            .cross_town_selected
+                    );
+                    assert!(
+                        app.world_mut()
+                            .non_send_mut::<HostOwner>()
+                            .request_container_tool(ContainerTool::Depot, None, None)
+                    );
+                    let local =
+                        test_wire::reply(&mut peer, &selected, 1, &[8, 1, 16, 1, 24, 0, 40, 0], 8)
+                            .await?;
+                    let settled = |panel: &DepotPanel| !panel.pending;
+                    assert_eq!(depot_panel_until(&app, settled).await?.reply, Some(local));
+                    app.update();
+                    click(&mut app, Kind::Request(Intent::SelectTown(Some(6))))
+                        .map_err(|error| error.to_string())?;
+                    let remote = test_wire::reply(
+                        &mut peer,
+                        &selected,
+                        2,
+                        &[8, 1, 16, 1, 24, 0, 40, 0, 32, 6, 56, 1],
+                        6,
+                    )
+                    .await?;
+                    assert_eq!(depot_panel_until(&app, settled).await?.reply, Some(remote));
+                    drop(app);
+                    task.await?;
+                    Ok::<(), test_wire::Error>(())
+                })
+                .await?
+            })
+        })?
+        .join()
+        .map_err(|_| "native Depot round trip thread panicked")?
+}
+
+async fn depot_panel_until(
+    app: &App,
+    ready: impl Fn(&DepotPanel) -> bool,
+) -> Result<DepotPanel, crate::play::feature_0037_depot::protocol::test_wire::Error> {
+    loop {
+        let owner = app.world().non_send::<HostOwner>();
+        let panel = owner
+            .play
+            .as_ref()
+            .ok_or("missing play owner")?
+            .link
+            .depot_panel();
+        if ready(&panel) {
+            return Ok(panel);
+        }
+        tokio::task::yield_now().await;
+    }
 }

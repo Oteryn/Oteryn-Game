@@ -7,6 +7,7 @@ use oteryn_protocol_oteryn::depot::{
 
 impl<S: SessionStream> Session<S> {
     /// Resolve a nearby locker, browse a box, or move one whole item/stack.
+    /// A named town selects cross-town storage when capability 627 is negotiated.
     /// Capability absence and ordinary command rejection leave play usable.
     pub async fn depot(&mut self, intent: DepotIntent) -> Result<Option<DepotReply>, SessionError> {
         self.depot_at(intent, None).await
@@ -19,7 +20,13 @@ impl<S: SessionStream> Session<S> {
         intent: DepotIntent,
         slot: Option<u32>,
     ) -> Result<Option<DepotReply>, SessionError> {
-        self.depot_request(DepotRequest::local(intent, slot)).await
+        let cross_town = intent.town.is_some() && self.is_selected(CAPABILITY_CROSS_TOWN_DEPOT_V1);
+        self.depot_request(DepotRequest {
+            intent,
+            slot,
+            cross_town,
+        })
+        .await
     }
 
     /// An explicit cross-town request requires capability 627.

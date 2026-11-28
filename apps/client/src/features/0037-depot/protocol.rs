@@ -86,3 +86,7 @@ impl Outbox {
         lock(&self.0).depot.replace_items(items);
     }
 }
+
+#[cfg(test)]
+#[path = "tests/wire.rs"]
+pub(crate) mod test_wire;

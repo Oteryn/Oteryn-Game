@@ -143,7 +143,9 @@ use super::super::{
 };
 use super::inventory::ToolSnapshot;
 use super::modal::ModalGuard;
+use crate::play::feature_0037_depot::view::DepotUiAction;
 use bevy::{ui::InteractionDisabled, ui_widgets::Activate};
+use oteryn_client_ui::depot::{DepotPanel, Intent as DepotIntent};
 use oteryn_client_ui_bevy as source;
 #[derive(Resource, Default)]
 struct ToolUi {
@@ -192,6 +194,17 @@ struct ToolControl {
     revision: u64,
     tool: ContainerTool,
     action: ToolAction,
+}
+pub(super) fn depot_action(owner: &HostOwner, panel: &DepotPanel, action: DepotUiAction) {
+    use super::super::owner::Phase;
+
+    if owner.phase == Phase::Playing
+        && !owner.modal_active()
+        && let Some(play) = &owner.play
+        && (action == DepotUiAction::Close || !play.view.gameplay_input_blocked(&play.link))
+    {
+        play.link.depot_action_bound(panel, action);
+    }
 }
 fn install_container_tools(app: &mut App) {
     app.init_resource::<ToolUi>()
@@ -314,15 +327,27 @@ fn tool_activate(
                 play.link.browse_field_request(command.payload);
             }
         }
-        (ToolAction::DepotBrowse { box_number, page }, ToolSnapshot::Depot(_)) => play
-            .link
-            .depot_request(oteryn_client_ui::depot::Intent::Browse { box_number, page }),
-        (ToolAction::Deposit(handle), ToolSnapshot::Depot(_)) => play
-            .link
-            .depot_request(oteryn_client_ui::depot::Intent::Deposit(handle)),
-        (ToolAction::Withdraw(row), ToolSnapshot::Depot(_)) => play
-            .link
-            .depot_request(oteryn_client_ui::depot::Intent::Withdraw(row)),
+        (ToolAction::DepotBrowse { box_number, page }, ToolSnapshot::Depot(panel)) => {
+            depot_action(
+                &owner,
+                &panel,
+                DepotUiAction::Request(DepotIntent::Browse { box_number, page }),
+            );
+        }
+        (ToolAction::Deposit(handle), ToolSnapshot::Depot(panel)) => {
+            depot_action(
+                &owner,
+                &panel,
+                DepotUiAction::Request(DepotIntent::Deposit(handle)),
+            );
+        }
+        (ToolAction::Withdraw(row), ToolSnapshot::Depot(panel)) => {
+            depot_action(
+                &owner,
+                &panel,
+                DepotUiAction::Request(DepotIntent::Withdraw(row)),
+            );
+        }
         (ToolAction::Search(request), ToolSnapshot::Search(_)) => {
             if let Ok(payload) = oteryn_client_runtime::cui3::depot_search::encode_request(request)
             {

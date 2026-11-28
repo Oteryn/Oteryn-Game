@@ -53,6 +53,30 @@ fn panel_until(
 }
 
 #[test]
+fn native_admission_offer_contains_cross_town_depot() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let run = || -> TestResult {
+                let stack = Stack::start_two_channels()?;
+                let client = crate::ClientBootstrap::new()?.with_native_login(stack.config());
+                let mut entry = Reentry::new(client);
+                assert!(entry.request());
+                // The TLS peer asserts 627 on ClientBootstrap before it accepts admission.
+                let (_view, link) = admitted(&mut entry)?;
+                drop(link);
+                entry.shutdown();
+                stack.finish();
+                Ok(())
+            };
+            run().map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "native admission offer thread failed")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn the_client_switches_to_the_other_channel_and_a_second_switch_in_the_cooldown_is_refused()
 -> TestResult {
     std::thread::Builder::new()

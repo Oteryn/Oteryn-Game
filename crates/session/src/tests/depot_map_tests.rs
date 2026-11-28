@@ -253,3 +253,102 @@ fn depot_client_refuses_unselected_capability_without_sending() -> Result<(), Bo
 
 #[path = "depot_open_tests.rs"]
 mod open_tests;
+
+#[test]
+fn depot_at_encodes_selected_town_and_preserves_legacy_bytes() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                for negotiated in [true, false] {
+                    let selected: &[u32] = if negotiated {
+                        &[4, 6, CAPABILITY_DEPOT_V1, CAPABILITY_CROSS_TOWN_DEPOT_V1]
+                    } else {
+                        &[4, 6, CAPABILITY_DEPOT_V1]
+                    };
+                    let (client, mut server) = tokio::io::duplex(64 * 1024);
+                    let peer = tokio::spawn(async move {
+                        let inventory =
+                            item_view::encode_character_inventory(&CharacterInventory::default())
+                                .map_err(|error| format!("{error:?}"))?;
+                        let container = item_view::encode_open_container(&OpenContainer::default())
+                            .map_err(|error| format!("{error:?}"))?;
+                        join_peer_with(
+                            &mut server,
+                            CLIENT_SUPPORTED_CAPABILITIES,
+                            selected,
+                            &[],
+                            item_snapshot(vec![])?,
+                            &[(9, 1, 1, inventory), (11, 1, 1, container)],
+                        )
+                        .await?;
+                        let local = [8, 1, 16, 1, 24, 0, 40, 0];
+                        let named = [8, 1, 16, 1, 24, 0, 40, 0, 32, 6];
+                        let remote = [8, 1, 16, 1, 24, 0, 40, 0, 32, 6, 56, 1];
+                        let expected = if negotiated {
+                            remote.as_slice()
+                        } else {
+                            named.as_slice()
+                        };
+                        for (sequence, payload) in [(41, local.as_slice()), (42, expected)] {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(command.command_type, COMMAND_TYPE_DEPOT_INTENT);
+                            assert_eq!(command.payload, payload);
+                            let reply = encode_depot_reply(&DepotReply {
+                                outcome: DepotOutcome::Opened,
+                                town: Some(6),
+                                box_number: 1,
+                                page: 0,
+                                total: 0,
+                                entries: vec![],
+                            })
+                            .map_err(|error| format!("{error:?}"))?;
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    sequence,
+                                    command.command_id,
+                                    CommandStatus::Accepted,
+                                    &reply,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let exchange = async {
+                        let mut admission = item_admission()?;
+                        admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+                        let mut session = Session::admit(client, admission).await?;
+                        for town in [None, Some(6)] {
+                            let reply = session
+                                .depot_at(
+                                    DepotIntent {
+                                        town,
+                                        box_number: 1,
+                                        page: 0,
+                                        action: DepotAction::Browse,
+                                    },
+                                    None,
+                                )
+                                .await?;
+                            assert_eq!(
+                                reply.map(|reply| reply.outcome),
+                                Some(DepotOutcome::Opened)
+                            );
+                        }
+                        Ok::<(), BoxError>(())
+                    };
+                    let result = exchange.await;
+                    peer.await??;
+                    result?;
+                }
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "depot exchange thread panicked")?
+}

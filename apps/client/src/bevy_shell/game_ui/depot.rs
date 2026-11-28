@@ -56,18 +56,12 @@ fn project(
     }
 }
 fn perform(owner: &HostOwner, state: &State, control: Control) {
-    if owner.phase != Phase::Playing
-        || owner.modal_active()
-        || control.generation != owner.generation()
-        || control.generation != state.generation
-        || control.revision != state.revision
+    if control.generation == owner.generation()
+        && control.generation == state.generation
+        && control.revision == state.revision
+        && let Some(panel) = &state.panel
     {
-        return;
-    }
-    if let (Some(play), Some(panel)) = (&owner.play, &state.panel)
-        && (control.kind == Kind::Close || !play.view.gameplay_input_blocked(&play.link))
-    {
-        play.link.depot_action_bound(panel, control.kind);
+        super::install::depot_action(owner, panel, control.kind);
     }
 }
 fn activate(

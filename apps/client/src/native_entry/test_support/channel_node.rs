@@ -85,6 +85,7 @@ where
         616,
         617,
         oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+        oteryn_protocol_oteryn::depot::CAPABILITY_CROSS_TOWN_DEPOT_V1,
     ] {
         assert!(
             offered.contains(&capability),
