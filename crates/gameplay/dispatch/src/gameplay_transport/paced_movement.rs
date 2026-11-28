@@ -324,6 +324,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=step_rejected_field_pass_return");
                 return (StepOutcome::rejected(), None);
             }
+            let contact = origin.and_then(|origin| {
+                use super::actor_spell::field_step_ingress;
+                let source = self.active_generation?.native_gameplay()?;
+                let cells = self.movement_cells();
+                let destination = field_step_ingress::destination(
+                    &runtime, cells, actor, session, origin, cardinal, blocking,
+                )
+                .ok()?;
+                field_step_ingress::bundle_environment_contact(cells, &runtime, source, destination)
+            });
             states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),
@@ -334,7 +344,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 blocking,
                 equipped_speed_delta,
                 None,
-                None,
+                contact,
             )
         } else {
             self.step_with_field_ingress(

@@ -56,7 +56,7 @@ pub(in crate::gameplay_transport) use familiar_cast::{
 #[path = "familiar_defense.rs"]
 mod familiar_defense;
 #[path = "field_step_ingress.rs"]
-mod field_step_ingress;
+pub(super) mod field_step_ingress;
 #[path = "native_combat_cast.rs"]
 pub(in crate::gameplay_transport) mod native_combat_cast;
 #[path = "parameter_cast.rs"]

@@ -33,6 +33,22 @@ use oteryn_protocol_oteryn::{CommandStatus, decode_command_result, decode_snapsh
 use tokio::io::AsyncWriteExt;
 
 #[test]
+fn static_energy_field_step_postgres_publishes_damage_vitals() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            run(async |_| {
+                field_scenario(admin, 0, 0, 0, true, false, false, Scenario::StaticEnergyField).await
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "static Energy Field scenario panicked")??;
+    Ok(())
+}
+
+#[test]
 fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
     large_stack(|| {
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -331,6 +347,7 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
+    StaticEnergyField,
     HolderBusy,
     DestroyField,
     DestroyFar,
@@ -759,6 +776,82 @@ const FIELD_SCENARIO_LIVENESS: LivenessPolicy = LivenessPolicy {
     missed_limit: 3,
 };
 
+const STATIC_ENERGY_START: MovementLocalPosition =
+    MovementLocalPosition { x: 32473, y: 32249, floor: 8 };
+
+async fn static_energy_field_step(
+    harness: &Harness,
+    deps: &Dependencies,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    pin: &ChannelContentPin,
+) -> TestResult {
+    use oteryn_protocol_oteryn::actor_spell::{STATE_DOMAIN_ACTOR_VITALS, decode_actor_vitals};
+
+    deps.initialize(owner).await;
+    let actor = deps.actor;
+    let session = deps.admitted.game_session_id;
+    let _simulation_clock = owner.freeze_owner_clock_for_test();
+    {
+        let runtime = deps.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        states.get_mut(&runtime, actor, session).ok_or("field victim")?
+            .install_equipped_mana_shield(true);
+    }
+    sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING")
+        .bind(id(41).as_slice()).execute(&harness.pool).await?;
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
+    sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+        .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.server_artifact_digest().as_slice())
+        .bind(pin.client_artifact_digest().as_slice()).bind(pin.frame_binding_digest().as_slice()).execute(&harness.pool).await?;
+    let mut admitted = deps.admitted;
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    let (current, _) = FreshAdmissionStore::from_root(harness.root.clone()).current_session_at(session).await?;
+    admitted.item_fence = item_fence_of(current);
+    admitted.continuity.selected_capabilities = crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6, 12, 14],
+    ).ok_or("step capabilities")?;
+    let (before_revision, before) = owner.observe_vitals(actor, session).await.ok_or("before vitals")?;
+    assert!(super::proficiency_select_perk_fixtures::connection(owner, admitted, async |client| {
+        let payload = encode_step_intent(StepDirection::East);
+        let frame = test_command(1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, &payload);
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+        loop {
+            let frame = read_frame(client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(
+                    decode_step_result(result.payload).map_err(debug)?,
+                    StepDisposition::Moved,
+                );
+                break;
+            }
+        }
+        let landed = deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+        assert_eq!(landed, MovementLocalPosition { x: 32474, ..STATIC_ENERGY_START });
+        let (after_revision, after) = owner.observe_vitals(actor, session).await.ok_or("after vitals")?;
+        assert!(after.mana < before.mana, "entering the pinned static Energy Field consumes shield mana");
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            loop {
+                let frame = read_frame(client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::StateDelta {
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+                    if delta.domain_id == STATE_DOMAIN_ACTOR_VITALS {
+                        assert_eq!((delta.base_revision, delta.new_revision), (before_revision, after_revision));
+                        assert_eq!(decode_actor_vitals(delta.payload).map_err(debug)?, after);
+                        return TestResult::Ok(());
+                    }
+                }
+            }
+        }).await??;
+        Ok(())
+    }).await?);
+    Ok(())
+}
+
 async fn field_case(
     admin: String,
     rune: u32,
@@ -853,8 +946,18 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let map = if scenario == Scenario::DestroyBlocked {
-        field_world_inner(world, 0, true)?
+    let static_energy = if scenario == Scenario::StaticEnergyField {
+        let index = native.item_index().ok_or("item index")?;
+        let key = "oteryn:item.tibia.i2126";
+        let revision = index.revision(key).ok_or("energy field revision")?;
+        Some(index.definition_ref("Item", key, revision).ok_or("energy field reference")?)
+    } else {
+        None
+    };
+    let map = if static_energy.is_some() {
+        field_world_inner(world, 0, false, static_energy)?
+    } else if scenario == Scenario::DestroyBlocked {
+        field_world_inner(world, 0, true, None)?
     } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
     } else if protection {
@@ -866,10 +969,14 @@ async fn field_scenario_inner(
         .movement_cells(entry_room.movement_cells())
         .map_err(debug)?;
     // Runtime floors are the negation of the bundle's native floors.
-    let start = MovementLocalPosition {
-        x: if protection { 1 } else { 100 },
-        y: if protection { 0 } else { 100 },
-        floor: 7,
+    let start = if static_energy.is_some() {
+        STATIC_ENERGY_START
+    } else {
+        MovementLocalPosition {
+            x: if protection { 1 } else { 100 },
+            y: if protection { 0 } else { 100 },
+            floor: 7,
+        }
     };
     let room = entry_room
         .bundle_view(
@@ -892,8 +999,11 @@ async fn field_scenario_inner(
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    let dependencies =
-        Dependencies::with_content(channel_pin, entry_room.clone(), native.spell_book().clone())?;
+    let dependencies = Dependencies::with_content(
+        channel_pin.clone(),
+        entry_room.clone(),
+        native.spell_book().clone(),
+    )?;
     let (actor, session) = (dependencies.actor, dependencies.admitted.game_session_id);
     {
         let mut runtime = dependencies.runtime.lock().await;
@@ -926,6 +1036,9 @@ async fn field_scenario_inner(
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(None, Some(&room));
     owner.movement_cells = (&cells).into();
+    if static_energy.is_some() {
+        return static_energy_field_step(&harness, &dependencies, &owner, &channel_pin).await;
+    }
     // Client intents use the same sealed wire frame as the published map;
     // runtime positions above remain physical +z, while Bundle wire uses -z.
     let wire_frame = {
@@ -2259,13 +2372,14 @@ fn field_world(
     world: crate::foundation::WorldId,
     zone: u32,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    field_world_inner(world, zone, false)
+    field_world_inner(world, zone, false, None)
 }
 
 fn field_world_inner(
     world: crate::foundation::WorldId,
     zone: u32,
     wall: bool,
+    static_energy: Option<std::num::NonZeroU32>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         sector::{Attrs, Item, Tile},
@@ -2274,7 +2388,13 @@ fn field_world_inner(
             TerrainKind,
         },
     };
-    let manifest = Manifest {
+    let (sx, sy, floor, size) = if static_energy.is_some() {
+        (1014, 1007, -8, 32)
+    } else {
+        (3, 3, -7, 16)
+    };
+    let (min_x, min_y) = (sx * 32, sy * 32);
+    let mut manifest = Manifest {
         subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
@@ -2288,11 +2408,11 @@ fn field_world_inner(
             ..Default::default()
         },
         world: Extent {
-            min_x: 96,
-            min_y: 96,
-            max_x: 112,
-            max_y: 112,
-            floors: vec![-7],
+            min_x,
+            min_y,
+            max_x: min_x + size,
+            max_y: min_y + size,
+            floors: vec![floor],
         },
         palette: vec![
             PaletteEntry {
@@ -2324,9 +2444,26 @@ fn field_world_inner(
         spawns: Default::default(),
         npcs: Default::default(),
     };
+    if let Some(reference) = static_energy {
+        manifest.palette[0].key = "oteryn:item.tibia.i410".into();
+        if let Some(terrain) = &mut manifest.palette[0].terrain {
+            terrain.ground_speed = Some(100);
+        }
+        manifest.palette.push(PaletteEntry {
+            family: Family::Item,
+            key: "oteryn:item.tibia.i2126".into(),
+            id: reference.get() - 1,
+            terrain: Some(Terrain {
+                kind: TerrainKind::Field,
+                walkable: Some(true),
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+    }
     let mut tiles = Vec::new();
-    for y in 96..112 {
-        for x in 96..112 {
+    for y in min_y..min_y + size {
+        for x in min_x..min_x + size {
             tiles.push(Tile {
                 x,
                 y,
@@ -2339,14 +2476,19 @@ fn field_world_inner(
                     attrs: Attrs::default(),
                 }],
             });
+            if static_energy.is_some() && (x, y) == (32474, 32249) {
+                tiles.last_mut().ok_or("destination tile")?.items.push(Item {
+                    palette: 2, depth: 0, attrs: Attrs::default(),
+                });
+            }
         }
     }
     let bytes = writer::write(
         &manifest,
         &[Sector {
-            floor: -7,
-            sx: 3,
-            sy: 3,
+            floor,
+            sx,
+            sy,
             tiles,
         }],
         &Default::default(),
@@ -2368,14 +2510,18 @@ fn field_world_inner(
             bundle: pins,
             map_revision: crate::map::overlay::map_revision(&base),
             start: crate::map::overlay::TilePos {
-                x: 100,
-                y: 100,
-                floor: -7,
+                x: if static_energy.is_some() { 32473 } else { 100 },
+                y: if static_energy.is_some() { 32249 } else { 100 },
+                floor,
             },
         },
         world,
         crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
-        |_| None,
+        |key| {
+            (key == "oteryn:item.tibia.i2126").then_some(crate::map::facts::ItemDefinition {
+                reference: static_energy?, solid: Some(false), blocks_projectile: false, pickupable: false, door: false,
+            })
+        },
     )
     .map_err(debug)
 }

@@ -14,6 +14,75 @@ use crate::movement::{CardinalStep, MovementError};
 use crate::spell::cast::PlayerSpellState;
 use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
 
+const ENVIRONMENT_ENERGY_FIELD: &str = "oteryn:item.tibia.i2126";
+
+fn environment_contact(
+    source: &crate::content::native_gameplay::NativeGameplayState,
+    recipe: &crate::content::field_condition::QualifiedFieldCondition,
+    identity: &str,
+) -> Option<super::NonPlayerFieldContact> {
+    let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+        "native.field.i2126",
+        1,
+        recipe.condition_values().ok()??,
+    )?;
+    Some(super::NonPlayerFieldContact {
+        origin: super::NonPlayerFieldOrigin::Environment,
+        source: format!("environment:field:{identity}"),
+        definition,
+        element: recipe.element().ok()?,
+        content: source.source_digest(),
+    })
+}
+
+/// Bundle base placements have no durable Ground receipt. Qualify the fixed field
+/// from the visible, top-level stack of the current bundle and its pinned Item profile.
+pub(in crate::gameplay_transport) fn bundle_environment_contact(
+    cells: &crate::content::NativeEntryMovementCells,
+    runtime: &ChannelRuntimeV1,
+    source: &crate::content::native_gameplay::NativeGameplayState,
+    destination: MovementLocalPosition,
+) -> Option<super::NonPlayerFieldContact> {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::map::boot::BundleCollisionIndexExt;
+    use crate::map::view::{EntrySource, compose_tile};
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+
+    let NativeMovementCollisionIndex::Bundle(index) = cells.index() else {
+        return None;
+    };
+    if source.source_digest() != runtime.content_pin().server_artifact_digest() {
+        return None;
+    }
+    let map = index.map();
+    let pos = crate::content::bundle_spell_tiles::tile_pos(crate::content::LogicalCell {
+        x: destination.x,
+        y: destination.y,
+        z: destination.floor.into(),
+    })?;
+    if map.zone_flags(pos)?.1 {
+        return None;
+    }
+    let index = source.item_index()?;
+    let revision = index.revision(ENVIRONMENT_ENERGY_FIELD)?;
+    let definition_ref = index.definition_ref("Item", ENVIRONMENT_ENERGY_FIELD, revision)?;
+    let tile = compose_tile(&map.overlay, &map.facts, pos).ok()??;
+    let placement = tile.entries.iter().find_map(|entry| match entry.source {
+        EntrySource::Base {
+            placement_key,
+            movable: false,
+            ..
+        } if entry.facts.definition == MapDefinition::Item(definition_ref) => Some(placement_key),
+        _ => None,
+    })?;
+    let policy = source.item_policy(ENVIRONMENT_ENERGY_FIELD, revision)?;
+    environment_contact(
+        source,
+        policy.record().attributes.field_condition.as_ref()?,
+        &format!("bundle:{placement}"),
+    )
+}
+
 /// Detached read evidence grants no movement or damage authority. The private
 /// constructor binds actual origin, source destination and predecessor owner.
 struct StepIngressRead<'read, 'holder> {
@@ -163,24 +232,19 @@ impl StepIngressRead<'_, '_> {
                     // Receipt joins prove this exact native or scripted field; an
                     // absent caster alone cannot bypass player-field policy.
                     // M49's 2126 has one entry hit and no residual DOT schedule.
-                    if let Some(values) = values
+                    if values.is_some()
                         && !tile.flags().protection_zone
                         && (item.native_map_origin || item.environment_field_origin)
-                        && item.definition.production_key == "oteryn:item.tibia.i2126"
+                        && item.definition.production_key == ENVIRONMENT_ENERGY_FIELD
                     {
-                        let definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
-                            "native.field.i2126", 1, values,
-                        ).ok_or(MovementError::NotQualified)?;
-                        non_player_contact = Some(super::NonPlayerFieldContact {
-                            origin: super::NonPlayerFieldOrigin::Environment,
-                            source: format!(
-                                "environment:field:{}",
-                                super::hex(&item.item_instance_id)
-                            ),
-                            definition,
-                            element: recipe.element().map_err(|_| MovementError::NotQualified)?,
-                            content: source.source_digest(),
-                        });
+                        non_player_contact = Some(
+                            environment_contact(
+                                source,
+                                recipe,
+                                &super::hex(&item.item_instance_id),
+                            )
+                            .ok_or(MovementError::NotQualified)?,
+                        );
                         continue;
                     }
                     if let Some(values) = values
@@ -309,11 +373,19 @@ impl StepIngressRead<'_, '_> {
                 }
             }
         }
+        if first_magic_field {
+            non_player_contact = bundle_environment_contact(
+                room.movement_cells(),
+                runtime,
+                source,
+                self.destination,
+            );
+        }
         Ok((non_player_contact, player_contact))
     }
 }
 #[allow(clippy::too_many_arguments)]
-pub(super) fn destination(
+pub(in crate::gameplay_transport) fn destination(
     runtime: &ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,
