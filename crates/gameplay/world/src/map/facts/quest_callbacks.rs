@@ -1,5 +1,6 @@
 //! Channel-local callback projection, sharing the bundle's existing fact/view owner.
 use super::*;
+use crate::content::{QualifiedSpellTile, SpellTileLookupError};
 use sha2::{Digest, Sha256};
 
 // A committed callback can replace or remove one exact native door. Keep every
@@ -173,6 +174,7 @@ pub(super) struct CallbackStates {
     pub(super) creature_visuals: std::collections::VecDeque<(u64, CreatureVisualKind)>,
     movement_speech: std::collections::VecDeque<(u64, MovementSpeech)>,
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
+    timed_base_items: BTreeMap<u64, u64>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
     merchant_barricades: BTreeMap<u64, (TilePos, EntryId)>,
@@ -189,6 +191,18 @@ impl CallbackStates {
                 .or_else(|| self.movement_item(key).map(|(pos, _)| pos))
                 .is_some_and(|position| self.reserved_positions.contains(&position))
     }
+    pub(super) fn has_timed_base_transform(&self, pos: TilePos) -> bool {
+        placement_key(pos, 0).is_some_and(|first| {
+            self.timed_base_items
+                .range(first..=first + 63)
+                .any(|(key, revision)| {
+                    self.changed
+                        .get(key)
+                        .is_some_and(|(current, _)| current == revision)
+                })
+        })
+    }
+
     fn position_reserved(&self, position: TilePos) -> bool {
         self.reserved_positions.contains(&position)
             || self.reserved.iter().any(|key| {
@@ -590,6 +604,7 @@ impl CallbackStates {
         self.hidden.retain(|key| !key_inside(key));
         self.passable.retain(|key, _| !key_inside(key));
         self.movement_decays.retain(|(_, key), _| !key_inside(key));
+        self.timed_base_items.retain(|key, _| !key_inside(key));
         let cleared = |p: &TilePos| {
             p.floor == -11 && (33415..=33445).contains(&p.x) && (31522..=31554).contains(&p.y)
         };
@@ -612,6 +627,7 @@ impl CallbackStates {
             + self.actions.len()
             + self.hidden.len()
             + self.movement_decays.len()
+            + self.timed_base_items.len()
             + self.movement_effects.len()
             + self.creature_visuals.len()
             + self.movement_speech.len()
@@ -946,6 +962,58 @@ impl BundleFacts {
         true
     }
 
+    /// Publish an unbound base Item's replacement and collision in one revision.
+    /// The Channel timer restores the original facts only at that revision.
+    pub fn transform_base_item_until(
+        &self,
+        key: u64,
+        expected: u64,
+        before: EntryFacts,
+        after: EntryFacts,
+        due: u64,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if self.house_tile(pos)
+            || before.bound
+            || before.pickupable
+            || !matches!(before.definition, MapDefinition::Item(_))
+            // A native wall Item can carry a Terrain classification in the base palette.
+            || !matches!(before.terrain_kind, None | Some(TerrainKind::Wall))
+            || after.pickupable
+            || self.override_blocks(after) != Some(false)
+            || expected >= u64::MAX - 1
+        {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if states.key_reserved(key)
+            || states.position_reserved(pos)
+            || states.hidden.contains(&key)
+            || states.changed.get(&key).map_or(0, |(r, _)| *r) != expected
+            || !states.has_capacity(4)
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        let revision = expected + 1;
+        let passable = states.passable.insert(key, true);
+        states.changed.insert(key, (revision, after));
+        states.timed_base_items.insert(key, revision);
+        states.movement_decays.insert(
+            (due, key),
+            MovementDecay {
+                revision,
+                restore: before,
+                overlay: Some((false, passable)),
+            },
+        );
+        true
+    }
+
     pub fn next_movement_decay_time(&self) -> Option<u64> {
         let states = self.callbacks.lock().ok()?;
         states
@@ -987,6 +1055,9 @@ impl BundleFacts {
                 continue;
             };
             let key = at.1;
+            if states.timed_base_items.get(&key) == Some(&decay.revision) {
+                states.timed_base_items.remove(&key);
+            }
             if states
                 .changed
                 .get(&key)
@@ -2115,6 +2186,17 @@ impl BundleFacts {
                 .flatten()
                 .is_none_or(|tile| tile.flags().block_solid);
         }
+        self.base_collision_blocked(base, pos, baseline, &states, &rotations)
+    }
+
+    fn base_collision_blocked(
+        &self,
+        base: &super::super::WorldBase,
+        pos: TilePos,
+        baseline: bool,
+        states: &CallbackStates,
+        rotations: &RotationStates,
+    ) -> bool {
         let Some(tile) = base.tile(pos.x, pos.y, pos.floor) else {
             return true;
         };
@@ -2171,6 +2253,75 @@ impl BundleFacts {
             .and_then(|k| states.passable.get(&k).copied())
             .unwrap_or_else(|| tile.walkable());
         !ground_walkable || if changed { blocked } else { baseline }
+    }
+
+    pub(super) fn timed_base_spell_tile(
+        &self,
+        base: &super::super::WorldBase,
+        pos: TilePos,
+        states: &CallbackStates,
+        baseline: &QualifiedSpellTile,
+    ) -> Result<QualifiedSpellTile, SpellTileLookupError> {
+        let unknown = SpellTileLookupError::Unknown;
+        let rotations = self.rotations.lock().map_err(|_| unknown)?;
+        let tile = base.tile(pos.x, pos.y, pos.floor).ok_or(unknown)?;
+        let mut flags = baseline.flags();
+        flags.block_solid = states.phase_has_dynamic_blocker(pos)
+            || states.arena_pillar_closed_at(pos)
+            || self.base_collision_blocked(base, pos, flags.block_solid, states, &rotations);
+        flags.block_projectile = false;
+        let mut immovable = [false; 3];
+        let mut tops = Vec::new();
+        let base_entries = tile
+            .ids()
+            .iter()
+            .zip(tile.depths())
+            .filter(|&(_, &depth)| depth == 0);
+        for (ordinal, (&id, _)) in base_entries.enumerate() {
+            let ordinal = u8::try_from(ordinal).map_err(|_| unknown)?;
+            let key = placement_key(pos, ordinal).ok_or(unknown)?;
+            if states.hidden.contains(&key) {
+                continue;
+            }
+            let entry = match states.changed.get(&key) {
+                Some((_, entry)) => *entry,
+                None => self
+                    .entry(pos, ordinal, id, None, &rotations)
+                    .ok_or(unknown)?,
+            };
+            if entry.appearance_id == 0 || entry.pickupable {
+                return Err(unknown);
+            }
+            let source_id = u32::from(entry.appearance_id);
+            let attrs = self
+                .placements
+                .binary_search_by_key(&key, |(k, _)| *k)
+                .ok()
+                .map(|i| &self.placements[i].1.attrs);
+            let default_attrs = Attrs::default();
+            let entry_flags = super::super::spell_tiles::immovable::flags(
+                source_id,
+                attrs.unwrap_or(&default_attrs),
+            );
+            for (flag, entry_flag) in immovable.iter_mut().zip(entry_flags) {
+                *flag |= entry_flag;
+            }
+            flags.block_projectile |= entry.blocks_projectile;
+            if tile.ground().is_none_or(|(ground, _)| ground != ordinal) {
+                tops.push(source_id);
+            }
+        }
+        [
+            flags.immovable_block_solid,
+            flags.immovable_block_item,
+            flags.immovable_nonfield_block_item,
+        ] = immovable;
+        Ok(QualifiedSpellTile::from_bundle(
+            baseline.ground_source_id().zip(baseline.ground_speed()),
+            tops,
+            flags,
+            baseline.no_pvp_zone().zip(baseline.pvp_zone()),
+        ))
     }
 }
 
