@@ -197,7 +197,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<R
     let expected_reward = provisioning::item_reference(&provisioning::item_index()?, 3266)?.get();
     let awarded = custody(&client)?;
     if !reward_increased(&before_custody, &awarded, expected_reward, 1)
-        || after.entries == before.entries
+        || after.entries != before.entries
     {
         return Err(format!(
             "step=claim claim={} inventory_changed={} quest_changed={}",

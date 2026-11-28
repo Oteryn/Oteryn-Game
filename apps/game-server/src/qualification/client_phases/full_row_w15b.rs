@@ -1,18 +1,8 @@
-//! W15b — quest reward chests/claims, derived from the matrix, the Crystal reaudit, and
-//! `gameplay_transport::bundle_chest` plus `interaction_chest_use`:
+//! Qualify the fixed Battle Axe Quest chest from normal wire commands.
 //!
-//! 1. Admit the provisioned character and send `QuestLogQuery::List`; require the accepted reply
-//!    and retain the quest list and native inventory snapshot.
-//! 2. From the production bundle's served reward-claim bindings, choose a reachable chest whose
-//!    claim advances a real quest, then send ordinary cardinal `STEP` commands until adjacent;
-//!    require `Moved` replies and spatial deltas for every step.
-//! 3. Send native `USE_INTENT` for that exact bundle placement; require `Committed`, a new reward
-//!    item in the inventory state, and a changed quest-journal list proving start/advance.
-//! 4. Send a second native `USE_INTENT` for the same chest; require `NothingToUse` (the durable
-//!    once-claim refusal), with neither inventory nor quest state changed.
-//! 5. Send `LOGOUT`, discard the connection, and freshly admit the same character. Re-query the
-//!    journal and require both the reward custody and advanced quest state to equal step 3; walk
-//!    back if needed and send `USE_INTENT` once more, requiring the same refusal and no delta.
+//! Seed only the approach placement. Verify one Battle Axe and one durable claim
+//! transition, an unchanged Global Quest Log list, and exact duplicate refusals
+//! both before and after fresh admission.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -327,9 +317,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if receipts_after != (receipts_before.0 + 1, receipts_before.1 + 1) {
         return Err(format!("step-3: exact quest receipt missing or unrelated transition committed: expected={} before={receipts_before:?} after={receipts_after:?}", chest.transition).into());
     }
-    if advanced == before_quests {
+    // The Battle Axe Quest is absent from Global's displayed Quest Log list.
+    // Its once-only progress is proved by the exact durable claim transition above.
+    if advanced != before_quests {
         return Err(format!(
-            "step-3: USE committed but quest-list delta missing claim={}",
+            "step-3: Battle Axe claim unexpectedly changed the Global Quest Log list claim={}",
             chest.claim
         )
         .into());
