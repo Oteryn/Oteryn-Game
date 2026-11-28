@@ -89,6 +89,7 @@ pub(super) async fn verify(
         )
         .await
         .map_err(debug)?;
+    eprintln!("w12speed-marker: cyclopedia_postgres_canonical_conversion_preserves_completed_legacy_progress db ready");
 
     step(
         owner,

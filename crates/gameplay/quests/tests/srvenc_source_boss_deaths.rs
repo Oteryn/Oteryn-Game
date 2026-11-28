@@ -41,6 +41,12 @@ fn source_room_credit_and_damage_map_credit_are_distinct_and_floor_exact() -> Re
             assert!(rule.recipient([x2, y2, z], false));
             assert!(!rule.recipient([x1 - 1, y1, z], true));
             assert!(!rule.recipient([x1, y1, z + 1], true));
+        } else if rule.top_damage_party {
+            for dealt_damage in [false, true] {
+                assert!(!rule.recipient([0, 0, -7], dealt_damage));
+                assert!(!rule.recipient_with_party([0, 0, -7], dealt_damage, false));
+                assert!(rule.recipient_with_party([0, 0, -7], dealt_damage, true));
+            }
         } else {
             assert!(rule.recipient([0, 0, -7], true));
             assert!(!rule.recipient([0, 0, -7], false));

@@ -1,0 +1,31 @@
+{
+  "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+  "source": {
+    "path": "docs/reference/content-prep/outfits-content-1/admission-evidence/evidence-00000-00135.json",
+    "record": "oteryn:content.outfit.field_surgeon_outfits",
+    "revision": "wiki:108239:1181114",
+    "selector": "full_store_price, male_look_type, female_look_type",
+    "outfit_looks": {
+      "oteryn:outfit.field_surgeon": [
+        1814,
+        1815
+      ]
+    },
+    "mount_looks": {}
+  },
+  "offers": [
+    {
+      "key": "store:outfit:field-surgeon",
+      "category": "cosmetics.outfits",
+      "title": "Field Surgeon (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.field_surgeon",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.field_surgeon"
+      },
+      "source_line": 8099
+    }
+  ]
+}

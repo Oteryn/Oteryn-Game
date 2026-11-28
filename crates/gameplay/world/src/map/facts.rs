@@ -53,8 +53,9 @@ mod world_change_phases;
 pub use feroxa_map_phases::{FeroxaPhaseTile, prepare_feroxa_phase};
 use quest_callbacks::CallbackStates;
 pub use quest_callbacks::{
-    ArenaPillarProjection, ElementalArrivalReservation, QuestCallbackProjection, QuestMapItemMove,
-    QuestSceneMutation, QuestTimedPassage, RafzaneElevator, SourceBossLeverProjection,
+    ArenaPillarProjection, ElementalArrivalReservation, PreparedSceneClose,
+    QuestCallbackProjection, QuestMapItemMove, QuestSceneMutation, QuestTimedPassage,
+    RafzaneElevator, SourceBossLeverProjection,
 };
 
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
@@ -1092,6 +1093,10 @@ fn bound_without_action(attrs: &Attrs) -> bool {
 /// record is walkable or has no collision fact (Terrain).
 const SOLID_FLOOR_CHANGE: &[u16] = &[17230, 24806, 24810, 24812, 28655];
 
+// The WorldObject catalogue marks the Cursed Crystal stair decoration as non-solid.
+// Its floor changes are action callbacks, so the ordinary floor mask has no entry.
+const CURSED_CRYSTAL_STAIR: &str = "oteryn:item.tibia.i19387";
+
 /// Whether the catalogue says the entry `key` names changes floors and can be walked onto: the
 /// compiler routes stairs and holes to Item entries that production definitions leave without a
 /// solidity fact, and a solid floor-change object (`SOLID_FLOOR_CHANGE`) is not one of them.
@@ -1240,7 +1245,8 @@ fn palette_facts(
         facts.pickupable = definition.pickupable;
         solid = definition.solid.unwrap_or_else(|| {
             // Crystal 201189f8 gives these Library staging bookstands unmove without unpass.
-            !walkable_floor_change(&entry.key)
+            entry.key != CURSED_CRYSTAL_STAIR
+                && !walkable_floor_change(&entry.key)
                 && !terrain_allows_item_passage(entry)
                 && !nonsolid_transition_layer(entry)
                 && !matches!(
@@ -1962,6 +1968,24 @@ mod tests {
             })
         };
         palette_facts(&entry, &definition).expect("facts").solid
+    }
+
+    #[test]
+    fn cursed_crystal_stair_inherits_the_source_collision_fact() {
+        let source: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/world/objects/objects-06000-06499.json"
+        ))
+        .expect("WorldObject catalogue");
+        let stair = source["records"]
+            .as_array()
+            .expect("WorldObject records")
+            .iter()
+            .find(|record| record["identity"]["key"] == "oteryn:world-object.tibia.i19387")
+            .expect("Cursed Crystal stair");
+        let blocks = &stair["collision"]["blocks_movement"];
+        assert_eq!(blocks["state"], "KNOWN");
+        assert_eq!(blocks["value"], false);
+        assert!(!item_solid(CURSED_CRYSTAL_STAIR));
     }
 
     #[test]

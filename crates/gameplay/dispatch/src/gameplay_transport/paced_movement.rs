@@ -42,12 +42,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=step_rejected_dawnport");
             return (StepOutcome::rejected(), None);
         }
-        if !self.ensure_source_map_initialized().await {
-            #[cfg(test)]
-            eprintln!("M25 movement preflight rejected at {}", line!());
-            operator_event("event=step_rejected_source_map");
-            return (StepOutcome::rejected(), None);
-        }
+        let source_map_initialized = self.ensure_source_map_initialized().await;
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
         if self.states.spell_states.lock().await.is_dead(actor) {
             #[cfg(test)]
@@ -65,6 +60,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=step_rejected_lane");
             return (StepOutcome::rejected(), None);
         };
+        if !source_map_initialized
+            || super::loop_move::reconcile_cask_collision(self)
+                .await
+                .is_none()
+        {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_source_map");
+            return (StepOutcome::rejected(), None);
+        }
         if !self.refresh_pvp_locks(actor, session).await {
             #[cfg(test)]
             eprintln!("M25 movement preflight rejected at {}", line!());

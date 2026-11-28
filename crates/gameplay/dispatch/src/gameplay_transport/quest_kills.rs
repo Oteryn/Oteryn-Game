@@ -53,7 +53,53 @@ pub(super) async fn settle(
     let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(entry.facts.occurrence) else {
         return false;
     };
+    let principal = entry.facts.principal;
+    let needs_peer_admission = |recipient: &Recipient| {
+        &recipient.character != principal.character.as_bytes()
+            && oteryn_gameplay_quests::quest::source_deaths::rule(&recipient.death.transition)
+                .is_some_and(|rule| rule.top_damage_party)
+    };
+    if frozen.source_party.get().is_none()
+        && frozen.native.iter().any(needs_peer_admission)
+        && let Some(party_at_death) = frozen.source_party_at_death
+    {
+        let party = match owner.current_quest_fence(principal.session).await {
+            Ok(Some(fence))
+                if fence.character_id.as_bytes() == principal.character.as_bytes()
+                    && fence.character_lease_generation == principal.lease_generation
+                    && fence.runtime_scope == entry.facts.death.runtime_scope()
+                    && fence.scope_ownership_generation
+                        == entry.facts.death.scope_ownership_generation() =>
+            {
+                let Ok(party) = owner
+                    .root
+                    .read_source_death_party(
+                        owner.character,
+                        owner.holder,
+                        fence.item_fence(),
+                        entry.facts.died_at_unix_ms,
+                        party_at_death,
+                    )
+                    .await
+                else {
+                    return false;
+                };
+                party
+            }
+            Ok(_) => Vec::new(),
+            Err(()) => return false,
+        };
+        let _ = frozen.source_party.set(party);
+    }
     for recipient in &frozen.native {
+        if needs_peer_admission(recipient)
+            && !frozen
+                .source_party
+                .get()
+                .is_some_and(|roster| roster.contains(&recipient.character))
+        {
+            continue;
+        }
         let fence = match owner.current_quest_fence(recipient.session).await {
             Ok(Some(fence)) => fence,
             Ok(None) => continue,

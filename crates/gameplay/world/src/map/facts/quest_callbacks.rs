@@ -77,7 +77,7 @@ pub enum QuestCallbackProjection {
         due: u64,
         restore: EntryFacts,
     },
-    /// Hide the selected source and restore exactly its committed revision.
+    /// Hide the selected base object until its exact revision's reset.
     TimedRemoval {
         due: u64,
         restore: EntryFacts,
@@ -161,6 +161,7 @@ pub(super) struct CallbackStates {
     pub(super) feroxa_phase: Option<Arc<super::feroxa_map_phases::FeroxaMapPhase>>,
     pub(super) reserved: BTreeSet<u64>,
     pub(super) reserved_positions: BTreeSet<TilePos>,
+    scene_reserved_capacity: usize,
     pub(super) changed: BTreeMap<u64, (u64, EntryFacts)>,
     pub(super) actions: BTreeMap<u64, Option<u16>>,
     pub(super) hidden: BTreeSet<u64>,
@@ -608,6 +609,7 @@ impl CallbackStates {
             + self.arena_pillars.len()
             + self.arena_recreated.len()
             + self.reserved_positions.len()
+            + self.scene_reserved_capacity
             + self.changed.len()
             + self.actions.len()
             + self.hidden.len()
@@ -654,6 +656,80 @@ impl Drop for SourceBossLeverProjection {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             Arc::make_mut(&mut states).reserved.remove(&self.key);
+        }
+    }
+}
+
+/// An unpublished scene holds its exact keys, new entry ids and overlay capacity.
+pub struct PreparedSceneClose<'a> {
+    callbacks: &'a Mutex<Arc<CallbackStates>>,
+    keys: BTreeSet<u64>,
+    positions: BTreeSet<TilePos>,
+    capacity: usize,
+    staged: Arc<CallbackStates>,
+    creations: Vec<(TilePos, usize, bool)>,
+    published: bool,
+}
+
+impl PreparedSceneClose<'_> {
+    fn release(&self, states: &mut CallbackStates) {
+        for key in &self.keys {
+            states.reserved.remove(key);
+        }
+        for position in &self.positions {
+            states.reserved_positions.remove(position);
+        }
+        states.scene_reserved_capacity -= self.capacity;
+    }
+
+    pub fn publish(mut self) {
+        let mut states = self
+            .callbacks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let states = Arc::make_mut(&mut states);
+        self.release(states);
+        // Presentations and unrelated map facts can change while custody commits.
+        // Publish just the fields owned by the staged scene.
+        for key in &self.keys {
+            if let Some(changed) = self.staged.changed.get(key) {
+                states.changed.insert(*key, *changed);
+            }
+            if self.staged.hidden.contains(key) {
+                states.hidden.insert(*key);
+            } else {
+                states.hidden.remove(key);
+            }
+            if let Some(passable) = self.staged.passable.get(key) {
+                states.passable.insert(*key, *passable);
+            } else {
+                states.passable.remove(key);
+            }
+        }
+        for &(position, original, blocks) in &self.creations {
+            if let Some(entries) = self.staged.movement_items.get(&position) {
+                states
+                    .movement_items
+                    .entry(position)
+                    .or_default()
+                    .extend(entries.iter().skip(original).copied());
+            }
+            if blocks {
+                states.solid_items.insert(position);
+            }
+        }
+        self.published = true;
+    }
+}
+
+impl Drop for PreparedSceneClose<'_> {
+    fn drop(&mut self) {
+        if !self.published {
+            let mut states = self
+                .callbacks
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            self.release(Arc::make_mut(&mut states));
         }
     }
 }
@@ -1807,6 +1883,116 @@ impl BundleFacts {
         let Ok(mut states) = self.callbacks.lock() else {
             return false;
         };
+        Self::project_quest_callback(
+            &mut states,
+            key,
+            expected,
+            after,
+            passages,
+            replacements,
+            close,
+            projection,
+        )
+    }
+
+    /// Stage the exact scene projection before committing its durable item moves.
+    /// The map reservation survives custody I/O. Publish only after revalidating
+    /// the scene's actors under the exclusive Channel runtime.
+    pub fn stage_scene_close(
+        &self,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        passages: &[u64],
+        replacements: &[(u64, EntryFacts, bool)],
+        projection: Option<&QuestCallbackProjection>,
+    ) -> Option<PreparedSceneClose<'_>> {
+        let Some(QuestCallbackProjection::Scene { mutations, .. }) = projection else {
+            return None;
+        };
+        let mut keys = BTreeSet::from([key]);
+        keys.extend(passages);
+        keys.extend(replacements.iter().map(|(key, _, _)| *key));
+        let mut positions = BTreeSet::new();
+        let mut blockers = BTreeSet::new();
+        for edit in mutations {
+            match *edit {
+                QuestSceneMutation::Remove { key, .. }
+                | QuestSceneMutation::Replace { key, .. }
+                | QuestSceneMutation::Restore { key, .. } => {
+                    keys.insert(key);
+                }
+                QuestSceneMutation::Create {
+                    position, passable, ..
+                } => {
+                    positions.insert(position);
+                    if !passable {
+                        blockers.insert(position);
+                    }
+                }
+            }
+        }
+        let mut current = self.callbacks.lock().ok()?;
+        let mut staged = Arc::clone(&current);
+        if !Self::project_quest_callback(
+            &mut staged,
+            key,
+            expected,
+            after,
+            passages,
+            replacements,
+            true,
+            projection,
+        ) {
+            return None;
+        }
+        let footprint = mutations.len() * 3 + 1 + passages.len() + replacements.len();
+        let reserved = keys.len() + positions.len();
+        if !current.has_capacity(footprint.max(reserved)) {
+            return None;
+        }
+        let capacity = footprint.saturating_sub(reserved);
+        let creations = positions
+            .iter()
+            .map(|&position| {
+                (
+                    position,
+                    current.movement_items.get(&position).map_or(0, Vec::len),
+                    blockers.contains(&position),
+                )
+            })
+            .collect();
+        let current = Arc::make_mut(&mut current);
+        // Allocate each added id once. An abandoned scene leaves harmless gaps.
+        current.movement_sequence = staged.movement_sequence;
+        current.reserved.extend(&keys);
+        current.reserved_positions.extend(&positions);
+        current.scene_reserved_capacity += capacity;
+        Some(PreparedSceneClose {
+            callbacks: &self.callbacks,
+            keys,
+            positions,
+            capacity,
+            staged,
+            creations,
+            published: false,
+        })
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the preview and publication share the same map commit checks"
+    )]
+    fn project_quest_callback(
+        states: &mut Arc<CallbackStates>,
+        key: u64,
+        expected: u64,
+        after: EntryFacts,
+        passages: &[u64],
+        replacements: &[(u64, EntryFacts, bool)],
+        close: bool,
+        projection: Option<&QuestCallbackProjection>,
+    ) -> bool {
         let projection_capacity = match projection {
             Some(QuestCallbackProjection::TimedPassages {
                 entries,
@@ -1903,7 +2089,7 @@ impl BundleFacts {
         if let Some(staged) = staged {
             *states = Arc::new(staged);
         }
-        let states = Arc::make_mut(&mut states);
+        let states = Arc::make_mut(states);
         for passage in passages {
             if close {
                 states.hidden.remove(passage);
@@ -2295,6 +2481,54 @@ fn project_scene(
 mod primal_pod_removal_tests {
     use super::*;
     use std::num::NonZeroU32;
+
+    #[test]
+    fn prepared_scene_keeps_unrelated_map_publications() -> Result<(), String> {
+        let map = BundleFacts::default();
+        let tile = TilePos {
+            x: 8,
+            y: 8,
+            floor: -7,
+        };
+        let entry = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 42,
+            blocks_projectile: true,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        };
+        let projection = QuestCallbackProjection::Scene {
+            mutations: vec![QuestSceneMutation::Create {
+                position: tile,
+                facts: entry,
+                passable: false,
+            }],
+            remove_self: false,
+        };
+        let abandoned = map
+            .stage_scene_close(1, 0, entry, &[], &[], Some(&projection))
+            .ok_or("prepare abandoned scene")?;
+        drop(abandoned);
+        let scene = map
+            .stage_scene_close(1, 0, entry, &[], &[], Some(&projection))
+            .ok_or("stage scene")?;
+        assert!(!map.apply_quest_callback(1, 0, entry, &[], &[], false, None));
+        assert!(map.apply_quest_callback(2, 0, entry, &[], &[], false, None));
+        assert!(map.emit_movement_effect(tile, 13));
+        scene.publish();
+
+        let states = map.callbacks.lock().map_err(|_| "scene states")?;
+        assert_eq!(states.changed.get(&1), Some(&(1, entry)));
+        assert_eq!(states.changed.get(&2), Some(&(1, entry)));
+        assert_eq!(states.movement_effects.len(), 1);
+        assert_eq!(states.movement_items.get(&tile).map(Vec::len), Some(1));
+        assert!(states.solid_items.contains(&tile));
+        assert_eq!(states.scene_reserved_capacity, 0);
+        Ok(())
+    }
 
     #[test]
     fn volatile_pod_removal_is_exact_and_frees_the_physical_occurrence() -> Result<(), String> {

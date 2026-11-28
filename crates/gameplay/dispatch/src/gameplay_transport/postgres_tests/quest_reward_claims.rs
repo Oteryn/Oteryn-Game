@@ -219,7 +219,6 @@ const PHASE_A_CONTAINERS: &[Chest] = &[
         contents: &[
             ("oteryn:item.tibia.i3448", 30, 0),
             ("oteryn:item.tibia.i3299", 1, 0),
-            ("oteryn:item.tibia.i3299", 1, 0),
         ],
         text_digest: None,
     },
@@ -320,7 +319,7 @@ fn quest_reward_claims_batch_one_purple_tome_all_three_bookcases() -> TestResult
 }
 
 #[test]
-fn quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay() -> TestResult {
+fn quest_reward_claims_batch_two_poison_daggers_numeric_contents_once_and_replay() -> TestResult {
     execute(&PHASE_A_CONTAINERS[2])
 }
 

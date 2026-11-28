@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.triangletower",
+      "position": [
+        32565,
+        32119,
+        3
+      ],
+      "appearance": 2472,
+      "unique": 6160,
+      "source_line": 1831
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.trollcave1",
+      "position": [
+        33143,
+        31719,
+        10
+      ],
+      "appearance": 2473,
+      "unique": 6039,
+      "source_line": 873
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.trollcave1",
+      "position": [
+        33143,
+        31721,
+        10
+      ],
+      "appearance": 2473,
+      "unique": 6040,
+      "source_line": 880
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.vampireshield1",
+      "position": [
+        33188,
+        31682,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6071,
+      "source_line": 1119
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.vampireshield2",
+      "position": [
+        33189,
+        31688,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6041,
+      "source_line": 888
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.vampireshield3",
+      "position": [
+        33195,
+        31688,
+        14
+      ],
+      "appearance": 2469,
+      "unique": 6042,
+      "source_line": 895
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.weddingring1",
+      "position": [
+        33158,
+        31621,
+        15
+      ],
+      "appearance": 2469,
+      "unique": 6043,
+      "source_line": 903
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.weddingring2",
+      "position": [
+        33158,
+        31622,
+        15
+      ],
+      "appearance": 2469,
+      "unique": 6044,
+      "source_line": 910
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.waterfall_quest",
+      "position": [
+        32970,
+        32646,
+        8
+      ],
+      "appearance": 2472,
+      "unique": 6258,
+      "source_line": 2591
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_2.vampire_hunter_quest.blood_skull",
+      "position": [
+        32972,
+        31461,
+        10
+      ],
+      "appearance": 1986,
+      "unique": 6278,
+      "source_line": 2673
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}
