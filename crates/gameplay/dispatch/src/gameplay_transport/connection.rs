@@ -1443,13 +1443,27 @@ async fn world_map_frames<A: FreshAdmissionAuthority>(
     view: &mut SessionMapView,
     items: &mut SessionItemView,
 ) -> Option<Option<(u64, Vec<Vec<u8>>)>> {
-    match authority.observe_world_map(actor, view, items).await? {
-        Ok(None) => Some(None),
-        Ok(Some(MapUpdate::Delta(delta))) => {
+    let update = authority
+        .observe_world_map(actor, view, items)
+        .await?
+        .ok()?;
+    match update {
+        None => Some(None),
+        Some(update) => encode_world_map_frames(generation, sequence, update).map(Some),
+    }
+}
+
+fn encode_world_map_frames(
+    generation: u64,
+    sequence: u64,
+    update: MapUpdate,
+) -> Option<(u64, Vec<Vec<u8>>)> {
+    match update {
+        MapUpdate::Delta(delta) => {
             let (sequence, frame) = item_view_delta(generation, sequence, &delta)?;
-            Some(Some((sequence, vec![frame])))
+            Some((sequence, vec![frame]))
         }
-        Ok(Some(MapUpdate::Snapshot(snapshot))) => {
+        MapUpdate::Snapshot(snapshot) => {
             // Admission reserves snapshot ID 1. Sequence boundaries also identify the
             // existing scope-barrier snapshots, so reserve at least boundary 2 here.
             let target = sequence.checked_add(1)?.max(2);
@@ -1465,9 +1479,8 @@ async fn world_map_frames<A: FreshAdmissionAuthority>(
                 }],
             )
             .ok()?;
-            Some(Some((target, frames)))
+            Some((target, frames))
         }
-        Err(_) => None,
     }
 }
 

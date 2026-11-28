@@ -13,11 +13,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(Unavailable);
         };
-        // A player waiting to enter keeps the scheduled monster passes from retaking the
-        // returned holder ahead of it, as logout does.
-        let Ok(_foreground) = self.root.foreground_demand() else {
-            return Err(Unavailable);
-        };
         let malformed = Classified(N8::AdmissionGrantMalformed);
         let token = std::str::from_utf8(attempt.admission_material).map_err(|_| malformed)?;
         // Untrusted selector only; verification below checks the same token.
@@ -34,21 +29,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // never creates a new preference window; cancellation drops this guard.
         let _foreground = self.root.foreground_demand().map_err(|_| Unavailable)?;
         let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
-        let record = loop {
-            match self
-                .root
-                .read_current_character(self.character, character_id)
-                .await
-            {
-                Ok(record) => break record,
-                Err(CharacterAuthorityError::Unavailable(_)) => {
-                    if !budget.retries_unavailable(Unavailable).await {
-                        return Err(Unavailable);
-                    }
-                }
-                Err(_) => return Err(Rejected),
-            }
-        };
+        let record = budget
+            .retry_logged_holder(
+                "fresh_admission_character",
+                async || {
+                    self.root
+                        .read_current_character(self.character, character_id)
+                        .await
+                },
+                |error| matches!(error, CharacterAuthorityError::Unavailable(_)),
+            )
+            .await
+            .map_err(|error| match error {
+                CharacterAuthorityError::Unavailable(_) => Unavailable,
+                _ => Rejected,
+            })?;
         // The grant is not authenticated yet: a classified answer here would reveal another
         // world's character, so only 1100/1101 may precede authentication (N8 precedence).
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
@@ -58,14 +53,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Resolve the ban from current truth within the same admission budget;
         // transient holder absence is not an authenticated grant verdict.
         if budget
-            .retry_unavailable(async || {
-                self.root.await_ready().await.map_err(|_| Unavailable)?;
-                self.root
-                    .staff_account_banned(self.character, record.account_id)
-                    .await
-                    .map_err(|_| Unavailable)
-            })
-            .await?
+            .retry_logged_holder(
+                "fresh_admission_ban",
+                async || {
+                    self.root
+                        .staff_account_banned(self.character, record.account_id)
+                        .await
+                },
+                |_| true,
+            )
+            .await
+            .map_err(|_| Unavailable)?
         {
             return Err(Rejected);
         }
