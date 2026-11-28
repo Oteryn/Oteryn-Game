@@ -21,7 +21,7 @@
 //!    server again rejects it with the protected-character reply and no
 //!    vitals delta, proving the removal controls the live permission check.
 
-use super::*;
+use super::{provisioning::with_peer_liveness, *};
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatLine, ChatSpeechMode, DevClientSession};
 use oteryn_protocol_oteryn::exiva::{
     CAPABILITY_EXIVA_SETTINGS_V1, COMMAND_TYPE_EXIVA_SETTINGS, PlayerList,
@@ -342,7 +342,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "E2E_P17_CHECK caster-preparation PASS level=8 max_health={max_health} max_mana={max_mana}"
     ));
-    let mut target = connect_character(clients, 0xd4, 0).await?;
+    let mut target = with_peer_liveness(&mut caster, connect_character(clients, 0xd4, 0)).await?;
     if !target
         .selected_capabilities()
         .contains(&CAPABILITY_EXIVA_SETTINGS_V1)
@@ -352,46 +352,58 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let target_name = own_name(&target)?;
     let caster_name = own_name(&caster)?;
 
-    let initial = list(&mut target).await?;
-    if matches!(initial.modes, 0 | 2) || !initial.players.is_empty() {
-        return Err(format!(
-            "step 1 expected a distinct enabled mode and no explicit entries: {initial:?}"
-        )
-        .into());
-    }
-    if settings(&mut target, &[0, 0]).await? != [1]
-        || list(&mut target).await?
-            != (PlayerList {
-                modes: 0,
-                players: Vec::new(),
-            })
-    {
-        return Err("step 1 SetModes(0) lacked accepted receipt/list state delta".into());
-    }
-    row.pass("deny-modes", 0_u8);
+    with_peer_liveness(&mut caster, async {
+        let initial = list(&mut target).await?;
+        if matches!(initial.modes, 0 | 2) || !initial.players.is_empty() {
+            return Err(format!(
+                "step 1 expected a distinct enabled mode and no explicit entries: {initial:?}"
+            )
+            .into());
+        }
+        if settings(&mut target, &[0, 0]).await? != [1]
+            || list(&mut target).await?
+                != (PlayerList {
+                    modes: 0,
+                    players: Vec::new(),
+                })
+        {
+            return Err("step 1 SetModes(0) lacked accepted receipt/list state delta".into());
+        }
+        row.pass("deny-modes", 0_u8);
+
+        Ok(())
+    })
+    .await?;
 
     require_full_vitals(&caster)?;
-    let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
+    let (_, denied) = with_peer_liveness(
+        &mut target,
+        cast(&mut caster, &target_name, ChatDisposition::Rejected),
+    )
+    .await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 2 denial lacked protected reply: {denied:?}").into());
     }
     row.pass("denied-cast", denied);
 
-    if settings(&mut target, &[0, 2]).await? != [1]
-        || list(&mut target).await?
-            != (PlayerList {
-                modes: 2,
-                players: Vec::new(),
-            })
-    {
-        return Err("step 3 SetModes(2) did not enable the empty explicit list".into());
-    }
-    let mut add = vec![6];
-    add.extend(caster_name.as_bytes());
-    if settings(&mut target, &add).await? != [1] {
-        return Err("step 3 AddName lacked accepted receipt".into());
-    }
-    let allowed = list(&mut target).await?;
+    let allowed = with_peer_liveness(&mut caster, async {
+        if settings(&mut target, &[0, 2]).await? != [1]
+            || list(&mut target).await?
+                != (PlayerList {
+                    modes: 2,
+                    players: Vec::new(),
+                })
+        {
+            return Err("step 3 SetModes(2) did not enable the empty explicit list".into());
+        }
+        let mut add = vec![6];
+        add.extend(caster_name.as_bytes());
+        if settings(&mut target, &add).await? != [1] {
+            return Err("step 3 AddName lacked accepted receipt".into());
+        }
+        list(&mut target).await
+    })
+    .await?;
     let (caster_id, listed_name) = allowed
         .players
         .first()
@@ -419,7 +431,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let (_, located) = cast(&mut caster, &target_name, ChatDisposition::Ok).await?;
+    let (_, located) = with_peer_liveness(
+        &mut target,
+        cast(&mut caster, &target_name, ChatDisposition::Ok),
+    )
+    .await?;
     if !located
         .iter()
         .any(|line| line == &format!("{target_name} is standing next to you."))
@@ -427,55 +443,63 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step 4 allowed cast lacked Find Person reply: {located:?}").into());
     }
     row.pass("allowed-cast", located);
-    drink_mana_potion(&mut caster).await?;
+    with_peer_liveness(&mut target, drink_mana_potion(&mut caster)).await?;
 
-    malformed_refused(&mut target).await?;
-    if list(&mut target).await? != allowed {
-        return Err("step 5 malformed refusal changed the allow-list".into());
-    }
-    row.pass("malformed-refusal", CommandStatus::Rejected);
+    let mut target = with_peer_liveness(&mut caster, async {
+        malformed_refused(&mut target).await?;
+        if list(&mut target).await? != allowed {
+            return Err("step 5 malformed refusal changed the allow-list".into());
+        }
+        row.pass("malformed-refusal", CommandStatus::Rejected);
 
-    let previous_session = target.join_snapshot().game_session_id;
-    logout(&mut target).await?;
-    drop(target);
-    let mut target = connect_character(clients, 0xd6, 0).await?;
-    if target.join_snapshot().game_session_id == previous_session
-        || list(&mut target).await? != allowed
-    {
-        return Err("step 6 fresh admission did not retain the durable allow-list".into());
-    }
-    row.pass(
-        "fresh-admission-state",
-        target.join_snapshot().game_session_id,
-    );
+        let previous_session = target.join_snapshot().game_session_id;
+        logout(&mut target).await?;
+        drop(target);
+        let mut target = connect_character(clients, 0xd6, 0).await?;
+        if target.join_snapshot().game_session_id == previous_session
+            || list(&mut target).await? != allowed
+        {
+            return Err("step 6 fresh admission did not retain the durable allow-list".into());
+        }
+        row.pass(
+            "fresh-admission-state",
+            target.join_snapshot().game_session_id,
+        );
 
-    let mut remove = vec![2];
-    remove.extend(caster_id);
-    if settings(&mut target, &remove).await? != [1] {
-        return Err("step 7 RemovePlayer lacked accepted receipt".into());
-    }
-    let removed = list(&mut target).await?;
-    if removed.modes != 2 || !removed.players.is_empty() {
-        return Err(format!("step 7 removal delta mismatch: {removed:?}").into());
-    }
-    row.pass("remove-player", &removed);
+        let mut remove = vec![2];
+        remove.extend(caster_id);
+        if settings(&mut target, &remove).await? != [1] {
+            return Err("step 7 RemovePlayer lacked accepted receipt".into());
+        }
+        let removed = list(&mut target).await?;
+        if removed.modes != 2 || !removed.players.is_empty() {
+            return Err(format!("step 7 removal delta mismatch: {removed:?}").into());
+        }
+        row.pass("remove-player", &removed);
 
-    let removal_session = target.join_snapshot().game_session_id;
-    logout(&mut target).await?;
-    drop(target);
-    let mut target = connect_character(clients, 0xd8, 0).await?;
-    if target.join_snapshot().game_session_id == removal_session
-        || list(&mut target).await? != removed
-    {
-        return Err("step 8 fresh admission did not retain the removed entry and mode".into());
-    }
+        let removal_session = target.join_snapshot().game_session_id;
+        logout(&mut target).await?;
+        drop(target);
+        let mut target = connect_character(clients, 0xd8, 0).await?;
+        if target.join_snapshot().game_session_id == removal_session
+            || list(&mut target).await? != removed
+        {
+            return Err("step 8 fresh admission did not retain the removed entry and mode".into());
+        }
+        Ok(target)
+    })
+    .await?;
     require_full_vitals(&caster)?;
-    let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
+    let (_, denied) = with_peer_liveness(
+        &mut target,
+        cast(&mut caster, &target_name, ChatDisposition::Rejected),
+    )
+    .await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {
         return Err(format!("step 8 denial lacked protected reply: {denied:?}").into());
     }
     row.pass("removed-cast-refusal", denied);
-    logout(&mut target).await?;
+    with_peer_liveness(&mut caster, logout(&mut target)).await?;
     logout(&mut caster).await?;
     release_row_characters(&caster_clients).await
 }
