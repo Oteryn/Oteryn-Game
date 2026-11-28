@@ -198,6 +198,8 @@ pub struct LoopContainer {
 pub struct LoopGroundItem {
     /// A committed creature-death corpse uses native cell and content-pin axes.
     pub native_corpse: bool,
+    /// Receipt-proven player corpse with the death cell's map binding.
+    pub player_corpse: bool,
     /// Authenticated costless native callback MINT, including explicit Lua timers.
     /// This is representation DATA; no custody or pickup authority is granted.
     pub source_native_ground: bool,
@@ -2431,7 +2433,7 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
+                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, COALESCE(cr.loot_table_family='PlayerDeath',false) AS player_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
                                 CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
                                 CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
@@ -2475,6 +2477,7 @@ impl DurabilityRoot {
                             .ok_or(DurabilityError::InvalidStoredState)?;
                         Ok(LoopGroundItem {
                             native_corpse: row.try_get("native_corpse")?,
+                            player_corpse: row.try_get("player_corpse")?,
                             source_native_ground: row.try_get("source_native_ground")?,
                             source_plain_corpse: row.try_get("source_plain_corpse")?,
                             field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),

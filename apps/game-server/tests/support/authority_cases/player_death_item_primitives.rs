@@ -1017,7 +1017,13 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool, reset: boo
         h.count("game_item_nested_entries").await?,
         if direct_bag { 7 } else { 8 }
     );
-    assert!(h.on_ground(selected).await?);
+    let corpse = if direct_bag {
+        assert!(h.on_ground(selected).await?);
+        None
+    } else {
+        assert!(!h.on_ground(selected).await?);
+        Some(player_corpse_of(&h, selected).await?)
+    };
     let written: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(selected.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(
@@ -1031,7 +1037,7 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool, reset: boo
     assert_eq!(written, replayed);
     assert_eq!(nested_death_snapshot(&h, selected).await?, before);
     assert_eq!(h.count("game_player_death_item_records").await?, 1);
-    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 1 + i64::from(corpse.is_some()));
     for item in &items[usize::from(direct_bag)..] {
         let owner: Option<String> = sqlx::query_scalar(
             "SELECT owner_character::text FROM game_item_loop_owner(encode($1,'hex')::uuid)",
@@ -1068,7 +1074,12 @@ async fn run_nested_death_regression(admin: String, direct_bag: bool, reset: boo
     );
     drop(permit);
     if reset {
-        retire_nested_death_ground(&h, &reopened, &authority, &items, direct_bag).await?;
+        if let Some(corpse) = corpse {
+            let order: Vec<_> = items.iter().rev().copied().chain([corpse]).collect();
+            retire_player_corpse_for_reset(&h, &reopened, &authority, &order).await?;
+        } else {
+            retire_nested_death_ground(&h, &reopened, &authority, &items, direct_bag).await?;
+        }
     }
     assert_eq!(
         h.character_revision().await?,
@@ -1108,7 +1119,7 @@ fn player_death_nested_direct_bag_preserves_descendants() -> TestResult {
 }
 
 #[test]
-fn player_death_nested_selected_backpack_reset_is_atomic_and_postordered() -> TestResult {
+fn player_death_nested_selected_backpack_reset_drains_corpse_postorder() -> TestResult {
     nested_death_case(false, true)
 }
 
@@ -1174,6 +1185,50 @@ async fn observe_nested_retirement_order(h: &Harness) -> TestResult {
         CREATE TRIGGER a_test_nested_retire_order AFTER INSERT ON game_item_decay_retire_receipts
           FOR EACH ROW WHEN(NEW.cause_kind='WORLD_RESET') EXECUTE FUNCTION test_log_nested_retire();")
         .execute(&h.pool).await?;
+    Ok(())
+}
+
+async fn player_corpse_of(h: &Harness, child: [u8; 16]) -> TestResult<[u8; 16]> {
+    let corpse: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT e.parent_item_instance_id FROM game_item_corpse_container_entries e
+         JOIN game_item_mint_receipts m ON m.item_instance_id=e.parent_item_instance_id
+         WHERE e.item_instance_id=encode($1,'hex')::uuid AND m.loot_table_family='PlayerDeath'",
+    ).bind(child.as_slice()).fetch_one(&h.pool).await?;
+    Ok(*corpse.as_bytes())
+}
+
+async fn retire_player_corpse_for_reset(
+    h: &Harness,
+    root: &crate::durability::DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    expected_order: &[[u8; 16]],
+) -> TestResult {
+    let expected_corpse = *expected_order.last().ok_or("missing corpse root")?;
+    let reset = prepare_nested_reset(h, root).await?;
+    observe_nested_retirement_order(h).await?;
+    let audits_before = h.count("game_item_audit_outbox").await?;
+    assert!(root.retire_world_reset_ground(authority, &h.node, &reset).await.map_err(debug)?);
+    let ordered: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+        "SELECT item FROM test_nested_retire_order ORDER BY position LIMIT $1",
+    ).bind(i64::try_from(expected_order.len() + 1)?).fetch_all(&h.pool).await?;
+    assert_eq!(ordered.iter().map(|uuid| *uuid.as_bytes()).collect::<Vec<_>>().as_slice(), expected_order);
+    let audited: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a
+             ON (a.item_instance_id,a.transaction_id,a.event_id,a.envelope_sha256,a.created_xact_id)
+                =(r.item_instance_id,r.transaction_id,r.event_id,r.envelope_sha256,r.created_xact_id)
+         WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid",
+    ).bind(expected_corpse.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(audited, i64::try_from(expected_order.len())?);
+    for item in expected_order {
+        assert_eq!(h.item_state(*item).await?, (0, 2));
+    }
+    for relation in ["game_item_ground_locations", "game_item_corpse_container_entries", "game_item_nested_entries"] {
+        assert_eq!(h.count(relation).await?, 0);
+    }
+    assert_eq!(h.count("game_item_container_slots").await?, 1);
+    assert!(root.retire_world_reset_ground(authority, &h.node, &reset).await.map_err(debug)?);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + audited);
+    assert_eq!(h.count("test_nested_retire_order").await?, audited);
     Ok(())
 }
 
@@ -3822,7 +3877,6 @@ async fn run_selected_quiver_death_reset(admin: String, slot: u8) -> TestResult 
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
     use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
     use crate::durability::{DurabilityError, SqlxFailureClass};
-    use crate::item_transfer_postgres_cases::uuid_text;
     use oteryn_gameplay_spell::spell::mana_training::CompiledTrainingFormula;
 
     assert!(matches!(slot, 6 | 10));
@@ -4031,7 +4085,9 @@ async fn run_selected_quiver_death_reset(admin: String, slot: u8) -> TestResult 
     let written = nested_death_snapshot(&h, [0; 16]).await?;
     let grounds: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g ORDER BY item_instance_id LIMIT 3")
         .fetch_all(&h.pool).await?;
-    assert_eq!(grounds.len(), 2);
+    assert_eq!(grounds.len(), 1);
+    let corpse = player_corpse_of(&h, quiver).await?;
+    assert_eq!(player_corpse_of(&h, main).await?, corpse);
     for (cause, request) in [(quiver_cause, quiver_request), (main_cause, main_request)] {
         assert_eq!(
             h.root
@@ -4044,7 +4100,7 @@ async fn run_selected_quiver_death_reset(admin: String, slot: u8) -> TestResult 
     let replay_grounds: Vec<String> = sqlx::query_scalar("SELECT to_jsonb(g)::text FROM game_item_ground_locations g ORDER BY item_instance_id LIMIT 3")
         .fetch_all(&h.pool).await?;
     assert_eq!(replay_grounds, grounds);
-    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 2);
+    assert_eq!(h.count("game_item_audit_outbox").await?, audits_before + 3);
     drop(permit);
     assert!(
         h.root
@@ -4053,67 +4109,7 @@ async fn run_selected_quiver_death_reset(admin: String, slot: u8) -> TestResult 
             .map_err(debug)?
             .is_some()
     );
-    let reset = prepare_nested_reset(&h, &h.root).await?;
-    observe_nested_retirement_order(&h).await?;
-    let audits_before_reset = h.count("game_item_audit_outbox").await?;
-    assert!(
-        h.root
-            .retire_world_reset_ground(&authority, &h.node, &reset)
-            .await
-            .map_err(debug)?
-    );
-    let order: Vec<String> = sqlx::query_scalar(
-        "SELECT item::text FROM test_nested_retire_order ORDER BY position LIMIT 4",
-    )
-    .fetch_all(&h.pool)
-    .await?;
-    assert_eq!(order.len(), 3);
-    assert!(
-        order
-            .iter()
-            .position(|item| item == &uuid_text(arrow))
-            .ok_or("retired arrow")?
-            < order
-                .iter()
-                .position(|item| item == &uuid_text(quiver))
-                .ok_or("retired quiver")?
-    );
-    let (transactions, receipts): (i64, i64) = sqlx::query_as("SELECT count(DISTINCT created_xact_id),count(*) FROM game_item_decay_retire_receipts WHERE ground_root_item_instance_id=encode($1,'hex')::uuid")
-        .bind(quiver.as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!((transactions, receipts), (1, 2));
-    assert_nested_retirement_audits(&h, quiver, &[(arrow, quiver)]).await?;
-    assert_nested_retirement_audits(&h, main, &[]).await?;
-    for item in [main, quiver, arrow] {
-        assert_eq!(h.item_state(item).await?, (0, 2));
-    }
-    for relation in [
-        "game_item_ground_locations",
-        "game_item_container_slots",
-        "game_character_equipment_slots",
-        "game_item_container_entries",
-        "game_item_nested_entries",
-    ] {
-        assert_eq!(h.count(relation).await?, 0);
-    }
-    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 3);
-    assert_eq!(
-        h.count("game_item_audit_outbox").await?,
-        audits_before_reset + 3
-    );
-    let retired = nested_death_snapshot(&h, [0; 16]).await?;
-    assert!(
-        h.root
-            .retire_world_reset_ground(&authority, &h.node, &reset)
-            .await
-            .map_err(debug)?
-    );
-    assert_eq!(nested_death_snapshot(&h, [0; 16]).await?, retired);
-    assert_eq!(h.count("game_item_decay_retire_receipts").await?, 3);
-    assert_eq!(
-        h.count("game_item_audit_outbox").await?,
-        audits_before_reset + 3
-    );
-    assert_eq!(h.count("test_nested_retire_order").await?, 3);
+    retire_player_corpse_for_reset(&h, &h.root, &authority, &[arrow, quiver, main, corpse]).await?;
     drop(authority);
     drop(seal);
     h.cleanup().await

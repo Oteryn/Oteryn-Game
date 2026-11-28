@@ -295,6 +295,7 @@ pub struct LoopGroundOverlay {
     ordinals: HashMap<[u8; 16], u64>,
     native_pickup_cells: HashMap<[u8; 16], Vec<u8>>,
     source_plain_corpses: HashSet<[u8; 16]>,
+    player_corpses: HashSet<[u8; 16]>,
     field_pin: ([u8; 32], [u8; 32], u64),
     taken_sources: std::collections::BTreeSet<u64>,
     ground_push_definition: Option<NonZeroU32>,
@@ -350,10 +351,22 @@ impl LoopGroundOverlay {
         let mut ordinals = HashMap::new();
         let mut native_pickup_cells = HashMap::new();
         let mut source_plain_corpses = HashSet::new();
+        let mut player_corpses = HashSet::new();
+        let player_death_map = field_revision.replacen("sha256:", "map:", 1);
         for entry in items {
             let ordinal = entry.stack_ordinal;
             let mut item = entry.item;
             let committed_corpse = entry.native_corpse && entry.field_collision.is_none();
+            // The durable death receipt already proves the scope, death cell and
+            // map binding. Adapt its view to the current map's native axes.
+            if entry.player_corpse {
+                if item.ground.map_revision != player_death_map {
+                    continue;
+                }
+                item.ground.map_revision.clone_from(&field_revision);
+                item.ground.content_revision.clone_from(&field_content);
+                item.ground.native_room_placement_context = field_pin.1.to_vec();
+            }
             // A native MINT uses runtime coordinates. After an ordinary loop
             // move, the same nonportable corpse uses the loop's map coordinates.
             let native_axes = entry.field_collision.is_some()
@@ -468,6 +481,9 @@ impl LoopGroundOverlay {
                 if entry.source_plain_corpse {
                     source_plain_corpses.insert(id);
                 }
+                if entry.player_corpse {
+                    player_corpses.insert(id);
+                }
                 facts.insert(id, entry_facts);
                 ordinals.insert(id, ordinal);
                 if let Some(cell) = native_cell {
@@ -481,6 +497,7 @@ impl LoopGroundOverlay {
             ordinals,
             native_pickup_cells,
             source_plain_corpses,
+            player_corpses,
             field_pin,
             taken_sources: Default::default(),
             ground_push_definition,
@@ -499,6 +516,17 @@ impl LoopGroundOverlay {
     /// Where a loop Ground item lies.
     pub fn ground_entry(&self, item: &[u8; 16]) -> Option<(TilePos, EntryId)> {
         self.overlay.ground_entry(item)
+    }
+
+    pub(super) fn player_corpse_cell(
+        &self,
+        item: &[u8; 16],
+    ) -> Option<crate::durability::spell_items_abi::SpellItemCell> {
+        if !self.player_corpses.contains(item) {
+            return None;
+        }
+        crate::durability::spell_items_abi::decode_ground_cell(self.native_pickup_cells.get(item)?)
+            .ok()
     }
 
     /// Preserve the durable source bytes while reach is checked in map coordinates.
@@ -700,6 +728,7 @@ impl LoopGroundCache {
                     && current
                         .source_plain_corpses
                         .iter()
+                        .chain(&current.player_corpses)
                         .any(|item| !live.contains(item))
             })
         {
@@ -1941,6 +1970,7 @@ mod tests {
         let pin = ([7; 32], [8; 32], 2);
         let item = LoopGroundItem {
             native_corpse: true,
+            player_corpse: false,
             source_native_ground: false,
             source_plain_corpse: false,
             field_collision: None,

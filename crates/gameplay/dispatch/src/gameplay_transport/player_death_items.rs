@@ -56,6 +56,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(items) = &death.items else {
             return Ok(());
         };
+        let _ground_change = super::loop_move::GroundChange(
+            (!items.lost.is_empty()).then_some(&self.states.loop_ground),
+        );
         for (item, burn) in items
             .lost
             .iter()

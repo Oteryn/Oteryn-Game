@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 pub const AMULET_SINK: &str = "PlayerDeathAmuletCause";
 /// Fixed per-operation rows: items, custody lines, value lines, transforms, expansion,
 /// participants, effect work, events, payload bytes, envelope bytes, retry work.
-pub const DROP_LIMITS: [u64; 11] = [1, 2, 0, 0, 0, 2, 3, 1, 7936, 9216, 3];
+pub const DROP_LIMITS: [u64; 11] = [2, 3, 0, 0, 0, 2, 4, 1, 7936, 9216, 3];
 pub const AMULET_LIMITS: [u64; 11] = [1, 1, 0, 0, 0, 2, 3, 1, 7936, 9216, 3];
 pub fn check_usage(burn: bool, usage: [u64; 11]) -> Result<(), AuditError> {
     let limits = if burn { AMULET_LIMITS } else { DROP_LIMITS };
@@ -56,6 +56,12 @@ pub struct OneItemPlayerDeathItemV1 {
     /// exact source scope, even when the burn has no Ground destination.
     #[prost(message, optional, tag = "16")]
     pub instance_scope: Option<OneItemPlayerDeathInstanceV1>,
+    #[prost(message, optional, tag = "17")]
+    pub corpse: Option<OneItemContainerEntryV1>,
+    #[prost(bytes = "vec", optional, tag = "18")]
+    pub drop_channel_id: Option<Vec<u8>>,
+    #[prost(message, optional, tag = "19")]
+    pub replacement_bag: Option<OneItemStateV1>,
 }
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemPlayerDeathInstanceV1 {
@@ -134,10 +140,49 @@ fn check(
         }
     }
     if burn {
-        if value.ground.is_some() || value.typed_sink != AMULET_SINK {
+        if value.ground.is_some()
+            || value.corpse.is_some()
+            || value.drop_channel_id.is_some()
+            || value.replacement_bag.is_some()
+            || value.typed_sink != AMULET_SINK
+        {
             return Err(AuditError::InvalidInput);
         }
+    } else if let Some(corpse) = &value.corpse {
+        mint::check_uuid_v7(&corpse.parent_item_instance_id)?;
+        if let Some(channel) = &value.drop_channel_id {
+            mint::check_uuid_v7(channel)?;
+        }
+        if value.ground.is_some()
+            || !value.typed_sink.is_empty()
+            || value.drop_channel_id.is_some() == value.instance_scope.is_some()
+            || corpse.parent_item_instance_id == value.item_instance
+            || !(1..=u64::from(crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX))
+                .contains(&corpse.placement_ordinal)
+            || (slot == super::BACKPACK_SLOT) != value.replacement_bag.is_some()
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        if let Some(bag) = &value.replacement_bag {
+            mint::check_uuid_v7(&bag.item_instance_id)?;
+            let definition = bag.definition.as_ref().ok_or(AuditError::InvalidInput)?;
+            if bag.item_instance_id == value.item_instance
+                || bag.item_instance_id == corpse.parent_item_instance_id
+                || bag.world_id != before.world_id
+                || bag.quantity != 1
+                || bag.lifecycle != 1
+                || bag.key_number != 0
+                || definition.family != "Item"
+                || definition.production_key != super::REPLACEMENT_BAG
+                || definition.revision_ref != "definition-r1"
+            {
+                return Err(AuditError::InvalidInput);
+            }
+        }
     } else {
+        if value.drop_channel_id.is_some() || value.replacement_bag.is_some() {
+            return Err(AuditError::InvalidInput);
+        }
         let ground = value.ground.as_ref().ok_or(AuditError::InvalidInput)?;
         let scope = ground.runtime_scope()?;
         match (scope, &value.instance_scope) {
@@ -209,6 +254,7 @@ pub fn decode(
                 .as_ref()
                 .filter(|g| g.instance_id.is_none())
                 .map(|g| &g.channel_id)
+                .or(value.drop_channel_id.as_ref())
     {
         return Err(AuditError::InvalidInput);
     }
@@ -232,7 +278,8 @@ pub(super) fn encode(
         .ground
         .as_ref()
         .filter(|g| g.instance_id.is_none())
-        .map(|g| g.channel_id.clone());
+        .map(|g| g.channel_id.clone())
+        .or_else(|| value.drop_channel_id.clone());
     let instance = value.instance_scope.as_ref().map(|s| s.instance_id.clone());
     let payload = mint::encode_bounded(
         &Payload {

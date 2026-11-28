@@ -572,16 +572,19 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    // A corpse has at most 48 direct entries. Each dropped
+                    // player container has at most 500 retained descendants.
+                    const MAX_TREE_ITEMS: usize = CORPSE_CONTAINER_ENTRIES_MAX * 501;
                     let rows = sqlx::query(
-                        "SELECT item_instance_id::text FROM game_item_corpse_container_entries \
-                          WHERE parent_item_instance_id = encode($1,'hex')::uuid \
-                          ORDER BY placement_ordinal LIMIT $2",
+                        "SELECT item_instance_id::text
+                         FROM game_corpse_retirement_entries(encode($1,'hex')::uuid)
+                         ORDER BY corpse_ordinal,depth DESC,item_instance_id LIMIT $2",
                     )
                     .bind(corpse_item_instance_id.as_slice())
-                    .bind(i64::try_from(CORPSE_CONTAINER_ENTRIES_MAX + 1).unwrap_or(i64::MAX))
+                    .bind((MAX_TREE_ITEMS + 1) as i64)
                     .fetch_all(&mut *tx)
                     .await?;
-                    if rows.len() > CORPSE_CONTAINER_ENTRIES_MAX {
+                    if rows.len() > MAX_TREE_ITEMS {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let entries = rows

@@ -300,7 +300,7 @@ async fn death_case(admin: String, legacy: bool, nested: bool) -> TestResult {
         .await?;
     assert_eq!(
         items_complete, !legacy,
-        "pending death must require loose loot drops"
+        "pending death must require lost items to move to the corpse"
     );
 
     let restarted = Dependencies::new()?;
@@ -342,8 +342,9 @@ async fn death_case(admin: String, legacy: bool, nested: bool) -> TestResult {
     .await?;
     assert_eq!(*parent.as_bytes(), id(if nested { 72 } else { 70 }));
     let ordinary_dropped: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
-         WHERE item_instance_id=$1 AND native_room_placement_context=$2)",
+        "SELECT EXISTS(SELECT 1 FROM game_item_corpse_container_entries e
+         JOIN game_item_ground_locations g ON g.item_instance_id=e.parent_item_instance_id
+         WHERE e.item_instance_id=$1 AND g.native_room_placement_context=$2)",
     )
     .bind(sqlx::types::Uuid::from_bytes(id(71)))
     .bind(death.occurrence.as_bytes().as_slice())
@@ -355,8 +356,9 @@ async fn death_case(admin: String, legacy: bool, nested: bool) -> TestResult {
     );
     if nested {
         let nested_dropped: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM game_item_ground_locations
-             WHERE item_instance_id=$1 AND native_room_placement_context=$2)",
+            "SELECT EXISTS(SELECT 1 FROM game_item_corpse_container_entries e
+             JOIN game_item_ground_locations g ON g.item_instance_id=e.parent_item_instance_id
+             WHERE e.item_instance_id=$1 AND g.native_room_placement_context=$2)",
         )
         .bind(sqlx::types::Uuid::from_bytes(id(73)))
         .bind(death.occurrence.as_bytes().as_slice())

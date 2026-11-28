@@ -81,6 +81,8 @@ const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 /// (the recovery query never returns more live corpses than one scope may
 /// hold) are the owner timer's own decay-family values.
 pub use crate::foundation::owner_timer::{COMBAT01_CORPSES_PER_SCOPE, CORPSE_DECAY_AFTER_MS};
+/// Global player-corpse durations are unconfirmed. Use the existing unknown-corpse default.
+pub const PLAYER_CORPSE_DECAY_AFTER_MS: i64 = CORPSE_DECAY_AFTER_MS;
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): at most this many
 /// entry steps precede one corpse step.
 const CORPSE_CONTAINER_ENTRIES_MAX: usize =
@@ -500,40 +502,36 @@ async fn admit(
             DecayRetireRefusal::NotYetDue,
         )));
     }
-    let placement_ordinal = if step.is_corpse_step() {
-        let remaining: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM game_item_corpse_container_entries \
-              WHERE parent_item_instance_id = encode($1,'hex')::uuid",
+    let (placement_ordinal, death_entry) = if step.is_corpse_step() {
+        let remaining: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_item_corpse_container_entries
+              WHERE parent_item_instance_id=encode($1,'hex')::uuid)",
         )
         .bind(step.corpse_item_instance_id.as_slice())
         .fetch_one(&mut **tx)
         .await?;
-        if remaining != 0 {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::EntriesRemain,
-            )));
+        if remaining {
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::EntriesRemain)));
         }
-        None
+        (None, None)
     } else {
-        let ordinal: Option<String> = sqlx::query_scalar(
-            "SELECT placement_ordinal::text FROM game_item_corpse_container_entries \
-              WHERE item_instance_id = encode($1,'hex')::uuid \
-                AND parent_item_instance_id = encode($2,'hex')::uuid",
+        let entry = sqlx::query(
+            "SELECT e.parent_item_instance_id::text, e.corpse_ordinal::text,
+                    e.source_ordinal::text, e.depth
+             FROM game_corpse_retirement_entries(encode($1,'hex')::uuid) e
+             WHERE e.item_instance_id=encode($2,'hex')::uuid
+               AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries n
+                              WHERE n.parent_item_instance_id=e.item_instance_id)",
         )
-        .bind(step.item_instance_id.as_slice())
         .bind(step.corpse_item_instance_id.as_slice())
+        .bind(step.item_instance_id.as_slice())
         .fetch_optional(&mut **tx)
         .await?;
-        let Some(ordinal) = ordinal else {
-            return Ok(Err(DecayRetireError::Refused(
-                DecayRetireRefusal::NotInCorpse,
-            )));
+        let Some(entry) = entry else {
+            return Ok(Err(DecayRetireError::Refused(DecayRetireRefusal::NotInCorpse)));
         };
-        Some(
-            ordinal
-                .parse()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
+        let (ordinal, nested) = corpse_entry(&entry, step.item_instance_id)?;
+        (Some(ordinal), nested)
     };
     let quantity = u32::try_from(item.try_get::<i64, _>("quantity")?)
         .map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -549,7 +547,7 @@ async fn admit(
         key_number: u32::try_from(item.try_get::<i64, _>("key_number")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal,
-        death_entry: None,
+        death_entry,
         corpse_ground: OneItemGroundV1 {
             world_id: world_id.to_vec(),
             channel_id: runtime_scope
@@ -571,6 +569,29 @@ async fn admit(
     }))
 }
 
+fn corpse_entry(
+    row: &sqlx::postgres::PgRow,
+    item: [u8; 16],
+) -> std::result::Result<(u64, Option<super::world_reset::ground_step::DeathTreeEntry>), DurabilityError> {
+    use super::world_reset::ground_step::{DeathEntryKind, DeathTreeEntry};
+    let ordinal = |field| -> std::result::Result<u64, DurabilityError> {
+        row.try_get::<&str, _>(field)?.parse().map_err(|_| DurabilityError::InvalidStoredState)
+    };
+    let depth: i32 = row.try_get("depth")?;
+    let nested = if depth > 0 {
+        Some(DeathTreeEntry {
+            item,
+            parent: uuid_text(row.try_get("parent_item_instance_id")?)?,
+            ordinal: ordinal("source_ordinal")?,
+            kind: DeathEntryKind::Nested,
+            depth,
+        })
+    } else {
+        None
+    };
+    Ok((ordinal("corpse_ordinal")?, nested))
+}
+
 /// Remove the one location, retire the item, and write the receipt and the
 /// audit event, all in the caller's transaction.
 async fn apply_retire(
@@ -584,19 +605,24 @@ async fn apply_retire(
     let item = step.item_instance_id.as_slice();
     // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of the corpse's Ground Channel.
     permit.check_scope(admitted.runtime_scope)?;
-    let removed = match admitted.placement_ordinal {
-        None => {
-            sqlx::query(
-                "DELETE FROM game_item_ground_locations \
-                  WHERE item_instance_id = encode($1,'hex')::uuid",
-            )
-            .bind(item)
-            .execute(&mut **tx)
-            .await?
+    use super::world_reset::ground_step::DeathEntryKind;
+    let removed = match (admitted.placement_ordinal, admitted.death_entry) {
+        (None, _) => sqlx::query(
+            "DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(item)
+        .execute(&mut **tx)
+        .await?
+        .rows_affected() == 1,
+        (Some(_), Some(entry)) if entry.kind == DeathEntryKind::Nested
+            && !matches!(step.cause, RetireCause::ArenaReset(_)) =>
+        {
+            sqlx::query_scalar("SELECT game_player_corpse_remove_nested(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                .bind(reservation.transaction_id.as_slice()).bind(entry.parent.as_slice())
+                .fetch_one(&mut **tx).await?
         }
-        Some(ordinal) => {
-            use super::world_reset::ground_step::DeathEntryKind;
-            let (kind, parent) = admitted.death_entry.map_or(
+        (Some(ordinal), entry) => {
+            let (kind, parent) = entry.map_or(
                 (DeathEntryKind::Corpse, step.corpse_item_instance_id),
                 |entry| (entry.kind, entry.parent),
             );
@@ -606,14 +632,11 @@ async fn apply_retire(
                 DeathEntryKind::Corpse => "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
             };
             sqlx::query(query)
-                .bind(item)
-                .bind(parent.as_slice())
-                .bind(ordinal.to_string())
-                .execute(&mut **tx)
-                .await?
+                .bind(item).bind(parent.as_slice()).bind(ordinal.to_string())
+                .execute(&mut **tx).await?.rows_affected() == 1
         }
     };
-    if removed.rows_affected() != 1 {
+    if !removed {
         return Err(DurabilityError::InvalidStoredState);
     }
     let retired = sqlx::query(

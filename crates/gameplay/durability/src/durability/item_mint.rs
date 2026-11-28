@@ -112,7 +112,9 @@ macro_rules! bind_cause {
     }};
 }
 
+pub(super) mod player_death;
 mod source_death;
+pub(super) use player_death::mint_player_death_corpse;
 pub use source_death::BakragoreDeathLoot;
 
 pub use crate::domain::item_definition::TypedDefinitionRef;
@@ -2049,7 +2051,11 @@ fn mint_message(
             placement_ordinal: u64::from(entry.placement_ordinal),
         }),
         source: Some(OneItemProvenanceV1 {
-            typed_cause: LOOT_MINT_TYPED_CAUSE.into(),
+            typed_cause: if request.cause.loot_table.family == player_death::PLAYER_DEATH_MINT_FAMILY {
+                player_death::PLAYER_DEATH_MINT_CAUSE
+            } else {
+                LOOT_MINT_TYPED_CAUSE
+            }.into(),
             death_occurrence: Some(CreatureDeathOccurrenceRefV1 {
                 instance_id: death.instance_bytes(),
                 world_id: world,

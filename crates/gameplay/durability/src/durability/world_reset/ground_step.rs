@@ -19,7 +19,7 @@ pub(super) async fn next(
     let root = uuid_text(row.try_get("item_instance_id")?)?;
     let channel = uuid_text(row.try_get("channel_id")?)?;
     validate_root(tx, root).await?;
-    let item: Option<String> = sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT 1")
+    let item: Option<String> = sqlx::query_scalar("SELECT item_instance_id::text FROM game_corpse_retirement_entries(encode($1,'hex')::uuid) ORDER BY corpse_ordinal,depth DESC,item_instance_id LIMIT 1")
         .bind(root.as_slice()).fetch_optional(&mut **tx).await?;
     let item = item
         .map(|item| uuid_text(&item))
@@ -38,6 +38,11 @@ pub(in crate::durability) async fn validate_root(
     let death_container = is_death_container(tx, root).await?;
     if death_container {
         death_tree(tx, root).await?;
+        return Ok(());
+    }
+    let player_corpse: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND loot_table_family='PlayerDeath' AND loot_purpose_key='CORPSE_MATERIALIZATION')")
+        .bind(root.as_slice()).fetch_one(&mut **tx).await?;
+    if player_corpse {
         return Ok(());
     }
     let invalid: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid))")
