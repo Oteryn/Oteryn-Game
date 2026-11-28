@@ -251,6 +251,39 @@ async fn expect_badges(
 }
 
 // The wire view defaults to public when there is no stored preference.
+async fn expect_peer_profile_badge(
+    peer: &mut DevClientSession,
+    target: [u8; 16],
+    name: &str,
+    badge: u8,
+    public: bool,
+) -> TestResult {
+    use oteryn_protocol_oteryn::cyclopedia_character::{
+        CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, profile,
+    };
+    let reply = peer
+        .session_mut()
+        .gated_command(
+            CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &profile::request(Some(target)),
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=peer-badge-profile observed=status:{:?}", reply.status).into());
+    }
+    let view = profile::Profile::decode(&reply.payload)
+        .map_err(|error| format!("step=peer-badge-profile observed=decode:{error:?}"))?;
+    let visible = view.badges.iter().any(|earned| earned.id() == badge);
+    if view.character != target || view.name != name || visible != public {
+        return Err(format!(
+            "step=peer-badge-profile observed=name:{},badge-{badge}-public:{visible};needed=name:{name},badge-{badge}-public:{public}",
+            view.name
+        ).into());
+    }
+    Ok(())
+}
+
 async fn expect_badge_preference(clients: &SeamClients<'_>, badge: u8, public: bool) -> TestResult {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let stored: Option<bool> = sqlx::query_scalar(
@@ -335,7 +368,26 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     expect_friends(&mut a, "accepted-view-inviter", a_main, a_friend).await?;
     expect_friends(&mut b, "accepted-view-invitee", b_main, b_friend).await?;
 
+    // Profile access uses character VIP consent, independently of account friendship.
+    let (add, _) = friends(&mut b, vip::Operation::Add, 0, &name_a).await?;
+    let (query, view) = friends(&mut a, vip::Operation::Query, 0, "").await?;
+    let invitation = &view["consents"][0];
+    if add != 1 || query != 1 || invitation["name"].as_str() != Some(name_b.as_str()) {
+        return Err(format!(
+            "step=profile-consent-invite observed=add:{add},query:{query},invite:{invitation}"
+        )
+        .into());
+    }
+    let handle = invitation["handle"]
+        .as_u64()
+        .ok_or("step=profile-consent-invite observed=no-handle")?;
+    let (accept, _) = friends(&mut a, vip::Operation::Accept, handle, "").await?;
+    if accept != 1 {
+        return Err(format!("step=profile-consent-accept observed=code:{accept};needed=1").into());
+    }
+
     let badge = oteryn_protocol_oteryn::cyclopedia_character::Badge::FledgelingHero as u8;
+    expect_peer_profile_badge(&mut b, clients.characters[0], &name_a, badge, true).await?;
     for (public, before, after, step) in [
         (false, &[][..], &[badge][..], "badge-hide"),
         (true, &[badge][..], &[][..], "badge-restore"),
@@ -354,6 +406,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         a = relog(clients, a, 0xd7, 0).await?;
         expect_badges(&mut a, &format!("{step}-after-relog"), after).await?;
         expect_badge_preference(clients, badge, public).await?;
+        expect_peer_profile_badge(&mut b, clients.characters[0], &name_a, badge, public).await?;
     }
     b = relog(clients, b, 0xd8, 1).await?;
     let accepted_handle = expect_friends(&mut a, "accepted-after-relog-inviter", a_main, a_friend)
