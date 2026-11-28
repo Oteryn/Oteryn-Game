@@ -275,6 +275,29 @@ MAP_REVISION=map-s3b-1
             sql = Path(work, 'epoch.sql').read_text()
             self.assertEqual(sql.count("NULL, 'map-s3b-1');"), 2, sql)
 
+    def test_w16_regions_follow_row_batch_selection(self):
+        helper = (HERE / "w16_regions.sh").read_text()
+        original = "126,125;128,125"
+        augmented = original + ";132,127;133,126"
+        for groups, batch, expected in [
+            ("rows", "34:1", augmented),
+            ("rows", "214:1", augmented),
+            ("core, rows", "213:2", augmented),
+            ("", "all", augmented),
+            ("rows", "33:1", original),
+            ("rows", "0:15", original),
+            ("rows", "34:0", original),
+            ("rows", "invalid", original),
+            ("core", "34:1", original),
+        ]:
+            with self.subTest(groups=groups, batch=batch):
+                result = bash(
+                    helper + '\nw16_regions "$REGIONS" "$GROUPS_VALUE" "$BATCH"\n',
+                    {"REGIONS": original, "GROUPS_VALUE": groups, "BATCH": batch},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), expected)
+
     def test_only_the_disposable_town_profile_selects_the_m03_portal(self):
         compile_world = section('  evidence "world_profile=', '  PIN="$WORK/world.json"')
         setup = r'''set -Eeuo pipefail
