@@ -5,6 +5,24 @@ use crate::durability::item_decay_retire::DecayRetireError;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use oteryn_gameplay_content::content::QualifiedNativeEntryRoom;
 
+pub(super) struct ResetContent<'a> {
+    pub(super) map: &'a str,
+    pub(super) server: [u8; 32],
+    pub(super) client: [u8; 32],
+    pub(super) frame: [u8; 32],
+}
+
+impl<'a> ResetContent<'a> {
+    fn new(room: &QualifiedNativeEntryRoom, map: &'a str) -> Self {
+        Self {
+            map,
+            server: room.compiled().server_digest(),
+            client: room.compiled().client_digest(),
+            frame: room.frame_binding().digest(),
+        }
+    }
+}
+
 impl DurabilityRoot {
     /// Complete a sealed reset only with the exact qualified old/new content and
     /// proven absence of Houses. None means the fresh-generation drain must wait.
@@ -18,10 +36,58 @@ impl DurabilityRoot {
         source: &QualifiedNativeEntryRoom,
         target: &QualifiedNativeEntryRoom,
     ) -> std::result::Result<Option<u64>, DecayRetireError> {
-        content_preflight::check(self, *reset, source, target).await?;
+        if reset.target != target.compiled().server_digest()
+            || [source, target].iter().any(|room| {
+                let cells = room.movement_cells();
+                cells.scope().world_id != reset.world || !cells.house_tiles().is_known_empty()
+            })
+        {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        let source = ResetContent::new(source, source.movement_cells().scope().map_revision.as_str());
+        let target = ResetContent::new(target, target.movement_cells().scope().map_revision.as_str());
+        self.finish_qualified_reset(authority, node, reset, (source, target), &[])
+            .await
+    }
+
+    /// Finish a Server Save for the same checked bundle on both sides of the reset.
+    /// The artifact owns the map and House tiles. The separately qualified native
+    /// content owns the issued server, client and frame identities.
+    pub async fn finish_bundle_world_reset(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        reset: &RetiringWorldReset,
+        rooms: (&QualifiedNativeEntryRoom, &QualifiedNativeEntryRoom),
+        catalogue: &BundleHouseCatalogue,
+    ) -> std::result::Result<Option<u64>, DecayRetireError> {
+        let (source, target) = rooms;
+        if reset.target != catalogue.digest
+            || reset.target == target.compiled().server_digest()
+            || [source, target]
+                .iter()
+                .any(|room| room.movement_cells().scope().world_id != reset.world)
+        {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        let source = ResetContent::new(source, &catalogue.map_revision);
+        let target = ResetContent::new(target, &catalogue.map_revision);
+        self.finish_qualified_reset(authority, node, reset, (source, target), catalogue.tiles())
+            .await
+    }
+
+    async fn finish_qualified_reset(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        reset: &RetiringWorldReset,
+        (source, target): (ResetContent<'_>, ResetContent<'_>),
+        house_tiles: &[bundle_houses::HouseTile],
+    ) -> std::result::Result<Option<u64>, DecayRetireError> {
+        content_preflight::check(self, *reset, &source, &target, house_tiles).await?;
         // Reconcile a completed commit first; historical evidence grants no
         // current authority. Empty resets can finish in this same transaction.
-        if let Some(epoch) = activate(self, node, *reset, target).await? {
+        if let Some(epoch) = activate(self, node, *reset, &target).await? {
             return Ok(Some(epoch));
         }
         if !self
@@ -30,7 +96,7 @@ impl DurabilityRoot {
         {
             return Ok(None);
         }
-        Ok(activate(self, node, *reset, target).await?)
+        Ok(activate(self, node, *reset, &target).await?)
     }
 }
 
@@ -38,20 +104,15 @@ async fn activate(
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     reset: RetiringWorldReset,
-    target: &QualifiedNativeEntryRoom,
+    target: &ResetContent<'_>,
 ) -> Result<Option<u64>> {
     let world_changes = crate::durability::world_event::prepare_catalogue()?;
     let owner = root.clone();
     let node = node.clone();
-    let map = target
-        .movement_cells()
-        .scope()
-        .map_revision
-        .as_str()
-        .to_owned();
-    let server = target.compiled().server_digest();
-    let client = target.compiled().client_digest();
-    let frame = target.frame_binding().digest();
+    let map = target.map.to_owned();
+    let server = target.server;
+    let client = target.client;
+    let frame = target.frame;
     root.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
         let mut tx = begin_semantic_transaction(holder, deadline).await?;
         crate::durability::db::lock_admission_relations(&mut tx).await?;
