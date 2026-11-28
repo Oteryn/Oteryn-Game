@@ -10,6 +10,12 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 #[path = "rope_pull.rs"]
 mod pull;
 
+#[derive(Debug)]
+pub(in crate::gameplay_transport) enum RopeUseError {
+    Preflight,
+    OutcomeUnknown,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) fn exact_rope_spot_placement(
         &self,
@@ -46,7 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
         target: Option<ItemKey>,
-    ) -> Result<Option<UseOutcome>, ()> {
+    ) -> Result<Option<UseOutcome>, RopeUseError> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
@@ -74,7 +80,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
                 return Ok(Some(UseOutcome::rejected()));
             }
-            Err(_) => return Err(()),
+            Err(_) => return Err(RopeUseError::Preflight),
         };
         let retry = AdmissionRetryBudget::for_command(self.root);
         let inventory = match tokio::time::timeout(std::time::Duration::from_secs(10), async {
@@ -101,12 +107,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             | Ok(Err(ItemUseError::Unavailable(
                 DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded,
             ))) => return Ok(Some(UseOutcome::rejected())),
-            Ok(Err(_)) => return Err(()),
+            Ok(Err(_)) => return Err(RopeUseError::Preflight),
         };
         drop(retry);
         let index = {
             let runtime = self.runtime.lock().await;
-            pinned_index(&runtime, self.active_generation).ok_or(())?
+            pinned_index(&runtime, self.active_generation).ok_or(RopeUseError::Preflight)?
         };
         let Some((definition, tool)) = carried_rope(&inventory, index, intent, source) else {
             return Ok(None);
@@ -133,8 +139,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ),
         )
         .await
-        .map_err(|_| ())?
-        .ok_or(())?;
+        .map_err(|_| RopeUseError::Preflight)?
+        .ok_or(RopeUseError::Preflight)?;
         if let Some(ItemKey::Instance(item)) = target {
             let facts = map.facts.pinned();
             if !ground
@@ -150,7 +156,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.refresh_pvp_locks(actor, command.game_session_id),
         )
         .await
-        .map_err(|_| ())?
+        .map_err(|_| RopeUseError::Preflight)?
         {
             return Ok(Some(UseOutcome::rejected()));
         }
@@ -180,11 +186,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             RopeTurn::Jam => {
                 drop((states, runtime));
                 let encoded = oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
-                    .map_err(|_| ())?;
+                    .map_err(|_| RopeUseError::Preflight)?;
                 return self
                     .commit_agent_jam(&permit, command, tool, encoded)
                     .await
-                    .map(Some);
+                    .map(Some)
+                    .map_err(|_| RopeUseError::OutcomeUnknown);
             }
             RopeTurn::Hole(spot) => {
                 match pull::pull(
@@ -241,7 +248,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 LoopMoveResult::Committed => {
                                     break 'relocate UseDisposition::Committed;
                                 }
-                                LoopMoveResult::Unknown => return Err(()),
+                                LoopMoveResult::Unknown => {
+                                    return Err(RopeUseError::OutcomeUnknown);
+                                }
                                 LoopMoveResult::Refused(LoopMoveRefusal::NoRoom) => continue,
                                 LoopMoveResult::TooFar | LoopMoveResult::Refused(_) => break,
                             }

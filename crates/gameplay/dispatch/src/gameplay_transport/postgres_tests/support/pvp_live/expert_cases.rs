@@ -338,13 +338,14 @@ pub(super) async fn drive(
         target(client, 11, None, Accepted).await?;
         return Ok(());
     }
-    if scenario == 11 {
+    if matches!(scenario, 11 | 15) {
         let mut tx = pool.begin().await?;
         // Fixture-only custody; the real ranged owner performs every shot and payment.
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        for (seed, item, count, slot) in [(70, 3350, 1, 6_i16), (71, 3447, 100, 10)] {
+        let ammo = if scenario == 15 { 3448 } else { 3447 };
+        for (seed, item, count, slot) in [(70, 3350, 1, 6_i16), (71, ammo, 100, 10)] {
             sqlx::raw_sql(sqlx::AssertSqlSafe(
                 crate::durability::item_fee_burn::test_support::item(
                     seed,
@@ -359,6 +360,42 @@ pub(super) async fn drive(
                 .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slot).bind(id(seed).as_slice()).execute(&mut *tx).await?;
         }
         tx.commit().await?;
+    }
+    if scenario == 15 {
+        let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
+        set(client, 1, modes(ExpertMode::RedFist)).await?;
+        delta(client, modes(ExpertMode::RedFist)).await?;
+        let before = health(owner, victim).await?;
+        melee_fault(
+            client, owner, 2, &attack::encode_attack_target_intent(Some(&entity)).map_err(debug)?,
+            crate::gameplay_transport::pvp_live::faults::Point::AfterCommit,
+        ).await?;
+        target(client, 3, None, Accepted).await?;
+        let after = health(owner, victim).await?;
+        assert!(after > 0 && after < before, "surviving player was hit");
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let conditions = states.get(&runtime, victim, target_session).ok_or("victim")?.owned_conditions();
+        let source = crate::spell::combat_execution::actor_atom(actor);
+        let poison = conditions.instances().iter().find(|condition| {
+            condition.provenance().source.as_ref() == Some(&source)
+        }).ok_or("reconciled PvP arrow hit omitted attributed poison")?;
+        use oteryn_gameplay_foundation::foundation::condition::DamageSchedule;
+        let Some(DamageSchedule::Fixed { delayed, segments }) = poison.definition().source_damage_schedule() else {
+            return Err("poison schedule missing".into());
+        };
+        assert!(*delayed);
+        assert_eq!(segments.iter().map(|s| (s.count, s.amount, s.interval_ms)).collect::<Vec<_>>(),
+            [(4, 3, 4_000), (9, 2, 4_000), (20, 1, 4_000)]);
+        // Periodic evaluation uses millisecond precision.
+        let first_tick = poison.started_at().div_ceil(1_000) * 1_000 + 4_000_000;
+        drop(states);
+        drop(runtime);
+        let due = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(first_tick);
+        owner.tick_spell_periodic_at(victim, target_session, due).await
+            .ok_or("first PvP poison tick")?;
+        assert_eq!(health(owner, victim).await?, after - 3);
+        return Ok(());
     }
     // Malformed command is refused by dispatch without modifying authoritative modes.
     let result = command(client, 1, COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT, &[8, 1]).await?;

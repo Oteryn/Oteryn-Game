@@ -139,7 +139,9 @@ def refine_loot_inputs(root: Path, generated: dict[str, bytes]) -> None:
         questpc7_smith_corpse_loot,
         questpc7_hot_corpse_loot,
     ):
-        overlay.apply(root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes)
+        overlay.apply(
+            root, generated, item_path, NATIVE_MANIFEST, spell_import.canonical_bytes
+        )
 
 
 def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
@@ -375,20 +377,23 @@ def admit_agony_field(root: Path, generated: dict[str, bytes]) -> None:
     generated[path] = spell_import.canonical_bytes(document)
 
 
-def admit_dream_courts_supplies(root: Path, items: dict) -> None:
-    """Admit the two portable rewards bound by the Dream Courts pickup callbacks."""
+def admit_portable_quest_items(root: Path, items: dict) -> None:
+    """Admit portable quest items from the pinned XML and client appearance inputs."""
     import build_source_item_profiles as source
     from authored_quest_item_custody import XML_SHA256
     from quest_reward_item_semantics import CLIENT, CLIENT_SHA
 
-    ids = {29991, 30009}
+    # The retained i10009 inputs agree with Crystal 201189f8 items.xml:26415-26418
+    # and appearances.dat object 10009 (take, no cumulative/unmove/forceuse/multiuse).
+    # Crystal king_tibianus.lua:78,89 consumes the flask through dialogue.
+    ids = {10009, 29991, 30009}
     xml = (root / "imports/canary/items-xml/items.xml").read_bytes()
     client = (root / CLIENT).read_bytes()
     if (
         hashlib.sha256(xml).hexdigest() != XML_SHA256
         or hashlib.sha256(client).hexdigest() != CLIENT_SHA
     ):
-        raise ValueError("DREAM_COURTS_SUPPLY_SOURCE_DRIFT")
+        raise ValueError("PORTABLE_QUEST_ITEM_SOURCE_DRIFT")
     nodes = source.xml_index(xml)
     appearances = source.engine_items.load_appearance_objects(client)
     bindings = source.binding_index(
@@ -405,7 +410,7 @@ def admit_dream_courts_supplies(root: Path, items: dict) -> None:
             "stack_class": "NonStackable",
             "legal_destinations": ["CharacterInventory", "Ground"],
         }:
-            raise ValueError(f"DREAM_COURTS_SUPPLY_CUSTODY:{item}")
+            raise ValueError(f"PORTABLE_QUEST_ITEM_CUSTODY:{item}")
         profiles.append(profile)
     qualified = source.bind_profiles(
         {"schema": items["schema"], "records": profiles}, bindings, ids
@@ -426,7 +431,7 @@ def admit_dream_courts_supplies(root: Path, items: dict) -> None:
             if row["production_definition"]["production_key"] == key
         ]
         if existing and existing != [profile]:
-            raise ValueError(f"DREAM_COURTS_SUPPLY_CONFLICT:{key}")
+            raise ValueError(f"PORTABLE_QUEST_ITEM_CONFLICT:{key}")
         if not existing:
             items["records"].append(profile)
     items["records"].sort(key=provider_order)
@@ -589,6 +594,50 @@ def admit_current_staff_profile(root: Path, generated: dict[str, bytes]) -> None
     manifest = json.loads(generated[NATIVE_MANIFEST])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(data).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
+
+
+def apply_spell_catalog_registration(root: Path, catalog: dict) -> None:
+    for entry in catalog["bundles"]:
+        spell_import.project_death_echo_area(root, entry["bundle"]["spell"])
+    spec = importlib.util.spec_from_file_location(
+        "build_executable_catalog",
+        root / "tools/content-schema/spell-authoring/build_executable_catalog.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_owner_decisions(catalog)
+
+
+def project_spell_catalog(root: Path, generated: dict[str, bytes]) -> None:
+    native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
+    # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
+    catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
+    catalog = json.loads(generated[catalog_path])
+    apply_spell_catalog_registration(root, catalog)
+    generated[catalog_path] = spell_import.canonical_bytes(catalog)
+    catalog_digest = spell_import.digest(generated[catalog_path])
+    # C18b replaces the Barrage formulas in the registered bundles and Formula collection.
+    _, formula_path = spell_import.DEPENDENCIES["Formula"]
+    formulas = json.loads(generated[formula_path])
+    formulas_by_id = {
+        (formula["identity"]["key"], formula["identity"]["revision"]): formula
+        for entry in catalog["bundles"]
+        for formula in entry["dependencies"]["formulas"]
+    }
+    formulas["records"] = [
+        formulas_by_id[(formula["identity"]["key"], formula["identity"]["revision"])]
+        for formula in formulas["records"]
+    ]
+    formulas["source_catalog"]["sha256"] = catalog_digest
+    generated[formula_path] = spell_import.canonical_bytes(formulas)
+    selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
+    selection = json.loads(generated[selection_path])
+    selection["catalog_sha256"] = catalog_digest
+    generated[selection_path] = spell_import.canonical_bytes(selection)
+    for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
+        native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
 
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
@@ -1745,8 +1794,11 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # select the fresh body, with its full admitted Ground decay chain.
     creature_path = spell_import.PROVIDER_DESTINATIONS["creature_profiles"]
     creatures = json.loads(generated[creature_path])
-    koshei = next(row for row in creatures["records"]
-                  if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless")
+    koshei = next(
+        row
+        for row in creatures["records"]
+        if row["profile"]["target"]["key"] == "oteryn:creature.koshei_the_deathless"
+    )
     details = koshei["profile"]["data"]["profile"]["details"]
     if details["corpse_item"]["key"] != "oteryn:item.tibia.i7538":
         raise ValueError("KOSHEI_CORPSE_SOURCE_CHANGED")
@@ -1802,7 +1854,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import healing_global_overrides
 
     healing_global_overrides.apply_native_profiles(items)
-    admit_dream_courts_supplies(root, items)
+    admit_portable_quest_items(root, items)
     import protected_loot_yields
 
     protected_loot_yields.admit(root, items, provider_order)
@@ -1960,25 +2012,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     native_manifest["creature_profiles"]["sha256"] = hashlib.sha256(
         generated[creature_path]
     ).hexdigest()
-    # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
-    # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
-    catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
-    catalog = json.loads(generated[catalog_path])
-    spec = importlib.util.spec_from_file_location(
-        "build_executable_catalog",
-        root / "tools/content-schema/spell-authoring/build_executable_catalog.py",
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.apply_owner_decisions(catalog)
-    generated[catalog_path] = spell_import.canonical_bytes(catalog)
-    selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
-    selection = json.loads(generated[selection_path])
-    selection["catalog_sha256"] = hashlib.sha256(generated[catalog_path]).hexdigest()
-    generated[selection_path] = spell_import.canonical_bytes(selection)
-    for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
-        native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+    project_spell_catalog(root, generated)
 
     pin_repository_inputs(root, generated)
     native_goal_loot_items.refresh_outfit_boss_loot(

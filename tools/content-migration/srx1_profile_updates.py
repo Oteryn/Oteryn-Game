@@ -26,9 +26,10 @@ def compact_item_record(row):
     return row
 
 
-def compact_item_provider(document, canonical):
+def compact_item_provider(document, canonical, exact_keys):
     for row in document["records"]:
-        compact_item_record(row)
+        if row["production_definition"]["production_key"] not in exact_keys:
+            compact_item_record(row)
     return canonical(document)
 
 
@@ -36,7 +37,7 @@ OMIT_IF_UNKNOWN = ('field_condition', 'rune_consumption', 'field_replaceable')
 
 
 def omit_unknown_attributes(row):
-    attributes = row['attributes']
+    attributes = row["attributes"]
     for name in OMIT_IF_UNKNOWN:
         if attributes.get(name) is None:
             attributes.pop(name, None)
@@ -46,10 +47,14 @@ def exact_source_keys(packet):
     from floor_assembly_profiles import IDS as floor_assembly_ids
     from lion_trial_item_profiles import SOURCE_RECORDS as lion_trial_ids
 
-    return {row['production_definition']['production_key']
-            for group in ('records', 'custody_promotions') for row in packet[group]} | {
-                f'oteryn:item.tibia.i{item_id}' for item_id in floor_assembly_ids | lion_trial_ids.keys()
-            }
+    return {
+        row["production_definition"]["production_key"]
+        for group in ("records", "custody_promotions")
+        for row in packet[group]
+    } | {
+        f"oteryn:item.tibia.i{item_id}"
+        for item_id in floor_assembly_ids | lion_trial_ids.keys()
+    }
 
 
 def coalesce_dispenser_top_order(document, source_records, house_overlay):
@@ -79,6 +84,7 @@ def coalesce_dispenser_top_order(document, source_records, house_overlay):
 
 def generate(root, generated, profile_path, manifest_path, order, canonical):
     import dispenser_item_profiles
+    import equipment_eligibility
     import house_decoration_actions
     import qengine_reward_item_profiles
     import srx1_potion_variants
@@ -104,15 +110,29 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         enriched["records"],
         json.loads((root / house_decoration_actions.PROFILES).read_bytes()),
     )
-    overlay[profile_path] = canonical(enriched)
     original_document = json.loads(base)
+    # Qualify both provider versions after the source owners' exact comparisons
+    # so updated records cannot restore unknown eligibility.
+    eligibility = equipment_eligibility.load_facts(root)
+    equipment_eligibility.complete(original_document, eligibility)
+    equipment_eligibility.complete(enriched, eligibility)
+    exact_keys = exact_source_keys(
+        json.loads(generated[qengine_reward_item_profiles.PROOF])
+    )
+    # Omit redundant nulls after the exact source comparisons. Rust reads either
+    # representation as Unknown and keeps the composed provider within 16 MiB.
+    # The QENGINE, Lion Trial and floor assembly proofs compare complete source rows.
+    for profile_document in (original_document, enriched):
+        for row in profile_document["records"]:
+            if row["production_definition"]["production_key"] not in exact_keys:
+                omit_unknown_attributes(row)
     original = {
         row["production_definition"]["production_key"]: row
         for row in original_document["records"]
     }
     updates = [
         row
-        for row in json.loads(overlay[profile_path])["records"]
+        for row in enriched["records"]
         if original.get(row["production_definition"]["production_key"]) != row
     ]
     if not updates or len(updates) > 128:
@@ -146,7 +166,7 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
                     row.pop("production_binding_qualification", None)
         base = canonical(original_document)
     if len(base) > MAX_ITEM_PROFILES:
-        base = compact_item_provider(original_document, canonical)
+        base = compact_item_provider(original_document, canonical, exact_keys)
     if len(base) > MAX_ITEM_PROFILES:
         raise ValueError("SRX1_ITEM_PROVIDER_SIZE")
     generated[profile_path] = base
@@ -169,11 +189,12 @@ def generate(root, generated, profile_path, manifest_path, order, canonical):
         # the base provider after that normalization.
         records = []
         for row in document["records"]:
-            compact_item_record(row)
             key = row["production_definition"]["production_key"]
             predecessor = copy.deepcopy(original.get(key))
-            if predecessor is not None:
-                compact_item_record(predecessor)
+            if key not in exact_keys:
+                compact_item_record(row)
+                if predecessor is not None:
+                    compact_item_record(predecessor)
             if predecessor != row:
                 records.append(row)
         document["records"] = records

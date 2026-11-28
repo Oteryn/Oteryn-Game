@@ -219,7 +219,10 @@ pub(super) async fn trade(
     {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
-    let now = unix_ms_now();
+    let wall_now = unix_ms_now();
+    let schedule_now = crate::world_clock::now_utc_ms()
+        .and_then(|now| i64::try_from(now).ok())
+        .unwrap_or(0);
     let (offer, coins, yasir_position) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
@@ -247,7 +250,7 @@ pub(super) async fn trade(
                     oteryn_gameplay_entities::rashid_schedule::trade_available(
                         &offer.npc_key,
                         npc.position,
-                        now,
+                        schedule_now,
                     )
                 });
         if !available {
@@ -444,7 +447,7 @@ pub(super) async fn trade(
         item,
         transaction_id: id(b"oteryn:npc-trade-transaction:v1"),
         event_id: id(b"oteryn:npc-trade-event:v1"),
-        occurred_at_unix_ms: now,
+        occurred_at_unix_ms: wall_now,
         output_item_instance_ids: [
             id(b"oteryn:npc-trade-output-1:v1"),
             id(b"oteryn:npc-trade-output-2:v1"),

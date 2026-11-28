@@ -11,12 +11,17 @@ pub(super) mod underwater_drown;
 
 pub(super) struct PlayerBundleDoors<'a> {
     facts: &'a crate::map::facts::BundleFacts,
-    level: u32,
+    level: Option<u32>,
 }
 
 impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
-        self.facts.doors_block_player(cell, self.level)
+        self.facts.doors_block_player(cell, self.level.unwrap_or(0))
+    }
+
+    fn admits_door_entry(&self, requirement: crate::map::door::DoorEntryRequirement) -> bool {
+        matches!(requirement, crate::map::door::DoorEntryRequirement::Level(required)
+            if self.level.is_some_and(|level| level >= required))
     }
 }
 
@@ -31,7 +36,7 @@ pub(super) fn player_bundle_doors<'a>(
         facts,
         level: states
             .get(runtime, actor, session)
-            .map_or(0, |state| state.character_facts().level),
+            .map(|state| state.character_facts().level),
     }
 }
 

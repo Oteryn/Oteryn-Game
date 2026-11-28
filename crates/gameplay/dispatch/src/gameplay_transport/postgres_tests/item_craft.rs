@@ -244,6 +244,44 @@ fn scenario(award: Option<BakingAward>, cake: Option<(&'static str, &'static str
             }
         }
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
+        // Hold the connection only after the earlier USE probes have completed.
+        let barrier = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+        let probing = crate::gameplay_transport::item_craft::CRAFT_RECEIPT_BARRIER.scope(
+            barrier.clone(),
+            owner.use_craft(
+                deps.actor,
+                crate::gameplay_transport::connection::UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 1,
+                    item_fence: Some(fence),
+                },
+                intent.clone(),
+                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))),
+                None,
+            ),
+        );
+        let holding = async {
+            barrier.wait().await;
+            let holder = harness.root.try_acquire_ready();
+            barrier.wait().await;
+            holder
+        };
+        let (probe, holder) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            super::fixture::join_two(probing, holding),
+        )
+        .await?;
+        let mut holder = holder?;
+        holder
+            .return_to_pool_observed_until(
+                std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE,
+            )
+            .await;
+        assert!(
+            probe.is_none(),
+            "a failed craft receipt read must stay pending"
+        );
+
         let (end, result, payload) = exchange(&owner, admitted, 1, &payload, reference(dough)).await?;
         assert_eq!(result, UseDisposition::Committed);
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await?, 1);

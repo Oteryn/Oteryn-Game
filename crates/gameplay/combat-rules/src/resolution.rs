@@ -361,21 +361,55 @@ pub fn creature_damage_response_with_reduction(
     if policy.damage_immunities.iter().any(|key| key == element) {
         return Some(0);
     }
-    let ratio = |r: CreatureExactRatio| {
-        (r.denominator != 0).then(|| r.numerator as f64 / r.denominator as f64)
-    };
+    let mitigated = mitigated_creature_damage(policy, damage as f64)?;
+    creature_magnitude(resisted_creature_damage(
+        policy,
+        mitigated,
+        element,
+        resistance_reduction,
+    )?)
+}
+
+/// Physical resistance on a melee component, before the armor draw.
+pub fn creature_physical_resistance(policy: &CompiledCreaturePolicy, damage: i64) -> Option<i64> {
+    if creature_physically_immune(policy) {
+        return Some(0);
+    }
+    let resisted = resisted_creature_damage(policy, damage as f64, PHYSICAL, 0)?;
+    (resisted.is_finite() && resisted < i64::MAX as f64).then_some(resisted.max(0.0) as i64)
+}
+
+/// Creature mitigation on a melee component after the armor draw.
+pub fn creature_melee_mitigation(policy: &CompiledCreaturePolicy, damage: i64) -> Option<i64> {
+    creature_magnitude(mitigated_creature_damage(policy, damage as f64)?)
+}
+
+fn creature_percent(ratio: CreatureExactRatio) -> Option<f64> {
+    (ratio.denominator != 0).then(|| ratio.numerator as f64 / ratio.denominator as f64)
+}
+
+fn mitigated_creature_damage(policy: &CompiledCreaturePolicy, damage: f64) -> Option<f64> {
     let mitigation = match policy.mitigation {
-        Some(m) => ratio(m)?.min(30.0),
+        Some(ratio) => creature_percent(ratio)?.min(30.0),
         None => 0.0,
     };
+    Some((damage - damage * mitigation / 100.0).trunc())
+}
+
+fn resisted_creature_damage(
+    policy: &CompiledCreaturePolicy,
+    damage: f64,
+    element: &str,
+    resistance_reduction: u32,
+) -> Option<f64> {
     let resistance = match policy.resistances.iter().find(|v| v.damage_type == element) {
-        Some(v) => ratio(v.percent)?,
+        Some(v) => creature_percent(v.percent)?,
         None => 0.0,
     };
-    let damage = damage as f64;
-    let mitigated = (damage - damage * mitigation / 100.0).trunc();
-    let landed =
-        (mitigated * (100.0 - resistance + f64::from(resistance_reduction)) / 100.0).round();
+    Some((damage * (100.0 - resistance + f64::from(resistance_reduction)) / 100.0).round())
+}
+
+fn creature_magnitude(landed: f64) -> Option<i64> {
     if !landed.is_finite() || landed > f64::from(i32::MAX) || landed < f64::from(i32::MIN) {
         return None;
     }

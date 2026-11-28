@@ -596,6 +596,7 @@ pub struct KillSettlementQueue(
     Arc<super::public_kill_statistics::CaptureQueue>,
     pub(super) Arc<Mutex<super::quest_kill_objectives::ObjectiveCaptureCache>>,
     Arc<std::sync::OnceLock<std::sync::Weak<super::raid_notices::ServerMessageHub>>>,
+    #[cfg(any(test, feature = "qualification-clock"))] Arc<OnceLock<()>>,
 );
 
 #[derive(Debug, Clone)]
@@ -615,6 +616,11 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    #[cfg(any(test, feature = "qualification-clock"))]
+    pub(super) fn enable_qualification_echo_portal(&self) {
+        let _ = self.5.set(());
+    }
+
     pub(super) fn bind_kill_notices(&self, hub: &Arc<super::raid_notices::ServerMessageHub>) {
         self.4.get_or_init(|| Arc::downgrade(hub));
     }
@@ -2259,22 +2265,31 @@ pub fn record_creature_kill(
             observed_at.map_or(now_ms.saturating_mul(1000), |at| at.get()),
         )
     });
-    let echo_effect =
-        super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000)
-            .and_then(|draw| {
-                runtime
-                    .record_echo_death(
-                        oteryn_gameplay_entities::carrier::echo_warden::EchoDeathInput {
-                            death: facts.death,
-                            occurrence: facts.occurrence,
-                            bestiary_stars: source.and_then(|source| source.bestiary_stars),
-                            has_boss_race: source.is_some_and(|source| source.has_boss_race),
-                            draw,
-                            now_ms,
-                        },
-                    )
-                    .ok()
-            });
+    let portal_draw =
+        || super::echo_warden::draw(runtime, facts.occurrence, "ECHO_WARDEN_PORTAL", 1, 200_000);
+    #[cfg(any(test, feature = "qualification-clock"))]
+    let portal_draw = || {
+        // Inject the winning roll only. The exact death occurrence still owns portal identity.
+        if sink.queue.5.get().is_some() {
+            Some(1)
+        } else {
+            portal_draw()
+        }
+    };
+    let echo_effect = portal_draw().and_then(|draw| {
+        runtime
+            .record_echo_death(
+                oteryn_gameplay_entities::carrier::echo_warden::EchoDeathInput {
+                    death: facts.death,
+                    occurrence: facts.occurrence,
+                    bestiary_stars: source.and_then(|source| source.bestiary_stars),
+                    has_boss_race: source.is_some_and(|source| source.has_boss_race),
+                    draw,
+                    now_ms,
+                },
+            )
+            .ok()
+    });
     let echo = (echo_effect
         == Some(crate::domain::echo_warden::EchoDeathEffect::FirstSpeciesReward))
     .then(|| {

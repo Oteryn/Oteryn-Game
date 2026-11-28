@@ -62,7 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(outcome(receipt.disposition))
     }
 
-    fn terrain_scope(&self) -> Option<TerrainScope> {
+    pub(in crate::gameplay_transport) fn terrain_scope(&self) -> Option<TerrainScope> {
         let map = self.bundle_map()?;
         let native = self.active_generation?.native_gameplay()?;
         Some(TerrainScope {
@@ -112,22 +112,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 .map(|_| &self.states.loop_ground),
         );
+        self.mark_use_receipt(
+            command,
+            Some(crate::gameplay_transport::session_ingress::UseReceipt::Terrain),
+        );
         let permit = self.spell_lane_permit().await.ok_or(())?;
-        if let Some(result) = self
-            .root
-            .apply_terrain_tool(
-                &permit,
-                self.character,
-                self.holder,
-                fence,
-                command_ref,
-                encoded.clone(),
-                scope.clone(),
-                None,
-            )
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        let receipt = retry
+            .retry_command_guard(async || {
+                self.root
+                    .apply_terrain_tool(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        command_ref,
+                        encoded.clone(),
+                        scope.clone(),
+                        None,
+                    )
+                    .await
+            })
             .await
-            .map_err(|_| ())?
-        {
+            .map_err(|_| ())?;
+        if let Some(result) = receipt {
             // A replay may acknowledge an already-committed gobbler XP award.
             if result == UseDisposition::Committed {
                 self.states.level_refresh.mark([fence.character_id]);
@@ -140,19 +148,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Ok(Some(outcome(result)));
         }
-        let native = self
+        let Some(native) = self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
-            .ok_or(())?;
-        let inventory = tokio::time::timeout(
-            std::time::Duration::from_secs(10),
+        else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
+        let inventory = retry_item_use_holder(&retry, async || {
             self.root
-                .read_item_use_inventory(self.character, self.holder, fence),
-        )
-        .await
-        .map_err(|_| ())?
-        .map_err(|_| ())?;
-        let index = native.item_index().ok_or(())?;
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+        })
+        .await;
+        let (Ok(inventory), Some(index)) = (inventory, native.item_index()) else {
+            return Ok(Some(UseOutcome::rejected()));
+        };
         let tool = match intent.target {
             UseTarget::Item(_) => match source {
                 Some(ItemKey::Instance(id)) => Some(id),
@@ -265,18 +275,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map(Some);
             }
-            let tile = view::compose_tile(&at.map.overlay, &facts, pos)
-                .map_err(|_| ())?
-                .ok_or(())?;
             let Some(key) = key else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
-            let before = tile
+            let Ok(Some(tile)) = view::compose_tile(&at.map.overlay, &facts, pos) else {
+                return Ok(Some(UseOutcome::rejected()));
+            };
+            let Some(map_entry) = tile
                 .entries
                 .iter()
                 .find(|e| e.source.key() == MapEntryKey::Base(key))
-                .ok_or(())?
-                .facts;
+            else {
+                return Ok(Some(UseOutcome::rejected()));
+            };
+            let before = map_entry.facts;
             if facts.house_tile(pos)
                 || before.pickupable
                 || before.count != 1
@@ -287,7 +299,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let MapDefinition::Item(reference) = before.definition else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
-            let target = super::super::item_look::typed_definition(index, reference).ok_or(())?;
+            let Some(target) = super::super::item_look::typed_definition(index, reference) else {
+                return Ok(Some(UseOutcome::rejected()));
+            };
             let Some(state) = target
                 .production_key
                 .strip_prefix("oteryn:item.tibia.i")
@@ -453,21 +467,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }),
                 enchanting: None,
             };
-            let result = self
-                .root
-                .craft_item(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request,
-                    native,
-                    &NativeItemWeights(native).with_wheel(self.premium_coordinator),
-                    false,
-                )
-                .await
-                .map_err(|_| ())?
-                .ok_or(())?;
+            let weights = NativeItemWeights(native).with_wheel(self.premium_coordinator);
+            self.mark_use_receipt(
+                command,
+                Some(crate::gameplay_transport::session_ingress::UseReceipt::Craft),
+            );
+            let result = retry_busy(&retry, async || {
+                self.root
+                    .craft_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &weights,
+                        false,
+                    )
+                    .await
+            })
+            .await;
+            let result = write_disposition(result)?;
             drop(permit);
             if result == UseDisposition::Committed {
                 self.refresh_terrain_tools().await;
@@ -520,26 +540,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Reload after success or an unknown outcome: an ambiguous commit may
             // already have advanced CharacterRevision with the terrain receipt.
             slot.observe_endgame_progression();
-            let result = durable.map_err(|_| ())?.ok_or(())?;
+            let result = write_disposition(durable)?;
             if result == UseDisposition::Committed {
                 self.states.level_refresh.mark([fence.character_id]);
             }
             result
         } else {
-            self.root
-                .apply_terrain_tool(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    command_ref,
-                    encoded,
-                    scope,
-                    Some(mutation),
-                )
-                .await
-                .map_err(|_| ())?
-                .ok_or(())?
+            let durable = retry_busy(&retry, async || {
+                self.root
+                    .apply_terrain_tool(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        command_ref,
+                        encoded.clone(),
+                        scope.clone(),
+                        Some(mutation.clone()),
+                    )
+                    .await
+            })
+            .await;
+            write_disposition(durable)?
         };
         drop(permit);
         if result == UseDisposition::Committed {
