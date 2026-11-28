@@ -1,162 +1,6 @@
-//! S06 replay: the native appearance catalogue snapshots, the APPEARANCE_CHANGE commit result and
-//! the unearned-addon refusal, applied by the production client reducers `catalogue` and `apply`
-//! (`protocol.rs`); the request comes from the production `command`. Captures: `s06-before.bin`,
-//! `s06-after.bin` (the `gated_snapshot` payloads), `s06-commit.bin`, `s06-refusal.bin` (command
-//! results) and `s06-expected.txt`. Without captures inline payloads built with the production
-//! encoders are used.
+//! Live S06 replay through the production appearance encoder and mailbox.
 use super::*;
 use oteryn_client_runtime::raw_feature::CommandStatus;
-
-struct Capture {
-    before: Vec<u8>,
-    after: Vec<u8>,
-    commit: Vec<u8>,
-    refusal: Vec<u8>,
-    live: Option<LiveReplay>,
-    outfit: String,
-    colours: [u16; 4],
-    committed: u64,
-    content_revision: String,
-}
-
-struct LiveReplay {
-    commit: GatedCommandResult,
-    refusal: GatedCommandResult,
-    request: Vec<u8>,
-    refused_request: Vec<u8>,
-}
-
-fn catalogue_of(
-    outfit: &str,
-    root_revision: u64,
-    selected: Option<wire::Selected>,
-) -> wire::Catalogue {
-    wire::Catalogue {
-        context: wire::Context {
-            content_generation: [1; 32],
-            cosmetics_digest: [2; 32],
-        },
-        root_revision,
-        selected,
-        palette: vec![[0, 0, 0]; 6],
-        outfits: vec![wire::OutfitOption {
-            key: outfit.to_owned(),
-            look_type: 128,
-            permitted_addons: 3,
-        }],
-        mounts: vec!["oteryn:content.mount/starter".to_owned()],
-    }
-}
-
-fn snapshot_bytes(catalogue: wire::Catalogue) -> Result<Vec<u8>, String> {
-    wire::Snapshot {
-        catalogue,
-        bindings: Vec::new(),
-        high_water: 0,
-    }
-    .encode()
-    .map_err(|e| format!("{e:?}"))
-}
-
-fn capture() -> Result<Capture, String> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        let read = |name: &str| std::fs::read(root.join(name)).map_err(|e| format!("{name}: {e}"));
-        let expected = std::fs::read_to_string(root.join("s06-expected.txt"))
-            .map_err(|e| format!("s06-expected.txt: {e}"))?;
-        let value = |key: &str| {
-            expected
-                .lines()
-                .find_map(|line| line.strip_prefix(&format!("{key}=")))
-                .ok_or_else(|| format!("{key}= missing"))
-        };
-        let colours = value("colours")?
-            .split(',')
-            .map(|c| c.parse::<u16>().map_err(|e| e.to_string()))
-            .collect::<Result<Vec<_>, _>>()?;
-        let session = value("session")?;
-        if session.len() != 36 {
-            return Err("invalid capture session ID".into());
-        }
-        let reply = |name: &str, status| -> Result<GatedCommandResult, String> {
-            if value(&format!("{name}_status"))? != format!("{status:?}") {
-                return Err(format!("{name}: unexpected captured status"));
-            }
-            let number = |suffix: &str| -> Result<u64, String> {
-                value(&format!("{name}_{suffix}"))?
-                    .parse::<u64>()
-                    .map_err(|e| e.to_string())
-            };
-            Ok(GatedCommandResult {
-                command_id: number("id")?,
-                server_sequence: number("sequence")?,
-                status,
-                payload: read(&format!("s06-{name}.bin"))?,
-            })
-        };
-        let commit = reply("commit", CommandStatus::Accepted)?;
-        let refusal = reply("refusal", CommandStatus::Rejected)?;
-        if commit.command_id == 0
-            || commit.server_sequence == 0
-            || refusal.command_id <= commit.command_id
-            || refusal.server_sequence <= commit.server_sequence
-        {
-            return Err("capture results are out of session order".into());
-        }
-        return Ok(Capture {
-            live: Some(LiveReplay {
-                commit,
-                refusal,
-                request: read("s06-request.bin")?,
-                refused_request: read("s06-refused-request.bin")?,
-            }),
-            before: read("s06-before.bin")?,
-            after: read("s06-after.bin")?,
-            commit: read("s06-commit.bin")?,
-            refusal: read("s06-refusal.bin")?,
-            outfit: value("outfit")?.to_owned(),
-            colours: colours.try_into().map_err(|_| "four colours".to_owned())?,
-            committed: value("committed")?.parse().map_err(|e| format!("{e}"))?,
-            content_revision: value("content_revision")?.to_owned(),
-        });
-    }
-    let outfit = "oteryn:content.outfit/starter";
-    let colours = [4, 3, 2, 1];
-    let selected = wire::Selected {
-        selection: wire::Selection {
-            outfit_key: outfit.to_owned(),
-            colours,
-            addons: 0,
-            mount_key: None,
-        },
-        revision: 8,
-        provenance: "player".to_owned(),
-    };
-    Ok(Capture {
-        live: None,
-        before: snapshot_bytes(catalogue_of(outfit, 7, None))?,
-        after: snapshot_bytes(catalogue_of(outfit, 8, Some(selected)))?,
-        commit: wire::ChangeResult::Committed(8)
-            .encode()
-            .map_err(|e| format!("{e:?}"))?,
-        refusal: wire::ChangeResult::Rejected
-            .encode()
-            .map_err(|e| format!("{e:?}"))?,
-        outfit: outfit.to_owned(),
-        colours,
-        committed: 8,
-        content_revision: "rev-1".to_owned(),
-    })
-}
-
-fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
-    GatedCommandResult {
-        command_id: 1,
-        server_sequence: 1,
-        status,
-        payload: payload.to_vec(),
-    }
-}
 
 fn pending(panel: &Panel) -> Result<(Panel, FeatureCommand), String> {
     let command = command(panel, Intent::Apply)?;
@@ -165,11 +9,84 @@ fn pending(panel: &Panel) -> Result<(Panel, FeatureCommand), String> {
     Ok((next, command))
 }
 
+fn capture_root() -> Result<std::path::PathBuf, String> {
+    let root = std::env::var_os("NODE_BOOT_S06_CAPTURE_DIR")
+        .map(std::path::PathBuf::from)
+        .ok_or("S06 requires the live wrapper capture directory")?;
+    let run = std::env::var("NODE_BOOT_S06_CAPTURE_RUN")
+        .map_err(|_| "S06 requires the live wrapper run ID")?;
+    if !run.starts_with("s06-client.")
+        || root.file_name().and_then(|name| name.to_str()) != Some(run.as_str())
+    {
+        return Err("S06 capture directory does not match wrapper run".into());
+    }
+    if !std::fs::read_to_string(root.join("live.log"))
+        .map_err(|error| error.to_string())?
+        .lines()
+        .any(|line| {
+            line == format!(
+                "SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=run-{run}"
+            )
+        })
+    {
+        return Err("S06 live seam did not issue the capture marker for this run".into());
+    }
+    Ok(root)
+}
+
+fn show_event(panel: Panel, event: oteryn_session::SessionEvent) -> Panel {
+    let (_, _, outbox) = crate::play::mailbox::play_channel();
+    lock(&outbox.0).properties.appearance = panel;
+    outbox.push(vec![event]);
+    std::mem::take(&mut lock(&outbox.0).properties.appearance)
+}
+
+// The harness runs this exact test once after producing the required live capture.
 #[test]
+#[ignore = "requires the fresh capture generated by s06_client_replay.sh"]
 fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
-    let capture = capture()?;
-    let before = wire::Snapshot::decode(&capture.before).map_err(|e| format!("{e:?}"))?;
-    let after = wire::Snapshot::decode(&capture.after).map_err(|e| format!("{e:?}"))?;
+    let root = capture_root()?;
+    let read = |name: &str| std::fs::read(root.join(name)).map_err(|e| format!("{name}: {e}"));
+    let expected = std::fs::read_to_string(root.join("s06-expected.txt"))
+        .map_err(|e| format!("s06-expected.txt: {e}"))?;
+    let value = |key: &str| {
+        expected
+            .lines()
+            .find_map(|line| line.strip_prefix(&format!("{key}=")))
+            .ok_or_else(|| format!("{key}= missing"))
+    };
+    if root.file_name().and_then(|name| name.to_str()) != Some(value("run")?) {
+        return Err("S06 capture manifest belongs to a different run".into());
+    }
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join("replay.started"))
+        .map_err(|error| {
+            format!("S06 capture has already been replayed or is unwritable: {error}")
+        })?;
+    let number = |key: &str| {
+        value(key)?
+            .parse::<u64>()
+            .map_err(|error| format!("{key}: {error}"))
+    };
+    let session = value("session")?;
+    assert_eq!(session.len(), 36);
+    let reply = |key: &str, file: &str, status| -> Result<GatedCommandResult, String> {
+        assert_eq!(value(&format!("{key}_status"))?, format!("{status:?}"));
+        Ok(GatedCommandResult {
+            command_id: number(&format!("{key}_id"))?,
+            server_sequence: number(&format!("{key}_sequence"))?,
+            status,
+            payload: read(file)?,
+        })
+    };
+
+    let before = wire::Snapshot::decode(&read("s06-before.bin")?).map_err(|e| format!("{e:?}"))?;
+    let committed = number("committed")?;
+    let outfit = value("outfit")?;
+    assert_eq!(outfit, "oteryn:content.outfit.citizen_outfits");
+    let colours = value("colours")?;
     let mut panel = Panel {
         selected: true,
         ..Panel::default()
@@ -178,16 +95,14 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
     assert!(
         panel
             .summary
-            .contains(&format!("Outfit: {}; allowed addon mask: ", capture.outfit))
+            .contains(&format!("Outfit: {outfit}; allowed addon mask: 0"))
     );
-
-    let [head, body, legs, feet] = capture.colours;
     panel.fields = [
-        capture.outfit.clone(),
+        outfit.into(),
         "0".into(),
         String::new(),
-        format!("{head},{body},{legs},{feet}"),
-        capture.content_revision.clone(),
+        colours.into(),
+        value("content_revision")?.into(),
     ];
     let (mut applying, change) = pending(&panel)?;
     assert_eq!(
@@ -197,96 +112,174 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
             wire::COMMAND_TYPE_APPEARANCE_CHANGE
         )
     );
-    let sent = wire::Change {
-        context: before.catalogue.context,
-        expected_root_revision: before.catalogue.root_revision,
-        prior: before.catalogue.selected.clone(),
-        selection: wire::Selection {
-            outfit_key: capture.outfit.clone(),
-            colours: capture.colours,
-            addons: 0,
-            mount_key: None,
+    assert_eq!(change.payload, read("s06-request.bin")?);
+    let sent = wire::Change::decode(&change.payload).map_err(|e| format!("{e:?}"))?;
+    assert_ne!(
+        before
+            .catalogue
+            .selected
+            .as_ref()
+            .map(|selected| &selected.selection),
+        Some(&sent.selection)
+    );
+
+    let commit = reply("commit", "s06-commit.bin", CommandStatus::Accepted)?;
+    assert!(commit.command_id > 0 && commit.server_sequence > 0);
+    let event_sequence = number("event_sequence")?;
+    let base_revision = number("event_base")?;
+    let new_revision = number("event_new")?;
+    assert!(
+        event_sequence > 0
+            && event_sequence != commit.server_sequence
+            && new_revision > base_revision
+    );
+    let event_catalogue = wire::Catalogue::decode(&read("s06-catalogue-event.bin")?)
+        .map_err(|error| format!("{error:?}"))?;
+    let mut event = Some(oteryn_session::SessionEvent::Appearance(
+        oteryn_session::AppliedDelta {
+            server_sequence: event_sequence,
+            base_revision,
+            new_revision,
+            value: oteryn_session::AppearanceUpdate::Catalogue(event_catalogue.clone()),
         },
-        content_revision: capture.content_revision.clone(),
-    };
-    assert_eq!(change.payload, sent.encode().map_err(|e| format!("{e:?}"))?);
-    if let Some(live) = &capture.live {
-        assert_eq!(change.payload, live.request);
-        apply(&mut applying, &change, &live.commit);
-    } else {
-        apply(
-            &mut applying,
-            &change,
-            &result(CommandStatus::Accepted, &capture.commit),
+    ));
+    if event_sequence < commit.server_sequence {
+        applying = show_event(
+            applying,
+            event.take().ok_or("missing earlier appearance event")?,
         );
     }
+    let confirmed_before_reply = applying.confirmed.clone();
+    apply(&mut applying, &change, &commit);
     assert!(!applying.pending);
     assert_eq!(
         applying.feedback,
-        format!(
-            "Appearance committed at revision {}; catalogue updates follow",
-            capture.committed
-        )
+        format!("Appearance committed at revision {committed}; catalogue updates follow")
     );
-    catalogue(&mut applying, after.catalogue.clone());
-    assert!(applying.summary.starts_with(&format!(
-        "Current outfit: {}\r\nAddons: 0\r\nMount: None\r\nColours: [{head}, {body}, {legs}, {feet}]\r\n",
-        capture.outfit
-    )));
+    assert_eq!(applying.confirmed, confirmed_before_reply);
+
+    if let Some(event) = event {
+        assert_eq!(applying.confirmed, before.catalogue.selected);
+        applying = show_event(applying, event);
+    }
     let confirmed = applying
         .confirmed
-        .clone()
-        .ok_or("selection not confirmed")?;
-    assert_eq!(confirmed.selection.outfit_key, capture.outfit);
-    assert_eq!(confirmed.selection.colours, capture.colours);
-    assert_eq!(after.catalogue.root_revision, capture.committed);
+        .as_ref()
+        .ok_or("live event did not confirm selection")?;
+    assert_eq!(confirmed.selection, sent.selection);
+    assert_eq!(confirmed.revision, committed);
+    assert_eq!(applying.catalogue.as_ref(), Some(&event_catalogue));
+    assert_eq!(event_catalogue.root_revision, committed);
+    assert!(applying.summary.starts_with(&format!(
+        "Current outfit: {outfit}\r\nAddons: 0\r\nMount: None\r\nColours: {:?}\r\n",
+        sent.selection.colours
+    )));
 
-    if let Some(live) = &capture.live {
-        let refused = wire::Change::decode(&live.refused_request).map_err(|e| format!("{e:?}"))?;
-        let mut bad = applying.clone();
-        bad.fields[1] = refused.selection.addons.to_string();
-        // The UI prevents this request. Replay the actual wire probe through the reducer.
-        assert!(command(&bad, Intent::Apply).is_err());
-        let change = FeatureCommand {
-            capability: wire::CAPABILITY_APPEARANCE_V1,
-            kind: wire::COMMAND_TYPE_APPEARANCE_CHANGE,
-            payload: live.refused_request.clone(),
+    let mut last_id = commit.command_id;
+    let mut last_sequence = commit.server_sequence.max(event_sequence);
+    for addon in [1, 2] {
+        let refused_request = read(&format!("s06-refused-request-{addon}.bin"))?;
+        let refused = wire::Change::decode(&refused_request).map_err(|e| format!("{e:?}"))?;
+        let mut expected_change = wire::Change {
+            context: event_catalogue.context,
+            expected_root_revision: committed,
+            prior: applying.confirmed.clone(),
+            ..sent.clone()
         };
-        assert!(bad.begin(change.kind));
-        apply(&mut bad, &change, &live.refusal);
-        assert!(!bad.pending);
-        assert_eq!(bad.feedback, "The server refused the appearance request");
-        assert_eq!(bad.confirmed, applying.confirmed);
-        assert_eq!(bad.summary, applying.summary);
-        assert_eq!(bad.catalogue, applying.catalogue);
-        return Ok(());
-    }
-
-    // The refusal leaves the confirmed selection and the shown catalogue unchanged.
-    for (status, payload, message) in [
-        (
+        expected_change.selection.addons = addon;
+        assert_eq!(refused, expected_change);
+        let mut bad = applying.clone();
+        bad.fields[1] = addon.to_string();
+        assert_eq!(
+            command(&bad, Intent::Apply).err().as_deref(),
+            Some("This outfit does not permit those addons")
+        );
+        let probe = FeatureCommand {
+            payload: refused_request,
+            ..change.clone()
+        };
+        let refusal = reply(
+            &format!("refusal_{addon}"),
+            &format!("s06-refusal-{addon}.bin"),
             CommandStatus::Rejected,
-            capture.refusal.clone(),
+        )?;
+        assert_eq!(
+            wire::ChangeResult::decode(&refusal.payload),
+            Ok(wire::ChangeResult::Rejected)
+        );
+        assert!(refusal.command_id > last_id && refusal.server_sequence > last_sequence);
+        last_id = refusal.command_id;
+        last_sequence = refusal.server_sequence;
+        assert_refused(
+            &applying,
+            bad,
+            &probe,
+            &refusal,
             "The server refused the appearance request",
-        ),
-        (
-            CommandStatus::Accepted,
-            capture.refusal.clone(),
-            "The server refused the appearance request",
-        ),
-        (
-            CommandStatus::Accepted,
-            vec![0xff, 0x00],
-            "Invalid appearance reply",
-        ),
-    ] {
-        let (mut bad, change) = pending(&applying)?;
-        apply(&mut bad, &change, &result(status, &payload));
-        assert!(!bad.pending);
-        assert_eq!(bad.feedback, message);
-        assert_eq!(bad.confirmed, applying.confirmed);
-        assert_eq!(bad.summary, applying.summary);
-        assert_eq!(bad.catalogue, applying.catalogue);
+        );
+
+        // Negative variants exercise result validation after the actual live refusal.
+        assert_invalid_replies(&applying, &probe, &refusal);
     }
+    Ok(())
+}
+
+fn assert_refused(
+    before: &Panel,
+    mut panel: Panel,
+    command: &FeatureCommand,
+    result: &GatedCommandResult,
+    feedback: &str,
+) {
+    assert!(panel.begin(command.kind));
+    apply(&mut panel, command, result);
+    assert!(!panel.pending);
+    assert_eq!(panel.feedback, feedback);
+    assert_eq!(panel.confirmed, before.confirmed);
+    assert_eq!(panel.summary, before.summary);
+    assert_eq!(panel.catalogue, before.catalogue);
+}
+
+fn assert_invalid_replies(panel: &Panel, command: &FeatureCommand, refusal: &GatedCommandResult) {
+    let mut result = refusal.clone();
+    result.status = CommandStatus::Accepted;
+    assert_refused(
+        panel,
+        panel.clone(),
+        command,
+        &result,
+        "The server refused the appearance request",
+    );
+    result.payload = vec![0xff, 0x00];
+    assert_refused(
+        panel,
+        panel.clone(),
+        command,
+        &result,
+        "Invalid appearance reply",
+    );
+}
+
+#[test]
+fn s06_reducer_rejects_accepted_envelopes_with_rejected_or_malformed_payloads() -> Result<(), String>
+{
+    let panel = Panel {
+        selected: true,
+        ..Panel::default()
+    };
+    let command = FeatureCommand {
+        capability: wire::CAPABILITY_APPEARANCE_V1,
+        kind: wire::COMMAND_TYPE_APPEARANCE_CHANGE,
+        payload: Vec::new(),
+    };
+    let refusal = GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Rejected,
+        payload: wire::ChangeResult::Rejected
+            .encode()
+            .map_err(|e| format!("{e:?}"))?,
+    };
+    assert_invalid_replies(&panel, &command, &refusal);
     Ok(())
 }

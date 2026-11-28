@@ -396,10 +396,10 @@ class SeamPassThroughTests(unittest.TestCase):
             cargo.write_text("#!/bin/sh\necho 'test result: ok. 0 passed; 0 failed; 0 ignored;'\n")
             cargo.chmod(0o755)
             live = textwrap.dedent('''\
-                for file in s06-before.bin s06-after.bin s06-commit.bin s06-refusal.bin s06-expected.txt s06-request.bin s06-refused-request.bin; do
+                for file in s06-before.bin s06-catalogue-event.bin s06-commit.bin s06-request.bin s06-expected.txt s06-refusal-{1,2}.bin s06-refused-request-{1,2}.bin; do
                     printf fixture > "$NODE_BOOT_S06_CAPTURE_DIR/$file"
                 done
-                echo 'SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=fixture'
+                echo "SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=run-$NODE_BOOT_S06_CAPTURE_RUN"
             ''')
             log = subprocess.run(
                 ['bash', str(HERE / 's06_client_replay.sh'), temp, 'bash', '-c', live],
@@ -415,7 +415,7 @@ class SeamPassThroughTests(unittest.TestCase):
             Path(temp, 's06-expected.txt').write_text('stale')
             log = subprocess.run(
                 ['bash', str(HERE / 's06_client_replay.sh'), temp, 'true'],
-                env={**os.environ, 'NODE_BOOT_E2E_ONLY': 'rows',
+                env={**os.environ, 'NODE_BOOT_E2E_ONLY': '\u00a0rows\u00a0',
                      'OTERYN_E2E_ROW_BATCH': '196:2', 'E2E_ALL_CAPTURE_DIR': temp},
                 capture_output=True, text=True, check=False,
             )
