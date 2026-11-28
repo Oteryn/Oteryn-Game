@@ -42,7 +42,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         }, key).await;
         let observation = match observed {
             Ok(observation) => observation,
-            Err(reason) => return Ok(refuse_corpse_open(command.command_id, reason)),
+            Err(reason) => return Ok(refuse_corpse_open(&admitted.continuity.selected_capabilities, command.command_id, reason)),
         };
         let opened = view.open(key, observation);
         admitted.continuity.item_view = view.continuity();
@@ -629,7 +629,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         };
                         Dispatch::UseItem(decision, delta)
                     }
-                    (_, None, _) => refuse_corpse_open(command.command_id, CorpseOpenRefusal::HandleStale),
+                    (_, None, _) => refuse_corpse_open(&admitted.continuity.selected_capabilities, command.command_id, CorpseOpenRefusal::HandleStale),
                     _ => Dispatch::UseItem(OpenDecision::StaleState, None),
                 }
             }
@@ -675,12 +675,17 @@ mod fluid_routing_tests {
 
 
 fn log_corpse_open_refusal(command_id: u64, refusal: &CorpseOpenRefusal) {
+    use crate::durability::{DurabilityError, SqlxFailureClass, item_transfer::ItemTransferError};
+
     let cause = match refusal {
         CorpseOpenRefusal::DurableRead(error) => match error {
-            crate::durability::item_transfer::ItemTransferError::AuthorityRejected => "authority",
-            crate::durability::item_transfer::ItemTransferError::Unavailable(
-                crate::durability::DurabilityError::RootPassDeadlineExceeded,
-            ) => "durable_deadline",
+            ItemTransferError::AuthorityRejected => "authority",
+            ItemTransferError::Unavailable(DurabilityError::RootPassDeadlineExceeded) => "durable_deadline",
+            ItemTransferError::Unavailable(DurabilityError::Database(SqlxFailureClass::RetryableStatement)) => {
+                "durable_statement_timeout_or_lock"
+            }
+            ItemTransferError::Unavailable(DurabilityError::InvalidStoredState) => "durable_state",
+            ItemTransferError::Unavailable(DurabilityError::Database(_)) => "durable_database",
             _ => "durable_read",
         },
         CorpseOpenRefusal::HolderBusy => "holder_busy",
@@ -693,9 +698,26 @@ fn log_corpse_open_refusal(command_id: u64, refusal: &CorpseOpenRefusal) {
     ));
 }
 
-fn refuse_corpse_open(command_id: u64, refusal: CorpseOpenRefusal) -> Dispatch {
+fn refuse_corpse_open(
+    selected: &transport::capabilities::SelectedCapabilities,
+    command_id: u64,
+    refusal: CorpseOpenRefusal,
+) -> Dispatch {
+    use crate::durability::{DurabilityError, SqlxFailureClass, item_transfer::ItemTransferError};
+    use oteryn_protocol_oteryn::refusal_detail::{RefusalDetail, append_refusal_detail};
+    use oteryn_protocol_oteryn::world_object::{UseDisposition, encode_use_result};
+
     log_corpse_open_refusal(command_id, &refusal);
     match refusal {
+        CorpseOpenRefusal::HolderBusy
+        | CorpseOpenRefusal::DurableRead(ItemTransferError::Unavailable(
+            DurabilityError::RootPassDeadlineExceeded
+            | DurabilityError::Database(SqlxFailureClass::RetryableStatement),
+        )) => {
+            let mut payload = encode_use_result(UseDisposition::Rejected).unwrap_or_default();
+            append_refusal_detail(&mut payload, selected.as_slice(), RefusalDetail::of_use(UseDisposition::Rejected));
+            Dispatch::Reply(crate::foundation::CommandStatus::Rejected, payload)
+        }
         CorpseOpenRefusal::NotOwner => Dispatch::Use(UseOutcome::rejected()),
         _ => Dispatch::UseItem(OpenDecision::StaleState, None),
     }

@@ -432,7 +432,7 @@ async fn observe_corpse(
         y: corpse.position.y,
         floor: corpse.position.floor,
     };
-    let entries = if let (Some(viewer), Some(command)) = (viewer, command) {
+    let entries = if let Some(viewer) = viewer {
         if !super::item_view::corpse_open::within_reach(actor_position, position) {
             return Ok(ItemTargetObservation {
                 actor: actor_position,
@@ -442,40 +442,40 @@ async fn observe_corpse(
                 },
             });
         }
-        let budget = super::AdmissionRetryBudget::for_command(admission.root);
-        let mut waited = false;
-        loop {
-            match admission
-                .root
-                .read_corpse_contents_for_open(
-                    admission.character,
-                    corpse.item.item_instance_id,
-                    viewer,
-                    budget.deadline,
-                )
-                .await
-            {
-                Ok(CorpseContents::Open(entries)) => break entries,
-                Ok(CorpseContents::Absent) => return Err(CorpseAbsent),
-                Ok(CorpseContents::NotOwner) => return Err(NotOwner),
-                Err(ItemTransferError::Unavailable(DurabilityError::RootUnavailable)) => {
-                    if !waited && command.command_id != 0 {
-                        super::operator_event(&format!(
-                            "event=corpse_open_wait command_id={} cause=holder_busy budget_ms={}",
-                            command.command_id,
-                            super::COMMAND_HOLDER_WINDOW.as_millis(),
-                        ));
-                    }
-                    waited = true;
-                    if !budget
-                        .retries_unavailable_with_cause(super::AdmissionRefusal::Unavailable, true)
+        let budget = super::AdmissionRetryBudget::for_holder_window(
+            admission.root,
+            super::AdmissionRetryBudget::holder_wait_window(),
+        );
+        let entries = budget
+            .retry_logged_holder(
+                "corpse_open",
+                async || {
+                    admission
+                        .root
+                        .read_corpse_contents_for_open(
+                            admission.character,
+                            corpse.item.item_instance_id,
+                            viewer,
+                            budget.deadline,
+                        )
                         .await
-                    {
-                        return Err(CorpseOpenRefusal::HolderBusy);
-                    }
-                }
-                Err(error) => return Err(DurableRead(error)),
+                },
+                |error| {
+                    matches!(
+                        error,
+                        ItemTransferError::Unavailable(DurabilityError::RootUnavailable)
+                    )
+                },
+            )
+            .await;
+        match entries {
+            Ok(CorpseContents::Open(entries)) => entries,
+            Ok(CorpseContents::Absent) => return Err(CorpseAbsent),
+            Ok(CorpseContents::NotOwner) => return Err(NotOwner),
+            Err(ItemTransferError::Unavailable(DurabilityError::RootUnavailable)) => {
+                return Err(CorpseOpenRefusal::HolderBusy);
             }
+            Err(error) => return Err(DurableRead(error)),
         }
     } else {
         admission
