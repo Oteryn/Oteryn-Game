@@ -72,11 +72,33 @@ fn kills(snapshot: &tr::TrackerSnapshot, key: &str) -> Option<u32> {
         .map(|entry| entry.kill_count)
 }
 
+fn adjacent_rat(client: &DevClientSession) -> Option<oteryn_dev_client::WorldSpatialEntity> {
+    let here = client.world_spatial().actor_position;
+    client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|entry| {
+                entry.kind == EntityKind::Creature
+                    && entry
+                        .display_name
+                        .is_some_and(|name| name.as_str() == Ok("Rat"))
+                    && entry.position.floor == here.floor
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(here.x)
+                        .max(entry.position.y.abs_diff(here.y))
+                        <= 1
+            })
+        })
+        .copied()
+}
+
 async fn walk_to_rat(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
+) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
@@ -97,6 +119,15 @@ async fn walk_to_rat(
     let mut path = VecDeque::from(path);
     let mut detours = std::collections::BTreeSet::new();
     while let Some(direction) = path.pop_front() {
+        let here = tile(client.world_spatial().actor_position)?;
+        if world
+            .base()
+            .tile(here.x, here.y, here.floor)
+            .is_some_and(|at| !at.protection_zone())
+            && let Some(target) = adjacent_rat(client)
+        {
+            return Ok(target);
+        }
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, before, direction).ok_or("step=route;observed=no-landing")?;
@@ -172,7 +203,7 @@ async fn walk_to_rat(
             .await?;
         client.take_events();
     }
-    Ok(())
+    adjacent_rat(client).ok_or_else(|| "step=hunt;observed=no-adjacent-rat".into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
@@ -211,27 +242,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .checked_add(1)
         .ok_or("step=add;observed=kill-count-overflow")?;
 
-    walk_to_rat(&mut client, world, &metadata.spawns).await?;
-    let here = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry
-                        .display_name
-                        .is_some_and(|name| name.as_str() == Ok("Rat"))
-                    && entry.position.floor == here.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(here.x)
-                        .max(entry.position.y.abs_diff(here.y))
-                        <= 1
-            })
-        })
-        .copied()
-        .ok_or("step=hunt;observed=no-adjacent-creature")?;
+    let target = walk_to_rat(&mut client, world, &metadata.spawns).await?;
+    evidence(&format!(
+        "p22d target={:?} position={:?}",
+        target.entity, target.position
+    ));
     client.take_events();
     let attack = client
         .session_mut()
