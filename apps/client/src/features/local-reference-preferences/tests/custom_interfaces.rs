@@ -343,7 +343,7 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
     let rune = SpellCatalogEntry {
         cast_index: 71,
         name: "Test rune".into(),
-        words: "test".into(),
+        words: String::new(),
         level: 1,
         mana: 1,
         mana_percent: false,
@@ -355,7 +355,9 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
     };
     let catalog = encode_catalog(&[rune]).map_err(|e| format!("{e:?}"))?;
     outbox.spell_catalog_initialize(true, Some(catalog))?;
+    shortcut_targets(&link);
     for target in [
+        ObjectTarget::SelfActor,
         ObjectTarget::Cursor,
         ObjectTarget::CurrentTarget,
         ObjectTarget::CursorPosition,
@@ -373,6 +375,106 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
                 .is_none()
         );
         assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+fn shortcut_targets(link: &crate::play::PlayLink) {
+    use oteryn_client_runtime::world_interaction::{Selection, Target};
+    use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
+    let own = WorldSpatialEntity {
+        motion: None,
+        display_name: None,
+        kind: EntityKind::Player,
+        entity: EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 100,
+            y: 200,
+            floor: 0,
+        },
+        detail: EntityDetail::Actor {
+            direction: oteryn_session::StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    let enemy = WorldSpatialEntity {
+        kind: EntityKind::Creature,
+        entity: EntityRef {
+            identity: [2; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 101,
+            ..own.position
+        },
+        ..own
+    };
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    mailbox.bar_actions.own_actor = Some(own);
+    mailbox.battle.rows.push(enemy);
+    mailbox.battle.combat = Some(oteryn_session::ActorCombatState {
+        target: Some(enemy.entity),
+        modes: oteryn_session::FightModes::DEFAULT,
+        in_fight: true,
+    });
+    mailbox.bar_actions.cursor = Some((
+        Target::Position(enemy.position),
+        Selection {
+            position: enemy.position,
+            binding: None,
+        },
+    ));
+}
+
+#[test]
+fn queued_targeted_shortcuts_consume_map_click_before_receiver_polls()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{BarAction, CustomAction, ItemUseMode, ObjectTarget};
+    use oteryn_client_runtime::world_interaction::Action;
+    let definition: std::num::NonZeroU32 = 900u32.try_into()?;
+    for (mode, target) in [
+        (ItemUseMode::SelfActor, ObjectTarget::SelfActor),
+        (ItemUseMode::Target, ObjectTarget::CurrentTarget),
+        (ItemUseMode::CursorPosition, ObjectTarget::CursorPosition),
+    ] {
+        for custom in [false, true] {
+            let (link, mut commands, outbox) = play_channel();
+            let mut play = view()?;
+            outbox.targeting_initialize(true);
+            outbox.inventory_initialize(Some(Default::default()), false);
+            shortcut_targets(&link);
+            if custom {
+                assert!(link.custom_hotkey_action(
+                    &play,
+                    &CustomAction::Object {
+                        definition: definition.get(),
+                        sub_type: 0,
+                        target,
+                    },
+                ));
+            } else {
+                assert!(link.assign_bar_action(
+                    0,
+                    BarAction::Use {
+                        definition,
+                        sub_type: None,
+                        mode,
+                    },
+                ));
+                link.cast_spell_slot(std::num::NonZeroU32::MIN);
+            }
+            assert!(!link.use_with_armed());
+            play.primary_click(oteryn_renderer::TileCoord::new(98, 200), &link)?;
+            assert!(play.inputs.is_empty(), "{mode:?}, custom={custom}");
+            assert!(matches!(commands.try_recv()?,
+                crate::combat_input::PlayCommand::WorldContext(command)
+                if command.action == Action::UseDefinitionOn(definition)));
+            assert!(commands.try_recv().is_err());
+        }
     }
     Ok(())
 }
