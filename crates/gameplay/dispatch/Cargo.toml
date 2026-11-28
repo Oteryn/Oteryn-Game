@@ -15,6 +15,7 @@ release-role = "production"
 # Disposable node-boot builds only; absent from production binaries.
 qualification-cast-evidence = ["oteryn-gameplay-spell/qualification-cast-evidence"]
 qualification-clock = ["oteryn-gameplay-world/qualification-clock"]
+qualification-taming = []
 test-support = ["dep:ed25519-dalek", "oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]
 
 [dependencies]

@@ -384,6 +384,8 @@ pub struct NodeConfig {
     /// Explicit disposable node-boot fixture opt-in; never enabled by default.
     #[serde(default)]
     pub qualification_fixture: bool,
+    /// Dedicated node-boot account allowed to request one forced taming draw.
+    pub qualification_taming_account: Option<String>,
     /// Optional message shown once after login in this configured World (NOLOGOUT-RL-01).
     #[serde(default)]
     pub server_motd: String,
@@ -644,6 +646,15 @@ impl NodeConfig {
                 || self.readiness.source_authority != "oteryn:runtime:node-boot")
         {
             return reject("qualification_fixture");
+        }
+        if self
+            .qualification_taming_account
+            .as_ref()
+            .is_some_and(|account| {
+                !self.qualification_fixture || super::uuid_bytes(account).is_none()
+            })
+        {
+            return reject("qualification_taming_account");
         }
         if self.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
             return reject("server_motd");
@@ -1491,6 +1502,19 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             "database = \"oteryn_node_boot_other\"",
         );
         assert!(NodeConfig::parse(other.as_bytes()).is_err());
+    }
+
+    #[test]
+    fn qualification_taming_account_requires_disposable_fixture_configuration() {
+        let account = "qualification_taming_account = \"01934f10-7c00-7000-8000-000000000002\"";
+        assert!(NodeConfig::parse(format!("{account}\n{NODE}").as_bytes()).is_err());
+        let disposable = format!("qualification_fixture = true\n{account}\n{NODE}")
+            .replace("database = \"oteryn\"", "database = \"oteryn_node_boot\"")
+            .replace(
+                "oteryn:runtime:world-1:channel-1",
+                "oteryn:runtime:node-boot",
+            );
+        assert!(NodeConfig::parse(disposable.as_bytes()).is_ok());
     }
 
     #[test]

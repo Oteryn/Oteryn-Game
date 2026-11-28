@@ -345,6 +345,14 @@
       "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
     },
     {
+      "event": "qualification_taming_draw",
+      "level": "warn",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "A disposable node-boot taming command consumed its one-use forced draw. Connection trace when available. No player identifiers or payloads."
+    },
+    {
       "event": "release_deferred",
       "level": "warn",
       "span": false,

@@ -80,6 +80,16 @@ def inspect_damage(socket_path, session, target):
     return answer.decode("ascii").rstrip("\n")
 
 
+def arm_taming_draw(socket_path, session, command):
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session or not 0 < command < 2**64:
+        raise ValueError("invalid qualification taming draw request")
+    answer = bytes(_request(socket_path, f"qualify-taming-draw {session} {command}\n", 64))
+    if answer != b"armed\n":
+        raise RuntimeError(f"node refused qualification taming draw: {answer[:64]!r}")
+    return "armed"
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -87,10 +97,13 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile")
     group.add_argument("--spawn", metavar="CREATURE_KEY")
+    group.add_argument("--taming-draw", type=int, metavar="COMMAND_ID")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
+    elif args.taming_draw is not None:
+        print(arm_taming_draw(args.socket, args.session, args.taming_draw))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
     else:
