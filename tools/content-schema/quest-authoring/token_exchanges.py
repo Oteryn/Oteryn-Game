@@ -1,4 +1,4 @@
-"""Fixed token recipes from Crystal Server 201189f8 (OTS_HYPOTHESIS_ONLY)."""
+"""Token exchanges from Global item records and Crystal Server 201189f8 NPC scripts."""
 
 import argparse
 import hashlib
@@ -138,6 +138,24 @@ RUPRECHT = (
 )
 
 
+# Global item revisions for recipes added after the retained NPC scripts.
+GLOBAL_ITEM_REVISIONS = {
+    50154: 1194210,
+    50147: 1148639,
+    53197: 1195622,
+    53199: 1197152,
+    53201: 1195619,
+    53203: 1195620,
+    53205: 1195623,
+    49272: 1082691,
+    49273: 1082690,
+    42175: 1162764,
+    44755: 1046708,
+    50124: 1162761,
+    52725: 1162763,
+}
+
+
 def donor_replies():
     """Extract the new dialogue branches from the committed, digest-checked corpus."""
     archive = Path(__file__).parent / "samples/donor-source/corpus.tar.gz"
@@ -202,6 +220,13 @@ def append(add, callbacks, offers):
             topic=topic,
             source=SOURCES[npc],
         )
+        if output in GLOBAL_ITEM_REVISIONS:
+            callbacks[-1]["sources"].extend(
+                [
+                    f"https://tibia.fandom.com/wiki/{npc.title()}",
+                    f"https://tibia.fandom.com/wiki/Special:PermanentLink/{GLOBAL_ITEM_REVISIONS[output]}",
+                ]
+            )
         callbacks[-1].update(
             reply=[reply],
             failure_reply=[failure],

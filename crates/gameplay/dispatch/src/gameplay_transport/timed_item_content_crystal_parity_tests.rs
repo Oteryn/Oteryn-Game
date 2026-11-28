@@ -1,6 +1,6 @@
 //! I05 parity: timed equipment budgets and paired forms the timed-item path reads, against
 //! Crystal `201189f8` `data/items/items.xml` (`duration` seconds, `charges`, `transformEquipTo`,
-//! `transformDeEquipTo`, `decayTo`). Canary `47dfd51f` carries the same values for these ids.
+//! `transformDeEquipTo`, `decayTo`). Crystal also supplies the corrected Ethereal Ring decay target.
 #![allow(clippy::expect_used, clippy::panic)]
 
 use super::*;
@@ -59,6 +59,9 @@ fn i05_crystal_timed_equipment_budgets_match() {
 
 #[test]
 fn cledwyn_exchange_rewards_equip_and_expire_to_the_discharged_item() {
+    use crate::domain::timed_item::{ExpireReason, LaneWriteKind};
+    use crate::domain::timed_item_host::{HostedItem, TimedItemDefinition, TimedItemHost};
+
     let controller = native();
     let native = native_state(&controller);
     let callbacks =
@@ -90,8 +93,38 @@ fn cledwyn_exchange_rewards_equip_and_expire_to_the_discharged_item() {
         assert_eq!(equipped.production_key, key(worn));
         let (budget, target) = facts(native, &definition).expect("worn item clock");
         assert_eq!(budget.full.remaining_ms(), Some(seconds * 1000));
+        let mut host = TimedItemHost::new(1000).expect("equipment clock");
+        host.host_live(
+            vec![HostedItem {
+                item_instance_id: [7; 16],
+                definition: TimedItemDefinition {
+                    definition: equipped.clone(),
+                    full: budget.full,
+                    decay_target: target.map(|t| t.definition),
+                },
+                row: None,
+            }],
+            0,
+        )
+        .expect("first wear after exchange");
+        host.advance(seconds * 1000);
+        let writes = host.due_writes(seconds * 1000, || [8; 16], |_| None);
+        let [expiry] = writes.as_slice() else {
+            panic!("expected one expiry for {worn}");
+        };
         assert_eq!(
-            target.expect("expiry target").definition.production_key,
+            expiry.write.kind,
+            LaneWriteKind::Expire {
+                reason: ExpireReason::TimeExhausted
+            }
+        );
+        assert_eq!(
+            expiry
+                .definition
+                .decay_target
+                .as_ref()
+                .expect("expiry target")
+                .production_key,
             key(discharged)
         );
         assert_eq!(

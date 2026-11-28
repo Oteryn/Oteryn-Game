@@ -84,6 +84,10 @@ def apply_admissions(definitions, root=ROOT):
             raise ValueError("ENGCLAIM_WIKI_WEIGHT_PIN:" + str(item))
     for definition in definitions:
         key = definition["identity"]["key"]
+        if key == "oteryn:item.tibia.i50148":
+            from qengine_reward_item_profiles import qualify_ethereal_decay
+
+            qualify_ethereal_decay(definition["semantics"])
         if key not in {f"oteryn:item.tibia.i{i}" for i in IDS}:
             continue
         item = int(key.rsplit(".i", 1)[1])

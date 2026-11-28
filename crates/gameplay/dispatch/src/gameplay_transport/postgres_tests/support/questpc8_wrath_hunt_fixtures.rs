@@ -295,7 +295,7 @@ pub(super) async fn exercise(
     )
     .await?;
     talk(owner, admitted, npc, 8202, "hi").await?;
-    talk(owner, admitted, npc, 8203, "imperial report").await?;
+    talk(owner, admitted, npc, 8203, "mission").await?;
     talk(owner, admitted, npc, 8204, "yes").await?;
     assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 0);
     refused(owner, admitted, npc, 8205, "imperial report").await?;

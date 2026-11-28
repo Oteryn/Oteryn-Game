@@ -507,6 +507,18 @@ CANONICAL_WEIGHTS = {
 }
 
 
+def qualify_ethereal_decay(semantics):
+    # Crystal 201189f8 data/items/items.xml, id 50148. The timed owner checks
+    # that the DECAY transform agrees with the discharged item's temporal target.
+    targets = semantics["use_transform"]["value"]["targets"]
+    (decay,) = [
+        entry["target"]["value"] for entry in targets if entry["kind"] == "DECAY"
+    ]
+    if decay["key"] not in {"oteryn:item.tibia.i39182", "oteryn:item.tibia.i50149"}:
+        raise ValueError("CLEDWYN_ETHEREAL_DECAY_SOURCE_DRIFT")
+    decay["key"] = "oteryn:item.tibia.i50149"
+
+
 def reconcile_canonical_physical(item_id, definition, record):
     if item_id not in CANONICAL_WEIGHTS:
         return
@@ -774,6 +786,8 @@ def capture(root=ROOT, ids=None, *, item_ids=None):
             record = questpc7_physical_custody_join.observation(
                 prior, record, accepted.accepted_first
             )
+        if item_id == 50148:
+            qualify_ethereal_decay(record["semantics"])
         if known_speed is not None:
             record["attributes"]["speed_bonus"] = known_speed
         records.append(record)
