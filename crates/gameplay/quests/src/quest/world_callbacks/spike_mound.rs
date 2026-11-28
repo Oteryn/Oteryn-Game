@@ -4,6 +4,9 @@ use std::ops::RangeInclusive;
 
 pub fn chances(callback: &Callback) -> Option<RangeInclusive<u8>> {
     let position = callback.selector.position?;
+    if !(-10..=-8).contains(&position.floor) {
+        return None;
+    }
     let suffix = callback
         .key
         .strip_prefix("oteryn:quest-callback/spike/mound-")?;

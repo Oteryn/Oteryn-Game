@@ -90,7 +90,15 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
                 .initial = value;
         }
     }
-    Ok(b.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
+    let base = if stage(name)? == "orchid" {
+        let published = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        let tarun = published.catalogue().track("oteryn:quest-progress/quest/u10_80/the_lost_brother_quest")
+            .ok_or("published Tarun report")?.clone();
+        QuestStateCatalogue::new("content-1", vec![tarun], vec![]).map_err(debug)?
+    } else {
+        QuestStateCatalogue::empty("content-1").ok_or("catalogue")?
+    };
+    Ok(b.attach(&base)?)
 }
 
 fn library_portal() -> TestResult<super::l6_world_pickups_fixtures::ExpectedTeleport> {
