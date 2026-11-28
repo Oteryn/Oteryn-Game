@@ -8,18 +8,9 @@
 use super::*;
 
 #[test]
-fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
--> Result<(), BoxError> {
+fn i14_consumable_inventory_reducer_rejects_invalid_delta_atomically() -> Result<(), BoxError> {
     block_on(async {
-        let (before, after, metadata) = if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-        {
-            let path = std::path::Path::new(&path);
-            (
-                std::fs::read(path.join("i14-inventory-before.bin"))?,
-                std::fs::read(path.join("i14-inventory-after.bin"))?,
-                std::fs::read_to_string(path.join("i14-expected.txt"))?,
-            )
-        } else {
+        let (before, after, metadata) = {
             let before = CharacterInventory {
                 main_backpack: Some(entry(70, 1988, 1)),
                 entries: vec![entry(71, 21425, 2)],
@@ -35,7 +26,7 @@ fn i14_real_consumable_inventory_payload_replays_and_invalid_delta_is_atomic()
                     .map_err(|error| format!("before fixture: {error:?}"))?,
                 item_view::encode_character_inventory_with_equip_drop(&after, true)
                     .map_err(|error| format!("after fixture: {error:?}"))?,
-                "41 1 2 1 21425\n".into(),
+                "41 1 2 1 21425\n",
             )
         };
         let numbers = metadata

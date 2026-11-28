@@ -179,6 +179,25 @@ pub(super) async fn read_frame_after<S: AsyncRead + Unpin>(
     read_frame_body(stream, prefix).await
 }
 
+tokio::task_local! {
+    static SERVER_FRAME_CAPTURE: std::cell::RefCell<Option<Vec<u8>>>;
+}
+
+/// Capture the exact inbound frame bytes read by this task during a qualification operation.
+pub async fn capture_server_frames<T>(
+    operation: impl std::future::Future<Output = T>,
+) -> (T, Result<Vec<u8>, SessionError>) {
+    SERVER_FRAME_CAPTURE
+        .scope(std::cell::RefCell::new(Some(Vec::new())), async {
+            let result = operation.await;
+            let bytes = SERVER_FRAME_CAPTURE
+                .with(|capture| capture.take())
+                .ok_or_else(|| SessionError::from(FoundationProtocolError::FrameTooLarge));
+            (result, bytes)
+        })
+        .await
+}
+
 pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     stream: &mut S,
     prefix: [u8; 4],
@@ -186,6 +205,17 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    let _ = SERVER_FRAME_CAPTURE.try_with(|capture| {
+        let mut capture = capture.borrow_mut();
+        if let Some(bytes) = capture.as_mut() {
+            if bytes.len() + prefix.len() + body.len() <= 32 * 1024 * 1024 {
+                bytes.extend_from_slice(&prefix);
+                bytes.extend_from_slice(&body);
+            } else {
+                *capture = None;
+            }
+        }
+    });
     Ok(body)
 }
 
