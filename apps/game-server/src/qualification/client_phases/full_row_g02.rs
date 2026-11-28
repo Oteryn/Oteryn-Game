@@ -53,10 +53,7 @@ async fn press(
     let command = request(panel, intent, v7(0x92, lane))
         .ok_or_else(|| format!("step={step} observed=panel-refused:{:?}", panel.feedback))?;
     let response = wheel_allocation::send(client.session_mut(), &command).await?;
-    if !matches!(
-        response.status,
-        CommandStatus::Accepted | CommandStatus::DuplicateReplay
-    ) {
+    if response.status != CommandStatus::Accepted {
         return Err(format!("step={step} observed=status:{:?}", response.status).into());
     }
     if !apply_result(panel, &response) {
@@ -242,11 +239,11 @@ async fn prepare(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     )
     .await?;
     character_prep::grant_item(&client, 3043, 2).await?;
-    character_prep::grant_premium(&client).await?;
     logout(&mut client).await?;
     drop(client);
 
     let mut client = connect_character(clients, 0xe0, 0).await?;
+    premium_input(&client).await?;
     let vitals = client
         .actor_vitals()
         .ok_or("step=prepare observed=no-vitals")?;
@@ -293,6 +290,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 }
 
 async fn verify(clients: &SeamClients<'_>, mut client: DevClientSession) -> TestResult {
+    premium_input(&client).await?;
     let mut panel = admitted_panel(&client);
     if !panel.selected {
         return Err("step=admit observed=wheel-capability-not-selected".into());
@@ -346,6 +344,7 @@ async fn verify(clients: &SeamClients<'_>, mut client: DevClientSession) -> Test
     drop(client);
 
     let mut fresh = connect_character(clients, 0xe2, 0).await?;
+    premium_input(&fresh).await?;
     let mut again = admitted_panel(&fresh);
     press(&mut fresh, &mut again, Intent::Refresh, 3, "fresh-refresh").await?;
     let durable = again
@@ -360,10 +359,29 @@ async fn verify(clients: &SeamClients<'_>, mut client: DevClientSession) -> Test
         .confirmed_wheel
         .clone()
         .ok_or("step=reset observed=no-wheel")?;
-    logout(&mut fresh).await?;
-    if cleared.refused || cleared.points != [0; 36] {
+    if cleared.refused || cleared.points != [0; 36]
+        || Some(cleared.revision) != durable.revision.checked_add(1) {
         return Err(format!("step=reset observed={cleared:?};needed=zero-allocation").into());
     }
+    logout(&mut fresh).await?;
+    drop(fresh);
+    let mut reset_read = connect_character(clients, 0xe3, 0).await?;
+    premium_input(&reset_read).await?;
+    let mut reset_panel = admitted_panel(&reset_read);
+    press(&mut reset_read, &mut reset_panel, Intent::Refresh, 5, "reset-relog").await?;
+    let persisted = reset_panel.confirmed_wheel.ok_or("step=reset-relog observed=no-wheel")?;
+    if persisted.refused || persisted.points != cleared.points || persisted.revision != cleared.revision {
+        return Err(format!("step=reset-relog observed={persisted:?};needed={cleared:?}").into());
+    }
+    logout(&mut reset_read).await
+}
+
+async fn premium_input(client: &DevClientSession) -> TestResult {
+    character_prep::grant_premium(client).await?;
+    evidence(&format!(
+        "G02_FIXTURE input=Premium session={}",
+        uuid_text(client.join_snapshot().game_session_id.as_bytes())
+    ));
     Ok(())
 }
 
