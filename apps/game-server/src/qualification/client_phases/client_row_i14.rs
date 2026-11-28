@@ -40,45 +40,69 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         Ok::<_, Box<dyn std::error::Error>>((client, proof))
     })
     .await;
-    let (mut client, live) = live?;
+    let (client, live) = live?;
     let use_session = client.join_snapshot().game_session_id;
+    let durability = verdict::observe(verify_relog(client, &scope, meat)).await;
+    let replayed = async {
+        let character = crate::foundation::CharacterId::decode(&scope.characters[0])?;
+        persist_and_replay(wire?, character, meat, use_session.as_bytes(), live).await
+    }
+    .await;
+    match &replayed {
+        Ok(()) => evidence(&format!(
+            "I14_REPLAY status=PASS server_sequence={} base_revision={} new_revision={}",
+            live.0, live.1, live.2
+        )),
+        Err(error) => evidence(&format!("I14_REPLAY status=FAIL evidence={error}")),
+    }
+    durability?;
+    replayed
+}
+
+async fn verify_relog(
+    mut client: oteryn_dev_client::DevClientSession,
+    scope: &SeamClients<'_>,
+    meat: std::num::NonZeroU32,
+) -> TestResult {
+    let use_session = client.join_snapshot().game_session_id;
+    verdict::Harness::global().progress("persistence-logout");
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(&scope, 0xb4, 0).await?;
+    let mut fresh = connect_character(scope, 0xb4, 0).await?;
     if fresh.join_snapshot().game_session_id == use_session
         || fresh.inventory().map(|inventory| visible(inventory, meat)) != Some(1)
     {
         return Err("I14 meat debit did not survive fresh admission".into());
     }
+    verdict::Harness::global().progress("cleanup-logout");
     logout(&mut fresh).await?;
+    Ok(())
+}
+
+async fn persist_and_replay(
+    wire: Vec<u8>,
+    character: crate::foundation::CharacterId,
+    meat: std::num::NonZeroU32,
+    session_id: &[u8; 16],
+    live: InventoryProof,
+) -> TestResult {
     let capture_dir = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
-    let path = capture_dir.join(format!(
-        "i14-food-server-{}.wire",
-        uuid_text(use_session.as_bytes())
-    ));
+    let path = capture_dir.join(format!("i14-food-server-{}.wire", uuid_text(session_id)));
     use std::io::Write;
-    use std::os::unix::fs::OpenOptionsExt;
-    let wire = wire?;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&path)?
-        .write_all(&wire)?;
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options.open(&path)?.write_all(&wire)?;
     let captured = std::fs::read(path)?;
     if captured != wire {
         return Err("I14 capture differs from this run's inbound wire bytes".into());
     }
-    replay(
-        captured,
-        crate::foundation::CharacterId::decode(&scope.characters[0])?,
-        meat,
-        use_session.as_bytes(),
-        live,
-    )
-    .await?;
-    Ok(())
+    replay(captured, character, meat, session_id, live).await
 }
 
 type InventoryProof = (u64, u64, u64);
