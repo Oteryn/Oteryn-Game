@@ -16,9 +16,8 @@ use oteryn_protocol_oteryn::account_achievements as wire;
 use oteryn_protocol_oteryn::item_view::{ItemEntry, ItemHandle};
 use oteryn_protocol_oteryn::zones_nologout::ServerMessage;
 
-// The live sword-350 run took 36.5 seconds to remove the first 35% of a demon's
-// health. Allow 150 seconds per target for damage variation and server ticks, then
-// 120 seconds for party setup, the combat lock, the reward and relog.
+// Allow 150 seconds per target and 120 seconds for party setup, combat lock,
+// reward and relog. The seeded build supplies the damage budget.
 const TARGET_DEADLINE: Duration = Duration::from_secs(150);
 const STEP_CLEAR_DEADLINE: Duration = Duration::from_secs(20);
 pub(super) const JOURNEY_DEADLINE: Duration = Duration::from_secs(420);
@@ -1105,7 +1104,7 @@ async fn leave_reward_room(
 
 async fn prepare_knight(clients: &SeamClients<'_>, index: usize, leader: bool) -> TestResult {
     let (level, profile) = if leader {
-        ("knight-level-1000", "p11-corridor-knight")
+        ("knight-level-3000", "p11-corridor-knight")
     } else {
         ("knight-level-100", "knight")
     };
@@ -1150,7 +1149,7 @@ async fn connect_knight(
     index: usize,
     leader: bool,
 ) -> TestResult<DevClientSession> {
-    let level = if leader { 1000 } else { 100 };
+    let level = if leader { 3000 } else { 100 };
     let mut fresh = connect_character(clients, 0xc1, index).await?;
     use oteryn_dev_client::client_ui::cyclopedia_character as panel;
     use oteryn_protocol_oteryn::cyclopedia_character::CharacterTab;
@@ -1172,7 +1171,7 @@ async fn connect_knight(
         .session_mut()
         .gated_command(command.capability, command.kind, &command.payload)
         .await?;
-    let sword = if leader { 350 } else { 10 };
+    let sword = if leader { 400 } else { 10 };
     if !panel::apply_result(&mut view, &reply)
         || view
             .general
@@ -1187,7 +1186,7 @@ async fn connect_knight(
     }
     if leader {
         evidence(&format!(
-            "FIXTURE_P11 character={} sword_skill={sword} verified_after_admission=true",
+            "FIXTURE_P11 character={} level={level} sword_skill={sword} verified_after_admission=true",
             uuid_text(&clients.characters[index]),
         ));
     }
