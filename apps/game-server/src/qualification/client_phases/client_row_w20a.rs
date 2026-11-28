@@ -1,13 +1,8 @@
-//! W20a client replay capture: the natural World clock (domain 18). The join snapshot payload and
-//! two consecutive clock updates from the live session are captured. The join payload is raw,
-//! and the validated clock values use the same canonical encoder as live dispatch.
-//! `crates/session/src/tests/e2e_w20a.rs` replays them through `Session::admit` and
-//! `Session::apply_state_delta` and asserts the server-observed minute, light level and colour.
-//! No clock override or fixture is used.
+//! W20a captures the original server frames from one natural World clock session.
 use super::*;
 use oteryn_dev_client::SessionEvent;
 use oteryn_protocol_oteryn::world_clock::{
-    CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK, decode_world_clock, encode_world_clock,
+    CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK, decode_world_clock,
 };
 
 // At constant light, the pacer only publishes on the next Tibian hour (150 real seconds).
@@ -32,7 +27,9 @@ fn advances_revision(previous: u64, base: u64, next: u64) -> bool {
     base == previous && next > previous
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(
+    clients: &SeamClients<'_>,
+) -> TestResult<(oteryn_dev_client::DevClientSession, String, String)> {
     let mut client = connect_world(clients, 0x96).await?;
     if !client
         .selected_capabilities()
@@ -94,9 +91,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             )
             .into());
         }
-        let payload = encode_world_clock(clock)
-            .map_err(|error| format!("step=delta{step} encode {error:?}"))?;
-        capture(&format!("w20a-delta{step}.bin"), &payload)?;
         expected.push_str(&format!(
             "delta{step}={}:{}:{}\ndelta{step}_sequence={}\ndelta{step}_base={}\ndelta{step}_new={}\n",
             clock.tibian_minute, clock.light_level, clock.light_color, delta.server_sequence, delta.base_revision, delta.new_revision
@@ -104,21 +98,33 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         previous = delta.new_revision;
         last = clock;
     }
-    capture("w20a-snapshot.bin", &snapshot_payload)?;
-    capture("w20a-expected.txt", expected.as_bytes())?;
+
+    Ok((
+        client,
+        expected,
+        format!(
+            "minute={}..{} light={}",
+            first.tibian_minute, last.tibian_minute, last.light_level
+        ),
+    ))
+}
+
+async fn capture_journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let (result, transcript) =
+        oteryn_dev_client::native_session::capture_inbound_frames(journey(clients)).await;
+    let (mut client, expected, observed) = result?;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?} need=Accepted").into());
     }
-    Ok(format!(
-        "minute={}..{} light={}",
-        first.tibian_minute, last.tibian_minute, last.light_level
-    ))
+    capture("w20a-inbound.bin", &transcript)?;
+    capture("w20a-expected.txt", expected.as_bytes())?;
+    Ok(observed)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     evidence("W20A_CAPTURE_STARTED");
-    match verdict::indexed_timeout(JOURNEY_WAIT, verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(JOURNEY_WAIT, verdict::observe(capture_journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W20a.client status=CAPTURED evidence={observed}"
         )),

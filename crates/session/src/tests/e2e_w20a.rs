@@ -16,17 +16,6 @@ struct Capture {
 }
 
 fn fixture() -> Result<Capture, BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        return Ok(Capture {
-            snapshot: std::fs::read(path.join("w20a-snapshot.bin"))?,
-            delta: [
-                std::fs::read(path.join("w20a-delta1.bin"))?,
-                std::fs::read(path.join("w20a-delta2.bin"))?,
-            ],
-            expected: std::fs::read_to_string(path.join("w20a-expected.txt"))?,
-        });
-    }
     let clock = |tibian_minute, light_level| {
         encode_world_clock(WorldClock {
             tibian_minute,
@@ -62,8 +51,59 @@ fn text(clock: WorldClock) -> String {
     )
 }
 
+async fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
+    let transcript = std::fs::read(directory.join("w20a-inbound.bin"))?;
+    let expected = std::fs::read_to_string(directory.join("w20a-expected.txt"))?;
+    let (idle, _peer) = tokio::io::duplex(1);
+    // Keep the recorded connection open after its last frame so the idle reader can
+    // return its queued events at the ordinary idle deadline.
+    let inbound = tokio::io::AsyncReadExt::chain(transcript.as_slice(), idle);
+    let stream = tokio::io::join(inbound, tokio::io::sink());
+    let mut session =
+        Session::admit(stream, admission_with(CLIENT_SUPPORTED_CAPABILITIES)?).await?;
+    let snapshot = session
+        .gated_snapshot(STATE_DOMAIN_WORLD_CLOCK)
+        .ok_or("clock snapshot absent")?;
+    assert_eq!(
+        snapshot.revision,
+        value(&expected, "snapshot_revision")?.parse::<u64>()?
+    );
+    assert_eq!(
+        text(decode_world_clock(&snapshot.payload).map_err(|error| format!("{error:?}"))?),
+        value(&expected, "snapshot")?
+    );
+    let mut observed = 0;
+    while observed < 2 {
+        let events = session.wait_for_events(Duration::from_secs(1)).await?;
+        for event in events {
+            let SessionEvent::WorldClock(delta) = event else {
+                continue;
+            };
+            observed += 1;
+            let key = |suffix: &str| format!("delta{observed}{suffix}");
+            assert_eq!(text(delta.value), value(&expected, &key(""))?);
+            assert_eq!(
+                delta.server_sequence,
+                value(&expected, &key("_sequence"))?.parse::<u64>()?
+            );
+            assert_eq!(
+                delta.base_revision,
+                value(&expected, &key("_base"))?.parse::<u64>()?
+            );
+            assert_eq!(
+                delta.new_revision,
+                value(&expected, &key("_new"))?.parse::<u64>()?
+            );
+        }
+    }
+    Ok(())
+}
+
 #[test]
 fn e2e_w20a_world_clock_replay() -> Result<(), BoxError> {
+    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        return block_on(replay_live(std::path::Path::new(&path)))?;
+    }
     block_on(async {
         let capture = fixture()?;
         let expected = capture.expected.as_str();
@@ -142,6 +182,28 @@ fn e2e_w20a_world_clock_replay() -> Result<(), BoxError> {
                 .map(|(_, revision)| *revision),
             Some(last)
         );
+        Ok(())
+    })?
+}
+
+#[test]
+fn qualification_capture_preserves_original_frame_bytes() -> Result<(), BoxError> {
+    block_on(async {
+        let mut frame = Vec::new();
+        write_frame(&mut frame, &[0x08, 0x13]).await?;
+        let mut body_after_first = &frame[1..];
+        let mut complete_frame = frame.as_slice();
+        let (result, transcript) = capture_inbound_frames(async {
+            assert_eq!(read_frame(&mut complete_frame).await?, [0x08, 0x13]);
+            assert_eq!(
+                read_frame_after(&mut body_after_first, frame[0]).await?,
+                [0x08, 0x13]
+            );
+            Ok::<_, BoxError>(())
+        })
+        .await;
+        result?;
+        assert_eq!(transcript, [frame.as_slice(), frame.as_slice()].concat());
         Ok(())
     })?
 }

@@ -118,6 +118,22 @@ pub(super) async fn read_frame_after<S: AsyncRead + Unpin>(
     read_frame_body(stream, prefix).await
 }
 
+tokio::task_local! {
+    static INBOUND_CAPTURE: std::cell::RefCell<Vec<u8>>;
+}
+
+/// Records the original inbound frames read by a single qualification session.
+pub async fn capture_inbound_frames<T>(
+    operation: impl std::future::Future<Output = T>,
+) -> (T, Vec<u8>) {
+    INBOUND_CAPTURE
+        .scope(std::cell::RefCell::new(Vec::new()), async {
+            let result = operation.await;
+            (result, INBOUND_CAPTURE.with(|capture| capture.take()))
+        })
+        .await
+}
+
 pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     stream: &mut S,
     prefix: [u8; 4],
@@ -125,6 +141,19 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    if let Ok(recorded) = INBOUND_CAPTURE.try_with(|capture| {
+        let mut bytes = capture.borrow_mut();
+        if bytes.len() + prefix.len() + body.len() > 32 * 1024 * 1024 {
+            return Err(std::io::Error::other(
+                "qualification inbound capture limit exceeded",
+            ));
+        }
+        bytes.extend_from_slice(&prefix);
+        bytes.extend_from_slice(&body);
+        Ok(())
+    }) {
+        recorded?;
+    }
     Ok(body)
 }
 
