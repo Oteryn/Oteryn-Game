@@ -68,6 +68,14 @@ pub(super) async fn exercise(
     talk(owner, admitted, tarun, 17, "mission").await?;
     assert_eq!(reward().await?, (before.0 + 3000, before.1 + 1));
     assert_eq!(palace_raider_grants(h).await?, 1);
+    let bound: bool = sqlx::query_scalar(
+        "SELECT source_event_id = uuid_send(account_id) || uuid_send(character_id)
+         FROM game_account_achievement_grant_requests
+         WHERE achievement_key='oteryn:achievement/lost_palace_raider'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(bound, "the receipt must distinguish a buyer from the seller");
     Ok(())
 }
 

@@ -9,22 +9,24 @@ pub(super) async fn earn(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
 ) -> Result<(), DurabilityError> {
-    let ready: bool = sqlx::query_scalar(
-        "SELECT count(*) = 2 FROM game_character_quest_tracks
+    let event: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(account_id) || uuid_send(character_id) FROM game_character_roots
+          WHERE character_id = encode($1,'hex')::uuid
+            AND 2 = (SELECT count(*) FROM game_character_quest_tracks
           WHERE character_id = encode($1,'hex')::uuid
             AND ((track_key = 'oteryn:quest-progress/engenc/asura/orchid/count' AND value >= 1)
-              OR (track_key = 'oteryn:quest-progress/quest/u10_80/the_lost_brother_quest' AND value >= 3))",
+              OR (track_key = 'oteryn:quest-progress/quest/u10_80/the_lost_brother_quest' AND value >= 3)))",
     )
     .bind(character.as_bytes().as_slice())
-    .fetch_one(&mut **tx)
+    .fetch_optional(&mut **tx)
     .await?;
-    if ready {
+    if let Some(event) = event {
         super::super::account_achievement::grant_missing(
             tx,
             character,
             &["oteryn:achievement/lost_palace_raider"],
             "oteryn:lost-palace-raider",
-            character.as_bytes(),
+            &event,
         )
         .await?;
     }

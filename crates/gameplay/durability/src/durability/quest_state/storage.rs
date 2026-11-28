@@ -20,7 +20,17 @@ impl DurabilityRoot {
             let rows=sqlx::query("SELECT proof,item_instance_id FROM (SELECT c.proof,c.item_instance_id FROM game_quest_callback_consumptions c LEFT JOIN game_quest_reward_sources s USING(character_id,cause_id,cause_ordinal,transition_key) WHERE c.character_id=encode($1,'hex')::uuid AND c.cause_id=encode($2,'hex')::uuid AND c.cause_ordinal=$3::text::numeric AND (((s.plan ? 'carried_item' OR s.plan ? 'recipe_source') AND c.before_item->>'definition_production_key'=coalesce(s.plan->>'carried_item',s.plan->>'recipe_source')) OR (convert_from(c.proof,'UTF8')::jsonb #>> '{callback,item_on_target,selected_instance}'='true' AND c.location_kind<>'ground')) UNION ALL SELECT r.proof,r.item_instance_id FROM game_quest_world_tool_reads r WHERE r.character_id=encode($1,'hex')::uuid AND r.cause_id=encode($2,'hex')::uuid AND r.cause_ordinal=$3::text::numeric) bound_tool_proofs LIMIT 2")
                 .bind(character.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_all(&mut *tx).await?;
             let answer=match rows.as_slice() {
-                []=>None,
+                [] => sqlx::query_scalar(
+                    "SELECT detector_intent = $4 FROM game_quest_reward_sources
+                      WHERE character_id=encode($1,'hex')::uuid AND cause_id=encode($2,'hex')::uuid
+                        AND cause_ordinal=$3::text::numeric AND retained_detector IS NOT NULL",
+                )
+                .bind(character.as_bytes().as_slice())
+                .bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string())
+                .bind(&intent)
+                .fetch_optional(&mut *tx)
+                .await?,
                 [row]=>{
                     let proof:serde_json::Value=serde_json::from_slice(&row.try_get::<Vec<u8>,_>("proof")?).map_err(|_|DurabilityError::InvalidStoredState)?;
                     let selected=proof.get("carried_use").or_else(||proof.get("context").and_then(|context|context.get("selected_tool"))).ok_or(DurabilityError::InvalidStoredState)?;

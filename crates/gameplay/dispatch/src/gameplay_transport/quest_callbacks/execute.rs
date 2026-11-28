@@ -84,6 +84,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
         scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
         publication: Option<&std::sync::atomic::AtomicBool>,
+        ingress_settled: bool,
     ) -> UseDisposition {
         let (mut runtime_guard, mut states_guard) = self.callback_guards().await;
         if let Some(publication) = publication
@@ -163,6 +164,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || (callback
                 .key
                 .starts_with("oteryn:quest-callback/spike/nest-")
+                && !ingress_settled
                 && !states.get(runtime, actor, session).is_some_and(|state| {
                     state.owned_conditions().outfit_at(self.owner_now().get()) == Some(307)
                 }))
