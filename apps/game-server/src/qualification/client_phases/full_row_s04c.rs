@@ -26,6 +26,58 @@ const ROOMS: [ChatRoom; 4] = [
     ChatRoom::Advertising,
 ];
 
+pub(super) async fn connect_speaker(
+    clients: &SeamClients<'_>,
+    row: &str,
+    tag: u8,
+    index: usize,
+) -> TestResult<DevClientSession> {
+    const LEVEL: u32 = 100;
+    character_prep::declare_seeded(
+        row,
+        "level-100-sorcerer",
+        "Public room speech requires level 20 or Premium, and leveling is outside this journey.",
+    );
+    let mut client = connect_character(clients, tag, index).await?;
+    let old_session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(old_session.as_bytes()),
+        "--profile",
+        "sorcerer".into(),
+    )
+    .await?;
+    if client.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("speaker fixture logout was refused".into());
+    }
+    drop(client);
+
+    let mut client = connect_character(clients, tag, index).await?;
+    if client.join_snapshot().game_session_id == old_session {
+        return Err("speaker fixture reused its original game session".into());
+    }
+    let level = full_e2ef7::player_level(&mut client).await?;
+    let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        LEVEL,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    )
+    .ok_or("speaker fixture source vitals are missing")?;
+    if level != LEVEL
+        || !client.actor_vitals().is_some_and(|vitals| {
+            vitals.max_health == max_health && vitals.max_mana == max_mana
+        })
+    {
+        return Err(format!(
+            "speaker fixture expected level {LEVEL} and maxima {max_health}/{max_mana}, observed level {level} and {:?}",
+            client.actor_vitals()
+        ).into());
+    }
+    Ok(client)
+}
+
 fn has_line(client: &DevClientSession, room: ChatRoom, text: &str) -> bool {
     client.chat_log().is_some_and(|log| {
         log.lines().any(|line| {
@@ -96,7 +148,7 @@ fn same_chat_session(before: &[u8; 16], after: &[u8; 16]) -> bool {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_character(clients, 0xc4, 0).await?;
+    let mut client = connect_speaker(clients, "S04c.full", 0xc4, 0).await?;
     for room in ROOMS {
         open(&mut client, room).await?;
     }

@@ -50,7 +50,7 @@ async fn say(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_character(clients, 0x63, 1).await?;
+    let mut client = full_row_s04c::connect_speaker(clients, "S04c.client", 0x63, 1).await?;
     let mut expected = String::new();
     let mut note = |step: &str, status: CommandStatus, disposition: ChatDisposition, wait: u32, who: &str| {
         expected.push_str(&format!("{step}\t{status:?}\t{disposition:?}\t{wait}\t{who}\n"));
