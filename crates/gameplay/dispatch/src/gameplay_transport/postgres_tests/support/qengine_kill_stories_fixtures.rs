@@ -718,6 +718,7 @@ pub(super) async fn recover_nest(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    trigger: oteryn_gameplay_quests::quest::world_callbacks::Position,
 ) -> TestResult {
     use super::questpc8_authored_programmes_fixtures::{object_target, use_target};
     use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -731,7 +732,16 @@ pub(super) async fn recover_nest(
     let session = admitted.game_session_id;
     owner.refresh_quest_session(session, false).await;
     owner.refresh_quest_disguise(session).await;
-    let tile = crate::map::overlay::TilePos { x: 32162, y: 32507, floor: -11 };
+    let (draw, creature) = match trigger.x {
+        32162 => (61, "oteryn:creature.spider"),
+        32221 => (71, "oteryn:creature.larva"),
+        32112 => (81, "oteryn:creature.scarab"),
+        32180 => (91, "oteryn:creature.tarantula"),
+        _ => return Err("unexpected nest".into()),
+    };
+    let tile = crate::map::overlay::TilePos { x: trigger.x, y: trigger.y, floor: trigger.floor };
+    let before = owner.runtime.lock().await.current_live_creature_census().map_err(debug)?;
+    owner.states.quest_callbacks.nest_draw.store(draw, std::sync::atomic::Ordering::Release);
     let target = object_target(owner, tile, 1)?;
     owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
     let command = admitted.continuity.next_command_id;
@@ -739,10 +749,38 @@ pub(super) async fn recover_nest(
     assert_eq!(count(h, PROGRESS).await?, 2);
     assert!(owner.has_pending_quest_callback(session));
     owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(121)).ok_or("clock")?;
+    if draw == 61 {
+        let mut blockers = Vec::new();
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let at = runtime.read_actor_position(admitted.runtime_actor.ok_or("actor")?).map_err(debug)?.position();
+            loop {
+                match runtime.admit_encounter_actor("oteryn:creature.rat", 1, at) {
+                    Ok(actor) => blockers.push(actor),
+                    Err(crate::domain::carrier_values::CarrierError::CapacityExceeded) => break,
+                    Err(error) => return Err(debug(error).into()),
+                }
+            }
+        }
+        assert!(!owner.reconcile_quest_callbacks(session).await);
+        assert!(owner.has_pending_quest_callback(session));
+        assert_eq!(object_target(owner, tile, 1)?.expected_revision, target.expected_revision);
+        let mut runtime = owner.runtime.lock().await;
+        for actor in blockers {
+            runtime.remove_encounter_actor(actor).map_err(debug)?;
+        }
+    }
+    assert!(owner.reconcile_quest_callbacks(session).await);
     assert!(owner.reconcile_quest_callbacks(session).await);
     assert!(!owner.has_pending_quest_callback(session));
     assert_eq!(use_target(owner, admitted, command, &target).await?, UseDisposition::Committed);
     assert_eq!(count(h, PROGRESS).await?, 2);
+    let runtime = owner.runtime.lock().await;
+    assert_eq!(object_target(owner, tile, 1)?.expected_revision, target.expected_revision + 1);
+    let after = runtime.current_live_creature_census().map_err(debug)?;
+    let spawned: Vec<_> = after.iter().filter(|a| !before.contains(a)).collect();
+    assert_eq!(spawned.len(), 1);
+    assert_eq!(runtime.current_live_creature_identity(*spawned[0]).map_err(debug)?, creature.as_bytes());
     Ok(())
 }
 
@@ -1186,5 +1224,194 @@ pub(super) async fn move_actor(
         .commit_quest_platform_ride(from, position, actor, |_, _, _| true, || true)
         .map_err(debug)?;
     assert_eq!(moved.len(), 1);
+    Ok(())
+}
+
+pub(super) fn pad_world(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    start_y: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use super::l6_world_pickups_fixtures::{ExpectedTeleport, NativeCrop, native_scene};
+    let crop = |bounds| NativeCrop {
+        bytes: include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z11-x125-y127.b3"
+        )),
+        region: (11, 125, 127),
+        bounds,
+        start: (32242, start_y),
+        expected: Vec::new(),
+    };
+    // The south pad also carries a native teleport. Keep its destination inside the
+    // extent but without landable ground, so movement settles on the pad for StepIn.
+    native_scene(
+        native,
+        vec![crop((32242, 32609, 32243, 32612)), crop((32241, 32608, 32242, 32609))],
+        &[ExpectedTeleport {
+            position: (32242, 32611, 11),
+            ordinal: 1,
+            destination: (32242, 32608, 11),
+        }],
+    )
+}
+
+pub(super) async fn transform_pad(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    trigger: oteryn_gameplay_quests::quest::world_callbacks::Position,
+) -> TestResult {
+    use super::quest_world_callbacks_fixtures::local;
+    use super::questpc8_authored_programmes_fixtures::step;
+    use crate::domain::condition::{ConditionValues, ConflictKey};
+    use crate::foundation::{ApplicationFacts, ConditionDefinition, ConditionSourceKind};
+    use oteryn_gameplay_entities::{ActorConditionTransition, ConditionSource};
+    use oteryn_protocol_oteryn::world_spatial::StepDirection;
+    const STAMP: &str = "oteryn:quest-progress/spike/nests/transformed_at";
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h,
+        owner,
+        admitted,
+        &[
+            ("oteryn:quest-progress/spike/nests/progress".into(), 1),
+            (STAMP.into(), 1),
+        ],
+        217,
+    )
+    .await?;
+    let session = admitted.game_session_id;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    owner.refresh_quest_session(session, false).await;
+    let origin = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let member = native
+        .spell_appearances()
+        .and_then(|a| a.for_look_type(1593))
+        .ok_or("outfit")?;
+    let item = ConditionDefinition::new(
+        "spell.chameleon",
+        0,
+        ConditionValues::ItemOutfit {
+            duration_ms: 60_000,
+        },
+    )
+    .and_then(|d| {
+        d.with_item_appearance(
+            "oteryn:item.tibia.i3031",
+            "definition-r1",
+            native.source_digest(),
+        )
+    })
+    .ok_or("chameleon")?;
+    let ordinary = ConditionDefinition::new(
+        "fixture.outfit",
+        1,
+        ConditionValues::Outfit {
+            duration_ms: 60_000,
+            look_type: member.look_type(),
+        },
+    )
+    .and_then(|d| d.with_appearance(member.selection()))
+    .ok_or("ordinary outfit")?;
+    for (spell, definition) in [(true, item), (false, ordinary)] {
+        let now = owner.owner_now();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([7; 32]);
+        let facts = ApplicationFacts {
+            now: now.get(),
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([8; 16]),
+        };
+        {
+            let mut runtime = owner.runtime.lock().await;
+            if spell {
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states.get(&runtime, actor, session).ok_or("player")?;
+                let next = state
+                    .stage_owned_test_conditions(std::slice::from_ref(&definition), &facts)
+                    .ok_or("spell conditions")?;
+                assert!(states.commit(&runtime, actor, session, next));
+            } else {
+                let plan = runtime
+                    .prepare_actor_condition(
+                        actor,
+                        Some(session),
+                        ActorConditionTransition::Apply {
+                            definition: &definition,
+                            source: ConditionSource {
+                                actor,
+                                session: Some(session),
+                                kind: ConditionSourceKind::SelfUse,
+                            },
+                            immunities: &[],
+                            facts,
+                        },
+                        now,
+                    )
+                    .map_err(debug)?;
+                assert!(runtime.commit_actor_condition(&plan, now).map_err(debug)?);
+            }
+        }
+        let command = admitted.continuity.next_command_id;
+        step(owner, admitted, command, StepDirection::South).await?;
+        assert_eq!(count(h, STAMP).await?, 1);
+        {
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime
+                    .read_actor_position(actor)
+                    .map_err(debug)?
+                    .position(),
+                origin
+            );
+            let now = owner.owner_now().get();
+            let states = owner.states.spell_states.lock().await;
+            let retained = if spell {
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("player")?
+                    .owned_conditions()
+                    .active_at(ConflictKey::Outfit, now)
+                    .map(|c| c.definition())
+            } else {
+                runtime
+                    .actor_conditions_at(actor, Some(session), now)
+                    .map_err(debug)?
+                    .active_at(ConflictKey::Outfit, now)
+                    .map(|c| c.definition())
+            };
+            assert_eq!(retained, Some(&definition));
+        }
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(61))
+            .ok_or("clock")?;
+    }
+    let command = admitted.continuity.next_command_id;
+    step(owner, admitted, command, StepDirection::South).await?;
+    assert_eq!(
+        owner
+            .runtime
+            .lock()
+            .await
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+        local(trigger)
+    );
+    assert!(count(h, STAMP).await? > 1);
     Ok(())
 }

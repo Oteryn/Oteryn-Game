@@ -178,7 +178,8 @@ fn scenario_case(
     let hot_cuisine_books = name == "m42-hot-cookbooks";
     let katana_lever = name == "katana-hidden-lever";
     let hunter_hymn = name == "hunter-hymn-piano";
-    let native_crop = classic_native.is_some() || hot_cuisine_books || pinned_qc_world
+    let spike_pad = name.starts_with("spike/transform-");
+    let native_crop = spike_pad || classic_native.is_some() || hot_cuisine_books || pinned_qc_world
         || katana_lever
         || hunter_hymn
         || eroth_mirror
@@ -232,7 +233,9 @@ fn scenario_case(
         || native_story
         || native_upper
         || paradox_journey;
-    let start = if classic_native.is_some() {
+    let start = if spike_pad {
+        Position { y: trigger.y - 1, ..trigger }
+    } else if classic_native.is_some() {
         trigger
     } else if name == "crystal-wand-twinkiller" {
         Position {
@@ -1320,6 +1323,10 @@ fn scenario_case(
                     .ok_or("workbench native policies")?,
                 name,
             )?
+        } else if spike_pad {
+            super::super::qengine_kill_stories_fixtures::pad_world(
+                generation.native_gameplay().ok_or("native")?, start.y,
+            )?
         } else if iglues || source_reward {
             use crate::map::overlay::TilePos;
             let tile = TilePos { x: trigger.x, y: trigger.y, floor: trigger.floor };
@@ -2402,9 +2409,13 @@ fn scenario_case(
                 &callback,
             ))
             .await?;
-        } else if name == "spike/nest-32162-32507-11" {
+        } else if spike_pad {
+            Box::pin(super::super::qengine_kill_stories_fixtures::transform_pad(
+                &mut owner, &mut admitted, &h, trigger,
+            )).await?;
+        } else if name.starts_with("spike/nest-") {
             Box::pin(super::super::qengine_kill_stories_fixtures::recover_nest(
-                &mut owner, &mut admitted, &h,
+                &mut owner, &mut admitted, &h, trigger,
             )).await?;
         } else if qready_craft {
             Box::pin(super::super::qready1_crafting_fixtures::exercise(

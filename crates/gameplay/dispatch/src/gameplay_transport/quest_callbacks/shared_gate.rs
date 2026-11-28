@@ -42,6 +42,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 context: None,
                 paid_arrivals: Vec::new(),
                 flame: None,
+                gate_admitted: false,
+                nest_draw: None,
                 ingress_settled: false,
                 participants: Vec::new(),
                 projection_target: None,
@@ -56,6 +58,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || pending.callback != gate.key
             {
                 return None;
+            }
+            if pending.gate_admitted {
+                return (pending.context.as_ref() == Some(&context))
+                    .then_some(GateObservation::Open);
             }
             pending.context.get_or_insert(context).clone()
         } else {

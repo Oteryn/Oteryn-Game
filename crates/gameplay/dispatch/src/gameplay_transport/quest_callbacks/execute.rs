@@ -224,10 +224,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .key
                 .starts_with("oteryn:quest-callback/spike/transform-")
                 && !states.get(runtime, actor, session).is_some_and(|state| {
-                    state
-                        .owned_conditions()
-                        .outfit_at(self.owner_now().get())
-                        .is_none()
+                    let now = self.owner_now().get();
+                    let outfit = crate::domain::condition::ConflictKey::Outfit;
+                    state.owned_conditions().active_at(outfit, now).is_none()
+                        && runtime
+                            .actor_conditions_at(actor, Some(session), now)
+                            .is_ok_and(|conditions| conditions.active_at(outfit, now).is_none())
                 }))
             || (callback.requires_live_drunk()
                 && !states.get(runtime, actor, session).is_some_and(|state| {
@@ -957,6 +959,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context: None,
                     paid_arrivals: Vec::new(),
                     flame: None,
+                    gate_admitted: false,
+                    nest_draw: None,
                     ingress_settled: false,
                     participants: Vec::new(),
                     flame_effect_sent: false,
@@ -1138,6 +1142,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context: None,
                     paid_arrivals: Vec::new(),
                     flame: None,
+                    gate_admitted: false,
+                    nest_draw: None,
                     ingress_settled: false,
                     participants: Vec::new(),
                     flame_effect_sent: false,
@@ -1293,12 +1299,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
                 return UseDisposition::Rejected;
             };
-            if !records.get(&session).is_some_and(owns_reservation) {
+            let Some(record) = records.get_mut(&session).filter(|p| owns_reservation(p)) else {
                 return UseDisposition::StaleState;
-            }
-            records.remove(&session);
+            };
             if matches!(admitted, shared_gate::GateObservation::Closed) {
+                records.remove(&session);
                 return UseDisposition::Rejected;
+            }
+            if gate.progress.is_some() {
+                record.gate_admitted = true;
+            } else {
+                records.remove(&session);
             }
         }
         if stateless_observation_required(callback) {
@@ -1408,6 +1419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let durable = callback.requires_durable_commit()
             && !callback.is_read_only()
             && !(close && callback.opening_only);
+        let mut nest_spawn = None;
         let mut fresh_effects = !durable;
         let mut success_message = if !durable {
             callback.success_message.clone()
@@ -1569,6 +1581,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context: None,
                     paid_arrivals: Vec::new(),
                     flame: None,
+                    gate_admitted: false,
+                    nest_draw: None,
                     ingress_settled: false,
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
@@ -1577,6 +1591,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 });
                 if !owns_reservation(record) {
                     return UseDisposition::StaleState;
+                }
+                if callback
+                    .key
+                    .starts_with("oteryn:quest-callback/spike/nest-")
+                    && let QuestCause::Use(command) = cause
+                {
+                    let draw = record.nest_draw.get_or_insert_with(|| {
+                        #[cfg(test)]
+                        {
+                            let forced = self
+                                .states
+                                .quest_callbacks
+                                .nest_draw
+                                .swap(0, std::sync::atomic::Ordering::AcqRel);
+                            if forced != 0 {
+                                return forced;
+                            }
+                        }
+                        use std::hash::{BuildHasher, RandomState};
+                        static DRAW: OnceLock<RandomState> = OnceLock::new();
+                        1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100)
+                            as u8
+                    });
+                    nest_spawn = nest_creature(*draw);
                 }
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
@@ -2169,6 +2207,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     optional_pvp,
                     scene_observations.into_iter().zip(committed),
                 );
+            } else if let Some(creature) = nest_spawn {
+                use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return UseDisposition::Rejected;
+                };
+                if native.install_companion_policies(runtime).is_err() {
+                    return UseDisposition::Rejected;
+                }
+                let Ok(policy) = runtime.companion_policy(creature) else {
+                    return UseDisposition::Rejected;
+                };
+                let monster = (creature, policy.maximum_health, expected.position());
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&[monster], apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
             } else if !merchant_projected
                 && !callback.is_read_only()
                 && !personal_claim_preserves_object
@@ -2276,26 +2332,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
-        }
-        if fresh_effects
-            && callback
-                .key
-                .starts_with("oteryn:quest-callback/spike/nest-")
-            && let QuestCause::Use(command) = cause
-        {
-            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-            use std::hash::{BuildHasher, RandomState};
-            static DRAW: OnceLock<RandomState> = OnceLock::new();
-            let draw =
-                1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100) as u8;
-            if let Some(creature) = nest_creature(draw)
-                && let Some(native) = self.active_generation.and_then(|g| g.native_gameplay())
-                && native.install_companion_policies(runtime).is_ok()
-                && let Ok(policy) = runtime.companion_policy(creature)
-            {
-                let monster = (creature, policy.maximum_health, expected.position());
-                let _ = runtime.commit_quest_creature_spawn(&[monster]);
-            }
         }
         if callback.effects.loot_merchant {
             map.facts.emit_movement_effect(pos, 46);

@@ -222,6 +222,9 @@ pub(super) async fn exercise(
         .checked_sub(std::time::Duration::from_secs(1))
         .ok_or("step clock")?;
     let ordinal = admitted.continuity.next_command_id;
+    if switches == 7 {
+        owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
+    }
     let payload = encode_step_intent(StepDirection::East);
     let reply = super::quest_world_callbacks_fixtures::wire(
         owner,
@@ -235,6 +238,19 @@ pub(super) async fn exercise(
         decode_step_result(&reply).map_err(debug)?,
         StepDisposition::Moved
     );
+    if switches == 7 {
+        assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        let expired = sqlx::query("UPDATE game_shared_switch_leases SET occurred_at_unix_ms=occurred_at_unix_ms-1200001,
+            expires_at_unix_ms=expires_at_unix_ms-1200001 WHERE transaction_id=(
+            SELECT transaction_id FROM game_shared_switch_leases ORDER BY cause_ordinal DESC LIMIT 1)")
+            .execute(&mut *tx).await?;
+        assert_eq!(expired.rows_affected(), 1);
+        tx.commit().await?;
+        assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+        assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+    }
     let expected = if open { GOAL } else { ORIGIN };
     let actual = owner
         .runtime
