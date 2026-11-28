@@ -61,14 +61,18 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let summoner = character_prep::dedicated_character(clients, "NODE_BOOT_C16C_ACCOUNT").await?;
     let (accounts, characters) = summoner.replace_slot(clients, 1)?;
     let summoner_clients = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
-    let mut summoner = character_prep::Seeded {
-        profile: "c16c-sorcerer",
-        reason: "P19 live owned summon census",
-    }.connect(&summoner_clients, 0xd5, 1).await?;
-    let owned = full_e2ef5::summon_rat_for_forge(&mut summoner, world).await?;
-    evidence(&format!("P19 live summon={owned:?}"));
     let seed = 19;
-    let draw = forge_population_draw(&mut client, seed).await?;
+    let summon = async {
+        let mut summoner = character_prep::Seeded {
+            profile: "c16c-sorcerer",
+            reason: "P19 live owned summon census",
+        }.connect(&summoner_clients, 0xd5, 1).await?;
+        let owned = full_e2ef5::summon_rat_for_forge(&mut summoner, world).await?;
+        evidence(&format!("P19 live summon={owned:?}"));
+        Ok::<_, Box<dyn std::error::Error>>((summoner, owned))
+    };
+    let (mut summoner, owned) = while_servicing(&mut client, summon).await?;
+    let draw = forge_population_draw(&mut client, &mut summoner, seed).await?;
     let mut selected = verify_forge_draw(&draw, seed, owned)?;
     selected.sort_by_key(|(_, _, stacks)| *stacks == 15);
     require_logout(&mut summoner, &summoner_clients).await?;
@@ -614,10 +618,14 @@ fn forge_rewards_reject_wrong_amount_or_phase() {
     ));
 }
 
-async fn forge_population_draw(client: &mut DevClientSession, seed: u64) -> TestResult<serde_json::Value> {
+async fn forge_population_draw(
+    client: &mut DevClientSession,
+    summoner: &mut DevClientSession,
+    seed: u64,
+) -> TestResult<serde_json::Value> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    tokio::time::timeout(Duration::from_secs(30), async {
+    let draw = tokio::time::timeout(Duration::from_secs(30), async {
         let mut socket = tokio::net::UnixStream::connect(required("NODE_BOOT_CONTROL_SOCKET")?).await?;
         socket.write_all(format!("forge-population-draw {session} {seed}\n").as_bytes()).await?;
         socket.shutdown().await?;
@@ -627,7 +635,32 @@ async fn forge_population_draw(client: &mut DevClientSession, seed: u64) -> Test
             .map_err(|error| format!("P19 production Forge draw: {error}; reply={reply:.200}"))?;
         evidence("P19 production Forge draw returned a census");
         Ok(census)
-    }).await?
+    });
+    while_servicing(client, while_servicing(summoner, async { draw.await? })).await
+}
+
+async fn while_servicing<T>(
+    client: &mut DevClientSession,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
+    let done = AtomicBool::new(false);
+    // Let a started frame or liveness acknowledgement finish before resuming commands.
+    let (result, serviced) = tokio::join!(
+        async {
+            let result = operation.await;
+            done.store(true, Relaxed);
+            result
+        },
+        async {
+            while !done.load(Relaxed) {
+                client.service_liveness(Duration::from_millis(100)).await?;
+            }
+            TestResult::Ok(())
+        },
+    );
+    serviced?;
+    result
 }
 
 fn draw_number(value: &serde_json::Value, key: &str) -> TestResult<u64> {
