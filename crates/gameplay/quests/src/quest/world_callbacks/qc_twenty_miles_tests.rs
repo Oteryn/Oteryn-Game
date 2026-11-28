@@ -84,3 +84,22 @@ fn twenty_miles_shell_can_issue_an_ear_after_a_borrowed_one_is_reported() -> Res
     }
     Ok(())
 }
+
+#[test]
+fn shell_cave_exit_reaches_seacrest_without_the_sea_ear() -> Result<(), String> {
+    let exit = load()?
+        .into_iter()
+        .find(|cb| cb.key == "oteryn:quest-callback/qc-twenty-miles-shell-cave-exit")
+        .ok_or("shell cave exit")?;
+    assert_eq!(exit.trigger, Trigger::StepIn);
+    assert!(exit.storage.is_empty());
+    assert_eq!(
+        exit.teleport,
+        Some(Position {
+            x: 33554,
+            y: 31629,
+            floor: -13,
+        })
+    );
+    Ok(())
+}

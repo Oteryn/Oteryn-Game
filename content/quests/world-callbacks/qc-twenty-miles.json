@@ -3261,9 +3261,9 @@
         "oteryn:content/world/placements/index.json (Crystal 00ce02a5 world placement export)"
       ],
       "teleport": {
-        "x": 33545,
-        "y": 31861,
-        "floor": -7
+        "x": 33554,
+        "y": 31629,
+        "floor": -13
       },
       "effects": {
         "scripted_teleport": true
