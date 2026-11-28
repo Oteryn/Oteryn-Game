@@ -1,48 +1,53 @@
 //! Verifies the live M07 ascent, durable relog, and original-frame client replay.
 use super::*;
-use oteryn_dev_client::SessionEvent;
+use oteryn_dev_client::{EntityKind, SessionEvent};
+use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_protocol_oteryn::world_object::*;
 
-fn connection_reset(mut error: &(dyn std::error::Error + 'static)) -> bool {
-    loop {
-        let io =
-            error
-                .downcast_ref::<std::io::Error>()
-                .or_else(
-                    || match error.downcast_ref::<oteryn_dev_client::SessionError>() {
-                        Some(oteryn_dev_client::SessionError::Io(io)) => Some(io),
-                        _ => None,
-                    },
-                );
-        if let Some(io) = io {
-            return io.kind() == std::io::ErrorKind::ConnectionReset;
-        }
-        match error.source() {
-            Some(source) => error = source,
-            None => return false,
-        }
+// Authored fixture exercised by the independent live runs. Changing its landing
+// cannot make the test select another spot.
+const ROPE_SPOT: TilePos = TilePos {
+    x: 32496,
+    y: 32083,
+    floor: -9,
+};
+
+fn capture_directory(parent: &std::path::Path) -> TestResult<std::path::PathBuf> {
+    let output = std::process::Command::new("mktemp")
+        .arg("-d")
+        .arg("--")
+        .arg(parent.join("m07.XXXXXXXX"))
+        .output()?;
+    if !output.status.success() {
+        return Err(format!(
+            "M07 capture directory: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
     }
+    let path = String::from_utf8(output.stdout)?;
+    Ok(path.trim_end_matches('\n').into())
 }
 
-#[test]
-fn m07_reconnect_classifies_only_typed_connection_resets() {
-    use oteryn_dev_client::{DevClientError, SessionError};
-    use std::io::{Error, ErrorKind};
-
-    for kind in [
-        ErrorKind::ConnectionReset,
-        ErrorKind::BrokenPipe,
-        ErrorKind::TimedOut,
-    ] {
-        let error = DevClientError::Context {
-            phase: "command",
-            elapsed: Duration::ZERO,
-            last_frame: String::new(),
-            source: Box::new(DevClientError::Session(SessionError::Io(Error::from(kind)))),
-        };
-        assert_eq!(connection_reset(&error), kind == ErrorKind::ConnectionReset);
+fn require_accepted_logout(result: Option<LogoutResult>, phase: &str) -> TestResult {
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!("M07 {phase} logout refused: {result:?}").into());
     }
-    assert!(!connection_reset(&Error::other("Connection reset by peer")));
+    Ok(())
+}
+
+fn unsafe_actor_distance(
+    kind: EntityKind,
+    distance: u16,
+    clear_approach: bool,
+    in_fight: bool,
+) -> bool {
+    (distance == 0
+        && matches!(
+            kind,
+            EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+        ))
+        || (kind == EntityKind::Creature && (clear_approach || in_fight) && distance <= 4)
 }
 
 fn rope_units(
@@ -70,23 +75,24 @@ async fn require_safe_position(
             .combat_state()
             .ok_or("M07 combat status unavailable")?
             .in_fight;
-        if !clear_approach && !in_fight {
-            return Ok(());
-        }
         let at = tile(client.world_spatial().actor_position)?;
         let entities = client
             .world_entities()
             .ok_or("M07 occupant observations unavailable")?;
-        if let Some(creature) = entities.others().find(|entity| {
-            entity.kind == oteryn_dev_client::EntityKind::Creature
-                && tile(entity.position).is_ok_and(|position| {
-                    position.floor == at.floor
-                        && position.x.abs_diff(at.x).max(position.y.abs_diff(at.y)) <= 4
-                })
+        if let Some(occupant) = entities.others().find(|entity| {
+            tile(entity.position).is_ok_and(|position| {
+                position.floor == at.floor
+                    && unsafe_actor_distance(
+                        entity.kind,
+                        position.x.abs_diff(at.x).max(position.y.abs_diff(at.y)),
+                        clear_approach,
+                        in_fight,
+                    )
+            })
         }) {
             return Err(format!(
-                "M07 fixture unsafe at {at:?}: nearby creature {:?} at {:?}",
-                creature.entity, creature.position
+                "M07 fixture unsafe at {at:?}: {:?} {:?} at {:?}",
+                occupant.kind, occupant.entity, occupant.position
             )
             .into());
         }
@@ -115,8 +121,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
-    let capture_directory = required("E2E_ALL_CAPTURE_DIR")?;
-    let capture_path = std::path::Path::new(&capture_directory).join("m07-wire.bin");
+    let capture_parent = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+    let capture_directory = capture_directory(&capture_parent)?;
+    let capture_path = capture_directory.join("m07-wire.bin");
+    evidence(&format!("M07_CAPTURE directory={capture_directory:?}"));
     let bundle = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -128,6 +137,10 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     let mut spots = Vec::new();
     let layout = oteryn_world_bundle::bundle::visit(&bundle, |manifest, sector| {
         for map_tile in sector.tiles {
+            if (map_tile.x, map_tile.y, sector.floor) != (ROPE_SPOT.x, ROPE_SPOT.y, ROPE_SPOT.floor)
+            {
+                continue;
+            }
             for (ordinal, item) in map_tile
                 .items
                 .iter()
@@ -163,16 +176,28 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     let identity =
         character_prep::dedicated_character(clients, "NODE_BOOT_M07_CLIENT_ACCOUNT").await?;
     let clients = &identity.clients(clients);
-    let preparation = character_prep::Seeded {
-        profile: "knight",
-        reason: "M07 traversal survivability",
-    };
     character_prep::declare_seeded(
         "M07.client",
         "q_m07 level-100 knight and equipment",
-        preparation.reason,
+        "M07 traversal survivability",
     );
-    let mut client = preparation.connect(clients, 0xa7, 0).await?;
+    let mut preparation = connect_character(clients, 0xa7, 0).await?;
+    let preparation_session = preparation.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(preparation_session.as_bytes()),
+        "--profile",
+        "knight".into(),
+    )
+    .await?;
+    require_accepted_logout(
+        preparation.session_mut().logout().await?.result,
+        "preparation",
+    )?;
+    drop(preparation);
+    let mut client = connect_character(clients, 0xa7, 0).await?;
+    if client.join_snapshot().game_session_id == preparation_session {
+        return Err("M07 preparation reused the original session".into());
+    }
     let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
         "knight",
         100,
@@ -212,30 +237,18 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         })
         .collect();
     let from = tile(client.world_spatial().actor_position)?;
-    let (spot, ordinal, path) = route_work(&mut client, move || {
-        spots
-            .into_iter()
-            // A route stays within 160 tiles and two floors of its origin.
-            // The spot may be one tile beyond its reachable approach.
-            .filter(|(spot, _)| {
-                spot.x.abs_diff(from.x) <= 161
-                    && spot.y.abs_diff(from.y) <= 161
-                    && spot.floor.abs_diff(from.floor) <= 2
-            })
-            .find_map(|(spot, ordinal)| {
-                let landing = TilePos { x: spot.x, y: spot.y.checked_add(1)?, floor: spot.floor.checked_add(1)? };
-                if unsafe_tiles.contains(&spot) || unsafe_tiles.contains(&landing)
-                    || !world.base().tile(landing.x, landing.y, landing.floor).is_some_and(|tile| tile.walkable())
-                    || !world.enterable(landing)
-                {
-                    return None;
-                }
-                route_avoiding(world, from, |at| {
-                    at.floor == spot.floor && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 1
-                }, |at| !unsafe_tiles.contains(&at))
-                .map(|path| (spot, ordinal, path))
-            })
-            .ok_or_else(|| "M07 client capture has no reachable rope spot".to_owned())
+    let [(spot, ordinal)] = spots.as_slice() else {
+        return Err("M07 fixed authored rope spot missing or ambiguous".into());
+    };
+    let (spot, ordinal) = (*spot, *ordinal);
+    let path = route_work(&mut client, move || {
+        route_avoiding(
+            world,
+            from,
+            |at| at.floor == spot.floor && at.x.abs_diff(spot.x).max(at.y.abs_diff(spot.y)) <= 1,
+            |at| !unsafe_tiles.contains(&at),
+        )
+        .ok_or_else(|| "M07 fixed authored rope spot is unreachable".to_owned())
     })
     .await?;
     // The donor's first landing is directly south on the floor above the spot.
@@ -247,34 +260,10 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let mut path = VecDeque::from(path);
     let mut detours = 0;
-    let mut reconnected = false;
     while let Some(direction) = path.pop_front() {
         let from = tile(client.world_spatial().actor_position)?;
         let planned = destination(world, from, direction).ok_or("M07 route edge missing")?;
-        let step = match client.step(direction).await {
-            Ok(step) => step,
-            Err(error) if !reconnected && connection_reset(&error) => {
-                reconnected = true;
-                let lost = client.join_snapshot().game_session_id;
-                evidence(&format!(
-                    "M07_RESET retry=1 phase=approach from={from:?} error={error}"
-                ));
-                drop(client);
-                client = tokio::time::timeout(
-                    Duration::from_secs(180),
-                    connect_character(clients, 0xa7, 0),
-                )
-                .await??;
-                if client.join_snapshot().game_session_id == lost
-                    || tile(client.world_spatial().actor_position)? != from
-                {
-                    return Err("M07 reset did not read back the exact pre-step position on a fresh session".into());
-                }
-                path.push_front(direction);
-                continue;
-            }
-            Err(error) => return Err(error.into()),
-        };
+        let step = client.step(direction).await?;
         if step.disposition == StepDisposition::Blocked
             && step.world_spatial_delta.is_none()
             && tile(client.world_spatial().actor_position)? == from
@@ -374,26 +363,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     evidence(&format!(
         "M07_USE spot={spot:?} from={before:?} expected={expected:?}"
     ));
-    let result = match client.session_mut().world_context_use(&payload).await {
-        Ok(result) => result,
-        Err(error) if !reconnected && connection_reset(&error) => {
-            evidence(&format!(
-                "M07_RESET retry=1 phase=rope-use from={before:?} error={error}"
-            ));
-            drop(client);
-            let fresh = tokio::time::timeout(
-                Duration::from_secs(180),
-                connect_character(clients, 0xa7, 0),
-            )
-            .await??;
-            return Err(format!(
-                "M07 rope result lost after reset: fresh position={:?}; original command outcome and frame unverified",
-                fresh.world_spatial().actor_position,
-            )
-            .into());
-        }
-        Err(error) => return Err(error.into()),
-    };
+    let result = client.session_mut().world_context_use(&payload).await?;
     let disposition = decode_use_result(&result.payload)
         .map_err(|error| format!("M07 rope result: {error:?}"))?;
     if result.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -458,11 +428,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     )?;
     evidence("M07_REPLAY status=PASS evidence=original-server-frames");
     require_safe_position(&mut client, false).await?;
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("M07 ascent logout refused".into());
-    }
+    require_accepted_logout(client.session_mut().logout().await?.result, "ascent")?;
     drop(client);
     let mut relog = connect_character(clients, 0xa7, 0).await?;
     if relog.join_snapshot().game_session_id == original_session
@@ -476,11 +442,83 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         before_rope_units
     ));
     require_safe_position(&mut relog, false).await?;
-    if relog.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("M07 relog logout refused".into());
-    }
+    require_accepted_logout(relog.session_mut().logout().await?.result, "relog")?;
 
+    Ok(())
+}
+
+#[test]
+fn m07_audit_capture_directory_is_private_and_fresh() -> TestResult {
+    use std::os::unix::fs::PermissionsExt as _;
+    let first = capture_directory(&std::env::temp_dir())?;
+    let second = capture_directory(&std::env::temp_dir())?;
+    let name = "m07-wire.bin";
+    std::fs::write(first.join(name), b"stale")?;
+    assert_eq!(
+        std::fs::metadata(&second)?.permissions().mode() & 0o777,
+        0o700
+    );
+    assert_ne!(first, second);
+    assert!(!second.join(name).exists());
+    std::fs::remove_dir_all(first)?;
+    std::fs::remove_dir(second)?;
+    Ok(())
+}
+
+#[test]
+fn m07_audit_busy_and_occupied_landing_fail() {
+    assert!(require_accepted_logout(Some(LogoutResult::Busy), "preparation").is_err());
+    assert!(require_accepted_logout(Some(LogoutResult::Accepted), "preparation").is_ok());
+    for kind in [EntityKind::Creature, EntityKind::Npc, EntityKind::Player] {
+        assert!(unsafe_actor_distance(kind, 0, false, false));
+    }
+    assert!(!unsafe_actor_distance(
+        EntityKind::Creature,
+        3,
+        false,
+        false
+    ));
+    assert!(unsafe_actor_distance(EntityKind::Creature, 3, true, false));
+}
+
+#[test]
+fn m07_audit_journey_keeps_first_attempt_and_fixed_spot() -> TestResult {
+    let source = include_str!("client_row_m07.rs");
+    let (_, safety) = source
+        .split_once("async fn require_safe_position(")
+        .ok_or("missing safety check")?;
+    let (safety, _) = safety
+        .split_once("pub(super) async fn run_packet(")
+        .ok_or("missing safety check end")?;
+    assert!(
+        safety
+            .find("unsafe_actor_distance(")
+            .ok_or("missing occupancy check")?
+            < safety
+                .find("return Ok(());")
+                .ok_or("missing safety success")?
+    );
+    let (_, journey) = source
+        .split_once("async fn verify_ascent(")
+        .ok_or("missing journey")?;
+    let (journey, _) = journey
+        .split_once("\n#[test]")
+        .ok_or("missing journey end")?;
+    assert!(journey.contains("!= (ROPE_SPOT.x, ROPE_SPOT.y, ROPE_SPOT.floor)"));
+    assert!(journey.contains("let [(spot, ordinal)] = spots.as_slice()"));
+    assert!(!journey.contains("world.enterable(landing)"));
+    assert!(journey.contains("let step = client.step(direction).await?;"));
+    assert!(!journey.contains("connection_reset"));
+    assert!(!journey.contains("logout_retrying_busy"));
+    assert!(!journey.contains("preparation.connect("));
+    assert!(journey.contains(".map_or_else(std::env::temp_dir, std::path::PathBuf::from)"));
+    assert!(journey.contains("require_safe_position(&mut client, false).await?;"));
+    assert!(journey.contains("require_safe_position(&mut relog, false).await?;"));
+    assert_eq!(
+        journey
+            .matches("preparation.session_mut().logout().await?")
+            .count(),
+        1
+    );
     Ok(())
 }
