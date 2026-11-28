@@ -132,14 +132,18 @@ pub(crate) async fn read_boss_cooldown_data(
     .transpose()
 }
 
-/// Proposed facts ONLY. Current epoch, boosted-boss identity, lever predicates and the
-/// admission occurrence must be resolved by BOSS-ROOM-1 before these data helpers are wired.
+/// Current epoch, boosted-boss identity and the admission occurrence are resolved
+/// by the boss-room owner within the entry transaction.
 pub(crate) struct BossCooldownAdmissionData {
     pub(crate) admission: [u8; 16],
     pub(crate) now: i64,
     pub(crate) reset_epoch: u64,
     pub(crate) cooldown_s: u64,
     pub(crate) boosted: bool,
+}
+
+pub(crate) fn boosted_cooldown_resets(boosted: bool, stored_epoch: u64, active_epoch: u64) -> bool {
+    boosted && stored_epoch < active_epoch
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,7 +192,7 @@ pub(crate) async fn set_boss_cooldowns_data(
                 }
                 replayed += 1;
             } else if facts.now < old.available_at
-                && !(facts.boosted && old.reset_epoch < facts.reset_epoch)
+                && !boosted_cooldown_resets(facts.boosted, old.reset_epoch, facts.reset_epoch)
             {
                 return Ok(BossCooldownChange::OnCooldown);
             }

@@ -3,9 +3,11 @@
 //! `boss_lever_death.lua`:21-32. Values and placements come from authored content.
 use crate::durability::db::commit_semantic_read;
 use super::super::boss_encounter::cooldown_storage::{
-    BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, set_boss_cooldowns_data,
+    BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, boosted_cooldown_resets,
+    set_boss_cooldowns_data,
 };
 use super::*;
+use crate::foundation::WorldId;
 use oteryn_gameplay_encounter_rules::boss_room::{
     AdmissionRefusal, BossRoomPolicy, ParticipantFact, plan_fresh_room,
 };
@@ -64,7 +66,51 @@ pub(super) struct BossAdmissionPlan {
     definition: BossRoomDefinition,
     now: i64,
     reset_epoch: u64,
+    boosted: bool,
     difficulty: Option<i16>,
+}
+
+async fn read_cooldown_reset(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    definition: &BossRoomDefinition,
+) -> Result<Option<(u64, bool)>> {
+    let world = world.as_bytes().as_slice();
+    let reset: Option<String> = sqlx::query_scalar(
+        "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
+    )
+    .bind(world)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(reset) = reset else {
+        return Ok(None);
+    };
+    // The rotation owner serializes its insert on the same active-reset row.
+    // Read the choice after acquiring the reset lock, including after a wait.
+    let boosted: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_world_daily_boosts
+         WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND boss_key=$3)",
+    )
+    .bind(world)
+    .bind(&reset)
+    .bind(&definition.boss_creature_key)
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok(Some((parse_u64(reset)?, boosted)))
+}
+
+fn effective_cooldown(
+    stored: Option<(i64, String)>,
+    reset: Option<(u64, bool)>,
+) -> Result<u64> {
+    let Some((available_at, stored_epoch)) = stored else {
+        return Ok(0);
+    };
+    let stored_epoch = parse_u64(stored_epoch)?;
+    if reset.is_some_and(|(epoch, boosted)| boosted_cooldown_resets(boosted, stored_epoch, epoch)) {
+        return Ok(0);
+    }
+    u64::try_from(available_at).map_err(|_| DurabilityError::InvalidStoredState)
 }
 
 impl ActivityHandoffOwner {
@@ -486,6 +532,7 @@ pub(super) async fn prepare_in_transaction<
     {
         return Ok(Err(ActivityRefusal::ContentChanged));
     }
+    let reset = read_cooldown_reset(tx, r.destination_scope.world_id(), &definition).await?;
     let mut facts = Vec::with_capacity(r.participants.len());
     for p in &r.participants {
         if !super::quest_encounter::permits_entry(
@@ -527,7 +574,7 @@ pub(super) async fn prepare_in_transaction<
         {
             return Ok(Err(refusal));
         }
-        let cooldown:Option<i64>=sqlx::query_scalar("SELECT available_at FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE")
+        let cooldown:Option<(i64,String)>=sqlx::query_as("SELECT available_at,reset_epoch::text FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE")
             .bind(p.source.character_id.as_bytes().as_slice()).bind(&r.activity_key).fetch_optional(&mut **tx).await?;
         facts.push(ParticipantFact {
             character: *p.source.character_id.as_bytes(),
@@ -537,8 +584,7 @@ pub(super) async fn prepare_in_transaction<
                 p.source_position.cell.floor,
             ),
             level: u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?,
-            cooldown_until_ms: u64::try_from(cooldown.unwrap_or(0))
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            cooldown_until_ms: effective_cooldown(cooldown, reset)?,
         });
     }
     if let Err(reason) = plan_fresh_room(
@@ -567,19 +613,14 @@ pub(super) async fn prepare_in_transaction<
             return Ok(Err(ActivityRefusal::AuthorityRejected));
         }
     }
-    let reset: Option<String> = sqlx::query_scalar(
-        "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
-    )
-    .bind(r.destination_scope.world_id().as_bytes().as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(reset) = reset else {
+    let Some((reset_epoch, boosted)) = reset else {
         return Ok(Err(ActivityRefusal::AuthorityRejected));
     };
     Ok(Ok(BossAdmissionPlan {
         definition,
         now,
-        reset_epoch: parse_u64(reset)?,
+        reset_epoch,
+        boosted,
         difficulty,
     }))
 }
@@ -603,7 +644,7 @@ pub(super) async fn commit_in_transaction(
             now: plan.now,
             reset_epoch: plan.reset_epoch,
             cooldown_s: plan.definition.policy.cooldown_ms / 1000,
-            boosted: false,
+            boosted: plan.boosted,
         },
     )
     .await

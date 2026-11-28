@@ -2,11 +2,12 @@
 //! from the source Player to its new Instance. No fixture catalogue bypasses
 //! the current Hatred source-hook qualification.
 use super::TestResult;
-use super::fixture::{Harness, debug, run};
+use super::fixture::{Harness, debug, id, run};
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::durability::activity_handoff::ActivityHandoffOwner;
 use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
@@ -18,7 +19,7 @@ fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    run_hatred_entry(false)
+    run_hatred_entry(false, None)
 }
 
 #[test]
@@ -26,12 +27,22 @@ fn srx3_hatred_instance_sorrow_survives_later_source_channel_activation_postgres
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    run_hatred_entry(true)
+    run_hatred_entry(true, None)
 }
 
-fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
+#[test]
+fn boosted_boss_cooldown_resets_only_for_the_selected_archfoe_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_hatred_entry(false, Some(admin))
+}
+
+fn run_hatred_entry(advance_source_activation: bool, boost_admin: Option<String>) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-hatred-entry", move || {
         run(async move |admin| {
+            let with_boost = boost_admin.is_some();
+            let admin = boost_admin.unwrap_or(admin);
             super::reset();
             let source = PinnedActivitySourceRoom::GoshnarsHatred;
             let scene = SourceScene::new(
@@ -140,6 +151,31 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
                 .register_template(&template)
                 .map_err(|_| "source template")?;
             let destination = super::activity_runtime_fixtures::allocate_ready_instance(&h, 232).await?;
+            if with_boost {
+                let fence = admitted.item_fence.ok_or("actual source fence")?;
+                let boss = template.boss_key();
+                let previous_deadline = seed_cooldown(&h, fence, boss).await?;
+                activate_boost(&h, fence, 1, "oteryn:creature.drume").await?;
+                let (_, refusal, barrier) =
+                    super::boss_activity_fixtures::exchange(&owner, &mut admitted, boss, false)
+                        .await?;
+                assert_eq!(
+                    refusal,
+                    wire::BossActivityReply::Refused(wire::BossActivityRefusal::Cooldown),
+                    "another boss's boost must preserve Hatred's cooldown"
+                );
+                assert!(barrier.is_none());
+                let retained: (i64, String) = sqlx::query_as(
+                    "SELECT available_at,reset_epoch::text FROM game_character_boss_cooldowns
+                     WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(boss)
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(retained, (previous_deadline, "0".to_owned()));
+                activate_boost(&h, fence, 2, template.creature_key()).await?;
+            }
             let (_, reply, barrier) = super::boss_activity_fixtures::exchange_capture(
                 &owner,
                 &mut admitted,
@@ -155,6 +191,20 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
             assert!(barrier.is_some(), "actual native scope barrier");
             let fence = admitted.item_fence.ok_or("actual destination fence")?;
             assert_eq!(fence.runtime_scope, destination);
+            if with_boost {
+                let (epoch, cooldown_ms): (String, i64) = sqlx::query_as(
+                    "SELECT c.reset_epoch::text,c.available_at-a.opened_at
+                     FROM game_character_boss_cooldowns c
+                     JOIN game_boss_room_activities a USING(admission,boss_key)
+                     WHERE c.character_id=encode($1,'hex')::uuid AND c.boss_key=$2",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(template.boss_key())
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(epoch, "2");
+                assert_eq!(cooldown_ms, i64::from(template.cooldown_seconds()) * 1000);
+            }
             let registered = owner
                 .activity_runtimes
                 .get(destination, fence.scope_ownership_generation.get())
@@ -195,6 +245,13 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
                 "the reset belongs to the transferred Player, not a fabricated destination state"
             );
             drop(view);
+            if with_boost {
+                drop(registered);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             if advance_source_activation {
                 let crate::foundation::RuntimeScopeRefV1::Channel {
                     world_id,
@@ -381,4 +438,69 @@ fn run_hatred_entry(advance_source_activation: bool) -> TestResult {
             h.cleanup().await
         })
     })
+}
+
+async fn seed_cooldown(
+    h: &Harness,
+    fence: CurrentCharacterItemFence,
+    boss: &str,
+) -> TestResult<i64> {
+    let available_at = sqlx::query_scalar(
+        "INSERT INTO game_character_boss_cooldowns
+            (character_id,boss_key,available_at,admission,reset_epoch)
+         VALUES(encode($1,'hex')::uuid,$2,
+            floor(extract(epoch FROM clock_timestamp()+interval '1 hour')*1000)::bigint,
+            encode($3,'hex')::uuid,0)
+         RETURNING available_at",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(boss)
+    .bind(id(234).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    Ok(available_at)
+}
+
+async fn activate_boost(
+    h: &Harness,
+    fence: CurrentCharacterItemFence,
+    epoch: i64,
+    boosted_creature: &str,
+) -> TestResult {
+    let world = fence.runtime_scope.world_id();
+    let mut reset = h.pool.begin().await?;
+    // Seed the already committed reset and rotation like the daily-boost PG harness.
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *reset)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_world_reset_epochs
+            (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,
+             frame_digest,calendar,calendar_revision,activated_at,reset_month)
+         SELECT world_id,$2::bigint,target_digest,map_revision,server_digest,client_digest,
+                frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month
+         FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(epoch)
+    .execute(&mut *reset)
+    .await?;
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=$2::bigint WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(epoch)
+    .execute(&mut *reset)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_world_daily_boosts(world_id,reset_epoch,creature_key,boss_key)
+         VALUES(encode($1,'hex')::uuid,$2::bigint,'oteryn:creature.rat',$3)",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(epoch)
+    .bind(boosted_creature)
+    .execute(&mut *reset)
+    .await?;
+    reset.commit().await?;
+    Ok(())
 }
