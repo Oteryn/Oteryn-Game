@@ -189,8 +189,8 @@ impl SessionAppearance {
             let observation = match observed {
                 Ok(observation) => observation,
                 Err(AdmissionRefusal::Unavailable) => {
-                    let catalogue =
-                        note_none(authority.appearance_fallback_catalogue(), "content")?;
+                    let catalogue = note_none(authority.appearance_fallback_catalogue(), "content")
+                        .ok_or(AdmissionRefusal::Rejected)?;
                     // The negotiated client requires its appearance domain and a binding for
                     // each player. Publish placeholders which the first successful read can
                     // replace without resetting the dictionary or granting any cosmetics.
