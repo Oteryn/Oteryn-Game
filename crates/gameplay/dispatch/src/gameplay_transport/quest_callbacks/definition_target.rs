@@ -81,9 +81,43 @@ impl GroundUseGuard<'_, '_> {
     pub(super) fn affected(&self) -> Option<&[ExactActorRef]> {
         Some(&self.turn.as_ref()?.0.affected)
     }
+}
 
-    pub(super) fn release(&mut self, runtime: &mut ChannelRuntimeV1) {
-        if let Some(turn) = self.turn.take() {
+#[derive(Clone)]
+pub(super) struct PendingTomb {
+    pub(super) actors: Vec<ExactActorRef>,
+    turn: std::sync::Arc<std::sync::Mutex<Option<GroundUseTurn>>>,
+}
+
+impl PendingTomb {
+    pub(super) fn new(actors: &[ExactActorRef]) -> Self {
+        Self {
+            actors: actors.to_vec(),
+            turn: Default::default(),
+        }
+    }
+
+    // Once the write can be sent, the receipt owner retains the installed
+    // reservation even if the caller is cancelled or the commit ACK is lost.
+    pub(super) fn retain(&self, guard: &mut GroundUseGuard<'_, '_>) -> bool {
+        let mut pending = self
+            .turn
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if pending.is_some() {
+            return false;
+        }
+        *pending = guard.turn.take();
+        pending.is_some()
+    }
+
+    pub(super) fn release(&self, runtime: &mut ChannelRuntimeV1) {
+        let turn = self
+            .turn
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+        if let Some(turn) = turn {
             turn.release(runtime);
         }
     }

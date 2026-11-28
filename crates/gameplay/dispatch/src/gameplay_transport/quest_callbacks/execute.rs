@@ -771,7 +771,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
-                    tomb_actors: None,
+                    tomb: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -935,7 +935,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
-                    tomb_actors: None,
+                    tomb: None,
                     selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
@@ -1306,21 +1306,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
-                    tomb_actors: None,
+                    tomb: None,
                     selected_tool: None,
                 });
                 if let Some(actors) = tomb_turn.as_ref().and_then(|turn| turn.affected()) {
                     if record
-                        .tomb_actors
-                        .as_deref()
-                        .is_some_and(|original| original != actors)
+                        .tomb
+                        .as_ref()
+                        .is_some_and(|original| original.actors != actors)
                     {
                         pending.remove(&session);
                         drop(pending);
                         self.schedule_quest_refresh(session);
                         return UseDisposition::StaleState;
                     }
-                    record.tomb_actors.get_or_insert_with(|| actors.to_vec());
+                    record
+                        .tomb
+                        .get_or_insert_with(|| definition_target::PendingTomb::new(actors));
                 }
                 record.projection_target = projection_target;
                 // The tool is bound with the first durable context. A replay keeps
@@ -1333,11 +1335,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
                     record.paid_arrivals.clone(),
+                    record.tomb.clone(),
                 )
             } else {
                 return UseDisposition::Rejected;
             };
-            let (context, selected_tool, paid_arrivals) = context;
+            let (context, selected_tool, paid_arrivals, tomb) = context;
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1423,6 +1426,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let release_guards = callback.trigger == Trigger::Use
                 && (callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
                     || callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY);
+            if let (Some(guard), Some(tomb)) = (&mut tomb_turn, &tomb)
+                && !tomb.retain(guard)
+            {
+                return UseDisposition::Rejected;
+            }
             if release_guards {
                 drop(guards.take());
             }
@@ -1480,8 +1488,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             (runtime, states) = (&mut **current_runtime, &mut **current_states);
-            if let Some(turn) = &mut tomb_turn {
-                turn.release(runtime);
+            if let Some(tomb) = &tomb {
+                if matches!(&outcome, Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_))) {
+                    return UseDisposition::Rejected;
+                }
+                tomb.release(runtime);
             }
             if release_guards {
                 let current_actor = runtime.owner_fence().is_ok()

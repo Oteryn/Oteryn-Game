@@ -87,7 +87,7 @@ struct Pending {
     ingress_settled: bool,
     participants: Vec<GameSessionId>,
     projection_target: Option<u64>,
-    tomb_actors: Option<Vec<ExactActorRef>>,
+    tomb: Option<definition_target::PendingTomb>,
     flame_effect_sent: bool,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
@@ -889,7 +889,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     else {
                         return false;
                     };
-                    match self
+                    let Ok(receipt) = self
                         .root
                         .reconcile_tomb_entry(
                             self.character,
@@ -899,12 +899,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &context,
                         )
                         .await
-                    {
-                        Ok(Some(receipt)) => Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)),
-                        Ok(None) => Ok(QuestTransitionOutcome::Refused(
+                    else {
+                        return false;
+                    };
+                    let Some(tomb) = &pending.tomb else {
+                        return false;
+                    };
+                    tomb.release(&mut *self.runtime.lock().await);
+                    match receipt {
+                        Some(receipt) => Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)),
+                        None => Ok(QuestTransitionOutcome::Refused(
                             oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch,
                         )),
-                        Err(_) => return false,
                     }
                 } else if let Some(input) = pending.flame {
                     slot.commit_rotten_flame_use(
@@ -1282,12 +1288,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some((runtime, _)) = guards.as_mut() else {
                 return false;
             };
+            // A cancelled replay of an already settled receipt may have parked a
+            // new turn. Release it under this owner before revalidating the roster.
+            if pending.ingress_settled
+                && let Some(tomb) = &pending.tomb
+            {
+                tomb.release(runtime);
+            }
             let at_origin = runtime.read_actor_position(pending.actor) == Ok(pending.expected);
             if pending.ingress_settled
-                && let Some(actors) = &pending.tomb_actors
+                && let Some(tomb) = &pending.tomb
                 && (!at_origin
                     || map.facts.object_revision(pending.key) != pending.revision
-                    || actors
+                    || tomb
+                        .actors
                         .iter()
                         .any(|actor| runtime.read_actor_position(*actor).is_err()))
             {
@@ -2259,7 +2273,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ingress_settled: false,
                         participants: Vec::new(),
                         projection_target: None,
-                        tomb_actors: None,
+                        tomb: None,
                         flame_effect_sent: false,
                         selected_tool: None,
                     });
