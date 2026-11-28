@@ -279,6 +279,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = full_row_p01::prepare_hunter(clients, "P01.client", 0x21).await?;
+    full_row_p01::prepare_unarmed(&mut client).await?;
     let races = full_row_p05::canonical_races()?;
     let race_id = |key| -> TestResult<NonZeroU32> {
         let index = races

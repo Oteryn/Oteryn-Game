@@ -383,7 +383,7 @@ pub(super) async fn authored_target(
     }
 }
 
-async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent};
     use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome};
 
