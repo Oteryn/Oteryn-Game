@@ -1209,7 +1209,7 @@ pub(super) struct GrantProof {
     pub(super) session: [u8; 16],
     pub(super) reward: std::num::NonZeroU32,
     pub(super) claim: String,
-    pub(super) relog_chest: Vec<u8>,
+    world: &'static BundleWorld,
 }
 
 const CONGRATULATIONS: &str = "Congratulations! You earned the achievement \"Annihilator\".";
@@ -1433,7 +1433,7 @@ pub(super) async fn earn_and_logout(
         session,
         reward,
         claim,
-        relog_chest: alternate[0].clone(),
+        world,
     })
 }
 
@@ -1456,36 +1456,38 @@ pub(super) async fn check_claim(clients: &SeamClients<'_>, claim: &str, expected
 
 pub(super) async fn probe_relog_claim(clients: &SeamClients<'_>, proof: &GrantProof) -> TestResult {
     check_claim(clients, &proof.claim, true).await?;
-    // The normal relog has already verified the persisted reward and page.
-    // Position this released character at the alternate for a separate lockout probe.
-    let at = TilePos { x: 33228, y: 31658, floor: -13 };
-    place_member(clients, 1, at).await?;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
     let mut client = connect_character(clients, 0xb1, 1).await?;
-    if tile(client.world_spatial().actor_position)? != at {
-        return Err("P11 relog lockout probe did not admit at the alternate chest".into());
+    let start = TilePos { x: 33213, y: 31671, floor: -13 };
+    if tile(client.world_spatial().actor_position)? != start {
+        return Err("P11 re-entry must start at the persisted exit landing".into());
     }
-    let before = client.inventory().ok_or("P11 missing relog lockout inventory")?.clone();
+    let before = client.inventory().ok_or("P11 missing re-entry inventory")?.clone();
     reject_earned_notices(&mut client)?;
-    corridor_step(&mut client, StepDirection::North, at.x, 31657).await?;
-    assert_claim_refused(&mut client, &proof.relog_chest).await?;
-    if page(&mut client, 0).await? != proof.page || client.inventory() != Some(&before) {
-        return Err("P11 shared claim lockout changed inventory or achievements in a fresh session".into());
+    let target = |x| -> TestResult<Vec<u8>> {
+        let key = crate::map::view::placement_key(TilePos { x, ..start }, 1)
+            .ok_or("P11 re-entry door placement missing")?;
+        let mut target = proof.world.base().digest().to_vec();
+        target.extend_from_slice(&key.to_be_bytes());
+        Ok(target)
+    };
+    let outer = client.session_mut().use_object(&target(33214)?, 0).await?;
+    if (outer.status, outer.disposition) != (CommandStatus::Accepted, UseDisposition::Committed) {
+        return Err(format!("P11 re-entry outer gate USE failed: {outer:?}").into());
+    }
+    corridor_step(&mut client, StepDirection::East, 33214, start.y).await?;
+    corridor_step(&mut client, StepDirection::East, 33215, start.y).await?;
+    let refuge = tile(client.world_spatial().actor_position)?;
+    let refusal = client.session_mut().use_object(&target(33216)?, 0).await?;
+    if (refusal.status, refusal.disposition) != (CommandStatus::Accepted, UseDisposition::NotPossible)
+        || tile(client.world_spatial().actor_position)? != refuge
+        || page(&mut client, 0).await? != proof.page
+        || client.inventory() != Some(&before)
+    {
+        return Err(format!("P11 claimed reward door allowed or changed normal re-entry: {refusal:?}").into());
     }
     reject_earned_notices(&mut client)?;
-    evidence("P11_CHECK persisted_shared_claim alternate_chest=NothingToUse inventory=unchanged page=unchanged");
-    corridor_step(&mut client, StepDirection::South, at.x, at.y).await?;
-    for x in 33229..=33233 {
-        corridor_step(&mut client, StepDirection::East, x, 31658).await?;
-    }
-    corridor_step(&mut client, StepDirection::South, 33233, 31659).await?;
-    for x in 33234..=33236 {
-        corridor_step(&mut client, StepDirection::East, x, 31659).await?;
-    }
-    for y in (31656..=31658).rev() {
-        corridor_step(&mut client, StepDirection::North, 33236, y).await?;
-    }
-    corridor_step(&mut client, StepDirection::North, 33213, 31671).await?;
-    reject_earned_notices(&mut client)?;
+    evidence("P11_CHECK persisted_shared_claim ordinary_reentry=NotPossible inventory=unchanged page=unchanged");
     logout(&mut client).await?;
     reject_earned_notices(&mut client)
 
