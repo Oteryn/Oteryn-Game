@@ -100,7 +100,31 @@ async fn obelisk_use(
     payload: &[u8],
     expected: UseDisposition,
 ) -> TestResult {
+    let session = client.join_snapshot().game_session_id;
     let response = client.session_mut().world_context_use(payload).await?;
+    if let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        use std::io::Write as _;
+        let directory = Path::new(&directory);
+        let stem = format!("g36-{expected:?}");
+        let mut packet = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join(format!("{stem}.bin")))?;
+        packet.write_all(&response.payload)?;
+        let mut metadata = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join(format!("{stem}.json")))?;
+        serde_json::to_writer(
+            &mut metadata,
+            &serde_json::json!({
+                "session": uuid_text(session.as_bytes()),
+                "command_id": response.command_id,
+                "server_sequence": response.server_sequence,
+                "status": format!("{:?}", response.status),
+            }),
+        )?;
+    }
     let disposition = world_object::decode_use_result(&response.payload).map_err(|error| {
         format!(
             "step=use;observed=decode:{error:?};status={:?}",
