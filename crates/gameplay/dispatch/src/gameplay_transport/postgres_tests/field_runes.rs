@@ -156,8 +156,18 @@ fn field_runes_postgres_safe_wall_unknown_commit_never_repeats_movement() -> Tes
 }
 
 #[test]
+fn c07_safe_fire_rune_publishes_regular_fire_and_idle_expiry_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("c07-safe-fire-expiry", move || {
+        run(async |_| {
+            field_scenario(admin, 3188, 1, 2118, true, false, false, Scenario::SafeFireExpiry).await
+        })
+    })
+}
+
+#[test]
 fn field_runes_postgres_safe_fire_stays_safe_after_creator_loss_through_decay() -> TestResult {
-    large_stack(|| run(async |admin| field_case(admin, 3188, 1, 21465, true, false, true).await))
+    large_stack(|| run(async |admin| field_case(admin, 3188, 1, 2118, true, false, true).await))
 }
 
 #[test]
@@ -165,17 +175,18 @@ fn field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs() -> TestResu
     large_stack(|| {
         run(async |admin| {
             for (rune, count, item) in [
-                (3188, 1, 21465),
+                (3188, 1, 2118),
                 (3164, 1, 2135),
                 (3172, 1, 2134),
-                (3190, 5, 21465),
+                (3190, 5, 2118),
                 (3166, 7, 2135),
                 (3176, 5, 2134),
-                (3192, 9, 21465),
+                (3192, 9, 2118),
                 (3149, 9, 2135),
                 (3173, 9, 2134),
             ] {
-                field_case(admin.clone(), rune, count, item, true, false, false).await?;
+                let scenario = if item == 2118 { Scenario::SafeFire } else { Scenario::Ordinary };
+                field_scenario(admin.clone(), rune, count, item, true, false, false, scenario).await?;
             }
             Ok(())
         })
@@ -317,7 +328,7 @@ fn field_runes_postgres_destroy_field_visible_screen_and_los() -> TestResult {
             ] {
                 field_scenario(admin.clone(), 3164, 1, 2135, true, false, false, scenario).await?;
             }
-            for (rune, output) in [(3188, 21465), (3156, 2130)] {
+            for (rune, output) in [(3188, 2118), (3156, 2130)] {
                 field_scenario(
                     admin.clone(),
                     rune,
@@ -348,6 +359,8 @@ fn destroy_scenario(scenario: Scenario) -> bool {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
+    SafeFire,
+    SafeFireExpiry,
     CasterTile,
     Thais,
     HolderBusy,
@@ -595,11 +608,7 @@ fn field_runes_postgres_player_legality_and_death() -> TestResult {
                     admin.clone(),
                     3188,
                     1,
-                    if scenario == Scenario::NoPvp {
-                        21465
-                    } else {
-                        2118
-                    },
+                    2118,
                     true,
                     false,
                     false,
@@ -676,7 +685,7 @@ fn field_runes_postgres_creature_entry_and_residual_tick() -> TestResult {
                 admin,
                 3188,
                 1,
-                21465,
+                2118,
                 true,
                 false,
                 false,
@@ -717,8 +726,6 @@ fn field_creature_hit(output: u32, ordinal: u32) -> i64 {
     // Cyclops: 0.97% mitigation, 25% energy resistance, -10% earth resistance.
     // Mitigation truncates before resistance; Global entry differs from residual.
     match (output, ordinal) {
-        // This case intentionally exercises excluded yellow flame, not Global rune fire.
-        (21465, _) => 9,
         (2122, 0) => 22,
         (2122, _) => 18,
         // Owner Global 2026-10-30 poison 4: trunc(4 * 0.9903) = 3, then trunc(3 * 1.1) = 3.
@@ -822,12 +829,15 @@ async fn field_scenario_inner(
     eprintln!("FIELD-RUNES start rune={rune} scenario={scenario:?}");
     let committed = enabled && !protection;
     let pvp_barrier = matches!(output, 2128 | 2130);
-    let player_field = (matches!(output, 2118 | 2122 | 105)
-        && !matches!(
-            scenario,
-            Scenario::SelfHardcore | Scenario::SelfOpen | Scenario::ElementCreature
-        ))
-        || scenario == Scenario::NoPvp;
+    let safe_fire = output == 2118
+        && (owner_loss
+            || matches!(
+                scenario,
+                Scenario::SafeFire | Scenario::SafeFireExpiry | Scenario::Creature | Scenario::DestroyField
+            ));
+    let player_field = !safe_fire
+        && matches!(output, 2118 | 2122 | 105)
+        && !matches!(scenario, Scenario::SelfHardcore | Scenario::SelfOpen | Scenario::ElementCreature);
     let harmful = player_field
         && !matches!(
             scenario,
@@ -1372,13 +1382,39 @@ async fn field_scenario_inner(
                     && tile.items.len() > 1),
                 "appearance reaches the persistent real map consumer"
             );
+            if scenario == Scenario::SafeFireExpiry {
+                let reference = inventory_definition(output)?;
+                let medium = inventory_definition(2119)?;
+                let target = oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                    x: wire_start.x + 1,
+                    ..wire_start
+                };
+                let placed = read_field_tile(&mut client, &map_header, target).await?;
+                assert!(placed.iter().any(|item| item.definition
+                    == oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)),
+                    "safe Fire Field places regular Fire (2118)");
+                {
+                    let mut tx = harness.pool.begin().await?;
+                    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                    sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=1 WHERE source_stage=1")
+                        .execute(&mut *tx).await?;
+                    tx.commit().await?;
+                }
+                owner.states.spell_states.lock().await.next_item_deadline_pass_us = 0;
+                owner.drain_source_item_deadlines().await;
+                let decayed = read_field_tile(&mut client, &map_header, target).await?;
+                assert!(decayed.iter().any(|item| item.definition
+                    == oteryn_protocol_oteryn::world_map::MapDefinition::Item(medium)),
+                    "first-stage expiry publishes medium Fire while the connection is idle");
+            }
             if matches!(scenario, Scenario::Creature | Scenario::ElementCreature) {
                 creature = Some(qualify_creature_entry(&owner, start, output).await?);
             }
             if matches!(output, 2128 | 2130 | 10181 | 10182) {
                 qualify_barrier_consumers(&owner, start, output).await?;
             }
-            let projected = projected_field_count(&owner, actor, output).await?;
+            let projected_id = if scenario == Scenario::SafeFireExpiry { 2119 } else { output };
+            let projected = projected_field_count(&owner, actor, projected_id).await?;
             assert_eq!(
                 projected, count,
                 "the existing map consumer shows every field on the converted bundle floor"
@@ -1430,7 +1466,7 @@ async fn field_scenario_inner(
         }
         if destroy_scenario(scenario) {
             wait_field_client(&mut client, std::time::Duration::from_secs(2)).await?;
-            let eligible = matches!(output, 2135 | 21465);
+            let eligible = matches!(output, 2135 | 2118);
             let mut first_command = admitted.continuity.next_command_id + 1;
             let probes = if scenario == Scenario::DestroyField {
                 vec![
@@ -1864,13 +1900,14 @@ async fn field_scenario_inner(
     };
     assert_eq!(ground, remaining_count, "rune {rune}");
     if committed {
+        let expected_on_ground = if scenario == Scenario::SafeFireExpiry { 2119 } else { output };
         let outputs: Vec<String> = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) ORDER BY g.stack_ordinal LIMIT 20")
             .fetch_all(&harness.pool).await?;
         assert_eq!(outputs.len(), usize::try_from(remaining_count)?);
         assert!(
             outputs
                 .iter()
-                .all(|key| key == &format!("oteryn:item.tibia.i{output}")),
+                .all(|key| key == &format!("oteryn:item.tibia.i{expected_on_ground}")),
             "rune {rune}: {outputs:?}"
         );
         let origins: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_lines l JOIN game_spell_item_receipts r USING(transaction_id) WHERE r.character_id=encode($1,'hex')::uuid AND l.operation_kind=1 AND r.caster_lease_generation=2")
@@ -2248,6 +2285,29 @@ async fn field_scenario_inner(
     drop(seal);
     harness.cleanup().await?;
     Ok(())
+}
+
+async fn read_field_tile(
+    client: &mut tokio::io::DuplexStream,
+    header: &oteryn_protocol_oteryn::world_map::MapViewHeader,
+    target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> TestResult<Vec<oteryn_protocol_oteryn::world_map::MapItem>> {
+    use oteryn_protocol_oteryn::world_map::{STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_delta};
+
+    loop {
+        let bytes = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+        if envelope.message_type() != MessageType::StateDelta {
+            continue;
+        }
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+        if delta.domain_id == STATE_DOMAIN_WORLD_MAP_VIEW {
+            let delta = decode_world_map_delta(header, delta.payload).map_err(debug)?;
+            if let Some(tile) = delta.tiles.into_iter().find(|tile| tile.position == target) {
+                return Ok(tile.items);
+            }
+        }
+    }
 }
 
 fn field_handle_from_wire(
@@ -2731,9 +2791,9 @@ async fn qualify_safe_field_after_owner_loss(
     let session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
     let health = player_health(owner, peer, session).await?;
     for (stage, definition, direction) in [
-        (None, 21465, StepDirection::West),
-        (Some(1), 2132, StepDirection::South),
-        (Some(2), 2133, StepDirection::South),
+        (None, 2118, StepDirection::West),
+        (Some(1), 2119, StepDirection::South),
+        (Some(2), 2120, StepDirection::South),
     ] {
         if let Some(stage) = stage {
             let mut tx = harness.pool.begin().await?;

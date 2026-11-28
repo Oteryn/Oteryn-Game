@@ -34,8 +34,8 @@ fn fixture() -> (ChannelRuntimeV1, CastFactsBinding, CommandRef) {
 #[test]
 fn qualified_safe_context_keeps_source_conversion_and_decay_ids() {
     for (source, selected) in [
-        (2123, 21465),
-        (2118, 21465),
+        (2123, 2118),
+        (2118, 2118),
         (2121, 2134),
         (105, 2134),
         (2126, 2135),
