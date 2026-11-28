@@ -531,10 +531,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return UseDisposition::Occupied;
             }
-            let Ok(policy) = runtime.companion_policy(&monster.creature) else {
+            let creature = if monster.alternatives.is_empty() {
+                monster.creature.as_str()
+            } else {
+                let QuestCause::Step(step) = cause else {
+                    return UseDisposition::Rejected;
+                };
+                // The server-owned movement occurrence selects one boss consistently on replay.
+                let index = step.command_id().get() % (1 + monster.alternatives.len() as u64);
+                std::iter::once(&monster.creature)
+                    .chain(&monster.alternatives)
+                    .nth(index as usize)
+                    .map(String::as_str)
+                    .unwrap_or(&monster.creature)
+            };
+            let Ok(policy) = runtime.companion_policy(creature) else {
                 return UseDisposition::Rejected;
             };
-            monsters.push((monster.creature.as_str(), policy.maximum_health, at));
+            monsters.push((creature, policy.maximum_health, at));
         }
         if preflight {
             let result = if encounter.phase.is_some() {

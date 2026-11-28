@@ -720,8 +720,6 @@ pub fn offered_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback
     // A replacement can retire a source offer only in a catalogue that admits it.
     callbacks.retain(|callback| catalogue.transition(&callback.key).is_some());
     retain_offered_callbacks(&mut callbacks);
-    callbacks
-        .retain(|callback| !super::grizzly_adams::regional_tasks::awaits_boss_route(&callback.key));
     Ok(callbacks)
 }
 

@@ -322,6 +322,8 @@ pub struct EncounterPlayer {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct EncounterMonster {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alternatives: Vec<String>,
     pub position: Position,
     pub creature: String,
 }
@@ -1100,6 +1102,20 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 !pos(m.position)
                     || !in_room(m.position)
                     || !super::super::valid_quest_key(&m.creature)
+                    || (!m.alternatives.is_empty()
+                        && (!personal_encounter
+                            || callback.trigger != Trigger::StepIn
+                            || m.alternatives.len() > 3
+                            || m.alternatives
+                                .iter()
+                                .chain([&m.creature])
+                                .collect::<BTreeSet<_>>()
+                                .len()
+                                != m.alternatives.len() + 1
+                            || m.alternatives.iter().any(|key| {
+                                !super::super::valid_quest_key(key)
+                                    || !key.starts_with("oteryn:creature.")
+                            })))
             })
         {
             return false;

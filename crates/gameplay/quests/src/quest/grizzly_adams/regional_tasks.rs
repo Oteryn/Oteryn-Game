@@ -99,6 +99,19 @@ tasks!(
         ]
     ),
     (
+        "necromancers-repeat",
+        "lugri_repeat",
+        1000,
+        "Lugri",
+        [
+            "necromancer",
+            "priestess",
+            "blood_priest",
+            "blood_hand",
+            "shadow_pupil"
+        ]
+    ),
+    (
         "pirates",
         "pirate_task",
         3000,
@@ -125,18 +138,6 @@ tasks!(
         ["troll", "troll_champion"]
     ),
 );
-
-// Unlike the pirate bounty, these reports exist to grant a one-shot boss
-// entry. Keep the earned quota reportable when its physical route is admitted.
-pub(crate) fn awaits_boss_route(key: &str) -> bool {
-    matches!(
-        key,
-        "oteryn:quest-reward/hunting-tasks/blue-djinns/report"
-            | "oteryn:quest-reward/hunting-tasks/green-djinns/report"
-            | "oteryn:quest-reward/hunting-tasks/minotaurs/report"
-            | "oteryn:quest-reward/hunting-tasks/necromancers/report"
-    )
-}
 
 pub(super) fn journal(name: &str, source_track: &str) -> Option<QuestLogMission> {
     let task = TASKS

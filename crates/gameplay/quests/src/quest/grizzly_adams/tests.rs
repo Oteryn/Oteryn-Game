@@ -732,7 +732,7 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
 }
 
 #[test]
-fn regional_boss_handoffs_remain_refused_without_the_boss_routes() -> Result<(), String> {
+fn regional_boss_handoffs_require_quota_and_consume_one_entry() -> Result<(), String> {
     use crate::quest::reward_callbacks::{load_for, offered_for};
     let loaded = crate::quest::loader::load_embedded_quest_state("regional-boss-partial")
         .map_err(|error| format!("{error:?}"))?;
@@ -744,10 +744,22 @@ fn regional_boss_handoffs_remain_refused_without_the_boss_routes() -> Result<(),
             historical.iter().any(|callback| callback.key == key),
             "{key}"
         );
-        assert!(
-            !offered.iter().any(|callback| callback.key == key),
-            "PARTIAL boss route cannot advance the quota: {key}"
-        );
+        let report = offered.iter().find(|cb| cb.key == key).ok_or(key)?;
+        let world = crate::quest::world_callbacks::load()?;
+        let entry = world
+            .iter()
+            .find(|cb| cb.key == format!("oteryn:quest-callback/hunting-tasks/{task}/boss-entry"))
+            .ok_or(task)?;
+        assert_eq!(entry.storage[0].track, report.storage[0].track);
+        assert_eq!(entry.storage[0].minimum, report.storage[0].set);
+        assert_eq!(entry.storage[0].maximum, report.storage[0].set);
+        assert_ne!(entry.storage[0].set, report.storage[0].set);
+        assert!(entry.personal_room_entry().is_some());
+        if task.ends_with("djinns") {
+            assert_eq!(report.experience, Some(10_000));
+            let coins = report.give.as_ref().ok_or("djinn report coins")?;
+            assert_eq!((&*coins.item, coins.count), ("oteryn:item.tibia.i3035", 50));
+        }
     }
     let pirate_report = offered
         .iter()
@@ -792,7 +804,41 @@ fn regional_boss_handoffs_remain_refused_without_the_boss_routes() -> Result<(),
             .plan_storage(&input)
             .map_err(|error| error.to_string())?
             .is_none(),
-        "PARTIAL pirate repeat requires the original boss route"
+        "earned boss access must be consumed before a new bounty"
+    );
+    let encounters = crate::quest::world_callbacks::load()?;
+    let entry = encounters
+        .iter()
+        .find(|c| c.key.ends_with("pirates/boss-entry"))
+        .ok_or("pirate entry")?;
+    assert_eq!(
+        (
+            entry.storage[1].minimum,
+            entry.storage[1].maximum,
+            entry.storage[1].increment
+        ),
+        (0, 2, true)
+    );
+    let boss = &entry
+        .effects
+        .encounter
+        .as_ref()
+        .ok_or("pirate room")?
+        .monsters[0];
+    assert_eq!(boss.alternatives.len(), 3);
+    let repeat = offered
+        .iter()
+        .find(|c| c.key.ends_with("pirates/repeat-report"))
+        .ok_or("repeat pirates")?;
+    assert_eq!(repeat.storage[0].set, 0);
+    assert!(repeat.per_occurrence_mint);
+    let repeat = offered
+        .iter()
+        .find(|c| c.key.ends_with("necromancers-repeat/report"))
+        .ok_or("repeat necromancers")?;
+    assert_eq!(
+        (repeat.storage[1].minimum, repeat.experience),
+        (1000, Some(40_000))
     );
     Ok(())
 }
