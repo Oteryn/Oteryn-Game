@@ -740,7 +740,8 @@ async fn spike(
             DELETE FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist';
             UPDATE game_character_quest_receipts SET committed_at=1 WHERE transition_key IN
                 ('oteryn:quest-reward/l12-cave-explorer-first','oteryn:quest-reward/l12-cave-explorer-second');
-            SET LOCAL session_replication_role=origin; DROP TABLE cave_completionist_backfill_eligible")
+            SET LOCAL session_replication_role=origin;
+            DROP TABLE cave_completionist_reconciliation, cave_completionist_previous")
             .execute(&mut *split).await?;
         sqlx::raw_sql(migration).execute(&mut *split).await?;
         let tied: (i64, i64) = sqlx::query_as("SELECT
