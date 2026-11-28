@@ -2,6 +2,58 @@ use super::*;
 use oteryn_protocol_oteryn::{bed, item_look};
 
 #[test]
+fn acknowledged_world_use_replays_the_same_command() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, mut server) = tokio::io::duplex(64 * 1024);
+        let intent = [8, 1];
+        let disposition = world_object::encode_use_result(UseDisposition::Committed)
+            .map_err(|error| format!("USE result: {error:?}"))?;
+        let retained = disposition.clone();
+        let peer = tokio::spawn(async move {
+            join_peer_with(&mut server, &[], &[], &[], (1, spatial(0)), &[]).await?;
+            for sequence in 41..=43 {
+                let bytes = read_frame(&mut server).await?;
+                let frame = decode_wire_envelope(&bytes)?;
+                let command = frame.client_command(1)?;
+                assert_eq!(command.command_type, world_object::COMMAND_TYPE_USE_INTENT);
+                assert_eq!(command.payload, intent);
+                let status = if sequence > 41 && command.command_id == 7 {
+                    CommandStatus::DuplicateReplay
+                } else {
+                    CommandStatus::Accepted
+                };
+                write_frame(
+                    &mut server,
+                    &encode_command_result(1, sequence, command.command_id, status, &retained)?,
+                )
+                .await?;
+            }
+            Ok::<(), BoxError>(())
+        });
+        let mut session = Session::admit(client, admission_with(&[])?).await?;
+        let original = session.world_context_use(&intent).await?;
+        assert_eq!(original.command_id, 7);
+        assert_eq!(original.status, CommandStatus::Accepted);
+
+        let replay = session
+            .replay_acknowledged_world_use(original.command_id, &intent)
+            .await?;
+        assert_eq!(replay.status, CommandStatus::DuplicateReplay);
+        assert_eq!(replay.command_id, original.command_id);
+        assert_eq!(replay.payload, disposition);
+        assert_eq!(session.next_command_id(), 8);
+        assert_eq!(session.last_server_sequence(), 42);
+
+        let next = session.world_context_use(&intent).await?;
+        assert_eq!(next.command_id, 8);
+        assert_eq!(next.status, CommandStatus::Accepted);
+        assert_eq!(next.server_sequence, 43);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
 fn world_context_existing_look_and_bed_commands_cross_the_session() -> Result<(), BoxError> {
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
         for selected in [false, true] {

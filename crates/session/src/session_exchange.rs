@@ -197,6 +197,45 @@ impl<S: SessionStream> Session<S> {
         self.next_command_id = command_id
             .checked_add(1)
             .ok_or(SessionError::CommandIdExhausted)?;
+        self.exchange_command(command_id, command_type, payload, false)
+            .await
+    }
+
+    /// Resends an acknowledged world-context USE using its original command ID and bytes.
+    #[cfg(any(test, feature = "test-support"))]
+    pub async fn replay_acknowledged_world_use(
+        &mut self,
+        command_id: u64,
+        payload: &[u8],
+    ) -> Result<DuplicateOutcome, SessionError> {
+        self.ensure_usable()?;
+        if !(self.first_command_id..self.next_command_id).contains(&command_id) {
+            return Err(SessionError::DuplicateForUnsentCommand { command_id });
+        }
+        let result = self
+            .exchange_command(
+                command_id,
+                world_object::COMMAND_TYPE_USE_INTENT,
+                payload,
+                true,
+            )
+            .await;
+        let result = self.poison_on_error(result)?;
+        Ok(DuplicateOutcome {
+            command_id: result.command_id,
+            status: result.status,
+            server_sequence: result.server_sequence,
+            payload: result.payload,
+        })
+    }
+
+    async fn exchange_command(
+        &mut self,
+        command_id: u64,
+        command_type: u32,
+        payload: &[u8],
+        expect_duplicate: bool,
+    ) -> Result<ReceivedResult, SessionError> {
         let frame = self.encode_current_command(&ClientCommandValue {
             command_id,
             command_type,
@@ -205,7 +244,9 @@ impl<S: SessionStream> Session<S> {
         // A cancelled exchange can leave a partial frame or its reply on the
         // transport. Keep the pending marker until this command finishes.
         self.command_result_pending = true;
-        let result = self.exchange_framed_command(command_id, &frame).await;
+        let result = self
+            .exchange_framed_command(command_id, &frame, expect_duplicate)
+            .await;
         self.command_result_pending = false;
         result
     }
@@ -214,6 +255,7 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         command_id: u64,
         frame: &[u8],
+        expect_duplicate: bool,
     ) -> Result<ReceivedResult, SessionError> {
         bounded(
             self.deadline,
@@ -234,44 +276,42 @@ impl<S: SessionStream> Session<S> {
                 continue;
             }
             let result = decode_command_result(&result_payload)?;
-            if matches!(
+            let duplicate = matches!(
                 result.status,
                 CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired
-            ) {
-                // FND-02 §13.2: a duplicate names an already reserved lower CommandId and is
-                // never executed again, so it is only ever valid for a CommandId this session
-                // sent before the current one; the current command's own result is never a
-                // duplicate. It carries no delta and does not end the wait for the real result.
-                if result.command_id == command_id {
+            );
+            if result.command_id == command_id {
+                if duplicate != expect_duplicate {
                     return Err(SessionError::InconsistentCommandResult {
                         command_id,
                         status: result.status,
                     });
                 }
-                if result.command_id < self.first_command_id || result.command_id > command_id {
-                    return Err(SessionError::DuplicateForUnsentCommand {
-                        command_id: result.command_id,
-                    });
-                }
-                if self.duplicates.len() >= MAX_RETAINED_DUPLICATES {
-                    return Err(FoundationProtocolError::PayloadLimitExceeded.into());
-                }
-                self.duplicates.push(DuplicateOutcome {
-                    command_id: result.command_id,
+                return Ok(ReceivedResult {
+                    command_id,
                     status: result.status,
                     server_sequence,
                     payload: result.payload.to_vec(),
                 });
-                continue;
             }
-            if result.command_id != command_id {
+            if !duplicate {
                 return Err(SessionError::CommandIdMismatch {
                     expected: command_id,
                     actual: result.command_id,
                 });
             }
-            return Ok(ReceivedResult {
-                command_id,
+            // FND-02 §13.2: a duplicate names a previously sent CommandId. An
+            // unrelated duplicate carries no delta and does not end this exchange.
+            if !(self.first_command_id..self.next_command_id).contains(&result.command_id) {
+                return Err(SessionError::DuplicateForUnsentCommand {
+                    command_id: result.command_id,
+                });
+            }
+            if self.duplicates.len() >= MAX_RETAINED_DUPLICATES {
+                return Err(FoundationProtocolError::PayloadLimitExceeded.into());
+            }
+            self.duplicates.push(DuplicateOutcome {
+                command_id: result.command_id,
                 status: result.status,
                 server_sequence,
                 payload: result.payload.to_vec(),

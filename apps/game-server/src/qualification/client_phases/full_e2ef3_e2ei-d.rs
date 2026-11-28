@@ -474,14 +474,23 @@ async fn refine(
             format!("pick refinement before reward={expected:?} observed={saved:?}").into(),
         );
     }
+    let replay = client
+        .session_mut()
+        .replay_acknowledged_world_use(response.command_id, &payload)
+        .await?;
+    if replay.status != CommandStatus::DuplicateReplay
+        || replay.payload != response.payload
+        || quantities(client)? != saved
+    {
+        return Err(format!("refinement replay changed the result or custody: {replay:?}").into());
+    }
     check.action = "relogin-refinement";
     rejoin(client, clients).await?;
     let observed = quantities(client)?;
     if observed != saved {
         return Err(format!("refinement before={saved:?} after={observed:?}").into());
     }
-    check.action = "retained-draw";
-    Err(format!("SERVER-GAP original refinement command={} reply={:?}/{disposition:?}; reloaded-inventory={observed:?}; retained refining draw needs the original session command ID (mining/mod.rs:112, :132); world_context_use allocates a new ID (session_exchange.rs:188)", response.command_id, response.status).into())
+    Ok(())
 }
 
 fn equipped(client: &DevClientSession, active: NonZeroU32) -> Option<items::ItemHandle> {
