@@ -69,6 +69,48 @@ pub(super) async fn prepare_owned_session_request(
     Ok(request)
 }
 
+pub(super) async fn create_other_house_owner(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+) -> TestResult<[u8; 16]> {
+    use crate::character_bootstrap_intent as bootstrap;
+    use crate::gameplay_transport::canonical_uuid;
+
+    let account = canonical_uuid(&id(120));
+    evidence.refresh_account(&h.root, &h.node, &account).await.map_err(debug)?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let operation = id(80);
+    let source = serde_json::json!({
+        "contract_version": bootstrap::CONTRACT_VERSION,
+        "variant": bootstrap::VARIANT,
+        "issuer_authority": bootstrap::ISSUER_AUTHORITY,
+        "issuer_decision_id": canonical_uuid(&id(90)),
+        "source_revision": "2",
+        "operation_id": canonical_uuid(&operation),
+        "operation": bootstrap::OPERATION,
+        "account_id": account,
+        "target_world_id": canonical_uuid(&id(42)),
+        "requested_name": "Other House Owner",
+        "requested_sex": "Male",
+        "requested_vocation": "Knight",
+        "interpretation_context": {
+            "profile_revision": "profile-1", "ruleset_revision": "ruleset-1",
+            "content_revision": "content-1", "starter_template_revision": "starter-1"
+        },
+        "issued_at_source": now.to_string(),
+        "expires_at_source": (now+120).to_string(),
+        "audience": bootstrap::AUDIENCE,
+    });
+    let intent = bootstrap::decode_producer_response(&serde_json::to_vec(&source)?, operation)
+        .map_err(debug)?;
+    let created = h.root.bootstrap_character(authority, &h.node, &intent).await.map_err(debug)?;
+    Ok(*created.character_id.as_bytes())
+}
+
 pub(super) struct RecoverySource {
     pub(super) clock: std::sync::Arc<std::sync::atomic::AtomicU64>,
     pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,

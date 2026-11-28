@@ -988,7 +988,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/creatures/definitions/spell-native-profiles.json",
-          "record_count": 1904,
+          "record_count": 1903,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
@@ -996,7 +996,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "4b3f550ff72975c5d17e6b9fcd7b39a491e36ec9d01788cadebcd229d27786f7"
+          "sha256": "81718a13220ff5e3765bda8c5c0df5e471da30bdf614239b5f626b07c4d4241e"
         },
         {
           "creates_canonical_identities": false,
@@ -1067,7 +1067,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 8365,
+          "record_count": 8317,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1075,7 +1075,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "2467a216b5f6cc708a56015f09b156a6e2ddf5c11d5e81a5025c1155d7b13d59"
+          "sha256": "55e1e888b3a30a2ced54a7dfe14ae55361af6272fd4e73a62e9402e4235143e5"
         },
         {
           "creates_canonical_identities": false,
@@ -1108,7 +1108,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/presentations/bindings/spell-appearances.json",
-          "record_count": 337,
+          "record_count": 336,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_SPELL_APPEARANCES/v1",
@@ -1116,7 +1116,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_spell_appearances.rs#SpellAppearancesDocument"
           },
-          "sha256": "02902db09a4d9e0f4a999df9367f747ddf624234b9edafc5f271a21c03b5f8ad"
+          "sha256": "bf34f281dd2c7a26acc5b262d3123a22a4fcdb5716ad37da696d67d9dc239b52"
         },
         {
           "creates_canonical_identities": false,

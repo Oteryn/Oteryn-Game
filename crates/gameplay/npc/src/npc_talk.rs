@@ -506,8 +506,7 @@ impl NpcTalkBook {
         &self.source_voices
     }
 
-    /// Entries for every NPC with generated replies. An NPC with an admitted Dialogue is left out
-    /// until a dialogue packet reads it.
+    /// Entries for NPCs with generated replies or a supported native dialogue binding.
     pub fn from_model(model: &NpcServiceModel) -> Self {
         Self::from_model_with_native_quests(model, &[])
     }
@@ -526,7 +525,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1|c16-shops-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -590,6 +589,22 @@ impl NpcTalkBook {
             if !caller_scope::allows(&reference.key, native_quest) {
                 continue;
             }
+            let rune_shop = !native_quest
+                && matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.alexander"
+                        | "oteryn:npc.asima"
+                        | "oteryn:npc.aurelia"
+                        | "oteryn:npc.chartan"
+                        | "oteryn:npc.fenech"
+                        | "oteryn:npc.frederik"
+                        | "oteryn:npc.ghorza"
+                        | "oteryn:npc.gnomegica"
+                        | "oteryn:npc.nelly"
+                        | "oteryn:npc.tandros"
+                        | "oteryn:npc.topsy"
+                        | "oteryn:npc.xodet"
+                );
             let premium_services = crate::content::npc_catalogue::premium_services::resolve(
                 &reference.key,
                 &npc.services,
@@ -830,7 +845,7 @@ impl NpcTalkBook {
                     None,
                     Vec::new(),
                 )
-            } else if literal_shop_focus {
+            } else if rune_shop || literal_shop_focus {
                 // Use source focus messages and Crystal's handler defaults.
                 // Only literal, single-line keywords are supported here.
                 let Some(dialogue) = &npc.bank_dialogue else {
@@ -841,12 +856,12 @@ impl NpcTalkBook {
                         .greet
                         .first()
                         .cloned()
-                        .unwrap_or_else(|| "Greetings, |PLAYERNAME|.".into()),
+                        .unwrap_or_else(|| regional_contacts::GREET.into()),
                     dialogue
                         .farewell
                         .first()
                         .cloned()
-                        .unwrap_or_else(|| "Good bye, |PLAYERNAME|.".into()),
+                        .unwrap_or_else(|| regional_contacts::FAREWELL.into()),
                     None,
                     dialogue
                         .keywords
@@ -1188,6 +1203,7 @@ impl NpcTalkBook {
                         || isle_messages.is_some()
                         || native_quest
                         || reward_callback_npc(&reference.key)
+                        || rune_shop
                         || matches!(
                             reference.key.as_str(),
                             "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
@@ -1202,7 +1218,7 @@ impl NpcTalkBook {
                         Some(line)
                     } else if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
-                    } else if reference.key == MORDECAI {
+                    } else if rune_shop || reference.key == MORDECAI {
                         npc.bank_dialogue
                             .as_ref()
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
@@ -1235,7 +1251,9 @@ impl NpcTalkBook {
                         .services
                         .iter()
                         .filter_map(|service| model.services().get(service))
-                        .flat_map(|service| service.offers.iter().cloned())
+                        .flat_map(|service| &service.offers)
+                        .filter(|offer| !held_rune_shop_offer(&reference.key, offer))
+                        .cloned()
                         .collect(),
                 },
             );
@@ -1269,6 +1287,20 @@ impl NpcTalkBook {
     pub fn catalogue_revision(&self) -> u64 {
         self.catalogue_revision.max(1)
     }
+}
+
+fn held_rune_shop_offer(npc: &str, offer: &ProjectV2ServiceOffer) -> bool {
+    // The retained Global Cyclopedia capture (items.jsonl:552,1441,2869)
+    // identifies these donor rows as different items or sellers.
+    offer.direction == crate::content::ProjectV2ServiceOfferDirection::SellToPlayer
+        && matches!(
+            (npc, offer.item.key.as_str()),
+            ("oteryn:npc.aurelia", "oteryn:item.tibia.i3178")
+                | (
+                    "oteryn:npc.topsy" | "oteryn:npc.xodet",
+                    "oteryn:item.tibia.i8084"
+                )
+        )
 }
 
 /// Source-qualified native finale speakers. A script-backed NPC outside this exact

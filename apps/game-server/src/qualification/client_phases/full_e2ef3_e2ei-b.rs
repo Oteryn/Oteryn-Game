@@ -12,7 +12,7 @@ const I04: &str = "I04";
 const I09: &str = "I09";
 pub(super) const COVERED_ROWS: &[&str] = &[I04, I09];
 
-const CHAIR: TilePos = TilePos {
+pub(in crate::qualification::client_world) const CHAIR: TilePos = TilePos {
     x: 32355,
     y: 32206,
     floor: -7,

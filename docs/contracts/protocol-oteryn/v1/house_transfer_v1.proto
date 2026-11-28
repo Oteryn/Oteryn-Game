@@ -8,8 +8,8 @@ message HouseTransferIntentV1 {
   string house = 2;
 }
 
-// A successful CommandResult payload. An empty payload refuses. Recovery sends
-// this same scope-identifying result before any destination snapshot/domain.
+// HOUSE_TRANSFER CommandResult payload. A rejected result carries field 13 only.
+// An accepted result and scope recovery carry the grant fields (1–12).
 message HouseTransferAckV1 {
   bytes transfer_id = 1;
   bytes destination_game_session_id = 2;
@@ -24,4 +24,20 @@ message HouseTransferAckV1 {
   sint32 x = 10;
   sint32 y = 11;
   sint32 floor = 12;
+  HouseTransferRefusalV1 refusal = 13;
+}
+
+
+// An empty rejection from an older server may still be shown as a generic refusal.
+enum HouseTransferRefusalV1 {
+  HOUSE_TRANSFER_REFUSAL_UNSPECIFIED = 0;
+  HOUSE_TRANSFER_REFUSAL_UNAVAILABLE = 1;
+  HOUSE_TRANSFER_REFUSAL_INVALID_INTENT = 2;
+  HOUSE_TRANSFER_REFUSAL_NOT_AT_ENTRANCE = 3;
+  HOUSE_TRANSFER_REFUSAL_NO_ACCESS = 4;
+  HOUSE_TRANSFER_REFUSAL_IN_COMBAT = 5;
+  HOUSE_TRANSFER_REFUSAL_BUSY = 6;
+  HOUSE_TRANSFER_REFUSAL_HOUSE_CLOSED = 7;
+  HOUSE_TRANSFER_REFUSAL_NO_ROOM = 8;
+  HOUSE_TRANSFER_REFUSAL_CAPABILITY_REQUIRED = 9;
 }

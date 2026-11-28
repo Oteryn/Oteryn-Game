@@ -9,6 +9,10 @@ use crate::foundation::{
     ChannelRuntimeV1, CompanionSnapshot, GameSessionId, MovementLocalPosition,
 };
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+#[cfg(feature = "qualification-spawn")]
+use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
+#[cfg(feature = "qualification-spawn")]
+use oteryn_gameplay_domain::domain::forge_creature::ForgeCreature;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::sync::atomic::{AtomicU16, Ordering};
 
@@ -30,6 +34,8 @@ static NEXT_COMMAND_SOURCE: AtomicU16 = AtomicU16::new(FIRST_COMMAND_SOURCE);
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum SpawnRefusal {
     UnknownCreature,
+    #[cfg(feature = "qualification-spawn")]
+    IneligibleForgeCreature,
     SessionUnknown,
     NoFreeTile(String),
     Fence(String),
@@ -40,6 +46,8 @@ impl SpawnRefusal {
     pub(crate) const fn token(&self) -> &'static str {
         match self {
             Self::UnknownCreature => "unknown_creature",
+            #[cfg(feature = "qualification-spawn")]
+            Self::IneligibleForgeCreature => "ineligible_forge_creature",
             Self::SessionUnknown => "session_unknown",
             Self::NoFreeTile(_) => "no_free_tile",
             Self::Fence(_) => "fence",
@@ -50,7 +58,7 @@ impl SpawnRefusal {
     pub(crate) fn detail(&self) -> Option<&str> {
         match self {
             Self::NoFreeTile(message) | Self::Fence(message) => Some(message),
-            Self::UnknownCreature | Self::SessionUnknown => None,
+            _ => None,
         }
     }
 
@@ -58,6 +66,10 @@ impl SpawnRefusal {
     fn into_message(self) -> String {
         match self {
             Self::UnknownCreature => "qualification spawn active Creature policies: unknown".into(),
+            #[cfg(feature = "qualification-spawn")]
+            Self::IneligibleForgeCreature => {
+                "qualification spawn creature is not Forge eligible".into()
+            }
             Self::SessionUnknown => "qualification spawn session has no positioned actor".into(),
             Self::NoFreeTile(message) | Self::Fence(message) => message,
         }
@@ -124,11 +136,17 @@ fn require_policy(runtime: &ChannelRuntimeV1, key: &str) -> Result<(), SpawnRefu
         .map_err(|_| SpawnRefusal::UnknownCreature)
 }
 
-enum Placement {
+pub(crate) enum Placement {
     // Only the cfg(test) seam rat (realize_rat_in_transaction) places at a fixed cell.
     #[cfg_attr(not(test), allow(dead_code))]
     Fixed(MovementLocalPosition),
     Adjacent(GameSessionId),
+    #[cfg(feature = "qualification-spawn")]
+    Forge {
+        session: GameSessionId,
+        position: MovementLocalPosition,
+        classification: ForgeCreature,
+    },
 }
 
 /// The Rat of the seam harness, at its Thalom cell, unchanged.
@@ -165,19 +183,11 @@ pub(crate) struct SpawnPlan {
         MovementLocalPosition,
         oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget,
     )>,
+    #[cfg(feature = "qualification-spawn")]
+    forge: Option<ForgeCreature>,
 }
 
-pub(crate) fn snapshot_adjacent_spawn(
-    room: &QualifiedNativeEntryRoom,
-    native: &NativeGameplayState,
-    runtime: &mut ChannelRuntimeV1,
-    key: &str,
-    session: GameSessionId,
-) -> Result<SpawnPlan, SpawnRefusal> {
-    snapshot_spawn(room, native, runtime, key, Placement::Adjacent(session))
-}
-
-fn snapshot_spawn(
+pub(crate) fn snapshot_spawn(
     room: &QualifiedNativeEntryRoom,
     native: &NativeGameplayState,
     runtime: &mut ChannelRuntimeV1,
@@ -207,16 +217,21 @@ fn snapshot_spawn(
             ))
         })?;
     require_policy(runtime, key)?;
+    #[cfg(feature = "qualification-spawn")]
+    let forge = match placement {
+        Placement::Forge { classification, .. } => Some(classification),
+        _ => None,
+    };
     let (candidates, player) = match placement {
         Placement::Fixed(position) => (vec![position], None),
         Placement::Adjacent(session) => {
-            let (actor, snapshot) = runtime
-                .positioned_player_for_session(session)
-                .map_err(|error| fence(format!("qualification spawn session actor: {error:?}")))?
-                .ok_or(SpawnRefusal::SessionUnknown)?;
-            let position = snapshot.position();
-            (adjacent_cells(position), Some((session, actor, position)))
+            let player = positioned_player(runtime, session)?;
+            (adjacent_cells(player.2), Some(player))
         }
+        #[cfg(feature = "qualification-spawn")]
+        Placement::Forge {
+            session, position, ..
+        } => (vec![position], Some(positioned_player(runtime, session)?)),
     };
     let mut targets = Vec::with_capacity(candidates.len());
     let mut skipped = "qualification spawn has no eligible cell".to_owned();
@@ -239,7 +254,29 @@ fn snapshot_spawn(
         scope_generation: runtime.binding().scope_generation().get(),
         player,
         targets,
+        #[cfg(feature = "qualification-spawn")]
+        forge,
     })
+}
+
+fn positioned_player(
+    runtime: &mut ChannelRuntimeV1,
+    session: GameSessionId,
+) -> Result<
+    (
+        GameSessionId,
+        crate::foundation::ExactActorRef,
+        MovementLocalPosition,
+    ),
+    SpawnRefusal,
+> {
+    let (actor, snapshot) = runtime
+        .positioned_player_for_session(session)
+        .map_err(|error| {
+            SpawnRefusal::Fence(format!("qualification spawn session actor: {error:?}"))
+        })?
+        .ok_or(SpawnRefusal::SessionUnknown)?;
+    Ok((session, actor, snapshot.position()))
 }
 
 pub(crate) async fn read_spawn_tiles(
@@ -314,6 +351,28 @@ pub(crate) fn publish_spawn(
         }) {
             return Err(SpawnRefusal::SessionUnknown);
         }
+    }
+    #[cfg(feature = "qualification-spawn")]
+    if let Some(kind) = plan.forge {
+        let [position] = eligible else {
+            return Err(SpawnRefusal::NoFreeTile(
+                "qualification Forge tile is no longer eligible".into(),
+            ));
+        };
+        return runtime
+            .realize_native_qualification_spawn_with_forge(
+                source,
+                plan.pin,
+                key,
+                *position,
+                Some(kind),
+            )
+            .map_err(|error| match error {
+                CarrierError::InvalidCreatureTarget => SpawnRefusal::IneligibleForgeCreature,
+                _ => SpawnRefusal::NoFreeTile(format!(
+                    "qualification spawn physical realization: {error:?}"
+                )),
+            });
     }
     place_first(runtime, &plan.pin, source, key, eligible)
 }

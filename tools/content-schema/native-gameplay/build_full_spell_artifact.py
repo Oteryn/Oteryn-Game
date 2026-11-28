@@ -834,6 +834,11 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     # original static facts, so this producer cannot widen general yield admission.
     qualified_corpses = set()
     for key, ref in corpse_refs.items():
+        # The movable Rat stage is materializable by decay and Animate Dead.
+        # Those Item facts do not qualify Munster's separate reward-boss corpse.
+        if key == 'oteryn:item.tibia.i3994':
+            facts[key].update(materializable=False, container_capacity=None)
+            continue
         profiles = native_by_key.get(key, [])
         if key in yield_keys or len(profiles) != 1:
             continue
