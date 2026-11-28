@@ -1260,6 +1260,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            if pending.tomb.is_some() && !self.prepare_tomb_quest_copy(fence).await {
+                return false;
+            }
             let observation = self
                 .observe_stateless_world_callback(
                     &permit,
@@ -1729,6 +1732,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(f) => Some(self.revision_sequencer.acquire(f.character_id).await),
                 None => None,
             };
+            if callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY {
+                let Some(fence) = fence else { return UseDisposition::Rejected; };
+                if !self.prepare_tomb_quest_copy(fence).await {
+                    return UseDisposition::Rejected;
+                }
+            }
             let observation=match self.observe_stateless_world_callback(
                 &permit,fence,actor,command.game_session_id,map,callback,resolved.placement_key,target.expected_revision,None,
             ).await {Ok(observation)=>observation,Err(disposition)=>return disposition};
