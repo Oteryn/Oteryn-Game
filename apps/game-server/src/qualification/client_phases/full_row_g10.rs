@@ -95,40 +95,67 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xd1).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_G10_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    character_prep::declare_seeded("G10.full", "sorcerer-level-50", "Trolltrasher eligibility");
+    let mut setup = connect_character(clients, 0xd0, 0).await?;
+    let setup_session = setup.join_snapshot().game_session_id;
+    request_fixture_control(uuid_text(setup_session.as_bytes()), "--profile", "g10-title".into()).await?;
+    logout(&mut setup).await?;
+    drop(setup);
+    let mut client = connect_character(clients, 0xd1, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    if setup_session == session {
+        return Err("step=admission;observed=reused-setup-session".into());
+    }
+    let level = full_e2ef7::player_level(&mut client).await?;
+    let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer", 50,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    ).ok_or("step=fixture;observed=no-derived-vitals")?;
+    if level != 50 || !client.actor_vitals().is_some_and(|vitals|
+        vitals.max_health == health && vitals.max_mana == mana) {
+        return Err(format!("step=fixture;observed=level-{level}-or-vitals-mismatch").into());
+    }
     if !client
         .selected_capabilities()
         .contains(&ANALYSER_CAPABILITY)
     {
         return Err("step=admission;needed:analyser-capability-10-selected".into());
     }
-    let (earned, _before) = query(&mut client).await?;
-    let Some(chosen) = earned.first().copied() else {
-        return Err("step=select;needed:earned-title-reachable-by-ordinary-play".into());
-    };
+    let (earned, before) = query(&mut client).await?;
+    let title = info::CharacterTitle::Trolltrasher;
+    let chosen = title.id();
+    if !earned.contains(&chosen) || before != 0 {
+        return Err(format!("step=select-prestate;observed=earned-{earned:?}-selected-{before}").into());
+    }
+    evidence("G10_CHECK fixture-level-50-derived-vitals-and-earned-trolltrasher");
     let select = send(
         &mut client,
-        info::CharacterInfoOperation::Select(info::CharacterTitle::from_id(chosen)),
+        info::CharacterInfoOperation::Select(Some(title)),
     )
     .await?;
     if select.status != CommandStatus::Accepted {
         return Err(format!("step=select;observed={:?}", select.status).into());
     }
-    let unearned = (1..=u8::try_from(info::TITLE_COUNT)?)
-        .filter(|id| !earned.contains(id))
-        .find_map(info::CharacterTitle::from_id)
-        .ok_or("step=refuse;needed:an-unearned-title")?;
+    if query(&mut client).await? != (earned.clone(), chosen) {
+        return Err("step=select-delta;observed=incorrect-title-state".into());
+    }
+    let unearned = info::CharacterTitle::Exalted;
+    if earned.contains(&unearned.id()) {
+        return Err("step=refuse-prestate;observed=exalted-already-earned".into());
+    }
     let refused = send(
         &mut client,
         info::CharacterInfoOperation::Select(Some(unearned)),
     )
     .await?;
-    if refused.status != CommandStatus::Rejected {
+    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
         return Err(format!("step=refuse;observed={:?}", refused.status).into());
     }
-    let (_, selected) = query(&mut client).await?;
-    if selected != chosen {
-        return Err(format!("step=select-delta;observed={selected};need={chosen}").into());
+    if query(&mut client).await? != (earned.clone(), chosen) {
+        return Err("step=refusal-state;observed=title-state-changed".into());
     }
     let first = cooldown_now(&mut client).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_millis(1_100);
@@ -140,7 +167,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step=cooldowns;observed=clock-{first}-then-{second}").into());
     }
     logout(&mut client).await?;
-    let mut again = connect_world(clients, 0xd2).await?;
+    drop(client);
+    let mut again = connect_character(clients, 0xd2, 0).await?;
+    if again.join_snapshot().game_session_id == session {
+        return Err("step=persist;observed=reused-session".into());
+    }
     let (_, persisted) = query(&mut again).await?;
     if persisted != chosen {
         return Err(format!("step=persist;observed={persisted};need={chosen}").into());
