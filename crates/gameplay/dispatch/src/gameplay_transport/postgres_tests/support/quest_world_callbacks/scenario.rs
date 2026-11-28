@@ -69,7 +69,8 @@ fn scenario_case(
     };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
-    let koshei = name == super::super::koshei_the_deathless_journey_fixtures::NAME;
+    let spatial_corpse = name == super::super::koshei_the_deathless_journey_fixtures::SPATIAL;
+    let koshei = spatial_corpse || name == super::super::koshei_the_deathless_journey_fixtures::NAME;
     let cyclops_amulet = matches!(
         name,
         "questpc7-friends-draconian-amulet-replaces-steel"
@@ -1640,7 +1641,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
-            super::super::koshei_the_deathless_journey_fixtures::NAME => Some(150),
+            _ if koshei => Some(150),
             // The settlement journey includes combat with a classed starter loadout.
             new_frontier_journey_fixtures::NAME | new_frontier_journey_fixtures::POLISHER_RETRY => Some(8),
             super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
@@ -2284,7 +2285,7 @@ fn scenario_case(
         owner.admit_quest_session(&admitted).await;
         if koshei {
             Box::pin(super::super::koshei_the_deathless_journey_fixtures::exercise(
-                &mut owner, &mut admitted, &h, &world,
+                &mut owner, &mut admitted, &h, &world, spatial_corpse,
             )).await?;
         } else if explorer {
             Box::pin(super::super::explorer_society_journey_fixtures::exercise(&mut owner, &mut admitted, &h)).await?;

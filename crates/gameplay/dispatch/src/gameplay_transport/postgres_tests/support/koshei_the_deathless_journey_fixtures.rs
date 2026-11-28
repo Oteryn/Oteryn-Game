@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::world_object::{
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) const NAME: &str = "koshei_the_deathless_full_journey";
+pub(super) const SPATIAL: &str = "koshei_spatial_corpse_on_first_visit";
 const QUEST: &str = "oteryn:quest.koshei_the_deathless_quest";
 const ENTRY: &str = "oteryn:quest-callback/koshei/tomb-entry";
 const FORGE: &str = "oteryn:quest-progress/qnpcfx/koshei/amulet";
@@ -305,6 +306,7 @@ async fn commission(
 async fn seal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    spatial_corpse: bool,
 ) -> TestResult<[u8; 16]> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     let body = owner
@@ -323,8 +325,6 @@ async fn seal(
     let amulet = index
         .definition_ref("Item", "oteryn:item.tibia.i7532", "definition-r1")
         .ok_or("amulet definition ref")?;
-    let command = admitted.continuity.next_command_id;
-    let generation = admitted.continuity.connection_generation;
     let (mut server, client) = tokio::io::duplex(1 << 20);
     let current = *admitted;
     let (end, result) = tokio::join!(
@@ -333,9 +333,8 @@ async fn seal(
             client,
             amulet,
             (body.position, body.identity),
-            current.continuity.selected_capabilities.as_slice(),
-            generation,
-            command
+            current,
+            spatial_corpse,
         ),
     );
     match end {
@@ -350,12 +349,13 @@ async fn seal_client(
     mut client: tokio::io::DuplexStream,
     amulet: std::num::NonZeroU32,
     (position, identity): (crate::foundation::MovementLocalPosition, [u8; 16]),
-    capabilities: &[u32],
-    generation: u64,
-    command: u64,
+    admitted: AdmittedSession,
+    spatial_corpse: bool,
 ) -> TestResult<UseDisposition> {
     use oteryn_protocol_oteryn::{self as wire, MessageType, item_view, world_map};
     use tokio::io::AsyncWriteExt;
+    let command = admitted.continuity.next_command_id;
+    let capabilities = admitted.continuity.selected_capabilities.as_slice();
     let (mut source, mut target, mut spatial_target) = (None, None, None);
     loop {
         let raw = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
@@ -429,12 +429,16 @@ async fn seal_client(
     let payload = use_wire::encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(source.ok_or("projected amulet handle")?),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Item(spatial_handle)),
+        use_with_map_item: Some(MapUseTarget::Item(if spatial_corpse {
+            spatial_handle
+        } else {
+            map_handle
+        })),
         use_with_position: None,
     })
     .map_err(debug)?;
     let frame = wire::encode_client_command(
-        generation,
+        admitted.continuity.connection_generation,
         &wire::ClientCommandValue {
             command_id: command,
             command_type: use_wire::COMMAND_TYPE_USE_INTENT,
@@ -464,6 +468,7 @@ pub(super) async fn exercise(
     admitted: &mut AdmittedSession,
     h: &Harness,
     world: &crate::map::boot::BundleWorld,
+    spatial_corpse: bool,
 ) -> TestResult {
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
@@ -679,7 +684,6 @@ pub(super) async fn exercise(
         return Err("one Koshei staging position".into());
     };
     let session = admitted.game_session_id;
-    let actor = admitted.runtime_actor.ok_or("Koshei player")?;
     let stage = super::quest_world_callbacks_fixtures::local(member.from);
     assert_eq!(owner.home_temple(session).await, Some(stage));
     move_to(owner, admitted, member.from).await?;
@@ -697,72 +701,9 @@ pub(super) async fn exercise(
     .await?;
     assert_eq!(entry_receipts, 1, "a live defender cannot be claimed again");
     move_to(owner, admitted, member.to).await?;
-    let mut seed = h.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *seed)
-        .await?;
-    // Protect the quest amulet and combat supplies through the fixture's PvE loss.
-    sqlx::query(
-        "INSERT INTO game_character_blessings(character_id,blessing_key,provenance) \
-         SELECT encode($1,'hex')::uuid,blessing,'fixture' FROM unnest($2::text[]) AS blessing",
-    )
-    .bind(id(41).as_slice())
-    .bind(
-        &[
-            "oteryn:blessing.the_embrace_of_tibia",
-            "oteryn:blessing.the_fire_of_the_suns",
-            "oteryn:blessing.the_spark_of_the_phoenix",
-            "oteryn:blessing.the_spiritual_shielding",
-            "oteryn:blessing.the_wisdom_of_solitude",
-        ][..],
-    )
-    .execute(&mut *seed)
-    .await?;
-    seed.commit().await?;
-    let death = {
-        let runtime = owner.runtime.lock().await;
-        assert_eq!(
-            runtime.read_actor_position(actor).map_err(debug)?.position(),
-            super::quest_world_callbacks_fixtures::local(member.to)
-        );
-        let mut states = owner.states.spell_states.lock().await;
-        let now = SemanticTimeMicros::from_micros(owner.owner_now().get());
-        let hit = states
-            .apply_creature_damage_native(&runtime, actor, session, 100_000, now)
-            .ok_or("lethal PvE hit inside the Koshei room")?;
-        assert_eq!(hit.damage.health_after, 0);
-        states
-            .player_death(&runtime, actor, session)
-            .ok_or("Koshei player death")?
-    };
-    let (_, vitals) = Box::pin(owner.respawn_after_death(actor, session, death))
-        .await
-        .ok_or("durable death and home respawn")?;
-    assert_eq!(vitals.health, vitals.max_health);
-    {
-        let runtime = owner.runtime.lock().await;
-        assert_eq!(
-            runtime.read_actor_position(actor).map_err(debug)?.position(),
-            stage
-        );
-        assert!(
-            runtime.contains_live_creature(native_boss),
-            "the ambient boss survives the player's death"
-        );
+    if !spatial_corpse {
+        die_and_reenter(owner, admitted, h, member.to, native_boss).await?;
     }
-    let gate = target(owner, CRYPT_GATE, 1)?;
-    assert_eq!(
-        use_next(owner, admitted, &gate).await?,
-        UseDisposition::Committed,
-        "the new life can claim the same native defender through framed USE"
-    );
-    let entry_receipts: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
-    )
-    .bind(ENTRY)
-    .fetch_one(&h.pool)
-    .await?;
-    assert_eq!(entry_receipts, 2, "entry has one receipt per admitted life");
     assert_eq!(State::read(h).await?, expected);
     super::elvenbane_combat_fixtures::fight(
         owner,
@@ -776,7 +717,7 @@ pub(super) async fn exercise(
     expected.mission[3] = 1;
     assert_eq!(State::read(h).await?, expected);
 
-    let corpse = seal(owner, admitted).await?;
+    let corpse = seal(owner, admitted, spatial_corpse).await?;
     let sample: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_quest_corpse_samples WHERE \
          character_id=encode($1,'hex')::uuid AND corpse_item=encode($2,'hex')::uuid \
@@ -878,5 +819,83 @@ pub(super) async fn exercise(
             .is_some_and(|quest| quest.key != QUEST)
     }));
     assert_eq!(State::read(h).await?, expected);
+    Ok(())
+}
+
+async fn die_and_reenter(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    inside: Position,
+    native_boss: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("Koshei player")?;
+    let session = admitted.game_session_id;
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    // Protect the quest amulet and combat supplies through the fixture's PvE loss.
+    sqlx::query(
+        "INSERT INTO game_character_blessings(character_id,blessing_key,provenance) \
+         SELECT encode($1,'hex')::uuid,blessing,'fixture' FROM unnest($2::text[]) AS blessing",
+    )
+    .bind(id(41).as_slice())
+    .bind(
+        &[
+            "oteryn:blessing.the_embrace_of_tibia",
+            "oteryn:blessing.the_fire_of_the_suns",
+            "oteryn:blessing.the_spark_of_the_phoenix",
+            "oteryn:blessing.the_spiritual_shielding",
+            "oteryn:blessing.the_wisdom_of_solitude",
+        ][..],
+    )
+    .execute(&mut *seed)
+    .await?;
+    seed.commit().await?;
+    let death = {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(inside)
+        );
+        let mut states = owner.states.spell_states.lock().await;
+        let now = SemanticTimeMicros::from_micros(owner.owner_now().get());
+        let hit = states
+            .apply_creature_damage_native(&runtime, actor, session, 100_000, now)
+            .ok_or("lethal PvE hit inside the Koshei room")?;
+        assert_eq!(hit.damage.health_after, 0);
+        states
+            .player_death(&runtime, actor, session)
+            .ok_or("Koshei player death")?
+    };
+    let (_, vitals) = Box::pin(owner.respawn_after_death(actor, session, death))
+        .await
+        .ok_or("durable death and home respawn")?;
+    assert_eq!(vitals.health, vitals.max_health);
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(STAGING)
+        );
+        assert!(
+            runtime.contains_live_creature(native_boss),
+            "the ambient boss survives the player's death"
+        );
+    }
+    let gate = target(owner, CRYPT_GATE, 1)?;
+    assert_eq!(
+        use_next(owner, admitted, &gate).await?,
+        UseDisposition::Committed,
+        "the new life can claim the same native defender through framed USE"
+    );
+    let entry_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(ENTRY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(entry_receipts, 2, "entry has one receipt per admitted life");
     Ok(())
 }

@@ -60,7 +60,7 @@ const BEFORE_DIG: Position = Position {
 const TUNNEL: Position = Position { floor: -9, ..DIRT };
 const DIG_CALLBACK: &str = "oteryn:quest-callback/authored-top-of-the-city-dig";
 use oteryn_gameplay_quests::quest::top_of_the_city::{
-    PURSUIT, PURSUIT_COMPLETE, STAGE as CITY_STAGE,
+    ASSASSINS, PURSUIT, PURSUIT_COMPLETE, STAGE as CITY_STAGE,
 };
 const PICK: &str = "oteryn:item.tibia.i3456";
 const OBSIDIAN_KNIFE: &str = "oteryn:item.tibia.i5908";
@@ -432,7 +432,7 @@ async fn start_city(
                 h,
                 owner,
                 admitted,
-                &[(PURSUIT.into(), PURSUIT_COMPLETE)],
+                &[(PURSUIT.into(), PURSUIT_COMPLETE), (ASSASSINS.into(), 3)],
                 120,
             )
             .await?;
@@ -648,6 +648,7 @@ async fn top_of_the_city(
     h: &Harness,
 ) -> TestResult {
     prepare_city(owner, admitted).await?;
+    super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
     let table = {
         let (bytes, _) = super::qc_pinned_world::artifact()?;
         oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?.npcs
@@ -792,7 +793,7 @@ async fn top_of_the_city(
         )
         .await?;
         assert_eq!(
-            track(h, oteryn_gameplay_quests::quest::top_of_the_city::ASSASSINS).await?,
+            track(h, ASSASSINS).await?,
             i64::try_from(i + 1)?
         );
     }
