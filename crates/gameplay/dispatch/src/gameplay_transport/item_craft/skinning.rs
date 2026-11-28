@@ -141,7 +141,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This identifies the rule shape only; the durable provenance supplies the race.
         let Some(ground) = self
             .root
-            .read_ground_action_source(self.character, fence, corpse)
+            .read_skinning_ground_source(self.character, fence, corpse)
             .await
             .map_err(|_| ())?
         else {
@@ -247,7 +247,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         result: SkinningOutcome,
     ) -> UseOutcome {
         if result.disposition == UseDisposition::Committed {
-            self.refresh_skinning_projection(fence).await;
+            self.refresh_skinning_projection(fence, result.corpse).await;
         }
         drop(permit);
         if let Some(feet) = result.rabbit_feet {
@@ -268,12 +268,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// Refresh only existing corpse bindings from the complete durable owner snapshot.
+    /// Read the exact committed corpse even when older Ground exceeds the admission cap.
     /// The caller retains its item lane across this read and runtime update, including replay.
-    async fn refresh_skinning_projection(&self, fence: CurrentCharacterItemFence) {
+    async fn refresh_skinning_projection(
+        &self,
+        fence: CurrentCharacterItemFence,
+        item: Option<[u8; 16]>,
+    ) {
         let Ok(schedule) = self
             .root
-            .read_scoped_corpse_decay_schedule(self.character, fence.runtime_scope)
+            .read_corpse_schedule_page(self.character, fence.runtime_scope, item)
             .await
         else {
             return;

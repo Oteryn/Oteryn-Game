@@ -7,7 +7,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "the selected native door and sealed movement share one owner turn"
     )]
-    pub(super) async fn execute_reward_door(
+    pub(super) fn execute_reward_door(
         &self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
@@ -17,38 +17,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         callback: &Callback,
         key: u64,
         expected_revision: u64,
-        fence: Option<CurrentCharacterGameplayFence>,
+        claimed: Option<bool>,
         optional_pvp: Option<bool>,
     ) -> UseDisposition {
-        let (Some(door), Some(fence), Some((target, _))) = (
-            callback.effects.reward_door.as_ref(),
-            fence,
-            crate::map::view::placement_of(key),
-        ) else {
+        let Some((target, _)) = crate::map::view::placement_of(key) else {
             return UseDisposition::Rejected;
         };
         let doors = map.facts.doors();
         if !doors.contains(key) {
             return UseDisposition::Rejected;
         }
-        match self
-            .root
-            .reward_claim_is_claimed(
-                self.character,
-                self.holder,
-                fence.item_fence(),
-                door.claim.clone(),
-            )
-            .await
-        {
-            Ok(false) => {}
-            Ok(true) => {
+        match claimed {
+            Some(false) => {}
+            Some(true) => {
                 if let Some(message) = &callback.failure_message {
                     self.states.chat.push_quest_feedback(session, message);
                 }
                 return UseDisposition::NotPossible;
             }
-            Err(_) => return UseDisposition::Rejected,
+            None => return UseDisposition::Rejected,
         }
         let Ok(expected) = runtime.read_actor_position(actor) else {
             return UseDisposition::Rejected;

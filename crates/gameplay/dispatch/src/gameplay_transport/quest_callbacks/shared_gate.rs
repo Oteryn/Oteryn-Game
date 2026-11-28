@@ -6,7 +6,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn admit_shared_switch_gate(
         &self,
         permit: &SpellLanePermit,
-        runtime: &ChannelRuntimeV1,
+        artifact: [u8; 32],
+        placement_context: Vec<u8>,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
@@ -29,11 +30,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let context = QuestWorldContext {
             map_revision: crate::map::overlay::map_revision(map.overlay.base()),
-            content_revision: format!(
-                "sha256:{}",
-                hex(&runtime.content_pin().server_artifact_digest())
-            ),
-            placement_context: runtime.content_pin().frame_binding_digest().to_vec(),
+            content_revision: format!("sha256:{}", hex(&artifact)),
+            placement_context,
             reset_epoch: self.reset_epoch,
             actor_placement: actor.placement_identity(),
             movement_revision: expected.revision(),

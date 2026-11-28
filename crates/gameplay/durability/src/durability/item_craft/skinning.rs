@@ -16,6 +16,7 @@ pub struct SkinningRequest {
 }
 
 pub struct SkinningOutcome {
+    pub corpse: Option<[u8; 16]>,
     pub disposition: UseDisposition,
     /// Present for a committed rabbit attempt, including zero feet on failure and receipt replay.
     pub rabbit_feet: Option<u32>,
@@ -24,6 +25,7 @@ pub struct SkinningOutcome {
 impl From<UseDisposition> for SkinningOutcome {
     fn from(disposition: UseDisposition) -> Self {
         Self {
+            corpse: None,
             disposition,
             rabbit_feet: None,
         }
@@ -32,6 +34,7 @@ impl From<UseDisposition> for SkinningOutcome {
 
 impl SkinningOutcome {
     fn committed_from_receipt(
+        corpse: Option<[u8; 16]>,
         corpse_key: Option<&str>,
         outputs: &Value,
     ) -> Result<Self, DurabilityError> {
@@ -50,6 +53,7 @@ impl SkinningOutcome {
             None
         };
         Ok(Self {
+            corpse,
             disposition: UseDisposition::Committed,
             rabbit_feet,
         })
@@ -119,7 +123,7 @@ impl DurabilityRoot {
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.craft.command.command_id().get().to_string()).execute(&mut **tx).await?;
             let previous=sqlx::query(
                 "SELECT c.intent,uuid_send(c.character_id) AS character_id,
-                        s.before_item->>'definition_production_key' AS corpse_key,c.outputs
+                        uuid_send(s.corpse_item_instance_id) AS corpse,s.before_item->>'definition_production_key' AS corpse_key,c.outputs
                  FROM game_item_craft_records c LEFT JOIN game_corpse_skinning_records s USING(transaction_id)
                  WHERE c.game_session_id=encode($1,'hex')::uuid AND c.command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.craft.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
@@ -128,7 +132,9 @@ impl DurabilityRoot {
                 let character: Vec<u8> = row.try_get("character_id")?;
                 let result=if intent==request.craft.intent && character==fence.character_id.as_bytes() {
                     let corpse_key: Option<String> = row.try_get("corpse_key")?;
-                    SkinningOutcome::committed_from_receipt(corpse_key.as_deref(), &row.try_get("outputs")?)?
+                    let corpse = row.try_get::<Option<Vec<u8>>, _>("corpse")?
+                        .map(|id| id.try_into().map_err(|_| DurabilityError::InvalidStoredState)).transpose()?;
+                    SkinningOutcome::committed_from_receipt(corpse, corpse_key.as_deref(), &row.try_get("outputs")?)?
                 } else {
                     UseDisposition::Rejected.into()
                 };
@@ -145,7 +151,7 @@ impl DurabilityRoot {
             ).await?;
             if disposition == UseDisposition::Committed {
                 tx.commit(deadline).await?;
-                return Ok(Some(SkinningOutcome { disposition, rabbit_feet: attempt.rabbit_feet }));
+                return Ok(Some(SkinningOutcome { corpse: Some(request.corpse), disposition, rabbit_feet: attempt.rabbit_feet }));
             }
             Ok(Some(disposition.into()))
         })).await
@@ -172,7 +178,7 @@ pub(super) async fn prepare(
     .bind(channel.as_bytes().as_slice())
     .execute(&mut ***tx)
     .await?;
-    let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,g.map_revision,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i,g")
+    let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,g.map_revision,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND (g.runtime_scope_ownership_generation=$4::text::numeric OR game_skinning_prior_ground(i.item_instance_id,$4::text::numeric)) AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i")
         .bind(request.corpse.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut ***tx).await?;
     let Some(row) = row else {
         return Ok(None);
@@ -382,12 +388,16 @@ mod tests {
             (json!([{"count":1}]), 1),
             (json!([{"count":2}]), 2),
         ] {
-            let replay =
-                SkinningOutcome::committed_from_receipt(Some("oteryn:item.tibia.i4301"), &outputs)?;
+            let replay = SkinningOutcome::committed_from_receipt(
+                Some([1; 16]),
+                Some("oteryn:item.tibia.i4301"),
+                &outputs,
+            )?;
             assert_eq!(replay.disposition, UseDisposition::Committed);
+            assert_eq!(replay.corpse, Some([1; 16]));
             assert_eq!(replay.rabbit_feet, Some(count));
         }
-        let replay = SkinningOutcome::committed_from_receipt(None, &json!([]))?;
+        let replay = SkinningOutcome::committed_from_receipt(None, None, &json!([]))?;
         assert_eq!(replay.rabbit_feet, None);
         Ok(())
     }

@@ -33,6 +33,49 @@ fn corpse_decay_forgets_only_retired_bindings_under_the_current_owner() {
 }
 
 #[test]
+fn committed_pickup_reconciled_before_replay_preserves_corpse_identity() {
+    let mut runtime = runtime(4);
+    let projection = corpse_projection_at(&runtime.continuity, 1);
+    let actor = projection.occurrence.actor;
+    let item = uuid_v7(1);
+    runtime.carrier.retain_corpse_projection(projection);
+    runtime
+        .bind_corpse_item(actor, item, "Item", "fixture:corpse", "r1")
+        .expect("bind the minted corpse");
+    let original = runtime
+        .carrier
+        .bound_corpses(None)
+        .pop()
+        .expect("visible corpse before pickup");
+    runtime
+        .retain_live_corpse_items(&[])
+        .expect("reconcile the committed Ground census");
+    assert!(runtime.carrier.bound_corpses(None).is_empty());
+    runtime
+        .set_corpse_item_ground_position(item, None)
+        .expect("replay the pickup");
+    runtime
+        .relocate_corpse_item(
+            item,
+            MovementLocalPosition {
+                x: 1,
+                y: 2,
+                floor: 7,
+            },
+        )
+        .expect("drop the same corpse");
+    assert_eq!(
+        runtime
+            .carrier
+            .bound_corpses(None)
+            .pop()
+            .expect("visible corpse after the drop")
+            .identity,
+        original.identity
+    );
+}
+
+#[test]
 fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
     let (continuity, mut carrier) = carrier(4);
     let context = spawn_position_context(&continuity);
@@ -254,7 +297,9 @@ fn ground_timer_preserves_carried_binding_for_pinned_settlement_replay() {
         let projection = corpse_projection_at(&channel.continuity, 1);
         let actor = projection.occurrence.actor;
         channel.carrier.retain_corpse_projection(projection);
-        channel.pin_corpse_projection(actor).expect("pending settlement");
+        channel
+            .pin_corpse_projection(actor)
+            .expect("pending settlement");
         let item = uuid_v7(1);
         channel
             .bind_corpse_item(actor, item, "Item", "fixture:corpse", "r1")

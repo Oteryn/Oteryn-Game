@@ -25,8 +25,8 @@ tokio::task_local! {
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn execute_source_boss_lever(
         &self,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        mut runtime_guard: tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+        mut spell_guard: tokio::sync::MutexGuard<'_, ChannelSpellStates>,
         actor: ExactActorRef,
         session: GameSessionId,
         source_use: SourceBossUse<'_>,
@@ -43,6 +43,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let QuestCause::Use(command) = cause else {
             return UseDisposition::Rejected;
         };
+        let runtime = &mut *runtime_guard;
+        let states = &mut *spell_guard;
         let ready = self.execute_quest_encounter(
             runtime, states, actor, session, map, callback, key, revision, after, true, cause,
             None, None,
@@ -56,6 +58,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(census) = runtime.positioned_melee_census() else {
             return UseDisposition::Rejected;
         };
+        drop(spell_guard);
+        drop(runtime_guard);
         let mut party = Vec::new();
         for &(member, at, member_session) in &census {
             let Some(member_session) = member_session else {
@@ -71,12 +75,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(Some(fence)) = self.current_quest_fence(member_session).await else {
                 return UseDisposition::Rejected;
             };
-            if !runtime
-                .bound_attacker_lease(member, member_session)
-                .is_ok_and(|lease| {
-                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                        && lease.generation() == fence.character_lease_generation
-                })
+            let runtime = self.runtime.lock().await;
+            if runtime.read_actor_position(member) != Ok(at)
+                || !runtime
+                    .bound_attacker_lease(member, member_session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
             {
                 return UseDisposition::Rejected;
             }
@@ -103,10 +109,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return UseDisposition::Rejected;
         };
-        let staged = match self.stage_source_boss(runtime, states, actor, session, &source_use) {
-            Ok(staged) => staged,
-            Err(disposition) => return disposition,
-        };
+        let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
+        if runtime.positioned_melee_census().ok().as_ref() != Some(&census) {
+            return UseDisposition::StaleState;
+        }
+        let staged =
+            match self.stage_source_boss(&mut runtime, &mut states, actor, session, &source_use) {
+                Ok(staged) => staged.detach(),
+                Err(disposition) => return disposition,
+            };
+        drop(states);
+        drop(runtime);
         #[cfg(test)]
         if let Ok(barrier) = PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone) {
             barrier.0.notify_one();
@@ -153,7 +166,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     return UseDisposition::Rejected;
                 }
-                self.publish_source_boss(staged, states, map, lever_projection);
+                let (mut runtime, mut states) =
+                    self.quest_turn_with(&self.states.spell_states).await;
+                let Some(staged) = staged.resume(&mut runtime) else {
+                    return UseDisposition::Rejected;
+                };
+                self.publish_source_boss(staged, &mut states, map, lever_projection);
                 UseDisposition::Committed
             }
             Ok(false) => UseDisposition::Rejected,

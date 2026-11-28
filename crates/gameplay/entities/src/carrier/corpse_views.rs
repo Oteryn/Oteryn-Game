@@ -339,25 +339,12 @@ impl ChannelRuntimeV1 {
     /// and a later drop until the bounded death projection is evicted.
     pub fn retain_live_corpse_items(&mut self, live: &[[u8; 16]]) -> Result<(), CarrierError> {
         self.owner_fence()?;
-        let pending = &self.carrier.corpse_projection_pins;
-        let pending_source = self
-            .carrier
-            .source_corpse_projection_pin
-            .as_ref()
-            .map(|seal| seal.actor());
-        self.carrier.corpse_item_bindings.retain_mut(|binding| {
-            if binding.ground_position.is_none() || live.contains(&binding.item.item_instance_id) {
-                return true;
-            }
-            if pending.contains(&binding.actor) || pending_source == Some(binding.actor) {
-                // The durable pickup or retirement may have committed before
-                // its publication. Pending MINT replay still needs this binding.
+        for binding in &mut self.carrier.corpse_item_bindings {
+            if binding.ground_position.is_some() && !live.contains(&binding.item.item_instance_id) {
                 binding.ground_position = None;
                 binding.revision = binding.revision.saturating_add(1);
-                return true;
             }
-            false
-        });
+        }
         Ok(())
     }
 

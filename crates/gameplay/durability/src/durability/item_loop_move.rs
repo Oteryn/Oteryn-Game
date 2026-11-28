@@ -114,6 +114,11 @@ const KIND_UNCHANGED: i16 = 9;
 const OPERATION_MOVE: i16 = 1;
 const OPERATION_MERGE: i16 = 2;
 const OPERATION_SPLIT: i16 = 3;
+#[cfg(test)]
+tokio::task_local! {
+    pub(crate) static BEFORE_SCULPTURE_LOCK: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 const OPERATION_DROP: i16 = 4;
 const OPERATION_PICKUP: i16 = 5;
 
@@ -1187,6 +1192,7 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
                 game_ordinary_corpse_drag_source(i.item_instance_id) AS source_corpse_drag, \
+                game_carried_corpse_transform_source(i.item_instance_id) AS carried_transform, \
                 EXISTS (SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id) AS corpse_has_loot, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
@@ -1372,11 +1378,17 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
     } else {
         content.loop_facts(&definition)
     };
-    let Some(facts) = facts else {
+    let Some(mut facts) = facts else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
     if facts.definition != definition {
         return refuse(LoopMoveRefusal::Rejected);
+    }
+    if matches!(source, SourceKind::Main | SourceKind::Nested { .. })
+        && matches!(request.destination, LoopDestination::Ground(_))
+        && row.try_get::<bool, _>("carried_transform")?
+    {
+        facts.stack = super::item_transfer::ItemStackClass::NonStackable;
     }
     let count = request.count.unwrap_or(quantity);
     if count == 0 || count > quantity {
@@ -1660,6 +1672,20 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         .bind(line.revision.map(|revision| revision.to_string()))
         .execute(&mut **tx)
         .await?;
+    }
+
+    // A pickup line can install a carried timer. Check its frozen deadline before
+    // releasing Ground custody, in the same transaction as the new schedule.
+    if source == SourceKind::Ground
+        && !matches!(target, Target::Ground(_))
+        && sqlx::query_scalar::<_, bool>(
+            "SELECT game_legacy_corpse_requires_ground(encode($1,'hex')::uuid)",
+        )
+        .bind(request.item.as_slice())
+        .fetch_one(&mut **tx)
+        .await?
+    {
+        return refuse(LoopMoveRefusal::NotSupported);
     }
 
     // Custody: the source leaves its location when it moves whole.
@@ -2475,8 +2501,13 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = if synchronize_sculpture {
-                        let mut tx = super::db::begin_locking_observation_transaction(holder, deadline)
+                        let mut tx = super::db::begin_sculpture_observation(holder, deadline)
                             .await?;
+                        #[cfg(test)]
+                        if let Ok(barrier) = BEFORE_SCULPTURE_LOCK.try_with(std::sync::Arc::clone) {
+                            barrier.0.notify_one();
+                            barrier.1.notified().await;
+                        }
                         super::spell_item_transaction::lock_ground_scope(&mut tx, scope).await?;
                         tx
                     } else {

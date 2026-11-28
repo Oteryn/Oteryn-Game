@@ -15,6 +15,26 @@ pub struct StagedQuestEncounter<'owner, T> {
     output: (Vec<MovementPositionSnapshot>, T),
 }
 
+/// A staged spawn can cross a durable call only with its original carrier
+/// image. Reacquisition refuses to overwrite any intervening owner change.
+pub struct DetachedQuestEncounter<T> {
+    binding: ScopeRuntimeAssignmentBinding,
+    activation: u64,
+    before: ChannelActorCarrier,
+    after: ChannelActorCarrier,
+    output: (Vec<MovementPositionSnapshot>, T),
+}
+
+impl<T> DetachedQuestEncounter<T> {
+    pub fn resume(self, runtime: &mut ChannelRuntimeV1) -> Option<StagedQuestEncounter<'_, T>> {
+        (runtime.owner_fence().is_ok()
+            && runtime.binding() == self.binding
+            && runtime.content_pin().activation_sequence() == self.activation
+            && runtime.carrier == self.before)
+            .then(|| StagedQuestEncounter::new(runtime, self.after, self.output))
+    }
+}
+
 impl<'owner, T> StagedQuestEncounter<'owner, T> {
     pub(super) fn new(
         runtime: &'owner mut ChannelRuntimeV1,
@@ -32,9 +52,19 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         &self.output.1
     }
 
-    /// Observe the original owner, before any staged replacement is published.
+    /// Observe the original owner before the staged replacement is published.
     pub fn retains_creature(&self, actor: ExactActorRef) -> bool {
         self.runtime.contains_live_creature(actor) || self.runtime.corpse_projection_pinned(actor)
+    }
+
+    pub fn detach(self) -> DetachedQuestEncounter<T> {
+        DetachedQuestEncounter {
+            binding: self.runtime.binding(),
+            activation: self.runtime.content_pin().activation_sequence(),
+            before: self.runtime.carrier.clone(),
+            after: self.carrier,
+            output: self.output,
+        }
     }
 
     /// Keep an identity used by a durable write retired even if staging is dropped.

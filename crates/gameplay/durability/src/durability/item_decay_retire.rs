@@ -153,6 +153,8 @@ pub struct CorpseDecayDeadline {
 /// oldest first, with the database clock from the same snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CorpseDecaySchedule {
+    /// False when more live roots exist outside this bounded page.
+    pub complete: bool,
     pub database_now_unix_ms: i64,
     pub corpses: Vec<CorpseDecayDeadline>,
 }

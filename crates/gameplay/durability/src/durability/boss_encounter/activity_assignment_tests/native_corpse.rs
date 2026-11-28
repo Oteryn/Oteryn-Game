@@ -700,3 +700,5 @@ mod activity_entry;
 
 #[path = "native_corpse/primal_deadline.rs"]
 mod primal_deadline;
+#[path = "native_corpse/upgrade.rs"]
+mod upgrade;

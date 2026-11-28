@@ -48,12 +48,28 @@ fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, publis
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn quest_turn_with<'a, T>(
+        &'a self,
+        other: &'a tokio::sync::Mutex<T>,
+    ) -> (
+        tokio::sync::MutexGuard<'a, ChannelRuntimeV1>,
+        tokio::sync::MutexGuard<'a, T>,
+    ) {
+        loop {
+            let runtime = self.runtime.lock().await;
+            if let Ok(state) = other.try_lock() {
+                return (runtime, state);
+            }
+            drop(runtime);
+            drop(other.lock().await);
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn execute_quest_callback<'map>(
         &self,
         permit: &SpellLanePermit,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        initial_position: MovementPositionSnapshot,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &'map BundleMap,
@@ -69,6 +85,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
         scene_publication: Option<&mut Option<super::scene_items::ScenePublication<'map>>>,
     ) -> UseDisposition {
+        let (mut runtime_guard, mut spell_guard) =
+            self.quest_turn_with(&self.states.spell_states).await;
+        let mut runtime = &mut *runtime_guard;
+        let mut states = &mut *spell_guard;
+        if runtime.read_actor_position(actor) != Ok(initial_position) {
+            return UseDisposition::StaleState;
+        }
+        let binding = runtime.binding();
+        let activation = runtime.content_pin().activation_sequence();
+        // The spell lane orders writers. Observers can use the runtime while
+        // the receipt is pending. A changed placement leaves replay to reconcile it.
+        macro_rules! await_receipt {
+            ($future:expr) => {{
+                let future = $future;
+                drop(spell_guard);
+                drop(runtime_guard);
+                let result = future.await;
+                (runtime_guard, spell_guard) =
+                    self.quest_turn_with(&self.states.spell_states).await;
+                runtime = &mut *runtime_guard;
+                states = &mut *spell_guard;
+                if runtime.owner_fence().is_err()
+                    || runtime.binding() != binding
+                    || runtime.content_pin().activation_sequence() != activation
+                    || runtime.read_actor_position(actor) != Ok(initial_position)
+                    || !runtime
+                        .player_control_facts(actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                    || states.is_dead(actor)
+                    || map.facts.object_revision(key) != expected_revision
+                {
+                    return UseDisposition::StaleState;
+                }
+                result
+            }};
+        }
         // Another user may have obtained the lane after this caller's first
         // receipt check. Only the original batch or its exact receipt can
         // release this placement for a new close.
@@ -253,21 +305,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::NothingToUse;
         }
-        if callback.effects.reward_door.is_some() {
-            return self
-                .execute_reward_door(
-                    runtime,
-                    states,
-                    actor,
-                    session,
-                    map,
-                    callback,
-                    key,
-                    expected_revision,
-                    fence,
-                    optional_pvp,
-                )
-                .await;
+        if let Some(door) = &callback.effects.reward_door {
+            let Some(door_fence) = fence else {
+                return UseDisposition::Rejected;
+            };
+            let claim = door.claim.clone();
+            let claimed = await_receipt!(self.root.reward_claim_is_claimed(
+                self.character,
+                self.holder,
+                door_fence.item_fence(),
+                claim
+            ));
+            return self.execute_reward_door(
+                runtime,
+                states,
+                actor,
+                session,
+                map,
+                callback,
+                key,
+                expected_revision,
+                claimed.ok(),
+                optional_pvp,
+            );
         }
         let tree_reset = oteryn_gameplay_quests::quest::dreamer_death_ring::shared_reset(callback);
         let close = tree_reset
@@ -811,9 +871,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 return UseDisposition::Exhausted;
             }
-            let result = self
-                .root
-                .commit_carried_step(
+            let result = await_receipt!(
+                self.root.commit_carried_step(
                     permit,
                     self.character,
                     self.holder,
@@ -831,7 +890,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         missing_prepared: missing.is_some(),
                     },
                 )
-                .await;
+            );
             match result {
                 Ok(Some(receipt)) => {
                     #[cfg(test)]
@@ -1005,39 +1064,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut placement = map.overlay.base().digest().to_vec();
             placement.extend_from_slice(&key.to_be_bytes());
-            let result = self
-                .root
-                .activate_shared_switch(
-                    permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    command,
-                    native,
+            let result = await_receipt!(self.root.activate_shared_switch(
+                permit,
+                self.character,
+                self.holder,
+                fence,
+                command,
+                native,
+                {
+                    #[allow(unused_mut)]
+                    let mut request =
+                        crate::durability::quest_world_callback::shared_switch::Request::new(
+                            callback.key.clone(),
+                            placement,
+                            expected_revision,
+                            context,
+                        );
+                    #[cfg(test)]
+                    if let Some(occurred) = self
+                        .states
+                        .quest_callbacks
+                        .shared_switch_occurred_test
+                        .lock()
+                        .ok()
+                        .and_then(|v| *v)
                     {
-                        #[allow(unused_mut)]
-                        let mut request =
-                            crate::durability::quest_world_callback::shared_switch::Request::new(
-                                callback.key.clone(),
-                                placement,
-                                expected_revision,
-                                context,
-                            );
-                        #[cfg(test)]
-                        if let Some(occurred) = self
-                            .states
-                            .quest_callbacks
-                            .shared_switch_occurred_test
-                            .lock()
-                            .ok()
-                            .and_then(|v| *v)
-                        {
-                            request = request.for_test_occurrence(occurred);
-                        }
-                        request
-                    },
-                )
-                .await;
+                        request = request.for_test_occurrence(occurred);
+                    }
+                    request
+                },
+            ));
             match result {
                 Ok(Some(receipt)) => {
                     // The response observation is current even on replay. Anchor after
@@ -1082,10 +1138,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        if !self
-            .admit_shared_switch_gate(
+        if oteryn_gameplay_quests::quest::shared_switches::gate(&callback.key).is_some()
+            && !await_receipt!(self.admit_shared_switch_gate(
                 permit,
-                runtime,
+                runtime.content_pin().server_artifact_digest(),
+                runtime.content_pin().frame_binding_digest().to_vec(),
                 actor,
                 session,
                 map,
@@ -1095,8 +1152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cause,
                 fence,
                 expected,
-            )
-            .await
+            ))
         {
             return UseDisposition::Rejected;
         }
@@ -1178,7 +1234,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let party_context = if let Some(plan) = &party {
-            let Some(context) = self.party_context(runtime, plan).await else {
+            let Some(context) = await_receipt!(self.party_context(plan)) else {
                 return UseDisposition::Rejected;
             };
             context
@@ -1452,7 +1508,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     None
                 };
             let outcome = if let Some(input) = &flame {
-                slot.commit_rotten_flame_use(
+                await_receipt!(slot.commit_rotten_flame_use(
                     self.root,
                     self.character,
                     self.holder,
@@ -1460,27 +1516,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     input.clone(),
                     std::sync::Arc::clone(catalogue),
                     permit,
-                )
-                .await
+                ))
             } else {
-                slot.commit_world_callback_with_items_selected(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    QuestTransitionRequest {
-                        transition_key: callback.key.clone(),
-                        cause,
-                    },
-                    std::sync::Arc::clone(catalogue),
-                    permit,
-                    context,
-                    self.active_generation
-                        .and_then(|generation| generation.native_gameplay()),
-                    reward_admission,
-                    &self.premium_coordinator,
+                await_receipt!(
+                    slot.commit_world_callback_with_items_selected(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        QuestTransitionRequest {
+                            transition_key: callback.key.clone(),
+                            cause,
+                        },
+                        std::sync::Arc::clone(catalogue),
+                        permit,
+                        context,
+                        self.active_generation
+                            .and_then(|generation| generation.native_gameplay()),
+                        reward_admission,
+                        &self.premium_coordinator,
+                    )
                 )
-                .await
             };
             if callback.key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY
                 && matches!(&outcome,Ok(QuestTransitionOutcome::Refused(
@@ -1559,10 +1615,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.schedule_quest_refresh(session);
                         return UseDisposition::Rejected;
                     }
-                    if callback.effects.encounter.is_none() {
-                        self.refresh_grizzly_kill_snapshot_in_runtime(runtime, session).await;
-                    }
-                    self.refresh_native_objective_snapshot_in_runtime(runtime, session).await;
+                    await_receipt!(async {
+                        if callback.effects.encounter.is_none() {
+                            self.refresh_grizzly_kill_snapshot(session).await;
+                        }
+                        self.refresh_native_objective_snapshot(session).await;
+                    });
                     self.states.loop_ground.invalidate();
                     self.schedule_quest_refresh(session);
                 }
@@ -1601,9 +1659,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch
                         )))
                         && let Ok(Some(claim)) = world_callbacks::legacy_world_claim(callback)
-                        && self.root.reward_claim_is_claimed(
+                        && await_receipt!(self.root.reward_claim_is_claimed(
                             self.character, self.holder, fence.item_fence(), claim.key.clone()
-                        ).await.is_ok_and(|claimed| claimed)
+                        )).is_ok_and(|claimed| claimed)
                     {
                         return UseDisposition::NothingToUse;
                     }
@@ -1639,8 +1697,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !close && let Some(lever) = court_warlock::source_boss_lever(callback) {
             return self
                 .execute_source_boss_lever(
-                    runtime,
-                    states,
+                    runtime_guard,
+                    spell_guard,
                     actor,
                     session,
                     court_warlock::SourceBossUse {
@@ -1657,23 +1715,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let merchant_projected = if callback.effects.encounter.is_some() && !close {
             let disposition = if let Some(kind) = coffin {
-                self.deliver_coffin(
-                    runtime,
-                    states,
-                    actor,
-                    session,
-                    map,
-                    callback,
-                    key,
-                    expected_revision,
-                    after,
-                    cause,
-                    permit,
-                    fence,
-                    personal_reservation.as_mut(),
-                    kind,
-                )
-                .await
+                let disposition = self
+                    .deliver_coffin(
+                        runtime_guard,
+                        spell_guard,
+                        actor,
+                        session,
+                        map,
+                        callback,
+                        key,
+                        expected_revision,
+                        after,
+                        cause,
+                        permit,
+                        fence,
+                        personal_reservation.as_mut(),
+                        kind,
+                    )
+                    .await;
+                (runtime_guard, spell_guard) =
+                    self.quest_turn_with(&self.states.spell_states).await;
+                runtime = &mut *runtime_guard;
+                states = &mut *spell_guard;
+                disposition
             } else {
                 self.execute_quest_encounter(
                     runtime,

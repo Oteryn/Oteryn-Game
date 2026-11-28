@@ -3,10 +3,10 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    EncounterDefenders, StagedQuestEncounter,
+    DetachedQuestEncounter, EncounterDefenders, StagedQuestEncounter,
 };
 
-struct PreparedPhase {
+pub(super) struct PreparedPhase {
     phase: Option<super::super::encounter_phases::ActivePhase>,
     actors: Vec<ExactActorRef>,
     roster: Option<EncounterDefenders>,
@@ -17,11 +17,36 @@ struct EncounterCreditPublication {
     prepared: super::super::grizzly_kills::PreparedEncounter,
 }
 
-pub(super) struct StagedSourceBoss<'owner> {
-    native: StagedQuestEncounter<'owner, PreparedPhase>,
+pub(super) type StagedSourceBoss<'owner> =
+    SourceBossProjection<StagedQuestEncounter<'owner, PreparedPhase>>;
+
+pub(super) struct SourceBossProjection<N> {
+    native: N,
     players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
     visit: Option<EncounterVisit>,
+}
+
+impl StagedSourceBoss<'_> {
+    pub(super) fn detach(self) -> SourceBossProjection<DetachedQuestEncounter<PreparedPhase>> {
+        SourceBossProjection {
+            native: self.native.detach(),
+            players: self.players,
+            capture: self.capture,
+            visit: self.visit,
+        }
+    }
+}
+
+impl SourceBossProjection<DetachedQuestEncounter<PreparedPhase>> {
+    pub(super) fn resume(self, runtime: &mut ChannelRuntimeV1) -> Option<StagedSourceBoss<'_>> {
+        Some(SourceBossProjection {
+            native: self.native.resume(runtime)?,
+            players: self.players,
+            capture: self.capture,
+            visit: self.visit,
+        })
+    }
 }
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -200,8 +225,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     )]
     pub(super) async fn deliver_coffin(
         &self,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        mut runtime_guard: tokio::sync::MutexGuard<'_, ChannelRuntimeV1>,
+        mut spell_guard: tokio::sync::MutexGuard<'_, ChannelSpellStates>,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
@@ -220,6 +245,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return UseDisposition::Rejected;
         };
+        let runtime = &mut *runtime_guard;
+        let states = &mut *spell_guard;
         let content = runtime.content_pin().server_artifact_digest();
         let Some(coffin) = map.facts.reserve_source_boss_lever(key, expected, after) else {
             return UseDisposition::Rejected;
@@ -253,7 +280,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if staged.native.retain_spawn_generation(count).is_err() {
             return UseDisposition::Rejected;
         }
-        let native = &mut staged.native;
+        let staged = staged.detach();
+        drop(spell_guard);
+        drop(runtime_guard);
         let delivery = self
             .root
             .deliver_vampire_coffin(
@@ -265,7 +294,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 content,
                 kind,
                 count,
-                move |previous| native.retains_creature(previous),
+                |previous| {
+                    self.runtime.try_lock().map_or(true, |runtime| {
+                        runtime.contains_live_creature(previous)
+                            || runtime.corpse_projection_pinned(previous)
+                    })
+                },
             )
             .await;
         #[cfg(test)]
@@ -281,7 +315,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             delivery
         };
         if matches!(delivery, Ok(true)) {
-            self.publish_staged_encounter(staged, states, map, coffin, Some(reservation));
+            let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
+            let Some(staged) = staged.resume(&mut runtime) else {
+                return UseDisposition::Rejected;
+            };
+            self.publish_staged_encounter(staged, &mut states, map, coffin, Some(reservation));
             UseDisposition::Committed
         } else {
             // The payment is durable. A fresh use may recover it after an
