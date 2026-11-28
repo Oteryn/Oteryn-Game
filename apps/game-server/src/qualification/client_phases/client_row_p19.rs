@@ -411,8 +411,14 @@ async fn move_first_attempt(
     path: Vec<StepDirection>,
     keep_entry_events: bool,
 ) -> TestResult {
-    let total_steps = path.len();
-    for (index, direction) in path.into_iter().enumerate() {
+    let start = tile(client.world_spatial().actor_position)?;
+    let goal = path.iter().try_fold(start, |at, direction| {
+        destination(world, at, *direction).ok_or("P19 route has no planned landing")
+    })?;
+    let mut remaining = std::collections::VecDeque::from(path);
+    let mut blocked = Vec::new();
+    let mut completed = 0;
+    while let Some(direction) = remaining.pop_front() {
         if !keep_entry_events {
             client.take_events();
         }
@@ -420,6 +426,21 @@ async fn move_first_attempt(
         let expected = destination(world, origin, direction).ok_or("P19 route has no landing")?;
         let movement = client.step(direction).await?;
         let actual = tile(client.world_spatial().actor_position)?;
+        if !keep_entry_events
+            && movement.disposition == StepDisposition::Blocked
+            && actual == origin
+            && blocked.len() < 4
+        {
+            blocked.push(expected);
+            remaining = find_route(origin, |at| at == goal, |at, direction| {
+                let next = destination(world, at, direction)?;
+                (forge_route_cell(start, next) && !blocked.contains(&next)).then_some(next)
+            })
+            .map_err(|visited| format!("P19 no detour around {blocked:?} to {goal:?} after {visited} visited tiles"))?
+            .into();
+            evidence(&format!("P19 detour blocked={expected:?} goal={goal:?} remaining={}", remaining.len()));
+            continue;
+        }
         if !confirmed_step(
             movement.disposition,
             movement.world_spatial_delta.is_some(),
@@ -432,9 +453,9 @@ async fn move_first_attempt(
             ).into());
         }
         verdict::Harness::global().progress("walk");
-        let completed = index + 1;
-        if completed % 32 == 0 || completed == total_steps {
-            evidence(&format!("P19 walk confirmed={completed}/{total_steps} position={actual:?}"));
+        completed += 1;
+        if completed % 32 == 0 || remaining.is_empty() {
+            evidence(&format!("P19 walk confirmed={completed}/{} position={actual:?}", completed + remaining.len()));
         }
         if movement.step_wait_ms != 0 {
             let wait = Duration::from_millis(u64::from(movement.step_wait_ms));
