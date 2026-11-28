@@ -1656,16 +1656,9 @@ PY_C08_SELECTED
       echo 'SEAM_EVIDENCE C08_CLIENT_REPLAY refused=live-row-did-not-complete'
       return 1
     fi
-    local replay_log="$c08_capture/replay.log"
-    if ! E2E_ALL_CAPTURE_DIR="$c08_capture" cargo +1.100.0 test --locked -p oteryn-session --lib \
-        tests::e2e_c08::e2e_c08_poison_damage_and_dispel_replay -- --exact > "$replay_log" 2>&1 ||
-        ! grep -Fxq 'test tests::e2e_c08::e2e_c08_poison_damage_and_dispel_replay ... ok' "$replay_log"; then
-      cat "$replay_log"
-      echo 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL cause=replay'
-      return 1
-    fi
-    cat "$replay_log"
-    echo 'SEAM_EVIDENCE e2e_all scenario=C08.client status=PASS evidence=fresh-capture-replay'
+    # ACTOR_VITALS samples alone cannot prove the original wire envelopes.
+    echo 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL cause=BLOCKED-CLIENT evidence=missing-original-server-frames'
+    return 1
   fi
 }
 

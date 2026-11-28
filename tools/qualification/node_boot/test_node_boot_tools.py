@@ -292,7 +292,7 @@ WORK=.
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
     def test_c08_replay_refuses_missing_duplicate_or_failed_live_verdicts(self):
-        gate = section('    if [[ "$(grep -c', '    local replay_log')
+        gate = section('    if [[ "$(grep -c', '    # ACTOR_VITALS samples alone')
         script = 'set -eu\ncheck() {\n' + gate + '}\ncheck\n'
         captured = 'SEAM_EVIDENCE e2e_all scenario=C08.client status=CAPTURED evidence=live\n'
         failed = 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL cause=assertion\n'
@@ -308,6 +308,15 @@ WORK=.
                     Path(work, 'live.log').write_text(log)
                     result = bash(script, {'c08_capture': work})
                     self.assertEqual(result.returncode, 0 if eligible else 1, result.stderr)
+
+    def test_c08_replay_requires_original_server_frames(self):
+        gate = section('    # ACTOR_VITALS samples alone', '  fi')
+        script = 'set -eu\ncheck() {\n' + gate + '}\ncheck\n'
+        with tempfile.TemporaryDirectory() as work:
+            Path(work, 'c08-before.bin').write_bytes(b'encoded vitals')
+            result = bash(script, {'c08_capture': work})
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('cause=BLOCKED-CLIENT evidence=missing-original-server-frames', result.stdout)
 
     def test_c08_replay_uses_a_fresh_directory_for_each_selected_world_batch(self):
         setup = section('  local c08_capture=', '  local staged_manifest=')
