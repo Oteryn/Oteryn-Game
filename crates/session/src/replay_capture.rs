@@ -22,6 +22,7 @@ pub struct RawReplayDelta {
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct ReplayRetention {
+    pub(super) qualification_travel: bool,
     pub(super) world_snapshot: Option<Arc<GatedSnapshot>>,
     pub(super) world_sequence: u64,
     pub(super) world_deltas: VecDeque<RawReplayDelta>,
@@ -33,8 +34,14 @@ pub(super) fn retain_delta(
     history: &mut VecDeque<RawReplayDelta>,
     server_sequence: u64,
     delta: &StateDeltaView<'_>,
+    qualification_travel: bool,
 ) {
-    if history.len() == REPLAY_DELTA_LIMIT {
+    let limit = if qualification_travel {
+        2048
+    } else {
+        REPLAY_DELTA_LIMIT
+    };
+    if history.len() == limit {
         history.pop_front();
     }
     history.push_back(RawReplayDelta {
@@ -47,6 +54,12 @@ pub(super) fn retain_delta(
 }
 
 impl<S> Session<S> {
+    /// Retain the bounded admission-to-encounter transcript for long qualification walks.
+    #[cfg(feature = "test-support")]
+    pub fn retain_qualification_travel_replay(&mut self) {
+        self.replay.qualification_travel = true;
+    }
+
     /// Most recent applied world entity deltas, oldest first, since the latest world snapshot.
     /// The oldest entries are evicted at [`REPLAY_DELTA_LIMIT`].
     pub fn raw_world_entity_deltas(&self) -> &VecDeque<RawReplayDelta> {

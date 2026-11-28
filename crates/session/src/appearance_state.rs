@@ -156,7 +156,12 @@ impl<S: SessionStream> Session<S> {
         )?;
         validate_entities(Some(&state), self.entities.as_ref())?;
         self.appearance = Some(state);
-        replay_capture::retain_delta(&mut self.replay.appearance_deltas, sequence, &delta);
+        replay_capture::retain_delta(
+            &mut self.replay.appearance_deltas,
+            sequence,
+            &delta,
+            self.replay.qualification_travel,
+        );
         Ok(SessionEvent::Appearance(AppliedDelta {
             server_sequence: sequence,
             base_revision: delta.base_revision,

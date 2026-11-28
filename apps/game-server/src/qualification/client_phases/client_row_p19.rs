@@ -45,6 +45,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     require_logout(&mut client, clients).await?;
     drop(client);
     let mut client = connect_character(clients, 0x19, 1).await?;
+    client.session_mut().retain_qualification_travel_replay();
     if client.join_snapshot().game_session_id == preparation {
         return Err("P19 preparation reused the original session".into());
     }
@@ -202,6 +203,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         require_logout(&mut client, clients).await?;
         drop(client);
         client = connect_character(clients, 0x19, 1).await?;
+        client.session_mut().retain_qualification_travel_replay();
         if client.join_snapshot().game_session_id == previous
             || client.world_spatial().actor_position != rest_position
         {
@@ -290,6 +292,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         require_logout(&mut client, clients).await?;
         drop(client);
         client = connect_character(clients, 0x19, 1).await?;
+        client.session_mut().retain_qualification_travel_replay();
         if client.join_snapshot().game_session_id == previous
             || client.world_spatial().actor_position != at
         {
