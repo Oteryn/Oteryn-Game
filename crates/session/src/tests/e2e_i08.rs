@@ -1,4 +1,4 @@
-//! SCENARIO_MATRIX I08 client replay.
+//! I08 client unit replay. Live I08 qualification replays its exact server frames inline.
 //!
 //! The Primal Bag USE result is decoded by
 //! `crates/client-runtime/src/features/0011-world-interaction/protocol.rs::use_target`, while
@@ -8,15 +8,7 @@
 //! exposed by `tools/dev-client/src/lib.rs::DevClientSession::inventory`).
 use super::*;
 
-fn captured_or_fixture() -> Result<(Vec<u8>, Vec<u8>, String), BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        return Ok((
-            std::fs::read(path.join("i08-before.bin"))?,
-            std::fs::read(path.join("i08-after.bin"))?,
-            std::fs::read_to_string(path.join("i08-expected.txt"))?,
-        ));
-    }
+fn inventory_fixture() -> Result<(Vec<u8>, Vec<u8>, String), BoxError> {
     let before = CharacterInventory {
         main_backpack: Some(entry(1, 2_854, 1)),
         entries: vec![entry(8, 39_546, 1)],
@@ -47,7 +39,7 @@ fn visible(inventory: &CharacterInventory) -> String {
 #[test]
 fn primal_bag_inventory_payload_replays_and_invalid_delta_is_atomic() -> Result<(), BoxError> {
     block_on(async {
-        let (before_payload, after_payload, expected) = captured_or_fixture()?;
+        let (before_payload, after_payload, expected) = inventory_fixture()?;
         let before = item_view::decode_character_inventory_with_equip_drop(&before_payload, true)
             .map_err(|error| format!("before inventory: {error:?}"))?;
         let _after = item_view::decode_character_inventory_with_equip_drop(&after_payload, true)
