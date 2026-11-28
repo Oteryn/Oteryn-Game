@@ -362,7 +362,9 @@ async fn prove_carried_corpse(h: &fixture::Harness) -> TestResult {
         scope_ownership_generation: snapshot.current_scope_generation(),
         runtime_scope: instance,
     };
-    reject_legacy_pickup(h, &authority, &instance_permit, &fence).await?;
+    for root in ["oteryn:item.tibia.i4024", "oteryn:item.tibia.i6017"] {
+        check_legacy_pickup(h, &authority, &instance_permit, &fence, root).await?;
+    }
     let command = crate::foundation::CommandRef::new(
         fence.game_session_id,
         crate::foundation::CommandId::new(5).map_err(fixture::debug)?,
@@ -404,18 +406,20 @@ async fn prove_carried_corpse(h: &fixture::Harness) -> TestResult {
     Ok(())
 }
 
-async fn reject_legacy_pickup(
+async fn check_legacy_pickup(
     h: &fixture::Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     permit: &SpellLanePermit,
     fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
+    root: &str,
 ) -> TestResult {
     use crate::durability::item_loop_move::{LoopDestination, LoopMoveRefusal, LoopMoveRequest};
+    let rabbit = root == "oteryn:item.tibia.i6017";
     let (death, mut request) = corpse_request(fence.runtime_scope, 1)?;
     let cell = request.ground.spatial_position.clone();
     request.item = TypedDefinitionRef {
         family: "Item".into(),
-        production_key: "oteryn:item.tibia.i4024".into(),
+        production_key: root.into(),
         revision_ref: "definition-r1".into(),
     };
     request.cause = ItemMintCause::from_creature_death(
@@ -445,15 +449,30 @@ async fn reject_legacy_pickup(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_item_mint_receipts SET ordinary_corpse_policy=false WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(item.as_slice()).execute(&mut *tx).await?;
-    let removed = sqlx::query("DELETE FROM game_spell_field_temporal_schedules WHERE item_instance_id=encode($1,'hex')::uuid AND target_production_key IS NULL")
-        .bind(item.as_slice()).execute(&mut *tx).await?;
-    assert_eq!(removed.rows_affected(), 1);
+    let age = if rabbit { 11_000_i64 } else { 0 };
+    sqlx::query("UPDATE game_item_mint_receipts SET ordinary_corpse_policy=false,materialized_at=materialized_at-$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice()).bind(age).execute(&mut *tx).await?;
+    if rabbit {
+        sqlx::query("UPDATE game_spell_field_temporal_schedules SET expires_at_unix_ms=expires_at_unix_ms-$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).bind(age).execute(&mut *tx).await?;
+    } else {
+        let removed = sqlx::query("DELETE FROM game_spell_field_temporal_schedules WHERE item_instance_id=encode($1,'hex')::uuid AND target_production_key IS NULL")
+            .bind(item.as_slice()).execute(&mut *tx).await?;
+        assert_eq!(removed.rows_affected(), 1);
+    }
     tx.commit().await?;
+    if rabbit {
+        assert_eq!(
+            h.root
+                .drain_spell_item_deadlines(permit, authority, &h.node, fence.runtime_scope, 1)
+                .await
+                .map_err(fixture::debug)?,
+            1
+        );
+    }
     let command = crate::foundation::CommandRef::new(
         fence.game_session_id,
-        crate::foundation::CommandId::new(4).map_err(fixture::debug)?,
+        crate::foundation::CommandId::new(if rabbit { 6 } else { 4 }).map_err(fixture::debug)?,
     );
     let result = h
         .root
@@ -472,10 +491,23 @@ async fn reject_legacy_pickup(
             },
         )
         .await?;
-    assert!(
-        matches!(result, Err(LoopMoveRefusal::NotSupported)),
-        "legacy pickup with a finite Ground-only deadline: {result:?}"
-    );
+    if rabbit {
+        assert!(
+            result.is_ok(),
+            "mature rabbit pickup installs its timer: {result:?}"
+        );
+        let timed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules s JOIN game_item_container_entries e USING(item_instance_id) WHERE s.item_instance_id=encode($1,'hex')::uuid AND s.source_stage=4 AND s.target_production_key IS NULL AND s.expires_at_unix_ms=game_corpse_retirement_deadline(s.item_instance_id))")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert!(timed);
+    } else {
+        assert!(
+            matches!(result, Err(LoopMoveRefusal::NotSupported)),
+            "legacy pickup with a finite Ground-only deadline: {result:?}"
+        );
+        let grounded: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert!(grounded);
+    }
     Ok(())
 }
 
@@ -506,7 +538,11 @@ impl crate::durability::item_loop_move::ItemLoopContent for ButterflyContent {
         Some(ItemDefinitionFacts {
             definition: item.clone(),
             weight: None,
-            stack: if bag || item.production_key == "oteryn:item.tibia.i4024" {
+            stack: if bag
+                || matches!(
+                    item.production_key.as_str(),
+                    "oteryn:item.tibia.i4024" | "oteryn:item.tibia.i4301"
+                ) {
                 ItemStackClass::NonStackable
             } else {
                 ItemStackClass::Unknown

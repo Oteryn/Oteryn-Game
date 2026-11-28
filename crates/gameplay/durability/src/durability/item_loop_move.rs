@@ -1192,7 +1192,6 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
                 game_ordinary_corpse_drag_source(i.item_instance_id) AS source_corpse_drag, \
-                game_legacy_corpse_requires_ground(i.item_instance_id) AS legacy_ground_only, \
                 game_carried_corpse_transform_source(i.item_instance_id) AS carried_transform, \
                 EXISTS (SELECT 1 FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=i.item_instance_id) AS corpse_has_loot, \
                 game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
@@ -1298,9 +1297,7 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         }
         let native_corpse = row.try_get::<bool, _>("native_corpse")?;
         if !matches!(request.destination, LoopDestination::Ground(_))
-            && (native_corpse
-                || row.try_get::<bool, _>("legacy_ground_only")?
-                || row.try_get::<bool, _>("corpse_has_loot")?)
+            && (native_corpse || row.try_get::<bool, _>("corpse_has_loot")?)
         {
             return refuse(LoopMoveRefusal::NotSupported);
         }
@@ -1675,6 +1672,20 @@ async fn apply_loop_move_with_source_policy<C: ItemLoopContent>(
         .bind(line.revision.map(|revision| revision.to_string()))
         .execute(&mut **tx)
         .await?;
+    }
+
+    // A pickup line can install a carried timer. Check its frozen deadline before
+    // releasing Ground custody, in the same transaction as the new schedule.
+    if source == SourceKind::Ground
+        && !matches!(target, Target::Ground(_))
+        && sqlx::query_scalar::<_, bool>(
+            "SELECT game_legacy_corpse_requires_ground(encode($1,'hex')::uuid)",
+        )
+        .bind(request.item.as_slice())
+        .fetch_one(&mut **tx)
+        .await?
+    {
+        return refuse(LoopMoveRefusal::NotSupported);
     }
 
     // Custody: the source leaves its location when it moves whole.

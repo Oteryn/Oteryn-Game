@@ -97,6 +97,22 @@ LANGUAGE sql STABLE STRICT AS $$
                 AND s.expires_at_unix_ms=game_corpse_retirement_deadline(p_item)))
 $$;
 
+-- Admission may itself install the terminal stage (the mature rabbit does).
+-- Validate the finished pickup after the immediate schedule writers have run.
+CREATE FUNCTION game_check_legacy_corpse_pickup() RETURNS TRIGGER
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF game_legacy_corpse_requires_ground(NEW.item_instance_id) THEN
+        RAISE EXCEPTION 'Legacy corpse requires Ground retirement' USING ERRCODE='23514';
+    END IF;
+    RETURN NULL;
+END
+$$;
+CREATE CONSTRAINT TRIGGER game_check_legacy_corpse_pickup AFTER INSERT ON game_item_loop_move_lines
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.from_kind=3 AND NEW.to_kind<>3)
+EXECUTE FUNCTION game_check_legacy_corpse_pickup();
+REVOKE ALL ON FUNCTION game_check_legacy_corpse_pickup() FROM PUBLIC;
+
 -- A transform in the backpack can produce a Ground-only successor. Its
 -- current temporal receipt admits only the whole instance back onto Ground.
 CREATE FUNCTION game_carried_corpse_transform_source(p_item UUID) RETURNS BOOLEAN
@@ -117,6 +133,7 @@ REVOKE ALL ON FUNCTION game_legacy_corpse_requires_ground(UUID),game_carried_cor
 GRANT EXECUTE ON FUNCTION game_legacy_corpse_requires_ground(UUID),game_carried_corpse_transform_source(UUID)
     TO oteryn_game_runtime,oteryn_game_control;
 DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_check_legacy_corpse_pickup() SET search_path=pg_catalog,%I,pg_temp',current_schema());
     EXECUTE format('ALTER FUNCTION game_legacy_corpse_requires_ground(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
     EXECUTE format('ALTER FUNCTION game_carried_corpse_transform_source(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
@@ -143,9 +160,6 @@ BEGIN
         RAISE EXCEPTION 'Ordinary corpse custody predecessor changed';
     END IF;
     body := replace(body, original, $guard$
-    IF NEW.from_kind=3 AND NEW.to_kind<>3 AND game_legacy_corpse_requires_ground(NEW.item_instance_id) THEN
-        RAISE EXCEPTION 'Legacy corpse requires Ground retirement' USING ERRCODE='23514';
-    END IF;
     -- Every ordinary retirement freezes the corpse's Ground, including a
     -- child step. Serialize that read with relocation on the root Item row.
     IF NEW.from_kind=3 THEN
