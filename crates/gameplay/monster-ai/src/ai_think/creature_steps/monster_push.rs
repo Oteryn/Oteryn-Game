@@ -104,7 +104,7 @@ impl CreatureAiTable {
         {
             return Ok(false);
         }
-        let clear = map.read(runtime, next).await == Some(true);
+        let clear = map.read_for_shove(runtime, next).await? == Some(true);
         let clock = SemanticTimeMicros::from_micros(now);
         if !map
             .view()
@@ -147,7 +147,7 @@ impl CreatureAiTable {
         let mut creature_landing = None;
         if blocker.is_some() {
             for &landing in &landings {
-                if map.read(runtime, landing).await == Some(true) {
+                if map.read_for_shove(runtime, landing).await? == Some(true) {
                     creature_landing = Some(landing);
                     break;
                 }
@@ -166,7 +166,7 @@ impl CreatureAiTable {
                 .await;
         }
         if let (Some(blocker), Some(landing)) = (blocker, creature_landing)
-            && map.validate_transaction(runtime).await
+            && map.validate_shove_transaction(runtime).await?
         {
             let _ = map.view().relocate(runtime, blocker, landing);
         }

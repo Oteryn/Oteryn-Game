@@ -2,7 +2,7 @@
 use super::super::{
     item_mint::ground_scope_columns,
     runtime_scope_assignment::{NodeIncarnationProof, assignment_scope_key},
-    spell_item_transaction::{SpellItemError, SpellItemScopeAuthority, check_scope_transaction},
+    spell_item_transaction::{SpellItemError, SpellItemScopeAuthority, check_scope_transaction, locked_monster_tile_rows_for_scope},
     spell_items_abi::{DurableTileItem, SpellGroundTarget},
 };
 use crate::foundation::ExactActorRef;
@@ -45,11 +45,7 @@ pub async fn push_ground_blocker(
     .fetch_one(&mut **tx)
     .await?;
     if !historical {
-        let remaining = super::super::ground_cell_limit::check_ground_cell_root_admission_in_transaction(
-            tx, authority, destination, &[],
-        )
-        .await
-        .map_err(|error| error.into_spell_error())?;
+        let remaining = locked_monster_tile_rows_for_scope(tx, authority, destination).await?;
         if remaining.len() >= super::super::ground_cell_limit::GROUND_CELL_ROOT_LIMIT {
             return Err(SpellItemError::Rejected("monster push landing full"));
         }

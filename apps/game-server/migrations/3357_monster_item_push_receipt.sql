@@ -92,7 +92,8 @@ BEGIN
               AND r.ground_before->>'channel_id' IS NOT DISTINCT FROM p_channel::text
               AND r.ground_before->>'instance_id' IS NOT DISTINCT FROM p_instance::text
               AND r.ground_before->>'runtime_scope_ownership_generation' = p_generation::text
-              AND r.ground_before->>'map_revision' = p_map
+              AND (r.ground_before->>'map_revision' = p_map OR
+                   'sha256:' || encode(sha256(convert_to(r.ground_before->>'map_revision', 'UTF8')), 'hex') = p_map)
               AND r.ground_before->>'content_revision' = p_content
               AND r.ground_before->'native_room_placement_context' = to_jsonb(p_frame)
               AND r.ground_before->'spatial_position' = to_jsonb(p_source)
@@ -114,6 +115,9 @@ BEGIN
               WHERE l.item_instance_id = i.item_instance_id AND l.transaction_id = i.minted_transaction_id
                 AND l.operation_kind = 1 AND l.blocks_movement AND NOT l.immovable_block_solid
                 AND l.expires_at_unix_ms IS NULL
+          ) OR EXISTS (
+              SELECT 1 FROM game_item_ground_locations g
+              WHERE g.item_instance_id = i.item_instance_id AND game_monster_push_map_amphora(g, i)
           )
       )
       FOR UPDATE;
@@ -123,7 +127,12 @@ BEGIN
         AND g.scope_kind = p_kind AND g.channel_id IS NOT DISTINCT FROM p_channel
         AND g.instance_id IS NOT DISTINCT FROM p_instance AND g.runtime_scope_ownership_generation = p_generation
         AND g.stack_ordinal = p_ordinal AND g.spatial_position = p_source
-        AND g.map_revision = p_map AND g.content_revision = p_content
+        AND g.content_revision = p_content
+        AND (g.map_revision = p_map OR (
+            'sha256:' || encode(sha256(convert_to(g.map_revision, 'UTF8')), 'hex') = p_map
+            AND EXISTS (SELECT 1 FROM game_item_instances i
+                        WHERE i.item_instance_id = p_item AND game_monster_push_map_amphora(g, i))
+        ))
         AND g.native_room_placement_context = p_frame;
     IF NOT FOUND THEN RETURN false; END IF;
 
@@ -164,8 +173,47 @@ CREATE FUNCTION game_monster_item_push_current(
     )
 $$;
 
+-- The player owner materializes the authored amphora and moves the same
+-- instance. Its immutable MINT and latest Ground move prove the blocker.
+-- After a monster shove the exact current shove receipt proves its address.
+CREATE FUNCTION game_monster_push_map_amphora(
+    g game_item_ground_locations, i game_item_instances
+) RETURNS boolean LANGUAGE sql STABLE AS $$
+    SELECT (i).definition_family = 'Item'
+       AND (i).definition_production_key = 'oteryn:item.tibia.i2904'
+       AND (i).lifecycle = 1 AND (g).scope_kind = 1
+       AND EXISTS (
+           SELECT 1 FROM game_map_item_mint_receipts m
+           JOIN game_item_loop_move_lines line ON line.item_instance_id = m.item_instance_id
+             AND line.transaction_id = (i).last_transaction_id
+           JOIN game_item_loop_move_receipts move ON move.transaction_id = line.transaction_id
+           WHERE m.item_instance_id = (g).item_instance_id
+             AND m.item_instance_id = (i).item_instance_id
+             AND m.transaction_id = (i).minted_transaction_id
+             AND m.world_id = (g).world_id AND m.channel_id = (g).channel_id
+             AND m.map_revision = (g).map_revision AND m.content_revision = (g).content_revision
+             AND m.reset_epoch = coalesce((SELECT reset_epoch FROM game_world_reset_active
+                                            WHERE world_id = m.world_id), 0)
+             AND (m.definition_family, m.definition_production_key, m.definition_revision_ref, m.quantity)
+                 = ((i).definition_family, (i).definition_production_key, (i).definition_revision_ref, (i).quantity)
+             AND move.world_id = m.world_id AND move.channel_id = m.channel_id
+             AND move.scope_generation = (g).runtime_scope_ownership_generation
+             AND (g).content_revision = 'sha256:' || encode(move.content_digest, 'hex')
+             AND (g).corpse_ref = convert_to('OTERYN_ITEM_LOOP_DROP/v1:', 'UTF8') || uuid_send(move.transaction_id)
+             AND move.operation = 1 AND line.from_kind = 3 AND line.to_kind = 3
+             AND (line.definition_family, line.definition_production_key, line.definition_revision_ref)
+                 = (m.definition_family, m.definition_production_key, m.definition_revision_ref)
+             AND line.quantity_before = m.quantity AND line.quantity_after = m.quantity
+             AND line.created_xact_id = move.created_xact_id
+             AND line.state_revision_before + 1 = (i).state_revision
+             AND (line.to_spatial_position = (g).spatial_position
+                  OR game_monster_item_push_current(g, (i).state_revision))
+       )
+$$;
+
 DO $migration$
 BEGIN
+    EXECUTE format('ALTER FUNCTION game_monster_push_map_amphora(game_item_ground_locations,game_item_instances) SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_monster_item_push_current(game_item_ground_locations,numeric) SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_push_monster_ground_item(uuid,uuid,smallint,uuid,uuid,numeric,bytea,bytea,numeric,numeric,bigint,bytea,bytea,text,text,bytea,uuid,numeric,bytea,numeric) SET search_path = %I, pg_temp', current_schema());
 END
@@ -177,3 +225,5 @@ GRANT SELECT ON game_monster_item_push_receipts TO oteryn_game_runtime;
 GRANT EXECUTE ON FUNCTION game_push_monster_ground_item(uuid,uuid,smallint,uuid,uuid,numeric,bytea,bytea,numeric,numeric,bigint,bytea,bytea,text,text,bytea,uuid,numeric,bytea,numeric) TO oteryn_game_runtime;
 REVOKE ALL ON FUNCTION game_monster_item_push_current(game_item_ground_locations,numeric) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_monster_item_push_current(game_item_ground_locations,numeric) TO oteryn_game_runtime;
+REVOKE ALL ON FUNCTION game_monster_push_map_amphora(game_item_ground_locations,game_item_instances) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_monster_push_map_amphora(game_item_ground_locations,game_item_instances) TO oteryn_game_runtime;

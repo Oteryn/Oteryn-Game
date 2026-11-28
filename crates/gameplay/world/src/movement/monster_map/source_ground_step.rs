@@ -402,17 +402,17 @@ impl CurrentMonsterMap<'_, '_> {
         runtime: &ChannelRuntimeV1,
         at: MovementLocalPosition,
         items: &crate::durability::spell_items_abi::DurableTileItems,
-    ) -> Option<()> {
+    ) -> Result<bool, SpellItemError> {
         let Some((_, reset_epoch)) = self.view.source_steps.binding.as_ref() else {
-            return Some(());
+            return Ok(true);
         };
         if !items.items.iter().any(|item| {
             SourceGroundStepKind::from_definition(&item.definition)
                 == Some(SourceGroundStepKind::DeadAspect)
         }) {
-            return Some(());
+            return Ok(true);
         }
-        let selected = SourceCreatureGroundTile::read_in_transaction(
+        let Some(selected) = SourceCreatureGroundTile::read_in_transaction(
             self.tx,
             self.authority,
             runtime,
@@ -421,12 +421,14 @@ impl CurrentMonsterMap<'_, '_> {
             *reset_epoch,
             at,
         )
-        .await
-        .ok()??;
+        .await?
+        else {
+            return Ok(false);
+        };
         self.view
             .source_steps
             .tiles
             .insert((at.x, at.y, at.floor), selected);
-        Some(())
+        Ok(true)
     }
 }

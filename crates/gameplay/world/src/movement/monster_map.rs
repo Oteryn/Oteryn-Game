@@ -29,7 +29,7 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{NativeEntryMovementCells, QualifiedNativeEntryRoom};
 use crate::durability::spell_item_transaction::{
     SpellItemError, SpellItemScopeAuthority, read_creature_empty_tiles_in_transaction,
-    read_creature_scope_tile_in_transaction,
+    read_creature_scope_tile_in_transaction, read_monster_scope_tile_in_transaction,
 };
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::world_runtime::LocalObjectRuntime;
@@ -448,16 +448,10 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
     /// Recheck the actual transaction after awaited reads, before a synchronous consumer.
     /// An aborted/lost transaction invalidates even its formerly known empty tiles.
     pub async fn validate_transaction(&mut self, runtime: &ChannelRuntimeV1) -> bool {
-        let binding = runtime.binding();
-        let valid = self.view.matches(runtime)
-            && self.authority.runtime_scope() == binding.runtime_scope()
-            && self.authority.generation() == binding.scope_generation().get()
-            && crate::durability::spell_item_transaction::check_scope_transaction(
-                self.tx,
-                self.authority,
-            )
+        let valid = self
+            .validate_shove_transaction(runtime)
             .await
-            .is_ok();
+            .unwrap_or(false);
         if !valid {
             self.view.valid = false;
             self.view.tiles.clear();
@@ -712,7 +706,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 target,
             });
         }
-        read_creature_scope_tile_in_transaction(self.tx, self.authority, &target).await
+        read_monster_scope_tile_in_transaction(self.tx, self.authority, &target).await
     }
     /// Tile existence is independent of queryAdd and current creature/item
     /// blockers. An absent tile is proved only inside the sealed capture.
@@ -916,18 +910,48 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         runtime: &ChannelRuntimeV1,
         at: MovementLocalPosition,
     ) -> Option<bool> {
+        self.read_for_shove(runtime, at).await.ok().flatten()
+    }
+
+    /// Unknown terrain stays closed. A failed database read leaves the
+    /// deadline eligible to retry and never becomes a cached tile result.
+    pub async fn read_for_shove(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        at: MovementLocalPosition,
+    ) -> Result<Option<bool>, SpellItemError> {
         let key = (at.x, at.y, at.floor);
         if !self.view.matches(runtime)
             || self.content.source_digest() != runtime.content_pin().server_artifact_digest()
         {
-            return None;
+            return Ok(None);
         }
         if let Some(tile) = self.view.tiles.get(&key) {
-            return tile.map(|tile| tile.admits);
+            return Ok(tile.map(|tile| tile.admits));
         }
-        let tile = self.read_tile(runtime, at).await;
+        let tile = match self.read_tile(runtime, at).await {
+            Ok(tile) => tile,
+            Err(SpellItemError::Rejected(_)) => None,
+            Err(error) => return Err(error),
+        };
         self.view.tiles.insert(key, tile);
-        tile.map(|tile| tile.admits)
+        Ok(tile.map(|tile| tile.admits))
+    }
+
+    pub async fn validate_shove_transaction(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<bool, SpellItemError> {
+        let binding = runtime.binding();
+        if !self.view.matches(runtime)
+            || self.authority.runtime_scope() != binding.runtime_scope()
+            || self.authority.generation() != binding.scope_generation().get()
+        {
+            return Ok(false);
+        }
+        crate::durability::spell_item_transaction::check_scope_transaction(self.tx, self.authority)
+            .await?;
+        Ok(true)
     }
     /// Bounded source `Tile:getItemById` predicate. Read the current static
     /// source stack and canonical scoped Item rows under this same transaction;
@@ -992,12 +1016,16 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         &mut self,
         runtime: &ChannelRuntimeV1,
         at: MovementLocalPosition,
-    ) -> Option<Tile> {
-        let items = self.read_items(runtime, at).await.ok()?;
-        self.capture_source_ground_tile(runtime, at, &items).await?;
-        let static_owner =
+    ) -> Result<Option<Tile>, SpellItemError> {
+        let items = self.read_items(runtime, at).await?;
+        if !self.capture_source_ground_tile(runtime, at, &items).await? {
+            return Ok(None);
+        }
+        let Ok(static_owner) =
             crate::native_world_read::qualified_static_owner(self.room, runtime, self.objects)
-                .ok()?;
+        else {
+            return Ok(None);
+        };
         // A qualified empty source cell is distinct from unavailable metadata.
         if self.room.movement_cells().spell_tiles().lookup(
             self.room.movement_cells().scope(),
@@ -1009,7 +1037,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         ) == Err(crate::content::SpellTileLookupError::Absent)
             && items.items.is_empty()
         {
-            return Some(Tile {
+            return Ok(Some(Tile {
                 admits: false,
                 pushable_blockers: false,
                 solid: true,
@@ -1027,7 +1055,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                     teleport: false,
                 },
                 source_placement_proven: true,
-            });
+            }));
         }
         // Immutable tiles are already bound to this map/runtime owner. Item reads above
         // belong to the held transaction, validated before each synchronous consumer.
@@ -1040,25 +1068,38 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                     crate::native_world_read::WorldStaticOwnerBorrow::Entry(_)
                 ) && static_owner.blocks_movement(at)
                 {
-                    return None;
+                    return Ok(None);
                 }
                 tile
             }
             _ => {
-                fact = crate::native_world_read::qualified_creature_source_tile_in_transaction(
-                    self.tx,
-                    self.authority,
-                    self.room,
-                    runtime,
-                    self.objects,
-                    at,
-                )
-                .await
-                .ok()?;
+                fact =
+                    match crate::native_world_read::qualified_creature_source_tile_in_transaction(
+                        self.tx,
+                        self.authority,
+                        self.room,
+                        runtime,
+                        self.objects,
+                        at,
+                    )
+                    .await
+                    {
+                        Ok(fact) => fact,
+                        Err(crate::native_world_read::NativeWorldReadError::Items(error)) => {
+                            return Err(error);
+                        }
+                        Err(_) => return Ok(None),
+                    };
                 std::borrow::Cow::Borrowed(fact.qualified_tile())
             }
         };
-        merge_current_tile(self.room, self.content, at, &tile, &items)
+        Ok(merge_current_tile(
+            self.room,
+            self.content,
+            at,
+            &tile,
+            &items,
+        ))
     }
     pub async fn read_sight(
         &mut self,

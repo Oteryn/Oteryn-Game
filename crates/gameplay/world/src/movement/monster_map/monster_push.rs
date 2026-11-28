@@ -43,7 +43,7 @@ impl<'a> CurrentMonsterMap<'a, '_> {
             node,
             reset_epoch,
         };
-        self.read(runtime, at).await;
+        self.read_for_shove(runtime, at).await?;
         if !self
             .view
             .tile(at)
@@ -54,7 +54,7 @@ impl<'a> CurrentMonsterMap<'a, '_> {
         let source = self.read_items(runtime, at).await?;
         let mut landings_with_room = Vec::with_capacity(landings.len());
         for &landing in landings {
-            if self.read(runtime, landing).await != Some(true) {
+            if self.read_for_shove(runtime, landing).await? != Some(true) {
                 continue;
             }
             let items = self.read_items(runtime, landing).await?;

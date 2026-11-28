@@ -439,7 +439,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ).await;
                     owner.states.loop_ground.invalidate();
                     committed?;
-                    return Ok((Some(now), Vec::new(), Vec::new(), false));
+
+                    // The old physical map cannot observe its committed write.
+                    // Resume the original deadline with a fresh owner read now,
+                    // before the periodic admission can advance the think clock.
+                    let mut resumed = begin_spell_owner_transaction(holder, deadline).await?;
+                    let authority = assert_spell_item_scope_in_transaction(
+                        &mut resumed, permit, owner.root, owner.character, owner.holder,
+                        scope, binding.scope_generation().get(),
+                    ).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let mut map = CurrentMonsterMap::new(
+                        &mut resumed, &authority, runtime, room, &objects, native,
+                    );
+                    map.bind_source_ground_steps(
+                        Arc::clone(&states.spite_steps.creatures), owner.reset_epoch,
+                    ).map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    let player_waiting = attack.players_waiting(now);
+                    let next = table.drive_current_movement_through(
+                        runtime, room.movement_cells(), doors, *native, &root, candidates,
+                        now, execution_now, &mut attack.path_budget,
+                        player_waiting, &mut map,
+                    ).await;
+                    drop(map);
+                    resumed.rollback().await
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                    return Ok((next, Vec::new(), Vec::new(), false));
                 }
                 let player_waiting = attack.players_waiting(now);
                 if native_pending.is_none() && primal_pending.is_none() {
