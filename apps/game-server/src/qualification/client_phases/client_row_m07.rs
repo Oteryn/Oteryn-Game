@@ -88,10 +88,60 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         floor: -i16::from(spot.floor) - 1,
     };
     client.take_events();
-    for direction in path {
+    let mut path = VecDeque::from(path);
+    let mut detours = 0;
+    while let Some(direction) = path.pop_front() {
         let from = tile(client.world_spatial().actor_position)?;
         let planned = destination(world, from, direction).ok_or("M07 route edge missing")?;
         let step = client.step(direction).await?;
+        if step.disposition == StepDisposition::Blocked
+            && step.world_spatial_delta.is_none()
+            && tile(client.world_spatial().actor_position)? == from
+        {
+            let identity = client
+                .world_entities()
+                .and_then(|entities| {
+                    entities.iter().find(|entity| {
+                        entity.kind == oteryn_dev_client::EntityKind::Creature
+                            && tile(entity.position).ok() == Some(planned)
+                    })
+                })
+                .map(|entity| entity.entity)
+                .ok_or_else(|| format!("M07 blocked without a visible creature: from={from:?} target={planned:?} step={step:?}"))?;
+            if detours == 8 {
+                return Err("M07 creature detour limit reached".into());
+            }
+            detours += 1;
+            client.service_liveness(Duration::from_millis(25)).await?;
+            let current = client
+                .world_entities()
+                .and_then(|entities| entities.get(&identity))
+                .ok_or("M07 lost sight of the creature blocking the approach")?;
+            let current = tile(current.position)?;
+            evidence(&format!(
+                "M07_BLOCKED creature={identity:?} target={planned:?} current={current:?} step={step:?}"
+            ));
+            if current == planned {
+                path = route_work(&mut client, move || {
+                    route_around_occupant(
+                        from,
+                        planned,
+                        &path,
+                        |_| true,
+                        |at, heading| destination(world, at, heading),
+                    )
+                    .ok_or_else(|| {
+                        "M07 no route to the original approach around creature".to_owned()
+                    })
+                })
+                .await?
+                .into();
+            } else {
+                path.push_front(direction);
+            }
+            client.take_events();
+            continue;
+        }
         if step.disposition != StepDisposition::Moved
             || step.world_spatial_delta.is_none()
             || tile(client.world_spatial().actor_position)? != planned
@@ -105,6 +155,9 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         client.take_events();
     }
     let before = client.world_spatial().actor_position;
+    if before == expected {
+        return Err("M07 already at the expected rope landing before use".into());
+    }
     let index = provisioning::item_index()?;
     let reference = provisioning::item_reference(&index, 3003)?;
     let rope = client
@@ -169,6 +222,7 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
+    let original_session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -176,7 +230,8 @@ async fn verify_ascent(clients: &SeamClients<'_>) -> TestResult {
     }
     drop(client);
     let mut relog = connect_world(clients, 0xa7).await?;
-    if relog.world_spatial().actor_position != expected
+    if relog.join_snapshot().game_session_id == original_session
+        || relog.world_spatial().actor_position != expected
         || !relog.inventory().is_some_and(|inventory| {
             inventory
                 .entries
