@@ -211,11 +211,12 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
     let catalogue = catalogue_exchanges(directory, "p02-catalogue", BOSS)?;
     let ready = read_exchange(directory, "p02-ready.bin")?;
     let invested = read_exchange(directory, "p02-equipped.bin")?;
+    let assigned_clock = read_exchange(directory, "p02-assigned-clock.bin")?;
     let mut exchanges = vec![&locked, &cooldowns, &slots, &refused];
     exchanges.extend(&ineligible_catalogue);
     exchanges.push(&ineligible);
     exchanges.extend(&catalogue);
-    exchanges.extend([&ready, &invested]);
+    exchanges.extend([&ready, &invested, &assigned_clock]);
     if cooldowns.session == [0; 16]
         || exchanges.iter().any(|item| {
             item.session != cooldowns.session
@@ -284,24 +285,50 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
     apply_catalogue(&mut panel, "Rotworm Queen", &catalogue)?;
     apply_exchange(&mut panel, Intent::SlotsDetailed, &ready)?;
     assert_slots(&panel, 0, "", 0, 1, 26, 10);
-    panel.fields[0] = BOSS.into();
-    apply_exchange(&mut panel, Intent::SlotEquipSelected, &invested)?;
-    let equipped = panel.slots.as_ref().ok_or("P02 assigned slot reply")?;
-    let details = equipped
-        .details
+    assert!(
+        super::slot_candidates(&panel)
+            .iter()
+            .any(|entry| entry.key == BOSS)
+    );
+    let before = panel
+        .slots
         .as_ref()
-        .ok_or("P02 assignment server timestamp missing")?;
-    let expected_ready = details
-        .now
-        .checked_add(490)
-        .ok_or("P02 assignment timestamp overflow")?;
-    assert_ne!(details.now, 0);
+        .and_then(|state| state.details.as_ref())
+        .ok_or("P02 assignment starting timestamp missing")?
+        .now;
+    panel.fields[0] = BOSS.into();
+    apply_exchange(&mut panel, Intent::SlotEquip, &invested)?;
+    let equipped = panel.slots.clone().ok_or("P02 assigned slot reply")?;
+    assert_slots(&panel, 0, BOSS, equipped.ready_at_ms, 1, 26, 10);
+    apply_exchange(&mut panel, Intent::SlotsDetailed, &assigned_clock)?;
+    let mut confirmed = panel
+        .slots
+        .clone()
+        .ok_or("P02 post-assignment slot reply")?;
+    let details = confirmed
+        .details
+        .take()
+        .ok_or("P02 assignment ending timestamp missing")?;
+    assert_ne!(before, 0);
+    assert!(
+        details
+            .now
+            .checked_sub(before)
+            .is_some_and(|span| span <= 2_000)
+    );
+    assert!(
+        equipped
+            .ready_at_ms
+            .checked_sub(490)
+            .is_some_and(|operation_time| (before..=details.now).contains(&operation_time))
+    );
     assert_eq!((details.base_bonus, details.bonuses), (26, [26, 0]));
     assert_eq!(details.boosted, detailed.boosted);
-    assert_slots(&panel, 0, BOSS, expected_ready, 1, 26, 10);
+    assert_eq!(confirmed, equipped);
+    assert_slots(&panel, 0, BOSS, equipped.ready_at_ms, 1, 26, 10);
     assert_malformed_preserves_state(&mut panel, &slots, &cooldowns)?;
     println!(
-        "SEAM_EVIDENCE P02_REPLAY progress=exact requests=matched catalogue=verified refusals=rat,below-prowess assignment=exact cooldown_ms=490 malformed=2"
+        "SEAM_EVIDENCE P02_REPLAY progress=exact requests=matched catalogue=verified refusals=rat,below-prowess assignment=exact cooldown_ms=490 clock=bracketed malformed=2"
     );
     Ok(())
 }

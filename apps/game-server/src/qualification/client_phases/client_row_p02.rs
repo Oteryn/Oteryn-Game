@@ -78,8 +78,12 @@ fn empty_slots(reply: &BossSlotReply, unlocked: u8, points: u32, bonus: u16) -> 
         && reply.bosses == ["", ""]
 }
 
-fn assignment_ready_at(now: u64, ready: u64) -> bool {
-    now != 0 && now.checked_add(ASSIGN_COOLDOWN_MS) == Some(ready)
+fn assignment_ready_at(before: u64, after: u64, ready: u64) -> bool {
+    before != 0
+        && after.checked_sub(before).is_some_and(|span| span <= 2_000)
+        && ready
+            .checked_sub(ASSIGN_COOLDOWN_MS)
+            .is_some_and(|operation_time| (before..=after).contains(&operation_time))
 }
 
 async fn catalogue_entry(
@@ -209,58 +213,68 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("P02 expected earned Nemesis Prowess: {eligible:?}").into());
     }
 
-    let ready = slots(
-        &mut client,
-        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
-        Some("p02-ready.bin"),
-    )
-    .await?;
-    if !empty_slots(&ready, 1, 10, 26)
-        || ready.details.as_ref().is_none_or(|current| {
-            current.base_bonus != 26
-                || current.bonuses != [0, 0]
-                || current.boosted != details.boosted
-                || current.now < ready.ready_at_ms
-        })
-    {
-        return Err(format!("P02 invalid slot refresh before assignment: {ready:?}").into());
-    }
     let balance = gold(&mut client).await?;
     if balance.0 < 20 {
         return Err(
             format!("P02 free assignment needs the funded gold precondition: {balance:?}").into(),
         );
     }
-    let mut equipped = slots(
+    let ready = slots(
         &mut client,
-        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Equip {
+        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
+        Some("p02-ready.bin"),
+    )
+    .await?;
+    let before_assign = ready
+        .details
+        .as_ref()
+        .ok_or("P02 ready timestamp missing")?;
+    if !empty_slots(&ready, 1, 10, 26)
+        || before_assign.base_bonus != 26
+        || before_assign.bonuses != [0, 0]
+        || before_assign.boosted != details.boosted
+        || before_assign.now < ready.ready_at_ms
+    {
+        return Err(format!("P02 invalid slot refresh before assignment: {ready:?}").into());
+    }
+    let equipped = slots(
+        &mut client,
+        BossSlotRequest::Equip {
             slot: 1,
             boss: ORDINARY_BOSS.into(),
-        })),
+        },
         Some("p02-equipped.bin"),
     )
     .await?;
-    let assigned = equipped
+    let mut confirmed = slots(
+        &mut client,
+        BossSlotRequest::Detailed(Box::new(BossSlotRequest::Query)),
+        Some("p02-assigned-clock.bin"),
+    )
+    .await?;
+    let after_assign = confirmed
         .details
         .take()
-        .ok_or("P02 assignment server timestamp missing")?;
+        .ok_or("P02 post-assignment timestamp missing")?;
     let expected = BossSlotReply {
         bosses: [ORDINARY_BOSS.into(), String::new()],
         ready_at_ms: equipped.ready_at_ms,
         details: None,
         ..empty.clone()
     };
-    if !assignment_ready_at(assigned.now, equipped.ready_at_ms)
+    if !assignment_ready_at(before_assign.now, after_assign.now, equipped.ready_at_ms)
         || equipped != expected
-        || assigned.base_bonus != 26
-        || assigned.bonuses != [26, 0]
-        || assigned.boosted != details.boosted
+        || confirmed != equipped
+        || after_assign.base_bonus != 26
+        || after_assign.bonuses != [26, 0]
+        || after_assign.boosted != details.boosted
     {
-        return Err(format!(
-            "P02 exact assignment or cooldown mismatch: {equipped:?} {assigned:?}"
-        )
-        .into());
+        return Err(format!("P02 exact assignment or cooldown mismatch: {before_assign:?} {equipped:?} {after_assign:?}").into());
     }
+    evidence(&format!(
+        "P02_ASSIGN_CLOCK before={} after={} ready_at_ms={}",
+        before_assign.now, after_assign.now, equipped.ready_at_ms
+    ));
     if gold(&mut client).await? != balance {
         return Err(
             format!("P02 first assignment changed carried or bank gold from {balance:?}").into(),
@@ -336,7 +350,9 @@ fn p02_client_preconditions_reject_the_audited_false_positives() {
     slot.bonus = 25;
     slot.remove_fee = 0;
     assert!(!empty_slots(&slot, 0, 0, 25));
-    assert!(assignment_ready_at(1000, 1490));
-    assert!(!assignment_ready_at(1000, 1491));
-    assert!(!assignment_ready_at(1000, 1000));
+    assert!(assignment_ready_at(1000, 1010, 1490));
+    assert!(!assignment_ready_at(1000, 1010, 1501));
+    assert!(!assignment_ready_at(1000, 1010, 1000));
+    assert!(!assignment_ready_at(1000, 3010, 1490));
+    assert!(!assignment_ready_at(1000, 999, 1490));
 }

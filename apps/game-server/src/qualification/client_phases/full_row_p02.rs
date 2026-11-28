@@ -248,7 +248,10 @@ async fn observe_combat(
     }
 }
 
-async fn fight(c: &mut DevClientSession, key: &str) -> TestResult<oteryn_dev_client::EntityRef> {
+async fn fight(
+    c: &mut DevClientSession,
+    key: &str,
+) -> TestResult<(oteryn_dev_client::EntityRef, tokio::time::Instant)> {
     let session = uuid_text(c.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, key.to_owned())
         .await
@@ -303,22 +306,7 @@ async fn fight(c: &mut DevClientSession, key: &str) -> TestResult<oteryn_dev_cli
                     )
                     .into());
                 }
-                if c.session_mut()
-                    .combat_state()
-                    .is_some_and(|state| state.target.is_some())
-                {
-                    let clear = c.session_mut().attack_target(None).await?;
-                    if clear.disposition != AttackIntentDisposition::Ok {
-                        return Err(
-                            format!("step boss-kill {key}: target clear reply={clear:?}").into(),
-                        );
-                    }
-                    observe_combat(c, clear.result_server_sequence, |state| {
-                        state.target.is_none()
-                    })
-                    .await?;
-                }
-                return Ok(target);
+                return Ok((target, until));
             }
         }
         if tokio::time::Instant::now() >= until {
@@ -356,7 +344,7 @@ pub(super) async fn credited_death(
     key: &str,
     credit: i32,
 ) -> TestResult {
-    let target = fight(c, key).await?;
+    let (target, deadline) = fight(c, key).await?;
     let principal = clients.characters[1];
     let prefix = [
         clients.world.as_slice(),
@@ -364,7 +352,6 @@ pub(super) async fn credited_death(
         &clients.scope_generation.to_be_bytes(),
     ]
     .concat();
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     verdict::Harness::global().bounded_wait(deadline, "p02-exact-death-proof");
     let (occurrence, received) = tokio::time::timeout_at(deadline, async {
         let mut database = sqlx::PgConnection::connect(clients.url).await?;
@@ -416,6 +403,22 @@ pub(super) async fn credited_death(
         return Err(
             format!("P02 exact death {target:?} expected credit {credit}, got {received}").into(),
         );
+    }
+    if c.actor_vitals().is_none_or(|vitals| vitals.health == 0) {
+        return Err("P02 player died before the exact death proof committed".into());
+    }
+    if c.session_mut()
+        .combat_state()
+        .is_some_and(|state| state.target.is_some())
+    {
+        let clear = c.session_mut().attack_target(None).await?;
+        if clear.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("step boss-kill {key}: target clear reply={clear:?}").into());
+        }
+        observe_combat(c, clear.result_server_sequence, |state| {
+            state.target.is_none()
+        })
+        .await?;
     }
     evidence(&format!(
         "P02_DEATH entity={target:?} occurrence={} boss={key} credit={credit}",
