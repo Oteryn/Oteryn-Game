@@ -882,6 +882,9 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
     "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
     "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
     "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=https://localhost:$WP5_PORT"
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+    "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
