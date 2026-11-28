@@ -8,6 +8,12 @@ use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMo
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_tracker as tr};
 
 const RAT: &str = "oteryn:creature.rat";
+// The verified retreat road west of the compiled Rat spawn.
+const STAGING_TILE: TilePos = TilePos {
+    x: 32475,
+    y: 32169,
+    floor: -7,
+};
 
 fn selected(client: &DevClientSession) -> TestResult {
     expect(
@@ -218,18 +224,70 @@ async fn walk_path<T>(
     Ok(stop_when(client))
 }
 
-async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+async fn place_hunter(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    original: TilePos,
+) -> TestResult {
+    use sqlx::Connection as _;
+    expect(
+        original != STAGING_TILE
+            && original.floor == STAGING_TILE.floor
+            && world
+                .base()
+                .tile(STAGING_TILE.x, STAGING_TILE.y, STAGING_TILE.floor)
+                .is_some_and(|tile| tile.walkable() && !tile.protection_zone())
+            && world.enterable(STAGING_TILE),
+        "placement-input",
+        (original, STAGING_TILE),
+    )?;
+    wait_character_released(clients, 1).await?;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let placement = sqlx::query(
+        "UPDATE game_character_last_positions SET tile_x=$1, tile_y=$2
+         WHERE character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid
+           AND tile_x=$5 AND tile_y=$6",
+    )
+    .bind(i32::from(STAGING_TILE.x))
+    .bind(i32::from(STAGING_TILE.y))
+    .bind(clients.characters[1].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(original.x))
+    .bind(i32::from(original.y))
+    .execute(&mut database)
+    .await?;
+    expect(
+        placement.rows_affected() == 1,
+        "placement-write",
+        placement.rows_affected(),
+    )?;
+    database.close().await?;
+    evidence(&format!(
+        "p22d fixture-placement from={original:?} to={STAGING_TILE:?}"
+    ));
+    Ok(())
+}
+
+async fn prepare_hunter(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
         "P22d.full",
-        "sorcerer-level-100",
+        "sorcerer-level-100,authored-rat-road-placement",
         "the authored rat route and combat-lock wait exceed the ordinary character budget",
     );
     let mut client = connect_world(clients, 0xd5).await?;
     selected(&client)?;
     let old = client.join_snapshot().game_session_id;
+    let original = tile(client.world_spatial().actor_position)?;
     request_fixture_control(uuid_text(old.as_bytes()), "--profile", "sorcerer".into()).await?;
     logout(&mut client).await?;
+    drop(client);
+    place_hunter(clients, world, original).await?;
     let mut fresh = connect_world(clients, 0xd6).await?;
+    let position = tile(fresh.world_spatial().actor_position)?;
+    expect(position == STAGING_TILE, "seeded-placement", position)?;
     selected(&fresh)?;
     expect(
         fresh.join_snapshot().game_session_id != old,
@@ -259,7 +317,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = prepare_hunter(clients).await?;
+    let mut client = prepare_hunter(clients, world).await?;
     let initial = read(&mut client, best).await?;
     expect(
         initial
@@ -433,6 +491,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "live-refresh",
         "confirmed-kill-without-domain-98-push",
     )?;
+    let clear = client.session_mut().attack_target(None).await?;
+    expect(
+        clear.disposition == AttackIntentDisposition::Ok,
+        "clear-target",
+        clear,
+    )?;
+    client.service_liveness(Duration::from_millis(25)).await?;
+    let target_after = client
+        .session_mut()
+        .combat_state()
+        .map(|state| state.target);
+    expect(
+        target_after == Some(None),
+        "clear-target-state",
+        target_after,
+    )?;
     leave_combat(&mut client, world).await?;
     let original_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
@@ -531,7 +605,7 @@ async fn leave_combat(client: &mut DevClientSession, world: &BundleWorld) -> Tes
             state.modes == FightModes::DEFAULT && state.target.is_none() && !state.in_fight
         }),
         "combat-lock-after-retreat",
-        combat,
+        combat.map(|state| (state.in_fight, state.modes, state.target)),
     )?;
     Ok(())
 }
