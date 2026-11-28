@@ -197,3 +197,64 @@ fn achievement_browser_search_trims_input_and_finds_confirmed_keys() {
     p.catalog.search = " HUNT CREATURES ".into();
     assert_eq!(catalog_rows(&p.catalog).len(), 1);
 }
+
+#[test]
+fn gap_0612_achievement_completion_filter_keeps_earned_totals_for_incomplete_catalogue() {
+    use oteryn_client_runtime::account_achievements::{
+        AccountAchievementRow, AchievementCompletion,
+    };
+
+    let mut panel = AchievementsPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let incomplete = Intent::Completion(AchievementCompletion::Incomplete);
+    assert_eq!(request(&mut panel, incomplete), None);
+
+    panel.completion = Some(AchievementCompletion::Completed);
+    panel.catalog.enabled = true;
+    assert_eq!(request(&mut panel, Intent::Refresh), Some(0));
+    apply_result(
+        &mut panel,
+        &Response::Page(AccountAchievementsResult::default()),
+    );
+    assert!(panel.catalog.ready);
+
+    panel.catalog.page = 2;
+    assert_eq!(request(&mut panel, incomplete), Some(0));
+    assert_eq!(panel.completion, Some(AchievementCompletion::Incomplete));
+    assert_eq!(panel.catalog.page, 0);
+    assert!(!panel.catalog.ready);
+    assert!(panel.page.is_none());
+    assert_eq!(
+        request(
+            &mut panel,
+            Intent::Completion(AchievementCompletion::Completed)
+        ),
+        None,
+    );
+
+    let row = AccountAchievementRow {
+        key: "oteryn:achievement/hunter".into(),
+        name: "Hunter".into(),
+        description: "Hunt creatures".into(),
+        grade: 1,
+        points: 5,
+        earned_at: 0,
+        secret: false,
+    };
+    apply_result(
+        &mut panel,
+        &Response::Page(AccountAchievementsResult {
+            rows: vec![row.clone()],
+            ..Default::default()
+        }),
+    );
+    assert!(panel.error.is_none());
+    assert!(panel.catalog.ready);
+    assert_eq!(panel.catalog.rows, [row]);
+    assert_eq!(panel.catalog.points, 0);
+    assert_eq!(panel.catalog.earned_count, 0);
+    assert_eq!(panel.page.as_ref().map(|page| page.fact_count), Some(0));
+    assert_eq!(request(&mut panel, incomplete), None);
+}

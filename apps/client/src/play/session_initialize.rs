@@ -179,7 +179,9 @@ pub(super) fn initialize<T: Stepper>(
     outbox.weapon_proficiency_initialize(session.feature_selected(195));
     outbox.weapon_proficiency_state_initialize(session.feature_selected(448));
     outbox.depot_initialize(session.feature_selected(37));
-    outbox.achievements_initialize();
+    outbox.achievements_initialize_with_completion(session.feature_selected(
+        oteryn_client_runtime::account_achievements::CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1,
+    ));
     outbox.player_trade_items(session.player_trade_items());
     Ok(())
 }

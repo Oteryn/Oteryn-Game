@@ -1,4 +1,8 @@
+use super::input::send_page;
 use crate::play::{PlayLink, mailbox::lock};
+use oteryn_client_runtime::account_achievements::{
+    ACCOUNT_ACHIEVEMENTS_PAGE_ROWS, AchievementCompletion,
+};
 use oteryn_client_ui::account_achievements::AchievementsPanel;
 impl PlayLink {
     #[must_use]
@@ -6,9 +10,6 @@ impl PlayLink {
         lock(&self.mailbox).achievements.clone()
     }
 }
-
-/// Rows on one page of the account achievement list.
-const PAGE_ROWS: usize = 64;
 
 fn shown_rows(
     panel: &AchievementsPanel,
@@ -31,22 +32,20 @@ fn achievements_text(panel: &AchievementsPanel) -> String {
         tr!("Feature unavailable in this session")
     } else if panel.catalog.collecting {
         tr!("Loading the complete account list")
+    } else if panel.pending.is_some() {
+        tr!("Loading…")
     } else {
         panel.error.unwrap_or("")
     };
     let (points, earned, page) = if ready {
         (
             panel.catalog.points,
-            panel.catalog.rows.len(),
+            panel.catalog.earned_count,
             (panel.catalog.page as u64).saturating_add(1),
         )
     } else {
         panel.page.as_ref().map_or((0, 0, 1), |page| {
-            (
-                page.total_points,
-                page.fact_count as usize,
-                u64::from(page.page) + 1,
-            )
+            (page.total_points, page.fact_count, u64::from(page.page) + 1)
         })
     };
     let scope = if ready {
@@ -54,15 +53,29 @@ fn achievements_text(panel: &AchievementsPanel) -> String {
     } else {
         tr!("here; load all for filters")
     };
-    let mut text = format!(
-        "{points} points · {earned} earned · {matching} {scope} · Page {page}\n{status}\n"
-    );
+    let mut text =
+        format!("{points} points · {earned} earned · {matching} {scope} · Page {page}\n{status}\n");
+    if let Some(mode) = panel.completion {
+        let label = match mode {
+            AchievementCompletion::Completed => tr!("Show completed"),
+            AchievementCompletion::Incomplete => tr!("Hide completed"),
+        };
+        text.push_str(label);
+        text.push('\n');
+    }
     let skip = if ready {
-        panel.catalog.page.saturating_mul(PAGE_ROWS)
+        panel
+            .catalog
+            .page
+            .saturating_mul(ACCOUNT_ACHIEVEMENTS_PAGE_ROWS)
     } else {
         0
     };
-    for row in rows.into_iter().skip(skip).take(PAGE_ROWS) {
+    for row in rows
+        .into_iter()
+        .skip(skip)
+        .take(ACCOUNT_ACHIEVEMENTS_PAGE_ROWS)
+    {
         let secret = if row.secret { tr!(" — Secret") } else { "" };
         text.push_str(&format!(
             "{} — Grade {} — {} points{secret}\n  {}\n",
@@ -73,7 +86,7 @@ fn achievements_text(panel: &AchievementsPanel) -> String {
 }
 
 /// Account achievements for the shared frontend; search, filter and sort apply once loaded.
-pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+pub(in crate::play) fn form(link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use oteryn_client_ui::account_achievements::{AchievementFilter, AchievementSort, Intent};
     crate::play::feature_0115_mail::view::form::Form {
         title: tr!("Account achievements — Ctrl+Shift+A"),
@@ -82,7 +95,18 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
             "Filter: 0 all, 1 regular, 2 secret",
             "Sort: 0 name, 1 points, 2 grade, 3 earned",
         ],
-        buttons: &["Load all", "Previous", "Next", "Apply search"],
+        buttons: if lock(&link.mailbox).achievements.completion.is_some() {
+            &[
+                "Load all",
+                "Previous",
+                "Next",
+                "Apply search",
+                "Show completed",
+                "Hide completed",
+            ]
+        } else {
+            &["Load all", "Previous", "Next", "Apply search"]
+        },
         snapshot: |mailbox| {
             let panel = &mailbox.achievements;
             let filter = match panel.catalog.filter {
@@ -131,6 +155,8 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                     panel.catalog.enabled = true;
                     Some(Intent::Refresh)
                 }
+                4 => Some(Intent::Completion(AchievementCompletion::Completed)),
+                5 => Some(Intent::Completion(AchievementCompletion::Incomplete)),
                 1 if !panel.catalog.enabled => Some(Intent::Previous),
                 2 if !panel.catalog.enabled => Some(Intent::Next),
                 1 => {
@@ -141,7 +167,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                     .catalog
                     .page
                     .saturating_add(1)
-                    .saturating_mul(PAGE_ROWS)
+                    .saturating_mul(ACCOUNT_ACHIEVEMENTS_PAGE_ROWS)
                     < matching =>
                 {
                     panel.catalog.page += 1;
@@ -150,15 +176,9 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                 _ => None,
             };
             if let Some(intent) = intent
-                && let Some(payload) =
-                    oteryn_client_ui::account_achievements::request(panel, intent)
-                && commands
-                    .send(crate::combat_input::PlayCommand::AccountAchievements(payload))
-                    .is_err()
+                && let Some(page) = oteryn_client_ui::account_achievements::request(panel, intent)
             {
-                panel.pending = None;
-                panel.catalog.collecting = false;
-                panel.error = Some(tr!("Session ended"));
+                send_page(panel, commands, page);
             }
         },
     }
@@ -172,14 +192,8 @@ pub(in crate::play) fn tick(
     if !mailbox.achievements.open {
         return;
     }
-    if let Some(payload) =
-        oteryn_client_ui::account_achievements::catalog_next_request(&mut mailbox.achievements)
-        && commands
-            .send(crate::combat_input::PlayCommand::AccountAchievements(payload))
-            .is_err()
-    {
-        mailbox.achievements.pending = None;
-        mailbox.achievements.catalog.collecting = false;
-        mailbox.achievements.error = Some(tr!("Session ended"));
+    let panel = &mut mailbox.achievements;
+    if let Some(page) = oteryn_client_ui::account_achievements::catalog_next_request(panel) {
+        send_page(panel, commands, page);
     }
 }

@@ -1,7 +1,11 @@
-use oteryn_client_runtime::account_achievements::AccountAchievementsResult;
+use oteryn_client_runtime::account_achievements::{
+    AccountAchievementsResult, AchievementCompletion,
+};
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct AchievementsPanel {
     pub selected: bool,
+    /// The selected mode when the session negotiated completion filtering.
+    pub completion: Option<AchievementCompletion>,
     pub catalog: super::catalog::CatalogState,
     pub open: bool,
     pub pending: Option<u32>,

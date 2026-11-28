@@ -81,6 +81,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         oteryn_client_runtime::account_achievements::send(self, page).await
     }
 
+    async fn account_achievements_filtered(
+        &mut self,
+        page: u32,
+        completion: oteryn_client_runtime::account_achievements::AchievementCompletion,
+    ) -> Result<oteryn_client_runtime::account_achievements::Response, SessionError> {
+        Session::account_achievements_filtered(self, page, completion).await
+    }
+
     fn inventory(&self) -> Option<oteryn_session::CharacterInventory> {
         oteryn_client_runtime::inventory::initial(self)
     }

@@ -22,6 +22,10 @@ pub enum PlayCommand {
     Depot(oteryn_session::DepotIntent, Option<u32>),
     DepotContainer(oteryn_session::ItemHandle),
     AccountAchievements(u32),
+    AccountAchievementsFiltered(
+        u32,
+        oteryn_client_runtime::account_achievements::AchievementCompletion,
+    ),
     Animus(Vec<u8>),
     /// Capability-16 query encoded by its feature controls.
     QuestLog(Vec<u8>),

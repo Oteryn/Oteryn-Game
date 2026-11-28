@@ -62,6 +62,7 @@ async fn peer(
     let bytes = read_frame(&mut stream).await?;
     let command = decode_wire_envelope(&bytes)?.client_command(1)?;
     assert_eq!((command.command_id, command.command_type), (7, 10));
+    assert_eq!(command.payload, [0x08, 0x03]);
     assert_eq!(
         wire::decode_account_achievements_query(command.payload),
         Ok(AccountAchievementsQuery { page: 3 })
@@ -84,7 +85,25 @@ fn scenario(
             block_on(async {
                 let (client, server) = tokio::io::duplex(65536);
                 let task = tokio::spawn(peer(server, status, payload));
-                let mut session = Session::admit(client, admission()?).await?;
+                let mut session = Session::admit(
+                    client,
+                    Admission {
+                        supported_capabilities: &[
+                            13,
+                            wire::CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1,
+                        ],
+                        ..admission()?
+                    },
+                )
+                .await?;
+                assert!(matches!(
+                    session
+                        .account_achievements_filtered(0, wire::AchievementCompletion::Incomplete)
+                        .await,
+                    Err(SessionError::CapabilityNotSelected {
+                        capability: wire::CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1
+                    })
+                ));
                 let result = session.account_achievements(3).await;
                 if let Some(wanted) = wanted {
                     assert_eq!(result?, wanted);
@@ -108,7 +127,8 @@ fn scenario(
         .map_err(|_| "achievements session scenario panicked")?
 }
 #[test]
-fn account_achievements_core_command_needs_no_notice_capability() -> Result<(), BoxError> {
+fn account_achievements_core_command_keeps_old_bytes_without_completion_capability()
+-> Result<(), BoxError> {
     let page = AccountAchievementsResult {
         page: 3,
         total_points: 42,

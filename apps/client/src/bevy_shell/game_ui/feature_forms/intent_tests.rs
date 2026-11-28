@@ -578,6 +578,218 @@ fn account_achievements_buttons_page_through_the_server_list() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn gap_0612_achievement_completion_filter_restarts_server_paging() -> TestResult {
+    use oteryn_session::{Admission, Session, read_frame, test_support::wire, write_frame};
+    use std::time::Duration;
+    use wire::account_achievements::{
+        AccountAchievementRow, AccountAchievementsResult, encode_account_achievements_result,
+    };
+    use wire::world_object as overlay;
+    use wire::world_spatial as spatial;
+
+    type WireError = Box<dyn std::error::Error + Send + Sync>;
+
+    async fn wait_for(app: &App, page_name: Option<&str>) -> Result<(), WireError> {
+        tokio::time::timeout(Duration::from_secs(3), async {
+            loop {
+                let panel =
+                    with_link(app, |link| link.achievements_panel()).map_err(|e| e.to_string())?;
+                let ready = match page_name {
+                    None => panel.selected,
+                    Some(name) => {
+                        panel.pending.is_none()
+                            && panel
+                                .page
+                                .as_ref()
+                                .is_some_and(|page| page.rows.iter().any(|row| row.name == name))
+                    }
+                };
+                if ready {
+                    return Ok::<(), WireError>(());
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await?
+    }
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), WireError> {
+            let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+            runtime.block_on(async {
+                let (client, mut server) = tokio::io::duplex(65_536);
+                let id = |n| {
+                    [
+                        1, 0x93, 0x4f, 0x10, 0x7c, 0, 0x70, n, 0x80, 0, 0, 0, 0, 0, 0, n,
+                    ]
+                };
+                let caps =
+                    &[wire::account_achievements::CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1];
+                let (observed, mut commands) = tokio::sync::mpsc::unbounded_channel();
+                let peer = tokio::spawn(async move {
+                    read_frame(&mut server).await?;
+                    write_frame(
+                        &mut server,
+                        &wire::encode_server_accepted(&wire::ServerAcceptedValue {
+                            game_session_id: wire::GameSessionId::decode(&id(1))?,
+                            world_id: wire::WorldId::decode(&id(2))?,
+                            channel_id: wire::ChannelId::decode(&id(3))?,
+                            connection_generation: 1,
+                            current_server_sequence: 0,
+                            next_command_id: 1,
+                            schema_revision: 1,
+                            selected_capabilities: caps,
+                        })?,
+                    )
+                    .await?;
+                    let spatial_payload =
+                        spatial::encode_world_spatial(&spatial::WorldSpatialObservation {
+                            content_generation: [7; 32],
+                            actor_position: spatial::ActorPosition {
+                                x: 100,
+                                y: 100,
+                                floor: 7,
+                            },
+                        });
+                    let overlay_payload = overlay::encode_world_object_overlay_snapshot(&[])
+                        .map_err(|e| format!("{e:?}"))?;
+                    for frame in wire::encode_single_chunk_snapshot(
+                        1,
+                        1,
+                        1,
+                        &[
+                            wire::DomainSnapshot {
+                                domain_id: spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                                revision: 1,
+                                snapshot_type: spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                                payload: &spatial_payload,
+                            },
+                            wire::DomainSnapshot {
+                                domain_id: overlay::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                                revision: 1,
+                                snapshot_type: overlay::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                                payload: &overlay_payload,
+                            },
+                        ],
+                    )? {
+                        write_frame(&mut server, &frame).await?;
+                    }
+                    for (i, page, count, name, secret) in [
+                        (1, 0, 64, "Earned", true),
+                        (2, 1, 1, "Earned secret", true),
+                        (3, 0, 64, "Public goal", false),
+                        (4, 1, 1, "Another public goal", false),
+                        (5, 0, 64, "Earned again", true),
+                    ] {
+                        let frame = read_frame(&mut server).await?;
+                        let command = wire::decode_wire_envelope(&frame)?.client_command(1)?;
+                        assert_eq!(command.command_id, i);
+                        observed.send((command.command_type, command.payload.to_vec()))?;
+                        let result = AccountAchievementsResult {
+                            page,
+                            total_points: 42,
+                            fact_count: 65,
+                            has_more: count == 64,
+                            rows: (0..count)
+                                .map(|row| AccountAchievementRow {
+                                    key: format!("oteryn:achievement/a{i}_{row}"),
+                                    name: name.into(),
+                                    description: "Achievement description".into(),
+                                    grade: 1,
+                                    points: 1,
+                                    earned_at: if secret { 123 } else { 0 },
+                                    secret,
+                                })
+                                .collect(),
+                        };
+                        let payload = encode_account_achievements_result(&result)
+                            .map_err(|e| format!("{e:?}"))?;
+                        write_frame(
+                            &mut server,
+                            &wire::encode_command_result(
+                                1,
+                                i + 1,
+                                i,
+                                CommandStatus::Accepted,
+                                &payload,
+                            )?,
+                        )
+                        .await?;
+                    }
+                    // Keep the admitted transport alive through the last UI assertion.
+                    assert!(read_frame(&mut server).await.is_err());
+                    Ok::<(), WireError>(())
+                });
+                let session = Session::admit(
+                    client,
+                    Admission {
+                        appearance_items: None,
+                        schema_revision: 1,
+                        character_id: wire::CharacterId::decode(&id(4))?,
+                        admission_material: b"achievements-filter",
+                        client_build_id: "achievement-completion-filter-test",
+                        supported_capabilities: caps,
+                        deadline: Duration::from_secs(3),
+                    },
+                )
+                .await?;
+                let (mut app, _, _) = fixture().map_err(|e| e.to_string())?;
+                let (link, incoming, outbox) = play_channel();
+                link.use_shared_frontend();
+                app.world_mut()
+                    .non_send_mut::<HostOwner>()
+                    .play
+                    .as_mut()
+                    .ok_or("play")?
+                    .link = link;
+                let task = tokio::spawn(crate::play::run_session(session, incoming, outbox));
+                let actions = async {
+                    wait_for(&app, None).await?;
+                    open_key(
+                        &mut app,
+                        crate::play::PlayLink::achievements_input,
+                        4,
+                        ctrl_shift(),
+                    )
+                    .map_err(|e| e.to_string())?;
+                    wait_for(&app, Some("Earned")).await?;
+                    app.update();
+                    click(&mut app, Some(2)).map_err(|e| e.to_string())?;
+                    wait_for(&app, Some("Earned secret")).await?;
+                    assert!(summary(&mut app).contains("Page 2"));
+                    click(&mut app, Some(5)).map_err(|e| e.to_string())?;
+                    wait_for(&app, Some("Public goal")).await?;
+                    let text = summary(&mut app);
+                    assert!(text.contains("42 points · 65 earned"));
+                    assert!(text.contains("Page 1"));
+                    assert!(text.contains("Public goal"));
+                    assert!(!text.contains("Earned secret"));
+                    click(&mut app, Some(2)).map_err(|e| e.to_string())?;
+                    wait_for(&app, Some("Another public goal")).await?;
+                    app.update();
+                    click(&mut app, Some(4)).map_err(|e| e.to_string())?;
+                    wait_for(&app, Some("Earned again")).await?;
+                    assert!(summary(&mut app).contains("Page 1"));
+                    for payload in [&[0][..], &[0, 8, 1], &[1], &[1, 8, 1], &[0]] {
+                        assert_eq!(commands.try_recv()?, (6387, payload.to_vec()));
+                    }
+                    Ok::<(), WireError>(())
+                }
+                .await;
+                drop(app);
+                tokio::time::timeout(Duration::from_secs(3), task).await??;
+                actions?;
+                tokio::time::timeout(Duration::from_secs(3), peer).await???;
+                Ok::<(), WireError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "achievement completion filter scenario panicked")?
+        .map_err(|e| e.to_string().into())
+}
+
 /// Open, Preview, Start and Cancel send the typed boss, context and difficulty.
 #[test]
 fn boss_difficulty_buttons_map_to_their_requests() -> TestResult {

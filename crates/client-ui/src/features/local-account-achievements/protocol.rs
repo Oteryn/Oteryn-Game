@@ -1,10 +1,11 @@
 use super::AchievementsPanel;
-use oteryn_client_runtime::account_achievements::Response;
+use oteryn_client_runtime::account_achievements::{AchievementCompletion, Response};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
     Refresh,
     Previous,
     Next,
+    Completion(AchievementCompletion),
 }
 pub fn request(p: &mut AchievementsPanel, intent: Intent) -> Option<u32> {
     if !p.selected {
@@ -16,11 +17,21 @@ pub fn request(p: &mut AchievementsPanel, intent: Intent) -> Option<u32> {
     }
     let page = match intent {
         Intent::Refresh => 0,
+        Intent::Completion(mode) if p.completion.is_some() => {
+            if p.completion != Some(mode) {
+                p.completion = Some(mode);
+                p.page = None;
+                p.catalog.clear_projection();
+            } else if p.page.is_some() {
+                return None;
+            }
+            0
+        }
         Intent::Previous if p.has_previous() => p.page.as_ref()?.page.checked_sub(1)?,
         Intent::Next if p.has_next() => p.page.as_ref()?.page.checked_add(1)?,
         _ => return None,
     };
-    if matches!(intent, Intent::Refresh) && p.catalog.enabled {
+    if matches!(intent, Intent::Refresh | Intent::Completion(_)) && p.catalog.enabled {
         p.catalog.begin();
     }
     p.pending = Some(page);
@@ -35,7 +46,7 @@ pub fn apply_result(p: &mut AchievementsPanel, response: &Response) {
         Response::Page(page) if page.page == wanted => {
             p.catalog.revision = p.catalog.revision.saturating_add(1);
             p.error = if p.catalog.enabled {
-                p.catalog.accept(page).err()
+                p.catalog.accept(page, p.completion).err()
             } else {
                 None
             };

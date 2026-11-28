@@ -1,6 +1,7 @@
 //! Typed core-protocol account achievement adapter.
 pub use oteryn_session::account_achievements::{
-    AccountAchievementRow, AccountAchievementsResult, Response,
+    ACCOUNT_ACHIEVEMENTS_PAGE_ROWS, AccountAchievementRow, AccountAchievementsResult,
+    AchievementCompletion, CAPABILITY_ACHIEVEMENT_COMPLETION_FILTER_V1, Response,
 };
 use oteryn_session::{Session, SessionError, SessionStream};
 

@@ -2,17 +2,19 @@
   "mechanic": "0612-achievement-completion-filter",
   "kind": "handlers",
   "id": "0612-achievement-completion-filter-query",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
     6387
   ],
   "direction": "client_to_server",
-  "reason": "Account Achievement completion filters are available on the server. The native client lane owns their integration.",
+  "capability": 612,
+  "entry": "account_achievements.rs::account_achievements_filtered",
+  "entry_owner": "session",
   "not_applicable": {
-    "state": "Completion comes from the server account facts.",
-    "protocol": "The client does not negotiate this capability yet.",
-    "view": "The existing panel uses the original query.",
-    "input": "The existing panel sends the original command.",
-    "settings": "There is no independent client setting for this query."
+    "state": "The local-account-achievements reducer owns the selected mode and page.",
+    "protocol": "The typed Session handler uses the account achievements codec.",
+    "view": "The native account achievements form displays the selected projection.",
+    "input": "The native account achievements form submits the completion controls.",
+    "settings": "The completion selector belongs to the current catalogue session."
   }
 }

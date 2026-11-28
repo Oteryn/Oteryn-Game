@@ -1,7 +1,10 @@
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::account_achievements::{AchievementFilter, AchievementSort, Intent};
+use oteryn_client_ui::account_achievements::{
+    AchievementFilter, AchievementSort, AchievementsPanel, Intent,
+};
 use oteryn_input_actions::NormalizedInputEvent;
+use tokio::sync::mpsc::UnboundedSender;
 
 impl PlayLink {
     pub fn achievements_browse(
@@ -21,15 +24,9 @@ impl PlayLink {
 
     pub fn achievements_request(&self, intent: Intent) {
         let mut mailbox = lock(&self.mailbox);
-        if let Some(payload) =
-            oteryn_client_ui::account_achievements::request(&mut mailbox.achievements, intent)
-            && self
-                .commands
-                .send(PlayCommand::AccountAchievements(payload))
-                .is_err()
-        {
-            mailbox.achievements.pending = None;
-            mailbox.achievements.error = Some(tr!("Session ended"));
+        let panel = &mut mailbox.achievements;
+        if let Some(page) = oteryn_client_ui::account_achievements::request(panel, intent) {
+            send_page(panel, &self.commands, page);
         }
     }
 
@@ -40,5 +37,21 @@ impl PlayLink {
         self.achievements_request(Intent::Refresh);
         lock(&self.mailbox).achievements.open = true;
         true
+    }
+}
+
+pub(super) fn send_page(
+    panel: &mut AchievementsPanel,
+    commands: &UnboundedSender<PlayCommand>,
+    page: u32,
+) {
+    let command = match panel.completion {
+        Some(mode) => PlayCommand::AccountAchievementsFiltered(page, mode),
+        None => PlayCommand::AccountAchievements(page),
+    };
+    if commands.send(command).is_err() {
+        panel.pending = None;
+        panel.catalog.collecting = false;
+        panel.error = Some(tr!("Session ended"));
     }
 }

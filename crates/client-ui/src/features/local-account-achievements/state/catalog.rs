@@ -1,5 +1,5 @@
 use oteryn_client_runtime::account_achievements::{
-    AccountAchievementRow, AccountAchievementsResult,
+    AccountAchievementRow, AccountAchievementsResult, AchievementCompletion,
 };
 use std::collections::BTreeSet;
 const MAX_ROWS: usize = 16_384;
@@ -25,6 +25,7 @@ pub struct CatalogState {
     pub ready: bool,
     pub rows: Vec<AccountAchievementRow>,
     pub points: u32,
+    pub earned_count: u32,
     pub filter: AchievementFilter,
     pub sort: AchievementSort,
     pub search: String,
@@ -48,6 +49,14 @@ impl CatalogState {
         }
     }
 
+    pub(super) fn clear_projection(&mut self) {
+        self.rows.clear();
+        self.points = 0;
+        self.earned_count = 0;
+        self.ready = false;
+        self.page = 0;
+    }
+
     pub(super) fn begin(&mut self) {
         self.collecting = true;
         self.building.clear();
@@ -55,17 +64,28 @@ impl CatalogState {
         self.totals = None;
         self.next_page = 0;
     }
-    /// Publish only a complete account list. A changed count/points or duplicate requires refresh.
-    pub(super) fn accept(&mut self, page: &AccountAchievementsResult) -> Result<(), &'static str> {
+    /// Publish only after the last page. A changed count/points or duplicate requires refresh.
+    pub(super) fn accept(
+        &mut self,
+        page: &AccountAchievementsResult,
+        completion: Option<AchievementCompletion>,
+    ) -> Result<(), &'static str> {
         if page.page == 0 {
             self.begin();
         }
         let totals = (page.fact_count, page.total_points);
+        // Incomplete pages report the same earned totals as completed pages.
+        let earned_only = completion != Some(AchievementCompletion::Incomplete);
+        let row_limit = if earned_only {
+            page.fact_count as usize
+        } else {
+            MAX_ROWS
+        };
         if !self.collecting
             || page.page != self.next_page
-            || page.fact_count as usize > MAX_ROWS
+            || row_limit > MAX_ROWS
             || self.totals.is_some_and(|v| v != totals)
-            || self.building.len().saturating_add(page.rows.len()) > page.fact_count as usize
+            || self.building.len().saturating_add(page.rows.len()) > row_limit
         {
             self.collecting = false;
             return Err(tr!(
@@ -83,13 +103,14 @@ impl CatalogState {
         self.revision = self.revision.saturating_add(1);
         self.next_page = self.next_page.saturating_add(1);
         if !page.has_more {
-            if self.building.len() != page.fact_count as usize {
+            if earned_only && self.building.len() != row_limit {
                 self.collecting = false;
                 return Err(tr!("The server returned an incomplete account list"));
             }
             self.rows = std::mem::take(&mut self.building);
             self.keys.clear();
             self.points = page.total_points;
+            self.earned_count = page.fact_count;
             self.ready = true;
             self.collecting = false;
             self.page = 0;
