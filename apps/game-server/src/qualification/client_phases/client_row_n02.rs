@@ -188,7 +188,7 @@ async fn journey(
         .ok_or("King Tibianus was not visible at his authored placement")?
         .entity;
     character_prep::grant_premium(&client).await?;
-    let (_, greeting) = client_row_p20::talk(&mut client, king, "hi").await?;
+    let (_, greeting) = client_row_p20::talk(&mut client, king, "Hail King").await?;
     if greeting.is_empty() {
         return Err("King Tibianus greeting was empty".into());
     }
