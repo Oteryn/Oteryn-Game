@@ -64,7 +64,7 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "w20b-light" => Some(("sorcerer", 26)),
         "c05-exiva" => Some(("sorcerer", 8)),
         "c10-sorcerer" => Some(("sorcerer", 20)),
-        "c16d-sorcerer" => Some(("sorcerer", 30)),
+        "c16d-sorcerer" => Some(("sorcerer", 300)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
         "c12-monk" => Some(("monk", 20)),
