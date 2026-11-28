@@ -286,19 +286,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if list != denied {
         return Err(format!("fresh-admission step observed modes={}", list.modes).into());
     }
+    // The target's relog can leave unrelated caster regeneration deltas queued.
+    caster.service_liveness(Duration::from_millis(50)).await?;
     let before = caster
         .actor_vitals()
         .copied()
         .ok_or("fresh refusal missing vitals")?;
     let (refused, messages) = cast(&mut caster, &target_name).await?;
+    let after = caster
+        .actor_vitals()
+        .copied()
+        .ok_or("fresh refusal missing post-cast vitals")?;
     if refused.status != CommandStatus::Rejected
         || refused.disposition != ChatDisposition::Rejected
-        || caster.actor_vitals() != Some(&before)
+        || before != after
         || messages != [protected]
     {
         return Err(format!(
-            "fresh-admission refusal observed disposition={:?} replies={messages:?}",
-            refused.disposition
+            "fresh-admission refusal observed status={:?} disposition={:?} before={before:?} after={after:?} replies={messages:?}",
+            refused.status, refused.disposition
         )
         .into());
     }
