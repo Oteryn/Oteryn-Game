@@ -271,7 +271,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(probe) = &probe {
             probe.pause().await;
         }
-        if !matches!(self.save_conditions_at_actor_end(actor, session).await, Ok(true)) {
+        if !matches!(
+            self.save_conditions_at_actor_end(actor, session).await,
+            Ok(true)
+        ) {
             #[cfg(test)]
             if let Some(probe) = probe {
                 probe.blocked();
