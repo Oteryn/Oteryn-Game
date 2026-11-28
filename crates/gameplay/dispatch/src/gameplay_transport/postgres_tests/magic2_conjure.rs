@@ -25,12 +25,12 @@ const MISSILE: &str = "oteryn:item.tibia.i3198";
 
 #[test]
 fn magic2_conjure_postgres_full_bag_rolls_back_then_merges_mints_and_replays() -> TestResult {
-    large_stack(|| scenarios(&[(true, false)], false, false))
+    large_stack(|| scenarios(&[(true, false)], ScenarioMode::Standard))
 }
 
 #[test]
 fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_terminal() -> TestResult {
-    large_stack(|| scenarios(&[(false, true), (false, false)], false, false))
+    large_stack(|| scenarios(&[(false, true), (false, false)], ScenarioMode::Standard))
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn c10_light_magic_missile_conjure_uses_preparation_clock_postgres() -> TestResu
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    large_stack(|| scenarios(&[(false, false)], true, false))
+    large_stack(|| scenarios(&[(false, false)], ScenarioMode::PreparationClock))
 }
 
 struct AdvanceDuringAccess<'a> {
@@ -60,10 +60,22 @@ impl CurrentSpellAccessOwner for AdvanceDuringAccess<'_> {
 
 #[test]
 fn magic2_conjure_postgres_without_qualified_room() -> TestResult {
-    large_stack(|| scenarios(&[(true, false), (false, false)], false, true))
+    large_stack(|| {
+        scenarios(
+            &[(true, false), (false, false)],
+            ScenarioMode::CombatRoomOnly,
+        )
+    })
 }
 
-fn scenarios(cases: &[(bool, bool)], cooldown_clock: bool, combat_room_only: bool) -> TestResult {
+#[derive(Clone, Copy)]
+enum ScenarioMode {
+    Standard,
+    PreparationClock,
+    CombatRoomOnly,
+}
+
+fn scenarios(cases: &[(bool, bool)], mode: ScenarioMode) -> TestResult {
     run(async |admin| {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
@@ -83,8 +95,7 @@ fn scenarios(cases: &[(bool, bool)], cooldown_clock: bool, combat_room_only: boo
                 &pin,
                 full,
                 missing_reagent,
-                cooldown_clock,
-                combat_room_only,
+                mode,
             )
             .await?;
         }
@@ -101,9 +112,10 @@ async fn scenario(
     pin: &crate::content::NativeEntryContentPin,
     full: bool,
     missing_reagent: bool,
-    cooldown_clock: bool,
-    combat_room_only: bool,
+    mode: ScenarioMode,
 ) -> TestResult {
+    let cooldown_clock = matches!(mode, ScenarioMode::PreparationClock);
+    let combat_room_only = matches!(mode, ScenarioMode::CombatRoomOnly);
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
     prepare_current_session(&h).await?;
