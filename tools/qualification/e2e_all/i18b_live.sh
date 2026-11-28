@@ -29,5 +29,5 @@ grep '^NODE_BOOT_RESULT=NODE_BOOT_PASS ' "$node_log"
 replay_log="$E2E_ALL_CAPTURE_DIR/client.log"
 cargo +1.100.0 test --locked -p oteryn-client --lib i18b_live_browse_field_replay \
     -- --ignored --nocapture 2>&1 | tee "$replay_log"
-grep -Fx "I18B_CLIENT_REPLAY PASS run=${E2E_ALL_CAPTURE_DIR##*/} phases=3" "$replay_log"
-grep '^test result: ok\. 1 passed; 0 failed;' "$replay_log"
+grep -Fqx "I18B_CLIENT_REPLAY PASS run=${E2E_ALL_CAPTURE_DIR##*/} phases=3" "$replay_log"
+grep -q '^test result: ok\. 1 passed; 0 failed;' "$replay_log"
