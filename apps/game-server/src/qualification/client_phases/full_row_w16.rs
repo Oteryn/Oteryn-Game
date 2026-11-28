@@ -133,11 +133,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.world_spatial().actor_position != saved {
         return Err("step=invalid-floor-refusal observed=position-changed".into());
     }
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
-    }
+    logout_w16(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xb7, 0).await?;
     if fresh.world_spatial().actor_position != saved {
@@ -177,11 +173,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(format!("step=summer-population-observation need={key} observed=no-matching-live-actor").into());
         }
     }
-    if fresh.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=final-logout observed=refused".into());
-    }
+    logout_w16(&mut fresh).await?;
     Err("step=summer-boss-encounters observed=no-authored-player-entry need=Maior-Domus,Mimar-Haffar,Phosphorus,Rakesh-Moonfang,The-Moonsnow-Magnolia".into())
 }
 
@@ -190,6 +182,7 @@ async fn population_step(
     world: &BundleWorld,
     direction: StepDirection,
 ) -> TestResult<oteryn_dev_client::StepOutcome> {
+    require_alive(client)?;
     let before = client.world_spatial().actor_position;
     let expected = destination(world, tile(before)?, direction).ok_or("W16 step has no compiled landing")?;
     let mut waited = false;
@@ -319,6 +312,8 @@ fn population_fixture(suffix: &str) -> Option<(TilePos, ActorPosition)> {
     let (spawn_x, spawn_y, start_x, start_y, floor) = match suffix {
         "radiant_acolyte" => (33946, 32645, 33945, 32645, 5),
         "radiant_inquisitor" => (33945, 32646, 33944, 32646, 2),
+        "radiant_paragon" => (33946, 32648, 33946, 32647, 5),
+        "radiant_templar" => (33949, 32645, 33948, 32645, 2),
         _ => return None,
     };
     Some((
@@ -342,12 +337,38 @@ pub(super) fn require_target_walk(
     Err(format!("step=target-walk-{key} observed={disposition} status={status:?} payload={payload:?}").into())
 }
 
-pub(super) async fn logout_w16(client: &mut DevClientSession) -> TestResult {
-    let result = client.session_mut().logout().await?;
-    if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("W16 logout refused: {result:?}").into());
+fn require_alive(client: &DevClientSession) -> TestResult {
+    if client.actor_vitals().is_none_or(|vitals| vitals.health == 0) {
+        return Err(format!("W16 requires live character vitals: {:?}", client.actor_vitals()).into());
     }
     Ok(())
+}
+
+pub(super) async fn logout_w16(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    let position = client.world_spatial().actor_position;
+    let vitals = client.actor_vitals().copied();
+    let inventory = client.inventory().cloned();
+    let mut attempt = 0;
+    loop {
+        attempt += 1;
+        let outcome = tokio::time::timeout_at(deadline, client.session_mut().logout()).await??;
+        evidence(&format!("W16_LOGOUT attempt={attempt} reply={outcome:?}"));
+        match (outcome.status, outcome.result) {
+            (CommandStatus::Accepted, Some(LogoutResult::Accepted)) => return Ok(()),
+            (CommandStatus::Rejected, Some(LogoutResult::Busy)) => {},
+            _ => return Err(format!("W16 logout refused: {outcome:?}").into()),
+        }
+        tokio::time::timeout_at(deadline, client.service_liveness(Duration::from_millis(250))).await??;
+        if client.world_spatial().actor_position != position
+            || client.actor_vitals().copied() != vitals
+            || client.inventory() != inventory.as_ref()
+        {
+            return Err(format!("W16 logout Busy changed observed state: {outcome:?}").into());
+        }
+    }
 }
 
 pub(super) async fn approach(
@@ -390,7 +411,7 @@ pub(super) async fn approach(
     Ok(client)
 }
 
-async fn stage_at(
+pub(super) async fn stage_at(
     clients: &SeamClients<'_>, tag: u8, key: &str, start: ActorPosition,
 ) -> TestResult<DevClientSession> {
     wait_character_released(clients, 0).await?;
@@ -423,6 +444,7 @@ async fn stage_at(
     if client.world_spatial().actor_position != start {
         return Err(format!("W16 fixture admission expected={start:?} observed={:?}", client.world_spatial().actor_position).into());
     }
+    require_alive(&client)?;
     Ok(client)
 }
 

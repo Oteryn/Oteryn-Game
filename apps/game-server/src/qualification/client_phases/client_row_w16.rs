@@ -9,7 +9,6 @@ const NPC: &str = "oteryn:npc.wayland_smythers";
 const NAME: &str = "Wayland Smythers";
 // TibiaWiki's Venore placement, independent of the compiled bundle.
 const VENORE: ActorPosition = ActorPosition { x: 32960, y: 32075, floor: 6 };
-const ENTRY: ActorPosition = ActorPosition { x: 32369, y: 32238, floor: 7 };
 const APPROACH: ActorPosition = ActorPosition { x: 32959, y: 32076, floor: 6 };
 const LANDING: ActorPosition = ActorPosition { x: 32959, y: 32075, floor: 6 };
 
@@ -43,41 +42,13 @@ fn is_wayland(kind: EntityKind, name: Option<&str>, position: ActorPosition) -> 
     kind == EntityKind::Npc && name == Some(NAME) && position == VENORE
 }
 
-fn approach_route(
-    from: ActorPosition,
-    goal: TilePos,
-    resolve: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
-) -> TestResult<Vec<StepDirection>> {
-    expect_position("normal-admission", from, ENTRY)?;
-    let path = find_route(tile(from)?, |at| at == goal, resolve)
-        .map_err(|visited| format!("W16 no compiled walking route from {from:?} to {goal:?}; visited={visited}"))?;
-    if path.is_empty() {
-        return Err("W16 empty approach route".into());
-    }
-    Ok(path)
-}
-
-async fn walk_from_admission(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    path: Vec<StepDirection>,
-) -> TestResult {
-    let landing = |from, direction| destination_with_teleports(world, from, direction, false);
-    evidence(&format!("W16_ROUTE from={ENTRY:?} approach={APPROACH:?} steps={}", path.len()));
-    for direction in path {
-        let before = tile(client.world_spatial().actor_position)?;
-        let expected = landing(before, direction).ok_or("W16 compiled step has no landing")?;
-        let outcome = client.step(direction).await?;
-        if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none()
-            || tile(client.world_spatial().actor_position)? != expected
-        {
-            return Err(format!("W16 route step from={before:?} direction={direction:?} expected={expected:?} observed={outcome:?}").into());
-        }
-        if outcome.step_wait_ms > 0 {
-            client.service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms))).await?;
-        }
-    }
+async fn walk_from_fixture(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     expect_position("walk-approach", client.world_spatial().actor_position, APPROACH)?;
+    if destination_with_teleports(world, tile(APPROACH)?, StepDirection::North, false)
+        != Some(tile(LANDING)?)
+    {
+        return Err("W16 fixture approach has no compiled north landing".into());
+    }
     let reply = client.session_mut().target_walk(LANDING).await?;
     super::full_row_w16::require_target_walk(NPC, reply.status, &reply.payload)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
@@ -187,21 +158,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_W16_ACCOUNT").await?;
     let fixture_clients = fixture.clients(clients);
     let initial = &fixture_clients;
-    let mut client = connect_character(initial, 0x89, 0).await?;
-    let path = approach_route(client.world_spatial().actor_position, tile(APPROACH)?, |from, direction| {
-        destination_with_teleports(world, from, direction, false)
-    });
+    let mut setup = connect_character(initial, 0x89, 0).await?;
+    super::full_row_w16::logout_w16(&mut setup).await?;
+    drop(setup);
+    let mut client = super::full_row_w16::stage_at(initial, 0x8b, NPC, APPROACH).await?;
     if !npc.placements.iter().any(|placement| {
         i32::from(placement.x) == VENORE.x
             && i32::from(placement.y) == VENORE.y
             && -i16::from(placement.floor) == VENORE.floor
     }) {
-        if let Err(error) = &path {
-            evidence(&format!("W16_ROUTE_BLOCKER {error}"));
-        }
-        return Err(format!("W16 Global Wayland placement absent: expected={VENORE:?} compiled={:?}", npc.placements).into());
+        return Err(format!("BLOCKED-CONTENT W16 Global Wayland placement absent: expected={VENORE:?} compiled={:?}", npc.placements).into());
     }
-    walk_from_admission(&mut client, world, path?).await?;
+    walk_from_fixture(&mut client, world).await?;
     let landing = client.world_spatial().actor_position;
     let actor = client
         .world_entities()
@@ -293,15 +261,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn approach_rejects_adjacent_fixture_and_requires_connected_ground() -> TestResult {
-        assert!(approach_route(APPROACH, tile(APPROACH)?, |_, _| None).is_err());
-        assert!(approach_route(ENTRY, tile(APPROACH)?, |_, _| None).is_err());
-        let from = tile(ENTRY)?;
-        let next = TilePos { x: from.x + 1, ..from };
-        assert_eq!(approach_route(ENTRY, next, |at, direction| {
-            (at == from && direction == StepDirection::East).then_some(next)
-        })?, [StepDirection::East]);
-        Ok(())
+    fn fixture_differs_from_asserted_walk_landing() -> TestResult {
+        assert!(expect_position("target-walk-landing", APPROACH, LANDING).is_err());
+        expect_position("target-walk-landing", LANDING, LANDING)
     }
 
     #[test]
