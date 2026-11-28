@@ -306,7 +306,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-pirate-hat-start" => &["addon", "task", "yes"],
         "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
-        "sam-backpack" => &["old backpack"],
+        "sam-backpack" => &["old backpack", "yes"],
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],
@@ -1243,10 +1243,32 @@ pub(super) async fn exercise(
     let mut command = admitted.continuity.next_command_id;
     let offers = offer_words(key);
     for offer in offers {
+        let sam_confirmation = key == "sam-backpack" && *offer == "yes";
+        let before_confirmation = if sam_confirmation {
+            Some(counts(h).await?)
+        } else {
+            None
+        };
+        let outcome = talk_outcome(owner, admitted, npc, command, offer).await?;
         assert_eq!(
-            talk(owner, admitted, npc, command, offer).await?,
-            NpcIntentDisposition::Ok
+            outcome.disposition,
+            NpcIntentDisposition::Ok,
+            "{key}: {offer} must advance the conversation"
         );
+        if let Some(before_confirmation) = before_confirmation {
+            assert!(
+                outcome.conversation.is_some_and(|conversation| conversation
+                    .lines
+                    .iter()
+                    .any(|line| line.contains("Is it in pristine condition?"))),
+                "Sam must ask for a second confirmation"
+            );
+            assert_eq!(
+                counts(h).await?,
+                before_confirmation,
+                "Sam's first yes must leave quest reward receipts unchanged"
+            );
+        }
         command += 1;
     }
     let before = counts(h).await?;

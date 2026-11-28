@@ -5377,7 +5377,26 @@
       "topic": 0,
       "next_topic": 1,
       "reply": [
-        "Did you find my old backpack?"
+        "What? Are you telling me you found my old adventurer's backpack that I lost years ago??"
+      ],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sam",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "reply": [
+        "Is it in pristine condition? I'll throw away any items I find inside. Did you check if there's anything left in there you want to keep?"
       ],
       "storage": [
         {

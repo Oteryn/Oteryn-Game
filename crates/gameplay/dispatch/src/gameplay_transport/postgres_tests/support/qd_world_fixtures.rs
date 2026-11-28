@@ -248,7 +248,7 @@ async fn sams_old_backpack(
         sam_npc,
         sam,
         false,
-        vec!["hi", "backpack", "yes"],
+        vec!["hi", "backpack", "yes", "yes"],
     )
     .await?;
     assert_eq!(result, NpcIntentDisposition::Ok);

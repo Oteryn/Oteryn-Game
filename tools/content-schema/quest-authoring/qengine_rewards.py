@@ -365,7 +365,9 @@ def build():
     add('outfox-helmet','tibia_tales','budrik',['mission','quest'],
         [storage(prefix+'u8_1/to_outfox_afox_quest',1,2)],take=[(139,1)],give=(875,1))
     add('sam-backpack','sam_s_old_backpack_quest','sam',['yes'],
-        [storage(prefix+'u7_5/sams_old_backpack/sams_old_backpack_npc',-1,1,0)],take=[(3244,1)],topic=1)
+        [storage(prefix+'u7_5/sams_old_backpack/sams_old_backpack_npc',-1,1,0)],take=[(3244,1)],topic=2)
+    callbacks[-1]["reply"] = ['Thank you very much! This brings back good old memories! Please, as a reward, travel to Kazordoon and ask my old friend Kroox to provide you a special dwarven armor. ...', 'I will mail him about you immediately. Just tell him, his old buddy Sam is sending you.']
+    callbacks[-1]["sources"].append('https://tibia.fandom.com/wiki/Sam%27s_Old_Backpack_Quest/Spoiler#Transcripts')
     # Offers bind confirmation to this NPC and the common conversation topic.
     offers=[{'npc':'oteryn:npc.morgan','keywords':['forge'],'topic':0,'next_topic':1,
              'reply':['What would you like me to forge?'],
@@ -373,7 +375,9 @@ def build():
             {'npc':offer['npc'],'keywords':offer['keywords'],'topic':0,'next_topic':3,
              'reply':['Who sent you?'],'storage':offer['storage']},
             {'npc':'oteryn:npc.sam','keywords':['old backpack','backpack'],'topic':0,'next_topic':1,
-             'reply':['Did you find my old backpack?'],'storage':callbacks[-1]['storage']}]
+             'reply':["What? Are you telling me you found my old adventurer's backpack that I lost years ago??"],'storage':callbacks[-1]['storage']},
+            {'npc':'oteryn:npc.sam','keywords':['yes'],'topic':1,'next_topic':2,
+             'reply':["Is it in pristine condition? I'll throw away any items I find inside. Did you check if there's anything left in there you want to keep?"],'storage':callbacks[-1]['storage']}]
     for word,topic,next_topic in [('flou',0,1),('explain',1,2),('yes',2,3),('no',3,4),('yes',4,5),('yes',5,6),('yes',6,7),('helmet',7,8)]:
         offers.append({'npc':'oteryn:npc.navigator','keywords':[word],'topic':topic,'next_topic':next_topic,
             'reply':['Listen carefully.'],'storage':[storage('oteryn:quest-progress/navigator',-1,4,0)]})
