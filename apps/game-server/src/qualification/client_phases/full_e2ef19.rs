@@ -153,16 +153,63 @@ async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<C
         .ok_or_else(|| format!("{step}:accepted-but-channel-list-delta-missing").into())
 }
 
+async fn prepare_sender(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    role: &str,
+) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+
+    let mut client = connect_character(clients, tag, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(session.as_bytes()),
+        "--profile",
+        "s04b-level".into(),
+    )
+    .await?;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, tag, 0).await?;
+    if client.join_snapshot().game_session_id == session {
+        return Err("S04b level fixture reused the original admission".into());
+    }
+    let stats = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+        )
+        .await?;
+    if stats.status != CommandStatus::Accepted {
+        return Err(format!("S04b level read refused for {role}: {:?}", stats.status).into());
+    }
+    general_stats::validate(&stats.payload, general_stats::selected(&client))?;
+    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
+    if level != 3 {
+        return Err(format!("S04b seeded level for {role}: expected 3, got {level}").into());
+    }
+    evidence(&format!(
+        "S04B_FIXTURE account={role} level={level} verified=after_relog"
+    ));
+    Ok(client)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S04B_ACCOUNT").await?;
-    let (accounts, characters) = owner.replace_slot(clients, 0)?;
-    let clients = &SeamClients {
-        accounts: &accounts,
-        characters: &characters,
-        ..*clients
-    };
-    let mut a = connect_character(clients, 0xe1, 0).await?;
-    let mut b = connect_character(clients, 0xe2, 1).await?;
+    let peer =
+        character_prep::dedicated_character(clients, "NODE_BOOT_Q_S04B_PEER_ACCOUNT").await?;
+    let owner_clients = owner.clients(clients);
+    let peer_clients = peer.clients(clients);
+    character_prep::declare_seeded(
+        "S04b.full",
+        "two level-3 senders; Premium channel owner",
+        "Private messaging requires level 3; leveling and entitlement acquisition are outside this journey",
+    );
+    let mut a = prepare_sender(&owner_clients, 0xe1, "q_s04b").await?;
+    let mut b = prepare_sender(&peer_clients, 0xe2, "q_s04b_peer").await?;
     let result: TestResult = async {
         let a_name = own_name(&a)?;
         let b_name = own_name(&b)?;
@@ -350,7 +397,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             return Err("relog-transient:no-open-channel-before-logout".into());
         }
         logout(&mut a).await?;
-        a = connect_character(clients, 0xe3, 0).await?;
+        a = connect_character(&owner_clients, 0xe3, 0).await?;
         if channel_list(&mut a, "relog-transient-list")
             .await?
             .own_channel
