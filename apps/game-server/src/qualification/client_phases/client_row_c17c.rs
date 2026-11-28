@@ -141,7 +141,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             return Err("C17c seeded admission reused its original session".into());
         }
         let cast = cast_rat(client.session_mut()).await?;
-        Ok::<_, Box<dyn Error>>((client, cast))
+        Ok::<_, Box<dyn std::error::Error>>((client, cast))
     })
     .await;
     let (mut client, cast) = cast?;
