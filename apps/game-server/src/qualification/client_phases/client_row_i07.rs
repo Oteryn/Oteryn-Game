@@ -645,12 +645,15 @@ pub(super) async fn journey(
     if tile(admitted_position)? != TOWN {
         return Err("I07 fixture requires admission at the seeded corpse tile".into());
     }
-    request_fixture_control(
+    let provisioning_log = request_fixture_control(
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
         "--profile",
         "i07-loot".into(),
     )
     .await?;
+    if !provisioning_log.is_empty() {
+        evidence(&provisioning_log);
+    }
     evidence("FIXTURE I07 premium=granted purpose=category_prerequisite");
     let character = &clients.characters[1];
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
