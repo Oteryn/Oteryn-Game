@@ -425,6 +425,11 @@ impl<S: SessionStream> Session<S> {
             }
             STATE_DOMAIN_CHAT => Err(SessionError::UnselectedDomain { domain_id }),
             STATE_DOMAIN_CHARACTER_INVENTORY if self.inventory.is_some() => {
+                if delta.npc_purchase_attribution.is_some()
+                    && !self.is_selected(npc_service::CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1)
+                {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
                 check_delta(
                     &delta,
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
@@ -436,6 +441,10 @@ impl<S: SessionStream> Session<S> {
                     self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                 )
                 .map_err(SessionError::ItemView)?;
+                self.inventory_npc_purchase_ids.clear();
+                if let Some(attribution) = delta.npc_purchase_attribution {
+                    self.inventory_npc_purchase_ids.extend(attribution.command_ids());
+                }
                 self.inventory = Some(value.clone());
                 self.inventory_revision = new_revision;
                 Ok(SessionEvent::Inventory(applied(

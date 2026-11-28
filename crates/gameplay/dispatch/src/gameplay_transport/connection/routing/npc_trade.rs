@@ -7,6 +7,9 @@ use super::super::{
 };
 use super::Dispatch;
 use oteryn_protocol_oteryn::ClientCommandView;
+use oteryn_protocol_oteryn::npc_service::{
+    CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1, NpcTradeSide,
+};
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -22,6 +25,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         let options = admitted.continuity.selected_capabilities.contains(
             oteryn_protocol_oteryn::npc_shop::CAPABILITY_NPC_SHOP_OPTIONS_V1,
         );
+        let selected = admitted.continuity.selected_capabilities
+            .contains(CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1);
+        let mut attribute_purchase = false;
         let step = match oteryn_protocol_oteryn::npc_service::decode_npc_trade_intent_for(command.payload, options) {
             Ok((intent, _))
                 if intent.quantity > 100
@@ -32,6 +38,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 ))
             }
             Ok((intent, packed)) => {
+                attribute_purchase = selected && intent.side == NpcTradeSide::Buy;
+                if attribute_purchase && item_view.as_ref().is_some_and(SessionItemView::npc_purchase_attribution_full) {
+                    // Preserve every already committed ID while the inventory read is busy.
+                    return Some(Dispatch::NpcTrade(
+                        NpcIntentDisposition::RateLimited,
+                        NpcUpdate::default(),
+                        Vec::new(),
+                    ));
+                }
                 authority
                     .npc_trade_with_delivery(
                         actor,
@@ -53,18 +68,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             NpcTradeStep::Traded => {
                 let mut deltas = Vec::new();
                 if let Some(view) = item_view.as_mut() {
-                    let inventory = item_move::observe_inventory(
+                    if attribute_purchase {
+                        view.record_npc_purchase(command.command_id);
+                    }
+                    if let Some(inventory) = item_move::observe_inventory(
                         authority,
                         actor,
                         admitted.game_session_id,
                         view,
                     )
-                    .await?;
-                    let Ok(delta) = view.inventory_committed(inventory) else {
-                        return None;
-                    };
-                    admitted.continuity.item_view = view.continuity();
-                    deltas.extend(delta);
+                    .await
+                    {
+                        let Ok(delta) = view.inventory_committed(inventory) else {
+                            return None;
+                        };
+                        admitted.continuity.item_view = view.continuity();
+                        deltas.extend(delta);
+                    } else {
+                        view.inventory_refresh_pending = true;
+                    }
                 }
                 Dispatch::NpcTrade(NpcIntentDisposition::Ok, NpcUpdate::default(), deltas)
             }

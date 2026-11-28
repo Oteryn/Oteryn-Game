@@ -6,7 +6,7 @@ pub(super) fn buyer() -> [u8; 16] {
 pub(super) fn account() -> [u8; 16] {
     history::sid(90, 2)
 }
-pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence> {
+pub(super) async fn prepare(h: &Harness, buyer_gold: i64) -> TestResult<CurrentCharacterItemFence> {
     history::historical_character(
         &h.pool,
         90,
@@ -87,7 +87,7 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<CurrentCharacterItemFence
         )
         .await
         .map_err(debug)?;
-    super::super::super::guild_bank_fixtures::bank_seed::balance(h, account(), buyer(), 1000, 180).await?;
+    super::super::super::guild_bank_fixtures::bank_seed::balance(h, account(), buyer(), buyer_gold, 180).await?;
     super::super::super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 100, 160).await?;
     Ok(fence)
 }

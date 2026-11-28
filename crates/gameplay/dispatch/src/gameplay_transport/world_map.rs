@@ -592,6 +592,7 @@ impl SessionMapView {
             Planned::Delta(payload) => {
                 let from = self.revision;
                 Some(MapUpdate::Delta(ItemViewDelta {
+                    npc_purchase_command_ids: Vec::new(),
                     domain_id: STATE_DOMAIN_WORLD_MAP_VIEW,
                     from,
                     to: advance(&mut self.revision)?,

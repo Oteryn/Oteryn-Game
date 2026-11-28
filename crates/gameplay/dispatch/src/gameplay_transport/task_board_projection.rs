@@ -7,8 +7,8 @@ use oteryn_protocol_oteryn::task_board::{self as wire, full as full_wire};
 
 pub(super) fn legacy(commit: &TaskBoardCommit) -> Option<wire::TaskBoardReply> {
     let balances = &commit.view.balances;
-    // The old fixed five-task selection/claim surface is retired. Its query keeps
-    // balances and upgrades readable without inventing a second weekly board.
+    // Legacy replies retain the balance and upgrade view of the retired board.
+    // Generated hunts are available through the full reply.
     Some(wire::TaskBoardReply {
         refused: commit.refusal.is_some(),
         selected: 0,
