@@ -786,6 +786,13 @@ ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
 PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q; LIGHT_ACCOUNT_ID=l
 W10_ACCOUNT_ID=w10; C16C_ACCOUNT_ID=c16c; G17_ACCOUNT=g17; G01_ACCOUNT=g01
+WORK=$PWD; node_log=$WORK/node.log; C20C_PVP_ACCOUNT=c20c
+EXIVA_ACCOUNT_ID=exiva; F5_C17A_ACCOUNT=c17a; F5_C17C_ACCOUNT=c17c; F5_C13_ACCOUNT=c13
+F5_C18A_ACCOUNT=c18a; F5_C17D_ACCOUNT=c17d; C11_UNASSIGNED_ACCOUNT=c11u; C11_KNIGHT_ACCOUNT=c11k
+C12_MONK_ACCOUNT=c12; S13_ACCOUNT=s13; S13_PEER_ACCOUNT=s13peer; W19A_ACCOUNT=w19a
+C05_TARGET_ACCOUNT=c05; C06_CASTER_ACCOUNT=c06; C06_PEER_ACCOUNT=c06peer; W18_ACCOUNT=w18
+C01_ACCOUNT=c01; C20D_ACCOUNT=c20d; C19B_ACCOUNT=c19b; C10_FULL_ACCOUNT=c10f; C10_CLIENT_ACCOUNT=c10c
+c20c_replay() { test -f "$1/seam.log"; }
 EXTRA_WORLD_ACCOUNTS=(e); NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
 declare -A STATUS=()
 sleep() { :; }
@@ -812,8 +819,9 @@ sleep() { :; }
                         cwd=work,
                         capture_output=True,
                         text=True,
-                        check=True,
+                        check=False,
                     )
+                    self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertEqual(
                         result.stdout.splitlines()[-1], f"batch={expected}"
                     )
