@@ -20,6 +20,7 @@ const CONJURE_MANA_COST: u32 = 120;
 const XODET: &str = "oteryn:npc.xodet";
 const XODET_CELL: (u16, u16, i8) = (32398, 32222, -7);
 const XODET_WANDER_RADIUS: u32 = 2;
+const XODET_STREET: TilePos = TilePos { x: 32398, y: 32226, floor: -7 };
 
 const PREPARATION: character_prep::Seeded = character_prep::Seeded {
     profile: "c06-sorcerer",
@@ -460,72 +461,47 @@ async fn acquire(
         })
         .collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let candidates = npcs.npcs.iter().filter(|n| {
-        sellers.contains(&n.key)
-            && (item_id != BLANK_RUNE_ID
-                || (n.key == XODET
-                    && n.placements.iter().any(|p| (p.x, p.y, p.floor) == XODET_CELL)))
-    });
-    let placed = candidates.clone().count();
-    let (npc, path) = candidates
-        .filter_map(|n| {
-            let wander = if n.key == XODET {
-                XODET_WANDER_RADIUS
-            } else {
-                0
-            };
-            let approach = wire::TALK_RANGE_TILES - wander;
-            route(world, here, |at| {
-                n.placements.iter().any(|p| {
-                    (item_id != BLANK_RUNE_ID || (p.x, p.y, p.floor) == XODET_CELL)
-                        && p.floor == at.floor
-                        && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
-                })
-            })
-            .map(|p| (n, p))
-        })
-        .min_by_key(|(_, p)| p.len())
-        .ok_or_else(|| format!("{};from={here:?}", seller_gap(item_id, sellers.len(), placed)))?;
+    let npc = npcs.npcs.iter().find(|npc| {
+        npc.key == XODET
+            && sellers.contains(&npc.key)
+            && npc.placements.iter().any(|p| (p.x, p.y, p.floor) == XODET_CELL)
+    }).ok_or_else(|| seller_gap(item_id, sellers.len(), 0))?;
+    let path = route(world, here, |at| at == XODET_STREET)
+        .ok_or_else(|| format!("{};from={here:?}", seller_gap(item_id, sellers.len(), 1)))?;
     walk(client, world, &path).await?;
     let position = client.world_spatial().actor_position;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
+    if tile(position)? != XODET_STREET {
+        return Err("C06 did not reach the authored Xodet street approach".into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    let actor = loop {
+        let actor = client.world_entities().and_then(|entities| {
             let mut candidates = entities.iter().filter(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Npc
                     && entry.position.floor == position.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(position.x)
-                        .max(entry.position.y.abs_diff(position.y))
+                    && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y))
                         <= wire::TALK_RANGE_TILES
+                    && entry.display_name.is_some_and(|name| {
+                        name.as_str().is_ok_and(|name| name == "Xodet")
+                    })
                     && npc.placements.iter().any(|p| {
-                        let distance = entry
-                            .position
-                            .x
-                            .abs_diff(i32::from(p.x))
-                            .max(entry.position.y.abs_diff(i32::from(p.y)));
-                        position.floor == -i16::from(p.floor)
-                            && if npc.key == XODET {
-                                distance <= XODET_WANDER_RADIUS
-                                    && entry.display_name.is_none_or(|name| {
-                                        name.as_str().is_ok_and(|name| name == "Xodet")
-                                    })
-                            } else {
-                                distance == 0
-                            }
+                        (p.x, p.y, p.floor) == XODET_CELL
+                            && position.floor == -i16::from(p.floor)
+                            && entry.position.x.abs_diff(i32::from(p.x))
+                                .max(entry.position.y.abs_diff(i32::from(p.y))) <= XODET_WANDER_RADIUS
                     })
             });
             let entry = candidates.next()?;
             candidates.next().is_none().then_some(entry.entity)
-        })
-        .ok_or_else(|| {
-            format!(
-                "need=unique-visible-vendor-within-talk-range;seller={}",
-                npc.key
-            )
-        })?;
+        });
+        if let Some(actor) = actor {
+            break actor;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("need=unique-visible-Xodet-within-talk-range".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    };
     for text in ["hi", "trade"] {
         let reply = npc_shop::talk(
             client.session_mut(),
@@ -543,7 +519,8 @@ async fn acquire(
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
+    let details = client.selected_capabilities().contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = wire::decode_npc_trade_window_for(&delta.payload, details)
         .map_err(|e| format!("trade window: {e:?}"))?;
     let (i, offer) = window
         .offers
@@ -553,6 +530,15 @@ async fn acquire(
             o.side == wire::NpcTradeSide::Buy && o.item_definition_ref == reference.get()
         })
         .ok_or_else(|| format!("observed=item-{item_id}-not-offered"))?;
+    // Global Xodet prices: TibiaWiki lists blank runes at 10 gp and intense healing at 95 gp.
+    let unit_price = match item_id {
+        BLANK_RUNE_ID => 10,
+        HEAL_RUNE_ID => 95,
+        _ => return Err(format!("unexpected C06 purchase item {item_id}").into()),
+    };
+    if offer.unit_price != unit_price || offer.count != 1 {
+        return Err(format!("C06 wrong Xodet offer for {item_id}: {offer:?}").into());
+    }
     let before = quantity(client, reference)?;
     client.take_events();
     let reply = npc_shop::buy(
@@ -568,7 +554,7 @@ async fn acquire(
     )
     .await?;
     if reply != wire::NpcIntentDisposition::Ok {
-        return Err(format!("observed=buy-{item_id}:{reply:?} need=earned-player-funds").into());
+        return Err(format!("observed=buy-{item_id}:{reply:?} need=live-Xodet-purchase").into());
     }
     inventory_count(
         client,
