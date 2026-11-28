@@ -16,6 +16,40 @@ fn book() -> Result<NpcTalkBook, String> {
 }
 
 #[test]
+fn p20_king_tibianus_accepts_royal_greetings_only() -> Result<(), String> {
+    let book = book()?;
+    let entry = book
+        .get("oteryn:npc.king_tibianus")
+        .ok_or("King Tibianus")?;
+    let position = ChatPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let npcs = [TalkNpc {
+        id: 1u8,
+        position,
+        entry,
+    }];
+    for plain in ["hi", "hello", "hail"] {
+        let mut focused = None;
+        assert!(
+            talk(position, plain, &npcs, &mut focused).is_none(),
+            "{plain}"
+        );
+        assert_eq!(focused, None);
+    }
+    // https://tibia.fandom.com/wiki/King_Tibianus/Transcripts
+    for royal in ["Hail King!", "Hello King", "Hail to the beloved King"] {
+        let mut focused = None;
+        let reply = talk(position, royal, &npcs, &mut focused).ok_or(royal)?;
+        assert_eq!(reply.text, "I greet thee, my loyal subject.");
+        assert_eq!(focused, Some(1));
+    }
+    Ok(())
+}
+
+#[test]
 fn placed_npcs_open_source_conversations() -> Result<(), String> {
     let book = book()?;
     let contacts = [

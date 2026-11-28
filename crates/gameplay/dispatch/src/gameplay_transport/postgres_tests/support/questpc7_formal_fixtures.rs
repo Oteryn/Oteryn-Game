@@ -86,11 +86,12 @@ pub(super) async fn exercise(
     );
     let mut sequence = 3000;
     assert_eq!(
-        super::questpc7_outfit_items_fixtures::talk(
+        super::questpc7_outfit_items_fixtures::talk_with_greeting(
             owner,
             admitted,
             king,
             &mut sequence,
+            "Hail King!",
             "anniversary exhibition"
         )
         .await?,
@@ -139,11 +140,12 @@ pub(super) async fn exercise(
     );
     assert_eq!(progress(owner, admitted).await?, 2);
     assert_eq!(
-        super::questpc7_outfit_items_fixtures::talk(
+        super::questpc7_outfit_items_fixtures::talk_with_greeting(
             owner,
             admitted,
             king,
             &mut sequence,
+            "Hail King!",
             "formal brass button"
         )
         .await?,
@@ -151,11 +153,12 @@ pub(super) async fn exercise(
     );
     assert_eq!(super::questpc7_outfit_items_fixtures::quantity(h, 37604).await?, 1);
     assert_eq!(
-        super::questpc7_outfit_items_fixtures::talk(
+        super::questpc7_outfit_items_fixtures::talk_with_greeting(
             owner,
             admitted,
             king,
             &mut sequence,
+            "Hail King!",
             "formal decorative plume"
         )
         .await?,
@@ -179,11 +182,12 @@ pub(super) async fn exercise(
         "Brass Button retains the real source addon2"
     );
     assert_eq!(
-        super::questpc7_outfit_items_fixtures::talk(
+        super::questpc7_outfit_items_fixtures::talk_with_greeting(
             owner,
             admitted,
             king,
             &mut sequence,
+            "Hail King!",
             "formal decorative plume"
         )
         .await?,
@@ -191,11 +195,12 @@ pub(super) async fn exercise(
     );
     assert_eq!(super::questpc7_outfit_items_fixtures::quantity(h, 37605).await?, 1);
     assert_eq!(
-        super::questpc7_outfit_items_fixtures::talk(
+        super::questpc7_outfit_items_fixtures::talk_with_greeting(
             owner,
             admitted,
             king,
             &mut sequence,
+            "Hail King!",
             "complete formal dress"
         )
         .await?,
@@ -204,11 +209,12 @@ pub(super) async fn exercise(
     super::questpc7_outfit_items_fixtures::use_token(owner, admitted, 37605).await?;
     assert_eq!(super::questpc7_outfit_items_fixtures::quantity(h, 37605).await?, 0);
     assert_eq!(
-        super::questpc7_outfit_items_fixtures::talk(
+        super::questpc7_outfit_items_fixtures::talk_with_greeting(
             owner,
             admitted,
             king,
             &mut sequence,
+            "Hail King!",
             "complete formal dress"
         )
         .await?,
