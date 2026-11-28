@@ -96,6 +96,55 @@ async fn replay_live(directory: &std::path::Path) -> Result<(), BoxError> {
             );
         }
     }
+    assert_eq!(observed, 2);
+    let first_sequence = value(&expected, "delta1_sequence")?.parse::<u64>()?;
+    let last_revision = value(&expected, "delta2_new")?.parse::<u64>()?;
+    let mut frames = transcript.as_slice();
+    let stale = loop {
+        let frame = read_frame(&mut frames).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::StateDelta
+            && envelope.server_sequence() == first_sequence
+        {
+            assert_eq!(
+                decode_state_delta(envelope.payload())?.domain_id,
+                STATE_DOMAIN_WORLD_CLOCK
+            );
+            break frame;
+        }
+    };
+    let revision = |session: &Session<_>| {
+        session
+            .gated_revisions
+            .iter()
+            .find(|(domain, _)| *domain == STATE_DOMAIN_WORLD_CLOCK)
+            .map(|(_, revision)| *revision)
+    };
+    assert_eq!(revision(&session), Some(last_revision));
+    assert!(matches!(
+        session.apply_state_delta(first_sequence, decode_wire_envelope(&stale)?.payload()),
+        Err(SessionError::StateRevisionMismatch { .. })
+    ));
+    assert_eq!(revision(&session), Some(last_revision));
+
+    // This is a negative probe after replaying the unmodified transcript.
+    let next_sequence = session.last_server_sequence() + 1;
+    let malformed = encode_state_delta(
+        session.connection_generation,
+        next_sequence,
+        STATE_DOMAIN_WORLD_CLOCK,
+        last_revision,
+        last_revision + 1,
+        1,
+        &[0xff],
+    )?;
+    assert!(matches!(
+        session.apply_state_delta(next_sequence, decode_wire_envelope(&malformed)?.payload()),
+        Err(SessionError::Protocol(
+            FoundationProtocolError::MalformedFrame
+        ))
+    ));
+    assert_eq!(revision(&session), Some(last_revision));
     Ok(())
 }
 

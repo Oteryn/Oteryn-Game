@@ -27,6 +27,22 @@ fn advances_revision(previous: u64, base: u64, next: u64) -> bool {
     base == previous && next > previous
 }
 
+// Independent expectations from WORLD-INTERACTION-0 §11.3.
+fn expected_light(minute: u16) -> u8 {
+    match minute {
+        360..480 => (40 + 7 * ((minute - 360) / 4 + 1)).min(250) as u8,
+        480..1050 => 250,
+        1050..1170 => (250_u16.saturating_sub(7 * ((minute - 1050) / 4 + 1))).max(40) as u8,
+        _ => 40,
+    }
+}
+
+fn advances_minute(previous: u16, next: u16) -> bool {
+    // A publish interval is at most one game hour, with the existing 15-second
+    // receive allowance. Midnight wraps in the same interval.
+    (1..=66).contains(&((next + 1440 - previous) % 1440))
+}
+
 async fn journey(
     clients: &SeamClients<'_>,
 ) -> TestResult<(oteryn_dev_client::DevClientSession, String, String)> {
@@ -46,7 +62,7 @@ async fn journey(
         .map_err(|error| format!("step=snapshot decode {error:?}"))?;
     if first.light_color != 215
         || first.tibian_minute >= 1_440
-        || first.light_level != crate::world_clock::light_level(u32::from(first.tibian_minute))
+        || first.light_level != expected_light(first.tibian_minute)
     {
         return Err(format!("step=snapshot clock={first:?}").into());
     }
@@ -82,8 +98,8 @@ async fn journey(
         if !advances_revision(previous, delta.base_revision, delta.new_revision)
             || clock.light_color != 215
             || clock.tibian_minute >= 1_440
-            || clock.tibian_minute == last.tibian_minute
-            || clock.light_level != crate::world_clock::light_level(u32::from(clock.tibian_minute))
+            || !advances_minute(last.tibian_minute, clock.tibian_minute)
+            || clock.light_level != expected_light(clock.tibian_minute)
         {
             return Err(format!(
                 "step=delta{step} base={} new={} clock={clock:?}",
@@ -139,6 +155,24 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clock_oracle_rejects_backward_and_oversized_steps_and_checks_transitions() {
+        assert!(!advances_minute(1210, 1209));
+        assert!(!advances_minute(1200, 1267));
+        assert!(!advances_minute(1200, 1200));
+        assert!(advances_minute(1439, 0));
+        for (minute, level) in [
+            (359, 40),
+            (360, 47),
+            (480, 250),
+            (1049, 250),
+            (1050, 243),
+            (1170, 40),
+        ] {
+            assert_eq!(expected_light(minute), level);
+        }
+    }
 
     #[test]
     fn journey_regression_rejects_reversed_capture_revisions() {
