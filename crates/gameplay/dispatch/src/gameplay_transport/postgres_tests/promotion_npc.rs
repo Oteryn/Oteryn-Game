@@ -12,3 +12,18 @@ fn promotion_npc_postgres_dispatch_purchase_replay_bank_login_and_death() -> Tes
         .map_err(|_| "promotion PostgreSQL thread panicked")??;
     Ok(())
 }
+
+#[test]
+fn n02_king_tibianus_postgres_dispatch_greeting_and_promotion() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            run_source_promotion_scenario("king_tibianus").map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "King Tibianus PostgreSQL thread panicked")??;
+    Ok(())
+}

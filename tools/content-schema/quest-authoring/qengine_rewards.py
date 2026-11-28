@@ -117,6 +117,9 @@ def reward_greetings(callbacks, inputs, *, root=None):
             messages[field] = matches[0].group(1)
             line = inputs[origin][: matches[0].start()].count(b"\n") + 1
             citations.append(f"crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}")
+        if npc == "oteryn:npc.king_tibianus":
+            messages["greet"] = "I greet thee, my loyal subject."
+            citations[0] = "https://tibia.fandom.com/wiki/King_Tibianus/Transcripts"
         greetings.append({"npc": npc, **messages, "sources": citations})
     return greetings
 

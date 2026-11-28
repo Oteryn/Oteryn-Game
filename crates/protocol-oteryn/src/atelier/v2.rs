@@ -1,5 +1,5 @@
-//! Gem Atelier v2 (Winter Update 2026): gems without a domain, the twelve ordered Gem Vessel
-//! slots and Replace Vessel. Lock and paid requests keep the v1 bytes; Switch Domain is gone.
+//! Gem Atelier v2: gems without a domain, ordered Gem Vessel slots and Replace Vessel.
+//! Lock and paid requests keep the v1 bytes; Switch Domain is gone.
 use super::{
     GradeQuote, GradeView, SetLockRequest, decode_grade, decode_quote_fields, encode_quote_fields,
     read_bool, read_id,
@@ -18,7 +18,9 @@ pub const COMMAND_TYPE_ATELIER_V2_REPLACE_VESSEL: u32 = 6213;
 pub const COMMAND_TYPE_ATELIER_V2_RESHAPE: u32 = 6214;
 pub const MAX_REQUEST_BYTES: usize = super::MAX_REQUEST_BYTES;
 pub const MAX_REPLY_BYTES: usize = 16_384;
+/// Maximum wire slot count, retained for twelve-slot replies and historical requests.
 pub const GEM_VESSEL_SLOTS: usize = 12;
+const EIGHT_VESSEL_SLOTS: usize = 8;
 
 /// Paid Atelier intent. Action tags are the v1 tags; tag 2 (Switch Domain) is malformed and tag
 /// 4 is reserved for Mod Reshaping.
@@ -94,7 +96,7 @@ pub struct AtelierReply {
     pub grades: Vec<GradeView>,
     pub quality_quotes: Vec<QualityQuote>,
     pub grade_quotes: Vec<GradeQuote>,
-    /// Empty, or all twelve slots in slot order.
+    /// Empty, or a complete eight- or twelve-slot board in slot order.
     pub vessels: Vec<VesselSlotView>,
     /// The Wheel slots (1..=36) of the vocation's Gem Vessel nodes, in slot order.
     pub vessel_nodes: Vec<u8>,
@@ -243,12 +245,16 @@ pub fn decode_replace_vessel(bytes: &[u8]) -> Result<ReplaceVesselRequest, Error
 }
 
 pub fn encode_reply(value: &AtelierReply) -> Result<Vec<u8>, Error> {
+    let slot_limit = match value.vessels.len() {
+        0 | GEM_VESSEL_SLOTS => GEM_VESSEL_SLOTS,
+        EIGHT_VESSEL_SLOTS => EIGHT_VESSEL_SLOTS,
+        _ => return Err(Error::LimitExceeded),
+    };
     if value.gems.len() > super::MAX_GEMS
         || value.grades.len() > super::MAX_GRADE_ENTRIES
         || value.quality_quotes.len() > 3
         || value.grade_quotes.len() > 6
-        || !(value.vessels.is_empty() || value.vessels.len() == GEM_VESSEL_SLOTS)
-        || value.vessel_nodes.len() > GEM_VESSEL_SLOTS
+        || value.vessel_nodes.len() > slot_limit
     {
         return Err(Error::LimitExceeded);
     }
@@ -257,9 +263,7 @@ pub fn encode_reply(value: &AtelierReply) -> Result<Vec<u8>, Error> {
     push_varint_field(&mut out, 2, value.revision);
     for gem in &value.gems {
         if gem.quality > 2
-            || gem
-                .slot
-                .is_some_and(|slot| usize::from(slot) >= GEM_VESSEL_SLOTS)
+            || gem.slot.is_some_and(|slot| usize::from(slot) >= slot_limit)
             || (!gem.modifiers.is_empty() && gem.modifiers.len() != usize::from(gem.quality) + 1)
         {
             return Err(Error::Malformed);
@@ -567,6 +571,49 @@ mod tests {
         let mut unordered = value;
         unordered.vessel_nodes.swap(0, 1);
         assert!(encode_reply(&unordered).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn atelier_v2_round_trips_eight_ordered_slots_without_truncation() -> Result<(), Error> {
+        let mut value = reply();
+        value.vessels = [0, 1, 2, 0, 2, 1, 2, 2]
+            .into_iter()
+            .map(|quality| VesselSlotView {
+                quality,
+                open: true,
+                gem: None,
+            })
+            .collect();
+        value.vessel_nodes = vec![3, 5, 7, 10, 15, 18, 19, 22];
+        value.gems[0].quality = 2;
+        value.gems[0].slot = Some(7);
+        value.gems[0].modifiers.push(41);
+        value.vessels[7].gem = Some(value.gems[0].id);
+
+        assert_eq!(decode_reply(&encode_reply(&value)?)?, value);
+        value.gems[0].slot = Some(8);
+        assert!(encode_reply(&value).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn atelier_v2_decodes_original_twelve_slot_bytes() -> Result<(), Error> {
+        // Literal capability 483 payload with an occupied final slot.
+        let bytes: &[u8] = &[
+            8, 0, 16, 7, 26, 24, 10, 16, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 16, 2, 24,
+            0, 32, 11, 58, 4, 8, 0, 16, 1, 58, 4, 8, 1, 16, 1, 58, 4, 8, 2, 16, 1, 58, 4, 8, 0, 16,
+            1, 58, 4, 8, 1, 16, 1, 58, 4, 8, 2, 16, 1, 58, 4, 8, 0, 16, 1, 58, 4, 8, 1, 16, 1, 58,
+            4, 8, 2, 16, 1, 58, 4, 8, 0, 16, 1, 58, 4, 8, 1, 16, 1, 58, 22, 8, 2, 16, 1, 26, 16, 5,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 64, 3, 72, 1, 80, 1, 88, 3, 88, 5, 88, 7,
+            88, 10, 88, 15, 88, 18, 88, 19, 88, 22, 88, 27, 88, 30, 88, 32, 88, 34, 96, 1, 104, 0,
+        ];
+        let value = decode_reply(bytes)?;
+        assert_eq!(value.vessels.len(), 12);
+        assert_eq!(value.vessel_nodes.len(), 12);
+        assert_eq!(value.gems[0].slot, Some(11));
+        assert_eq!(value.vessels[11].gem, Some([5; 16]));
+        assert_eq!(encode_reply(&value)?, bytes);
         Ok(())
     }
 

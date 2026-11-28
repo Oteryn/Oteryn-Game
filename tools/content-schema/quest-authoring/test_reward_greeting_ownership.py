@@ -134,5 +134,13 @@ class RewardGreetingOwnership(unittest.TestCase):
         self.reject(root)
 
 
+    def test_king_tibianus_uses_the_global_greeting(self):
+        (greeting,) = [
+            row for row in qengine_rewards.reward_greetings(self.callbacks, self.inputs)
+            if row["npc"] == "oteryn:npc.king_tibianus"
+        ]
+        self.assertEqual(greeting["greet"], "I greet thee, my loyal subject.")
+
+
 if __name__ == "__main__":
     unittest.main()

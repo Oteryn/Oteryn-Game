@@ -157,7 +157,12 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
             .ok_or("active fence")?
             .item_fence();
         // Greetings, prompt, and confirmation are all real NPC_TALK dispatches.
-        for (command_id, text) in [(1, "hi"), (2, "promotion"), (3, "yes")] {
+        let greeting = if npc_stem == "king_tibianus" {
+            "Hail King"
+        } else {
+            "hi"
+        };
+        for (command_id, text) in [(1, greeting), (2, "promotion"), (3, "yes")] {
             let outcome = owner
                 .npc_talk(
                     dependencies.actor,
@@ -174,6 +179,10 @@ pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResul
                 .await;
             assert!(!outcome.unknown, "{text}: unknown outcome");
             assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{text}");
+            if text == "Hail King" {
+                let conversation = outcome.conversation.as_ref().ok_or("King's greeting absent")?;
+                assert_eq!(conversation.lines, ["I greet thee, my loyal subject."]);
+            }
             if text == "yes" {
                 assert!(
                     outcome.inventory_changed,
