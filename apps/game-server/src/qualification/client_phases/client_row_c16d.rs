@@ -17,9 +17,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) 
 }
 
 async fn capture_and_replay(clients: &SeamClients<'_>) -> TestResult {
-    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
-        .ok_or("C16d capture directory must be set for live replay")?;
-    let directory = Path::new(&directory).canonicalize()?;
+    let directory = CaptureDirectory::open()?;
     let mut client = connect_world(clients, 0xd6).await?;
     let files = client
         .session_mut()
@@ -31,13 +29,13 @@ async fn capture_and_replay(clients: &SeamClients<'_>) -> TestResult {
     }
     drop(client);
     for (name, bytes) in files {
-        std::fs::File::create_new(directory.join(name))?.write_all(&bytes)?;
+        std::fs::File::create_new(directory.path().join(name))?.write_all(&bytes)?;
     }
 
     let replay = tokio::task::spawn_blocking(move || {
         std::process::Command::new("timeout")
             .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
-            .env("E2E_ALL_CAPTURE_DIR", directory)
+            .env("E2E_ALL_CAPTURE_DIR", directory.path())
             .args([
                 "80s",
                 env!("CARGO"),
@@ -64,4 +62,41 @@ async fn capture_and_replay(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("C16d exact Session replay failed: {}", replay.status).into());
     }
     Ok(())
+}
+
+enum CaptureDirectory {
+    Supplied(std::path::PathBuf),
+    Temporary(std::path::PathBuf),
+}
+
+impl CaptureDirectory {
+    fn open() -> TestResult<Self> {
+        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            return Ok(Self::Supplied(Path::new(&path).canonicalize()?));
+        }
+        let output = std::process::Command::new("mktemp")
+            .args(["-d", "/tmp/oteryn-c16d-capture.XXXXXXXXXX"])
+            .output()?;
+        if !output.status.success() {
+            return Err(
+                format!("C16d capture directory creation failed: {}", output.status).into(),
+            );
+        }
+        let path = std::str::from_utf8(&output.stdout)?.trim_end();
+        Ok(Self::Temporary(path.into()))
+    }
+
+    fn path(&self) -> &Path {
+        match self {
+            Self::Supplied(path) | Self::Temporary(path) => path,
+        }
+    }
+}
+
+impl Drop for CaptureDirectory {
+    fn drop(&mut self) {
+        if let Self::Temporary(path) = self {
+            let _ = std::fs::remove_dir_all(path);
+        }
+    }
 }
