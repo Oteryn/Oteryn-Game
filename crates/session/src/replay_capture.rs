@@ -224,3 +224,58 @@ fn append_bytes(output: &mut Vec<u8>, bytes: &[u8]) -> Option<()> {
     output.extend(bytes);
     Some(())
 }
+
+impl<S: SessionStream> Session<S> {
+    /// Applies a recorded inbound transcript through the regular domain reducer.
+    /// The caller provides the live USE result sequence and the final vitals delta sequence.
+    /// This consumes recorded replies and is only for an offline replay stream.
+    pub async fn replay_food_vitals(
+        &mut self,
+        baseline_sequence: u64,
+        use_sequence: u64,
+        regenerated_sequence: u64,
+    ) -> Result<(ActorVitals, ActorVitals), SessionError> {
+        if baseline_sequence < self.last_server_sequence
+            || use_sequence <= baseline_sequence
+            || regenerated_sequence <= use_sequence
+        {
+            return Err(SessionError::SessionUnusable);
+        }
+        let mut before = (baseline_sequence == self.last_server_sequence)
+            .then_some(self.actor_vitals)
+            .flatten();
+        loop {
+            let (kind, sequence, payload) = self.read_sequenced_push("food replay").await?;
+            if sequence > regenerated_sequence {
+                return Err(SessionError::SessionUnusable);
+            }
+            if sequence == use_sequence {
+                if kind != MessageType::CommandResult {
+                    return Err(SessionError::SessionUnusable);
+                }
+                let result = decode_command_result(&payload)?;
+                let (payload, _) = self.item_result_payload(result.payload)?;
+                let (disposition, _) = world_object::decode_use_result_with_gate(payload)?;
+                if result.status != CommandStatus::Accepted
+                    || disposition != world_object::UseDisposition::Committed
+                {
+                    return Err(SessionError::SessionUnusable);
+                }
+            }
+            if kind == MessageType::StateDelta {
+                let event = self.apply_state_delta(sequence, &payload)?;
+                if sequence == regenerated_sequence {
+                    let SessionEvent::ActorVitals(delta) = event else {
+                        return Err(SessionError::SessionUnusable);
+                    };
+                    return Ok((before.ok_or(SessionError::SessionUnusable)?, delta.value));
+                }
+            } else if sequence == regenerated_sequence {
+                return Err(SessionError::SessionUnusable);
+            }
+            if sequence == baseline_sequence {
+                before = self.actor_vitals;
+            }
+        }
+    }
+}

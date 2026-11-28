@@ -3501,6 +3501,18 @@ pub(super) async fn connect_character(
     tag: u8,
     index: usize,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
+    Ok(connect_character_with_capture(clients, tag, index, None).await?.0)
+}
+
+async fn connect_character_with_capture(
+    clients: &SeamClients<'_>,
+    tag: u8,
+    index: usize,
+    limit: Option<std::num::NonZeroUsize>,
+) -> TestResult<(
+    oteryn_dev_client::DevClientSession,
+    Option<oteryn_dev_client::InboundCapture>,
+)> {
     wait_character_released(clients, index).await?;
     let token = if requires_platform_grant(&clients.accounts[index]) {
         platform_row_grant(clients, index).await?
@@ -3521,7 +3533,7 @@ pub(super) async fn connect_character(
         };
         sign_grant(&grant, now_seconds()?)
     };
-    let client = oteryn_dev_client::connect_session(oteryn_dev_client::JoinRequest {
+    let request = oteryn_dev_client::JoinRequest {
         address: clients.address,
         server_name: "localhost",
         root_certificate: clients.certificate,
@@ -3530,10 +3542,15 @@ pub(super) async fn connect_character(
         admission_material: token.as_bytes(),
         client_build_id: "oteryn-dev-client/world-qualification",
         deadline: Duration::from_secs(20),
-    })
-    .await?;
+    };
+    let (client, capture) = if let Some(limit) = limit {
+        let (client, capture) = oteryn_dev_client::connect_recording_driver(request, limit).await?;
+        (client, Some(capture))
+    } else {
+        (oteryn_dev_client::connect_session(request).await?, None)
+    };
     verdict::Harness::global().progress("admission");
-    Ok(client)
+    Ok((client, capture))
 }
 
 async fn travel_to_spawn(

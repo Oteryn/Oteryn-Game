@@ -529,6 +529,53 @@ async fn prove_full_stomach(client: &mut DevClientSession, meat: NonZeroU32) -> 
     }
 }
 
+async fn verify_use_window(
+    capture: &oteryn_dev_client::InboundCapture,
+    first: &oteryn_dev_client::UseOutcome,
+    second: &oteryn_dev_client::UseOutcome,
+) -> TestResult<u64> {
+    use std::io::BufRead as _;
+    use oteryn_protocol_oteryn::{decode_server_accepted, decode_wire_envelope};
+
+    let transcript = capture.bytes().ok_or("C09 USE capture overflow")?;
+    let frame = oteryn_dev_client::native_session::read_frame(&mut transcript.as_slice()).await?;
+    let accepted = decode_server_accepted(decode_wire_envelope(&frame)?.payload())?;
+    let trace = uuid_text(&accepted.connection_trace.ok_or("C09 USE connection trace absent")?);
+    let log = std::fs::File::open(required("NODE_BOOT_CAST_EVIDENCE_LOG")?)?;
+    let mut timestamps = [None, None];
+    for line in std::io::BufReader::new(log).lines() {
+        let line = line?;
+        let field = |key| {
+            line.split_ascii_whitespace()
+                .filter_map(|part| part.split_once('='))
+                .find_map(|(name, value)| (name == key).then_some(value))
+        };
+        if field("trace") != Some(trace.as_str()) || field("command_type") != Some("2") {
+            continue;
+        }
+        for (reply, timestamp) in [first, second].into_iter().zip(&mut timestamps) {
+            if field("command_id").and_then(|value| value.parse().ok()) == Some(reply.command_id)
+                && field("server_sequence").and_then(|value| value.parse().ok())
+                    == Some(reply.result_server_sequence)
+            {
+                let ts: u64 = field("ts").ok_or("C09 USE log timestamp missing")?.parse()?;
+                if timestamp.replace(ts).is_some() {
+                    return Err("C09 ambiguous server timestamps for USE".into());
+                }
+            }
+        }
+    }
+    let [Some(start), Some(end)] = timestamps else {
+        return Err(format!(
+            "C09 USE server timestamps missing trace={trace} first_sequence={} second_sequence={} second_disposition={:?}",
+            first.result_server_sequence, second.result_server_sequence, second.disposition,
+        ).into());
+    };
+    end.checked_sub(start)
+        .filter(|elapsed| *elapsed < 200)
+        .ok_or_else(|| format!("C09 USE outside refusal window ts={start}->{end}").into())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -540,7 +587,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let meat = provisioning::item_reference(&provisioning::item_index()?, 3577)?;
-    let mut client = connect_world(clients, 0xc9).await?;
+    let limit = std::num::NonZeroUsize::MIN.saturating_add(32 * 1024 * 1024 - 1);
+    let (mut client, capture) = connect_character_with_capture(clients, 0xc9, 1, Some(limit)).await?;
+    let capture = capture.ok_or("C09 USE capture disabled")?;
     // Seven meats can fill the 20-minute stomach. Keep an additional unit
     // available to exercise the refusal after allowing the regeneration ticks.
     const MEATS: u32 = 8;
@@ -585,6 +634,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let refused_inventory = quantity(&client, meat)?;
     let refused_vitals = client.actor_vitals().copied();
     let refused = client.use_item(handle).await?;
+    let elapsed_ms = verify_use_window(&capture, &used, &refused).await?;
     food_remaining(&mut client, Some(refused.result_server_sequence)).await?;
     if refused.status != CommandStatus::Accepted
         || refused.disposition != UseDisposition::Exhausted
@@ -593,7 +643,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("food refusal reply={refused:?} inventory={refused_inventory}->{} vitals={refused_vitals:?}->{:?}", quantity(&client, meat)?, client.actor_vitals()).into());
     }
-    row.pass("food-refusal", refused.disposition);
+    row.pass("food-refusal", (refused.disposition, elapsed_ms));
     let fed = food_remaining(&mut client, None).await?;
     if fed <= 0 {
         return Err(

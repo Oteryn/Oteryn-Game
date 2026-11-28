@@ -239,7 +239,7 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
     let stream = connect_transport(request, started).await?;
-    let session = admit_transport(stream, request, started).await?;
+    let session = admit_transport(RecordingTransport::unrecorded(stream), request, started).await?;
     Ok(DevClientSession { session, started })
 }
 
@@ -253,6 +253,16 @@ pub async fn connect_recording_session(
     let (stream, capture) = RecordingTransport::new(stream, limit);
     let session = admit_transport(stream, request, started).await?;
     Ok((session, capture))
+}
+
+/// Connects the normal qualification driver with original inbound recording enabled.
+pub async fn connect_recording_driver(
+    request: JoinRequest<'_>,
+    limit: std::num::NonZeroUsize,
+) -> Result<(DevClientSession, InboundCapture), DevClientError> {
+    let started = Instant::now();
+    let (session, capture) = connect_recording_session(request, limit).await?;
+    Ok((DevClientSession { session, started }, capture))
 }
 
 async fn connect_transport(
@@ -303,7 +313,7 @@ pub async fn resume_session(
     let stream = oteryn_session_tcp::connect(transport)
         .await
         .map_err(|error| contextualize_transport(error, started))?;
-    let session = Session::resume(stream, previous, recovery)
+    let session = Session::resume(RecordingTransport::unrecorded(stream), previous, recovery)
         .await
         .map_err(|error| contextualize_session(error, "resume", started, "unknown"))?;
     Ok(DevClientSession { session, started })
@@ -316,7 +326,7 @@ pub use oteryn_session_tcp::TcpConnect as RecoveryTransport;
 /// dev client's error type. Dropping it closes the connection.
 #[derive(Debug)]
 pub struct DevClientSession {
-    session: Session<TcpTlsStream>,
+    session: Session<RecordingTransport<TcpTlsStream>>,
     started: Instant,
 }
 
@@ -348,7 +358,7 @@ impl DevClientSession {
 
     /// The session used by the native feature adapters. Qualification code deliberately uses
     /// this instead of manufacturing command frames or decoding replies itself.
-    pub fn session_mut(&mut self) -> &mut Session<TcpTlsStream> {
+    pub fn session_mut(&mut self) -> &mut Session<RecordingTransport<TcpTlsStream>> {
         &mut self.session
     }
 

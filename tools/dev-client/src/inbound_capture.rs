@@ -29,18 +29,23 @@ impl InboundCapture {
 #[derive(Debug)]
 pub struct RecordingTransport<T> {
     inner: T,
-    capture: InboundCapture,
-    limit: NonZeroUsize,
+    capture: Option<(InboundCapture, NonZeroUsize)>,
 }
 
 impl<T> RecordingTransport<T> {
+    pub(crate) fn unrecorded(inner: T) -> Self {
+        Self {
+            inner,
+            capture: None,
+        }
+    }
+
     pub fn new(inner: T, limit: NonZeroUsize) -> (Self, InboundCapture) {
         let capture = InboundCapture(Arc::new(Mutex::new(Some(Vec::new()))));
         (
             Self {
                 inner,
-                capture: capture.clone(),
-                limit,
+                capture: Some((capture.clone(), limit)),
             },
             capture,
         )
@@ -57,11 +62,12 @@ impl<T: AsyncRead + Unpin> AsyncRead for RecordingTransport<T> {
         let previously_filled = buf.filled().len();
         let result = Pin::new(&mut this.inner).poll_read(cx, buf);
         if matches!(result, Poll::Ready(Ok(())))
-            && let Ok(mut capture) = this.capture.0.lock()
+            && let Some((capture, limit)) = &this.capture
+            && let Ok(mut capture) = capture.0.lock()
             && let Some(bytes) = capture.as_mut()
         {
             let received = &buf.filled()[previously_filled..];
-            if received.len() <= this.limit.get() - bytes.len() {
+            if received.len() <= limit.get() - bytes.len() {
                 bytes.extend_from_slice(received);
             } else {
                 *capture = None;

@@ -45,34 +45,60 @@ async fn acquire_meat(
     Ok(reference)
 }
 
-fn capture(path: &Path, before: ActorVitals, after: ActorVitals) -> TestResult {
-    write_packet(
-        path,
-        "c09-before.bin",
-        &oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&before)
-            .map_err(|error| format!("encode before: {error:?}"))?,
-    )?;
-    write_packet(
-        path,
-        "c09-regenerated.bin",
-        &oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&after)
-            .map_err(|error| format!("encode regenerated: {error:?}"))?,
-    )?;
-    write_packet(
-        path,
-        "c09-expected.txt",
-        format!(
-            "{} {} {} {} {} {} {}\n",
-            after.health,
-            after.max_health,
-            after.mana,
-            after.max_mana,
-            after.soul,
-            after.harmony,
-            u8::from(after.serene)
-        )
-        .as_bytes(),
+async fn replay_capture(
+    clients: &SeamClients<'_>,
+    capture: &oteryn_dev_client::InboundCapture,
+    session_id: &oteryn_protocol_oteryn::GameSessionId,
+    sequences: (u64, u64, u64),
+    expected: (ActorVitals, ActorVitals),
+) -> TestResult {
+    use oteryn_dev_client::native_session::{Admission, Session};
+    use std::io::Write as _;
+    let root = if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        std::path::PathBuf::from(root)
+    } else {
+        let log = std::path::PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
+        log.parent()
+            .ok_or("node log directory missing")?
+            .to_path_buf()
+    };
+    let path = root.join("c09-inbound.frames");
+    let bytes = capture.bytes().ok_or("C09 inbound transcript overflow")?;
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?
+        .write_all(&bytes)?;
+    let transport = tokio::io::join(
+        std::io::Cursor::new(std::fs::read(path)?),
+        tokio::io::sink(),
+    );
+    let mut replay = Session::admit(
+        transport,
+        Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: oteryn_protocol_oteryn::CharacterId::decode(&clients.characters[1])?,
+            admission_material: b"offline-c09-replay",
+            client_build_id: "oteryn-dev-client/c09-replay",
+            supported_capabilities: oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES,
+            deadline: Duration::from_secs(2),
+        },
     )
+    .await?;
+    if &replay.join_snapshot().game_session_id != session_id
+        || replay
+            .replay_food_vitals(sequences.0, sequences.1, sequences.2)
+            .await?
+            != expected
+    {
+        return Err("C09 raw replay disagrees with the live session or vitals".into());
+    }
+    evidence(&format!(
+        "C09_REPLAY verified before={} use={} regenerated={}",
+        sequences.0, sequences.1, sequences.2
+    ));
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -85,7 +111,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xc9).await?;
+    let limit = std::num::NonZeroUsize::MIN.saturating_add(32 * 1024 * 1024 - 1);
+    let (mut client, capture) =
+        connect_character_with_capture(clients, 0xc9, 1, Some(limit)).await?;
+    let capture = capture.ok_or("C09 capture disabled")?;
     let meat = acquire_meat(&mut client, world).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
     let full = *client.actor_vitals().ok_or("C09 initial vitals absent")?;
@@ -116,7 +145,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .map(|item| item.handle)
         .ok_or("meat handle absent")?;
-    if client.use_item(handle).await?.disposition != UseDisposition::Committed {
+    let baseline = client.last_server_sequence();
+    let use_reply = client.use_item(handle).await?;
+    if use_reply.status != CommandStatus::Accepted
+        || use_reply.disposition != UseDisposition::Committed
+    {
         return Err("food use was not committed".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
@@ -124,12 +157,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             if let SessionEvent::ActorVitals(delta) = event
+                && delta.server_sequence > use_reply.result_server_sequence
                 && delta.value.health > before.health
                 && delta.value.mana > before.mana
             {
-                if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-                    capture(Path::new(&root), before, delta.value)?;
-                }
+                replay_capture(
+                    clients,
+                    &capture,
+                    &client.join_snapshot().game_session_id,
+                    (
+                        baseline,
+                        use_reply.result_server_sequence,
+                        delta.server_sequence,
+                    ),
+                    (before, delta.value),
+                )
+                .await?;
                 return Ok(());
             }
         }

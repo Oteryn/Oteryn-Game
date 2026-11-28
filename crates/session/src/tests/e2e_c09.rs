@@ -3,25 +3,6 @@
 //! `session_access.rs` exposes the client-visible HP/mana used by `DevClientSession`.
 use super::*;
 
-fn parse_expected(text: &str) -> Result<ActorVitals, BoxError> {
-    let values = text
-        .split_whitespace()
-        .map(str::parse::<u32>)
-        .collect::<Result<Vec<_>, _>>()?;
-    let [health, max_health, mana, max_mana, soul, harmony, serene] = values.as_slice() else {
-        return Err("invalid C09 expected vitals".into());
-    };
-    Ok(ActorVitals {
-        health: *health,
-        max_health: *max_health,
-        mana: *mana,
-        max_mana: *max_mana,
-        soul: *soul,
-        harmony: *harmony,
-        serene: *serene != 0,
-    })
-}
-
 async fn send_join_with_vitals(stream: &mut DuplexStream, payload: &[u8]) -> Result<(), BoxError> {
     read_frame(&mut *stream).await?;
     write_frame(
@@ -72,37 +53,26 @@ async fn send_join_with_vitals(stream: &mut DuplexStream, payload: &[u8]) -> Res
 
 #[test]
 fn e2e_c09_food_regeneration_replay() -> Result<(), BoxError> {
-    let (before_payload, regenerated_payload, expected) =
-        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            let path = std::path::Path::new(&path);
-            (
-                std::fs::read(path.join("c09-before.bin"))?,
-                std::fs::read(path.join("c09-regenerated.bin"))?,
-                parse_expected(&std::fs::read_to_string(path.join("c09-expected.txt"))?)?,
-            )
-        } else {
-            let before = ActorVitals {
-                health: 91,
-                max_health: 150,
-                mana: 41,
-                max_mana: 55,
-                soul: 100,
-                harmony: 0,
-                serene: false,
-            };
-            let regenerated = ActorVitals {
-                health: 92,
-                mana: 42,
-                ..before
-            };
-            (
-                actor_spell::encode_actor_vitals(&before)
-                    .map_err(|error| format!("before fixture: {error:?}"))?,
-                actor_spell::encode_actor_vitals(&regenerated)
-                    .map_err(|error| format!("regenerated fixture: {error:?}"))?,
-                regenerated,
-            )
-        };
+    // The live row replays its original capture in-process. This test exercises the
+    // same reducer with a scripted transport and an explicit malformed frame.
+    let before = ActorVitals {
+        health: 91,
+        max_health: 150,
+        mana: 41,
+        max_mana: 55,
+        soul: 100,
+        harmony: 0,
+        serene: false,
+    };
+    let expected = ActorVitals {
+        health: 92,
+        mana: 42,
+        ..before
+    };
+    let before_payload = actor_spell::encode_actor_vitals(&before)
+        .map_err(|error| format!("before fixture: {error:?}"))?;
+    let regenerated_payload = actor_spell::encode_actor_vitals(&expected)
+        .map_err(|error| format!("regenerated fixture: {error:?}"))?;
     block_on(async {
         let before = actor_spell::decode_actor_vitals(&before_payload)
             .map_err(|error| format!("before payload: {error:?}"))?;
@@ -114,11 +84,19 @@ fn e2e_c09_food_regeneration_replay() -> Result<(), BoxError> {
         let mut session = Session::admit(client, admission()?).await?;
         let mut peer = joining.await??;
         assert_eq!(session.actor_vitals(), Some(&before));
+        let committed = world_object::encode_use_result(world_object::UseDisposition::Committed)
+            .map_err(|error| format!("use fixture: {error:?}"))?;
+        write_frame(
+            &mut peer,
+            &encode_command_result(1, 41, 7, CommandStatus::Accepted, &committed)?,
+        )
+        .await?;
+
         write_frame(
             &mut peer,
             &encode_state_delta(
                 1,
-                41,
+                42,
                 actor_spell::STATE_DOMAIN_ACTOR_VITALS,
                 3,
                 4,
@@ -127,7 +105,10 @@ fn e2e_c09_food_regeneration_replay() -> Result<(), BoxError> {
             )?,
         )
         .await?;
-        session.service_liveness(Duration::from_millis(20)).await?;
+        assert_eq!(
+            session.replay_food_vitals(40, 41, 42).await?,
+            (before, expected)
+        );
         assert_eq!(session.actor_vitals(), Some(&expected));
 
         let retained = *session.actor_vitals().ok_or("regenerated vitals absent")?;
@@ -135,7 +116,7 @@ fn e2e_c09_food_regeneration_replay() -> Result<(), BoxError> {
             &mut peer,
             &encode_state_delta(
                 1,
-                42,
+                43,
                 actor_spell::STATE_DOMAIN_ACTOR_VITALS,
                 4,
                 5,
