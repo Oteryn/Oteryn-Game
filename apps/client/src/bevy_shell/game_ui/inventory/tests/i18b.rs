@@ -198,7 +198,15 @@ async fn replay_live_browse_field(
             Startup,
             (crate::bevy_shell::ui::setup, super::super::super::setup).chain(),
         )
-        .add_systems(Update, view::project);
+        .add_systems(
+            Update,
+            (super::super::super::project, view::project).chain(),
+        );
+    world_drag::install(&mut app);
+    app.init_resource::<bevy::picking::hover::HoverMap>()
+        .init_resource::<bevy::picking::pointer::PointerMap>();
+    app.world_mut()
+        .spawn((Window::default(), bevy::window::PrimaryWindow));
     let (events, incoming) = tokio::sync::mpsc::unbounded_channel();
     let (sent, mut moves) = tokio::sync::mpsc::unbounded_channel();
     let runner = tokio::spawn(crate::play::run_session(
@@ -334,8 +342,8 @@ fn drag_to_backpack(
 ) -> TestResult {
     use bevy::picking::{
         backend::HitData,
-        events::{PointerDragDrop, PointerDragStart},
-        pointer::PointerButton,
+        events::{Pointer, PointerDragDrop, PointerDragStart, PointerPress},
+        pointer::{Location as PointerLocation, PointerButton, PointerId},
     };
 
     // The production projection creates the source and destination and installs the observers.
@@ -362,17 +370,81 @@ fn drag_to_backpack(
             .then_some(entity)
         })
         .ok_or("captured backpack did not project to a Bevy drop target")?;
+    let owner = app.world().non_send::<HostOwner>();
+    let source_slot = *app
+        .world()
+        .get::<Slot>(source)
+        .ok_or("source Slot absent")?;
+    let target_slot = *app
+        .world()
+        .get::<Slot>(target)
+        .ok_or("target Slot absent")?;
+    assert!(
+        source_slot.drag(owner).is_some(),
+        "projected browse item cannot be dragged"
+    );
+    assert!(
+        target_slot.current(owner).is_some(),
+        "projected backpack is not a current drop target"
+    );
+    let window = app
+        .world_mut()
+        .query_filtered::<Entity, With<bevy::window::PrimaryWindow>>()
+        .single(app.world())?;
+    let window = bevy::window::WindowRef::Entity(window)
+        .normalize(None)
+        .ok_or("Bevy replay window is unbound")?;
+    let location = |position| PointerLocation {
+        target: bevy::camera::NormalizedRenderTarget::Window(window),
+        position,
+    };
+    let start = Vec2::splat(30.);
+    let end = Vec2::splat(80.);
+    for (entity, center) in [(source, start), (target, end)] {
+        app.world_mut().entity_mut(entity).insert((
+            ComputedNode {
+                size: Vec2::splat(32.),
+                ..default()
+            },
+            UiGlobalTransform::from_translation(center),
+        ));
+    }
+    let mouse = app
+        .world_mut()
+        .spawn((
+            PointerId::Mouse,
+            bevy::picking::pointer::PointerLocation::new(location(start)),
+        ))
+        .id();
+    let pointer = |point| Pointer::new(PointerId::Mouse, location(point));
+    app.world_mut().trigger(PointerPress {
+        entity: source,
+        pointer: pointer(start),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        count: 1,
+    });
     if !matches!(fault, ReplayFault::MissingDragStart) {
         app.world_mut().trigger(PointerDragStart {
             entity: source,
-            pointer: pointer(),
+            pointer: pointer(start),
             button: PointerButton::Primary,
             hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
         });
     }
+    if !matches!(fault, ReplayFault::MissingDragStart) {
+        assert_eq!(
+            app.world().resource::<InventoryUi>().dragged,
+            Some(source_slot),
+            "Bevy did not begin the browse drag",
+        );
+    }
+    app.world_mut()
+        .entity_mut(mouse)
+        .insert(bevy::picking::pointer::PointerLocation::new(location(end)));
     app.world_mut().trigger(PointerDragDrop {
         entity: target,
-        pointer: pointer(),
+        pointer: pointer(end),
         button: PointerButton::Primary,
         dropped: source,
         hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
