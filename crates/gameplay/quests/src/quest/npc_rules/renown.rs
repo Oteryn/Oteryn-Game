@@ -31,7 +31,12 @@ pub(super) fn resolve(
         }
         RenownAction::Ask => 122,
         RenownAction::Quote => {
-            let Ok(amount) = input.message.trim().parse::<i32>() else {
+            let Some(amount) = input
+                .message
+                .split(|ch: char| !ch.is_ascii_digit())
+                .find(|part| !part.is_empty())
+                .and_then(|digits| digits.parse::<i32>().ok())
+            else {
                 return Ok(None);
             };
             if !(1..=MAX_TOKENS).contains(&amount) {
