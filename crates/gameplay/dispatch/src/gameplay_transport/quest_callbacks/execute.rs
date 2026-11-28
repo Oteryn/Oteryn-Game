@@ -958,6 +958,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
+                    nest_spawn: None,
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
@@ -1139,6 +1140,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
+                    nest_spawn: None,
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
@@ -1523,6 +1525,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let mut nest_spawn = None;
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
@@ -1570,6 +1573,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
+                    nest_spawn: None,
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
@@ -1582,9 +1586,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The tool is bound with the first durable context. A replay keeps
                 // that exact binding instead of the replaying caller's tool.
                 if record.context.is_none() {
+                    if callback
+                        .key
+                        .starts_with("oteryn:quest-callback/spike/nest-")
+                        && let QuestCause::Use(command) = cause
+                    {
+                        use std::hash::{BuildHasher, RandomState};
+                        static DRAW: OnceLock<RandomState> = OnceLock::new();
+                        let draw = 1
+                            + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100)
+                                as u8;
+                        #[cfg(test)]
+                        let draw = match self
+                            .states
+                            .quest_callbacks
+                            .nest_draw
+                            .load(std::sync::atomic::Ordering::Relaxed)
+                        {
+                            0 => draw,
+                            forced => forced,
+                        };
+                        record.nest_spawn = nest_creature(draw);
+                    }
                     record.selected_tool = selected_tool.cloned();
                     record.paid_arrivals = paid_arrivals;
                 }
+                nest_spawn = record.nest_spawn;
                 (
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
@@ -2170,6 +2197,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     optional_pvp,
                     scene_observations.into_iter().zip(committed),
                 );
+            } else if let Some(creature) = nest_spawn {
+                use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+                let Some(native) = self.active_generation.and_then(|g| g.native_gameplay()) else {
+                    return UseDisposition::Rejected;
+                };
+                if native.install_companion_policies(runtime).is_err() {
+                    return UseDisposition::Rejected;
+                }
+                let Ok(policy) = runtime.companion_policy(creature) else {
+                    return UseDisposition::Rejected;
+                };
+                let monster = (creature, policy.maximum_health, expected.position());
+                if runtime
+                    .commit_quest_creature_spawn_with_projection(&[monster], apply_scene)
+                    .is_err()
+                {
+                    return UseDisposition::Rejected;
+                }
             } else if !merchant_projected
                 && !callback.is_read_only()
                 && !personal_claim_preserves_object
@@ -2277,26 +2322,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 underwater(map, expected.position()),
                 underwater(map, snapshot.position()),
             );
-        }
-        if fresh_effects
-            && callback
-                .key
-                .starts_with("oteryn:quest-callback/spike/nest-")
-            && let QuestCause::Use(command) = cause
-        {
-            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-            use std::hash::{BuildHasher, RandomState};
-            static DRAW: OnceLock<RandomState> = OnceLock::new();
-            let draw =
-                1 + (DRAW.get_or_init(RandomState::new).hash_one((command, key)) % 100) as u8;
-            if let Some(creature) = nest_creature(draw)
-                && let Some(native) = self.active_generation.and_then(|g| g.native_gameplay())
-                && native.install_companion_policies(runtime).is_ok()
-                && let Ok(policy) = runtime.companion_policy(creature)
-            {
-                let monster = (creature, policy.maximum_health, expected.position());
-                let _ = runtime.commit_quest_creature_spawn(&[monster]);
-            }
         }
         if callback.effects.loot_merchant {
             map.facts.emit_movement_effect(pos, 46);

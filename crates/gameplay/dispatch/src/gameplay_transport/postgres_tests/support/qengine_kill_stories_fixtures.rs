@@ -682,6 +682,21 @@ async fn spike(
              WHERE r.achievement_key='oteryn:achievement/cave_completionist'",
         ).fetch_one(&mut *split).await?;
         assert_eq!(earned, (alt, 2), "addon {addon} completed the pair");
+        // A timestamp tie proves the account grant, but cannot identify the finisher.
+        sqlx::raw_sql("SET LOCAL session_replication_role=replica;
+            DELETE FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist';
+            DELETE FROM game_account_achievement_grant_requests WHERE achievement_key='oteryn:achievement/cave_completionist';
+            DELETE FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist';
+            UPDATE game_character_quest_receipts SET committed_at=1 WHERE transition_key IN
+                ('oteryn:quest-reward/l12-cave-explorer-first','oteryn:quest-reward/l12-cave-explorer-second');
+            SET LOCAL session_replication_role=origin; DROP TABLE cave_completionist_backfill_eligible")
+            .execute(&mut *split).await?;
+        sqlx::raw_sql(migration).execute(&mut *split).await?;
+        let tied: (i64, i64) = sqlx::query_as("SELECT
+            (SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'),
+            (SELECT count(*) FROM game_character_achievement_progress WHERE achievement_key='oteryn:achievement/cave_completionist')")
+            .fetch_one(&mut *split).await?;
+        assert_eq!(tied, (1, 0));
         split.rollback().await?;
     }
     sale.rollback().await?;
@@ -733,6 +748,8 @@ pub(super) async fn recover_nest(
     owner.refresh_quest_disguise(session).await;
     let tile = crate::map::overlay::TilePos { x: 32162, y: 32507, floor: -11 };
     let target = object_target(owner, tile, 1)?;
+    owner.states.quest_callbacks.nest_draw.store(100, std::sync::atomic::Ordering::Relaxed);
+    let before = owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len();
     owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
     let command = admitted.continuity.next_command_id;
     assert!(use_target(owner, admitted, command, &target).await.is_err());
@@ -743,6 +760,8 @@ pub(super) async fn recover_nest(
     assert!(!owner.has_pending_quest_callback(session));
     assert_eq!(use_target(owner, admitted, command, &target).await?, UseDisposition::Committed);
     assert_eq!(count(h, PROGRESS).await?, 2);
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert_eq!(owner.runtime.lock().await.current_live_creature_census().map_err(debug)?.len(), before + 1);
     Ok(())
 }
 

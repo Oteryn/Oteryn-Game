@@ -136,7 +136,7 @@ impl PlayView {
                 && matches!(item.origin, oteryn_session::world_map::MapOrigin::BaseOrdinal { ordinal: 1, .. }));
         let destroy_field = mailbox.world_context.rune_targeting && realm_fire && mailbox.inventory.rows().iter()
             .chain(mailbox.containers.views.iter().flat_map(|views| &views.views).flat_map(|view| &view.entries))
-            .any(|item| item.handle == source && item.appearance_id == 3148);
+            .any(|item| item.handle == source && Some(item.item_definition_ref.get()) == env!("DESTROY_FIELD_DEFINITION").parse::<u32>().ok());
         let prefer_item = destroy_field || !mailbox.world_context.rune_targeting && self.scene.target().is_some_and(|entry| entry.tile == tile && entry.item.is_some());
         let target = oteryn_client_ui::item_use::input::destination(
             mailbox.world_context.rune_targeting && !destroy_field,
