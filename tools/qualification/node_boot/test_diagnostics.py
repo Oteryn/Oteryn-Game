@@ -31,6 +31,28 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_provisioning_refusals_report_safe_reasons_after_the_general_limit(self):
+        monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
+        prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
+        lines = [
+            'oteryn-game-server event=qualification_fixture_refused '
+            'reason=qualification_Item_commit:_Unavailable_RootUnavailable_ profile=paladin session=secret',
+            'oteryn-game-server event=qualification_fixture_refused '
+            'reason=qualification_build:_qualification_level_absent_from_the_served_progression_policy '
+            'profile=knight-underlevel session=secret',
+            'oteryn-game-server event=qualification_fixture_refused reason=malformed_request',
+            'oteryn-game-server event=qualification_fixture_refused reason=secret profile=secret',
+        ]
+        script = prefix + '\nemitted = 128\n' + '\n'.join(f'report({line!r})' for line in lines)
+        result = subprocess.run([sys.executable, '-c', script, 'unused', 'test', '1', '0'],
+                                capture_output=True, text=True, check=True)
+        self.assertIn('provision_step=Item_commit reason=RootUnavailable profile=paladin', result.stdout)
+        self.assertIn('provision_step=build reason=qualification_level_absent_from_the_served_progression_policy '
+                      'profile=knight-underlevel', result.stdout)
+        self.assertIn('reason=malformed_request', result.stdout)
+        self.assertIn('reason=unclassified', result.stdout)
+        self.assertNotIn('secret', result.stdout)
+
     def test_served_content_revision_is_the_characters_interpretation(self):
         # NBSEAM: the quest and Task Board owners refuse a Character whose stored progression
         # content differs from the served readiness.content_revision (ProgressionContextMismatch).

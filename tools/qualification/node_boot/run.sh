@@ -934,7 +934,7 @@ events = {'serve_end', 'serve_command_end', 'command_guard_failed',
           'session_durability_failed', 'logout_unknown', 'logout_busy',
           'control_loss_reconcile_pending', 'control_loss_result',
           'control_loss_publication', 'control_loss_grace', 'character_authority_check_failed',
-          'appearance_initial_failed', 'appearance_observation_failed'}
+          'appearance_initial_failed', 'appearance_observation_failed', 'qualification_fixture_refused'}
 legacy = {'DURABILITY_PASS_SLOW', 'DURABILITY_PASS_RETIRED',
           'DURABILITY_HOLDER_STUCK', 'DURABILITY_ROOT_REESTABLISHED'}
 labels = {
@@ -987,6 +987,21 @@ authority_stages = {'recovery_fence', 'offline_training', 'npc_purchase', 'creat
                     'bazaar', 'revision_chain', 'appearance', 'build_chain',
                     'proficiency_history', 'familiar_chain', 'spell_familiar_group',
                     'spell_item_chain', 'audit_payload'}
+provision_steps = {'admission', 'interpretation', 'build', 'inventory', 'backpack_recovery',
+                   'Item_reserve', 'Item_commit'}
+provision_reasons = {'fixture_disabled', 'native_unavailable', 'malformed_request',
+                     'qualification_scope_mismatch', 'qualification_progression_unavailable',
+                     'qualification_interpretation_unavailable', 'qualification_Item_absent',
+                     'qualification_Item_index_missing', 'qualification_backpack_missing_after_recovery',
+                     'qualification_backpack_recovery_was_not_admitted',
+                     'qualification_level_absent_from_the_served_progression_policy',
+                     'spell_fixture_progression_level_or_XP_is_not_initial',
+                     'spell_fixture_vocation_is_set', 'spell_fixture_build_is_not_initial',
+                     'qualification_fixture_XP_checkpoint_has_changed', 'redacted_sensitive_error'}
+provision_error = re.compile(
+    r'(?:Unavailable_)?(RootUnavailable|RootPassDeadlineExceeded|CommitTransactionTimeout|'
+    r'CommitOutcomeUnknown|CommitRejected|AuthorityRejected|InvalidStoredState|'
+    r'InvalidInput|CapacityExceeded|ConflictingCause|ConflictingCandidate|Unavailable)_?')
 numbers = {'ts', 'next_command_id', 'server_sequence', 'command_type', 'command_id',
            'ms', 'connections', 'lifecycles', 'held_ms'}
 counts = collections.Counter()
@@ -1016,6 +1031,16 @@ def report(line):
             safe.append((key, fields[key]))
     if event == 'character_authority_check_failed' and fields.get('stage') in authority_stages:
         safe.append(('check_stage', fields['stage']))
+    if event == 'qualification_fixture_refused':
+        reason = fields.get('reason', '')
+        step, separator, detail = reason.partition(':_')
+        if separator and step.removeprefix('qualification_') in provision_steps:
+            safe.append(('provision_step', step.removeprefix('qualification_')))
+            reason = detail
+        error = provision_error.fullmatch(reason)
+        safe.append(('reason', error[1] if error else reason if reason in provision_reasons else 'unclassified'))
+        if fields.get('profile') in {'explorer', 'knight', 'druid', 'paladin', 'sorcerer', 'monk', 'knight-underlevel'}:
+            safe.append(('profile', fields['profile']))
     for key in ('source', 'caller'):
         value = fields.get(key, '')
         if value in {'maintenance', 'none'} or re.fullmatch(
@@ -1031,7 +1056,7 @@ def report(line):
              'logout_busy': 16, 'control_loss_reconcile_pending': 16,
              'control_loss_grace': 16,
              'character_authority_check_failed': 16}.get(event, 8)
-    if event_counts[event] >= limit or emitted >= 128:
+    if event_counts[event] >= limit or (emitted >= 128 and event != 'qualification_fixture_refused'):
         if event not in limited:
             print(f'NODE_BOOT_RUNTIME_LIMIT stage={stage} world_bundle={world} '
                   f'event={event} records={event_counts[event]}')
@@ -1139,6 +1164,8 @@ stage() { # name prerequisite... -- function
     [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
+      # A failed row can exit zero. Keep its node's log before the restart probes.
+      [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then

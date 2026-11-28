@@ -64,9 +64,11 @@ pub(super) async fn prepare(
                 return "rejected";
             }
         };
-    match Box::pin(prepare_build(
+    // The control loop shares its supervisor task with other owner futures.
+    // Keep this request's holder ticket separate from theirs.
+    match Box::pin(DurabilityRoot::with_holder_owner(prepare_build(
         root, authority, proof, config, native, session, profile,
-    ))
+    )))
     .await
     {
         Ok(()) => "qualified",
@@ -707,7 +709,8 @@ async fn prepare_build(
         policy,
         deadline,
     )
-    .await?;
+    .await
+    .map_err(|error| format!("qualification build: {error}"))?;
     prepare_items(root, authority, proof, &current, native, deadline).await
 }
 
@@ -1549,9 +1552,15 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight",
+                                "druid",
+                                "paladin",
+                                "sorcerer",
+                                "explorer",
+                                "monk",
+                                "knight-underlevel",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();

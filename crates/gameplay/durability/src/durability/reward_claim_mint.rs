@@ -810,6 +810,7 @@ impl DurabilityRoot {
         &self,
         retry_until: Option<tokio::time::Instant>,
     ) -> std::result::Result<super::db::IssuedSemanticPass, DurabilityError> {
+        let mut waiter = None;
         loop {
             let result = self.try_issue_semantic_pass();
             let Some(deadline) = retry_until else {
@@ -822,11 +823,13 @@ impl DurabilityRoot {
             }
             let now = tokio::time::Instant::now();
             let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
-            self.wait_holder_retry(
-                (now + std::time::Duration::from_millis(50)).min(latest),
-                latest,
-            )
-            .await;
+            let earliest = (now + std::time::Duration::from_millis(50)).min(latest);
+            // Keep our turn while a busy holder is returned, as the fixture's
+            // reservation pass does. Only retry the checkout, before any SQL.
+            waiter.get_or_insert_with(|| self.holder_waiter());
+            if !self.wait_holder_turn(earliest, latest).await {
+                self.wait_holder_retry(earliest, latest).await;
+            }
             if tokio::time::Instant::now() >= deadline {
                 return result;
             }
@@ -1803,6 +1806,66 @@ fn intent_binding(request: &RewardClaimMintRequest, character_id: CharacterId) -
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn qualification_claim_pass_keeps_its_holder_turn() -> crate::bestiary_postgres_harness::TestResult
+    {
+        use crate::bestiary_postgres_harness::{Harness, TestResult, configured_admin, debug, runtime};
+        use sqlx::pool::PoolConnectionReturnDisposition;
+        use std::future::{Future, poll_fn};
+        use std::task::Poll;
+
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                runtime().map_err(debug)?.block_on(async {
+                    let harness = Harness::create(admin, "claim_holder_turn", false).await?;
+                    let root = &harness.root;
+                    let result: TestResult = async {
+                        let mut held = root.try_acquire_ready()?;
+                        let deadline = tokio::time::Instant::now() + super::super::ROOT_RECOVERY_WINDOW;
+                        let mut claim = std::pin::pin!(DurabilityRoot::with_holder_owner(
+                            root.reward_claim_pass(Some(deadline)),
+                        ));
+                        poll_fn(|cx| match claim.as_mut().poll(cx) {
+                            Poll::Pending => Poll::Ready(Ok(())),
+                            Poll::Ready(_) => Poll::Ready(Err("claim did not wait for the holder")),
+                        })
+                        .await?;
+                        assert_eq!(
+                            held.return_to_pool_observed().await,
+                            PoolConnectionReturnDisposition::ReturnedToIdle
+                        );
+                        let later =
+                            DurabilityRoot::with_holder_owner(async { root.try_acquire_ready() }).await;
+                        if !matches!(later, Err(DurabilityError::RootUnavailable)) {
+                            return Err("later owner took the holder before the qualification claim".into());
+                        }
+                        let value: i32 = claim
+                            .await?
+                            .run(|holder, _| {
+                                Box::pin(async move {
+                                    Ok(sqlx::query_scalar("SELECT 1").fetch_one(&mut **holder).await?)
+                                })
+                            })
+                            .await?;
+                        assert_eq!(value, 1);
+                        eprintln!("qualification_claim_pass_keeps_its_holder_turn PostgreSQL checkout verified");
+                        Ok(())
+                    }
+                    .await;
+                    harness.cleanup().await?;
+                    result
+                })
+                .map_err(debug)
+            })?
+            .join()
+            .map_err(|_| "qualification claim holder test thread failed")?
+            .map_err(Into::into)
+    }
 
     fn id(seed: u8) -> [u8; 16] {
         [
