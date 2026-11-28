@@ -20,6 +20,7 @@ CAPTURE = Path(
 SUMMARY = "tools/content-schema/world-authoring/samples/world-base-capture-v1.json"
 SPECS = (
     ("tile.lua", "TileAction", 50022, "action"),
+    ("tile_pick.lua", "TilePickAction", 101, "action"),
     ("teleport.lua", "TeleportAction", 50022, "action"),
     # Adventurers' Guild exits (adventurers_guild.lua).
     ("teleport.lua", "TeleportAction", 4253, "action"),
@@ -63,10 +64,22 @@ def capture(source):
                 continue
             positions = group["itemPos"]
             for position in positions if isinstance(positions, list) else [positions]:
+                if table == "TilePickAction" and tuple(position[k] for k in "xyz") != (
+                    32302,
+                    32257,
+                    8,
+                ):
+                    continue
+                # Global Battle Axe Quest requires a pick-opened sewer entrance.
+                # Crystal supplies the position for the existing ground 355.
                 # LevelDoorAction's false means the door at this exact position.
                 # Both native placements are 5102, a closed expertise door:
                 # Crystal data/libs/tables/doors.lua:273 (5102 -> 5103).
-                item = group["itemId"] or (7033 if table == "KeyDoorAction" else 5102)
+                item = (
+                    355
+                    if table == "TilePickAction"
+                    else group["itemId"] or (7033 if table == "KeyDoorAction" else 5102)
+                )
                 rows.append(
                     {
                         "position": [position[k] for k in "xyz"],

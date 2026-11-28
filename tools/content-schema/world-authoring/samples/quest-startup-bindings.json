@@ -9,6 +9,10 @@
       "sha256": "f6e1d120063105d19303c9e9c8a57b40a6419cc51c4998be58984c42dc67a2a7"
     },
     {
+      "path": "data-global/startup/tables/tile_pick.lua",
+      "sha256": "b4839e13c284d32724d0b304bde18bb0d5d9924f6dd3cbd27c884e76c69a48a6"
+    },
+    {
       "path": "data-global/startup/tables/teleport.lua",
       "sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e"
     },
@@ -97,6 +101,18 @@
       "action": 4253,
       "source": "data-global/startup/tables/teleport.lua",
       "line": 5
+    },
+    {
+      "position": [
+        32302,
+        32257,
+        8
+      ],
+      "item": 355,
+      "attribute": "action",
+      "action": 101,
+      "source": "data-global/startup/tables/tile_pick.lua",
+      "line": 6
     },
     {
       "position": [
