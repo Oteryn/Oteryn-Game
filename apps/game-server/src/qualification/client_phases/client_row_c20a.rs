@@ -155,10 +155,6 @@ async fn capture_journey(
     logout(&mut fresh).await?;
     let session = uuid_text(session.as_bytes());
     replay(directory, &session, vocation_selected, [&before, &after])?;
-    general_stats::record_selection("c20a-before.bin", &before.payload, vocation_selected)?;
-    general_stats::record_selection("c20a-after.bin", &after.payload, vocation_selected)?;
-    std::fs::write(directory.join("c20a-before.bin"), &before.payload)?;
-    std::fs::write(directory.join("c20a-after.bin"), &after.payload)?;
     std::fs::write(
         directory.join("c20a-expected.txt"),
         format!("{} {}\n{} {}\n", BEFORE.0, BEFORE.1, AFTER.0, AFTER.1),
@@ -200,8 +196,11 @@ fn replay(
         },
         ..Default::default()
     };
-    for (((command_id, server_sequence, payload), live), (xp, level)) in
-        captured.into_iter().zip(replies).zip([BEFORE, AFTER])
+    for ((((command_id, server_sequence, payload), live), (xp, level)), name) in captured
+        .into_iter()
+        .zip(replies)
+        .zip([BEFORE, AFTER])
+        .zip(["c20a-before.bin", "c20a-after.bin"])
     {
         if (command_id, server_sequence, &payload)
             != (live.command_id, live.server_sequence, &live.payload)
@@ -229,6 +228,16 @@ fn replay(
         {
             return Err(format!("C20a replay rendered the wrong stats: {result:?}").into());
         }
+        std::fs::write(directory.join(name), &reply.payload)?;
+        std::fs::write(
+            directory.join(format!("{name}.selection")),
+            format!(
+                "vocation_selected={}\nvocation_id={}\n",
+                u8::from(vocation),
+                view.vocation_id
+                    .map_or_else(|| "none".to_owned(), |id| id.to_string())
+            ),
+        )?;
     }
     Ok(())
 }
