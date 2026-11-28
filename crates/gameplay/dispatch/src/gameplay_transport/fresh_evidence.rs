@@ -115,6 +115,7 @@ const fn durability_cause(error: &DurabilityError) -> &'static str {
         DurabilityError::SchemaIncompatible(_) => "schema_incompatible",
         DurabilityError::InvalidConfiguration => "invalid_configuration",
         DurabilityError::RootUnavailable => "root_unavailable",
+        DurabilityError::HolderBusy => "holder_busy",
         DurabilityError::RootPassDeadlineExceeded => "pass_deadline",
         DurabilityError::CommitRejected => "commit_rejected",
         DurabilityError::CommitTransactionTimeout => "commit_transaction_timeout",

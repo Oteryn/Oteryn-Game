@@ -550,7 +550,8 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
         return Ok(true);
     };
     let kind = match error {
-        crate::durability::DurabilityError::RootUnavailable => "holder_busy",
+        crate::durability::DurabilityError::RootUnavailable
+        | crate::durability::DurabilityError::HolderBusy => "holder_busy",
         crate::durability::DurabilityError::RootPassDeadlineExceeded => "deadline",
         _ => {
             operator_event(&format!(

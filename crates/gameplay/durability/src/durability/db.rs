@@ -236,29 +236,14 @@ fn record_refused_checkout(slot: &StdMutex<HolderOwner>, waiter: Site) {
     }
 }
 
-/// Reports `waiter`'s wait, if long enough, now that it has the holder (LOGDBG-C).
-fn record_checkout(waiter: Site, now: Instant, trace: Option<[u8; 16]>) {
-    let Some(wait) = HOLDER_WAITS
-        .lock()
-        .ok()
-        .and_then(|mut waits| finish_wait(&mut waits, waiter, now))
-    else {
-        return;
-    };
-    let trace = trace.map(format_trace);
-    let mut line = holder_wait_line(&wait, now.duration_since(wait.first));
-    if let Some(trace) = trace.as_deref() {
-        line = line.trace(trace);
-    }
-    oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
-}
-
 /// Records the maintenance window's own checkout of the holder when it ends (NBDIAG-5).
-struct MaintenanceUsage(Instant);
+struct MaintenanceUsage(Option<Instant>);
 
 impl Drop for MaintenanceUsage {
     fn drop(&mut self) {
-        record_holder_usage(None, Some(self.0.elapsed()));
+        if let Some(started) = self.0 {
+            record_holder_usage(None, Some(started.elapsed()));
+        }
     }
 }
 
@@ -337,6 +322,10 @@ fn record_holder_use(
     if elapsed < HOLDER_USAGE_WINDOW {
         return;
     }
+    let Some(mut window) = usage.take() else {
+        return;
+    };
+    drop(usage);
     let held: Duration = window.callers.iter().map(|(_, entry)| entry.held).sum();
     let passes: u64 = window.callers.iter().map(|(_, entry)| entry.passes).sum();
     let refused: u64 = window.callers.iter().map(|(_, entry)| entry.refused).sum();
@@ -377,7 +366,6 @@ fn record_holder_use(
         }
         oteryn_error_codes::emit(DIAGNOSTIC_PROCESS, &line);
     }
-    *usage = None;
 }
 
 /// Process name on the durability diagnostic lines (NBDIAG-4).
@@ -396,6 +384,7 @@ struct PassOwner {
     caller: &'static std::panic::Location<'static>,
     issued: Instant,
     finished: bool,
+    wait: Option<Box<PendingWait>>,
     /// The connection trace of the issuing task, when it has one (LOGDBG-C).
     trace: Option<[u8; 16]>,
 }
@@ -410,13 +399,28 @@ impl PassOwner {
         if let Ok(mut owner) = slot.lock() {
             *owner = Some((caller, issued, trace));
         }
-        record_checkout(caller, issued, trace);
+        let wait = HOLDER_WAITS
+            .lock()
+            .ok()
+            .and_then(|mut waits| finish_wait(&mut waits, caller, issued))
+            .map(Box::new);
         Self {
             slot: Arc::clone(slot),
             caller,
             issued,
             finished: false,
+            wait,
             trace,
+        }
+    }
+
+    fn clear(&self) {
+        if let Ok(mut owner) = self.slot.lock()
+            && owner.is_some_and(|(caller, issued, _)| {
+                std::ptr::eq(caller, self.caller) && issued == self.issued
+            })
+        {
+            *owner = None;
         }
     }
 
@@ -433,6 +437,10 @@ impl PassOwner {
 
 impl Drop for PassOwner {
     fn drop(&mut self) {
+        self.clear();
+        if let Some(wait) = self.wait.take() {
+            self.emit(holder_wait_line(&wait, self.issued.duration_since(wait.first)));
+        }
         record_holder_usage(Some(self.caller), Some(self.issued.elapsed()));
         if !self.finished {
             self.emit(
@@ -448,13 +456,7 @@ impl Drop for PassOwner {
                 .field("held_ms", millis(self.issued.elapsed())),
             );
         }
-        if let Ok(mut owner) = self.slot.lock()
-            && owner.is_some_and(|(caller, issued, _)| {
-                std::ptr::eq(caller, self.caller) && issued == self.issued
-            })
-        {
-            *owner = None;
-        }
+
     }
 }
 const WP3_RUNTIME_WORKER_THREADS: usize = 1;
@@ -1766,6 +1768,7 @@ impl DurabilityRoot {
         }
         let fresh = self.pool.size() == 0;
         let remaining = deadline.saturating_duration_since(Instant::now());
+        let mut usage = MaintenanceUsage(None);
         let acquired = tokio::time::timeout(remaining, self.pool.acquire())
             .await
             .map_err(|_| DurabilityError::RootUnavailable)?;
@@ -1773,7 +1776,7 @@ impl DurabilityRoot {
             Ok(holder) => holder,
             Err(error) => return Err(DurabilityError::from(error)),
         };
-        let _usage = MaintenanceUsage(Instant::now());
+        usage.0 = Some(Instant::now());
 
         let remaining = deadline.saturating_duration_since(Instant::now());
         let compatibility =
@@ -1948,7 +1951,10 @@ impl DurabilityRoot {
 
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
-        let caller = std::panic::Location::caller();
+        self.try_issue_at(std::panic::Location::caller())
+    }
+
+    fn try_issue_at(&self, caller: Site) -> Result<IssuedSemanticPass, DurabilityError> {
         let holder = self.try_acquire_ready().inspect_err(|_| {
             record_refused_checkout(&self.holder_owner, caller);
         })?;
@@ -2064,35 +2070,43 @@ impl IssuedSemanticPass {
 
         let held = self.owner.issued.elapsed();
         let deadline_exceeded = matches!(&result, Err(DurabilityError::RootPassDeadlineExceeded));
-        if deadline_exceeded || held >= SLOW_PASS_REPORT {
-            // The text line stays until node boot's run.sh selects the event instead (LOGDBG-C).
-            eprintln!(
-                "DURABILITY_PASS_SLOW caller={} held_ms={} deadline_exceeded={deadline_exceeded}",
-                self.owner.caller,
-                held.as_millis(),
-            );
-            self.owner
-                .emit(pass_slow_line(self.owner.caller, held, deadline_exceeded));
-        }
+        self.owner.clear();
+        let report_slow = || {
+            if deadline_exceeded || held >= SLOW_PASS_REPORT {
+                // The text line stays until node boot's run.sh selects the event instead (LOGDBG-C).
+                eprintln!(
+                    "DURABILITY_PASS_SLOW caller={} held_ms={} deadline_exceeded={deadline_exceeded}",
+                    self.owner.caller,
+                    held.as_millis(),
+                );
+                self.owner
+                    .emit(pass_slow_line(self.owner.caller, held, deadline_exceeded));
+            }
+        };
 
         if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
+            self.holder.close_on_drop();
+            drop(self.holder);
+            self.root.request_ready();
+            report_slow();
             eprintln!(
                 "DURABILITY_PASS_RETIRED caller={} reason=commit_outcome_unknown",
                 self.owner.caller
             );
-            self.holder.close_on_drop();
-            self.root.request_ready();
             return result;
         }
 
         // SQLx takes a system-clock deadline, so transfer only the remaining budget.
         let release_deadline = Instant::now()
             + self.deadline.saturating_duration_since(TokioInstant::now());
-        match self.holder.return_to_pool_observed_until(release_deadline).await {
-            PoolConnectionReturnDisposition::ReturnedToIdle => {
-                self.root.holder_returned.notify_waiters();
-                result
-            }
+        let disposition = self.holder.return_to_pool_observed_until(release_deadline).await;
+        drop(self.holder);
+        if matches!(disposition, PoolConnectionReturnDisposition::ReturnedToIdle) {
+            self.root.holder_returned.notify_waiters();
+        }
+        report_slow();
+        match disposition {
+            PoolConnectionReturnDisposition::ReturnedToIdle => result,
             PoolConnectionReturnDisposition::RetiredClosed => {
                 eprintln!(
                     "DURABILITY_PASS_RETIRED caller={} reason=closed",

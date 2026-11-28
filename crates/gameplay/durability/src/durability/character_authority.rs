@@ -156,9 +156,22 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         character_id: CharacterId,
     ) -> Result<CharacterAuthorityRecord> {
+        self.read_current_character_until(authority, character_id, None).await
+    }
+
+    pub async fn read_current_character_until(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        checkout_deadline: Option<tokio::time::Instant>,
+    ) -> Result<CharacterAuthorityRecord> {
         let character = *character_id.as_bytes();
         let recovery = authority.record_for(self)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let pass = match checkout_deadline {
+            Some(deadline) => self.issue_foreground_pass_until(deadline).await?,
+            None => self.try_issue_semantic_pass()?,
+        };
+        pass.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {

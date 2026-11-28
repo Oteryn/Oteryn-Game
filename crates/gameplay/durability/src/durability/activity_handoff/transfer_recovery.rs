@@ -109,9 +109,23 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         transport: AuthenticatedTransportRefV1,
     ) -> Result<()> {
+        self.note_transfer_input_until(node, fence, transport, None).await
+    }
+
+    pub async fn note_transfer_input_until(
+        &self,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        transport: AuthenticatedTransportRefV1,
+        checkout_deadline: Option<tokio::time::Instant>,
+    ) -> Result<()> {
         let root = self.root.clone();
         let node = node.clone();
-        self.root.try_issue_semantic_pass()?.run(move |pass, deadline| Box::pin(async move {
+        let pass = match checkout_deadline {
+            Some(deadline) => self.root.issue_foreground_pass_until(deadline).await?,
+            None => self.root.try_issue_semantic_pass()?,
+        };
+        pass.run(move |pass, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(pass, deadline).await?;
             lock_admission_relations(&mut tx).await?;
             let activity: bool = sqlx::query_scalar(

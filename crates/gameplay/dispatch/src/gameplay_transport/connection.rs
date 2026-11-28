@@ -988,8 +988,8 @@ where
         Err(refusal) => {
             report_admission_refusal(refusal);
             if let AdmissionRefusal::Classified(error) = refusal {
-                // N8: exactly one ProtocolError at generation 0, then close. A slow or
-                // failed peer write changes nothing: the refusal already stands.
+                // A fresh admission refusal precedes ServerAccepted and all snapshot writes.
+                // Send one ProtocolError at generation 0, then close.
                 let _ = tokio::time::timeout(
                     ADMISSION_REFUSAL_WRITE_BOUND,
                     send_error(stream, error, 0),

@@ -259,9 +259,18 @@ impl FreshAdmissionStore {
         request: &FreshAdmissionCommitRequestV1,
         revalidate: Option<OwnerRevalidation>,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
+        let issued = self.guards.backend.try_issue_root()?;
+        self.commit_revalidated_with_pass(request, revalidate, issued).await
+    }
+
+    pub(in crate::durability) async fn commit_revalidated_with_pass(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        revalidate: Option<OwnerRevalidation>,
+        issued: Option<super::db::IssuedSemanticPass>,
+    ) -> Result<FreshAdmissionDurableOutcomeV1> {
         let store = (*self).clone();
         let request = (*request).clone();
-        let issued = store.guards.backend.try_issue_root()?;
         let backend = store.guards.backend.clone();
         backend
             .run_pass(issued, |holder, deadline| Box::pin(async move {

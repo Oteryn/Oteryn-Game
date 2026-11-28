@@ -312,6 +312,7 @@ pub enum DurabilityError {
     SchemaIncompatible(SchemaCompatibility),
     InvalidConfiguration,
     RootUnavailable,
+    HolderBusy,
     RootPassDeadlineExceeded,
     CommitRejected,
     CommitTransactionTimeout,
@@ -349,6 +350,7 @@ impl Display for DurabilityError {
                 formatter.write_str("game durability root configuration is invalid")
             }
             Self::RootUnavailable => formatter.write_str("game durability root is not ready"),
+            Self::HolderBusy => formatter.write_str("durability holder checkout timed out"),
             Self::RootPassDeadlineExceeded => {
                 formatter.write_str("game durability semantic pass deadline expired")
             }

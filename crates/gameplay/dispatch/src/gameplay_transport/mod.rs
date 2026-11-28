@@ -1589,8 +1589,16 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// (NODEBOOT-1). Any other retry after a return starts no earlier than
     /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
+        self.retries_unavailable_with_minimum(refusal, self.backoff).await
+    }
+
+    async fn retries_unavailable_with_minimum(
+        &self,
+        refusal: AdmissionRefusal,
+        minimum_remaining: Duration,
+    ) -> bool {
         let now = tokio::time::Instant::now();
-        if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
+        if refusal != AdmissionRefusal::Unavailable || now + minimum_remaining >= self.deadline {
             // A given-up owner holds no later owner back.
             if let Some(Some(waiter)) = self.waiter.get() {
                 waiter.stop_waiting();
@@ -1601,7 +1609,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             Some(root) => {
                 let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
-                let latest = now + self.backoff;
+                let latest = (now + self.backoff).min(self.deadline);
                 if !root.wait_holder_turn(earliest, latest).await {
                     // A retired holder cannot emit a return notification. Service
                     // real readiness within this same retry window, then retry on
