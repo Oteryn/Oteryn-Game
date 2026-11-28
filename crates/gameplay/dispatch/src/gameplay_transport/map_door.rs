@@ -371,40 +371,28 @@ pub(super) fn use_key_observed(
     target: &WorldObjectTarget,
     admit: impl FnOnce() -> bool,
 ) -> (UseOutcome, Option<KeyDoorOpening>) {
-    let source = MapViewSource {
+    let mut opening = None;
+    let result = use_resolved_door(
         overlay,
         facts,
         content_generation,
-        reset_epoch: 0,
-    };
-    let resolved = resolve_map_target(&source, target, |_| None::<()>);
-    if resolved
-        .as_ref()
-        .is_ok_and(|target| !reachable(actor, target.pos))
-    {
-        return (outcome(UseDisposition::TooFar), None);
-    }
-    if !admit() {
-        return (outcome(UseDisposition::Exhausted), None);
-    }
-    let resolved = match resolved {
-        Ok(resolved) => resolved,
-        Err(MapTargetRefusal::StateRevisionMismatch) => {
-            return (outcome(UseDisposition::StaleState), None);
-        }
-        Err(MapTargetRefusal::Use(disposition)) => return (outcome(disposition), None),
-    };
-    let (used, opening) = facts.doors().use_key_observed(
-        resolved.placement_key,
-        target.expected_revision,
-        key_action,
+        actor,
+        target,
+        |key, _| {
+            if !admit() {
+                return outcome(UseDisposition::Exhausted);
+            }
+            let (used, observed) =
+                facts
+                    .doors()
+                    .use_key_observed(key, target.expected_revision, key_action);
+            opening = observed;
+            match used {
+                Some(DoorUse::Locked) => outcome(UseDisposition::KeyMismatch),
+                _ => door_result(used),
+            }
+        },
     );
-    let result = match used {
-        Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
-        Some(DoorUse::Locked) => outcome(UseDisposition::KeyMismatch),
-        Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),
-        _ => outcome(UseDisposition::NothingToUse),
-    };
     (result, opening)
 }
 
@@ -484,7 +472,10 @@ mod tests {
                 actor,
                 3520,
                 &target,
-                || true,
+                || {
+                    assert_eq!(expected, UseDisposition::KeyMismatch);
+                    true
+                },
             );
             assert_eq!(outcome.disposition, expected);
             assert!(
@@ -526,6 +517,17 @@ mod tests {
             let refused = run(&world, actor, &[], &t);
             assert_eq!(refused.disposition, UseDisposition::TooFar, "{actor:?}");
             assert_eq!(refused.refusal_detail, detail, "{actor:?}");
+            let (key_refused, _) = use_key_observed(
+                world.overlay(),
+                world.facts(),
+                GENERATION,
+                actor,
+                3520,
+                &t,
+                || false,
+            );
+            assert_eq!(key_refused.disposition, UseDisposition::TooFar);
+            assert_eq!(key_refused.refusal_detail, detail);
         }
         assert!(!world.enterable(DOOR_AT));
         assert_eq!(run(&world, at(7), &[], &t).refusal_detail, None);

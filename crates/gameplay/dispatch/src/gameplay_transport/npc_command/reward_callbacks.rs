@@ -619,6 +619,11 @@ fn cwdoor_key_dialogue_follows_native_offer_topics()
                 (3, "redips", 4),
                 (4, "7", 5),
                 (5, "black", 6),
+                (0, "i need a key", 1),
+                (1, "yes please", 2),
+                (3, "his name was redips", 4),
+                (4, "he had 7 fingers", 5),
+                (5, "black demons", 6),
             ],
         ),
     ] {
@@ -651,6 +656,16 @@ fn cwdoor_key_dialogue_follows_native_offer_topics()
         assert!(offers.offers.iter().all(|offer| {
             offer.next_topic == 0 || !offer.admits(npc, 0, text, state.catalogue(), &tracks)
         }));
+    }
+    let callbacks = reward_callbacks::load()?;
+    for topic in [2, 6] {
+        let callback = callbacks
+            .iter()
+            .find(|callback| callback.npc == "oteryn:npc.skjaar" && callback.topic == topic)
+            .ok_or("Skjaar confirmation")?;
+        assert!(matches_reward_keyword(callback, "oh yes please"));
+        assert!(!matches_reward_keyword(callback, "eyes"));
+        assert!(!matches_reward_keyword(callback, "yes i need a key"));
     }
     Ok(())
 }
@@ -746,6 +761,13 @@ pub(super) fn crystal_keyword(text: &str, word: &str) -> bool {
 const JORGE: &str = "oteryn:npc.jorge";
 
 fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> bool {
+    if npc == "oteryn:npc.skjaar" {
+        // The key prompt can restart the quiz at any topic, including a paid confirmation.
+        if crystal_keyword(text, "key") {
+            return keywords.iter().any(|word| word == "key");
+        }
+        return keywords.iter().any(|word| crystal_keyword(text, word));
+    }
     keywords.iter().any(|word| {
         word == text || (npc == JORGE && word == "souvenir" && message_contains(text, word))
     })
