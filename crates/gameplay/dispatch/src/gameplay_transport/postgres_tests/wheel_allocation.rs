@@ -787,6 +787,35 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             "receipt replay does not stack dedication or change vitals"
         );
         owner.premium_coordinator = Some(&free);
+        let before_refusal = {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states.get_mut(&runtime, deps.actor, session).ok_or("live spell state")?;
+            state.restore_saved_vitals(allocated_vitals.max_health, allocated_vitals.max_mana);
+            (state.revision(), state.vitals())
+        };
+        assert!(before_refusal.1.mana > facts.max_mana, "the fixture can detect a mana clamp");
+        next_fresh_wheel_action(&mut owner)?;
+        let stale = wire::WheelAllocationRequest { occurrence: id(166), ..request.clone() };
+        // Use the command route without a new join snapshot, which independently refreshes vitals.
+        let outcome = owner.wheel_allocation_command(
+            admitted,
+            wire::COMMAND_TYPE_WHEEL_ALLOCATION,
+            &wire::encode_wheel_request(&stale).map_err(debug)?,
+        ).await;
+        let crate::gameplay_transport::wheel_allocation::WheelAllocationReply::Payload(payload) = outcome else {
+            return Err(format!("stale Wheel save reply: {outcome:?}").into());
+        };
+        assert_eq!(payload, reply(true, 1, points)?.1);
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                crate::gameplay_transport::actor_spell::observe_vitals(&runtime, &states, deps.actor, session),
+                Some(before_refusal),
+                "stale Wheel saves must preserve all vitals and the revision used to publish them"
+            );
+        }
         assert_eq!(
             send(&owner, &mut admitted, &[8, 0]).await?,
             reply(false, 1, points)?
