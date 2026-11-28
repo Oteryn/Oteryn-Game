@@ -148,14 +148,22 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.base_hidden(wall));
     assert_eq!(map.facts.next_movement_decay_time(), Some(due));
-    assert_eq!(map.facts.expire_movement_items(due), 1);
-    assert!(!map.facts.base_hidden(wall));
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(
         Box::pin(use_source(owner, admitted, 9, CONTROL, 3, 4)).await?,
         UseDisposition::NothingToUse,
         "returning the switch leaves the opening cooldown in force",
     );
     assert_eq!(receipts(harness).await?, 3);
+    let map = owner.bundle_map().ok_or("map")?;
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert!(!map.facts.base_hidden(wall));
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 10, CONTROL, 3, 4)).await?,
+        UseDisposition::Committed,
+        "the restored wall and expired lever cooldown allow the next opening",
+    );
+    assert_eq!(receipts(harness).await?, 4);
     Ok(())
 }
 
