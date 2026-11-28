@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult};
-use crate::durability::DurabilityRoot;
+use crate::durability::{DB_PASS_DEADLINE, DurabilityRoot};
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId, MessageType};
 use crate::gameplay_transport::composed_admission::FRESH_CHECKOUT_BARRIER;
 use crate::gameplay_transport::connection::{ConnectionIdentifiers, admit_frame};
@@ -101,12 +101,12 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
             _ = barrier.0.notified() => {},
             end = &mut joining => return Err(format!("ended before checkout: {end:?}").into()),
         }
-        let held = h.root.try_issue_semantic_pass()?;
+        let mut held = h.root.try_acquire_ready()?;
         barrier.1.notify_one();
         assert!(poll_fn(|cx| Poll::Ready(joining.as_mut().poll(cx))).await.is_pending());
         if expire {
             assert!(matches!(
-                joining.await,
+                joining.as_mut().await,
                 Err(crate::gameplay_transport::connection::ConnectionEnd::AdmissionRefused(
                     crate::gameplay_transport::connection::AdmissionRefusal::Classified(
                         crate::foundation::FoundationProtocolError::SessionJoinUnavailable
@@ -116,9 +116,12 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
             assert!(!owner.runtime.lock().await.contains_player_session(session).map_err(debug)?);
             let consumed: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts").fetch_one(&h.pool).await?;
             assert_eq!(consumed, 0);
-            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-        } else {
-            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        }
+        assert_eq!(
+            held.return_to_pool_observed_until(std::time::Instant::now() + DB_PASS_DEADLINE).await,
+            sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle,
+        );
+        if !expire {
             tokio::select! {
                 _ = barrier.0.notified() => return Err("the join retried the admission round".into()),
                 result = &mut joining => {
