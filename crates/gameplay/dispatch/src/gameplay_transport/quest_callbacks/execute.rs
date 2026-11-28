@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn execute_quest_callback<'map>(
         &self,
         permit: &SpellLanePermit,
-        entered: Option<MovementPositionSnapshot>,
+        initial_position: MovementPositionSnapshot,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &'map BundleMap,
@@ -89,12 +89,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.quest_turn_with(&self.states.spell_states).await;
         let mut runtime = &mut *runtime_guard;
         let mut states = &mut *spell_guard;
-        let Ok(initial_position) = runtime.read_actor_position(actor) else {
-            return UseDisposition::StaleState;
-        };
-        if entered.is_some_and(|entered| entered != initial_position) {
+        if runtime.read_actor_position(actor) != Ok(initial_position) {
             return UseDisposition::StaleState;
         }
+        let binding = runtime.binding();
+        let activation = runtime.content_pin().activation_sequence();
         // The spell lane orders writers. Observers can use the runtime while
         // the receipt is pending. A changed placement leaves replay to reconcile it.
         macro_rules! await_receipt {
@@ -108,6 +107,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime = &mut *runtime_guard;
                 states = &mut *spell_guard;
                 if runtime.owner_fence().is_err()
+                    || runtime.binding() != binding
+                    || runtime.content_pin().activation_sequence() != activation
                     || runtime.read_actor_position(actor) != Ok(initial_position)
                     || !runtime
                         .player_control_facts(actor, session)

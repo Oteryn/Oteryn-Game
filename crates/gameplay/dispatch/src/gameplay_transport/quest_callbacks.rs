@@ -1188,7 +1188,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         &permit,
-                        Some(pending.expected),
+                        pending.expected,
                         pending.actor,
                         pending.session,
                         map,
@@ -1667,7 +1667,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
-                None,
+                expected,
                 actor,
                 command.game_session_id,
                 map,
@@ -1956,7 +1956,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         permit,
-                        Some(entered),
+                        entered,
                         actor,
                         session,
                         map,
