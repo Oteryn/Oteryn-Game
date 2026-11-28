@@ -333,6 +333,51 @@ fn boosted_exclusion_slot(
 }
 
 pub(super) const ORDINARY_BOSS: &str = "oteryn:creature.rotworm_queen";
+const STONECUTTER_AXE: u32 = 3319;
+
+async fn equip_boss_axe(
+    mut client: DevClientSession,
+    clients: &SeamClients<'_>,
+) -> TestResult<DevClientSession> {
+    let reference = provisioning::item_reference(&provisioning::item_index()?, STONECUTTER_AXE)?;
+    let session = client.join_snapshot().game_session_id;
+    request_fixture_control(
+        uuid_text(session.as_bytes()),
+        "--profile",
+        format!("item-{STONECUTTER_AXE}-1"),
+    )
+    .await?;
+    evidence(&format!("P02 FIXTURE input=weapon item={STONECUTTER_AXE} quantity=1 result=accepted"));
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_world(clients, 0x71).await?;
+    let inventory = client.inventory().ok_or("P02 weapon inventory missing")?;
+    let equipped = |inventory: &oteryn_dev_client::CharacterInventory| {
+        inventory.equipment.iter().any(|slot| {
+            slot.item.item_definition_ref == reference && slot.item.count.get() == 1
+        })
+    };
+    if client.join_snapshot().game_session_id == session || equipped(inventory)
+        || !inventory.entries.iter().any(|item| item.item_definition_ref == reference && item.count.get() == 1)
+    {
+        return Err("P02 Stonecutter Axe must start unequipped in the fresh admission".into());
+    }
+    let reply = client.session_mut().equip_item_definition(reference).await?;
+    if reply.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+        return Err(format!("P02 Stonecutter Axe equip refused: {reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    verdict::Harness::global().bounded_wait(deadline, "p02-weapon-equip");
+    while !client.inventory().is_some_and(equipped) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("P02 Stonecutter Axe equip delta missing".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    evidence(&format!("P02_COMBAT item={STONECUTTER_AXE} equipped=confirmed"));
+    Ok(client)
+}
 
 pub(super) async fn prepare_combat(clients: &SeamClients<'_>, row: &str, tag: u8) -> TestResult<DevClientSession> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
@@ -345,11 +390,12 @@ pub(super) async fn prepare_combat(clients: &SeamClients<'_>, row: &str, tag: u8
     )?;
     character_prep::declare_seeded(
         row,
-        "level 100, axe, boss placement",
+        "level 100, Stonecutter Axe, boss placement",
         "combat inputs are prepared; credit and slots must come from live gameplay",
     );
     let client = connect_world(clients, tag).await?;
-    let mut c = provisioning::provision_fixture(client, clients, 1, 100).await?;
+    let c = provisioning::provision_fixture(client, clients, 1, 100).await?;
+    let mut c = equip_boss_axe(c, clients).await?;
     prepare_boss_ground(&mut c, world).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,
