@@ -84,8 +84,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = admitted
             .item_fence
             .ok_or(ActivityRefusal::AuthorityRejected)?;
+        let origin_pin = self.activity_origin_pin().await;
         if !ActivityHandoffOwner::new(self.root.clone())
-            .activate_primal_boss_catalogue(self.character, self.holder, fence, active, &template)
+            .activate_primal_boss_catalogue(
+                self.character,
+                self.holder,
+                fence,
+                active,
+                &template,
+                (origin, &origin_pin),
+            )
             .await
             .map_err(|_error| {
                 #[cfg(test)]

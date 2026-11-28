@@ -8,6 +8,7 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         active: &crate::content::ActiveGeneration,
         template: &crate::content::bosses::activity_template::QualifiedActivityRoomTemplate,
+        origin: (&crate::content::QualifiedNativeEntryRoom, &crate::foundation::ChannelContentPin),
     ) -> Result<bool> {
         if template.boss_key() != "oteryn:boss.the_primal_menace"
             || template.creature_key() != "oteryn:creature.the_primal_menace"
@@ -26,13 +27,26 @@ impl ActivityHandoffOwner {
         else {
             return Ok(false);
         };
+        let (room, pin) = origin;
+        if world_id != pin.world_id()
+            || world_id != room.movement_cells().scope().world_id
+            || world_id != template.room().movement_cells().scope().world_id
+            || active.activation_sequence() != pin.activation_sequence()
+            || room.compiled().server_digest() != pin.server_artifact_digest()
+            || room.compiled().client_digest() != pin.client_artifact_digest()
+            || room.frame_binding().digest() != pin.frame_binding_digest()
+            || room.map_revision_digest() != pin.map_revision_digest()
+            || !active.qualifies_primal_source_lobby(room)
+        {
+            return Ok(false);
+        }
         let recovery = authority
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         // Publication is append-only and checks exact policy equality on replay.
         // The following pass independently re-proves the Character, Node,
         // runtime and current activation before accepting this interpretation.
-        self.publish_qualified_boss_rooms(node, std::slice::from_ref(template))
+        self.publish_qualified_boss_rooms_with_origin(node, std::slice::from_ref(template), Some(pin))
             .await?;
         let root = self.root.clone();
         let node = node.clone();

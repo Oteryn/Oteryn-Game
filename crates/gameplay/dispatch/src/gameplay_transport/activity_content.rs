@@ -7,6 +7,21 @@ use crate::foundation::{ChannelRuntimeV1, RuntimeScopeRefV1};
 mod capacity;
 
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
+    pub(super) async fn activity_origin_pin(&self) -> crate::foundation::ChannelContentPin {
+        let runtime = self.runtime.lock().await;
+        let pin = runtime.content_pin();
+        let start = pin.entry_start();
+        crate::foundation::ChannelContentPin::from_activation(
+            pin.world_id(),
+            pin.activation_sequence(),
+            pin.server_artifact_digest(),
+            pin.client_artifact_digest(),
+            pin.frame_binding_digest(),
+            pin.map_revision_digest(),
+            (start.x, start.y, start.floor),
+        )
+    }
+
     /// A pinned source map uses its own frame. Allocation and readiness still
     /// come only from the existing control owner; this method creates neither.
     pub(super) async fn ensure_pinned_source_runtime(

@@ -104,24 +104,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .gate_field_step_ingress()
             .ok_or(ActivityRefusal::ContentUnavailable)?;
         // Both accepted paths authenticate the real current map, never raw XYZ.
-        let runtime = self.runtime.lock().await;
-        let pin = runtime.content_pin();
-        let start = pin.entry_start();
-        // Clone is test-only; retain the exact immutable pin before releasing
-        // its runtime owner for the durable publication below.
-        let origin_pin = crate::foundation::ChannelContentPin::from_activation(
-            pin.world_id(),
-            pin.activation_sequence(),
-            pin.server_artifact_digest(),
-            pin.client_artifact_digest(),
-            pin.frame_binding_digest(),
-            pin.map_revision_digest(),
-            (start.x, start.y, start.floor),
-        );
+        let origin_pin = self.activity_origin_pin().await;
         let world_origin = active.qualify_published_world_context(origin, &origin_pin);
         let qualified =
             origin.pinned_activity_source_room() == source(key) || world_origin.is_some();
-        drop(runtime);
         if !qualified {
             return Err(ActivityRefusal::ContentUnavailable);
         }

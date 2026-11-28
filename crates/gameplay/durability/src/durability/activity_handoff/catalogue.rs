@@ -35,7 +35,7 @@ impl ActivityHandoffOwner {
             .await
     }
 
-    async fn publish_qualified_boss_rooms_with_origin(
+    pub(super) async fn publish_qualified_boss_rooms_with_origin(
         &self,
         node: &NodeIncarnationProof,
         templates: &[QualifiedActivityRoomTemplate],

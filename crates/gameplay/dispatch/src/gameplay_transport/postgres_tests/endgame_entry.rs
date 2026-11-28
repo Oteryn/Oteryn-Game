@@ -24,6 +24,107 @@ fn endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02() -
     super::kill_reward_e2e_fixtures::scenario_thread::run("endgame-entry", scenario)
 }
 
+#[test]
+fn g35_cruelty_published_world_lever_enters_assigned_instance_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("g35-world-cruelty", move || {
+        run_world_lever(
+            admin,
+            "g35_world_cruelty",
+            PinnedActivitySourceRoom::GoshnarsCruelty,
+            "oteryn:creature.goshnar_s_cruelty",
+            MovementLocalPosition { x: 33854, y: 31854, floor: 6 },
+        )
+    })
+}
+
+#[test]
+fn g35_primal_published_world_lever_enters_assigned_instance_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("g35-world-primal", move || {
+        run_world_lever(
+            admin,
+            "g35_world_primal",
+            PinnedActivitySourceRoom::Primal,
+            "oteryn:creature.the_primal_menace",
+            MovementLocalPosition { x: 33548, y: 32752, floor: 14 },
+        )
+    })
+}
+
+fn run_world_lever(
+    admin: String,
+    seed: &str,
+    source: PinnedActivitySourceRoom,
+    key: &str,
+    origin: MovementLocalPosition,
+) -> TestResult {
+    use super::boss_activity_fixtures::{exchange_capture, issue_content_and_reset_with_runtime_pin};
+    use super::srx3_soul_war_world_fixture_fixtures::source_world_with_bundle;
+    use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+
+    crate::bestiary_postgres_harness::runtime()?.block_on(async {
+        reset();
+        let (scene, bundle, activation_pin) = source_world_with_bundle(origin)?;
+        let deps = scene.dependencies()?;
+        let h = Harness::create_with_admission_seed(admin, seed, false, false).await?;
+        if source == PinnedActivitySourceRoom::GoshnarsCruelty {
+            // Import historical teleport access. The live lever and handoff
+            // still run through the real source-state and authority checks.
+            let mut historical = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *historical)
+                .await?;
+            sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,0,NULL,false,false)")
+                .bind(id(41).as_slice())
+                .execute(&mut *historical)
+                .await?;
+            historical.commit().await?;
+        }
+        let evidence = super::house_transfer_fixtures::RecoverySource::start(&h).await?;
+        super::house_transfer_fixtures::prepare_owned_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let mut owner = deps.owner(&h, &authority);
+        owner.evidence = &evidence.evidence;
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&scene.room));
+        let active = scene.controller.active().ok_or("active World content")?;
+        owner.active_generation = Some(active);
+        let captured = active.qualify_activity_source_room(&scene.room, source).map_err(debug)?;
+        let room = crate::gameplay_transport::activity_runtime::source_bundle::qualify(
+            &captured, source, active, owner.world_id, owner.channel_id,
+        ).map_err(|_| "materialize the native source room")?;
+        owner.activity_runtimes.register_source_room(source, &room)
+            .map_err(|_| "register the native source room")?;
+        let map_revision = crate::map::overlay::map_revision(bundle.overlay().base());
+        issue_content_and_reset_with_runtime_pin(&h, &activation_pin, &scene.pin, &map_revision).await?;
+        let mut admitted = deps.admitted;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            &[4, 6, 7, 10, 11, 15, 18, 23, 30, 92, CAPABILITY_BOSS_ENCOUNTER_V1],
+        ).ok_or("boss encounter capability")?;
+        prepare_player(&h, &owner, &mut admitted, 500).await?;
+        let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(level, 500);
+        let instance = super::activity_runtime_fixtures::allocate_ready_instance(&h, 218).await?;
+        let (_, reply, activation) =
+            exchange_capture(&owner, &mut admitted, key, true, &mut Vec::new()).await?;
+        assert!(
+            matches!(reply, BossActivityReply::Accepted { .. }),
+            "{key}: the lever must resolve its recipe by the current Channel pin: {reply:?}"
+        );
+        assert!(activation.is_some());
+        assert_eq!(admitted.item_fence.ok_or("Instance fence")?.runtime_scope, instance);
+        h.cleanup().await?;
+        Ok(())
+    })
+}
+
 fn scenario() -> TestResult {
     // Preserve the unavailable-W02 terminal counterfactual independently of
     // the real source catalogues required to reach each lever's Level gate.

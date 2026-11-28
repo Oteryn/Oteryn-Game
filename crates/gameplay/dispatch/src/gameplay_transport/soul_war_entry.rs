@@ -99,13 +99,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .gate_field_step_ingress()
             .ok_or(ActivityRefusal::ContentUnavailable)?;
         // Both accepted paths authenticate the real current map, never raw XYZ.
-        let runtime = self.runtime.lock().await;
-        let qualified = origin.pinned_activity_source_room() == source(key)
-            || active
-                .qualify_published_world_context(origin, runtime.content_pin())
-                .is_some();
-        drop(runtime);
-        if !qualified {
+        let origin_pin = self.activity_origin_pin().await;
+        let world_origin = active.qualify_published_world_context(origin, &origin_pin);
+        if origin.pinned_activity_source_room() != source(key) && world_origin.is_none() {
             return Err(ActivityRefusal::ContentUnavailable);
         }
         let fence = admitted
@@ -116,7 +112,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 eprintln!("PR3056_SOUL_WAR_ENTRY stage=source_fence refusal=AuthorityRejected");
             })?;
         if !ActivityHandoffOwner::new(self.root.clone())
-            .activate_soul_war_boss_catalogue(self.character, self.holder, fence, active, &template)
+            .activate_soul_war_boss_catalogue(
+                self.character,
+                self.holder,
+                fence,
+                active,
+                &template,
+                world_origin.as_ref().map(|_| (origin, &origin_pin)),
+            )
             .await
             .map_err(|_error| {
                 #[cfg(test)]
