@@ -2,7 +2,7 @@
 //! ASSIGN of a locked charm, and the QUERY after a credited hunt kill. The consumer is `apply` in
 //! `apps/client/src/features/0067-bestiary-charm-progression/protocol.rs`.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, WorldSpatialEntity};
+use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent, WorldSpatialEntity};
 use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmKind};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
@@ -116,6 +116,7 @@ pub(super) async fn walk_rat_route(
     world: &BundleWorld,
     path: &[StepDirection],
     reserved: &BTreeSet<TilePos>,
+    mut observe: impl FnMut(&SessionEvent),
 ) -> TestResult {
     let mut remaining = VecDeque::from(path.to_vec());
     let center = tile(client.world_spatial().actor_position)?;
@@ -162,7 +163,7 @@ pub(super) async fn walk_rat_route(
                     "P01_ROUTE wait landing={landing:?} occupants={occupants:?}"
                 ));
                 client.service_liveness(VISIBILITY_TICK).await?;
-                client.take_events();
+                client.take_events().iter().for_each(&mut observe);
                 continue;
             }
 
@@ -174,7 +175,7 @@ pub(super) async fn walk_rat_route(
             match step.disposition {
                 StepDisposition::Moved if observed == landing => {
                     verdict::Harness::global().progress("p01-walk");
-                    client.take_events();
+                    client.take_events().iter().for_each(&mut observe);
                     client
                         .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
                         .await?;
@@ -209,7 +210,7 @@ pub(super) async fn walk_rat_route(
                     if tokio::time::Instant::now() >= deadline {
                         return Err(format!("P01 STEP recovery deadline at {landing:?}").into());
                     }
-                    client.take_events();
+                    client.take_events().iter().for_each(&mut observe);
                 }
                 _ => return Err(format!(
                     "P01 STEP from={before:?} expected={landing:?} observed={observed:?}: {step:?}"
@@ -234,7 +235,7 @@ async fn verify_rat_kill(
         race,
         corpse.fresh_ref,
         Some(corpse),
-        Some(clients),
+        full_row_p01::HuntEvidence::Principal(clients),
     )
     .await?;
     if kill.race != race || kill.raw_xp != 5 || kill.gained_xp != 5 {
@@ -279,7 +280,7 @@ async fn logout_from_protected_ground(
     let occupied = occupied_rat_route_tiles(client);
     let path = route_avoiding(world, from, protected, |at| !occupied.contains(&at) && !reserved.contains(&at))
         .ok_or_else(|| format!("no walkable route from {from:?} to {PROTECTED_LOGOUT:?}"))?;
-    walk_rat_route(client, world, &path, &reserved).await?;
+    walk_rat_route(client, world, &path, &reserved, |_| {}).await?;
     let reached = tile(client.world_spatial().actor_position)?;
     if !protected(reached) {
         return Err(format!("client logout ground is not protected: {reached:?}").into());
@@ -346,7 +347,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         refusal_race,
         troll_corpse,
         None,
-        Some(clients),
+        full_row_p01::HuntEvidence::Principal(clients),
     )
     .await?;
     if troll_kill.raw_xp != 20 || troll_kill.gained_xp != 20 || troll_kill.fire_damage {

@@ -18,11 +18,15 @@
 //!    the pre-logout durable view.
 
 use super::*;
-use oteryn_dev_client::DevClientSession;
+use oteryn_dev_client::{DevClientSession, SessionEvent};
 use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDisposition};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
 };
+use oteryn_protocol_oteryn::presentation::{
+    PresentationEventKind, PresentationValue, PresentationValueKind,
+};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
@@ -97,10 +101,64 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     row.finish(result);
 }
 
-pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
-    use oteryn_dev_client::SessionEvent;
-    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
+#[derive(Debug, Clone, Copy)]
+struct IncomingDamage {
+    sequence: u64,
+    attacker: Option<EntityRef>,
+    target: EntityRef,
+    value: PresentationValue,
+}
 
+fn incoming_damage(event: &SessionEvent) -> impl Iterator<Item = IncomingDamage> + '_ {
+    let frame = match event {
+        SessionEvent::Presentation(frame) => Some(frame),
+        _ => None,
+    };
+    frame.into_iter().flat_map(|frame| {
+        frame.value.iter().filter_map(|event| {
+            let PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageReceived,
+                attacker,
+                target,
+                primary,
+                ..
+            } = event.kind else {
+                return None;
+            };
+            Some(IncomingDamage { sequence: frame.server_sequence, attacker, target, value: primary })
+        })
+    })
+}
+
+impl IncomingDamage {
+    fn log(self) {
+        evidence(&format!(
+            "P01_LOGOUT incoming_damage sequence={} attacker={:?} target={:?} value={:?}",
+            self.sequence, self.attacker, self.target, self.value
+        ));
+    }
+}
+
+#[derive(Default)]
+pub(super) struct CombatContacts(BTreeSet<EntityRef>);
+
+impl CombatContacts {
+    fn observe(&mut self, event: &SessionEvent) {
+        for damage in incoming_damage(event) {
+            damage.log();
+            self.0.extend(damage.attacker);
+        }
+    }
+
+    fn nearby(&self, client: &DevClientSession, floor: i8) -> BTreeMap<EntityRef, TilePos> {
+        client_row_p01::route_occupants(client)
+            .filter(|(at, entity)| at.floor == floor && self.0.contains(&entity.entity))
+            .map(|(at, entity)| (entity.entity, at))
+            .collect()
+    }
+}
+
+pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResult {
     // Global monster combat lasts 60 seconds. Allow one domain 10 publication tick.
     let started = tokio::time::Instant::now();
     let deadline = started + Duration::from_secs(60) + client_row_p01::VISIBILITY_TICK;
@@ -111,31 +169,16 @@ pub(super) async fn logout_when_ready(client: &mut DevClientSession) -> TestResu
     let mut last_damage = None;
     loop {
         for event in client.take_events() {
-            match event {
-                SessionEvent::ActorCombatState(frame) => {
-                    evidence(&format!(
-                        "P01_LOGOUT combat sequence={} state={:?}",
-                        frame.server_sequence, frame.value
-                    ));
-                    last_frame = Some((frame.server_sequence, frame.value));
-                }
-                SessionEvent::Presentation(frame) => {
-                    for event in frame.value {
-                        if let PresentationEventKind::ValueText {
-                            kind: PresentationValueKind::DamageReceived,
-                            attacker,
-                            target,
-                            primary,
-                            ..
-                        } = event.kind
-                        {
-                            let damage = (frame.server_sequence, attacker, target, primary);
-                            evidence(&format!("P01_LOGOUT incoming_damage={damage:?}"));
-                            last_damage = Some(damage);
-                        }
-                    }
-                }
-                _ => {}
+            for damage in incoming_damage(&event) {
+                damage.log();
+                last_damage = Some(damage);
+            }
+            if let SessionEvent::ActorCombatState(frame) = event {
+                evidence(&format!(
+                    "P01_LOGOUT combat sequence={} state={:?}",
+                    frame.server_sequence, frame.value
+                ));
+                last_frame = Some((frame.server_sequence, frame.value));
             }
         }
         if client
@@ -202,46 +245,43 @@ pub(super) fn rat_corpse_stage() -> TestResult<client_hunt::CorpseStage> {
     })
 }
 
-pub(super) async fn retreat_from_spawn(
+async fn retreat_from_spawn(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawn: TilePos,
+    contacts: &mut CombatContacts,
 ) -> TestResult {
-    use oteryn_dev_client::EntityKind;
-
-    let mut tracked = BTreeMap::new();
     let clear_of = |at: TilePos, origin: TilePos| {
         at.floor != origin.floor || at.x.abs_diff(origin.x).max(at.y.abs_diff(origin.y)) > 11
     };
     for _ in 0..3 {
+        client.take_events().iter().for_each(|event| contacts.observe(event));
         let from = tile(client.world_spatial().actor_position)?;
-        tracked.extend(
-            client_row_p01::route_occupants(client)
-                .filter(|(_, entity)| entity.kind == EntityKind::Creature)
-                .map(|(at, entity)| (entity.entity, at)),
-        );
+        let nearby = contacts.nearby(client, from.floor);
         let occupied = client_row_p01::occupied_rat_route_tiles(client);
         let retreat = route_avoiding(
             world,
             from,
-            |at| clear_of(at, spawn) && tracked.values().all(|&point| clear_of(at, point)),
+            |at| clear_of(at, spawn) && nearby.values().all(|&point| clear_of(at, point)),
             |at| !occupied.contains(&at),
         )
-        .ok_or_else(|| format!("no walkable retreat from hunt at {from:?} contacts={tracked:?}"))?;
-        client_row_p01::walk_rat_route(client, world, &retreat, &BTreeSet::new()).await?;
+        .ok_or_else(|| format!("no walkable retreat from hunt at {from:?} aggressors={nearby:?}"))?;
+        client_row_p01::walk_rat_route(client, world, &retreat, &BTreeSet::new(), |event| {
+            contacts.observe(event);
+        }).await?;
         client.service_liveness(client_row_p01::VISIBILITY_TICK).await?;
+        client.take_events().iter().for_each(|event| contacts.observe(event));
         let reached = tile(client.world_spatial().actor_position)?;
-        let present: Vec<_> = client_row_p01::route_occupants(client)
-            .filter(|(at, entity)| entity.kind == EntityKind::Creature && at.floor == reached.floor)
-            .collect();
+        let remaining = contacts.nearby(client, reached.floor);
         evidence(&format!(
-            "P01_LOGOUT retreat from={from:?} tracked={tracked:?} present={present:?}"
+            "P01_LOGOUT retreat from={from:?} reached={reached:?} aggressors={:?} remaining={remaining:?}",
+            contacts.0
         ));
-        if present.is_empty() {
+        if remaining.is_empty() {
             return Ok(());
         }
     }
-    Err("P01 retreat still has visible creature contacts after three routes".into())
+    Err("P01 retreat still has visible aggressors after three routes".into())
 }
 
 pub(super) async fn authored_target(
@@ -308,7 +348,7 @@ pub(super) async fn authored_target(
         })
         .copied()
         .ok_or("route does not end adjacent to its authored spawn")?;
-    client_row_p01::walk_rat_route(client, world, &path, &reserved).await?;
+    client_row_p01::walk_rat_route(client, world, &path, &reserved, |_| {}).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     verdict::Harness::global().bounded_wait(deadline, "authored-creature-visibility");
     loop {
@@ -392,6 +432,12 @@ async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+pub(super) enum HuntEvidence<'a, 'b> {
+    Wire,
+    Principal(&'a SeamClients<'b>),
+    Contacts(&'a mut CombatContacts),
+}
+
 pub(super) async fn hunt_exact_creature(
     client: &mut DevClientSession,
     target: oteryn_dev_client::WorldSpatialEntity,
@@ -399,7 +445,7 @@ pub(super) async fn hunt_exact_creature(
     race: NonZeroU32,
     corpse_ref: u32,
     stage: Option<client_hunt::CorpseStage>,
-    verify_principal: Option<&SeamClients<'_>>,
+    mut observations: HuntEvidence<'_, '_>,
 ) -> TestResult<full_row_p05::KillSample> {
     use oteryn_dev_client::{EntityKind, SessionEvent};
     use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact};
@@ -432,6 +478,9 @@ pub(super) async fn hunt_exact_creature(
     let (corpse, raw_xp, gained_xp) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
+            if let HuntEvidence::Contacts(contacts) = &mut observations {
+                contacts.observe(&event);
+            }
             let facts = match event {
                 SessionEvent::ChatLine(delta) => {
                     if let oteryn_protocol_oteryn::chat::ChatLine::System { text } = delta.value
@@ -460,7 +509,7 @@ pub(super) async fn hunt_exact_creature(
                     continue;
                 }
                 SessionEvent::AnalyserFacts(delta) => {
-                    if verify_principal.is_some() {
+                    if matches!(observations, HuntEvidence::Principal(_)) {
                         return Err("P01.client received an un-attributed analyser batch".into());
                     }
                     delta.value
@@ -551,6 +600,21 @@ pub(super) async fn hunt_exact_creature(
         }
         if tokio::time::Instant::now() >= deadline {
             client.session_mut().attack_target(None).await?;
+            let visible = client.world_entities();
+            let corpses: Vec<_> = visible
+                .into_iter()
+                .flat_map(|entities| entities.iter())
+                .filter(|entry| entry.kind == EntityKind::Corpse)
+                .filter(|entry| entry.position.floor == last_position.floor)
+                .filter(|entry| !old_corpses.contains(&entry.entity))
+                .take(8)
+                .collect();
+            evidence(&format!(
+                "P01_HUNT missing_corpse target={:?} last_position={last_position:?} expected_ref={corpse_ref} target_present={} sequence={} new_corpses={corpses:?}",
+                target.entity,
+                visible.is_some_and(|entities| entities.get(&target.entity).is_some()),
+                client.last_server_sequence()
+            ));
             return Err(format!("step=hunt-credit race={race} missing target corpse, kill credit or XP; kills={kills:?} experience={experience:?}").into());
         }
     };
@@ -565,7 +629,7 @@ pub(super) async fn hunt_exact_creature(
         }
     }
     client.session_mut().attack_target(None).await?;
-    if let Some(clients) = verify_principal {
+    if let HuntEvidence::Principal(clients) = observations {
         let principal = clients.characters[1];
         let death = committed_hunt_death(
             client,
@@ -625,7 +689,7 @@ pub(super) async fn hunt_exact_creature(
         .ok_or("corpse view")?
         .entries
         .clone();
-    if verify_principal.is_some() && key == "oteryn:creature.rat" && entries.is_empty() {
+    if matches!(observations, HuntEvidence::Principal(_)) && key == "oteryn:creature.rat" && entries.is_empty() {
         return Err("Rat corpse is empty; strict loot transfer cannot be proved".into());
     }
     if let Some(item) = entries.first() {
@@ -886,7 +950,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         race,
         rat_stage.fresh_ref,
         Some(rat_stage),
-        None,
+        HuntEvidence::Wire,
     )
     .await?;
     let current = query(&mut client, "p01-full-mastery.json", &mut frames).await?;
@@ -1094,6 +1158,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "P01_FIXTURE enflame-rolls target={:?}",
         troll.entity
     ));
+    let mut contacts = CombatContacts::default();
     let kill = hunt_exact_creature(
         &mut client,
         troll,
@@ -1101,13 +1166,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         race,
         troll_corpse,
         None,
-        None,
+        HuntEvidence::Contacts(&mut contacts),
     )
     .await?;
     if kill.race != race || kill.raw_xp != 20 {
         return Err(format!("incorrect Troll kill credit: {kill:?}").into());
     }
-    retreat_from_spawn(&mut client, world, spawn).await?;
+    retreat_from_spawn(&mut client, world, spawn, &mut contacts).await?;
     let after_hook = query(&mut client, "p01-full-after-hook.json", &mut frames).await?;
     let mut expected_durable = expected_assigned;
     expected_durable.outcome = CharmProgressionOutcome::Query;
