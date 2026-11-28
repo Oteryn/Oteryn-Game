@@ -154,18 +154,13 @@ pub(super) async fn connect_at_battle_axe(
     index: usize,
     row: &str,
 ) -> TestResult<DevClientSession> {
-    let mut initial = connect_character(clients, tag, index).await?;
-    let reply = initial.session_mut().logout().await?;
-    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("fixture placement logout refused: {reply:?}").into());
-    }
-    drop(initial);
     wait_character_released(clients, index).await?;
     use sqlx::Connection as _;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let updated = sqlx::query(
-        "UPDATE game_character_last_positions SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
-         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+    sqlx::query(
+        "INSERT INTO game_character_pending_arrivals
+         (character_id, occurrence_id, world_id, tile_x, tile_y, tile_floor)
+         VALUES (encode($1,'hex')::uuid, uuidv7(), encode($2,'hex')::uuid, $3, $4, $5)",
     )
     .bind(clients.characters[index].as_slice())
     .bind(clients.world.as_slice())
@@ -174,11 +169,18 @@ pub(super) async fn connect_at_battle_axe(
     .bind(i16::from(-BATTLE_AXE_APPROACH.floor))
     .execute(&mut database)
     .await?;
-    if updated.rows_affected() != 1 {
-        return Err("fixture placement did not update one durable position".into());
-    }
     character_prep::declare_seeded(row, "placement", "isolate the fixed Battle Axe chest claim");
-    let client = connect_character(clients, tag.wrapping_add(1), index).await?;
+    let client = connect_character(clients, tag, index).await?;
+    let pending = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS (SELECT 1 FROM game_character_pending_arrivals
+         WHERE character_id=encode($1,'hex')::uuid)",
+    )
+    .bind(clients.characters[index].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    if pending {
+        return Err("fixture arrival was not consumed by admission".into());
+    }
     let observed = tile(client.world_spatial().actor_position)?;
     if observed != BATTLE_AXE_APPROACH || !adjacent(observed, BATTLE_AXE_CHEST) {
         return Err(format!(

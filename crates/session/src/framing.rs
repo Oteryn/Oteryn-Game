@@ -1,5 +1,21 @@
 //! Framing and exchange validation shared by session features.
 use super::*;
+use std::cell::RefCell;
+
+tokio::task_local! {
+    static INBOUND_CAPTURE: RefCell<Vec<u8>>;
+}
+
+/// Capture exactly the inbound framed bytes read by the scoped operation.
+/// Outbound frames can contain admission credentials and are never recorded.
+pub async fn capture_inbound<F: Future>(operation: F) -> (F::Output, Vec<u8>) {
+    INBOUND_CAPTURE
+        .scope(RefCell::new(Vec::new()), async {
+            let result = operation.await;
+            (result, INBOUND_CAPTURE.with(RefCell::take))
+        })
+        .await
+}
 
 /// A validated, correlated `CommandResult` with its typed payload still undecoded.
 pub(super) struct ReceivedResult {
@@ -125,6 +141,17 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    if let Ok(result) = INBOUND_CAPTURE.try_with(|capture| {
+        let mut bytes = capture.borrow_mut();
+        if bytes.len() + prefix.len() + body.len() > 16 * 1024 * 1024 {
+            return Err(FoundationProtocolError::FrameTooLarge);
+        }
+        bytes.extend_from_slice(&prefix);
+        bytes.extend_from_slice(&body);
+        Ok(())
+    }) {
+        result?;
+    }
     Ok(body)
 }
 
@@ -165,5 +192,29 @@ pub(super) fn check_status_pairing(
         Ok(())
     } else {
         Err(SessionError::InconsistentCommandResult { command_id, status })
+    }
+}
+
+#[cfg(test)]
+mod capture_tests {
+    use super::*;
+
+    #[test]
+    fn inbound_capture_starts_at_the_scoped_admission() -> Result<(), crate::tests::BoxError> {
+        crate::tests::block_on(async {
+            let preparation = [0, 0, 0, 1, 42];
+            read_frame(&mut preparation.as_slice()).await?;
+            let admission_and_update = [0, 0, 0, 1, 43, 0, 0, 0, 2, 44, 45];
+            let (result, captured) = capture_inbound(async {
+                let mut input = admission_and_update.as_slice();
+                assert_eq!(read_frame(&mut input).await?, [43]);
+                assert_eq!(read_frame(&mut input).await?, [44, 45]);
+                Ok::<(), SessionError>(())
+            })
+            .await;
+            result?;
+            assert_eq!(captured, admission_and_update);
+            Ok(())
+        })?
     }
 }

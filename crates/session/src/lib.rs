@@ -279,7 +279,6 @@ pub use oteryn_protocol_oteryn::{npc_service, staff};
 use std::collections::{BTreeMap, VecDeque};
 use std::error::Error as StdError;
 use std::fmt;
-use std::future::Future;
 use std::io;
 use std::num::NonZeroU32;
 use std::time::Duration;
@@ -451,7 +450,7 @@ pub mod property_services;
 pub use entities::WorldEntities;
 pub use error::SessionError;
 use framing::*;
-pub use framing::{read_frame, write_frame};
+pub use framing::{capture_inbound, read_frame, write_frame};
 pub use outcomes::*;
 
 /// Optional server-executed Gem modifier presentation.
