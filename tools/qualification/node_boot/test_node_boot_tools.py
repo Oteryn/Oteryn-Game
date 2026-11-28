@@ -720,6 +720,33 @@ class ClientReplayTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.stdout, '')
 
+    def test_w01c_capture_binding_rejects_each_mixed_binary(self):
+        from hashlib import sha256
+        with tempfile.TemporaryDirectory() as work:
+            work = Path(work)
+            frame = work / 'w01c-vitals.bin'
+            before = work / 'w01c-before.bin'
+            for path in (frame, before):
+                path.write_bytes(path.name.encode())
+            expected = (
+                f'frame_sha256={sha256(frame.read_bytes()).hexdigest()}\n'
+                f'checkpoint_sha256={sha256(before.read_bytes()).hexdigest()}\n'
+            )
+            (work / 'w01c-expected.txt').write_text(expected)
+            marker = 'SEAM_EVIDENCE e2e_capture scenario=W01c.client status=CAPTURED'
+            (work / 'node.log').write_text(f'{marker} evidence="{expected.replace(chr(10), ";")}"\n')
+            for substitute in (None, frame, before):
+                with self.subTest(substitute=substitute):
+                    if substitute:
+                        substitute.write_bytes(b'other run')
+                    result = bash(
+                        'source "$REPLAY_HELPER"; w01c_capture_matches_log node.log .',
+                        {'REPLAY_HELPER': str(HERE / 'client_replay.sh')}, cwd=work,
+                    )
+                    self.assertEqual(result.returncode, int(substitute is not None))
+                    if substitute:
+                        substitute.write_bytes(substitute.name.encode())
+
     def test_w01c_replay_is_selected_by_its_registered_batch(self):
         for batch, expected in (
             ('186:1', ''),

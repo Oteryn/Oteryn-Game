@@ -1,3 +1,12 @@
+w01c_capture_matches_log() {
+  local log=$1 captures=$2 expected="$2/w01c-expected.txt" frame checkpoint
+  frame=$(sha256sum < "$captures/w01c-vitals.bin") || return 1
+  checkpoint=$(sha256sum < "$captures/w01c-before.bin") || return 1
+  grep -Fxq "frame_sha256=${frame%% *}" "$expected" &&
+    grep -Fxq "checkpoint_sha256=${checkpoint%% *}" "$expected" &&
+    grep -Fxq "SEAM_EVIDENCE e2e_capture scenario=W01c.client status=CAPTURED evidence=\"$(tr '\n' ';' < "$expected")\"" "$log"
+}
+
 replay_client() {
   local log=$1 captures=$2 row=$3 package=$4 case_name=$5 started=$SECONDS
   local status=FAIL
@@ -8,8 +17,7 @@ replay_client() {
   fi
   # The live journey and the exact client replay must both reach their assertions.
   if [[ $(grep -cF "e2e_capture scenario=$row status=CAPTURED " "$log") == 1 ]] \
-    && { [[ "$row" != W01c.client ]] || grep -Fxq \
-      "SEAM_EVIDENCE e2e_capture scenario=W01c.client status=CAPTURED evidence=\"$(tr '\n' ';' < "$captures/w01c-expected.txt")\"" "$log"; } \
+    && { [[ "$row" != W01c.client ]] || w01c_capture_matches_log "$log" "$captures"; } \
     && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" \
       > "$captures/$row.replay.log" 2>&1 \
     && grep -qE '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$captures/$row.replay.log"; then

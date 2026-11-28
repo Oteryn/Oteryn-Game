@@ -35,7 +35,7 @@ fn apply(
     payload: &[u8],
 ) -> Result<(), BoxError> {
     let frame = encode_state_delta(
-        1,
+        session.connection_generation,
         sequence,
         actor_spell::STATE_DOMAIN_ACTOR_VITALS,
         revision,
@@ -62,16 +62,34 @@ fn apply_captured(
     Ok(())
 }
 
+fn session_payload<'a>(file: &'a [u8], expected: &str) -> Result<&'a [u8], BoxError> {
+    let (prefix, payload) = file.split_at_checked(16).ok_or("missing capture session")?;
+    let id = GameSessionId::decode(prefix)?;
+    let session: String = id
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    if session != value(expected, "session")?.replace('-', "") {
+        return Err("capture belongs to a different game session".into());
+    }
+    Ok(payload)
+}
+
 #[test]
 fn e2e_w01c_creature_attack_vitals_replay() -> Result<(), BoxError> {
     let live = std::env::var_os("E2E_ALL_CAPTURE_DIR")
         .map(|root| -> Result<_, BoxError> {
             let root = Path::new(&root);
+            let expected = std::fs::read_to_string(root.join("w01c-expected.txt"))?;
+            let frame = std::fs::read(root.join("w01c-vitals.bin"))?;
+            let before = std::fs::read(root.join("w01c-before.bin"))?;
+            let checkpoint = actor_spell::decode_actor_vitals(session_payload(&before, &expected)?)
+                .map_err(|error| format!("decode prior vitals: {error:?}"))?;
             Ok((
-                std::fs::read(root.join("w01c-vitals.bin"))?,
-                std::fs::read_to_string(root.join("w01c-expected.txt"))?,
-                actor_spell::decode_actor_vitals(&std::fs::read(root.join("w01c-before.bin"))?)
-                    .map_err(|error| format!("decode prior vitals: {error:?}"))?,
+                session_payload(&frame, &expected)?.to_vec(),
+                expected,
+                checkpoint,
             ))
         })
         .transpose()?;
@@ -118,14 +136,31 @@ fn e2e_w01c_creature_attack_vitals_replay() -> Result<(), BoxError> {
         );
         assert_eq!(vitals.soul, value(&expected, "soul")?.parse::<u32>()?);
 
-        // A truncated vitals payload is refused whole: the damaged value stays.
+        // Use a valid envelope, current revision and next sequence so rejection must
+        // come from the ActorVitals decoder itself.
         let after = session.actor_vitals().copied();
-        let truncated = &payload[..payload.len() - 1];
-        if live.is_some() {
-            assert!(apply_captured(&mut session, truncated).is_err());
-        } else {
-            assert!(apply(&mut session, 51, 4, truncated).is_err());
-        }
+        let revision = session.vitals_revision;
+        let sequence = session.last_server_sequence + 1;
+        let encoded = actor_spell::encode_actor_vitals(&after.ok_or("vitals absent")?)
+            .map_err(|error| format!("{error:?}"))?;
+        let invalid = encode_state_delta(
+            session.connection_generation,
+            sequence,
+            actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+            revision,
+            revision + 1,
+            actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+            &[0x08, 0x80],
+        )?;
+        let Err(error) = apply_captured(&mut session, &invalid) else {
+            return Err("malformed ActorVitals accepted".into());
+        };
+        assert!(matches!(
+            error.downcast_ref::<SessionError>(),
+            Some(SessionError::ActorSpell(_))
+        ));
+        assert_eq!(session.vitals_revision, revision);
+        apply(&mut session, sequence + 1, revision, &encoded)?;
         assert_eq!(session.actor_vitals().copied(), after);
         Ok(())
     })?
@@ -164,4 +199,17 @@ fn w01c_capture_preserves_wire_and_prior_context() -> Result<(), BoxError> {
         assert_eq!(captured, Some((frame, 150, 141, 3, previous)));
         Ok(())
     })?
+}
+
+#[test]
+fn w01c_rejects_identical_payload_from_another_session() -> Result<(), BoxError> {
+    let id = uuid_v7(1);
+    let expected_id: String = id.iter().map(|byte| format!("{byte:02x}")).collect();
+    let expected = format!("session={expected_id}\n");
+    let bytes = [1, 2, 3];
+    let original = [id.as_slice(), bytes.as_slice()].concat();
+    let substituted = [uuid_v7(2).as_slice(), bytes.as_slice()].concat();
+    assert_eq!(session_payload(&original, &expected)?, &bytes);
+    assert!(session_payload(&substituted, &expected).is_err());
+    Ok(())
 }

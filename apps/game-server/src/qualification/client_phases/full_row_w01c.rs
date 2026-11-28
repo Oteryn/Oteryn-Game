@@ -23,7 +23,7 @@ use oteryn_protocol_oteryn::damage_element::DamageElement;
 use oteryn_protocol_oteryn::logout::LogoutResult;
 use std::collections::BTreeSet;
 
-const ENCOUNTER: TilePos = TilePos {
+pub(super) const ENCOUNTER: TilePos = TilePos {
     x: 32462,
     y: 32225,
     floor: -7,
@@ -385,7 +385,7 @@ async fn logout_once(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-fn adjacent_spiders(client: &DevClientSession) -> TestResult<Vec<EntityRef>> {
+pub(super) fn adjacent_spiders(client: &DevClientSession) -> TestResult<Vec<EntityRef>> {
     let here = client.world_spatial().actor_position;
     let spiders = client
         .world_entities()
@@ -417,7 +417,17 @@ fn adjacent_spiders(client: &DevClientSession) -> TestResult<Vec<EntityRef>> {
     Ok(spiders)
 }
 
-async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TilePos) -> TestResult {
+fn step_landed(
+    disposition: StepDisposition,
+    has_delta: bool,
+    previous: TilePos,
+    expected: TilePos,
+    observed: TilePos,
+) -> bool {
+    disposition == StepDisposition::Moved && has_delta && observed == expected && observed != previous
+}
+
+pub(super) async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TilePos) -> TestResult {
     let mut position = tile(client.world_spatial().actor_position)?;
     let route = route(world, position, |at| at == goal)
         .filter(|steps| !steps.is_empty())
@@ -427,11 +437,7 @@ async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TileP
             .ok_or_else(|| format!("W01c step {direction:?} has no landing from {position:?}"))?;
         let outcome = client.step(direction).await?;
         let observed = tile(client.world_spatial().actor_position)?;
-        if outcome.disposition != StepDisposition::Moved
-            || outcome.world_spatial_delta.is_none()
-            || observed != expected
-            || observed == position
-        {
+        if !step_landed(outcome.disposition, outcome.world_spatial_delta.is_some(), position, expected, observed) {
             return Err(format!(
                 "W01c first step {direction:?} from {position:?}: expected {expected:?}, observed {observed:?} {outcome:?}"
             ).into());
@@ -452,6 +458,16 @@ async fn walk_to(client: &mut DevClientSession, world: &BundleWorld, goal: TileP
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn movement_requires_first_attempt_and_exact_landing() {
+        for refused in [StepDisposition::TooEarly, StepDisposition::Rejected, StepDisposition::Blocked] {
+            assert!(!step_landed(refused, true, TOWN, ENCOUNTER, ENCOUNTER));
+        }
+        assert!(!step_landed(StepDisposition::Moved, false, TOWN, ENCOUNTER, ENCOUNTER));
+        assert!(!step_landed(StepDisposition::Moved, true, TOWN, ENCOUNTER, TOWN));
+        assert!(step_landed(StepDisposition::Moved, true, TOWN, ENCOUNTER, ENCOUNTER));
+    }
 
     #[test]
     fn surviving_an_attack_does_not_qualify_lethal_attack_and_respawn() {
