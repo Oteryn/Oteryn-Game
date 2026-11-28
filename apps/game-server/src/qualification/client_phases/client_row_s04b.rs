@@ -58,6 +58,13 @@ async fn channel_list(client: &mut DevClientSession) -> TestResult<ChatChannelLi
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S04B_ACCOUNT").await?;
+    let (accounts, characters) = owner.replace_slot(clients, 0)?;
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let mut a = connect_character(clients, 0x4d, 0).await?;
     let mut b = connect_character(clients, 0x4e, 1).await?;
     let a_name = own_name(&a)?;
@@ -72,7 +79,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .collect();
 
     character_prep::grant_premium(&a).await?;
-    evidence("S04B_FIXTURE premium=granted role=channel_owner");
+    evidence("S04B_FIXTURE account=q_s04b premium=granted role=channel_owner");
     if channel_list(&mut a).await?.own_channel.is_some() {
         return Err("owner already has a private channel before Create".into());
     }

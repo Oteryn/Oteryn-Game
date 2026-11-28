@@ -154,6 +154,13 @@ async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<C
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
+    let owner = character_prep::dedicated_character(clients, "NODE_BOOT_Q_S04B_ACCOUNT").await?;
+    let (accounts, characters) = owner.replace_slot(clients, 0)?;
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let mut a = connect_character(clients, 0xe1, 0).await?;
     let mut b = connect_character(clients, 0xe2, 1).await?;
     let result: TestResult = async {
@@ -206,7 +213,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.pass("offline-refusal");
 
         character_prep::grant_premium(&a).await?;
-        evidence("S04B_FIXTURE premium=granted role=channel_owner");
+        evidence("S04B_FIXTURE account=q_s04b premium=granted role=channel_owner");
         if channel_list(&mut a, "channel-create-pre-list")
             .await?
             .own_channel
