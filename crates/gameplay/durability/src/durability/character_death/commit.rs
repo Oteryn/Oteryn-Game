@@ -289,14 +289,16 @@ impl DurabilityRoot {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    let effective_red_or_black: bool = sqlx::query_scalar(
-                        "SELECT EXISTS(SELECT 1 FROM game_character_pvp_state \
+                    let skull: Option<i16> = sqlx::query_scalar(
+                        "SELECT skull FROM game_character_pvp_state \
                          WHERE character_id = encode($1,'hex')::uuid \
-                           AND skull > 0 AND skull_until > clock_timestamp())",
+                           AND skull > 0 AND skull_until > statement_timestamp()",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
-                    .fetch_one(&mut *tx)
+                    .fetch_optional(&mut *tx)
                     .await?;
+                    let effective_red_or_black = skull.is_some();
+                    let black_skull = skull == Some(2);
                     let disposition = oteryn_gameplay_combat_rules::pvp::death::blessing_disposition(
                         !contributors.is_empty(),
                         effective_red_or_black,
@@ -339,12 +341,12 @@ impl DurabilityRoot {
                            ruleset_revision, content_revision, simulation_revision, \
                            evidence_revision, declaration_revision, policy_revision, \
                            reward_revision, committed_at, \
-                           vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after, death_scope_kind, death_instance_id, death_scope_generation) \
+                           vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after, death_scope_kind, death_instance_id, death_scope_generation, black_skull) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), $7, $8, $9, $10, \
                            $11, $12, $13, $25::text::uuid, $26::text[]::uuid[], $27, encode($14,'hex')::uuid, \
                            encode($15,'hex')::uuid, $16, $17, $18, $19, ($20::text[])[1], ($20::text[])[2], ($20::text[])[3], ($20::text[])[4], \
-                           ($20::text[])[5], ($20::text[])[6], ($20::text[])[7], ($20::text[])[8], $21, $22, ($23::bigint[])[1]::integer, ($23::bigint[])[2], ($23::bigint[])[3]::integer, ($23::bigint[])[4], ($23::bigint[])[5]::integer, ($23::bigint[])[6], ($23::bigint[])[7]::integer, ($23::bigint[])[8], ($23::bigint[])[9]::integer, ($23::bigint[])[10], ($23::bigint[])[11]::integer, ($23::bigint[])[12], ($23::bigint[])[13]::integer, ($23::bigint[])[14], ($23::bigint[])[15]::integer, ($23::bigint[])[16], ($24::bigint[])[1]::integer, ($24::bigint[])[2], ($24::bigint[])[3]::integer, ($24::bigint[])[4], ($24::bigint[])[5]::integer, ($24::bigint[])[6], ($24::bigint[])[7]::integer, ($24::bigint[])[8], ($24::bigint[])[9]::integer, ($24::bigint[])[10], ($24::bigint[])[11]::integer, ($24::bigint[])[12], ($24::bigint[])[13]::integer, ($24::bigint[])[14], ($24::bigint[])[15]::integer, ($24::bigint[])[16], $28, encode($29,'hex')::uuid, $30::text::numeric)",
+                           ($20::text[])[5], ($20::text[])[6], ($20::text[])[7], ($20::text[])[8], $21, $22, ($23::bigint[])[1]::integer, ($23::bigint[])[2], ($23::bigint[])[3]::integer, ($23::bigint[])[4], ($23::bigint[])[5]::integer, ($23::bigint[])[6], ($23::bigint[])[7]::integer, ($23::bigint[])[8], ($23::bigint[])[9]::integer, ($23::bigint[])[10], ($23::bigint[])[11]::integer, ($23::bigint[])[12], ($23::bigint[])[13]::integer, ($23::bigint[])[14], ($23::bigint[])[15]::integer, ($23::bigint[])[16], ($24::bigint[])[1]::integer, ($24::bigint[])[2], ($24::bigint[])[3]::integer, ($24::bigint[])[4], ($24::bigint[])[5]::integer, ($24::bigint[])[6], ($24::bigint[])[7]::integer, ($24::bigint[])[8], ($24::bigint[])[9]::integer, ($24::bigint[])[10], ($24::bigint[])[11]::integer, ($24::bigint[])[12], ($24::bigint[])[13]::integer, ($24::bigint[])[14], ($24::bigint[])[15]::integer, ($24::bigint[])[16], $28, encode($29,'hex')::uuid, $30::text::numeric, $31)",
                     )
                     .bind(request.occurrence.0.as_slice())
                     .bind(&binding)
@@ -378,7 +380,8 @@ impl DurabilityRoot {
                         .bind(items.as_ref().map(|i| i.root.to_vec()))
                         .bind(death_kind)
                         .bind(death_instance)
-                        .bind(fence.scope_ownership_generation.get().to_string());
+                        .bind(fence.scope_ownership_generation.get().to_string())
+                        .bind(black_skull);
                     receipt
                         .execute(&mut *tx)
                         .await?;
@@ -452,6 +455,7 @@ impl DurabilityRoot {
                         experience_before: staged.experience_before,
                         experience_after: staged.experience_after,
                         experience_lost: staged.death_experience_lost,
+                        black_skull,
                         blessings_before: held,
                         blessings_after,
                         death_cell: request.death_cell.clone(),

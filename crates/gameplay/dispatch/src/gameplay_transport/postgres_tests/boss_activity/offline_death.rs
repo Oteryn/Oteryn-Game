@@ -206,6 +206,76 @@ pub(super) async fn assert_offline_death(
     Ok(())
 }
 
+pub(super) async fn assert_black_skull_respawn(
+    h: &Harness,
+    origin: &ComposedFreshAdmission<'_, '_, '_>,
+    instance: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("Instance actor")?;
+    let fence = admitted.item_fence.ok_or("Instance fence")?;
+    let session = admitted.game_session_id;
+    sqlx::query(
+        "INSERT INTO game_character_pvp_state(character_id,world_id,skull,skull_until) \
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,clock_timestamp()+interval '1 day')",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    eprintln!("black_skull_activity_death PostgreSQL fixture ready");
+    let death = {
+        let runtime = instance.runtime.lock().await;
+        let mut states = instance.states.spell_states.lock().await;
+        states
+            .apply_creature_damage_native(
+                &runtime,
+                actor,
+                session,
+                100_000,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                    instance.owner_now().get(),
+                ),
+            )
+            .ok_or("native lethal hit")?;
+        states
+            .player_death(&runtime, actor, session)
+            .ok_or("Instance death")?
+    };
+    let _ = instance.respawn_after_death(actor, session, death).await;
+    let returned: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(destination_game_session_id) \
+        FROM game_activity_runtime_returns WHERE source_game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let session = GameSessionId::decode(&returned).map_err(debug)?;
+    let returned = origin
+        .activity_runtimes
+        .connection(session)
+        .ok_or("returned connection")?;
+    let actor = returned.runtime_actor.ok_or("returned actor")?;
+    {
+        let runtime = origin.runtime.lock().await;
+        let states = origin.states.spell_states.lock().await;
+        let vitals = states
+            .get(&runtime, actor, session)
+            .ok_or("returned spell state")?
+            .vitals();
+        assert_eq!(
+            (vitals.health, vitals.mana),
+            (40, 0),
+            "the returned actor takes black-skull vitals"
+        );
+    }
+    let saved: (Option<i32>, Option<i32>) = sqlx::query_as(
+        "SELECT health,mana FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid",
+    ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(saved, (Some(40), Some(0)));
+    Ok(())
+}
+
 pub(super) async fn train_and_kill(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

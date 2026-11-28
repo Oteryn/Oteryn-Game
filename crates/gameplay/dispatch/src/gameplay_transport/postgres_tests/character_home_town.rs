@@ -22,12 +22,22 @@ fn p20_login_path_moves_an_ended_premium_area_citizen_to_the_thais_temple() -> T
 enum PremiumEntry {
     Stored,
     Respawn,
+    BlackSkullRespawn,
     Arrival,
 }
 
 #[test]
 fn p20_ended_premium_consumes_pending_respawn_with_relocation() -> TestResult {
     on_large_stack(Some(PremiumEntry::Respawn))
+}
+
+#[test]
+fn black_skull_premium_relocation_keeps_respawn_vitals() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    on_large_stack(Some(PremiumEntry::BlackSkullRespawn))
 }
 
 #[test]
@@ -433,7 +443,14 @@ async fn premium_ended<'a>(
     assert_eq!(town(h).await?, 11);
     match entry {
         PremiumEntry::Stored => {}
-        PremiumEntry::Respawn => {
+        PremiumEntry::Respawn | PremiumEntry::BlackSkullRespawn => {
+            if matches!(entry, PremiumEntry::BlackSkullRespawn) {
+                sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id,skull,skull_until) \
+                    VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,clock_timestamp()+interval '1 day')")
+                    .bind(id(41).as_slice()).bind(owner.world_id.as_bytes().as_slice())
+                    .execute(&h.pool).await?;
+                eprintln!("black_skull_premium_relocation PostgreSQL fixture ready");
+            }
             let death = {
                 let mut runtime = owner.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
@@ -565,6 +582,15 @@ async fn premium_ended<'a>(
                     .position(),
                 relocated
             );
+            if matches!(entry, PremiumEntry::BlackSkullRespawn) {
+                let runtime = fresh.runtime.lock().await;
+                let states = login.states.spell_states.lock().await;
+                let vitals = states
+                    .get(&runtime, fresh.actor, session)
+                    .ok_or("temple spell state")?
+                    .vitals();
+                assert_eq!((vitals.health, vitals.mana), (40, 0));
+            }
             let budget =
                 crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, &h.root);
             assert!(
@@ -595,10 +621,13 @@ async fn premium_ended<'a>(
             floor: relocated.floor,
         }
     );
-    let (vitals, rest) = if matches!(entry, PremiumEntry::Respawn) {
-        (None, None)
-    } else {
-        (saved.record.vitals, saved.record.rest)
+    let (vitals, rest) = match entry {
+        PremiumEntry::Respawn => (None, None),
+        PremiumEntry::BlackSkullRespawn => (
+            crate::durability::character_last_position::LastVitals::new(40, 0),
+            None,
+        ),
+        PremiumEntry::Stored | PremiumEntry::Arrival => (saved.record.vitals, saved.record.rest),
     };
     assert_eq!(restored.record.vitals, vitals);
     assert_eq!(restored.record.rest, rest);

@@ -52,7 +52,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         death: actor_spell::PlayerDeath,
     ) -> (
         DeathCommit,
-        Option<crate::durability::character_build::DurableBuildState>,
+        Option<crate::durability::character_death::CommittedCharacterDeath>,
     ) {
         let Some(respawn) = self.home_temple(session).await else {
             return (DeathCommit::Unavailable, None);
@@ -99,10 +99,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .lock()
                     .await
                     .clear_death_charm(session, *death.occurrence.as_bytes());
-                (
-                    DeathCommit::Settled,
-                    committed.build_loss.map(|loss| loss.after),
-                )
+                (DeathCommit::Settled, Some(committed))
             }
             Err(error) => {
                 operator_event(&format!("player_death_settle_failed reason={error}"));

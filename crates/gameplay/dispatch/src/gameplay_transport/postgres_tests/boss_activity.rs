@@ -78,6 +78,7 @@ enum Case {
     CapabilityMismatch,
     OfflineDeathMismatch,
     OfflineDeathDeadline,
+    BlackSkullRespawn,
     SoulWarEntry,
     SoulWarFinalEntry,
     RottenBloodEntry,
@@ -174,6 +175,15 @@ fn boss_activity_postgres_recovery_protection_survives_entry_loss_and_return() -
 #[test]
 fn boss_activity_postgres_capability_mismatch_returns_before_terminal_release() -> TestResult {
     run_scenario(Case::CapabilityMismatch)
+}
+
+#[test]
+fn black_skull_activity_death_returns_with_reduced_vitals() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_scenario(Case::BlackSkullRespawn)
 }
 
 #[test]
@@ -359,7 +369,7 @@ fn scenario(case: Case) -> TestResult {
         let late = matches!(case, Case::LateRewards | Case::SoulWarLateDefeat);
         let with_death = matches!(
             case,
-            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline | Case::SecurityDead
+            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline | Case::BlackSkullRespawn | Case::SecurityDead
         );
         reset();
         // Real progression cases let the current Character admission owner
@@ -1124,6 +1134,9 @@ fn scenario(case: Case) -> TestResult {
             }
             Case::CapabilityMismatch => {
                 recovery::assert_capability_mismatch(&h, &owner, admitted).await?
+            }
+            Case::BlackSkullRespawn => {
+                offline_death::assert_black_skull_respawn(&h, &owner, &destination, admitted).await?
             }
             Case::OfflineDeathMismatch | Case::OfflineDeathDeadline => {
                 offline_death::assert_offline_death(

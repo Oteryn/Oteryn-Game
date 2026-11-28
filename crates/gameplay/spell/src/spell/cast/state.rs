@@ -590,15 +590,18 @@ impl PlayerSpellState {
         }
     }
     /// DEATH-2 (Reference first player death decision §4.5, D63): the respawned actor's state,
-    /// health and mana at their maxima under one successor revision, published as one
+    /// health and mana initialized under one successor revision, published as one
     /// `ACTOR_VITALS` delta. A monk's Harmony and forced Serene are reset, as the death commit
     /// writes them (§8.2), and its Serene initialization evaluation runs at `now`, the owner step
     /// that makes the respawned actor playable. `None` when the revision is exhausted.
-    pub fn respawned(&self, now: SemanticTimeMicros) -> Option<Self> {
+    pub fn respawned(&self, now: SemanticTimeMicros, vitals: Option<(u32, u32)>) -> Option<Self> {
         let mut next = self.clone();
         crate::spell::actor_conditions::clear_on_lifecycle(&mut next);
         next.health = next.facts.max_health;
         next.mana = next.facts.max_mana;
+        if let Some((health, mana)) = vitals {
+            next.restore_saved_vitals(health, mana);
+        }
         next.revision = next.revision.checked_add(1)?;
         next.monk = MonkState::load(next.facts.vocation, 0, 0).ok()?;
         next.make_playable(now).ok()?;

@@ -118,6 +118,8 @@ pub struct CommittedCharacterDeath {
     pub experience_before: ExactI64,
     pub experience_after: ExactI64,
     pub experience_lost: ExactI64,
+    /// The victim had an effective black skull when this death committed.
+    pub black_skull: bool,
     pub blessings_before: Vec<String>,
     pub blessings_after: Vec<String>,
     pub death_cell: DeathCell,
@@ -1006,7 +1008,7 @@ async fn load_receipt(
         "SELECT death_occurrence_id::text, command_binding, character_id::text, \
                 original_character_revision::text, committed_character_revision::text, \
                 level_before, level_after, experience_before, experience_after, \
-                experience_lost, blessings_before, blessings_after, death_world_id::text, \
+                experience_lost, black_skull, blessings_before, blessings_after, death_world_id::text, \
                 death_channel_id::text, death_instance_id::text, death_scope_kind, death_spatial_position, death_map_revision, \
                 amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, ARRAY[magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before]::bigint[] AS families_before, ARRAY[magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after]::bigint[] AS families_after \
            FROM game_character_death_receipts \
@@ -1064,6 +1066,7 @@ fn decode_receipt(
         experience_before: ExactI64::new(row.try_get("experience_before")?),
         experience_after: ExactI64::new(row.try_get("experience_after")?),
         experience_lost: ExactI64::new(row.try_get("experience_lost")?),
+        black_skull: row.try_get("black_skull")?,
         blessings_before: row.try_get("blessings_before")?,
         blessings_after: row.try_get("blessings_after")?,
         death_cell: DeathCell {

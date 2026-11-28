@@ -14,16 +14,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         permit: &SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
-    ) -> Result<(), CharacterProgressionError> {
+    ) -> Result<Option<CommittedCharacterDeath>, CharacterProgressionError> {
         if let Some(occurrence) = self
             .root
             .pending_player_death_item_occurrence(self.character, self.holder, fence)
             .await?
         {
-            self.resume_player_death_items(permit, fence, occurrence)
-                .await?;
+            return self
+                .resume_player_death_items(permit, fence, occurrence)
+                .await
+                .map(Some);
         }
-        Ok(())
+        Ok(None)
     }
 
     pub(super) async fn resume_player_death_items(
@@ -31,17 +33,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
         occurrence: PlayerDeathOccurrence,
-    ) -> Result<(), CharacterProgressionError> {
+    ) -> Result<CommittedCharacterDeath, CharacterProgressionError> {
         let death = self
             .root
             .reconcile_character_death(self.character, occurrence)
             .await?
             .ok_or(CharacterProgressionError::InvalidInput)?;
-        // An old receipt has no item obligation. History is never redrawn.
-        if death.items.is_none() {
-            return Ok(());
-        }
-        self.apply_player_death_items(permit, fence, &death).await
+        self.apply_player_death_items(permit, fence, &death).await?;
+        Ok(death)
     }
 
     pub(super) async fn apply_player_death_items(

@@ -1,4 +1,15 @@
 use super::*;
+use crate::durability::character_death::CommittedCharacterDeath;
+use crate::durability::character_last_position::LastVitals;
+
+pub(super) fn black_skull_vitals(death: &CommittedCharacterDeath) -> Option<LastVitals> {
+    // Tibia Fandom archive, Skull System: a black-skulled character respawns with 40 HP / 0 mana.
+    if death.black_skull {
+        LastVitals::new(40, 0)
+    } else {
+        None
+    }
+}
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
@@ -53,28 +64,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165): the committed death's
         // post-loss build, carried from the settle to the respawn step that rebases the live
         // actor onto it, so the next training save submits the lowered durable build.
-        let lowered = std::sync::OnceLock::new();
+        let committed = std::sync::OnceLock::new();
         respawn_in_order(
             async {
-                let (settled, after) = self.settle_death(actor, session, death, false).await;
-                if let Some(after) = after {
-                    let _ = lowered.set(after);
+                let (settled, receipt) = self.settle_death(actor, session, death, false).await;
+                if let Some(receipt) = receipt {
+                    let _ = committed.set(receipt);
                 }
                 settled
             },
-            self.place_and_consume_settled_respawn(actor, session, death.occurrence),
+            async {
+                let Some(receipt) = committed.get() else {
+                    return false;
+                };
+                self.place_and_consume_settled_respawn(
+                    actor,
+                    session,
+                    death.occurrence,
+                    None,
+                    black_skull_vitals(receipt),
+                )
+                .await
+            },
             async {
                 let now = self.owner_now();
                 let runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
-                if let Some(after) = lowered.get() {
+                let receipt = committed.get()?;
+                if let Some(build) = &receipt.build_loss {
                     // A replayed death rebases again onto the same receipt; an actor this step
                     // cannot reach stays dead for the next cadence.
                     states
                         .get_mut(&runtime, actor, session)?
-                        .rebase_after_death(after);
+                        .rebase_after_death(&build.after);
                 }
-                states.respawn(&runtime, actor, session, death.occurrence, now)
+                states.respawn_with_vitals(
+                    &runtime,
+                    actor,
+                    session,
+                    death.occurrence,
+                    now,
+                    black_skull_vitals(receipt),
+                )
             },
         )
         .await
@@ -85,8 +116,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// recorded for the placement.
     ///
     /// DEATH-ML-LOSS-1 (A13 §4.6, CP D1433): before a new death the actor's pending training is
-    /// force-saved ([`Self::flush_training_before_death`]), and a committed death that lowered the
-    /// build returns its post-loss build for the respawn's rebase. `releasing` marks the actor-end
+    /// force-saved ([`Self::flush_training_before_death`]), and the receipt supplies the post-loss
+    /// build and respawn vitals. `releasing` marks the actor-end
     /// release, which settles a session whose training writes are fenced out once the fence left
     /// no training in memory (Codex P1 4307011952).
     pub(in crate::gameplay_transport) async fn settle_death(
@@ -95,17 +126,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
         releasing: bool,
-    ) -> (
-        SessionDeath,
-        Option<crate::durability::character_build::DurableBuildState>,
-    ) {
+    ) -> (SessionDeath, Option<CommittedCharacterDeath>) {
         if self.states.player_trades.transitioning(session) {
             return (SessionDeath::Retry, None);
         }
         self.states.player_trades.cancel(session);
         self.states.newhaven_travel.death(session);
-        let mut lowered = None;
-        let lowered_slot = &mut lowered;
+        let mut receipt = None;
+        let receipt_slot = &mut receipt;
         let settled =
             settle_session_death(&self.states.progression_sessions, session, |progression| {
                 Box::pin(async move {
@@ -115,8 +143,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     {
                         return DeathCommit::Unavailable;
                     }
-                    let (commit, after) = self.commit_death(session, &progression, death).await;
-                    *lowered_slot = after;
+                    let (commit, committed) = self.commit_death(session, &progression, death).await;
+                    *receipt_slot = committed;
                     commit
                 })
             })
@@ -131,12 +159,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::foundation::RuntimeScopeRefV1::Channel { .. }
             )
         {
-            let Ok(Some(committed)) = self
-                .root
-                .reconcile_character_death(self.character, death.occurrence)
-                .await
-            else {
-                return (SessionDeath::Retry, lowered);
+            let Some(committed) = &receipt else {
+                return (SessionDeath::Retry, None);
             };
             let equipment_changed = committed
                 .items
@@ -146,10 +170,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Drops and the AoL burn changed durable equipment. A respawn must
                 // not retain protections or a swing weapon from the pre-death slots.
                 let Some(_permit) = self.spell_lane_permit().await else {
-                    return (SessionDeath::Retry, lowered);
+                    return (SessionDeath::Retry, receipt);
                 };
                 let Ok(effects) = self.read_admission_effects(session).await else {
-                    return (SessionDeath::Retry, lowered);
+                    return (SessionDeath::Retry, receipt);
                 };
                 self.states
                     .attack
@@ -162,11 +186,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .is_none()
                 {
-                    return (SessionDeath::Retry, lowered);
+                    return (SessionDeath::Retry, receipt);
                 }
             }
         }
-        (settled, lowered)
+        (settled, receipt)
     }
 
     /// DEATH-RESTART-SAFETY-1 (#2004 Codex P1 4248558737): resolve the session's current fences
@@ -186,22 +210,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// the row stays for the next attempt or, after a restart, for the next admission.
     ///
     /// [`DurabilityRoot::place_and_consume_pending_respawn_placed`]: crate::durability::DurabilityRoot::place_and_consume_pending_respawn_placed
-    pub(in crate::gameplay_transport) async fn place_and_consume_settled_respawn(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
-    ) -> bool {
-        self.place_and_consume_settled_respawn_for(actor, session, occurrence, None)
-            .await
-    }
-
-    async fn place_and_consume_settled_respawn_for(
+    async fn place_and_consume_settled_respawn(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         occurrence: crate::durability::character_death::PlayerDeathOccurrence,
         expected: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        vitals: Option<LastVitals>,
     ) -> bool {
         let Some(respawn) = self.home_temple(session).await else {
             return false;
@@ -231,7 +246,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // orders after it.
         let respawned = {
             let runtime = self.runtime.lock().await;
-            self.placed_record(&runtime, respawn)
+            let mut placed = self.placed_record(&runtime, respawn);
+            placed.record.vitals = vitals;
+            placed
         };
         let runtime = &self.runtime;
         let placed = self
@@ -367,12 +384,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             }
         }
+        let vitals = black_skull_vitals(&committed);
         if !self
-            .place_and_consume_settled_respawn_for(
+            .place_and_consume_settled_respawn(
                 actor,
                 admitted.game_session_id,
                 occurrence,
                 Some(expected),
+                vitals,
             )
             .await
         {
@@ -395,12 +414,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // No await follows the atomic native respawn. The caller immediately
         // retains completion while still holding the unique return-attempt mutex.
         states
-            .respawn(
+            .respawn_with_vitals(
                 &runtime,
                 actor,
                 admitted.game_session_id,
                 occurrence,
                 self.owner_now(),
+                vitals,
             )
             .is_some()
     }
@@ -430,15 +450,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(death) if *settled != Some(death) => {
                 // A subsequent release call keeps the fence but not `settled`. Resolve
                 // its receipt before death-flush prechecks that may now be fenced out.
-                let (outcome, lowered) = match self
+                let (outcome, receipt) = match self
                     .root
                     .reconcile_character_death(self.character, death.occurrence)
                     .await
                 {
-                    Ok(Some(committed)) => (
-                        SessionDeath::Durable,
-                        committed.build_loss.map(|loss| loss.after),
-                    ),
+                    Ok(Some(committed)) => (SessionDeath::Durable, Some(committed)),
                     Ok(None) => self.settle_death(actor, session, death, true).await,
                     Err(error) => {
                         operator_event(&format!("player_death_reconcile_failed reason={error}"));
@@ -451,11 +468,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         // from the death's post-loss build, as a respawn would rebase it, so the
                         // release's own training save and a resumed epoch never submit the
                         // pre-death build.
-                        if let Some(after) = lowered {
+                        if let Some(build) = receipt.and_then(|receipt| receipt.build_loss) {
                             let runtime = self.runtime.lock().await;
                             let mut states = self.states.spell_states.lock().await;
                             if let Some(state) = states.get_mut(&runtime, actor, session) {
-                                state.rebase_after_death(&after);
+                                state.rebase_after_death(&build.after);
                             }
                         }
                         *settled = Some(death);
@@ -468,7 +485,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// DEATH-0 §3.4 and DEATH-2: a fresh admission with full vitals is the respawn of a death
+    /// DEATH-0 §3.4 and DEATH-2: a fresh admission can be the respawn of a death
     /// committed before the previous actor ended. In the Character's revision slot and under the
     /// admitted session's fences, before the session's other Character writes, its pending
     /// respawn is read, the new actor is placed at the recorded respawn position, and only then
@@ -535,13 +552,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return false,
         };
         // A reconnect can arrive after the receipt committed but before its item operations.
-        if self
+        let Ok(death) = self
             .resume_player_death_items(&permit, fence, pending.occurrence)
             .await
-            .is_err()
-        {
+        else {
             return false;
-        }
+        };
         let placed_at_entry = matches!(
             decided,
             Some(last_position::AdmissionPosition::Respawn(placed))
@@ -559,10 +575,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // the same transaction, under the new lease's key.
         // A placed actor whose cell cannot be read back (stale or gone) consumes nothing: the
         // obligation stays for the next admission rather than be consumed without its cell.
-        let Some(placed) = self.respawn_last_position(actor).await else {
+        let Some(mut placed) = self.respawn_last_position(actor).await else {
             operator_event("pending_respawn_placed_cell_unavailable");
             return false;
         };
+        if let Some(vitals) = black_skull_vitals(&death) {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            let Some(state) = states.get_mut(&runtime, actor, session) else {
+                return false;
+            };
+            state.restore_saved_vitals(vitals.health(), vitals.mana());
+            placed.record.vitals = Some(vitals);
+        }
         let consumed = self
             .root
             .consume_pending_respawn_placed(

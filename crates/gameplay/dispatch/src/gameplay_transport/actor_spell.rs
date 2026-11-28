@@ -27,6 +27,7 @@ mod actor_conditions;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod actor_invisibility;
+use crate::durability::character_last_position::LastVitals;
 #[cfg(test)]
 use crate::foundation::MovementLocalPosition;
 pub use crate::monster_combat_lane::native_conditions::{
@@ -1131,7 +1132,7 @@ impl ChannelSpellStates {
     }
 
     /// DEATH-2 §4.5 (D63): the respawn of `occurrence` in one owner step, after the caller placed
-    /// the actor at its respawn position. Health and mana are refilled to their maxima under one
+    /// the actor at its respawn position. Health and mana are initialized under one
     /// new `ACTOR_VITALS` revision, a monk's Harmony and forced Serene are reset with its Serene
     /// evaluation initialized at `now`, and the death record ends; the new revision and value are
     /// returned for the owner to publish. `None` changes nothing: the actor is not this death's
@@ -1144,10 +1145,24 @@ impl ChannelSpellStates {
         occurrence: PlayerDeathOccurrence,
         now: SemanticTimeMicros,
     ) -> Option<(u64, ActorVitals)> {
+        self.respawn_with_vitals(runtime, actor, game_session_id, occurrence, now, None)
+    }
+
+    pub(super) fn respawn_with_vitals(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        occurrence: PlayerDeathOccurrence,
+        now: SemanticTimeMicros,
+        vitals: Option<LastVitals>,
+    ) -> Option<(u64, ActorVitals)> {
         let death = self.deaths.iter().position(|(dead, session, death)| {
             *dead == actor && *session == game_session_id && death.occurrence == occurrence
         })?;
-        let next = self.get(runtime, actor, game_session_id)?.respawned(now)?;
+        let next = self
+            .get(runtime, actor, game_session_id)?
+            .respawned(now, vitals.map(|vitals| (vitals.health(), vitals.mana())))?;
         let vitals = (next.revision(), next.vitals());
         if !self.commit(runtime, actor, game_session_id, next) {
             return None;

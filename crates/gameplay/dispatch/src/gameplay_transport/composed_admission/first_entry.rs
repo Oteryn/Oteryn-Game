@@ -301,13 +301,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_character_revision: character_revision,
             };
         phase.set("death_items");
-        if self
+        let Ok(pending_death) = self
             .resume_pending_player_death_items(&permit, position_fence)
             .await
-            .is_err()
-        {
+        else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
-        }
+        };
         phase.set("home_town");
         if self
             .bundle_map()
@@ -330,6 +329,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let relocated = temple.map(|temple| decided.relocated(temple, self.world_id));
         let placement = relocated.as_ref().unwrap_or(&decided);
+        let respawn_vitals = if let last_position::AdmissionPosition::Respawn(pending) = &decided {
+            let Some(death) = pending_death.filter(|death| death.occurrence == pending.occurrence)
+            else {
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
+            };
+            super::death::black_skull_vitals(&death)
+        } else {
+            None
+        };
         #[cfg(test)]
         stage("durable_position_read");
         phase.set("reserve_precondition");
@@ -399,7 +407,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // evaluated here too (§8.2). CHAR-VITALS-1: a newly placed actor whose last-position row
         // saved its health and mana takes them, capped at its maxima, in this same step.
         let saved_vitals = (outcome == FirstEntryOutcome::Positioned)
-            .then(|| last_position::admitted_vitals(placement, self.world_id))
+            .then(|| {
+                respawn_vitals
+                    .map(|vitals| (vitals.health(), vitals.mana()))
+                    .or_else(|| last_position::admitted_vitals(placement, self.world_id))
+            })
             .flatten();
         let admitted_rest = (outcome == FirstEntryOutcome::Positioned)
             .then(|| bed_regen::admitted_rest(placement, self.world_id))
@@ -516,10 +528,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             };
             let mut placed = self.placed_record(&runtime, position.position());
-            placed.record.vitals = last_position::admitted_vitals(placement, self.world_id)
-                .and_then(|(health, mana)| {
-                    crate::durability::character_last_position::LastVitals::new(health, mana)
-                });
+            placed.record.vitals = saved_vitals.and_then(|(health, mana)| {
+                crate::durability::character_last_position::LastVitals::new(health, mana)
+            });
             placed.record.rest = bed_regen::admitted_rest(placement, self.world_id);
             Some(placed)
         } else {
