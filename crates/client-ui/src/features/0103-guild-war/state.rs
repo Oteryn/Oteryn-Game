@@ -6,10 +6,11 @@ pub enum Intent {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub selected: bool,
+    pub stake_selected: bool,
     pub open: bool,
     pub pending: bool,
     pub pending_kind: u32,
-    pub fields: [String; 3],
+    pub fields: [String; 4],
     pub feedback: String,
     pub summary: String,
 }

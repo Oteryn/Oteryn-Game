@@ -9,6 +9,7 @@ use std::sync::{
     Mutex,
     atomic::{AtomicU64, Ordering},
 };
+use std::time::{Duration, Instant};
 
 mod admission;
 mod dequeue;
@@ -16,11 +17,15 @@ mod party;
 mod send;
 pub(super) mod wire;
 
+struct ChatBinding {
+    fence: CurrentCharacterItemFence,
+    actor: crate::foundation::ExactActorRef,
+    last_war_poll: Option<Instant>,
+}
+
 #[derive(Default)]
 pub(super) struct GuildChatRuntime {
-    bindings: Mutex<
-        HashMap<GameSessionId, (CurrentCharacterItemFence, crate::foundation::ExactActorRef)>,
-    >,
+    bindings: Mutex<HashMap<GameSessionId, ChatBinding>>,
     /// Aggregate only: no name, text, GuildId or CharacterId is logged.
     drops: AtomicU64,
 }
@@ -34,7 +39,14 @@ impl GuildChatRuntime {
         if let (Some(fence), Some(actor)) = (admitted.item_fence, admitted.runtime_actor)
             && let Ok(mut bindings) = self.bindings.lock()
         {
-            bindings.insert(admitted.game_session_id, (fence, actor));
+            bindings.insert(
+                admitted.game_session_id,
+                ChatBinding {
+                    fence,
+                    actor,
+                    last_war_poll: None,
+                },
+            );
         }
     }
     pub(super) fn negotiated(&self, session: GameSessionId) -> bool {
@@ -48,9 +60,30 @@ impl GuildChatRuntime {
         };
         fence.connection_generation.get() == admitted.continuity.connection_generation
             && self.bindings.lock().is_ok_and(|bindings| {
-                bindings.get(&admitted.game_session_id) == Some(&(fence, actor))
+                bindings
+                    .get(&admitted.game_session_id)
+                    .is_some_and(|binding| (binding.fence, binding.actor) == (fence, actor))
             })
     }
+    fn poll_war_notices(&self, admitted: &AdmittedSession) -> bool {
+        let Ok(mut bindings) = self.bindings.lock() else {
+            return false;
+        };
+        let Some(binding) = bindings.get_mut(&admitted.game_session_id) else {
+            return false;
+        };
+        if admitted.item_fence != Some(binding.fence)
+            || admitted.runtime_actor != Some(binding.actor)
+            || binding
+                .last_war_poll
+                .is_some_and(|last| last.elapsed() < Duration::from_secs(1))
+        {
+            return false;
+        }
+        binding.last_war_poll = Some(Instant::now());
+        true
+    }
+
     pub(super) fn take_drops(&self) -> u64 {
         self.drops.swap(0, Ordering::Relaxed)
     }

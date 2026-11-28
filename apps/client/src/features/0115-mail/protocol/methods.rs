@@ -40,6 +40,8 @@ impl Outbox {
         };
         shared.properties.guild_war = oteryn_client_ui::guild_war::Panel {
             selected: session.feature_selected(103),
+            stake_selected: session
+                .feature_selected(oteryn_client_runtime::guild_war::CAPABILITY_GUILD_WAR_STAKE_V1),
             ..Default::default()
         };
         shared.properties.house_move_out = oteryn_client_ui::house_move_out::Panel {

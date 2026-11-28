@@ -138,6 +138,32 @@ one of a bank, fee, Market, house or guild operation. Each guild operation that 
 balance writes this decision's bank event (§5) besides the guild event. A guildhall bid or rent may draw on the leader's balance with the house kinds. A junior
 character never moves gold to or from a guild.
 
+**Guild war amendment (owner decision, 2026-11-28).** Account Bank entries may also reference
+exactly one guild war escrow operation. At acceptance, each current guild leader authorizes
+a debit for the agreed penalty plus the 1,000-gold declaration fee. A declaration cannot
+authorize a debit from a successor leader. The fee is consumed and
+each penalty is held against that war. The bank reserves credit headroom for either outcome.
+The signed fund and settle deltas carry the war, guild, leader, phase, and exact balance chain.
+Fencing, physical transaction proofs and command receipts still apply.
+
+A completed war credits the accounts recorded at acceptance. A frag-limit win transfers
+both penalties to the winning side. At timeout with unequal scores, transfer
+`floor(loser penalty × frag difference ÷ frag limit)` to the winning side and return the
+remaining penalties. A draw or disband cancellation returns each penalty to its payer.
+Settlement and both guild-channel notices commit with the end transition. If the war reaches
+its frag limit or deadline before cancellation is processed, the normal result takes precedence.
+Legacy declarations without the negotiated stake field continue with their existing terms.
+
+> “In case he accepts, the previously set penalty payments, and a small war declaration fee
+> amounting to 1.000 gold coins, will be transferred from both guild leader's accounts to a
+> temporary escrow deposit at the next server save.”
+>
+> “In case of a time out, the guild which achieved the most frags will be counted as the winner,
+> but only gets a proportional amount of the loser's penalty payment measured against the frag
+> difference. In case of a draw, the payments will be returned to both guilds.”
+
+[Tibia Fandom Guild War](https://tibia.fandom.com/wiki/Guild_War)
+
 ## 4. Operations (BANK-1)
 
 ### 4.1 Common rules

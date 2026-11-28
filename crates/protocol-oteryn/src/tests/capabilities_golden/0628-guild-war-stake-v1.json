@@ -1,0 +1,17 @@
+{
+  "id": 628,
+  "name": "GUILD_WAR_STAKE_V1",
+  "constant": "guild_war::CAPABILITY_GUILD_WAR_STAKE_V1",
+  "requires": [
+    103
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": 628,
+  "name": "GUILD_WAR_STAKE_V1",
+  "owner_decision": "Guild war stake and settlement, 2026-11-28",
+  "owner": "Game Guild durable owner",
+  "requires": [103],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Requires GUILD_WAR_V1. Only sessions selecting 628 may send optional stake_gold on GUILD_WAR_INTENT (119)."
+}

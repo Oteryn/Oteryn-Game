@@ -80,6 +80,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,
     oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
     oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1,
+    property_services::guild_war::CAPABILITY_GUILD_WAR_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_FORGE_CREATURE_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
@@ -201,6 +202,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // Party join and leave notices on domain 57 (576, requires 42 and 92).
     party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+    property_services::guild_war::CAPABILITY_GUILD_WAR_STAKE_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -253,6 +255,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
     oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1,
+    property_services::guild_war::CAPABILITY_GUILD_WAR_V1,
     property_services::mail::CAPABILITY_MAIL_V1 as u32,
     oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,

@@ -10,7 +10,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         remaining: &mut usize,
     ) -> Option<ChatLine> {
         while *remaining > 0 {
-            let candidate = self.states.chat.peek_line(admitted.game_session_id)?;
+            let Some(candidate) = self.states.chat.peek_line(admitted.game_session_id) else {
+                *remaining -= 1;
+                return self.guild_war_chat_notice(admitted).await;
+            };
             if let ChatLine::Room { .. } = &candidate {
                 *remaining -= 1;
                 if let Some(line) = self
@@ -92,5 +95,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         None
+    }
+
+    async fn guild_war_chat_notice(&self, admitted: AdmittedSession) -> Option<ChatLine> {
+        if !self.states.chat.guild.poll_war_notices(&admitted) {
+            return None;
+        }
+        let fence = {
+            let runtime = self.runtime.lock().await;
+            qualified_fence(&admitted, &runtime)?
+        };
+        let (guild_id, text) = self
+            .root
+            .take_guild_war_notice(self.character, self.holder, fence)
+            .await
+            .ok()??;
+        Some(ChatLine::Guild(
+            oteryn_protocol_oteryn::chat::guild_room::GuildChatLine {
+                guild_id,
+                rank: 1,
+                speaker_name: "[Guild War]".into(),
+                text,
+            },
+        ))
     }
 }

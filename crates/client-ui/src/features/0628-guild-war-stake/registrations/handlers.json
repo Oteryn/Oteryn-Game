@@ -1,0 +1,20 @@
+{
+  "mechanic": "0628-guild-war-stake",
+  "kind": "handlers",
+  "id": "0628-guild-war-stake-exchange",
+  "status": "supported",
+  "commands": [],
+  "shared_commands": [119],
+  "direction": "server_to_client",
+  "capability": 628,
+  "entry": "protocol.rs::with_stake",
+  "push_messages": ["GuildWarResult"],
+  "reducer": "protocol.rs::result",
+  "test": "protocol.rs::acceptance_sends_exact_terms_only_with_selection",
+  "not_applicable": {
+    "input": "The native guild war form owns entry of the agreed gold amount.",
+    "settings": "The draft is scoped to the guild war panel.",
+    "state": "The guild war panel holds the draft and its negotiated capability.",
+    "view": "The existing guild war form displays the stake field and result."
+  }
+}

@@ -13,6 +13,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
             "Opponent guild UUID (declare) or war UUID (accept)",
             "Frag limit (declare)",
             "Duration in days (declare)",
+            "Agreed stake in gold (optional)",
         ],
         buttons: &["Declare", "Accept"],
         snapshot: |mailbox| {

@@ -21,6 +21,11 @@ pub(in crate::play) fn command(panel: &Panel, intent: Intent) -> Result<FeatureC
         },
         Intent::Accept => wire::GuildWarIntent::Accept { war: id },
     };
+    let request = oteryn_client_ui::guild_war_stake::with_stake(
+        request,
+        panel.stake_selected,
+        &panel.fields[3],
+    )?;
     let payload =
         wire::encode_guild_war_intent(&request).map_err(|_| tr!("Enter a valid UUIDv7"))?;
     Ok(FeatureCommand {
@@ -43,8 +48,8 @@ pub(in crate::play) fn apply(
         panel.feedback = tr!("The server refused the guild war request").into();
         return;
     }
-    match wire::decode_guild_war_result(&result.payload) {
-        Ok(reply) if reply.code == 1 => {
+    match oteryn_client_ui::guild_war_stake::result(&result.payload) {
+        Some(reply) if reply.code == 1 => {
             let id = reply
                 .war
                 .iter()
@@ -53,7 +58,7 @@ pub(in crate::play) fn apply(
             panel.summary = lfmt!("War UUID: {id}", id = id);
             panel.feedback = tr!("Guild war request accepted").into();
         }
-        Ok(_) => panel.feedback = tr!("The server refused the guild war request").into(),
-        Err(_) => panel.feedback = tr!("Invalid guild war reply").into(),
+        Some(_) => panel.feedback = tr!("The server refused the guild war request").into(),
+        None => panel.feedback = tr!("Invalid guild war reply").into(),
     }
 }

@@ -41,6 +41,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(intent) = wire::decode_guild_war_intent(payload) else {
             return GuildReply::Rejected;
         };
+        if intent.stake().is_some()
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_GUILD_WAR_STAKE_V1)
+        {
+            return GuildReply::Rejected;
+        }
         // Hash the canonical intent so equivalent field orderings share a durable receipt.
         let Ok(canonical) = wire::encode_guild_war_intent(&intent) else {
             return GuildReply::Rejected;
@@ -52,8 +60,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let derive =
             |tag: &[u8]| super::npc_trade_command::derived(tag, admitted.game_session_id, id);
         let war = match intent {
-            GuildWarIntent::Declare { .. } => derive(b"oteryn:guild-war:v1"),
-            GuildWarIntent::Accept { war } => war,
+            GuildWarIntent::Declare { .. } | GuildWarIntent::DeclareWithStake { .. } => {
+                derive(b"oteryn:guild-war:v1")
+            }
+            GuildWarIntent::Accept { war } | GuildWarIntent::AcceptWithStake { war, .. } => war,
         };
         let Some(now) = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

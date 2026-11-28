@@ -1,0 +1,7 @@
+{
+  "mechanic": "0628-guild-war-stake",
+  "kind": "panels",
+  "id": "0628-guild-war-stake-panel",
+  "status": "supported",
+  "entry": "protocol.rs::with_stake"
+}

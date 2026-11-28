@@ -4,6 +4,16 @@
   "owner_decision": "GUILD-WAR-1 parity slice 2026-10-26",
   "capability": 103,
   "payload_schema": "guild_war.rs#GuildWarIntent",
+  "optional_fields": {
+    "stake_gold": {
+      "field_number": 5,
+      "wire_type": "uint32",
+      "max": 2000000000,
+      "requires_capability": 628,
+      "declare": "Penalty per side in gold. An explicit zero selects the fee-only terms.",
+      "accept": "Must echo the declared amount, including an explicit zero. Omit only for legacy wars."
+    }
+  },
   "result_schema": "guild_war.rs#GuildWarResult",
   "max_payload_bytes": 64,
   "max_result_payload_bytes": 20

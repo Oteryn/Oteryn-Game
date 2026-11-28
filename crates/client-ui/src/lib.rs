@@ -38,6 +38,8 @@ pub mod diagonal_movement;
 pub mod guild_bank;
 #[path = "features/0103-guild-war/mod.rs"]
 pub mod guild_war;
+#[path = "features/0628-guild-war-stake/protocol.rs"]
+pub mod guild_war_stake;
 #[path = "features/0099-guildhall/mod.rs"]
 pub mod guildhall;
 #[path = "features/0049-house/mod.rs"]
