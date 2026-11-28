@@ -190,6 +190,43 @@ fn obelisk_result(
     Ok((disposition, detail))
 }
 
+async fn instance_assignments(clients: &SeamClients<'_>) -> TestResult<String> {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let snapshot = sqlx::query_scalar(
+        "SELECT coalesce(jsonb_agg(snapshot ORDER BY instance), '[]'::jsonb)::text
+         FROM (
+           SELECT a.activity_instance_id AS instance, jsonb_build_object(
+             'instance_id', a.activity_instance_id,
+             'holder_node', a.holder_node_id,
+             'registration_revision', a.holder_registration_revision,
+             'assignment_state', a.state,
+             'assignment_generation', a.ownership_generation,
+             'readiness_generation', g.ownership_generation,
+             'ready', g.ready,
+             'handoffs', ARRAY(
+               SELECT h.handoff_id FROM game_activity_handoff_groups h
+               WHERE h.world_id=a.world_id AND h.instance_id=a.activity_instance_id
+               ORDER BY h.handoff_id LIMIT 16),
+             'sessions', ARRAY(
+               SELECT s.game_session_id FROM game_durability_reconnect_sessions s
+               WHERE s.runtime_scope_world_id=a.world_id
+                 AND s.runtime_scope_instance_id=a.activity_instance_id
+               ORDER BY s.game_session_id LIMIT 16)
+           ) AS snapshot
+           FROM game_runtime_scope_assignments a
+           LEFT JOIN game_durability_admission_runtime_guards g
+             ON g.scope_key=decode('02','hex') || uuid_send(a.world_id) || uuid_send(a.activity_instance_id)
+           WHERE a.world_id=encode($1,'hex')::uuid AND a.scope_kind=3
+           ORDER BY a.activity_instance_id LIMIT 16
+         ) AS instances",
+    )
+    .bind(clients.world.as_slice())
+    .fetch_one(&mut db)
+    .await?;
+    db.close().await?;
+    Ok(snapshot)
+}
+
 async fn enter_soulpit(
     clients: &SeamClients<'_>,
     client: &mut DevClientSession,
@@ -246,7 +283,21 @@ async fn enter_soulpit(
     })
     .map_err(|error| format!("W08 obelisk USE encoding: {error:?}"))?;
     let source = client.join_snapshot().game_session_id;
+    let snapshot = instance_assignments(clients).await;
+    match snapshot {
+        Ok(instances) => evidence(&format!(
+            "W08_PRE_USE world={} map_digest={:02x?} source_session={} instances={instances}",
+            uuid_text(&clients.world),
+            world.base().digest(),
+            uuid_text(source.as_bytes()),
+        )),
+        Err(error) => evidence(&format!("W08_PRE_USE capture_error={error}")),
+    }
     let reply = client.session_mut().world_context_use(&payload).await?;
+    evidence(&format!(
+        "W08_RAW_USE status={:?} command_id={} server_sequence={} payload={:02x?}",
+        reply.status, reply.command_id, reply.server_sequence, reply.payload,
+    ));
     let result = obelisk_result(&reply.payload);
     if reply.status != CommandStatus::Accepted
         || !matches!(result, Ok((UseDisposition::Committed, None)))
