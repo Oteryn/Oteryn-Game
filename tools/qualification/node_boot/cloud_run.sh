@@ -71,7 +71,7 @@ summarize() {
 
 w24_client_selected() {
   [[ $1 == rows ]] || return 1
-  python3 - "${OTERYN_E2E_ROW_BATCH:-}" <<'PY'
+  python3 - "${OTERYN_E2E_ROW_BATCH:-}" "${2:-222}" <<'PY'
 import re
 import sys
 
@@ -85,15 +85,17 @@ values = [digits.lstrip("0") or "0" for digits in parsed.groups()]
 if any(len(value) > 20 for value in values):
     sys.exit(1)
 start, length = map(int, values)
-sys.exit(not (start <= 222 and 222 - start < length <= 2**64 - 1))
+index = int(sys.argv[2])
+sys.exit(not (start <= index and index - start < length <= 2**64 - 1))
 PY
 }
 
 w24_client_replay() {
-  local capture_dir=$1 log=$2 replay_log=$1.replay.log
+  local capture_dir=$1 log=$2 mode=${3:-client} replay_log=$1.replay.log
+  [[ $mode != full ]] || replay_log=$1.full.replay.log
   local test=tests::e2e_w24::e2e_w24_ambient_zone_sound_replay
-  [[ $(grep -c '^SEAM_EVIDENCE e2e_capture scenario=W24.client status=CAPTURED ' "$log") == 1 ]] || return 1
-  E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-session --lib \
+  [[ $(grep -c "^SEAM_EVIDENCE e2e_capture scenario=W24[.]${mode} status=CAPTURED " "$log") == 1 ]] || return 1
+  E2E_ALL_W24_MODE="$mode" E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-session --lib \
     "$test" -- --exact --nocapture > "$replay_log" 2>&1 || return 1
   grep -Fx "test $test ... ok" "$replay_log" >/dev/null &&
     grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$replay_log"
@@ -149,7 +151,10 @@ for group in "$@"; do
   started=$SECONDS
   status=0
   capture_dir=
-  if w24_client_selected "$group"; then
+  w24_modes=()
+  if w24_client_selected "$group" 19; then w24_modes+=(full); fi
+  if w24_client_selected "$group"; then w24_modes+=(client); fi
+  if (( ${#w24_modes[@]} )); then
     capture_dir="$work_dir/$index-w24-captures"
     mkdir -- "$capture_dir" || blocked work_dir_unavailable
   fi
@@ -162,13 +167,15 @@ for group in "$@"; do
   wait "$child_pid" || status=$?
   child_pid=
   if [[ -n $capture_dir && $status == 0 ]]; then
-    if w24_client_replay "$capture_dir" "$log"; then
-      printf '%s\n' 'SEAM_EVIDENCE e2e_all scenario=W24.client status=PASS evidence=live-capture-replayed' >> "$log"
-    else
-      status=1
-      printf '%s\n' 'SEAM_EVIDENCE e2e_all scenario=W24.client status=FAIL evidence=live-capture-replay-failed' \
-        'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged' >> "$log"
-    fi
+    for w24_mode in "${w24_modes[@]}"; do
+      if w24_client_replay "$capture_dir" "$log" "$w24_mode"; then
+        printf 'SEAM_EVIDENCE e2e_all scenario=W24.%s status=PASS evidence=live-capture-replayed\n' "$w24_mode" >> "$log"
+      else
+        status=1
+        printf 'SEAM_EVIDENCE e2e_all scenario=W24.%s status=FAIL evidence=live-capture-replay-failed\n' "$w24_mode" >> "$log"
+        printf '%s\n' 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged' >> "$log"
+      fi
+    done
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1

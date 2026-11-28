@@ -168,18 +168,58 @@ fn w24_rejects_false_boundary_evidence() -> Result<(), BoxError> {
     Ok(())
 }
 
+#[derive(Clone, Copy)]
+enum Action {
+    Boundary { silent: bool },
+    Approach,
+    Blocked,
+}
+
+fn direction(letter: char) -> Result<StepDirection, BoxError> {
+    match letter {
+        'N' => Ok(StepDirection::North),
+        'E' => Ok(StepDirection::East),
+        'S' => Ok(StepDirection::South),
+        'W' => Ok(StepDirection::West),
+        _ => Err("invalid W24 replay direction".into()),
+    }
+}
+
+async fn replay_walk(
+    session: &mut Session<ReplayStream>,
+    path: &str,
+    crossing: bool,
+) -> Result<u64, BoxError> {
+    let mut directions = path.chars().peekable();
+    let mut sequence = None;
+    while let Some(letter) = directions.next() {
+        let direction = direction(letter)?;
+        let from = session.world_spatial().actor_position;
+        let reply = session.step(direction).await?;
+        assert_eq!(reply.disposition, StepDisposition::Moved);
+        let delta = reply
+            .world_spatial_delta
+            .ok_or("missing replay spatial delta")?;
+        assert!(delta.server_sequence > reply.result_server_sequence);
+        require_ordinary_step(from, delta.value.actor_position, direction)?;
+        if !crossing || directions.peek().is_some() {
+            require_no_cues(&drain_cues(session)?, "walking approach")?;
+        }
+        sequence = Some(delta.server_sequence);
+    }
+    sequence.ok_or_else(|| "missing W24 replay STEP".into())
+}
+
 async fn replay_connection(
     root: &std::path::Path,
     name: &str,
     initial_silent: bool,
-    crossing_silent: Option<bool>,
+    actions: &[Action],
 ) -> Result<(String, ActorPosition, ActorPosition), BoxError> {
     let metadata = std::fs::read_to_string(root.join(format!("{name}.txt")))?;
-    let mut lines = metadata.lines();
+    let mut lines = metadata.lines().peekable();
     let id = lines.next().ok_or("missing replay session ID")?;
     let initial = cue_record(lines.next().ok_or("missing admission cue")?)?;
-    let crossing = lines.next().ok_or("missing crossing record")?;
-    assert!(lines.next().is_none());
     assert_eq!(initial.0 == 0, initial_silent);
     let bytes = std::fs::read(root.join(format!("{name}.bin")))?;
     let stream = tokio::io::join(std::io::Cursor::new(bytes), tokio::io::sink());
@@ -188,51 +228,60 @@ async fn replay_connection(
     assert_eq!(format!("{:?}", session.join_snapshot().game_session_id), id);
     let before = session.world_spatial().actor_position;
     read_cue(&mut session, initial).await?;
-    if let Some(silent) = crossing_silent {
-        let (path, cue) = crossing.split_once(' ').ok_or("missing walking route")?;
-        let expected = cue_record(cue)?;
-        assert_eq!(expected.0 == 0, silent);
-        let mut directions = path.chars().peekable();
-        let mut crossing_sequence = None;
-        while let Some(letter) = directions.next() {
-            let direction = match letter {
-                'N' => StepDirection::North,
-                'E' => StepDirection::East,
-                'S' => StepDirection::South,
-                'W' => StepDirection::West,
-                _ => return Err("invalid W24 replay direction".into()),
-            };
-            let from = session.world_spatial().actor_position;
-            let reply = session.step(direction).await?;
-            assert_eq!(reply.disposition, StepDisposition::Moved);
-            let delta = reply
-                .world_spatial_delta
-                .ok_or("missing replay spatial delta")?;
-            assert!(delta.server_sequence > reply.result_server_sequence);
-            require_ordinary_step(from, delta.value.actor_position, direction)?;
-            if directions.peek().is_some() {
-                assert!(
-                    drain_cues(&mut session)?.is_empty(),
-                    "ambient before crossing"
-                );
-            } else {
-                crossing_sequence = Some(delta.server_sequence);
+    let mut exit_from = None;
+    for action in actions {
+        match *action {
+            Action::Approach => {
+                if let Some(path) = lines.peek().and_then(|line| line.strip_prefix("W ")) {
+                    replay_walk(&mut session, path, false).await?;
+                    lines.next();
+                }
+            }
+            Action::Blocked => {
+                let letter = lines
+                    .next()
+                    .and_then(|line| line.strip_prefix("B "))
+                    .and_then(|letter| letter.chars().next())
+                    .ok_or("missing blocked STEP")?;
+                let before = session.world_spatial().actor_position;
+                let reply = session.step(direction(letter)?).await?;
+                assert_eq!(reply.disposition, StepDisposition::Blocked);
+                assert!(reply.world_spatial_delta.is_none());
+                assert_eq!(session.world_spatial().actor_position, before);
+                require_no_cues(&drain_cues(&mut session)?, "blocked STEP")?;
+            }
+            Action::Boundary { silent } => {
+                let (path, cue) = lines
+                    .next()
+                    .and_then(|line| line.split_once(' '))
+                    .ok_or("missing boundary route and cue")?;
+                let expected = cue_record(cue)?;
+                assert_eq!(expected.0 == 0, silent);
+                let sequence = replay_walk(&mut session, path, true).await?;
+                require_after_crossing(expected, sequence)?;
+                read_cue(&mut session, expected).await?;
+                let at = session.world_spatial().actor_position;
+                if silent {
+                    let direction = direction(path.chars().last().ok_or("missing exit STEP")?)?;
+                    let (dx, dy) = direction.delta();
+                    exit_from = Some(ActorPosition {
+                        x: at.x - dx,
+                        y: at.y - dy,
+                        floor: at.floor,
+                    });
+                } else if let Some(inside) = exit_from.take() {
+                    assert_eq!(at, inside, "reentry must use the recorded exit boundary");
+                }
             }
         }
-        require_after_crossing(expected, crossing_sequence.ok_or("missing boundary STEP")?)?;
-        read_cue(&mut session, expected).await?;
-    } else {
-        assert_eq!(crossing, "-");
     }
+    assert!(lines.next().is_none(), "unexpected replay action");
     let after = session.world_spatial().actor_position;
     assert_eq!(
         session.logout().await?.result,
         Some(logout::LogoutResult::Accepted)
     );
-    assert!(
-        drain_cues(&mut session)?.is_empty(),
-        "ambient during logout"
-    );
+    require_no_cues(&drain_cues(&mut session)?, "logout")?;
     assert_eq!(
         session.stream.read(&mut [0]).await?,
         0,
@@ -243,13 +292,27 @@ async fn replay_connection(
 }
 
 async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
+    let mode = std::env::var("E2E_ALL_W24_MODE").unwrap_or_else(|_| "client".to_owned());
+    let full = match mode.as_str() {
+        "full" => true,
+        "client" => false,
+        _ => return Err("unknown W24 replay mode".into()),
+    };
+    let root = path.join(mode);
+    let path = root.as_path();
+    let entry = Action::Boundary { silent: false };
+    let exit = Action::Boundary { silent: true };
+    let actions: &[Action] = if full {
+        &[entry, Action::Approach, Action::Blocked, exit, entry]
+    } else {
+        &[entry]
+    };
     let origin = std::fs::read_to_string(path.join("w24-expected.txt"))?;
-    let (entry_id, outside, inside) =
-        replay_connection(path, "w24-entry", true, Some(false)).await?;
+    let (entry_id, outside, inside) = replay_connection(path, "w24-entry", true, actions).await?;
     match origin.as_str() {
         "exit" => {
             let (exit_id, _, exit_position) =
-                replay_connection(path, "w24-exit", false, Some(true)).await?;
+                replay_connection(path, "w24-exit", false, &[exit]).await?;
             assert_ne!(exit_id, entry_id);
             assert_eq!(exit_position, outside);
         }
@@ -259,7 +322,7 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
         }
         _ => return Err("invalid W24 origin".into()),
     }
-    let (relog_id, relog_position, _) = replay_connection(path, "w24-relog", false, None).await?;
+    let (relog_id, relog_position, _) = replay_connection(path, "w24-relog", false, &[]).await?;
     assert_ne!(relog_id, entry_id);
     assert_ne!(outside, inside);
     assert_eq!(relog_position, inside);

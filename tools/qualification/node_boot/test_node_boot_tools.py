@@ -720,6 +720,32 @@ class CloudRunSummaryTests(unittest.TestCase):
                                     check=True, capture_output=True, text=True)
             self.assertEqual(result.stdout.strip(), str(work.resolve()))
 
+    def test_full_w24_batch_requires_its_own_capture_and_replay(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("w24_client_selected()"):cloud.index('if [[ ${1:-} == --summarize')]
+        command = helper + textwrap.dedent("""
+            set -e
+            OTERYN_E2E_ROW_BATCH=19:1
+            w24_client_selected rows 19
+            if w24_client_selected rows 222; then exit 1; fi
+            capture_dir="$1/capture"
+            log="$1/node.log"
+            mkdir "$capture_dir"
+            echo 'SEAM_EVIDENCE e2e_capture scenario=W24.client status=CAPTURED evidence=outside=0 city=28' > "$log"
+            cargo() { return 1; }
+            if w24_client_replay "$capture_dir" "$log" full; then exit 1; fi
+            [[ ! -e "$capture_dir.full.replay.log" ]]
+            echo 'SEAM_EVIDENCE e2e_capture scenario=W24.full status=CAPTURED evidence=outside=0 city=28' > "$log"
+            cargo() {
+                [[ $E2E_ALL_CAPTURE_DIR == "$capture_dir" && $E2E_ALL_W24_MODE == full ]] || return 1
+                echo 'test tests::e2e_w24::e2e_w24_ambient_zone_sound_replay ... ok'
+                echo 'test result: ok. 1 passed; 0 failed; 0 ignored;'
+            }
+            w24_client_replay "$capture_dir" "$log" full
+            """)
+        with tempfile.TemporaryDirectory() as temp:
+            subprocess.run(["bash", "-c", command, "test", temp], check=True)
+
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
             ['bash', str(HERE / 'cloud_run.sh'), '--summarize',
