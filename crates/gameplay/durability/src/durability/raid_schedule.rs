@@ -13,7 +13,7 @@ mod storage;
 pub(super) const FEROXA_KEY: &str = "raid:edron.feroxa";
 
 pub use activity::{MAX_RAID_ACTIVITY_PLAYERS, RaidActivityPlayer, RaidActivitySnapshot};
-pub use calendar::CalendarRaidScheduleCandidate;
+pub use calendar::{CalendarRaidScheduleCandidate, CalendarRaidTiming};
 pub use claustrophobic::ClaustrophobicRaidStart;
 pub use lua::LuaRaidScheduleCandidate;
 pub use scheduler::{RaidScheduleCandidate, RaidSchedulerCheck, RaidSchedulerOutcome};

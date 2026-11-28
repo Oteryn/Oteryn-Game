@@ -1,8 +1,8 @@
 //! Composition of the existing schedule planner with current node, World reset,
 //! admission and channel-target facts. It creates no actors or protocol messages.
 use super::{
-    CalendarRaidScheduleCandidate, LuaRaidScheduleCandidate, ProductionKey, RaidSchedule, WorldId,
-    calendar, lua, storage,
+    CalendarRaidScheduleCandidate, CalendarRaidTiming, LuaRaidScheduleCandidate, ProductionKey,
+    RaidSchedule, WorldId, calendar, lua, storage,
 };
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use crate::durability::db::{
@@ -85,7 +85,10 @@ impl DurabilityRoot {
                     .window
                     .validate()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
-                if calendar.interval_ms == 0 {
+                if matches!(
+                    calendar.timing,
+                    CalendarRaidTiming::Interval { interval_ms: 0, .. }
+                ) {
                     return Err(DurabilityError::InvalidStoredState);
                 }
             }
@@ -224,15 +227,31 @@ impl DurabilityRoot {
                         now_ms: request.now_ms, selected,
                         firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
                     }
-                } else if let Some(window) = &candidate.calendar_window {
+                } else if let Some(window) = &candidate.calendar_window
+                    && matches!(window.timing, CalendarRaidTiming::ImmediatePostSave)
+                {
+                    let Some((month, day, save_at)) =
+                        calendar::committed_save(&mut tx, request.world, request.now_ms).await?
+                    else { continue; };
+                    if !window.window.contains(month, day)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?
+                        || before.last_fired_at_ms.is_some_and(|at| at >= save_at)
+                    { continue; }
+                    RaidAction::PostSaveCheck {
+                        now_ms: request.now_ms, firing_id: candidate.firing_id,
+                        bundle_digest: request.bundle_digest,
+                    }
+                } else if let Some(window) = &candidate.calendar_window
+                    && let CalendarRaidTiming::Interval { interval_ms, repeat } = window.timing
+                {
                     let clock = calendar::clock(&mut tx, request.world, request.now_ms).await?;
                     // Startup-activated repeating cycles belong to the committed reset date,
                     // so a delayed reset cannot start the next month's source early.
-                    let (month,day) = if window.repeat { (clock.epoch_month,clock.epoch_month_day) } else { (clock.month,clock.month_day) };
+                    let (month,day) = if repeat { (clock.epoch_month,clock.epoch_month_day) } else { (clock.month,clock.month_day) };
                     let in_window = window.window.contains(month,day)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
-                        request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
+                        request.now_ms.saturating_sub(last) >= i64::from(interval_ms));
                     // Crystal globalevents_cake_raids.lua:9-29 registers 24
                     // absolute daily slots: save06:00 + offset4, hourly modulo1440.
                     // Its config:388-405 requires stage1 at the actual firing.
@@ -243,7 +262,7 @@ impl DurabilityRoot {
                             && before.last_fired_at_ms.is_none_or(|last| last < clock.minute_started_at_ms)
                             && phase.is_some_and(|progress| progress.phase_one_active())
                     } else { interval_due };
-                    let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
+                    let persistent_fired = !repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,
@@ -268,6 +287,14 @@ impl DurabilityRoot {
                         .bind(candidate.firing_id.as_slice()).bind(request.world.as_bytes().as_slice())
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
+                    if matches!(action, RaidAction::PostSaveCheck { .. }) {
+                        // The zero-delay effects are due immediately. Register pending
+                        // live runs now so deadline reconciliation cannot abandon them
+                        // if another scheduler pass arrives before dispatch polls.
+                        sqlx::query("INSERT INTO game_world_raid_channel_runs(firing_id,channel_id,owner_generation,updated_at_ms) SELECT firing_id,channel_id,owner_generation,$2 FROM game_world_raid_targets WHERE firing_id=encode($1,'hex')::uuid ORDER BY channel_id")
+                            .bind(candidate.firing_id.as_slice()).bind(request.now_ms)
+                            .execute(&mut *tx).await?;
+                    }
                     if legacy { legacy_running = true; }
                     fired.push((candidate.firing_id, candidate.key));
                 }

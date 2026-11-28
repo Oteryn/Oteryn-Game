@@ -103,10 +103,17 @@ pub enum CatalogueSchedule {
     Calendar {
         window: Option<CatalogueWindow>,
         interval_ms: Option<u32>,
+        anchor: Option<CatalogueCalendarAnchor>,
         #[serde(default)]
         repeat: bool,
     },
     Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CatalogueCalendarAnchor {
+    ImmediatePostSave,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -378,14 +385,18 @@ impl CatalogueRaid {
             CatalogueSchedule::Calendar {
                 window,
                 interval_ms,
-                ..
+                anchor,
+                repeat,
             } => {
-                window
-                    .ok_or(RaidError::InvalidCalendar)?
-                    .window()
-                    .validate()?;
-                if interval_ms.is_none_or(|interval| interval == 0) {
-                    return Err(RaidError::InvalidCalendar);
+                let window = window.ok_or(RaidError::InvalidCalendar)?.window();
+                window.validate()?;
+                match (anchor, interval_ms) {
+                    (None, Some(1..)) => {}
+                    (Some(CatalogueCalendarAnchor::ImmediatePostSave), None)
+                        if !repeat
+                            && (window.start_month, window.start_day)
+                                == (window.end_month, window.end_day) => {}
+                    _ => return Err(RaidError::InvalidCalendar),
                 }
             }
             _ => {}
@@ -559,7 +570,7 @@ mod tests {
         // plus Crystal a_piece_of_cake_config.lua:394-400's seasonal raid.
         // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         assert_eq!(catalogue.records().len(), 240);
-        assert_eq!(catalogue.active().count(), 138);
+        assert_eq!(catalogue.active().count(), 139);
         for record in catalogue.records() {
             if record.active {
                 record.select([7; 32], [9; 16])?.definition.validate()?;
@@ -624,17 +635,17 @@ mod tests {
     fn halloween_raids_keep_source_cells_and_require_anchored_schedule()
     -> Result<(), Box<dyn std::error::Error>> {
         let catalogue = RaidCatalogue::embedded()?;
-        for (key, last_day, inactive_reason, cells) in [
+        for (key, last_day, expected_anchor, cells) in [
             (
                 "kazordoon_raids.the_halloween_hare",
                 (10, 31),
-                "calendar_firing_anchor_unbound:immediate_post_save",
+                Some(CatalogueCalendarAnchor::ImmediatePostSave),
                 &[(32624, 32018)][..],
             ),
             (
                 "northern_darama_raids.the_mutated_pumpkin",
                 (11, 2),
-                "calendar_firing_anchor_unbound:server_open",
+                None,
                 &[(33115, 32398), (33095, 32381), (33092, 32418)][..],
             ),
         ] {
@@ -643,6 +654,7 @@ mod tests {
             let CatalogueSchedule::Calendar {
                 window: Some(window),
                 interval_ms,
+                anchor,
                 repeat,
             } = raid.schedule
             else {
@@ -652,18 +664,22 @@ mod tests {
             assert_eq!((window.end_month, window.end_day), last_day);
             assert_eq!(interval_ms, None);
             assert!(!repeat);
-            assert!(
-                raid.inactive_reasons
-                    .iter()
-                    .any(|reason| reason == inactive_reason)
-            );
+            assert_eq!(anchor, expected_anchor);
+            if anchor.is_none() {
+                assert_eq!(
+                    raid.inactive_reasons,
+                    ["calendar_firing_anchor_unbound:server_open"]
+                );
+            } else {
+                assert!(raid.inactive_reasons.is_empty());
+            }
             assert_eq!(raid.variants.len(), cells.len());
             for (variant, &(x, y)) in raid.variants.iter().zip(cells) {
                 let area = &variant.waves[0].entries[0].area;
                 assert_eq!((area.from.x, area.from.y, area.from.floor), (x, y, 7));
                 assert_eq!((area.to.x, area.to.y, area.to.floor), (x, y, 7));
             }
-            assert!(raid.select([1; 32], [2; 16]).is_err());
+            assert_eq!(raid.select([1; 32], [2; 16]).is_ok(), anchor.is_some());
             for variant in &raid.variants {
                 assert_eq!(variant.announcements.len(), 1);
                 assert_eq!(variant.waves.len(), 1);

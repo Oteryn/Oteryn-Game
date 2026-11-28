@@ -156,3 +156,4 @@ mod guild_scheduler;
 mod house_rent_scheduler;
 mod market_scheduler;
 mod raid_scheduler;
+pub use raid_scheduler::{RaidScheduleTick, check_raid_tick};

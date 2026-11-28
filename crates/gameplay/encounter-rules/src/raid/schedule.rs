@@ -57,6 +57,13 @@ pub enum RaidAction {
         firing_id: [u8; 16],
         bundle_digest: [u8; 32],
     },
+    /// The durable owner has confirmed a new committed server-save occurrence.
+    /// Its first check bypasses the ordinary scheduler's initial minute.
+    PostSaveCheck {
+        now_ms: i64,
+        firing_id: [u8; 16],
+        bundle_digest: [u8; 32],
+    },
     /// Metadata-only close at the deadline. Live runs/LOST reconciliation must
     /// be composed by their future owner before any runtime activation.
     Close {
@@ -267,17 +274,30 @@ impl RaidSchedule {
             }
             RaidAction::ResolvedCheck {
                 now_ms,
-                selected,
+                firing_id,
+                bundle_digest,
+                ..
+            }
+            | RaidAction::PostSaveCheck {
+                now_ms,
                 firing_id,
                 bundle_digest,
             } => {
+                let post_save = matches!(action, RaidAction::PostSaveCheck { .. });
+                let selected =
+                    post_save || matches!(action, RaidAction::ResolvedCheck { selected: true, .. });
                 if definition.policy != RaidPolicy::SourceScheduled {
                     return Err(RaidError::InvalidDefinition);
                 }
                 if now_ms < 0 {
                     return Err(RaidError::InvalidTime);
                 }
-                if !self.retired && now_ms >= self.next_check_at_ms {
+                let due_at = if post_save {
+                    self.next_check_at_ms - CHECK_INTERVAL_MS
+                } else {
+                    self.next_check_at_ms
+                };
+                if !self.retired && now_ms >= due_at {
                     after.next_check_at_ms = now_ms
                         .checked_add(CHECK_INTERVAL_MS)
                         .ok_or(RaidError::Exhausted)?;
