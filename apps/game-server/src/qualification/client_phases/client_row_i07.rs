@@ -1164,9 +1164,10 @@ pub(super) async fn journey(
         &[],
     )
     .await?;
-    evidence(
-        "I07_LOOT_CUSTODY category=gold exact_coins=10 destination=inbox_pouch diagonal_transferred=true",
-    );
+    evidence(&format!(
+        "I07_LOOT_CUSTODY category=gold exact_coins={} destination=inbox_pouch diagonal_transferred=true",
+        expected_pouch[0].quantity,
+    ));
 
     // Reset Gold to main before exercising Equipment, so misclassifying armor as Gold fails.
     let gold_main = route(
