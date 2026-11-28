@@ -206,6 +206,7 @@ impl<S: SessionStream> Session<S> {
             appearance,
             chat_revision,
             map_header,
+            map_capture: None,
             inventory_revision,
             container_revision,
             inventory,

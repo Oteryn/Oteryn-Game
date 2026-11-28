@@ -85,6 +85,7 @@ mod hotkey_equip_transport;
 pub mod item_movement;
 mod join;
 mod map_transport;
+pub use map_transport::replay_world_map_frames;
 mod outcomes;
 mod player_trade_transport;
 mod presentation;
@@ -400,6 +401,7 @@ pub struct Session<S> {
     appearance: Option<appearance_state::AppearanceState>,
     chat_revision: u64,
     map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,
+    map_capture: Option<Vec<Vec<u8>>>,
     inventory_revision: u64,
     container_revision: u64,
     inventory: Option<CharacterInventory>,

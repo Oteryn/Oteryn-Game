@@ -1,4 +1,4 @@
-//! M05 replay: `domain_dispatch.rs::Session::apply_state_delta` installs door overlay deltas,
+//! Standalone overlay replay: `domain_dispatch.rs::Session::apply_state_delta` installs door overlay deltas,
 //! and `session_access.rs::Session::world_object_overlay` exposes the resulting client state.
 
 use super::*;
@@ -7,18 +7,9 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 #[test]
-fn real_m05_door_payloads_replay_through_session_store() -> Result<(), BoxError> {
+fn standalone_overlay_payloads_replay_through_session_store() -> Result<(), BoxError> {
     block_on(async {
-        let (payloads, expected) = if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            let path = std::path::Path::new(&path);
-            (
-                ["basic-open", "basic-closed", "key-open", "key-closed"]
-                    .map(|name| std::fs::read(path.join(format!("m05-{name}.bin"))))
-                    .into_iter()
-                    .collect::<Result<Vec<_>, _>>()?,
-                std::fs::read_to_string(path.join("m05-expected.txt"))?,
-            )
-        } else {
+        let (payloads, expected) = {
             let entry = |placement: &[u8], state: &[u8], revision| WorldObjectOverlayEntry {
                 content_generation: CONTENT_GENERATION,
                 placement: placement.to_vec(),
@@ -36,7 +27,7 @@ fn real_m05_door_payloads_replay_through_session_store() -> Result<(), BoxError>
                 .map(encode_world_object_overlay_delta)
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|error| format!("M05 fixture: {error:?}"))?,
-                "open\nclosed\nopen\nclosed\n".into(),
+                "open\nclosed\nopen\nclosed\n",
             )
         };
         let entries = payloads
