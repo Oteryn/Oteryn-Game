@@ -117,11 +117,37 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  capture_env=()
+  if [[ "$group" == rows && ${OTERYN_E2E_ROW_BATCH:-} == 96:1 ]]; then
+    capture_dir="$(mktemp -d "$work_dir/c11.XXXXXX")" || exit 1
+    capture_run="${capture_dir##*/}"
+    capture_env=("E2E_ALL_CAPTURE_DIR=$capture_dir" "C11_CAPTURE_RUN=$capture_run" CARGO_BUILD_JOBS=2)
+  fi
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if (( ${#capture_env[@]} )); then
+    mapfile -t captures < <(sed -n 's/^SEAM_EVIDENCE C11_CAPTURED //p' "$log")
+    if [[ "$status" == 0 && ${#captures[@]} == 1 && "${captures[0]}" == "run=$capture_run "* ]] &&
+        ! grep -q '^SEAM_EVIDENCE e2e_all scenario=C11.client status=' "$log" &&
+        env "${capture_env[@]}" "C11_CAPTURE_EVIDENCE=${captures[0]}" \
+          cargo test --locked -p oteryn-client --features bevy-shell --lib c11_live_native_replay \
+          -- --ignored --nocapture > "$capture_dir/replay.log" 2>&1 &&
+        grep -Eq '^test .*::c11_live_native_replay \.\.\. ok$' "$capture_dir/replay.log" &&
+        grep -q '^test result: ok\. 1 passed; 0 failed;' "$capture_dir/replay.log"; then
+      printf '%s\n' 'SEAM_EVIDENCE e2e_all scenario=C11.client status=PASS evidence=wheel-relog-four-five-native-hud-live-replay' >> "$log"
+    else
+      if ! grep -q '^SEAM_EVIDENCE e2e_all scenario=C11.client status=FAIL ' "$log"; then
+        printf '%s\n' 'SEAM_EVIDENCE e2e_all scenario=C11.client status=FAIL evidence=missing-live-capture-or-native-replay-failed' >> "$log"
+      fi
+      printf '%s\n' 'NODE_BOOT_RESULT=NODE_BOOT_FAIL mode=unprivileged' >> "$log"
+      status=1
+    fi
+    grep -a '^SEAM_EVIDENCE e2e_all scenario=C11.client status=' "$log"
+    grep -a '^NODE_BOOT_RESULT=' "$log" | tail -1
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done

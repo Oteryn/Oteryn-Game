@@ -427,7 +427,7 @@ async fn battle_status(client: &mut DevClientSession) -> TestResult<oteryn_proto
     wire::BattleInstinctStatus::decode(&reply.payload).ok_or_else(|| "invalid Battle Instinct payload".into())
 }
 
-async fn wheel_command(client: &mut DevClientSession, request: &oteryn_protocol_oteryn::wheel::WheelAllocationRequest) -> TestResult<oteryn_protocol_oteryn::wheel::WheelAllocationReply> {
+pub(super) async fn wheel_command(client: &mut DevClientSession, request: &oteryn_protocol_oteryn::wheel::WheelAllocationRequest) -> TestResult<oteryn_protocol_oteryn::wheel::WheelAllocationReply> {
     use oteryn_protocol_oteryn::wheel;
     let payload = wheel::encode_wheel_request(request).map_err(|error| format!("Wheel request: {error:?}"))?;
     let reply = client.session_mut().gated_command(wheel::CAPABILITY_WHEEL_ALLOCATION_V1, wheel::COMMAND_TYPE_WHEEL_ALLOCATION, &payload).await?;
@@ -472,7 +472,7 @@ async fn walk_to(
     Ok(())
 }
 
-async fn approach_npc(
+pub(super) async fn approach_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
@@ -512,7 +512,7 @@ async fn approach_npc(
         .ok_or_else(|| format!("{key} was not visible at its served placement").into())
 }
 
-async fn talk(
+pub(super) async fn talk(
     client: &mut DevClientSession,
     npc: oteryn_dev_client::EntityRef,
     text: &str,
@@ -682,7 +682,7 @@ fn gap(action: &str, failures: &[String]) -> String {
         .map_or_else(|| format!("C11_GAP step={action} unproven"), |failure| format!("C11_GAP {failure}"))
 }
 
-async fn admitted_vocation(client: &mut DevClientSession) -> TestResult<(u8, u32)> {
+pub(super) async fn admitted_vocation(client: &mut DevClientSession) -> TestResult<(u8, u32)> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let reply = client.session_mut().gated_command(wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
         wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, &[1, 0, 0, 1]).await?;

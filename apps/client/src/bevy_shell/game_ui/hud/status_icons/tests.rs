@@ -466,3 +466,6 @@ fn review_hud_conditions_follow_independent_visibility() -> TestResult {
     assert_eq!(hud.1.len(), 1);
     Ok(())
 }
+
+#[path = "c11_replay.rs"]
+mod c11_replay;
