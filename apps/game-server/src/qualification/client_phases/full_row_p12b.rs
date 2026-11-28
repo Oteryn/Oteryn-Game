@@ -110,6 +110,67 @@ async fn expect_account_levels(clients: &SeamClients<'_>, expected: &[i64]) -> T
     )
 }
 
+// A real PvE death changes only the eligibility input. The badge is read on
+// either side through the same player route and compared to its original row.
+async fn lose_eligibility(clients: &SeamClients<'_>, client: &mut DevClientSession) -> TestResult {
+    let world = full_e2ef7::qualification_world(clients)?;
+    let town = tile(client.world_spatial().actor_position)?;
+    let path = route(world, town, |at| {
+        at.floor == town.floor
+            && world.base().tile(at.x, at.y, at.floor)
+                .is_some_and(|cell| cell.walkable() && !cell.protection_zone())
+    })
+    .ok_or("P12b death setup has no reachable combat tile")?;
+    walk(client, world, &path).await?;
+    let encounter = tile(client.world_spatial().actor_position)?;
+    expect(encounter != town, "death-combat-tile", encounter)?;
+    client.take_events();
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let dragon = parse_spawned_entity(&request_spawn(session, "oteryn:creature.dragon".into()).await?)?;
+    evidence(&format!("P12b eligibility-loss fixture=dragon attacker={dragon:?} position={encounter:?}"));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let mut damaged_by_dragon = false;
+    loop {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::AnalyserAttributedFacts(delta) = event {
+                for fact in delta.value {
+                    if let Some(attacker) = fact.attacker {
+                        expect(attacker == dragon, "death-attacker", attacker)?;
+                        damaged_by_dragon = true;
+                    }
+                }
+            }
+        }
+        if damaged_by_dragon && tile(client.world_spatial().actor_position)? == town {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("P12b eligibility loss did not respawn: dragon_damage={damaged_by_dragon}").into());
+        }
+    }
+
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let receipt: (i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT level_before, level_after, experience_before, experience_after
+         FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid
+         ORDER BY committed_at DESC, death_occurrence_id DESC LIMIT 1",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    expect(receipt == (2, 1, 100, 0), "eligibility-loss-receipt", receipt)?;
+    expect_account_levels(clients, &[1, 499]).await?;
+    let combat_deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    while !client.session_mut().combat_state().is_some_and(|state| !state.in_fight) {
+        if tokio::time::Instant::now() >= combat_deadline {
+            return Err("P12b combat lock did not clear after leaving the dragon".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    Ok(())
+}
+
 async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
     let fixture = character_prep::dedicated_named_character(
         scope, "NODE_BOOT_P12B_ACCOUNT", Some("Badge Knight"),
@@ -216,6 +277,11 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
         "durable-after-relog",
         (&awarded, &reread),
     )?;
+    lose_eligibility(clients, &mut fresh).await?;
+    let below_threshold = reply_badges(&mut fresh).await?;
+    expect(below_threshold == EXPECTED_BADGES, "permanent-badge-after-level-loss", &below_threshold)?;
+    let retained = stored_badges(clients).await?;
+    expect(retained == awarded, "original-badge-after-level-loss", (&awarded, &retained))?;
     logout(clients, &mut fresh).await?;
     let released = stored_badges(clients).await?;
     expect(
@@ -225,7 +291,7 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     Ok((
         "PASS",
-        format!("badges={reply:?};account-levels=499+2;level-sum-500-empty;pre-state-empty;original-awards-survive-relog"),
+        format!("badges={reply:?};account-levels=499+2;level-sum-500-empty;pre-state-empty;original-awards-survive-relog-and-level-loss"),
     ))
 }
 
