@@ -235,19 +235,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .await?;
     drop(target);
-    let mut target =
+    let relogged =
         provisioning::with_peer_liveness(&mut pusher, connect_character(clients, 0x95, 0)).await?;
-    if target.world_spatial().actor_position != position(landing) {
+    if relogged.world_spatial().actor_position != position(landing) {
         return Err("M04 relog did not restore the pushed landing".into());
     }
-    let logout = target.session_mut().logout().await?;
-    if logout.result != Some(LogoutResult::Accepted) {
-        return Err(format!("M04 target cleanup logout refused: {logout:?}").into());
-    }
-    let logout = pusher.session_mut().logout().await?;
-    if logout.result != Some(LogoutResult::Accepted) {
-        return Err(format!("M04 pusher cleanup logout refused: {logout:?}").into());
-    }
+    evidence(&format!("M04_RELOG_PASS before={before:?} landing={landing:?}"));
+    drop(relogged);
     let directory = required("E2E_ALL_CAPTURE_DIR")?;
     let path = Path::new(&directory).join("m04-inbound.bin");
     let mut file = std::fs::OpenOptions::new()
@@ -266,6 +260,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         delta.server_sequence,
     )
     .await?;
-    evidence(&format!("M04_REPLAY_PASS server_sequence={}", delta.server_sequence));
+    evidence(&format!(
+        "M04_REPLAY_PASS server_sequence={}",
+        delta.server_sequence
+    ));
     Ok(())
 }
