@@ -664,10 +664,16 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         );
     }
     for creature in ["oteryn:creature.crocodile", "oteryn:creature.the_snapper"] {
+        let row = source.reward_table().row(creature).unwrap();
         assert_eq!(
-            source.reward_table().row(creature).err(),
-            Some(NoSettlementReason::CorpseItemInadmissible)
+            row.corpse_item,
+            Some(LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.tibia.i6046",
+                "definition-r1"
+            ))
         );
+        assert!(!row.loot_table.entries.is_empty());
     }
     admitted.sort_unstable();
     assert_eq!(
@@ -722,7 +728,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
             "oteryn:creature.the_weakened_count",
         ]
     );
-    assert_eq!(bosses.len(), 396);
+    assert_eq!(bosses.len(), 395);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()

@@ -100,8 +100,7 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
         body["materializable"] = false.into();
         body["container_capacity"] = serde_json::Value::Null;
         loot.bytes = serde_json::to_vec(&document)?;
-        use sha2::Digest;
-        loot.sha256 = format!("{:x}", sha2::Sha256::digest(&loot.bytes));
+        loot.sha256 = super::staff_fixtures::sha(&loot.bytes);
         let (controller, activated) = crate::content::native_gameplay::test_support::try_activate_input(
             deps.admitted.world_id, &input,
         ).map_err(debug)?;
