@@ -18,6 +18,7 @@ const ORDINARY_CONJURE: &str = "adori min vis";
 const CONJURED_CHARGES: u64 = 10;
 const CONJURE_MANA_COST: u32 = 120;
 const XODET: &str = "oteryn:npc.xodet";
+const XODET_CELL: (u16, u16, i8) = (32398, 32222, -7);
 const XODET_WANDER_RADIUS: u32 = 2;
 
 const PREPARATION: character_prep::Seeded = character_prep::Seeded {
@@ -447,7 +448,7 @@ async fn acquire(
         sellers.contains(&n.key)
             && (item_id != BLANK_RUNE_ID
                 || (n.key == XODET
-                    && n.placements.iter().any(|p| (p.x, p.y, p.floor) == (32398, 32222, 7))))
+                    && n.placements.iter().any(|p| (p.x, p.y, p.floor) == XODET_CELL)))
     });
     let placed = candidates.clone().count();
     let (npc, path) = candidates
@@ -460,7 +461,7 @@ async fn acquire(
             let approach = wire::TALK_RANGE_TILES - wander;
             route(world, here, |at| {
                 n.placements.iter().any(|p| {
-                    (item_id != BLANK_RUNE_ID || (p.x, p.y, p.floor) == (32398, 32222, 7))
+                    (item_id != BLANK_RUNE_ID || (p.x, p.y, p.floor) == XODET_CELL)
                         && p.floor == at.floor
                         && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
                 })
