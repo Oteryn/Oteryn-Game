@@ -383,6 +383,27 @@ fn check_sidecar_position(
     Ok(())
 }
 
+fn arm_spatial_observer(observed: &Mutex<SpatialFrames>, client: &BrowseSession) -> TestResult {
+    let mut frames = observed
+        .lock()
+        .map_err(|_| "browse observer lock poisoned")?;
+    if frames.fields.is_some() || !frames.positions.is_empty() {
+        return Err("step=browse observed=observer-already-armed".into());
+    }
+    frames.fields = Some(EntityFields::selected(client.selected_capabilities()));
+    Ok(())
+}
+
+fn take_spatial_positions(
+    observed: &Mutex<SpatialFrames>,
+) -> TestResult<std::collections::BTreeMap<u64, ActorPosition>> {
+    let mut frames = observed
+        .lock()
+        .map_err(|_| "browse observer lock poisoned")?;
+    frames.fields = None;
+    Ok(std::mem::take(&mut frames.positions))
+}
+
 fn invalid_open_event(event: &SessionEvent) -> bool {
     matches!(
         event,
@@ -404,22 +425,13 @@ async fn browse_open(
 ) -> TestResult<tree::ContainerView> {
     client.take_events();
     let start = tile(client.world_spatial().actor_position)?;
-    observed
-        .lock()
-        .map_err(|_| "browse observer lock poisoned")?
-        .fields = Some(EntityFields::selected(client.selected_capabilities()));
+    arm_spatial_observer(observed, client)?;
     let (outcome, reply_sequence) =
         browse_command(client, browse::BrowseFieldIntent::Open { position: at }).await?;
     if outcome != tree::ContainerViewOutcome::Opened {
         return Err(format!("step=browse-open observed={outcome:?};needed=Opened").into());
     }
-    let mut positions = {
-        let mut frames = observed
-            .lock()
-            .map_err(|_| "browse observer lock poisoned")?;
-        frames.fields = None;
-        std::mem::take(&mut frames.positions)
-    };
+    let mut positions = take_spatial_positions(observed)?;
     let mut landings = Vec::new();
     for event in client.take_events() {
         match event {
@@ -812,6 +824,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("step=browse-precondition observed=already-browsing".into());
     }
     client.take_events();
+    arm_spatial_observer(&observed, &client)?;
     let (refused, _) = browse_command(
         &mut client,
         browse::BrowseFieldIntent::Open {
@@ -823,23 +836,30 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     // is sent while draining the refusal's frames.
     unopened_view_barrier(&mut client).await?;
     client.service_liveness(Duration::from_secs(1)).await?;
-    let events = client.take_events();
-    if let Some(event) = events.iter().find(|event| match event {
-        SessionEvent::WorldMap(delta) => map_changes_state(&map_before_refusal, &delta.value),
-        _ => refusal_changed_state(event, distant),
-    }) {
-        if let SessionEvent::WorldMap(delta) = event {
-            return Err(format!(
-                "step=browse-other-floor observed=map-change sequence={} before={:?} after={:?} cleared={} tiles={}",
-                delta.server_sequence, map_before_refusal.header.origin, delta.value.header.origin,
-                delta.value.cleared.len(), delta.value.tiles.len()
-            ).into());
+    let mut positions = take_spatial_positions(&observed)?;
+    for event in client.take_events() {
+        if let Some(sequence) = sidecar_sequence(&event) {
+            check_sidecar_position(&mut positions, sequence, distant)?;
+            continue;
         }
-        return Err(format!(
-            "step=browse-other-floor observed=unexpected-event domain={}",
-            event.domain_id()
-        )
-        .into());
+        if let SessionEvent::WorldMap(delta) = &event {
+            if map_changes_state(&map_before_refusal, &delta.value) {
+                return Err(format!(
+                    "step=browse-other-floor observed=map-change sequence={} before={:?} after={:?} cleared={} tiles={}",
+                    delta.server_sequence, map_before_refusal.header.origin, delta.value.header.origin,
+                    delta.value.cleared.len(), delta.value.tiles.len()
+                ).into());
+            }
+        } else if refusal_changed_state(&event, distant) {
+            return Err(format!(
+                "step=browse-other-floor observed=unexpected-event domain={}",
+                event.domain_id()
+            )
+            .into());
+        }
+    }
+    if !positions.is_empty() {
+        return Err("step=browse-other-floor observed=unpaired-wire-sidecar".into());
     }
     if refused != tree::ContainerViewOutcome::TooFar
         || tile(client.world_spatial().actor_position)? != distant
