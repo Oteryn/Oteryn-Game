@@ -14,6 +14,22 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 use std::collections::BTreeMap;
 
+pub(super) async fn use_with_commit_probe<T>(
+    use_object: impl Future<Output = TestResult<T>>,
+    pause: &(tokio::sync::Notify, tokio::sync::Notify),
+    inspect: impl FnOnce(),
+) -> TestResult<T> {
+    let observer = async {
+        tokio::time::timeout(std::time::Duration::from_secs(5), pause.0.notified()).await?;
+        inspect();
+        pause.1.notify_one();
+        Ok(())
+    };
+    // A missed arrival deadline cancels the USE that would otherwise wait for release.
+    let (used, ()) = tokio::try_join!(use_object, observer)?;
+    Ok(used)
+}
+
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     // The Stampede entry is an authored binding of the content catalogue.
     if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry_fixtures::CALLBACK {

@@ -369,29 +369,23 @@ pub(crate) mod tests {
             "oteryn:npc.orockle",
             yeo,
         ];
-        let sources = [
-            include_str!("../../../../../content/world/npc-placements/placements-00000-00055.json"),
-            include_str!("../../../../../content/world/npc-placements/placements-00500-00999.json"),
-            include_str!("../../../../../content/world/npc-placements/placements-01000-01156.json"),
-        ]
-        .map(|json| serde_json::from_str::<serde_json::Value>(json).expect("NPC placements"));
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let (_, shards) =
+            oteryn_world_bundle_compiler::source::indexed(&root, "content/world/npc-placements/")
+                .expect("read NPC placement shards")
+                .expect("NPC placement index");
+        let mut families = oteryn_world_bundle_compiler::project::Families::default();
+        for shard in shards {
+            families.add_npc_placements(&shard).expect("NPC placements");
+        }
         let authored = keys.map(|key| {
-            let row = sources
+            let (x, y, z) = families
+                .npc_placements
                 .iter()
-                .flat_map(|source| source["records"].as_array().expect("NPC placement records"))
-                .map(|record| &record["declaration"])
-                .find(|row| row["npc"] == key)
-                .expect("authored NPC placement");
-            let cell = &row["cell"];
-            let number = |field: &str| cell[field].as_u64().expect("NPC placement coordinate");
-            (
-                key,
-                (
-                    u16::try_from(number("x")).expect("placement x"),
-                    u16::try_from(number("y")).expect("placement y"),
-                    i8::try_from(number("floor")).expect("placement floor"),
-                ),
-            )
+                .find(|row| row.npc == key)
+                .expect("authored NPC placement")
+                .cell;
+            (key, (x, y, i8::try_from(z).expect("placement floor")))
         });
         let day = DailyWorldChanges::roll(41, 1, 12, |_| u64::MAX);
         let scheduled: Vec<_> = shared_npcs(&day).collect();

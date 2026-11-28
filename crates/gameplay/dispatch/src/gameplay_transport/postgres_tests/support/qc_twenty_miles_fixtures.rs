@@ -439,16 +439,10 @@ async fn prove_use_commit_releases_guards(
     assert!(states.quest_callbacks.before_commit.lock().map_err(|_| "commit pause")?
         .replace(pause.clone()).is_none());
     let use_pile = use_object(owner, admitted, "pile-1", None, UseDisposition::Committed);
-    let check = async {
-        tokio::time::timeout(std::time::Duration::from_secs(5), pause.0.notified()).await?;
+    super::quest_world_callbacks_fixtures::use_with_commit_probe(use_pile, &pause, || {
         let free = runtime.try_lock().is_ok() && states.spell_states.try_lock().is_ok();
-        pause.1.notify_one();
         assert!(free, "the wire USE is in the commit window with both Channel guards free");
-        Ok::<_, Box<dyn std::error::Error>>(())
-    };
-    let (used, checked) = tokio::join!(use_pile, check);
-    checked?;
-    used
+    }).await
 }
 
 async fn pickup_pearl(

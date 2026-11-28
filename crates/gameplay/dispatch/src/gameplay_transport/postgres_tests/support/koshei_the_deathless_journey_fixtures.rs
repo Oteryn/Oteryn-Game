@@ -666,22 +666,22 @@ pub(super) async fn exercise(
         .before_commit
         .lock()
         .map_err(|_| "commit pause")? = Some(pause.clone());
-    let inspect = async {
-        tokio::time::timeout(std::time::Duration::from_secs(5), pause.0.notified()).await?;
-        let reserved = runtime
-            .try_lock()
-            .is_ok_and(|r| r.actor_spell_reserved(actor) && r.actor_spell_reserved(native_boss));
-        let states_free = states.spell_states.try_lock().is_ok();
-        pause.1.notify_one();
-        assert!(
-            reserved && states_free,
-            "tomb admission must reserve both actors while the Channel remains available"
-        );
-        Ok::<_, Box<dyn std::error::Error>>(())
-    };
-    let (used, checked) = tokio::join!(use_next(owner, admitted, &gate), inspect);
-    checked?;
-    assert_eq!(used?, UseDisposition::Committed);
+    let used = super::quest_world_callbacks_fixtures::use_with_commit_probe(
+        use_next(owner, admitted, &gate),
+        &pause,
+        || {
+            let reserved = runtime
+                .try_lock()
+                .is_ok_and(|r| r.actor_spell_reserved(actor) && r.actor_spell_reserved(native_boss));
+            let states_free = states.spell_states.try_lock().is_ok();
+            assert!(
+                reserved && states_free,
+                "tomb admission must reserve both actors while the Channel remains available"
+            );
+        },
+    )
+    .await?;
+    assert_eq!(used, UseDisposition::Committed);
     expected.mission[2] = 1;
     assert_eq!(State::read(h).await?, expected);
     let boss = {
