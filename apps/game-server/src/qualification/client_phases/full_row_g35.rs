@@ -73,7 +73,46 @@ async fn lever(client: &mut DevClientSession, key: &str) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0xe5).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G35_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
+    character_prep::declare_seeded(
+        "G35.full",
+        "level-500-knight",
+        "Ordinary leveling to the Primal Menace entry threshold exceeds the row budget.",
+    );
+    let mut initial = connect_character(clients, 0xe5, 1).await?;
+    let previous_level = full_e2ef7::player_level(&mut initial).await?;
+    if previous_level >= 500 {
+        return Err(format!("step=seed-precondition observed={previous_level}").into());
+    }
+    let initial_session = initial.join_snapshot().game_session_id;
+    request_fixture_control_at(
+        "NODE_BOOT_CONTROL_SOCKET",
+        uuid_text(initial_session.as_bytes()),
+        "--profile",
+        "g35-knight".into(),
+    )
+    .await?;
+    if initial.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=seed-logout observed=refused".into());
+    }
+    drop(initial);
+    let mut client = connect_character(clients, 0xe6, 1).await?;
+    if client.join_snapshot().game_session_id == initial_session {
+        return Err("step=seed-relog observed=reused-session".into());
+    }
+    let level = full_e2ef7::player_level(&mut client).await?;
+    if level != 500 {
+        return Err(format!("step=derived-level expected=500 observed={level}").into());
+    }
+    evidence("G35_CHECK step=derived-level expected=500 observed=500");
     let mut observed = Vec::new();
     for key in BOSSES {
         let outcome = lever(&mut client, key).await?;
