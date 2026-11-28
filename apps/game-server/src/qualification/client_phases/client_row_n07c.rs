@@ -12,7 +12,7 @@ use oteryn_protocol_oteryn::world_map::{CAPABILITY_WORLD_MAP_VIEW_V1, MapOrigin,
 fn rat_corpse_handles(map: &WorldMapViewSnapshot) -> impl Iterator<Item = (ActorPosition, std::num::NonZeroU64)> + '_ {
     map.tiles.iter().flat_map(|tile| {
         tile.items.iter().filter_map(|item| match item.origin {
-            MapOrigin::Handle(handle) if item.appearance_id == 4255 => Some((tile.position, handle)),
+            MapOrigin::Handle(handle) if item.appearance_id == 5964 => Some((tile.position, handle)),
             _ => None,
         })
     })
@@ -398,9 +398,12 @@ async fn fight(
     }
     let map = client.session_mut().world_map_snapshot().ok_or("Rat fight has no native map")?;
     let existing_corpses: Vec<_> = rat_corpse_handles(&map).map(|(_, handle)| handle).collect();
-    let new_corpse = |map: &WorldMapViewSnapshot, target_position| {
+    let new_corpse = |map: &WorldMapViewSnapshot, target_position: ActorPosition| {
         rat_corpse_handles(map).find_map(|(position, handle)| {
-            (position == target_position && !existing_corpses.contains(&handle)).then_some(handle)
+            let same_tile = position.x == target_position.x
+                && position.y == target_position.y
+                && position.floor.unsigned_abs() == target_position.floor.unsigned_abs();
+            (same_tile && !existing_corpses.contains(&handle)).then_some(handle)
         })
     };
     let attack = client
