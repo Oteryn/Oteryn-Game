@@ -359,14 +359,19 @@ pub(in crate::gameplay_transport) fn snow_at(
     })
 }
 
+pub(in crate::gameplay_transport) fn swimming_selection() -> AppearanceSelection<String> {
+    AppearanceSelection {
+        outfit_key: "environment.swimming".to_owned(),
+        colours: Colours::default(),
+        addons: 0,
+        mount_key: None,
+    }
+}
+
 fn swimming_definition() -> Option<ConditionDefinition> {
-    ConditionDefinition::new_permanent_outfit("environment.swimming", 1, SWIMMING_LOOK_TYPE)?
-        .with_appearance(AppearanceSelection {
-            outfit_key: "environment.swimming".to_owned(),
-            colours: Colours::default(),
-            addons: 0,
-            mount_key: None,
-        })
+    let selection = swimming_selection();
+    ConditionDefinition::new_permanent_outfit(&selection.outfit_key, 1, SWIMMING_LOOK_TYPE)?
+        .with_appearance(selection)
 }
 
 /// Crystal yellow_pillow.lua:3-10 and utils_definitions.hpp:390 (MONSTER_SAY = 36).

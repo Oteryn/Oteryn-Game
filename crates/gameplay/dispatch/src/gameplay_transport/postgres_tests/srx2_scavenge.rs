@@ -1458,6 +1458,8 @@ async fn rabbit_jam_wire(
 ) -> TestResult {
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+    use crate::gameplay_transport::session_ingress::{CommandAction, SessionCommandStream};
+    use oteryn_protocol_oteryn::{CommandStatus, encode_command_result};
     let race = native.reward_table().row("oteryn:creature.rabbit").map_err(debug)?.race.clone().ok_or("rabbit race")?;
     let corpse = mint_corpse(owner, h, native, 6017, Some(race), 903).await
         .map_err(|error| format!("wire rabbit mint: {error}"))?;
@@ -1485,6 +1487,8 @@ async fn rabbit_jam_wire(
     admitted.item_fence = Some(fence);
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18]).ok_or("rabbit capability offer")?;
     let index = native.item_index().ok_or("item index")?;
+    let mut stream = SessionCommandStream::open(owner.session_commands(), &admitted)
+        .ok_or("rabbit command stream")?;
     for (command_id, appearance) in [(1, 9594), (2, 9598)] {
         let key = format!("oteryn:item.tibia.i{appearance}");
         let definition = index.definition_ref("Item", &key, "definition-r1").ok_or("tool")?;
@@ -1505,6 +1509,15 @@ async fn rabbit_jam_wire(
                 payload: &payload,
             },
         )?;
+        let generation = admitted.continuity.connection_generation;
+        let sequence = admitted.continuity.server_sequence;
+        if !matches!(
+            stream.begin(command_id, generation, sequence, false),
+            Ok(CommandAction::Execute)
+        ) {
+            return Err("reserve rabbit USE command".into());
+        }
+        // Redispatch the original reservation to exercise the durable jam receipt.
         for attempt in 1..=2 {
             let outcome = tokio::select! {
                 result = crate::gameplay_transport::connection::test_use_frame(owner, &mut admitted, &frame, &mut items) => {
@@ -1516,6 +1529,22 @@ async fn rabbit_jam_wire(
                 }
             };
             assert_eq!(outcome.disposition, UseDisposition::Committed, "tool {appearance}, attempt {attempt}");
+            if attempt == 2 {
+                let payload = oteryn_protocol_oteryn::world_object::encode_use_result(outcome.disposition)
+                    .map_err(debug)?;
+                let reply = encode_command_result(
+                    generation,
+                    sequence + 1,
+                    command_id,
+                    CommandStatus::Accepted,
+                    &payload,
+                )?;
+                stream
+                    .terminalize(command_id, &reply)
+                    .ok_or("terminalize rabbit USE")?;
+                admitted.continuity.server_sequence = sequence + 1;
+                admitted.continuity.next_command_id = stream.next_command_id();
+            }
         }
         let definition: String = sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(corpse.as_slice()).fetch_one(&h.pool).await?;

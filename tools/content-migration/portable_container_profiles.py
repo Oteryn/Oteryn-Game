@@ -216,8 +216,9 @@ def admit(root, items, order):
         if key not in existing:
             items["records"].append(record)
             continue
-        # Preserve the feedbag's loot metadata, the Explorer Society crown
-        # backpack, and packed BUY's shopping bag when their custody agrees.
+        # Preserve the seasonal Christmas present, feedbag loot metadata, the
+        # Explorer Society crown backpack, and packed BUY's shopping bag when
+        # their custody agrees.
         prior = existing[key]
         policy_fields = ("container", "physical", "stack", "temporal")
         if key == "oteryn:item.tibia.i21411" and prior["semantics"]["temporal"] == source.U:
@@ -226,6 +227,7 @@ def admit(root, items, order):
             policy_fields = ("container", "physical", "stack")
         if (
             key not in {
+                "oteryn:item.tibia.i6509",
                 "oteryn:item.tibia.i9605",
                 "oteryn:item.tibia.i21292",
                 "oteryn:item.tibia.i21411",

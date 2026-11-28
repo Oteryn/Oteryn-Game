@@ -85,6 +85,69 @@ fn highest(_: i64, maximum: i64) -> i64 {
     maximum
 }
 
+#[test]
+fn c18b_barrages_roll_crystal_damage_bounds() {
+    let catalog: Value = serde_json::from_str(include_str!(
+        "../../../../../content/abilities/definitions/player-spells.json"
+    ))
+    .expect("registered spell catalogue");
+    let mut paladin = caster(Vocation::RoyalPaladin, 300, 50, 1000);
+    paladin.premium = CasterPremium::Current;
+    paladin.attack_skill = 100;
+    paladin.attack_value = 40;
+    let facts = OperationalCastFacts {
+        caster_position: chain::TilePosition {
+            x: 10,
+            y: 10,
+            floor: 7,
+        },
+        target_position: Some(chain::TilePosition {
+            x: 11,
+            y: 10,
+            floor: 7,
+        }),
+        target: Some(CastTarget {
+            caster: 1,
+            creature: 2,
+            actor: "rat".into(),
+            master: None,
+        }),
+        line_of_sight_clear: Some(true),
+        direction_available: true,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: Some(false),
+        target_tile_creature: Some(true),
+    };
+    for (name, expected) in [
+        ("Divine Barrage", (389, 495)),
+        ("Ethereal Barrage", (204, 250)),
+    ] {
+        let entry = catalog["bundles"]
+            .as_array()
+            .expect("bundles")
+            .iter()
+            .find(|row| row["bundle"]["spell"]["name"] == name)
+            .expect("registered barrage");
+        let spell =
+            spell_from_bundle(&entry["bundle"], &entry["dependencies"]).expect("compile barrage");
+        let mut rolled = None;
+        resolve_cast_with_operational_facts(
+            &spell,
+            &paladin,
+            &Cooldowns::default(),
+            at(0),
+            &facts,
+            &mut |low, high| {
+                rolled = Some((low, high));
+                low
+            },
+        )
+        .expect("resolve barrage");
+        assert_eq!(rolled, Some(expected), "{name}");
+    }
+}
+
 /// Official scaling table (Tibia news of 2022-10-17, patch 13.05.12657).
 fn official_level_bonus(level: u32) -> i64 {
     if level <= 500 {

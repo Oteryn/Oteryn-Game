@@ -2,6 +2,7 @@
 use super::*;
 use crate::durability::item_craft::{MapHarvestOperand, MapHarvestRequest};
 use crate::durability::terrain_tool::{MapMutation, TerrainScope};
+use crate::gameplay_transport::session_ingress::UseReceipt;
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_items::event_planting as fishing;
 use oteryn_protocol_oteryn::world_object::{WorldObjectTarget, encode_item_use_intent};
@@ -74,6 +75,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         target: Target<'_>,
     ) -> Result<Option<UseOutcome>, ()> {
+        self.mark_use_receipt(command, Some(UseReceipt::Harvest));
+        let result = self.try_map_harvest(actor, command, intent, target).await;
+        // Keep the owner on uncertainty and clear it on fallthrough.
+        if matches!(result, Ok(None)) {
+            self.mark_use_receipt(command, None);
+        }
+        result
+    }
+
+    async fn try_map_harvest(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        target: Target<'_>,
+    ) -> Result<Option<UseOutcome>, ()> {
         let Some(fence) = command.item_fence else {
             return Ok(None);
         };
@@ -94,8 +111,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: encode_item_use_intent(intent).map_err(|_| ())?,
             operand: None,
         };
-        use crate::durability::DurabilityError;
-
         let permit = match self.try_spell_lane_permit().await {
             Ok(permit) => permit,
             Err(DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded) => {
@@ -106,16 +121,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let weights = NativeItemWeights(native);
         let retry = super::super::AdmissionRetryBudget::for_command(self.root);
         let replay = retry
-            .retry_durability("harvest_receipt", || {
-                self.root.harvest_map_item(
-                    &permit,
-                    self.character,
-                    self.holder,
-                    fence,
-                    request.clone(),
-                    native,
-                    &weights,
-                )
+            .retry_command_guard(async || {
+                self.root
+                    .harvest_map_item(
+                        &permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request.clone(),
+                        native,
+                        &weights,
+                    )
+                    .await
             })
             .await;
         drop(retry);

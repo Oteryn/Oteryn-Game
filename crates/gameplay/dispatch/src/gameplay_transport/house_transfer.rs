@@ -21,7 +21,8 @@ mod movement;
 #[path = "house_transfer/session_views.rs"]
 mod session_views;
 
-/// None is an uncertain outcome: close, preserving the durable destination for recovery.
+/// A refusal carries an empty payload. None requires recovery because the source
+/// or the outcome of the handoff can no longer be proved.
 pub(super) type TransferResult = Option<(Option<AdmittedSession>, Vec<u8>)>;
 
 /// A new command stream does not make the same physical player active again
@@ -76,23 +77,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return refuse();
         }
-        let house = HouseId::new(self.world_id, &intent.house)?;
-        self.evidence
-            .refresh_account(
-                self.root,
-                self.holder,
-                &super::canonical_uuid(&controller.account_id),
-            )
+        let Some(house) = HouseId::new(self.world_id, &intent.house) else {
+            return refuse();
+        };
+        // A busy publication holder is retryable. A failed preflight leaves
+        // the source in place, so the client can retry on the same route.
+        let account = super::canonical_uuid(&controller.account_id);
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        if budget
+            .retry_unavailable(async || {
+                self.evidence
+                    .refresh_account(self.root, self.holder, &account)
+                    .await
+                    .map_err(|error| {
+                        if error.holder_busy() {
+                            super::connection::AdmissionRefusal::Unavailable
+                        } else {
+                            super::connection::AdmissionRefusal::Rejected
+                        }
+                    })
+            })
             .await
-            .ok()?;
+            .is_err()
+        {
+            return refuse();
+        }
+        drop(budget);
         // The Channel selection is retained in the House, so exit cannot widen it.
-        let capabilities = self
-            .required_capabilities
-            .authenticate_resume_support(
-                admitted.continuity.selected_capabilities.as_slice(),
-                admitted.continuity.selected_capabilities,
-            )
-            .ok()?;
+        let Ok(capabilities) = self.required_capabilities.authenticate_resume_support(
+            admitted.continuity.selected_capabilities.as_slice(),
+            admitted.continuity.selected_capabilities,
+        ) else {
+            return refuse();
+        };
         if capabilities.selected() != admitted.continuity.selected_capabilities {
             return refuse();
         }
@@ -100,9 +117,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .prepare_house_transfer_checkpoints(actor, admitted.game_session_id)
             .await
         {
-            return None;
+            return refuse();
         }
-        let _lane = self.spell_lane_permit().await?;
+        let Some(_lane) = self.spell_lane_permit().await else {
+            return refuse();
+        };
         let tracked_equipment = self
             .states
             .timed_items
@@ -123,7 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .checkpoint_timed_equipment(actor, admitted.game_session_id, true)
                 .await
         {
-            return None;
+            return refuse();
         }
         let mut runtime = self.runtime.lock().await;
         let mut spells = self.states.spell_states.lock().await;
@@ -153,11 +172,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return refuse();
             }
             let position = if self.bundle_map().is_some() {
-                super::house_query::entrance(&intent.house)?
+                let Some(entrance) = super::house_query::entrance(&intent.house) else {
+                    return refuse();
+                };
+                entrance
             } else {
                 state.origin_position
             };
-            let census = runtime.positioned_actor_census().ok()?;
+            let Ok(census) = runtime.positioned_actor_census() else {
+                return refuse();
+            };
             let doors = self.door.lock().await;
             let clear = |p: LocalPosition| {
                 let cell = crate::foundation::MovementLocalPosition {
@@ -176,13 +200,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .iter()
                     .any(|(_, snapshot, _)| snapshot.position() == cell)
             };
-            let position = [
+            let Some(position) = [
                 position,
                 state.origin_position,
                 runtime.content_pin().entry_start(),
             ]
             .into_iter()
-            .find(|p| clear(*p))?;
+            .find(|p| clear(*p)) else {
+                return refuse();
+            };
             (state.lease, position, position)
         } else {
             if fence.runtime_scope != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)

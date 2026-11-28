@@ -402,7 +402,7 @@ async fn admit_peer_inner(
 
 /// Match the harness's initial Character facts, including its canonical creation
 /// receipt. A raw root alone cannot be resolved by current gameplay-fence reads.
-async fn seed_peer_creation(h: &Harness, member: u8) -> TestResult {
+pub(in super::super) async fn seed_peer_creation(h: &Harness, member: u8) -> TestResult {
     use crate::character_bootstrap_intent as bootstrap;
     let operation = id(160 + member);
     let decision = id(190 + member);
