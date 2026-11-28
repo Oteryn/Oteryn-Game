@@ -165,6 +165,7 @@ case "$NODE_BOOT_D150_LEGACY" in
 esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
+  published) WORLD_REGIONS= ;;
   # Real Thais/town outskirts and the default-start and seller regions.
   town)
     WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
@@ -714,11 +715,25 @@ MAP_REVISION=map-s3b-1
 NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
-  compile_world=compile-regions
-  if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
-  "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
+  published_pin="$GAME_SOURCE/content/world/pins/oteryn.json"
   PIN="$WORK/world.json"
-  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == published ]]; then
+    "${WORLD_COMPILER[@]}" compile "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" non-production > "$WORK/world-compile.json"
+    python3 - "$published_pin" "$WORK/world-compile.json" <<'PY_PUBLISHED_PIN'
+import json, sys
+with open(sys.argv[1]) as source:
+    expected = json.load(source)["digest"]
+with open(sys.argv[2]) as source:
+    actual = json.load(source)["digest"]
+if actual != expected:
+    raise SystemExit(f"published World digest mismatch: expected {expected}, compiled {actual}")
+PY_PUBLISHED_PIN
+    cp "$published_pin" "$PIN"
+  else
+    compile_world=compile-regions
+    if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
+    "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
+    python3 - "$published_pin" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, sys
 pin = json.load(open(sys.argv[1]))
 pin["schema"] = "OTERYN_QUALIFICATION_WORLD/v1"
@@ -727,6 +742,7 @@ pin["entry_start"] = {"x": 32369, "y": 32238, "floor": -7}
 with open(sys.argv[3], "w") as output:
     json.dump(pin, output, sort_keys=True)
 PY_REGION_PIN
+  fi
   WORLD_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
   install_owned root:root -d -m 0755 "$BASE/world"
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
