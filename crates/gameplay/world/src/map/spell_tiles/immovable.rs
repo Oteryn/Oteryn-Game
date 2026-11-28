@@ -11,7 +11,7 @@ mod catalogue {
 
 /// Unknown source identities remain blocked. A placement's unique id or action 100
 /// overrides source movability, just as Item::canBeMoved does in the donor.
-pub(super) fn flags(source_id: u32, attrs: &Attrs) -> [bool; 3] {
+pub(in crate::map) fn flags(source_id: u32, attrs: &Attrs) -> [bool; 3] {
     let Some(mask) = usize::try_from(source_id)
         .ok()
         .and_then(|id| catalogue::FLAGS.as_bytes().get(id))

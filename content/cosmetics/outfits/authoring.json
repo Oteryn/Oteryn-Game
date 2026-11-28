@@ -9725,6 +9725,9 @@
         },
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -9736,6 +9739,9 @@
         },
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -13145,6 +13151,70 @@
         ]
       },
       {
+        "grant_key": "oteryn:taskboard/shop/offer-0",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.feral_trapper"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-1",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.feral_trapper",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-2",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.feral_trapper",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-3",
+        "target": {
+          "kind": "Outfit",
+          "outfit_key": "oteryn:outfit.falconer"
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-4",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.falconer",
+          "addon": 1
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:taskboard/shop/offer-5",
+        "target": {
+          "kind": "Addon",
+          "outfit_key": "oteryn:outfit.falconer",
+          "addon": 2
+        },
+        "compatible_provenance": [
+          "task-board-shop-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:item-grant.outfit.430-431.addon1",
         "target": {
           "kind": "Addon",
@@ -13492,6 +13562,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -13503,6 +13576,9 @@
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16606,6 +16682,9 @@
         "sex": "female",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16618,6 +16697,9 @@
         "sex": "female",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16641,6 +16723,9 @@
         "sex": "male",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -16653,6 +16738,9 @@
         "sex": "male",
         "compatible_provenance": [
           "crystal-9f5a72c-quest-rewards-v1"
+        ],
+        "outfit_aliases": [
+          "oteryn:content.outfit.citizen_outfits"
         ]
       },
       {
@@ -24108,70 +24196,6 @@
         ]
       },
       {
-        "grant_key": "oteryn:taskboard/shop/offer-0",
-        "target": {
-          "kind": "Outfit",
-          "outfit_key": "oteryn:outfit.feral_trapper"
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-1",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.feral_trapper",
-          "addon": 1
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-2",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.feral_trapper",
-          "addon": 2
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-3",
-        "target": {
-          "kind": "Outfit",
-          "outfit_key": "oteryn:outfit.falconer"
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-4",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.falconer",
-          "addon": 1
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
-        "grant_key": "oteryn:taskboard/shop/offer-5",
-        "target": {
-          "kind": "Addon",
-          "outfit_key": "oteryn:outfit.falconer",
-          "addon": 2
-        },
-        "compatible_provenance": [
-          "task-board-shop-v1"
-        ]
-      },
-      {
         "grant_key": "oteryn:taming.rapid_boar",
         "target": {
           "kind": "Mount",
@@ -25096,7 +25120,7 @@
       {
         "item_key": "oteryn:item.tibia.i6579",
         "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-        "catalogue_sha256": "96559da254a5a90133c227b2b624e05c35d7fd51820548eb6fbc7a6c05c0ef5c",
+        "catalogue_sha256": "e1370977e146c5f68c0aa3832c9ee0264ed4ce5e9a27a70fc590c9a76520b8bf",
         "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
         "source": {
           "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
@@ -25893,6 +25917,9 @@
           },
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -25904,6 +25931,9 @@
           },
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -29313,6 +29343,70 @@
           ]
         },
         {
+          "grant_key": "oteryn:taskboard/shop/offer-0",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.feral_trapper"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-1",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.feral_trapper",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-2",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.feral_trapper",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-3",
+          "target": {
+            "kind": "Outfit",
+            "outfit_key": "oteryn:outfit.falconer"
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-4",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.falconer",
+            "addon": 1
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:taskboard/shop/offer-5",
+          "target": {
+            "kind": "Addon",
+            "outfit_key": "oteryn:outfit.falconer",
+            "addon": 2
+          },
+          "compatible_provenance": [
+            "task-board-shop-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:item-grant.outfit.430-431.addon1",
           "target": {
             "kind": "Addon",
@@ -29660,6 +29754,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -29671,6 +29768,9 @@
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -32774,6 +32874,9 @@
           "sex": "female",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -32786,6 +32889,9 @@
           "sex": "female",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -32809,6 +32915,9 @@
           "sex": "male",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -32821,6 +32930,9 @@
           "sex": "male",
           "compatible_provenance": [
             "crystal-9f5a72c-quest-rewards-v1"
+          ],
+          "outfit_aliases": [
+            "oteryn:content.outfit.citizen_outfits"
           ]
         },
         {
@@ -40276,70 +40388,6 @@
           ]
         },
         {
-          "grant_key": "oteryn:taskboard/shop/offer-0",
-          "target": {
-            "kind": "Outfit",
-            "outfit_key": "oteryn:outfit.feral_trapper"
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-1",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.feral_trapper",
-            "addon": 1
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-2",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.feral_trapper",
-            "addon": 2
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-3",
-          "target": {
-            "kind": "Outfit",
-            "outfit_key": "oteryn:outfit.falconer"
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-4",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.falconer",
-            "addon": 1
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
-          "grant_key": "oteryn:taskboard/shop/offer-5",
-          "target": {
-            "kind": "Addon",
-            "outfit_key": "oteryn:outfit.falconer",
-            "addon": 2
-          },
-          "compatible_provenance": [
-            "task-board-shop-v1"
-          ]
-        },
-        {
           "grant_key": "oteryn:taming.rapid_boar",
           "target": {
             "kind": "Mount",
@@ -41275,7 +41323,7 @@
         {
           "item_key": "oteryn:item.tibia.i6579",
           "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-          "catalogue_sha256": "96559da254a5a90133c227b2b624e05c35d7fd51820548eb6fbc7a6c05c0ef5c",
+          "catalogue_sha256": "e1370977e146c5f68c0aa3832c9ee0264ed4ce5e9a27a70fc590c9a76520b8bf",
           "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
           "source": {
             "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",

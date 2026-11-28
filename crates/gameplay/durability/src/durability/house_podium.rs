@@ -4,6 +4,7 @@
 //! `game_house_podium_load_fenced`, which recheck the current named-House session, scope
 //! and node-holder fence; this module adds the node-incarnation proof in the same
 //! transaction and, for an outfit or mount, the Character's ownership of it.
+use crate::durability::db::commit_semantic_read;
 use super::character_appearance::podium_cosmetic_owned;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::house_scope_handoff::HouseId;
@@ -345,7 +346,7 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)
                         })
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(position)
                 })
             })
@@ -386,7 +387,7 @@ impl DurabilityRoot {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let displays = rows.iter().map(decode).collect::<Result<Vec<_>, _>>()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(displays))
                 })
             })

@@ -119,8 +119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(());
             }
-            let attack = self.states.attack.try_lock().map_err(|_| ())?;
-            let mode = fight_mode(attack.expert_modes(actor, session).modes.fight_mode);
+            let mode = FightMode::Offensive;
             let facts = state.character_facts();
             let wheel = self.wheel_stat_bonuses(
                 session,
@@ -358,13 +357,17 @@ impl Observation<'_> {
                 }
                 ranged::RangedDamage::Distance {
                     attack,
+                    launcher_attack,
                     elemental_attack,
                     element,
                     cap,
                     chance,
                     launcher_bonus,
                 } => {
-                    let total = attack.checked_add(elemental_attack).ok_or(TabWireError)?;
+                    let total = attack
+                        .checked_add(launcher_attack)
+                        .and_then(|total| total.checked_add(elemental_attack))
+                        .ok_or(TabWireError)?;
                     out.set(Stat::AttackEquipment, i64::from(total))?;
                     out.set(Stat::AttackSkillId, 7)?;
                     out.set(Stat::AttackElement, 0)?;
@@ -411,10 +414,10 @@ impl Observation<'_> {
             }
         } else {
             let constants = AttackConstants::checked_in().ok_or(TabWireError)?;
-            let (attack, id, skill_index) = match self.weapon {
-                SwingWeapon::Fists => (constants.fist.attack, 11, 0),
-                SwingWeapon::Melee { attack, skill } => (
-                    attack,
+            let attack = self.weapon.attack(constants.fist.attack);
+            let (id, skill_index, physical_attack) = match self.weapon {
+                SwingWeapon::Fists => (11, 0, constants.fist.attack),
+                SwingWeapon::Melee { skill, attack, .. } => (
                     match skill.index() {
                         1 => 9,
                         2 => 8,
@@ -422,17 +425,33 @@ impl Observation<'_> {
                         _ => 11,
                     },
                     skill.index(),
+                    attack,
                 ),
             };
             out.set(Stat::AttackEquipment, i64::from(attack))?;
             out.set(Stat::AttackSkillId, id)?;
             out.set(Stat::AttackElement, 0)?;
+            if let SwingWeapon::Melee {
+                attack: physical,
+                elemental: Some((elemental, element)),
+                ..
+            } = self.weapon
+            {
+                out.set(Stat::ConvertedElement, element_id(element))?;
+                // Crystal displays a conversion fraction only for mixed melee weapons.
+                let converted = if physical == 0 {
+                    0
+                } else {
+                    i64::from(elemental) * 1_000_000 / i64::from(attack)
+                };
+                out.set(Stat::ConvertedDamage, converted)?;
+            }
             if let Some(skill) = self.skill(skill_index) {
                 // Crystal protocolgame.cpp:5114-5126,5142-5154 reports these display values.
                 let (total_attack, raw_attack) = attack_totals(flat, attack, skill, self.mode);
                 out.set(Stat::AttackTotal, total_attack)?;
                 out.set(Stat::AttackFightMode, total_attack - raw_attack)?;
-                out.set(Stat::AttackSkill, attack_skill(attack, skill))?;
+                out.set(Stat::AttackSkill, attack_skill(physical_attack, skill))?;
             }
         }
         Ok(())

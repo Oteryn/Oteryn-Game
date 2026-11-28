@@ -70,10 +70,12 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "write"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
+    ("crates/gameplay/durability/src/durability/item_craft.rs", "write"),
     ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "create"),
     ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "has_room"),
     ("crates/gameplay/durability/src/durability/item_craft/event_containers.rs", "place_drop"),
     ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
+    ("crates/gameplay/durability/src/durability/item_craft/sculpture.rs", "place_ground"),
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
@@ -98,12 +100,13 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "matches"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "read_requirements"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "require"),
+    ("crates/gameplay/durability/src/durability/reward_claim_mint/quest_corpse.rs", "record"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_consumption_operation"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_physical_item_line"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "expire_due_spell_items_bounded"),
-    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "lock_runtime_items"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "lock_ground_scope"),
 ];
 
 /// Non-lane readers use key 33 to stabilize custody, never to write a key-33 table.
@@ -119,6 +122,7 @@ const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_read.rs", "matches"),
+    ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "lock_ground_scope"),
 ];
 
 /// Lane-derived proofs: a permit or window directly, or a scope/item authority that is only

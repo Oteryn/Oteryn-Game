@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "8b3ca0add7d8c409b8f192b2b3d1f48d20e4c8e43a6aece66a8ba6cef9e3eaf6",
+  "digest": "71d2310275e75468e1a1eae046bf0b2c54e6a2d19a2bba33b272f839ff3b599d",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "seasonal-cake-creature-20261107-r1",
+  "content_revision": "cyclopedia-creatures-crystal-201189f-r1",
   "production": false,
   "entry_start": {
     "x": 32534,

@@ -174,7 +174,16 @@ class TerminalItemProfiles(unittest.TestCase):
         self.assertEqual([row['production_definition']['production_key']
                           for row in prefix['records']], [profiles.DIARY])
         diary = prefix['records'][0]
-        self.assertEqual(diary['semantics']['readable_writeable'], profiles.DIARY_TEXT)
+        self.assertEqual(diary['semantics']['readable_writeable'], {
+            'state': 'KNOWN',
+            'value': {
+                'readable': {'state': 'KNOWN', 'value': True},
+                'writeable': {'state': 'KNOWN', 'value': True},
+                'max_text_length': {'state': 'KNOWN', 'value': 1023},
+                'distance_read': {'state': 'UNKNOWN'},
+                'write_once_target': {'state': 'NOT_APPLICABLE'},
+            },
+        })
         generated = self.generated(copy.deepcopy(prefix['records']))
         self.publish(root, generated)
         rows = json.loads(generated['profiles'])['records']

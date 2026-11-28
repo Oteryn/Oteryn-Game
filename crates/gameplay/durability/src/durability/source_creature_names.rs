@@ -259,7 +259,7 @@ impl DurabilityRoot {
                         &mut tx, &root, &scope, &plan,
                     )
                     .await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

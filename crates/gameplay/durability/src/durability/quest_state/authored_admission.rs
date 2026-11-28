@@ -1,5 +1,5 @@
 //! Reuse the quest writer's already locked authoritative progression sample.
-use oteryn_gameplay_quests::quest::QuestStateCatalogue;
+use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTransition};
 
 pub(super) fn permits_level(catalogue: &QuestStateCatalogue, quest: &str, level: i64) -> bool {
     catalogue
@@ -14,15 +14,28 @@ pub(super) fn permits_level(catalogue: &QuestStateCatalogue, quest: &str, level:
         .is_none_or(|admission| level >= i64::from(admission.minimum_level))
 }
 
-pub(super) fn requires_premium(catalogue: &QuestStateCatalogue, quest: &str) -> bool {
-    catalogue
-        .authored_bindings()
-        .and_then(|bindings| {
-            bindings
-                .quests
-                .iter()
-                .find(|binding| binding.quest == quest)
-        })
+pub(super) fn requires_premium(
+    catalogue: &QuestStateCatalogue,
+    transition: &QuestTransition,
+    npc_reward: bool,
+) -> bool {
+    let Some(bindings) = catalogue.authored_bindings() else {
+        return false;
+    };
+    // Explorer Society's Crystal enrollment shares tracks with the Premium
+    // field course. Its independently registered NPC exchanges keep their own gates.
+    if npc_reward
+        && transition.quest == "oteryn:quest.the_explorer_society_quest"
+        && !bindings
+            .reward_callbacks()
+            .any(|callback| callback.key == transition.key)
+    {
+        return false;
+    }
+    bindings
+        .quests
+        .iter()
+        .find(|binding| binding.quest == transition.quest)
         .and_then(|binding| binding.admission.as_ref())
         .is_some_and(|admission| admission.premium)
 }

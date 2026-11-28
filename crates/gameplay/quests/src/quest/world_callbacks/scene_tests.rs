@@ -64,11 +64,57 @@ fn serpentine_lever_loads_both_source_branches() -> Result<(), String> {
 }
 
 #[test]
+fn katana_scene_closes_with_source_doorway_evacuation() -> Result<(), String> {
+    let callbacks = load()?;
+    let callback = callbacks
+        .iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/katana-hidden-lever")
+        .ok_or("Katana lever")?;
+    let scene = callback.effects.scene.as_ref().ok_or("Katana scene")?;
+    let doorway = Position {
+        x: 32177,
+        y: 32148,
+        floor: -11,
+    };
+    let landing = Position {
+        x: 32178,
+        ..doorway
+    };
+    assert_eq!(callback.lever, Some([2772, 2773]));
+    assert!(callback.reversible);
+    assert_eq!(scene.close.len(), 1);
+    let close = &scene.close[0];
+    assert_eq!(close.position, doorway);
+    assert_eq!(
+        (close.remove, close.create, close.passable),
+        (Some(5108), Some(5107), Some(false))
+    );
+    assert!(scene.evacuate_open.is_empty());
+    assert_eq!(scene.evacuate_close.len(), 1);
+    let evacuation = &scene.evacuate_close[0];
+    assert_eq!(
+        (
+            evacuation.from,
+            evacuation.players_to,
+            evacuation.creatures_to
+        ),
+        (doorway, landing, landing)
+    );
+    assert!(evacuation.all);
+    assert!(scene.relocate_items_close);
+    Ok(())
+}
+
+#[test]
 fn source_scenes_refuse_ambiguous_unbounded_and_value_bearing_edits() -> Result<(), String> {
     let source = include_str!("../../../../../../content/quests/native-scene-callbacks.json");
     let valid: serde_json::Value = serde_json::from_str(source).map_err(|e| e.to_string())?;
     let callbacks = parse(source)?;
-    let scene = callbacks[0].effects.scene.as_ref().ok_or("scene")?;
+    let index = callbacks
+        .iter()
+        .position(|callback| callback.key == "oteryn:quest-callback/mintwallin-cyclops-scene")
+        .ok_or("Mintwallin scene")?;
+    let scene = callbacks[index].effects.scene.as_ref().ok_or("scene")?;
     assert_eq!(
         scene.open.iter().filter(|e| e.remove == Some(1271)).count(),
         9
@@ -81,21 +127,21 @@ fn source_scenes_refuse_ambiguous_unbounded_and_value_bearing_edits() -> Result<
         let mut bad = valid.clone();
         match case {
             0 => {
-                bad["callbacks"][0]["effects"]["scene"]["open"][1]["position"] =
-                    bad["callbacks"][0]["effects"]["scene"]["open"][0]["position"].clone()
+                bad["callbacks"][index]["effects"]["scene"]["open"][1]["position"] =
+                    bad["callbacks"][index]["effects"]["scene"]["open"][0]["position"].clone()
             }
             1 => {
-                bad["callbacks"][0]["effects"]["item_reward"] =
+                bad["callbacks"][index]["effects"]["item_reward"] =
                     serde_json::json!({"item":"oteryn:item.tibia.i3031","count":1,"contents":[]})
             }
             2 => {
-                bad["callbacks"][0]["effects"]["scene"]["open"] = serde_json::json!([]);
-                bad["callbacks"][0]["effects"]["scene"]["remove_self"] = false.into();
+                bad["callbacks"][index]["effects"]["scene"]["open"] = serde_json::json!([]);
+                bad["callbacks"][index]["effects"]["scene"]["remove_self"] = false.into();
             }
-            3 => bad["callbacks"][0]["reversible"] = true.into(),
+            3 => bad["callbacks"][index]["reversible"] = true.into(),
             4 => {
-                let prototype = bad["callbacks"][0]["effects"]["scene"]["open"][0].clone();
-                bad["callbacks"][0]["effects"]["scene"]["open"] = (0..33)
+                let prototype = bad["callbacks"][index]["effects"]["scene"]["open"][0].clone();
+                bad["callbacks"][index]["effects"]["scene"]["open"] = (0..33)
                     .map(|x| {
                         let mut edit = prototype.clone();
                         edit["position"]["x"] = (32000 + x).into();
@@ -105,14 +151,14 @@ fn source_scenes_refuse_ambiguous_unbounded_and_value_bearing_edits() -> Result<
                     .into();
             }
             5 => {
-                bad["callbacks"][0]["effects"]["scene"]["open"][0]["passable"] =
+                bad["callbacks"][index]["effects"]["scene"]["open"][0]["passable"] =
                     serde_json::Value::Null
             }
             6 => {
-                bad["callbacks"][0]["effects"]["scene"]["open"][0]["position"] =
-                    bad["callbacks"][0]["selector"]["position"].clone()
+                bad["callbacks"][index]["effects"]["scene"]["open"][0]["position"] =
+                    bad["callbacks"][index]["selector"]["position"].clone()
             }
-            _ => bad["callbacks"][0]["effects"]["scene"]["unexpected"] = true.into(),
+            _ => bad["callbacks"][index]["effects"]["scene"]["unexpected"] = true.into(),
         }
         assert!(
             parse(&bad.to_string()).is_err(),
@@ -121,8 +167,8 @@ fn source_scenes_refuse_ambiguous_unbounded_and_value_bearing_edits() -> Result<
     }
     // The new owner does not expand the older passage primitive's eight-effect bound.
     let mut legacy = valid;
-    legacy["callbacks"][0]["effects"] = serde_json::json!({});
-    legacy["callbacks"][0]["passages"] = (32593..=32601)
+    legacy["callbacks"][index]["effects"] = serde_json::json!({});
+    legacy["callbacks"][index]["passages"] = (32593..=32601)
         .map(|x| {
             serde_json::json!({
                 "position":{"x":x,"y":32104,"floor":-14},"appearance":1271,"replacement":null

@@ -197,8 +197,13 @@ async fn verify(
 }
 
 /// Age the dedicated character's real terminal predecessor, keeping admission and end
-/// evidence from the normal session owner. This transaction changes timestamps only.
-async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResult {
+/// evidence from the normal session owner. The next admission follows this session even
+/// if this session itself has a training predecessor from a previous qualification run.
+async fn seed_history(
+    clients: &SeamClients<'_>,
+    session: &[u8; 16],
+    pending: Option<[u8; 16]>,
+) -> TestResult {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let mut tx = sqlx::Connection::begin(&mut database).await?;
     sqlx::raw_sql(
@@ -209,6 +214,35 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
     )
     .execute(&mut *tx)
     .await?;
+    if let Some(offer) = pending {
+        // A retained offer can belong to an earlier session. Reset it so the claim
+        // session creates its own offer and can still prove the state-2 transition.
+        sqlx::query(
+            "ALTER TABLE game_returner_reward_entitlements DISABLE TRIGGER returner_entitlement_immutable",
+        )
+        .execute(&mut *tx)
+        .await?;
+        let removed = sqlx::query(
+            "DELETE FROM game_returner_reward_entitlements e
+             WHERE e.offer_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid
+               AND e.world_id=encode($3,'hex')::uuid AND e.account_id=$4::text::uuid
+               AND NOT EXISTS (SELECT 1 FROM game_returner_reward_claims c WHERE c.offer_id=e.offer_id)",
+        )
+        .bind(offer.as_slice())
+        .bind(clients.characters[0].as_slice())
+        .bind(clients.world.as_slice())
+        .bind(&clients.accounts[0])
+        .execute(&mut *tx)
+        .await?;
+        if removed.rows_affected() != 1 {
+            return Err("G17 expected one unclaimed fixture entitlement to reset".into());
+        }
+        sqlx::query(
+            "ALTER TABLE game_returner_reward_entitlements ENABLE TRIGGER returner_entitlement_immutable",
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
     let updated = sqlx::query(
         "WITH predecessor AS (
             UPDATE game_durability_reconnect_sessions
@@ -216,7 +250,7 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
                 extract(epoch FROM (clock_timestamp() - interval '13 months 1 day'))::bigint*1000000
             WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid
               AND world_id=encode($3,'hex')::uuid AND account_id=$4::text::uuid
-              AND session_state=3 AND training_predecessor_session IS NULL
+              AND session_state=3
             RETURNING game_session_id,character_id,training_created_at_us
          )
          UPDATE game_character_session_ends e
@@ -242,17 +276,28 @@ async fn seed_history(clients: &SeamClients<'_>, session: &[u8; 16]) -> TestResu
     Ok(())
 }
 
+pub(crate) fn setup_pending(initial: returner::Reply) -> TestResult<Option<[u8; 16]>> {
+    match (initial.state, initial.id) {
+        (0, None) => Ok(None),
+        (1, Some(id)) => Ok(Some(id)),
+        _ => Err("G17 setup expected no entitlement or an unclaimed entitlement".into()),
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G17_ACCOUNT").await?;
-    let clients = &dedicated.clients(clients);
+    let accounts = [required("NODE_BOOT_G17_ACCOUNT")?];
+    let characters = [full_row_g01::fixture_character(clients, &accounts[0]).await?];
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let mut predecessor = connect_character(clients, 0x7c, 0).await?;
     let previous = *predecessor.join_snapshot().game_session_id.as_bytes();
-    if state(&mut predecessor).await?.state != 0 {
-        return Err("G17 unused account already reads a returner entitlement".into());
-    }
+    let pending = setup_pending(state(&mut predecessor).await?)?;
     finish(&mut predecessor).await?;
     drop(predecessor);
-    seed_history(clients, &previous).await?;
+    seed_history(clients, &previous, pending).await?;
     let mut client = connect_character(clients, 0x7c, 0).await?;
     let outcome = verdict::observe(body(&mut client, clients)).await;
     let closed = verdict::observe(finish(&mut client)).await;

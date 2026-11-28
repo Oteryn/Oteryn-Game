@@ -9,7 +9,9 @@ import event_item_profiles
 import hireling_item_profiles
 import house_decoration_actions
 
+import crystal_equipment_quarter_1
 import register_spell_families
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILE = 'content/items/definitions/spell-native-profiles.json'
@@ -60,7 +62,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
             # The hireling owner installs source taxonomy before event admission.
             expected[key]['authoring']['taxonomy'] = taxonomy[key]
             self.assertEqual(expected[key]['semantics'], original_semantics[key], key)
-            self.assertEqual(actual[key], expected[key], key)
+            self.assertEqual(compact_item_record(actual[key]), compact_item_record(expected[key]), key)
 
     def test_yasir_doors_keep_exact_source_geometry_without_global_item_admission(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
@@ -152,51 +154,50 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertFalse(physical['movable'])
         self.assertFalse(any(row['item_id'] == 31159 for row in source['unavailable']))
 
-    def test_historical_cake_facts_do_not_grant_inventory_after_map_identity_approval(self):
-        source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
-        captured = source['appearance_only_items']
-        self.assertEqual([row['item_id'] for row in captured], [48227])
-        self.assertTrue(captured[0]['physical']['ground'])
-        self.assertEqual(captured[0]['physical']['ground_speed'], 150)
-        self.assertFalse(captured[0]['physical']['movable'])
-        self.assertFalse(captured[0]['physical']['pickupable'])
-        self.assertFalse(any(row['server_item_id'] == 48227 for row in source['world_map_physical']))
-        self.assertFalse(any(row['production_definition']['production_key'] == 'oteryn:item.tibia.i48227'
+    def test_cake_bridge_exact_binding_admits_map_facts_without_inventory(self):
+        key = 'oteryn:item.tibia.i48227'
+        bindings = json.loads((ROOT / 'imports/crystalserver/bindings/items.json').read_bytes())
+        binding, = (row for row in bindings['bindings'] if row['external_id'] == '48227')
+        self.assertEqual(binding['disposition'], 'EXACT')
+        self.assertEqual(binding['target']['key'], key)
+
+        source = json.loads((ROOT / event_item_profiles.PATH).read_bytes())
+        self.assertFalse(any(row['item_id'] == 48227 for row in source['unavailable']))
+        self.assertFalse(any(row['item_id'] == 48227
+                             for row in source['canonical_identity_unavailable_evidence']))
+        self.assertIn(48227, source['projection_only_item_ids'])
+        captured, = source['appearance_only_items']
+        self.assertEqual(captured['item_id'], 48227)
+        physical, = (row for row in source['world_map_physical'] if row['server_item_id'] == 48227)
+        self.assertEqual(physical, captured['physical'])
+        self.assertTrue(physical['ground'])
+        self.assertEqual(physical['ground_speed'], 150)
+        for flag in ('movable', 'pickupable', 'block_solid', 'block_projectile'):
+            self.assertFalse(physical[flag], flag)
+        self.assertFalse(any(row['production_definition']['production_key'] == key
                              for row in source['records']))
-        gap = next(row for row in source['unavailable'] if row['item_id'] == 48227)
-        self.assertEqual(gap, {
-            'item_id': 48227,
-            'production_key': 'oteryn:item.tibia.i48227',
-            'reason': 'EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE',
-            'donor': ['data-global/scripts/lib/a_piece_of_cake_config.lua:249-292'],
-            'appearance_present': True,
-            'decision': 'https://github.com/Oteryn/Oteryn-Game/pull/2781#issuecomment-6549960114',
-        })
-        evidence = source['canonical_identity_unavailable_evidence']
-        self.assertEqual(len(evidence), 1)
-        self.assertEqual(evidence[0]['item_id'], 48227)
-        self.assertEqual(evidence[0]['reason'], gap['reason'])
-        self.assertEqual(evidence[0]['decision'], gap['decision'])
-        self.assertEqual(evidence[0]['source_revision'], '201189f871d23597b82caf88fd611454a2ddefb8')
-        self.assertEqual(len(evidence[0]['sources']), 8)
-        self.assertTrue(all(len(row['sha256']) == 64 for row in evidence[0]['sources']))
-        self.assertFalse({'bindings', 'target', 'policy', 'index'} & evidence[0].keys())
-        # The historical capture remains unchanged. M57's later explicit owner
-        # approval grants one map-only reference, never inventory Item semantics.
         keys = json.loads((ROOT / 'tools/content-schema/native-gameplay/item-keys.json').read_bytes())
-        self.assertEqual([row for row in keys['records'] if row[0] == 'oteryn:item.tibia.i48227'],
-                         [['oteryn:item.tibia.i48227', 'definition-r1']])
-        from cake_bridge_reference import definition, KEY
-        current = [row['definition'] for path in (ROOT / 'content/items/definitions').glob('items-*.json')
-                   for row in json.loads(path.read_bytes())['records']
-                   if row['definition']['identity']['key'] == KEY]
-        self.assertEqual(current, [definition(KEY)])
-        self.assertFalse(current[0]['materializable'])
+        self.assertEqual([row for row in keys['records'] if row[0] == key], [[key, 'definition-r1']])
+        current, = (row['definition']
+                    for shard in (ROOT / 'content/items/definitions').glob('items-*.json')
+                    for row in json.loads(shard.read_bytes())['records']
+                    if row['definition']['identity']['key'] == key)
+        self.assertFalse(current['materializable'])
+        self.assertEqual(current['semantics']['physical'], {'state': 'KNOWN', 'value': {
+            'movable': {'state': 'KNOWN', 'value': False},
+            'pickupable': {'state': 'KNOWN', 'value': False},
+            'weight': {'state': 'KNOWN', 'value': 0},
+        }})
+        self.assertEqual(current['semantics']['stack'], {'state': 'KNOWN', 'value': {
+            'stackable': {'state': 'KNOWN', 'value': False},
+            'stack_max': {'state': 'NOT_APPLICABLE'},
+        }})
+        self.assertEqual(current['semantics']['presentation'], {'state': 'UNKNOWN'})
 
     def test_spiritual_horseshoe_source_rule_survives_without_invented_item_profile(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
         unavailable = source['unavailable']
-        self.assertEqual([row['item_id'] for row in unavailable], [44048, 48227])
+        self.assertEqual([row['item_id'] for row in unavailable], [44048])
         self.assertEqual(unavailable[0]['reason'], 'EVENT_ITEM_PHYSICAL_DEFINITION_UNAVAILABLE')
         self.assertTrue(unavailable[0]['appearance_present'])
         self.assertFalse(any(row['production_definition']['production_key'] == 'oteryn:item.tibia.i44048'
@@ -216,14 +217,20 @@ class EventItemProfilePrecedence(unittest.TestCase):
                    if row['production_definition']['production_key'] == key]
         self.assertEqual(len(records), 1)
         source = json.loads((ROOT / event_item_profiles.PATH).read_bytes())
-        expected = next(row['semantics'] for row in source['records']
+        expected = next(row for row in source['records']
                         if row['production_definition']['production_key'] == key)
         # Main's complete Item closure fills unknown facts from the pinned source.
-        # Keep that full expectation plus canonical armor, market policy and EQUIP
-        # transformation; the canonical definition alone now has unknown groups.
+        # Preserve canonical armor, market policy and the EQUIP transformation.
         for group in ('protection', 'trade_restrictions', 'use_transform'):
-            expected[group] = definitions[0]['semantics'][group]
-        self.assertEqual(records[0]['semantics'], expected)
+            expected['semantics'][group] = definitions[0]['semantics'][group]
+        capture = json.loads((ROOT / crystal_equipment_quarter_1.FACTS).read_bytes())
+        boots = next(row['attributes'] for row in capture['records'] if row['id'] == 9019)
+        protection = expected['semantics']['protection']['value']
+        self.assertEqual(protection['armor'], {'state': 'KNOWN', 'value': int(boots['armor'])})
+        self.assertFalse(boots.keys() & crystal_equipment_quarter_1.RESISTANCES.keys())
+        protection['resistances'] = {'state': 'KNOWN', 'value': []}
+        self.assertEqual(compact_item_record(records[0])['semantics'],
+                         compact_item_record(expected)['semantics'])
         self.assertEqual(records[0]['production_binding']['disposition'], 'EXACT')
         self.assertEqual(records[0]['admission']['materializable'], True)
 

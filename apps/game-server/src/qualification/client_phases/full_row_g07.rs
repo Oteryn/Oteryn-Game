@@ -257,7 +257,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     );
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G07_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
-    let mut client = full_row_g01::prepare_owned_house(clients, 0xc9).await?;
+    let mut client = full_row_g01::prepare_owned_house_live(clients, 0xc9).await?;
     assign_fixture_scope(clients).await?;
     let key = prepare_chair(clients).await?;
     if !client

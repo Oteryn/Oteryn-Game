@@ -325,7 +325,9 @@ impl ChannelSpellStates {
         }
         let (next, publish) = prepared.into_successor();
         let state = self.get_mut(runtime, actor, session)?;
-        *state = next;
+        let before = std::mem::replace(state, next);
+        let state = self.get(runtime, actor, session)?;
+        self.committed_cooldowns(runtime, actor, session, &before, state);
         publish.then(|| (state.revision(), state.vitals()))
     }
 }
@@ -430,11 +432,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .any(|instance| {
                 instance.provenance().lineage.is_some()
-                    && instance
-                        .provenance()
-                        .source
-                        .as_deref()
-                        .is_some_and(|source| source.starts_with("player:field:"))
+                    && (crate::gameplay_transport::pvp_live::is_poison_arrow(instance.provenance())
+                        || instance
+                            .provenance()
+                            .source
+                            .as_deref()
+                            .is_some_and(|source| source.starts_with("player:field:")))
             })
         {
             return self

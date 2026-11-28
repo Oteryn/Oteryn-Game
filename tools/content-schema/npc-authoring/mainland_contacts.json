@@ -310,7 +310,7 @@
     {"npc": "ferks", "cell": [32634, 32739, 6], "line": 998, "direction": "north"},
     {"npc": "fernlor", "cell": [33279, 31846, 8], "line": 2486, "direction": "north"},
     {"npc": "ferryman_kamil", "cell": [32152, 32457, 7], "line": 2138, "direction": "north"},
-    {"npc": "ferryman_kamil_meluna", "cell": [32088, 32468, 7], "line": 2141, "direction": "north", "solid_contact": true},
+    {"npc": "ferryman_kamil_meluna", "cell": [32088, 32468, 7], "line": 2141, "direction": "north", "nearby": {"cell": [32088, 32469, 7], "reason": "Keep the Meluna ferry origin on the approved adjacent dock tile."}},
     {"npc": "ferus", "cell": [32649, 31911, 11], "line": 2922, "direction": "north"},
     {"npc": "fillias", "cell": [33570, 31926, 7], "line": 1715, "direction": "north"},
     {"npc": "finarfin", "cell": [32686, 31687, 8], "line": 2461, "direction": "north"},

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0618-actor-cooldown-deltas",
+  "kind": "panels",
+  "id": "0618-actor-cooldown-deltas-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

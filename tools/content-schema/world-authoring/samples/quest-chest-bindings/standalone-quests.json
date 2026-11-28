@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.geomancer",
+      "position": [
+        32456,
+        32008,
+        13
+      ],
+      "appearance": 2469,
+      "unique": 6134,
+      "source_line": 1618
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.goblintemple",
+      "position": [
+        31973,
+        32209,
+        12
+      ],
+      "appearance": 2472,
+      "unique": 6118,
+      "source_line": 1490
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.goblintemple2",
+      "position": [
+        31977,
+        32209,
+        12
+      ],
+      "appearance": 2472,
+      "unique": 6119,
+      "source_line": 1499
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3600",
+      "position": [
+        32509,
+        32181,
+        13
+      ],
+      "appearance": 4285,
+      "unique": 5015,
+      "source_line": 484
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_0.fishing_box",
+      "position": [
+        32015,
+        31409,
+        7
+      ],
+      "appearance": 2473,
+      "unique": 6235,
+      "source_line": 2422
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.okolnir",
+      "position": [
+        32146,
+        31430,
+        8
+      ],
+      "appearance": 2473,
+      "unique": 6217,
+      "source_line": 2283
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": []
+}

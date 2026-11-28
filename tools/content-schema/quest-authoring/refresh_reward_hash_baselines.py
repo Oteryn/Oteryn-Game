@@ -1,4 +1,4 @@
-"""Refresh the existing exact quest hash assertions from the canonical Rust loader."""
+"""Refresh the live quest hash assertions from the canonical Rust loader."""
 import argparse
 import json
 from pathlib import Path
@@ -36,17 +36,11 @@ def main():
         raise ValueError('canonical loader returned invalid quest hashes')
     refreshed = pattern.sub(lambda m: m[1] + hashes[m[2]] + m[3], baseline)
     updated = source[:start] + refreshed + source[end:]
-    updated, count = re.subn(
-        r'(hex\(&full_hash\),\s*")[0-9a-f]{64}(")',
-        lambda m: m[1] + hashes[OUTFIT] + m[2], updated,
-    )
-    if count != 1:
-        raise ValueError('missing or ambiguous full outfit predecessor assertion')
     if args.check and updated != source:
         raise ValueError('stale reward hash baselines')
     if not args.check:
         TARGET.write_text(updated)
-    print(f'reward quest hash baselines: {len(keys) + count} exact assertions')
+    print(f'reward quest hash baselines: {len(keys)} exact assertions')
 
 
 if __name__ == '__main__':

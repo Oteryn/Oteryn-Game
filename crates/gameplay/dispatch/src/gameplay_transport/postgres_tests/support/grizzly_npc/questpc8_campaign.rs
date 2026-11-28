@@ -167,7 +167,7 @@ pub(super) async fn exercise(
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
     let achievements: Vec<String> = sqlx::query_scalar(
-        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 4",
+        "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 5",
     )
     .fetch_all(&h.pool)
     .await?;
@@ -175,6 +175,7 @@ pub(super) async fn exercise(
         achievements,
         [
             "oteryn:achievement/blood_red_snapper",
+            "oteryn:achievement/huntsman",
             "oteryn:achievement/one_less",
             "oteryn:achievement/rootless_behaviour"
         ]
@@ -375,7 +376,7 @@ async fn hunt_with_decay(
         if refresh == HunterRefresh::BeforeEachKill {
             refresh_hunter(owner, admitted, actor).await;
         }
-        record_and_drain_lethal(
+        record_lethal(
             owner,
             admitted,
             target,
@@ -384,6 +385,7 @@ async fn hunt_with_decay(
             u16::try_from(index + 1)?,
         )
         .await?;
+        drain_lethal(owner, admitted).await?;
         let corpse = {
             let mut runtime = owner.runtime.lock().await;
             assert!(!runtime.corpse_projection_pinned(target));
@@ -427,9 +429,44 @@ pub(in super::super) async fn lethal(
     command: u64,
     swing: u16,
 ) -> TestResult {
+    queue_lethal(owner, admitted, target, creature, command, swing).await?;
+    drain_lethal(owner, admitted).await
+}
+
+async fn drain_lethal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    let mut outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
+    for _ in 1..8 {
+        if outcome == DrainOutcome::Drained {
+            break;
+        }
+        // A deferred pass keeps the original death queued. Restore the test
+        // holder if the pass retired it, then drain that same death.
+        owner.root.await_ready().await?;
+        tokio::task::yield_now().await;
+        outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
+    }
+    assert_eq!(outcome, DrainOutcome::Drained);
+    assert_eq!(
+        owner.drain_kill_rewards(admitted.game_session_id).await,
+        DrainOutcome::Drained
+    );
+    Ok(())
+}
+
+pub(in super::super) async fn queue_lethal(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    target: ExactActorRef,
+    creature: &str,
+    command: u64,
+    swing: u16,
+) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("hunter")?;
     refresh_hunter(owner, admitted, actor).await;
-    record_and_drain_lethal(owner, admitted, target, creature, command, swing).await
+    record_lethal(owner, admitted, target, creature, command, swing).await
 }
 
 async fn refresh_hunter(
@@ -447,7 +484,7 @@ async fn refresh_hunter(
     );
 }
 
-async fn record_and_drain_lethal(
+async fn record_lethal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     target: ExactActorRef,
@@ -515,22 +552,6 @@ async fn record_and_drain_lethal(
         }
     }
     assert!(queue.has_session(admitted.game_session_id));
-    let mut outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
-    for _ in 1..8 {
-        if outcome == DrainOutcome::Drained {
-            break;
-        }
-        // A deferred pass keeps the original death queued. Restore the test
-        // holder if the pass retired it, then drain that same death.
-        owner.root.await_ready().await?;
-        tokio::task::yield_now().await;
-        outcome = owner.drain_kill_rewards(admitted.game_session_id).await;
-    }
-    assert_eq!(outcome, DrainOutcome::Drained);
-    assert_eq!(
-        owner.drain_kill_rewards(admitted.game_session_id).await,
-        DrainOutcome::Drained
-    );
     Ok(())
 }
 
