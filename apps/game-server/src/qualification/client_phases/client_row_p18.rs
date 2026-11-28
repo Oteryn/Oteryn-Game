@@ -162,7 +162,9 @@ pub(super) async fn open_station(
     clients: &SeamClients<'_>,
     continuing: bool,
 ) -> TestResult {
-    walk_to_station(client, clients, continuing, None).await
+    walk_to_station(client, clients, continuing, None)
+        .await
+        .map(|_| ())
 }
 
 async fn walk_to_station(
@@ -170,7 +172,7 @@ async fn walk_to_station(
     clients: &SeamClients<'_>,
     continuing: bool,
     panel: Option<&mut ItemForgePanel>,
-) -> TestResult {
+) -> TestResult<Option<LiveReply>> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -225,7 +227,7 @@ async fn walk_to_station(
         verdict::Harness::global().progress("forge-walk");
     }
     let expected_revision = world.facts().object_revision(key);
-    if let Some(panel) = panel {
+    let opening_browse = if let Some(panel) = panel {
         let session = client.session_mut();
         let header = session
             .world_map_snapshot()
@@ -265,17 +267,25 @@ async fn walk_to_station(
         {
             return Err("P18 native Forge panel did not open with the browse page".into());
         }
+        Some((
+            response.command_id,
+            response.server_sequence,
+            response.status as u32,
+            response.payload,
+            browse.payload,
+        ))
     } else {
         let reply = client.use_object(&placement, expected_revision).await?;
         if !station_opened(reply.status, reply.disposition) {
             return Err(format!("P18 Forge USE did not open the station: {reply:?}").into());
         }
-    }
+        None
+    };
     verdict::Harness::global().progress("forge-open");
     evidence(&format!(
         "P18_FORGE_OPEN from={start:?} at={FORGE_APPROACH:?}"
     ));
-    Ok(())
+    Ok(opening_browse)
 }
 
 type LiveReply = (u64, u64, u32, Vec<u8>, Vec<u8>);
@@ -314,9 +324,9 @@ async fn dust_capture(client: &mut DevClientSession) -> TestResult<((u64, u64), 
 fn write_capture(root: &Path, session: [u8; 16], frames: &[LiveReply]) -> TestResult<String> {
     use sha2::Digest as _;
     use std::io::Write as _;
-    if frames.len() != 14 {
+    if frames.len() != 15 {
         return Err(format!(
-            "Forge capture requires fourteen live frames, got {}",
+            "Forge capture requires fifteen live frames, got {}",
             frames.len()
         )
         .into());
@@ -586,7 +596,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         ..Default::default()
     };
     confirmation_panel.preview.selected = true;
-    walk_to_station(&mut client, clients, false, Some(&mut confirmation_panel)).await?;
+    let opening_browse =
+        walk_to_station(&mut client, clients, false, Some(&mut confirmation_panel))
+            .await?
+            .ok_or("Forge opening browse was not captured")?;
     let session = client.join_snapshot().game_session_id;
     let definitions = provisioning::item_index()?;
     let dagger = provisioning::item_reference(&definitions, 3267)?;
@@ -959,6 +972,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("Forge relog session logout refused".into());
     }
     frames.extend(quotes);
+    frames.push(opening_browse);
     let digest = write_capture(root, *session.as_bytes(), &frames)?;
     Ok(format!(
         "live-capture session={} sha256={digest}",

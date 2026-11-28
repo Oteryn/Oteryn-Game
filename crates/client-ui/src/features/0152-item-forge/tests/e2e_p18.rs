@@ -147,16 +147,42 @@ fn replay_live(root: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
                 19 => matches!(byte, b'8' | b'9' | b'a' | b'b'),
                 _ => byte.is_ascii_hexdigit(),
             })
-        || requests.len() != 14
+        || requests.len() != 15
     {
-        return Err("Forge replay requires fourteen frames from a live UUIDv7 session".into());
+        return Err("Forge replay requires fifteen frames from a live UUIDv7 session".into());
     }
     let mut panel = ItemForgePanel {
         selected: true,
         ..Default::default()
     };
     panel.preview.selected = true;
-    let mut previous = (0, 0);
+    let (id, sequence, payload) = &requests[14];
+    let browse = read_envelope(std::fs::File::open(root.join("p18-frame-14.json"))?)?;
+    let opening =
+        crate::item_forge::begin_open(&mut panel).ok_or("Forge opening browse did not start")?;
+    if browse.game_session_id != session
+        || browse.command_id != *id
+        || browse.server_sequence != *sequence
+        || browse.status != 1
+        || opening.payload != *payload
+    {
+        return Err("Forge opening browse did not reproduce the live request".into());
+    }
+    use oteryn_client_runtime::raw_feature;
+    crate::item_forge::preview::apply(
+        &mut panel,
+        &opening,
+        &raw_feature::GatedCommandResult {
+            command_id: *id,
+            server_sequence: *sequence,
+            status: raw_feature::CommandStatus::Accepted,
+            payload: browse.payload,
+        },
+    );
+    if !panel.open || panel.preview.page.is_none() {
+        return Err("Forge did not open with its captured browse page".into());
+    }
+    let mut previous = (*id, *sequence);
     for (index, (command_id, server_sequence, submitted_bytes)) in
         requests.iter().take(8).cloned().enumerate()
     {

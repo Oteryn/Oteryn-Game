@@ -129,7 +129,7 @@ def replay_targets():
     )]
     targets["e2e_p18"] = [(
         "oteryn-client-ui", "e2e_p18_replays_forge_history_and_operation_receipts",
-        {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(14))},
+        {"p18-requests.json", *(f"p18-frame-{index}.json" for index in range(15))},
     )]
     return targets
 
@@ -146,7 +146,7 @@ def p18_capture_matches_verdict(captures, log):
         if json.loads(manifest)[0] != session:
             return False
         checksum = hashlib.sha256()
-        for raw in [manifest, *((captures / f"p18-frame-{i}.json").read_bytes() for i in range(14))]:
+        for raw in [manifest, *((captures / f"p18-frame-{i}.json").read_bytes() for i in range(15))]:
             checksum.update(len(raw).to_bytes(8, "big"))
             checksum.update(raw)
         return checksum.hexdigest() == digest
