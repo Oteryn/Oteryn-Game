@@ -14,9 +14,9 @@ fn questpc8_mystery_native_landmark_geometry_and_lai_receipts() -> TestResult {
         super::quest_world_callbacks_fixtures::scenario(
             "authored-mystery-geometry",
             Position {
-                x: 32571,
-                y: 32506,
-                floor: -7,
+                x: 33836,
+                y: 32352,
+                floor: -4,
             },
             false,
         )

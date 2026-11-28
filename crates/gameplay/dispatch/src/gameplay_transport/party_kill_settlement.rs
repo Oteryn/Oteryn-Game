@@ -473,6 +473,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                             Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                         };
+                        entry.retain_boss_achievements(&mut tx, false).await?;
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                         super::quest_kill_objectives::publish(_attack.kills(), &objectives);
                         publish_stamina(states, runtime, previous, entry, &awards);
@@ -633,7 +634,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut tx, owner.holder, entry, &participants, quest_fences, owner.quest_catalogue.as_deref()).await {
                         Ok(committed) => committed, Err(error) => return Ok(Err(error)),
                     };
-                    party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                    entry.retain_boss_achievements(&mut tx, false).await?;
+                        party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     super::quest_kill_objectives::publish(_attack.kills(), &objectives);
                     if entry.forge.is_some() {
                         publish_forge_dust(owner, quest_fences, &awards);
@@ -835,10 +837,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
+        skips_corpse: bool,
     ) -> Result<(), CharacterProgressionError> {
         if entry.boss_reward.is_none()
             && !super::quest_kill_objectives::has_grave_boss_credit(entry)
             && oteryn_gameplay_quests::quest::source_deaths::overlord(&entry.creature).is_none()
+            && !entry.has_boss_achievement_work()
         {
             return Ok(());
         }
@@ -896,21 +900,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let plan = entry
-                        .boss_reward_plan
-                        .get()
-                        .ok_or(DurabilityError::InvalidStoredState)?;
-                    if !owner
-                        .root
-                        .settle_boss_death_atomic(
-                            &mut tx,
-                            owner.character,
-                            owner.holder,
-                            entry.facts.death.runtime_scope(),
-                            entry.facts.death.scope_ownership_generation(),
-                            plan.clone(),
-                        )
-                        .await?
+                    let plan = entry.boss_reward_plan.get();
+                    if plan.is_none() && !entry.has_boss_achievement_work() {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    if let Some(plan) = plan
+                        && !owner
+                            .root
+                            .settle_boss_death_atomic(
+                                &mut tx,
+                                owner.character,
+                                owner.holder,
+                                entry.facts.death.runtime_scope(),
+                                entry.facts.death.scope_ownership_generation(),
+                                plan.clone(),
+                            )
+                            .await?
                     {
                         return Err(DurabilityError::Unavailable);
                     }
@@ -937,6 +942,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         } else {
                             Vec::new()
                         };
+                    entry
+                        .retain_boss_achievements(&mut tx, skips_corpse)
+                        .await?;
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
                     super::quest_kill_objectives::publish(attack.kills(), &objectives);
                     Ok(())

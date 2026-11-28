@@ -76,7 +76,10 @@ def read_verdicts(log):
             if kind == "e2e_capture" and (not scenario.endswith(".client") or status != "CAPTURED"):
                 continue
             if kind == "e2e_all" and status == "CAPTURED":
-                continue
+                # W19a's live-shop reporter predates the dedicated capture event.
+                if scenario != "W19a.client":
+                    continue
+                kind = "e2e_capture"
             verdicts.setdefault(scenario, []).append((kind, status))
     return verdicts
 

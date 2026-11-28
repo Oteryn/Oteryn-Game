@@ -133,7 +133,7 @@ pub(super) fn scenario(case: u8) -> TestResult {
             .map_err(debug)?;
         let progression =
             crate::gameplay_transport::SessionProgressionBinding::from_content(policy);
-        let level = if reward {
+        let level = if reward || case == 7 {
             130
         } else if case == 4 {
             49
@@ -426,7 +426,9 @@ pub(super) fn scenario(case: u8) -> TestResult {
         }
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        if case == 6 {
+        if case == 7 {
+            rank_achievements(&mut owner, &mut admitted, npc, &h, &authority).await?;
+        } else if case == 6 {
             wire::talk(
                 &mut owner,
                 &mut admitted,
@@ -496,6 +498,50 @@ async fn value(
     }
     .map_err(debug)?;
     Ok(quest::storage_value(copy.tracks(), storage))
+}
+
+async fn rank_achievements(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let grants = || async {
+        sqlx::query_as::<_, (i64, i64)>(
+            "SELECT count(*) FILTER (WHERE achievement_key='oteryn:achievement/huntsman'),
+                    count(*) FILTER (WHERE achievement_key='oteryn:achievement/elite_hunter')
+               FROM game_account_achievement_grant_requests WHERE source_kind='oteryn:grizzly-adams'",
+        )
+        .fetch_one(&h.pool)
+        .await
+    };
+    wire::talk(owner, admitted, npc, &[(3, "hi"), (4, "promotion")]).await?;
+    assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, -1);
+    assert_eq!(grants().await?, (0, 0));
+
+    seed(h, &[(quest::POINTS_STORAGE, 100)]).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    assert_eq!(grants().await?, (0, 0), "points alone do not confirm a rank");
+    let mut awards_by_rank = Vec::new();
+    for (i, rank) in [0, 2, 4, 6, 7].into_iter().enumerate() {
+        let id = 5 + 2 * u64::try_from(i)?;
+        wire::talk(owner, admitted, npc, &[(id, "hi"), (id + 1, "promotion"), (id + 1, "promotion")])
+            .await?;
+        assert_eq!(value(owner, authority, quest::PROMOTION_STORAGE).await?, rank);
+        awards_by_rank.push(grants().await?);
+    }
+    assert_eq!(awards_by_rank, [(1, 0), (1, 0), (1, 0), (1, 0), (1, 1)]);
+    let facts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements
+         WHERE account_id=encode($1,'hex')::uuid
+           AND achievement_key IN ('oteryn:achievement/huntsman','oteryn:achievement/elite_hunter')",
+    )
+    .bind(id(40).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(facts, 2);
+    Ok(())
 }
 
 /// Only predecessor counters use fixture privileges; client confirmations and rewards

@@ -1,0 +1,2300 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_ape_city_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:150-156"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks_door",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:415"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/chor_door",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:313"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/dworc_door",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:259"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:385-403"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:169-176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/parchment_decyphering",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 18,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:81-195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/shaman_outfit",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:454-456"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/snake_destroyer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:184"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u7_6/the_ape_city/started",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:257"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/greet-initial",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "lt",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "Oh, hello! I did not see you there."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:49-50"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/greet-friend",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "greet",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "ge",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "Welcome, friend of the apes. You can ask for my offers or for healing."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:51-52"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-moss",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "My people have troubles. Will you prove you are a friend to the apes?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:81-84"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-story",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Our trust is hard to earn. Will you hear my story?"
+      ],
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:240-243"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "A young ape has fallen ill. I need whisper moss from the eastern side of the upper Dworc lair. Take it yourself and bring it to me."
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/started",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/dworc_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:250-259"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/background",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "background"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "A young ape has fallen ill. I need whisper moss from the eastern side of the upper Dworc lair. Take it yourself and bring it to me."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:196-205"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-syrup",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "I need cough syrup to use the whisper moss. Ask the healer in the human settlement."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:93-97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/syrup-offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Have you brought the cough syrup?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:99"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/syrup-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4828",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "With this syrup I can prepare the cure. Ask me for another mission when you are ready."
+      ],
+      "topics": [
+        4
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 4
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4828",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:283-289"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/syrup-missing",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "I need a bottle of cough syrup."
+      ],
+      "topics": [
+        4
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:283-285"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-chor",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "The little ape should recover soon, but I fear there is more trouble ahead. Will you help again?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 5
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/explain-chor",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "The plague was a lizard curse. Will you find the lizard magician’s papers in the village southeast of here?"
+      ],
+      "topics": [
+        5
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 6
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:296-301"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-chor",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Report back when you have the scroll."
+      ],
+      "topics": [
+        6
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 5
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/chor_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:311-313"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/parchment-offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Have you brought the scroll from the lizard village?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 7
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:105-106"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/parchment-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4831",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "This is the scroll I need. I will study it. Come back when you are ready for another mission."
+      ],
+      "topics": [
+        7
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 6
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4831",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:323-333"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/parchment-missing",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "I need the old parchment. Search the lizard village or ask those who hunt holy serpents."
+      ],
+      "topics": [
+        7
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:323-330"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-decipher",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "The holy banana gave me a vision of a stone that could help read the scroll. Look east of the desert city for a buried tomb. Read the signs between two great red stones. Will you go?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 8
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:108-115"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-decipher",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Return when you have read the signs."
+      ],
+      "topics": [
+        8
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:340-341"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decipher-offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/parchment_decyphering",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You have read the signs. May I see what you saw?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 9
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:117-119"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decipher-needed",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Look for the signs in the tomb east of the desert city."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:120-122"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decipher-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 7
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/parchment_decyphering",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Now I can read the scroll. Ask me for another mission when you are ready."
+      ],
+      "topics": [
+        9
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:350-352"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-egg",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "The charm needs a token of life. Will you bring me a hydra egg? There is a hydra lair near the lake southeast of Banuta."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:124-129"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-egg",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Come back with an egg."
+      ],
+      "topics": [
+        10
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:359-361"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/egg-offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Have you brought a hydra egg?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:131-132"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/egg-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 9
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4839",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "This egg will strengthen the charm. Thank you."
+      ],
+      "topics": [
+        11
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 10
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4839",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:371-377"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/egg-missing",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Bring me a hydra egg for the charm."
+      ],
+      "topics": [
+        11
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:371-374"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-cap",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "The charm needs witches’ cap. Will you look for it in the hidden dungeon beneath Fibula?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 12
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:134-138"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-cap",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "You can enter the dungeon and look for the mushroom."
+      ],
+      "topics": [
+        12
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 11
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:383-386"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/cap-offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "Have you brought the witches’ cap?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:140-141"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/cap-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 11
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4829",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "Now I can finish the charm of life."
+      ],
+      "topics": [
+        13
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 12
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/fibula_door",
+          "value": -1
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4829",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:396-403"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/cap-missing",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "I need the witches’ cap from Fibula."
+      ],
+      "topics": [
+        13
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:396-399"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-casks",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "A cult is drinking the old lizard brew. Will you take a crowbar and break three casks in the temple under Banuta?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:143-148"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-casks",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "You can enter the cask rooms. Return after breaking three casks."
+      ],
+      "topics": [
+        14
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 13
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks_door",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:412-415"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/casks-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/casks",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Thank you for breaking the casks. Ask me for another mission when you are ready."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 14
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:150-154"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/casks-needed",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "Destroy three casks beneath Banuta before you report back."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:155-156"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-hair",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "Find a hair from Bong, the giant ape, in the Forbidden Lands. Ask the Blind Prophet in the cave east of the mountains how to enter. Will you go?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 15
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:158-166"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-hair",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "The Blind Prophet can grant you passage now."
+      ],
+      "topics": [
+        15
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 15
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:421-423"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/hair-offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 15
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Did you bring me a hair of the holy ape?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 16
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:169-170"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/hair-needed",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "Look for a hair of the holy ape in the Forbidden Lands."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:171-173"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/hair-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 15
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i4832",
+          "count": 1,
+          "op": "ge"
+        }
+      ],
+      "reply": [
+        "This will give my people a symbol of their faith."
+      ],
+      "topics": [
+        16
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 16
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i4832",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:430-437"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/hair-missing",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 15
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The hair is missing. Return to the Forbidden Lands to look again."
+      ],
+      "topics": [
+        16
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/holy_ape_hair",
+          "value": -1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:430-433"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/offer-monument",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 16
+        }
+      ],
+      "reply": [
+        "Will you enter the deepest catacombs and destroy the serpent god’s monument with a hammer I can give you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 17
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:175-181"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/start-monument",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 16
+        }
+      ],
+      "reply": [
+        "Take this Snake Destroyer to the monument under Banuta."
+      ],
+      "topics": [
+        17
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 17
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i4835",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:444-446"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/monument-report",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 17
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/snake_destroyer",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You have saved my people. Ask me about my offers or shamanic powers."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "value": 18
+        },
+        {
+          "kind": "achievement",
+          "name": "Friend of the Apes"
+        }
+      ],
+      "completes": true,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:183-190"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/monument-needed",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 17
+        }
+      ],
+      "reply": [
+        "Use the hammer to destroy the serpent god’s monument in the deepest catacombs."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:191-192"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/mission-finished",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 18
+        }
+      ],
+      "reply": [
+        "I have no more missions for you. You can ask me about shamanic powers."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:195"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/already-shaman",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "outfit",
+        "shamanic"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "eq",
+          "value": 18
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/shaman_outfit",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You already belong to the shamans."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:217-219"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/shaman-ineligible",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "outfit",
+        "shamanic"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "lt",
+          "value": 18
+        }
+      ],
+      "reply": [
+        "Finish your missions before you ask to become a shaman."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:220-222"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-1",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-2",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-3",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        3
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-4",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        4
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-5",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        5
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-6",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        6
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-7",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        7
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-8",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        8
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-9",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        9
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-10",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        10
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-11",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        11
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-12",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        12
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-13",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        13
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-14",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        14
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-15",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        15
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-16",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        16
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-17",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        17
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/hairycles/decline-18",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "We can talk again when you’re ready."
+      ],
+      "topics": [
+        18
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:242-461"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/the_blind_prophet/offer",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.the_blind_prophet",
+      "trigger": "say",
+      "keywords": [
+        "transport",
+        "passage"
+      ],
+      "reply": [
+        "Would you like passage to the Forbidden Lands?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_blind_prophet.lua:82-84"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/the_blind_prophet/passage",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.the_blind_prophet",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "Take care."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_blind_prophet.lua:85-92"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "ge",
+          "value": 15
+        }
+      ],
+      "effects": [
+        {
+          "kind": "teleport",
+          "position": {
+            "x": 33025,
+            "y": 32580,
+            "floor": -6
+          }
+        },
+        {
+          "kind": "magic_effect",
+          "effect": "CONST_ME_TELEPORT"
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/the_blind_prophet/refuse",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.the_blind_prophet",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "reply": [
+        "You have yet to prove yourself worthy of passage."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_blind_prophet.lua:93-94"
+      ],
+      "topics": [
+        1
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "op": "lt",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/ape-city/the_blind_prophet/decline",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.the_blind_prophet",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "reply": [
+        "Perhaps another time."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_blind_prophet.lua:96-97"
+      ],
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/hairycles.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "b2307616dfa9b6bdff899c60daf02a09980299c80b211d73c948d8681732df73"
+    },
+    {
+      "path": "data-global/npc/the_blind_prophet.lua",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "sha256": "6485485d8ef5effb9622280ea30bfbc181fd7025c23c94035ce510a1cc24fd8e"
+    }
+  ]
+}

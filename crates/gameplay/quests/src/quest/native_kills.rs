@@ -468,3 +468,65 @@ mod qworld_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[test]
+fn demon_wars_trial_requires_briefing_and_twenty_one_one_before_report() -> Result<(), String> {
+    let loaded = crate::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let mut tracks = BTreeMap::new();
+    let callbacks = super::reward_callbacks::load_for(catalogue)?;
+    let find_callback = |key| {
+        callbacks
+            .iter()
+            .find(|callback| callback.key == key && callback.npc == "oteryn:npc.a_dark_priestess")
+            .ok_or("Dark Priestess callback")
+    };
+    let briefing = find_callback("oteryn:quest-reward/demon-wars/briefing")?;
+    let report = find_callback("oteryn:quest-reward/demon-wars/report")?;
+    let briefing = catalogue
+        .transition(&briefing.key)
+        .ok_or("briefing transition")?;
+    let report = catalogue
+        .transition(&report.key)
+        .ok_or("report transition")?;
+    let kills = [("demon", 20), ("lord", 1), ("prince", 1)];
+    let key = |creature| format!("oteryn:quest-transition/native-kills/demon-wars/{creature}");
+    let evaluate = |transition, tracks: &mut BTreeMap<String, i64>| {
+        for change in catalogue
+            .evaluate(transition, tracks, 0)
+            .map_err(|error| format!("{error:?}"))?
+        {
+            tracks.insert(change.track, change.after);
+        }
+        Ok::<_, String>(())
+    };
+    assert!(catalogue.evaluate(report, &tracks, 0).is_err());
+    assert!(!active_for(catalogue, &tracks).contains(&key("demon")));
+    evaluate(briefing, &mut tracks)?;
+    for (creature, count) in kills {
+        let transition_key = key(creature);
+        let transition = catalogue
+            .transition(&transition_key)
+            .ok_or("kill transition")?;
+        let counter = counter_for(catalogue, &transition_key).ok_or("native counter")?;
+        assert_eq!(
+            counter.creature,
+            format!("oteryn:creature.shaburak_{creature}")
+        );
+        let area = counter.death_area.ok_or("Demonwar Dungeon bounds")?;
+        assert!(area.contains([33260, 31930, 13]));
+        assert!(!area.contains([33260, 31930, 7]));
+        for _ in 0..count {
+            assert!(catalogue.evaluate(report, &tracks, 0).is_err());
+            assert!(active_for(catalogue, &tracks).contains(&transition_key));
+            evaluate(transition, &mut tracks)?;
+        }
+        assert!(!active_for(catalogue, &tracks).contains(&transition_key));
+    }
+    assert!(report.completes);
+    evaluate(report, &mut tracks)?;
+    assert!(catalogue.evaluate(report, &tracks, 0).is_err());
+    Ok(())
+}

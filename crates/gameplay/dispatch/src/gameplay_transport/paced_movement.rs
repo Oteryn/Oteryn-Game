@@ -1,4 +1,5 @@
 //! Tutorial step interception around the existing owner movement path.
+use super::actor_spell::ChannelSpellStates;
 use super::*;
 
 mod autowalk;
@@ -7,6 +8,37 @@ pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
+
+pub(super) struct PlayerBundleDoors<'a> {
+    facts: &'a crate::map::facts::BundleFacts,
+    level: Option<u32>,
+}
+
+impl crate::map::floor::CellBlocker for PlayerBundleDoors<'_> {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        self.facts.doors_block_player(cell, self.level.unwrap_or(0))
+    }
+
+    fn admits_door_entry(&self, requirement: crate::map::door::DoorEntryRequirement) -> bool {
+        matches!(requirement, crate::map::door::DoorEntryRequirement::Level(required)
+            if self.level.is_some_and(|level| level >= required))
+    }
+}
+
+pub(super) fn player_bundle_doors<'a>(
+    facts: &'a crate::map::facts::BundleFacts,
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> PlayerBundleDoors<'a> {
+    PlayerBundleDoors {
+        facts,
+        level: states
+            .get(runtime, actor, session)
+            .map(|state| state.character_facts().level),
+    }
+}
 
 fn snowbunny_progress_operation(
     snow_origin: bool,
@@ -209,8 +241,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::SouthWest => CardinalStep::SouthWest,
             StepDirection::NorthWest => CardinalStep::NorthWest,
         };
-        // The closed bundle doors are read live per candidate cell, not collected per step: a
-        // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
+        // Check live doors and the entrant's level per candidate cell, including
+        // floor changes and teleport landings.
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
             .rooms()
@@ -220,7 +252,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
+            bundle_doors = player_bundle_doors(&map.facts, &states, &runtime, actor, session);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
@@ -236,7 +268,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map: self.bundle_map(),
             callbacks: self.callback_content(),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
+        let door_access = PlayerDoorAccess {
+            inner: &callback_portals,
+            level: states
+                .get(&runtime, actor, session)
+                .map(|state| state.character_facts().level),
+            states: &self.states,
+            session,
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &door_access;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
@@ -544,4 +584,55 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
     assert_eq!(body.matches("StepOutcome::rejected()").count(), 11);
     assert_eq!(body.matches("operator_event(").count(), 11);
     Ok(())
+}
+
+pub(super) struct PlayerDoorAccess<'a> {
+    pub(super) inner: &'a dyn crate::map::floor::CellBlocker,
+    pub(super) level: Option<u32>,
+    pub(super) states: &'a channel_states::ChannelSessionStates,
+    pub(super) session: GameSessionId,
+}
+
+impl crate::map::floor::CellBlocker for PlayerDoorAccess<'_> {
+    fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.blocks(cell)
+    }
+
+    fn admits_door_entry(&self, requirement: crate::map::door::DoorEntryRequirement) -> bool {
+        self.states
+            .admits_door_requirement(self.session, self.level, requirement)
+    }
+
+    fn owns_native_transition(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.owns_native_transition(cell)
+    }
+
+    fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
+        self.inner.suppresses_native_teleport(cell)
+    }
+}
+
+impl channel_states::ChannelSessionStates {
+    pub(super) fn door_storage_met(&self, session: GameSessionId, action: u16) -> bool {
+        self.quest_sessions.lock().ok().is_some_and(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|quest| quest.copy.as_ref())
+                .is_some_and(|copy| copy.meets_door_storage(action))
+        })
+    }
+
+    pub(super) fn admits_door_requirement(
+        &self,
+        session: GameSessionId,
+        level: Option<u32>,
+        requirement: crate::map::door::DoorEntryRequirement,
+    ) -> bool {
+        use crate::map::door::DoorEntryRequirement;
+        match requirement {
+            DoorEntryRequirement::MissingAction => false,
+            DoorEntryRequirement::Level(required) => level.is_some_and(|level| level >= required),
+            DoorEntryRequirement::Storage(action) => self.door_storage_met(session, action),
+        }
+    }
 }

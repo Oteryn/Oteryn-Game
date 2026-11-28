@@ -83,6 +83,10 @@ class NativeGoalCorpseProof(unittest.TestCase):
         self.assertEqual(weights[4041], 120000)
         self.assertEqual(weights[4013], 85000)
         self.assertEqual(weights[5973], 0)
+        self.assertEqual(policies[36847], (25, 10000, 36846))
+        self.assertEqual(policies[36846], (25, 300000, 36845))
+        self.assertEqual(policies[36845], (25, 300000, 36844))
+        self.assertEqual(policies[36844], (None, 60000, None))
 
     def test_admission_preserves_unowned_items_and_unrelated_semantics(self):
         items = definitions()

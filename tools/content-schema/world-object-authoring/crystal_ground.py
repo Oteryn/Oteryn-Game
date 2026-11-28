@@ -65,7 +65,8 @@ def regenerate(source, check):
         row.update(key=record["identity"]["key"], provisional=False)
         if record["identity"]["key"] not in existing:
             records.append(record)
-    if len(records) != 493 or not any(r["provenance"]["source_item_id"] == 53066 for r in records):
+    # The mainline Dawnport and Blood Vestibule shards own 16 of the original records.
+    if len(records) != 477 or not any(r["provenance"]["source_item_id"] == 53066 for r in records):
         raise ValueError(f"Crystal ground catalogue coverage changed: {len(records)}")
     for path, document in (
         (SHARD, {"family": "Terrain", "records": records}),

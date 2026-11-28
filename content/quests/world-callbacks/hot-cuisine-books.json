@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/hot-cuisine-cookbook-1",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33064,
+          "y": 32531,
+          "floor": -5
+        },
+        "appearance": 2472
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook-1-copy",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i9093",
+        "count": 1,
+        "contents": [],
+        "text": "Rotworm Stew\n- 2 Pieces of meat\n- 2 Vials of beer\n- 20 Potatoes\n- 1 Onion\n- 1 Garlic\n- 5 Ounces of flour\n\nHydra Tongue Salad\n- 2 Hydra tongues\n- 2 Tomatoes\n- 1 Cucumber\n- 2 Eggs\n- 1 Troll green\n- 1 Vial of wine\n\nRoasted Dragon Wings\n- 1 Fresh dead bat\n- 3 Jalapeño peppers\n- 5 Brown breads\n- 2 Eggs\n- 1 Powder herb\n- 5 Red mushrooms\n\nTropical Fried Terrorbird\n- 1 Fresh dead chicken\n- 2 Lemons\n- 2 Oranges\n- 2 Mangos\n- 2 Vials of coconut milk\n- 1 Stone herb\n\nBanana Chocolate Shake\n- 1 Bar of chocolate\n- 1 Cream cake\n- 2 Bananas\n- 2 Vials of milk\n- 1 Sling herb\n- 1 Star herb\n\nVeggie Casserole\n- 2 Carrots\n- 2 Tomatoes\n- 2 Corncobs\n- 2 Cucumbers\n- 1 Onion\n- 1 Garlic\n- 1 Cheese\n- 20 White mushrooms\n- 5 Brown mushrooms\n\nFilled Jalapeño Peppers\n- 10 Jalapeño peppers\n- 2 Cheese\n- 1 Troll green\n- 1 Shadow herb\n- 1 Vial of mead\n- 2 Eggs\n\nBlessed Steak\n- 1 Piece of ham\n- 5 Plums\n- 1 Onions\n- 2 Beetroot\n- 1 Pumpkin\n- 2 Jalapeño peppers\n\nNorthern Fishburger\n- 1 Northern pike\n- 1 Rainbow trout\n- 1 Green perch\n- 5 Shrimps\n- 2 Rolls\n- 1 Fern\n\nCarrot Cake\n- 5 Carrots\n- 1 Vial of milk\n- 1 Lemon\n- 10 Ounces of flour\n- 2 Eggs\n- 10 Cookies\n- 2 Peanuts"
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hot_cuisine/actions_cookbook1.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:161-167",
+        "content/world/placements/region-z05-x129-y127.b3:1#(33064,32531,-5)/1:sha256:6c2446b01b89c10a31f6798109542efa6cfcb1d86e0f2a27179d964faf4907b7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/hot-cuisine-cookbook-2",
+      "quest": "oteryn:quest.hot_cuisine_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33064,
+          "y": 32529,
+          "floor": -5
+        },
+        "appearance": 2472
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/cookbook-2-copy",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "item_reward": {
+        "item": "oteryn:item.tibia.i11541",
+        "count": 1,
+        "contents": [],
+        "text": "Coconut Shrimp Bake\n- 5 vials of coconut milk\n- 5 brown mushrooms\n- 5 red mushrooms\n- 10 rice balls\n- 10 shrimps\n\nPot of Blackjack\n- 5 sandcrawler shells\n- 2 vials of water\n- 20 carrots\n- 10 potatoes\n- 3 jalapeno peppers\n\nDemonic Candy Ball\n- 3 candies\n- 3 candy canes\n- 2 bar of chocolate\n- 15 gingerbreadmen\n- 1 concentrated demonic blood\n\nSweet Mangonaise Elixir\n- 40 eggs\n- 20 mangoes\n- 10 honeycombs\n- 1 bottle of bug milk\n- 1 blessed wooden stake\n\n"
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hot_cuisine/actions_cookbook2.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:121-127",
+        "content/world/placements/region-z05-x129-y127.b3:1#(33064,32529,-5)/1:sha256:6c2446b01b89c10a31f6798109542efa6cfcb1d86e0f2a27179d964faf4907b7"
+      ]
+    }
+  ]
+}

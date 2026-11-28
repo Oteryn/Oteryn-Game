@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "book",
+        "notebook"
+      ],
+      "topic": 0,
+      "next_topic": 51,
+      "storage": [],
+      "reply": [
+        "Do you bring me my notebook?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.amber",
+      "keywords": [
+        "no"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Too bad."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maryza",
+      "keywords": [
+        "cookbook"
+      ],
+      "topic": 0,
+      "next_topic": 51,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/storage/30022",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The cookbook of the famous dwarven kitchen. You're lucky. I have a few copies on sale. Do you like one for 150 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maryza",
+      "keywords": [
+        "cookbook"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/storage/30022",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I'm sorry but I sell only one copy to each customer. Otherwise they would have been sold out a long time ago."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maryza",
+      "keywords": [
+        "no"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I have but a few copies, anyway."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.melchior",
+      "keywords": [
+        "word of greeting"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The word of greeting is {DJANNI'HAH}."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.seymour",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Well, I would like to send our king a little present but I do not have a suitable box. If you find a nice box, please bring it to me."
+      ],
+      "minimum_level": 4,
+      "failure_reply": [
+        "You are pretty inexperienced. I think killing rats is a suitable challenge for you. For each fresh {dead rat} I will give you two shiny coins of gold."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "passage"
+      ],
+      "topic": 0,
+      "next_topic": 51,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "If you want to enter our fortress you have to become one of us and fight the Efreet. Are you willing to do so?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "passage"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You already have the permission to enter Ashta'daramai."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 51,
+      "next_topic": 52,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Are you sure you will pledge loyalty to King Gabel and fight the Efreets?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/greeting",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "no"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "This isn't your war anyway, human."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "keywords": [
+        "no"
+      ],
+      "topic": 52,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "This isn't your war anyway, human."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.willie",
+      "keywords": [
+        "banana"
+      ],
+      "topic": 0,
+      "next_topic": 51,
+      "storage": [],
+      "reply": [
+        "Have you found a banana for me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.willie",
+      "keywords": [
+        "no"
+      ],
+      "topic": 51,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Too bad."
+      ]
+    }
+  ]
+}
