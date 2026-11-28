@@ -292,6 +292,13 @@ pub struct DevClientSession {
 }
 
 impl DevClientSession {
+    /// Decodes a previously captured logout reply through the session decoder.
+    pub fn replay_logout_frame(
+        frame: &[u8],
+    ) -> Result<oteryn_session::LogoutOutcome, SessionError> {
+        Session::<TcpTlsStream>::replay_logout_frame(frame)
+    }
+
     /// Drops the TLS stream and retains only client continuity for a later recovery attempt.
     pub fn disconnect(self) -> RecoveryState {
         self.session.disconnect()

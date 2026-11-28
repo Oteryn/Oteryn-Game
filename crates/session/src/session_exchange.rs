@@ -209,15 +209,16 @@ impl<S: SessionStream> Session<S> {
         .await?;
 
         loop {
-            let (message_type, server_sequence, result_payload) =
+            let (message_type, server_sequence, result_frame) =
                 self.read_sequenced_push("CommandResult").await?;
+            let result_payload = decode_wire_envelope(&result_frame)?.payload();
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
-                let event = self.apply_state_delta(server_sequence, &result_payload)?;
+                let event = self.apply_state_delta(server_sequence, result_payload)?;
                 self.queue_event(event)?;
                 continue;
             }
-            let result = decode_command_result(&result_payload)?;
+            let result = decode_command_result(result_payload)?;
             if matches!(
                 result.status,
                 CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired
@@ -259,6 +260,7 @@ impl<S: SessionStream> Session<S> {
                 status: result.status,
                 server_sequence,
                 payload: result.payload.to_vec(),
+                frame: result_frame,
             });
         }
     }

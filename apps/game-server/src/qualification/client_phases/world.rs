@@ -2549,7 +2549,7 @@ pub(super) async fn journeys(
             }
             if e2e_row_selected(206) {
                 verdict::indexed("S09.client", async {
-                    client_row_s09::run_packet(clients).await;
+                    client_row_s09::run_packet(clients, world).await;
                     release_row_characters(clients).await
                 })
                 .await;

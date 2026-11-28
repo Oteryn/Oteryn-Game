@@ -10,14 +10,17 @@ impl<S: SessionStream> Session<S> {
         label: &'static str,
         expected: MessageType,
     ) -> Result<(u64, Vec<u8>), SessionError> {
-        let (message_type, server_sequence, payload) = self.read_sequenced_push(label).await?;
+        let (message_type, server_sequence, frame) = self.read_sequenced_push(label).await?;
         if message_type != expected {
             return Err(SessionError::UnexpectedMessage {
                 expected,
                 actual: message_type,
             });
         }
-        Ok((server_sequence, payload))
+        Ok((
+            server_sequence,
+            decode_wire_envelope(&frame)?.payload().to_vec(),
+        ))
     }
 
     /// `read_sequenced` for a frame that is either a `CommandResult` or a pushed `StateDelta`;
@@ -39,7 +42,7 @@ impl<S: SessionStream> Session<S> {
             });
         }
         let server_sequence = self.next_sequence(&envelope)?;
-        Ok((message_type, server_sequence, envelope.payload().to_vec()))
+        Ok((message_type, server_sequence, frame))
     }
 
     /// Requires `envelope`'s `server_sequence` to be exactly the last applied one plus one and

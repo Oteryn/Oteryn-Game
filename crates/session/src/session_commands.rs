@@ -279,6 +279,11 @@ impl<S: SessionStream> Session<S> {
     /// `ACCEPTED` the server has ended the session and closes the transport, so this session
     /// sends nothing further.
     pub async fn logout(&mut self) -> Result<LogoutOutcome, SessionError> {
+        self.logout_with_frame().await.map(|(outcome, _)| outcome)
+    }
+
+    /// Sends one logout request and retains its validated reply envelope for capture.
+    pub async fn logout_with_frame(&mut self) -> Result<(LogoutOutcome, Vec<u8>), SessionError> {
         self.ensure_usable()?;
         if !self.is_selected(logout::CAPABILITY_LOGOUT_V1) {
             return Err(SessionError::CapabilityNotSelected {
@@ -287,28 +292,48 @@ impl<S: SessionStream> Session<S> {
         }
         let outcome = self.exchange_logout().await;
         if matches!(
-            outcome,
-            Ok(LogoutOutcome {
-                result: Some(LogoutResult::Accepted),
-                ..
-            })
+            &outcome,
+            Ok((
+                LogoutOutcome {
+                    result: Some(LogoutResult::Accepted),
+                    ..
+                },
+                _
+            ))
         ) {
             self.unusable = true;
         }
         self.poison_on_error(outcome)
     }
 
-    pub(super) async fn exchange_logout(&mut self) -> Result<LogoutOutcome, SessionError> {
+    pub(super) async fn exchange_logout(
+        &mut self,
+    ) -> Result<(LogoutOutcome, Vec<u8>), SessionError> {
         let result = self
             .send_and_read_result(
                 logout::COMMAND_TYPE_LOGOUT_INTENT,
                 &logout::encode_logout_intent(),
             )
             .await?;
+        let outcome = Self::replay_logout_frame(&result.frame)?;
+        Ok((outcome, result.frame))
+    }
+
+    /// Decodes an original server reply with the same checks as the live logout exchange.
+    pub fn replay_logout_frame(frame: &[u8]) -> Result<LogoutOutcome, SessionError> {
+        let envelope = decode_wire_envelope(frame)?;
+        envelope.validate(Direction::ServerToClient, true)?;
+        if envelope.message_type() != MessageType::CommandResult {
+            return Err(SessionError::UnexpectedMessage {
+                expected: MessageType::CommandResult,
+                actual: envelope.message_type(),
+            });
+        }
+        let result = decode_command_result(envelope.payload())?;
         let decoded = if result.status == CommandStatus::Rejected && result.payload.is_empty() {
             None
         } else {
-            Some(logout::decode_logout_result(&result.payload).map_err(SessionError::Logout)?)
+            Some(logout::decode_logout_result(result.payload).map_err(SessionError::Logout)?)
         };
         check_status_pairing(
             result.command_id,
@@ -319,7 +344,7 @@ impl<S: SessionStream> Session<S> {
             command_id: result.command_id,
             status: result.status,
             result: decoded,
-            result_server_sequence: result.server_sequence,
+            result_server_sequence: envelope.server_sequence(),
         })
     }
 

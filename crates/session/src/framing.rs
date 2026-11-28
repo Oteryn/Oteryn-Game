@@ -7,6 +7,7 @@ pub(super) struct ReceivedResult {
     pub(super) status: CommandStatus,
     pub(super) server_sequence: u64,
     pub(super) payload: Vec<u8>,
+    pub(super) frame: Vec<u8>,
 }
 
 /// Checks a decoded `StateDelta` carries the registered `delta_type` and is based on exactly the
