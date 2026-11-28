@@ -134,7 +134,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| cells(at).len() == 2)
         .ok_or("P19 no approach with two open spawn tiles")?;
-    walk(&mut client, world, &path).await?;
+    classa3_observation::walk(&mut client, world, &path).await?;
     let at = client.world_spatial().actor_position;
     let positions = cells(tile(at)?);
     if positions.len() != 2 {
@@ -234,7 +234,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             first.1
         ));
         let previous = client.join_snapshot().game_session_id;
-        full_e2ef5::player_logout(&mut client).await?;
+        classa3_observation::logout(&mut client).await?;
         drop(client);
         client = connect_character(clients, 0x19, 0).await?;
         if client.join_snapshot().game_session_id == previous
@@ -255,5 +255,5 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             }
         }
     }
-    full_e2ef5::player_logout(&mut client).await
+    classa3_observation::logout(&mut client).await
 }

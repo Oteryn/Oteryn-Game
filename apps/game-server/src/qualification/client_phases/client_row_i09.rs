@@ -61,7 +61,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         |cell| cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 1,
     )
     .ok_or("no route to fixed chair 2358")?;
-    walk(&mut client, world, &path).await?;
+    classa3_observation::walk(&mut client, world, &path).await?;
     // STEP can return before the trailing map-view update. Apply it before
     // taking the predecessor so it cannot be mistaken for the rotation.
     client.service_liveness(Duration::from_millis(500)).await?;
@@ -197,5 +197,5 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("stale rotation was not refused".into());
     }
-    full_e2ef5::player_logout(&mut client).await
+    classa3_observation::logout(&mut client).await
 }

@@ -204,8 +204,8 @@ async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
     })
     .ok_or("I10 no route to the authored house entrance")?;
     prepare_house(clients, HOUSE).await?;
-    walk(&mut client, world, &path).await?;
-    full_e2ef5::player_logout(&mut client).await?;
+    classa3_observation::walk(&mut client, world, &path).await?;
+    classa3_observation::logout(&mut client).await?;
     drop(client);
     // Start the handoff with a fresh session at the saved entrance and the
     // House scope assignment already published.
@@ -223,5 +223,5 @@ async fn journey(clients: &SeamClients<'_>, directory: &Path) -> TestResult {
     );
     std::fs::write(directory.join("i10-expected.txt"), manifest)?;
     transfer(&mut client, HOUSE, true).await?;
-    full_e2ef5::player_logout(&mut client).await
+    classa3_observation::logout(&mut client).await
 }

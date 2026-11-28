@@ -146,7 +146,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
         .find(|at| world.enterable(*at))
         .ok_or("C16c Alexander has no walkable adjacent tile")?;
     let origin = tile(client.world_spatial().actor_position)?;
-    full_e2ef5::player_logout(&mut client).await?;
+    classa3_observation::logout(&mut client).await?;
     drop(client);
     place_buyer(clients, at, SELLER).await?;
     let mut client = connect_world(clients, 0xd5).await?;
@@ -154,7 +154,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
         return Err("C16c admission did not restore the buyer beside Alexander".into());
     }
     let rune = buy_rune(&mut client, seller).await?;
-    full_e2ef5::player_logout(&mut client).await?;
+    classa3_observation::logout(&mut client).await?;
     drop(client);
     place_buyer(clients, origin, "hunt-start").await?;
     let mut client = connect_world(clients, 0xd5).await?;
@@ -165,17 +165,17 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
             .is_some_and(|tile| !tile.protection_zone())
     })
     .ok_or("C16c has no route to a hunt tile outside protection")?;
-    walk(&mut client, world, &path).await?;
+    classa3_observation::walk(&mut client, world, &path).await?;
 
     // Save a nearby observation position before introducing the exact fixture Rat.
     let mut observer = connect_character(clients, 0xd6, 0).await?;
     let encounter = client.world_spatial().actor_position;
     full_e2ef5::with_observer_liveness(
         &mut client,
-        full_e2ef5::approach_melee(&mut observer, world, encounter),
+        classa3_observation::approach(&mut observer, world, encounter),
     )
     .await?;
-    full_e2ef5::with_observer_liveness(&mut client, full_e2ef5::player_logout(&mut observer))
+    full_e2ef5::with_observer_liveness(&mut client, classa3_observation::logout(&mut observer))
         .await?;
     drop(observer);
 
@@ -200,7 +200,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
         "FIXTURE_PLACEMENT row=C16c rat={expected:?} position={:?}",
         rat.position
     ));
-    full_e2ef5::approach_melee(&mut client, world, rat.position).await?;
+    classa3_observation::approach(&mut client, world, rat.position).await?;
     client.take_events();
     let attack = client
         .session_mut()
@@ -239,7 +239,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     })
     .await
     .map_err(|_| "C16c Rat produced no visible corpse")??;
-    full_e2ef5::approach_melee(&mut client, world, corpse.position).await?;
+    classa3_observation::approach(&mut client, world, corpse.position).await?;
     let index = provisioning::item_index()?;
     let movable = provisioning::item_reference(&index, 3994)?;
     let corpse = verdict::indexed_timeout(Duration::from_secs(25), async {
@@ -308,8 +308,24 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld, directory: &Pat
     for (name, bytes) in files? {
         std::fs::write(directory.join(name), bytes)?;
     }
-    full_e2ef5::player_logout(&mut observer).await?;
-    full_e2ef5::player_logout(&mut client).await
+    let retreat = |position| -> TestResult<Vec<StepDirection>> {
+        route(world, tile(position)?, |at| is_logout_rest_tile(world, at))
+            .ok_or_else(|| "C16c no route away from the hunt to a logout rest tile".into())
+    };
+    let path = retreat(observer.world_spatial().actor_position)?;
+    full_e2ef5::with_observer_liveness(
+        &mut client,
+        classa3_observation::walk(&mut observer, world, &path),
+    )
+    .await?;
+    full_e2ef5::with_observer_liveness(
+        &mut client,
+        classa3_observation::logout(&mut observer),
+    )
+    .await?;
+    let path = retreat(client.world_spatial().actor_position)?;
+    classa3_observation::walk(&mut client, world, &path).await?;
+    classa3_observation::logout(&mut client).await
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {

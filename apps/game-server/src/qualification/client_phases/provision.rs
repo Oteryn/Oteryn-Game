@@ -42,6 +42,7 @@ pub(in crate::qualification) async fn provision_profile(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
+    let assert_first_logout = profile == "c16c-sorcerer";
     let profile = profile.to_owned();
     let status = tokio::task::spawn_blocking(move || {
         crate::qualification::provision_python()
@@ -60,10 +61,14 @@ pub(in crate::qualification) async fn provision_profile(
     if !status.success() {
         return Err("node-boot fenced build provisioning failed".into());
     }
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    if assert_first_logout {
+        super::super::classa3_observation::logout(&mut client).await?;
+    } else {
+        let (result, logout, attempts, busy_timed_out) =
+            client_world::logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     let mut client = connect_character(clients, 0x70, index).await?;

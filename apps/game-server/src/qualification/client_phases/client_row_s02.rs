@@ -83,7 +83,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
     })
     .ok_or("peer approach route unavailable")?;
-    walk(&mut leader, world, &path).await?;
+    classa3_observation::walk(&mut leader, world, &path).await?;
     let (leader_ref, peer_ref) = (own(&leader)?, own(&peer)?);
 
     party(&mut leader, Some(PartyIntent::Invite(peer_ref))).await?;
@@ -161,8 +161,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("s02-expected.txt", expected.as_bytes())?;
     party(&mut leader, Some(PartyIntent::Leave)).await?;
-    let _ = leader.session_mut().logout().await?;
-    let _ = peer.session_mut().logout().await?;
+    classa3_observation::logout(&mut leader).await?;
+    classa3_observation::logout(&mut peer).await?;
     Ok("party-icon-replay-captured".into())
 }
 

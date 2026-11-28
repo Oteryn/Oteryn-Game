@@ -802,6 +802,9 @@ pub(crate) async fn request_fixture_control(
     })
 }
 
+#[path = "classa3_observation.rs"]
+mod classa3_observation;
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
