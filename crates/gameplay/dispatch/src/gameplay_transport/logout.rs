@@ -515,7 +515,9 @@ impl AdmissionRetryBudget<'_> {
                         continue;
                     }
                     let kind = match &error {
-                        DurabilityError::RootUnavailable => "holder_busy",
+                        DurabilityError::RootUnavailable | DurabilityError::HolderBusy => {
+                            "holder_busy"
+                        }
                         DurabilityError::Database(_)
                         | DurabilityError::Migration(_)
                         | DurabilityError::SchemaIncompatible(_) => "storage",

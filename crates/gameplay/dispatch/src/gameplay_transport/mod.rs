@@ -1602,9 +1602,17 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// (NODEBOOT-1). Any other retry after a return starts no earlier than
     /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
+        self.retries_unavailable_with_minimum(refusal, self.backoff).await
+    }
+
+    async fn retries_unavailable_with_minimum(
+        &self,
+        refusal: AdmissionRefusal,
+        minimum_remaining: Duration,
+    ) -> bool {
         let now = tokio::time::Instant::now();
         if refusal != AdmissionRefusal::Unavailable
-            || now >= self.deadline
+            || now + minimum_remaining >= self.deadline
             || (self.root.is_none() && now + self.backoff >= self.deadline)
         {
             // A given-up owner holds no later owner back.
