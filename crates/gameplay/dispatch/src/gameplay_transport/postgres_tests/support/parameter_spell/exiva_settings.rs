@@ -3,20 +3,59 @@ use super::*;
 use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::exiva::COMMAND_TYPE_EXIVA_SETTINGS;
 
+async fn seed_party(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> TestResult {
+    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
+        .bind(id(120).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,2),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,2)")
+        .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(120).as_slice()).execute(&mut **tx).await?;
+    Ok(())
+}
 
+pub(in super::super) async fn unsaved_party(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut caster: AdmittedSession,
+) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    seed_party(&mut tx).await?;
+    tx.commit().await?;
 
-
-
-
-
-
-
-
-
-
-
-
-
+    let has_saved_preferences = async || -> TestResult<bool> {
+        Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_spell_privacy WHERE character_id=encode($1,'hex')::uuid)")
+            .bind(id(101).as_slice()).fetch_one(&h.pool).await?)
+    };
+    if has_saved_preferences().await? {
+        return Err("target must start with unsaved Exiva settings".into());
+    }
+    let payload = chat::encode_chat_intent(&chat::ChatIntent::Say {
+        mode: chat::ChatSpeechMode::Say,
+        text: "exiva \"Fixture Watcher\"".into(),
+    })
+    .map_err(debug)?;
+    let (results, _) = exchange(
+        owner,
+        &mut caster,
+        &[(chat::COMMAND_TYPE_CHAT_INTENT, payload)],
+        false,
+        false,
+    )
+    .await?;
+    let (_, reply) = results.first().ok_or("Find Person reply")?;
+    let disposition = chat::decode_chat_intent_result(reply)
+        .map_err(debug)?
+        .disposition;
+    if disposition != chat::ChatDisposition::Ok || has_saved_preferences().await? {
+        return Err(format!(
+            "unsaved party preferences must allow Find Person without a save: {disposition:?}"
+        )
+        .into());
+    }
+    eprintln!("POSTGRES_COMPLETED unsaved party Find Person dispatch");
+    Ok(())
+}
 
 pub(in super::super) async fn exercise(
     h: &Harness,
@@ -69,12 +108,7 @@ pub(in super::super) async fn exercise(
                 sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1),(encode($2,'hex')::uuid,encode($4,'hex')::uuid,1,1)")
                     .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(120).as_slice()).bind(id(121).as_slice()).execute(&mut *tx).await?;
             }
-            10 => {
-                sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
-                    .bind(id(120).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,2),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,2)")
-                    .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(120).as_slice()).execute(&mut *tx).await?;
-            }
+            10 => seed_party(&mut tx).await?,
             11 => {
                 sqlx::query("INSERT INTO game_vip_lists(account_id,world_id) SELECT account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(101).as_slice()).execute(&mut *tx).await?;
