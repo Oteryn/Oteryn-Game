@@ -83,6 +83,83 @@ fn exploration_tiles(
     Ok(tiles)
 }
 
+fn occupant(
+    client: &DevClientSession,
+    at: TilePos,
+) -> Option<oteryn_dev_client::WorldSpatialEntity> {
+    use oteryn_dev_client::EntityKind;
+    let entities = client.world_entities()?;
+    entities
+        .iter()
+        .find(|entity| {
+            &entity.entity.identity != entities.own_identity()
+                && matches!(
+                    entity.kind,
+                    EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+                )
+                && tile(entity.position).ok() == Some(at)
+        })
+        .copied()
+}
+
+async fn exploration_step(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    from: TilePos,
+    expected: TilePos,
+) -> TestResult<oteryn_dev_client::StepOutcome> {
+    let first = client.session_mut().step(direction).await?;
+    if first.disposition != StepDisposition::Blocked
+        || first.world_spatial_delta.is_some()
+        || tile(client.world_spatial().actor_position)? != from
+    {
+        return Ok(first);
+    }
+    let Some(blocking) = occupant(client, expected) else {
+        return Err(format!(
+            "BLOCKER-SERVER W12 blocked without occupant {from:?} -> {expected:?}: {first:?}"
+        )
+        .into());
+    };
+    use oteryn_dev_client::EntityKind;
+    if !matches!(blocking.kind, EntityKind::Creature | EntityKind::Npc) {
+        return Err(format!(
+            "W12 blocked by another player {:?}: {first:?}",
+            blocking.entity
+        )
+        .into());
+    }
+    evidence(&format!(
+        "W12 movement blocked occupant={:?} at={expected:?} frame={first:?}",
+        blocking.entity
+    ));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    while tokio::time::Instant::now() < deadline {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        let current = client.world_entities().and_then(|entities| {
+            entities
+                .iter()
+                .find(|entity| entity.entity == blocking.entity)
+        });
+        if let Some(current) = current
+            && tile(current.position)? != expected
+            && occupant(client, expected).is_none()
+            && tile(client.world_spatial().actor_position)? == from
+        {
+            evidence(&format!(
+                "W12 occupant={:?} moved to {:?}; entering the same planned tile {expected:?}",
+                blocking.entity, current.position
+            ));
+            return Ok(client.session_mut().step(direction).await?);
+        }
+    }
+    Err(format!(
+        "W12 occupant {:?} did not visibly leave {expected:?}: {first:?}",
+        blocking.entity
+    )
+    .into())
+}
+
 async fn explore(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -117,7 +194,7 @@ async fn explore(
         for direction in path {
             let expected =
                 destination(world, at, direction).ok_or("W12 planned landing disappeared")?;
-            let stepped = client.session_mut().step(direction).await?;
+            let stepped = exploration_step(client, direction, at, expected).await?;
             let landed = tile(client.world_spatial().actor_position)?;
             if stepped.disposition != StepDisposition::Moved
                 || stepped.world_spatial_delta.is_none()
