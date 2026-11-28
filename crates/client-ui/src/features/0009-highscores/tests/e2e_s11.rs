@@ -126,10 +126,10 @@ fn panel() -> HighscoresPanel {
 }
 
 #[test]
+#[ignore = "requires an original S11 live capture"]
 fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxError> {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
+    let root =
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("S11 replay requires E2E_ALL_CAPTURE_DIR")?;
     let root = Path::new(&root);
     let expected = &std::fs::read_to_string(root.join("s11-expected.txt"))?;
     let mut panel = panel();

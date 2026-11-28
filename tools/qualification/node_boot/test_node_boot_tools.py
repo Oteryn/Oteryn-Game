@@ -712,6 +712,7 @@ class S11ClientReplayTests(unittest.TestCase):
                         f'test result: ok. {count} passed; 0 failed; 0 ignored;')
                     self.assertEqual(replay.replay_cause('S11', package, test, files, capture, server, log), want)
                     run.assert_called_once()
+                    self.assertEqual(run.call_args.args[0][-4:], [test, "--", "--nocapture", "--ignored"])
 
 
 class CloudRunSummaryTests(unittest.TestCase):
