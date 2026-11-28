@@ -8,6 +8,7 @@ type Error = Box<dyn std::error::Error>;
 struct Captured {
     query: Vec<u8>,
     after: Vec<u8>,
+    refused: Vec<u8>,
     expected: String,
 }
 
@@ -29,8 +30,9 @@ fn fixture() -> Captured {
     let query = reply([37, 120_500, 4, 6, 12, 3, 1, 0], 1, 0, &[1, 2], 2);
     Captured {
         after: query.clone(),
+        refused: Vec::new(),
         query,
-        expected: "values=37,120500,4,6,12,3,1,0\ndeaths=1\nkills=0\nearned=1,2\nselected=2\nrefused_title=3\nrefused_status=Rejected\n".into(),
+        expected: "values=37,120500,4,6,12,3,1,0\ndeaths=1\nkills=0\nearned=1,2\nselected=2\nrefused_title=3\nsession=00000000-0000-7000-8000-000000000001\nquery_result=1,1,Accepted\nrefused_result=2,2,Rejected\nafter_result=3,3,Accepted\n".into(),
     }
 }
 
@@ -42,6 +44,7 @@ fn captured() -> Result<Captured, Error> {
     Ok(Captured {
         query: std::fs::read(path.join("p12a-query.bin"))?,
         after: std::fs::read(path.join("p12a-query-after.bin"))?,
+        refused: std::fs::read(path.join("p12a-refused.bin"))?,
         expected: std::fs::read_to_string(path.join("p12a-expected.txt"))?,
     })
 }
@@ -83,19 +86,40 @@ fn pend(panel: &mut Panel, intent: Intent) -> Result<FeatureCommand, Error> {
     Ok(command)
 }
 
-fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
-    GatedCommandResult {
-        command_id: 1,
+fn captured_result(metadata: &str, payload: Vec<u8>) -> Result<GatedCommandResult, Error> {
+    let fields: Vec<_> = metadata.split(',').collect();
+    let [command_id, server_sequence, status] = fields.as_slice() else {
+        return Err("invalid P12a result metadata".into());
+    };
+    let status = match *status {
+        "Accepted" => CommandStatus::Accepted,
+        "Rejected" => CommandStatus::Rejected,
+        _ => return Err("unexpected P12a result status".into()),
+    };
+    Ok(GatedCommandResult {
+        command_id: command_id.parse()?,
         status,
-        server_sequence: 1,
-        payload: payload.to_vec(),
-    }
+        server_sequence: server_sequence.parse()?,
+        payload,
+    })
 }
 
 #[test]
 fn e2e_p12a_replays_titles_and_refused_unearned_select() -> Result<(), Error> {
     let captured = captured()?;
     let e = captured.expected.as_str();
+    assert!(!value(e, "session")?.is_empty());
+    let before = captured_result(value(e, "query_result")?, captured.query)?;
+    let refused = captured_result(value(e, "refused_result")?, captured.refused)?;
+    let after = captured_result(value(e, "after_result")?, captured.after)?;
+    assert_eq!(before.status, CommandStatus::Accepted);
+    assert_eq!(refused.status, CommandStatus::Rejected);
+    assert!(refused.payload.is_empty());
+    assert_eq!(after.status, CommandStatus::Accepted);
+    assert_eq!(before.command_id.checked_add(1), Some(refused.command_id));
+    assert_eq!(refused.command_id.checked_add(1), Some(after.command_id));
+    assert!(before.server_sequence < refused.server_sequence);
+    assert!(refused.server_sequence < after.server_sequence);
     let mut panel = Panel {
         selected: true,
         ..Panel::default()
@@ -103,7 +127,7 @@ fn e2e_p12a_replays_titles_and_refused_unearned_select() -> Result<(), Error> {
 
     let query = pend(&mut panel, Intent::Query)?;
     assert_eq!(query.payload, [0, 0, 0, 50]);
-    apply(&mut panel, &query, &result(CommandStatus::Accepted, &captured.query));
+    apply(&mut panel, &query, &before);
     assert_eq!(panel.feedback, "Character information updated");
     let confirmed = visible(e)?;
     assert_eq!(panel.summary, confirmed);
@@ -112,22 +136,21 @@ fn e2e_p12a_replays_titles_and_refused_unearned_select() -> Result<(), Error> {
     panel.fields[3] = value(e, "refused_title")?.to_owned();
     let select = pend(&mut panel, Intent::Select)?;
     assert_eq!(select.payload, [3, value(e, "refused_title")?.parse()?]);
-    assert_eq!(value(e, "refused_status")?, "Rejected");
-    apply(&mut panel, &select, &result(CommandStatus::Rejected, &[]));
+    apply(&mut panel, &select, &refused);
     assert_eq!(panel.feedback, "The server refused the request");
     assert_eq!(panel.summary, confirmed);
     assert!(!panel.pending);
 
     // The follow-up query shows the same earned set and selected title.
     let query = pend(&mut panel, Intent::Query)?;
-    apply(&mut panel, &query, &result(CommandStatus::Accepted, &captured.after));
+    apply(&mut panel, &query, &after);
     assert_eq!(panel.summary, confirmed);
 
     // A reply with trailing bytes is rejected and the confirmed summary stays.
-    let mut trailing = captured.query.clone();
-    trailing.push(0);
+    let mut trailing = before;
+    trailing.payload.push(0);
     let query = pend(&mut panel, Intent::Query)?;
-    apply(&mut panel, &query, &result(CommandStatus::Accepted, &trailing));
+    apply(&mut panel, &query, &trailing);
     assert_eq!(panel.feedback, "Invalid character information reply");
     assert_eq!(panel.summary, confirmed);
     Ok(())

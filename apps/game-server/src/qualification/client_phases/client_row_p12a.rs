@@ -5,13 +5,23 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::character_info_panel as info;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P12A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write as _;
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join(name))?
+        .write_all(bytes)?;
+    Ok(())
+}
+
+fn response_metadata(
+    response: &oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse,
+) -> String {
+    format!(
+        "{},{},{:?}",
+        response.command_id, response.server_sequence, response.status
+    )
 }
 
 async fn send(
@@ -53,13 +63,15 @@ fn summary(bytes: &[u8]) -> TestResult<String> {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("P12a capture directory absent")?;
+    let root = Path::new(&root);
     let mut client = connect_world(clients, 0x30).await?;
+    let session = *client.join_snapshot().game_session_id.as_bytes();
     let page = info::PageRequest::new(0, 50).ok_or("page")?;
     let query = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
     if query.status != CommandStatus::Accepted {
         return Err(format!("QuerySelf status={:?}", query.status).into());
     }
-    capture("p12a-query.bin", &query.payload);
     let before = summary(&query.payload)?;
     let earned: Vec<u8> = before
         .lines()
@@ -73,22 +85,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .find_map(info::CharacterTitle::from_id)
         .ok_or("every title is earned")?;
     let refused = send(&mut client, info::CharacterInfoOperation::Select(Some(unearned))).await?;
-    if refused.status != CommandStatus::Rejected {
+    if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
         return Err(format!("unearned Select was not rejected: {refused:?}").into());
-    }
-    if !refused.payload.is_empty() {
-        capture("p12a-refused.bin", &refused.payload);
     }
     let after = send(&mut client, info::CharacterInfoOperation::QuerySelf(page)).await?;
     if after.status != CommandStatus::Accepted || after.payload != query.payload {
         return Err("unearned Select changed the earned or selected title".into());
     }
-    capture("p12a-query-after.bin", &after.payload);
+    if client.join_snapshot().game_session_id.as_bytes() != &session {
+        return Err("P12a capture session changed".into());
+    }
     let expected = format!(
-        "{before}refused_title={}\nrefused_status=Rejected\n",
-        unearned.id()
+        "{before}refused_title={}\nsession={}\nquery_result={}\nrefused_result={}\nafter_result={}\n",
+        unearned.id(),
+        uuid_text(&session),
+        response_metadata(&query),
+        response_metadata(&refused),
+        response_metadata(&after)
     );
-    capture("p12a-expected.txt", expected.as_bytes());
+    capture(root, "p12a-query.bin", &query.payload)?;
+    capture(root, "p12a-refused.bin", &refused.payload)?;
+    capture(root, "p12a-query-after.bin", &after.payload)?;
+    capture(root, "p12a-expected.txt", expected.as_bytes())?;
     Ok(expected.replace('\n', ";"))
 }
 
