@@ -211,7 +211,7 @@ pub(super) fn install(app: &mut App) {
     world_drag::install(app);
 }
 /// Minimal real state for raw-input caller fixtures; production always installs the full module.
-#[cfg(test)]
+#[cfg(any(test, feature = "qualification-i09"))]
 pub(in crate::bevy_shell) fn initialize_item_pointer_test_state(app: &mut App) {
     app.init_resource::<InventoryUi>()
         .init_resource::<world_drag::Gesture>()

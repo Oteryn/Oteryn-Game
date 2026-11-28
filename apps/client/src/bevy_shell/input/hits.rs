@@ -135,5 +135,7 @@ impl WorldPointerHits<'_, '_> {
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-pub(in crate::bevy_shell) use tests::qualification_right_click;
+#[cfg(any(test, feature = "qualification-i09"))]
+mod qualification;
+#[cfg(feature = "qualification-i09")]
+pub(in crate::bevy_shell) use qualification::qualification_right_click;

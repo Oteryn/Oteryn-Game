@@ -347,4 +347,3 @@ fn wrap_on_clicked_item_lists_house_furniture_and_wraps_the_chosen_one() -> Resu
 }
 
 // Exercise the production menu against the live qualification row's map.
-include!("../../../../../tools/qualification/node_boot/i09_rotate_menu.rs");

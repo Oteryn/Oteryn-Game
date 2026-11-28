@@ -263,3 +263,8 @@ fn installer_assets_pass_normal_startup_validation() -> Result<(), String> {
     Options::parse([OsString::from("--ui-assets"), assets.into_os_string()])?;
     Ok(())
 }
+
+#[cfg(feature = "qualification-i09")]
+pub use gameplay_dialogs::qualification::{RotateProof, rotate_live_chair};
+#[cfg(feature = "qualification-i09")]
+pub(crate) use gameplay_dialogs::qualification::{record_map_events, record_world_context};

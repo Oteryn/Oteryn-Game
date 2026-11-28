@@ -5058,6 +5058,7 @@ dependencies = [
  "base64 0.22.1",
  "console-subscriber",
  "ed25519-dalek",
+ "oteryn-client",
  "oteryn-dev-client",
  "oteryn-error-codes",
  "oteryn-foundation",

@@ -599,3 +599,6 @@ mod tests;
 
 #[cfg(test)]
 mod party_tests;
+
+#[cfg(feature = "qualification-i09")]
+pub(super) mod qualification;

@@ -296,6 +296,16 @@ pub struct DevClientSession {
 }
 
 impl DevClientSession {
+    /// Transfers the admitted session to a native client qualification journey.
+    pub fn into_session_parts(self) -> (Session<TcpTlsStream>, Instant) {
+        (self.session, self.started)
+    }
+
+    /// Reattaches the dev helpers after the native journey returns the same connection.
+    pub fn from_session_parts(session: Session<TcpTlsStream>, started: Instant) -> Self {
+        Self { session, started }
+    }
+
     /// Drops the TLS stream and retains only client continuity for a later recovery attempt.
     pub fn disconnect(self) -> RecoveryState {
         self.session.disconnect()

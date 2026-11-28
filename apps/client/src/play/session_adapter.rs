@@ -166,7 +166,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     }
 
     fn drain(&mut self) -> Vec<SessionEvent> {
-        self.take_events()
+        let events = self.take_events();
+        #[cfg(feature = "qualification-i09")]
+        crate::bevy_shell::record_map_events(&events);
+        events
     }
 
     async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
@@ -329,7 +332,22 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
         command: &oteryn_client_runtime::world_interaction::Command,
         raw_wire: bool,
     ) -> Result<String, SessionError> {
-        oteryn_client_runtime::world_interaction::send_framed(self, command, raw_wire).await
+        #[cfg(feature = "qualification-i09")]
+        let before = (
+            self.next_command_id(),
+            self.last_server_sequence(),
+            self.gated_snapshot(oteryn_session::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+                .cloned(),
+        );
+        let result =
+            oteryn_client_runtime::world_interaction::send_framed(self, command, raw_wire).await;
+        #[cfg(feature = "qualification-i09")]
+        crate::bevy_shell::record_world_context(
+            command,
+            before,
+            (self.next_command_id(), self.last_server_sequence()),
+        );
+        result
     }
     fn feature_selected(&self, capability: u32) -> bool {
         self.is_selected(capability)

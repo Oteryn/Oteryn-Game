@@ -3,16 +3,20 @@
 //! `crates/session/src/map_transport.rs::apply` decodes and validates the delta and queues the
 //! client-visible `SessionEvent::WorldMap`; `Session::take_events` exposes it to the native client.
 use super::*;
+#[cfg(feature = "qualification-i09")]
 use oteryn_dev_client::{
-    SessionEvent,
+    DevClientSession, SessionEvent,
     world_interaction::{self, Action, Command, Selection, Target},
 };
+#[cfg(feature = "qualification-i09")]
 use oteryn_protocol_oteryn::world_map::{self, MapDefinition, MapOrigin};
+#[cfg(feature = "qualification-i09")]
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
     encode_item_use_intent,
 };
 
+#[cfg(feature = "qualification-i09")]
 const BEFORE: &str = "oteryn:item.tibia.i2358";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -41,6 +45,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
+#[cfg(feature = "qualification-i09")]
 fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
     let mut file = std::fs::OpenOptions::new()
         .write(true)
@@ -51,6 +56,7 @@ fn capture(directory: &Path, name: &str, bytes: &[u8]) -> TestResult {
 }
 
 // Only command-result frames carry a command ID and status on the wire.
+#[cfg(feature = "qualification-i09")]
 fn capture_envelopes(root: &Path, name: &str, mut transcript: &[u8], session: &str) -> TestResult {
     use oteryn_protocol_oteryn::{
         FrameLength, MessageType, decode_command_result, decode_wire_envelope,
@@ -81,47 +87,12 @@ fn capture_envelopes(root: &Path, name: &str, mut transcript: &[u8], session: &s
     capture(root, name, &serde_json::to_vec(&envelopes)?)
 }
 
-type MenuSelection = ((i32, i32, i16), Option<([u8; 32], [u8; 32], u64)>);
-
-async fn rotate_menu_command(
-    capture_root: &Path,
-    map: &[u8],
-    actor: oteryn_protocol_oteryn::world_spatial::ActorPosition,
-    target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
-) -> TestResult<Command> {
-    let binary = required("OTERYN_I09_MENU_TEST")?;
-    let map_path = capture_root.join("i09-rotate-menu-map.bin");
-    capture(capture_root, "i09-rotate-menu-map.bin", map)?;
-    let coordinates = format!("{} {} {} {} {}", actor.x, actor.y, actor.floor, target.x, target.y);
-    let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new(binary)
-            .args(["qualification_i09_rotate_menu", "--ignored", "--nocapture"])
-            .env("OTERYN_I09_MENU_MAP", map_path)
-            .env("OTERYN_I09_CLICK", coordinates)
-            .env("OTERYN_ASSET_DIR", Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
-            .output()
-    }).await??;
-    let stdout = String::from_utf8(output.stdout)?;
-    if !output.status.success() {
-        return Err(format!("I09 Rotate context menu failed: {stdout} {}", String::from_utf8_lossy(&output.stderr)).into());
-    }
-    let mut payloads = stdout.lines().filter_map(|line| line.strip_prefix("I09_MENU_USE="));
-    let payload = payloads.next().ok_or("I09 Rotate context menu did not emit a command")?;
-    if payloads.next().is_some() {
-        return Err("I09 Rotate context menu emitted multiple commands".into());
-    }
-    let (placement, expected_revision, selection): (Vec<u8>, u64, Option<MenuSelection>) =
-        serde_json::from_str(payload)?;
-    Ok(Command {
-        target: Target::Object(WorldObjectTarget { placement, expected_revision }),
-        action: Action::Use,
-        selection: selection.map(|((x, y, floor), binding)| Selection {
-            position: oteryn_protocol_oteryn::world_spatial::ActorPosition { x, y, floor },
-            binding,
-        }),
-    })
+#[cfg(not(feature = "qualification-i09"))]
+async fn journey(_: &SeamClients<'_>) -> TestResult {
+    Err("I09.client requires the native qualification-i09 build".into())
 }
 
+#[cfg(feature = "qualification-i09")]
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let capture_root = required("E2E_ALL_CAPTURE_DIR")?;
     let capture_root = Path::new(&capture_root);
@@ -209,88 +180,83 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let before_map = world_map::decode_world_map_snapshot(&before.payload)
         .map_err(|error| format!("I09 predecessor decode: {error:?}"))?;
     let original = provisioning::item_reference(&definitions, 2358)?;
-    let before_item = before_map.tiles.iter().find(|tile| tile.position == target)
-        .and_then(|tile| tile.items.iter().find(|item| {
-            item.origin == (MapOrigin::BaseOrdinal { ordinal, object_revision: 0 })
-        }))
-        .filter(|item| item.definition == MapDefinition::Item(original) && item.appearance_id == 2358)
+    let before_item = before_map
+        .tiles
+        .iter()
+        .find(|tile| tile.position == target)
+        .and_then(|tile| {
+            tile.items.iter().find(|item| {
+                item.origin
+                    == (MapOrigin::BaseOrdinal {
+                        ordinal,
+                        object_revision: 0,
+                    })
+            })
+        })
+        .filter(|item| {
+            item.definition == MapDefinition::Item(original) && item.appearance_id == 2358
+        })
         .ok_or("I09 predecessor omitted original chair at revision 0")?;
     require_unique_chair(&before_map.tiles, target, before_item)?;
     client.take_events();
-    let command = rotate_menu_command(capture_root, &before.payload, client.world_spatial().actor_position, target).await?;
-    let Target::Object(object) = &command.target else {
-        return Err("I09 Rotate menu did not emit an object target".into());
-    };
-    let stale_payload = oteryn_protocol_oteryn::world_object::encode_use_intent(object)
-        .map_err(|error| format!("I09 Rotate target encode: {error:?}"))?;
     let header = before_map.header;
-    if stale_payload != intent(0)? || command.selection != Some(Selection {
-        position: target,
-        binding: Some((header.content_generation, header.bundle_digest, header.reset_epoch)),
-    }) {
-        return Err("I09 Rotate menu did not carry the exact public chair selection".into());
-    }
-    // Match the production world-context dispatch: service pending frames while
-    // the menu owns input, then validate the live selection before submitting.
-    client.service_liveness(Duration::from_millis(1)).await?;
-    require_actor_tile(tile(client.world_spatial().actor_position)?, approach)?;
-    assert_chair(&mut client, target, before_item)?;
-    if client.take_events().iter().any(|event| matches!(
-        event, SessionEvent::GatedSnapshotReplaced(update) if update.value.domain_id == before.domain_id
-    )) {
-        return Err("I09 map snapshot replaced while the Rotate menu owned input".into());
-    }
-    let before = client.session_mut().gated_snapshot(before.domain_id)
-        .ok_or("I09 map snapshot absent before Rotate dispatch")?.clone();
+    let command = Command {
+        target: Target::Object(WorldObjectTarget {
+            placement: placement.clone(),
+            expected_revision: 0,
+        }),
+        action: Action::Use,
+        selection: Some(Selection {
+            position: target,
+            binding: Some((
+                header.content_generation,
+                header.bundle_digest,
+                header.reset_epoch,
+            )),
+        }),
+    };
+    let stale_payload = intent(0)?;
     let session = client.session_mut();
-    let use_command_id = session.next_command_id();
+    let next_command_id = session.next_command_id();
     let mut unselected = command.clone();
     unselected.selection = None;
     let refused = world_interaction::send_framed(session, &unselected, true).await?;
-    if refused != "Target changed" || session.next_command_id() != use_command_id {
+    if refused != "Target changed" || session.next_command_id() != next_command_id {
         return Err("I09 missing Rotate selection crossed the production send guard".into());
     }
     evidence("I09_MENU_ASSERTION missing-selection=Target-changed no-command-sent");
-    let before_use_sequence = session.last_server_sequence();
-    let outcome = world_interaction::send_framed(session, &command, true).await?;
-    if outcome != "Use: completed" || use_command_id.checked_add(1) != Some(session.next_command_id()) {
-        return Err(format!("I09 first native Rotate outcome: {outcome}").into());
+    if client
+        .take_events()
+        .iter()
+        .any(|event| matches!(event, SessionEvent::WorldMapSnapshot(_)))
+    {
+        return Err("I09 map replaced before the native Rotate interaction".into());
     }
-    let use_reply_sequence = session.last_server_sequence();
-    evidence("I09_MENU_ASSERTION rotate=clicked-public-chair dispatch=production");
+    let actor = client.world_spatial().actor_position;
+    let initial_session = client.join_snapshot().game_session_id;
+    let (session, started) = client.into_session_parts();
+    let (session, proof) =
+        oteryn_client::bevy_shell::rotate_live_chair(session, actor, target, ordinal, &command)
+            .await?;
+    let mut client = DevClientSession::from_session_parts(session, started);
+    if client.join_snapshot().game_session_id != initial_session {
+        return Err("I09 native rotation changed game sessions".into());
+    }
+    require_actor_tile(tile(client.world_spatial().actor_position)?, approach)?;
+    let use_command_id = proof.command_id;
+    let before_use_sequence = proof.before_sequence;
+    let use_reply_sequence = proof.reply_sequence;
+    let before = proof.predecessor;
+    let native_before = world_map::decode_world_map_snapshot(&before.payload)
+        .map_err(|error| format!("I09 native USE predecessor decode: {error:?}"))?;
+    require_unique_chair(&native_before.tiles, target, before_item)?;
+    let delta = proof.delta;
+    evidence(
+        "I09_MENU_ASSERTION rotate=clicked-public-chair dispatch=live-native feedback=Use-completed displayed=2358-to-2359 session=same",
+    );
     let rotated = MapOrigin::BaseOrdinal {
         ordinal,
         object_revision: 1,
-    };
-    let started = tokio::time::Instant::now();
-    let delta = loop {
-        let mut rotation = None;
-        for event in client.take_events() {
-            match event {
-                SessionEvent::GatedSnapshotReplaced(update)
-                    if update.value.domain_id == before.domain_id =>
-                {
-                    return Err("I09 map snapshot replaced before rotation delta".into());
-                }
-                SessionEvent::WorldMap(delta)
-                    if delta.value.cleared.contains(&target)
-                        || delta.value.tiles.iter().any(|tile| tile.position == target) =>
-                {
-                    rotation = Some(delta);
-                    break;
-                }
-                _ => {}
-            }
-        }
-        if let Some(delta) = rotation {
-            break delta;
-        }
-        // Match the full row's map observation budget. USE may publish on a later
-        // visibility refresh, whose nominal cadence already exceeds 100 ms.
-        if started.elapsed() >= Duration::from_secs(5) {
-            return Err("rotation sent no map delta for the revised chair".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
     };
     if delta.server_sequence <= use_reply_sequence {
         return Err("I09 chair update did not follow the USE reply".into());
@@ -298,10 +264,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if delta.base_revision != before.revision {
         return Err("I09 predecessor revision does not match rotation delta".into());
     }
-    evidence(&format!(
-        "I09 rotation_delta_ms={}",
-        started.elapsed().as_millis()
-    ));
     let rotated_tile = delta
         .value
         .tiles
@@ -336,20 +298,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let MapDefinition::Item(definition) = item.definition else {
         return Err("rotated furniture was not an item".into());
     };
-    if *item != (world_map::MapItem {
-        definition: MapDefinition::Item(expected),
-        appearance_id: 2359,
-        count: 1,
-        origin: MapOrigin::BaseOrdinal { ordinal, object_revision: 1 },
-        ..*before_item
-    }) {
+    if *item
+        != (world_map::MapItem {
+            definition: MapDefinition::Item(expected),
+            appearance_id: 2359,
+            count: 1,
+            origin: MapOrigin::BaseOrdinal {
+                ordinal,
+                object_revision: 1,
+            },
+            ..*before_item
+        })
+    {
         return Err(format!(
             "rotation expected definition {expected} and appearance 2359, observed {item:?}"
         )
         .into());
     }
     require_unique_chair(&delta.value.tiles, target, item)?;
-    let stale = client.session_mut().world_context_use(&stale_payload).await?;
+    let stale = client
+        .session_mut()
+        .world_context_use(&stale_payload)
+        .await?;
     if stale.status != CommandStatus::Accepted
         || decode_use_result(&stale.payload)
             .map_err(|error| format!("I09 stale decode: {error:?}"))?
@@ -392,7 +362,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     drop(relogged);
     let (observer_id, observer_transcript) =
         oteryn_dev_client::with_qualification_transcript(async {
-            if clients.accounts[0] == clients.accounts[1] || clients.characters[0] == clients.characters[1] {
+            if clients.accounts[0] == clients.accounts[1]
+                || clients.characters[0] == clients.characters[1]
+            {
                 return Err("I09 public observer must use a distinct account and character".into());
             }
             let mut observer = connect_character(clients, 0xcb, 0).await?;
@@ -400,10 +372,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             if observer_id == initial_id || observer_id == relog_id {
                 return Err("I09 public observer reused the rotating character's session".into());
             }
-            require_release_state(&mut database, &observer_id, clients.characters[0], false).await?;
+            require_release_state(&mut database, &observer_id, clients.characters[0], false)
+                .await?;
             let observer_start = tile(observer.world_spatial().actor_position)?;
-            let path = route(world, observer_start, |cell| cell == approach)
-                .ok_or_else(|| format!("I09 no route from {observer_start:?} to fixed public approach {approach:?}"))?;
+            let path = route(world, observer_start, |cell| cell == approach).ok_or_else(|| {
+                format!(
+                    "I09 no route from {observer_start:?} to fixed public approach {approach:?}"
+                )
+            })?;
             walk_once(&mut observer, world, &path).await?;
             require_actor_tile(tile(observer.world_spatial().actor_position)?, approach)?;
             assert_chair(&mut observer, target, item)?;
@@ -415,7 +391,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 return Err("I09 observer cleanup logout refused".into());
             }
             Ok::<_, Box<dyn std::error::Error>>((observer_id, transcript))
-        }).await?;
+        })
+        .await?;
     let binding = format!(
         "{initial_id} {before_use_sequence} {} {} {} {} {} {relog_id} {observer_id}",
         use_command_id,
@@ -433,8 +410,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         &relog_transcript,
         &relog_id,
     )?;
-    capture(capture_root, "i09-observer-frames.bin", &observer_transcript)?;
-    capture_envelopes(capture_root, "i09-observer-envelopes.json", &observer_transcript, &observer_id)?;
+    capture(
+        capture_root,
+        "i09-observer-frames.bin",
+        &observer_transcript,
+    )?;
+    capture_envelopes(
+        capture_root,
+        "i09-observer-envelopes.json",
+        &observer_transcript,
+        &observer_id,
+    )?;
     capture(capture_root, "i09-binding.txt", binding.as_bytes())?;
     capture(capture_root, "i09-map-before.bin", &before.payload)?;
     capture(
@@ -475,6 +461,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "qualification-i09")]
 fn assert_chair(
     client: &mut oteryn_dev_client::DevClientSession,
     target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
@@ -487,6 +474,7 @@ fn assert_chair(
     require_unique_chair(&snapshot.tiles, target, expected)
 }
 
+#[cfg(feature = "qualification-i09")]
 fn require_unique_chair(
     tiles: &[world_map::MapTile],
     target: oteryn_protocol_oteryn::world_spatial::ActorPosition,
@@ -504,7 +492,9 @@ fn require_unique_chair(
         .filter(|item| matches!(item.appearance_id, 2358..=2361)
             || matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: actual, .. } if actual == ordinal));
     if chairs.next() != Some(expected) || chairs.next().is_some() {
-        return Err("I09 map must show exactly one chair at the expected placement and revision".into());
+        return Err(
+            "I09 map must show exactly one chair at the expected placement and revision".into(),
+        );
     }
     Ok(())
 }
@@ -516,6 +506,7 @@ fn require_clean_logout(phase: &str, outcome: oteryn_dev_client::LogoutOutcome) 
     Ok(())
 }
 
+#[cfg(feature = "qualification-i09")]
 async fn require_release_state(
     database: &mut sqlx::PgConnection,
     session: &str,
@@ -536,9 +527,15 @@ async fn require_release_state(
 }
 
 fn check_release_state(state: (i16, bool, bool), terminal: bool) -> TestResult {
-    let expected = if terminal { (3, false, true) } else { (2, true, true) };
+    let expected = if terminal {
+        (3, false, true)
+    } else {
+        (2, true, true)
+    };
     if state != expected {
-        return Err(format!("I09 session release expected {expected:?}, observed {state:?}").into());
+        return Err(
+            format!("I09 session release expected {expected:?}, observed {state:?}").into(),
+        );
     }
     Ok(())
 }
@@ -550,13 +547,17 @@ fn require_actor_tile(actual: TilePos, expected: TilePos) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "qualification-i09")]
 async fn probe_chair_collision(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     approach: TilePos,
     chair: TilePos,
 ) -> TestResult {
-    for (from, direction, to) in [(approach, StepDirection::West, chair), (chair, StepDirection::East, approach)] {
+    for (from, direction, to) in [
+        (approach, StepDirection::West, chair),
+        (chair, StepDirection::East, approach),
+    ] {
         require_actor_tile(tile(client.world_spatial().actor_position)?, from)?;
         if destination(world, from, direction) != Some(to) {
             return Err("I09 fixed chair collision probe has invalid landing".into());
@@ -567,6 +568,7 @@ async fn probe_chair_collision(
     Ok(())
 }
 
+#[cfg(feature = "qualification-i09")]
 async fn walk_once(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -604,7 +606,11 @@ async fn walk_once(
 
 #[test]
 fn i09_rejects_shifted_collision_probe_and_loss_release() {
-    let chair = TilePos { x: 32355, y: 32206, floor: -7 };
+    let chair = TilePos {
+        x: 32355,
+        y: 32206,
+        floor: -7,
+    };
     let approach = TilePos { x: 32356, ..chair };
     assert!(require_actor_tile(approach, chair).is_err());
     assert!(require_actor_tile(chair, chair).is_ok());
@@ -614,7 +620,7 @@ fn i09_rejects_shifted_collision_probe_and_loss_release() {
 }
 
 #[test]
-fn i09_logout_gate_keeps_refusal_details() {
+fn i09_logout_gate_keeps_refusal_details() -> TestResult {
     let accepted = oteryn_dev_client::LogoutOutcome {
         command_id: 60,
         result_server_sequence: 187,
@@ -624,7 +630,12 @@ fn i09_logout_gate_keeps_refusal_details() {
     assert!(require_clean_logout("initial", accepted).is_ok());
     for (result, detail) in [
         (Some(LogoutResult::Busy), "Busy"),
-        (Some(LogoutResult::InFight { retry_after_ms: 500 }), "InFight"),
+        (
+            Some(LogoutResult::InFight {
+                retry_after_ms: 500,
+            }),
+            "InFight",
+        ),
         (None, "result: None"),
     ] {
         let refusal = oteryn_dev_client::LogoutOutcome {
@@ -632,8 +643,12 @@ fn i09_logout_gate_keeps_refusal_details() {
             result,
             ..accepted
         };
-        let error = require_clean_logout("initial", refusal).unwrap_err().to_string();
+        let Err(error) = require_clean_logout("initial", refusal) else {
+            return Err("I09 logout gate accepted a refusal".into());
+        };
+        let error = error.to_string();
         assert!(error.contains(detail));
         assert!(error.contains("result_server_sequence: 187"));
     }
+    Ok(())
 }

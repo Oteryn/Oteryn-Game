@@ -22,6 +22,7 @@ diagnostics = [
 ]
 # Disposable node-boot builds only; absent from production binaries.
 qualification-clock = ["oteryn-gameplay-dispatch/qualification-clock", "oteryn-gameplay-world/qualification-clock"]
+qualification-i09 = ["oteryn-client/qualification-i09"]
 # Disposable node-boot builds only: the root-only `spawn` control command reaches the
 # test-support owners that place a creature (`qualification_wild_spawn`); absent from production.
 qualification-spawn = ["dep:time", "oteryn-gameplay-durability/qualification-spawn", "oteryn-gameplay-dispatch/qualification-cast-evidence", "oteryn-gameplay-durability/test-support", "oteryn-gameplay-entities/test-support"]
@@ -102,6 +103,8 @@ oteryn-gameplay-content = { version = "=0.1.0", path = "../../crates/gameplay/co
 # Dev/qualification-only (ADR-0011 §6, #162 C1b): drives the seam qualification's
 # `stage=dev_client`. Not part of either production closure (workspace-boundaries.toml
 # `[dev_edges]`, never walked by the production-closure check).
+# I09 transfers the admitted connection to the native client only in the qualification libtest.
+oteryn-client = { version = "=0.1.0", path = "../client" }
 oteryn-dev-client = { version = "=0.1.0", path = "../../tools/dev-client" }
 # Test-only (MAP-LOAD-1): the map_load tests compile their fixture bundle with the compiler.
 oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../tools/world-bundle-compiler" }

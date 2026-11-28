@@ -108,9 +108,21 @@ impl HostOwner {
     }
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
         let client = ClientBootstrap::new()?.with_shared_frontend();
+        Self::with_entry(path, Some(Reentry::new(client)))
+    }
+
+    #[cfg(any(test, feature = "qualification-i09"))]
+    pub(super) fn for_input_fixture() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::with_entry(None, None)
+    }
+
+    fn with_entry(
+        path: Option<PathBuf>,
+        entry: Option<Reentry>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let (selection, selector) = super::selection::SelectionBridge::new();
         Ok(Self {
-            entry: Some(Reentry::new(client)),
+            entry,
             controls: super::controls::Controls::new()?,
             play: None,
             view_mode: Default::default(),

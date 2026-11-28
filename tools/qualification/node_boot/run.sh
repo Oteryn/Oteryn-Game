@@ -214,6 +214,14 @@ if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$NODE_BOOT_P
 fi
 readonly SPAWN_PROOF=node::serve::qualification_fixture::tests::qualification_spawn_transaction_returns_pool_and_bounds_backend
 NODE_SPAWN_FEATURES=(--features qualification-spawn)
+NODE_I09_FEATURES=()
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  i09_feature=$(python3 "$GAME_SOURCE/tools/qualification/node_boot/i09_menu_test.py") || blocked i09_selector_check_failed
+  if [[ "$i09_feature" == 1 ]]; then
+    NODE_I09_FEATURES=(--features qualification-i09)
+    export OTERYN_ASSET_DIR="$GAME_SOURCE"
+  fi
+fi
 if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
   [[ -z "${NODE_BOOT_PREBUILT_DIR:-}" ]] || blocked unprivileged_requires_local_game_build
   NODE_SPAWN_FEATURES=(--features qualification-unprivileged)
@@ -633,7 +641,7 @@ fi
 # Shipped binaries and the SEAM client harness.
 if [[ -z "$NODE_BOOT_LIBTEST" ]]; then
   cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
-  cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+  cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_I09_FEATURES[@]}" "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
 fi
 
 # Deployment administration: service user, directories, roles, migration.
@@ -1553,7 +1561,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       spawn_command=("$NODE_BOOT_LIBTEST" "$spawn_test" --exact)
     else
       spawn_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib
-        "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" "$spawn_test" -- --exact)
+        "${NODE_I09_FEATURES[@]}" "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}" "$spawn_test" -- --exact)
     fi
     spawn_proof="$(OTERYN_TEST_POSTGRES_ADMIN_URL="$ADMIN_URL" "${spawn_command[@]}")" || {
       printf '%s\n' "$spawn_proof"
@@ -1609,19 +1617,12 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
-  if [[ -n "${E2E_ALL_CAPTURE_DIR:-}" ]] && [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-    local menu_test
-    menu_test=$(python3 "$GAME_SOURCE/tools/qualification/node_boot/i09_menu_test.py") || return 1
-    if [[ -n "$menu_test" ]]; then
-      test_env+=(OTERYN_I09_MENU_TEST="$menu_test")
-    fi
-  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
-  local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+  local test_command=(cargo +1.100.0 test --locked -p oteryn-game-server --lib "${NODE_I09_FEATURES[@]}" "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
     "qualification::$qualification" -- --ignored --exact --nocapture)
-  if [[ -n "${NODE_BOOT_LIBTEST:-}" ]]; then
+  if [[ -n "${NODE_BOOT_LIBTEST:-}" && ${#NODE_I09_FEATURES[@]} == 0 ]]; then
     # Cargo runs each test with its package directory as the working directory.
     test_dir="$GAME_SOURCE/apps/game-server"
     test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)

@@ -337,7 +337,7 @@ impl Scene {
         self.facing
     }
 
-    fn unlit_atlas(&self) -> &AtlasImage {
+    pub(crate) fn unlit_atlas(&self) -> &AtlasImage {
         self.presentation_atlas
             .as_deref()
             .unwrap_or_else(|| self.world.atlas())

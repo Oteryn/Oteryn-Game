@@ -32,7 +32,7 @@ mod install;
 pub(super) use install::install;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
-#[cfg(test)]
+#[cfg(any(test, feature = "qualification-i09"))]
 pub(super) use inventory::initialize_item_pointer_test_state;
 pub(super) mod item_details;
 mod journal;

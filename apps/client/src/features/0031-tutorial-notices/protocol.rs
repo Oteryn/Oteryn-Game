@@ -8,8 +8,15 @@ pub async fn run_session<T: Stepper>(
     commands: tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    run_session_returning(session, commands, outbox).await;
+}
+pub(crate) async fn run_session_returning<T: Stepper>(
+    session: T,
+    commands: tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+    outbox: Outbox,
+) -> T {
     outbox.notices_initialize(session.feature_selected(31), session.feature_selected(75));
-    crate::play::session_loop::run_session(session, commands, outbox).await;
+    crate::play::session_loop::run_session_returning(session, commands, outbox).await
 }
 impl Outbox {
     pub(in crate::play) fn notices_initialize(&self, tutorial: bool, save: bool) {
