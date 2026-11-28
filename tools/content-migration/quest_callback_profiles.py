@@ -71,6 +71,9 @@ def admit_route_scenery(root, generated, profile_path, manifest_path, order, can
     # The New Frontier ramp, Outlaw Camp debris and Ape City jar and statue states.
     movement = {**dict.fromkeys(folda, False), 1953: False, 6484: False,
                 4850: True, 4851: True, 4995: True, 4996: True}
+    # Crystal 201189f8 data/items/items.xml:4621-4624,7640-7643 agrees with the retained XML.
+    # The appearance flags make intact bars solid and trashed bars walkable.
+    movement.update({2295: True, 3145: False})
     # The captured Outlaw and Alawar placements use three locked doors. The
     # second Alawar door also needs its unlocked and open counterparts.
     doors = {6251: True, 7033: True, 7034: True, 7035: False, 7042: True}
