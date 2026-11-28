@@ -3,17 +3,19 @@
     "mechanic": "0596-item-inscription-attribution",
     "kind": "handlers",
     "id": "0596-item-inscription-attribution-query",
-    "status": "unsupported",
+    "status": "supported",
     "commands": [
       6356
     ],
     "direction": "client_to_server",
-    "reason": "The capability is reserved for the client lane implementing the negotiated occurrence and inscription extensions.",
+    "capability": 596,
+    "entry_owner": "session",
+    "entry": "gated_command.rs::gated_command",
     "not_applicable": {
-      "state": "The carried-item text owner supplies the server-owned fields.",
-      "protocol": "The server gates the request on its negotiated capability.",
-      "view": "Client presentation is owned by the client lane.",
-      "input": "The server owns the facts behind this read-only query.",
+      "state": "The writing window's item read state belongs to 0511-item-inscription-read.",
+      "protocol": "The 0511-item-inscription-read reducer shares the session's inscription codec.",
+      "view": "The native writing window shows the writer and date alongside the item text.",
+      "input": "The writing window's existing item action requests the attributed read when selected.",
       "settings": "The query has no client setting."
     }
   }

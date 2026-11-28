@@ -16,13 +16,20 @@ pub(in crate::play) fn form_window(_link: &PlayLink) -> crate::play::feature_011
         ],
         buttons: &["Write", "Post"],
         snapshot: |mailbox| {
-            let panel = &mailbox.properties.mail;
-            (
-                panel.open,
-                panel.pending,
-                panel.fields.to_vec(),
-                oteryn_client_ui::mail::panel_text(panel),
-            )
+            let properties = &mailbox.properties;
+            let panel = &properties.mail;
+            let mut text = oteryn_client_ui::mail::panel_text(panel);
+            if !panel.pending
+                && let Ok(handle) = super::protocol::handle(&panel.fields[0])
+                && let Some(attribution) = oteryn_client_ui::item_inscription::attribution_text(
+                    &properties.mail_inscription.known,
+                    handle.get(),
+                )
+            {
+                text.push_str("\r\n");
+                text.push_str(&attribution);
+            }
+            (panel.open, panel.pending, panel.fields.to_vec(), text)
         },
         set_open: |mailbox, value| mailbox.properties.mail.open = value,
         submit: |mailbox, commands, action, values| {

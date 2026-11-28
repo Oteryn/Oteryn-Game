@@ -84,6 +84,7 @@ fn an_unshown_too_long_text_blocks_only_the_same_items_write() {
     let state = Inscription {
         selected: true,
         known: Known::TooLong(7),
+        ..Default::default()
     };
     assert_eq!(
         write_check(&state, 7, "replacement"),
@@ -94,4 +95,41 @@ fn an_unshown_too_long_text_blocks_only_the_same_items_write() {
         WriteCheck::Refused("The letter text is too long")
     );
     assert_eq!(write_check(&state, 8, "other item"), WriteCheck::Read);
+}
+
+#[test]
+fn gap_0596_item_inscription_reduces_only_the_in_flight_attribution_read()
+-> Result<(), &'static str> {
+    let mut state = Inscription {
+        selected: true,
+        attribution_selected: true,
+        ..Default::default()
+    };
+    let read = request(&mut state, 7).ok_or("read")?;
+    assert_eq!(read.capability, CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1);
+    assert_eq!(read.kind, COMMAND_TYPE_ITEM_INSCRIPTION_ATTRIBUTION);
+
+    let second = request(&mut state, 8).ok_or("second read")?;
+    let date_only = result(
+        CommandStatus::DuplicateReplay,
+        br#"{"text":"Epitaph","max_length":20,"writable":false,"written_at_unix_ms":-1}"#.to_vec(),
+    );
+    assert!(apply_result(&mut state, &read, &date_only).is_none());
+    assert_eq!(state.known, Known::Reading(8));
+    assert!(apply_result(&mut state, &second, &date_only).is_some());
+    assert_eq!(
+        attribution_text(&state.known, 8).as_deref(),
+        Some("1969-12-31 23:59:59 UTC")
+    );
+    assert!(attribution_text(&state.known, 7).is_none());
+
+    let blank = request(&mut state, 7).ok_or("blank read")?;
+    let accepted = result(
+        CommandStatus::Accepted,
+        br#"{"text":"","max_length":20,"writable":true}"#.to_vec(),
+    );
+    assert!(apply_result(&mut state, &blank, &accepted).is_some());
+    assert!(attribution_text(&state.known, 7).is_none());
+    assert_eq!(write_check(&state, 7, "new"), WriteCheck::Allowed);
+    Ok(())
 }

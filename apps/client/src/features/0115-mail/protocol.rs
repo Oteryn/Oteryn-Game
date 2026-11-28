@@ -23,7 +23,7 @@ pub(in crate::play) struct Panels {
     pub mail: Panel,
     /// The item chosen for the writing window while a request was pending; applied on its reply.
     pub mail_deferred: Option<oteryn_session::ItemHandle>,
-    /// The writing window item's current text as read from the server (capability 511).
+    /// The writing window item's current inscription as read from the server (511 or 596).
     pub mail_inscription: oteryn_client_ui::item_inscription::Inscription,
     pub house_furniture_rotation: oteryn_client_ui::house_furniture_rotation::Panel,
     pub house_furniture_wrap: oteryn_client_ui::house_furniture_wrap::Panel,
@@ -125,6 +125,9 @@ impl Outbox {
         shared.properties.mail_inscription = oteryn_client_ui::item_inscription::Inscription {
             selected: session.feature_selected(
                 oteryn_client_ui::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+            ),
+            attribution_selected: session.feature_selected(
+                oteryn_client_ui::item_inscription::CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1,
             ),
             ..Default::default()
         };
@@ -281,9 +284,20 @@ impl Outbox {
                 command,
                 result,
             ),
-            115 | 511 => {
+            115 | 511 | 596 => {
                 let properties = &mut shared.properties;
                 if command.capability == 115 {
+                    if properties.mail.pending
+                        && properties.mail.pending_kind == command.kind
+                        && accepted(result)
+                        && command.payload.first() == Some(&2)
+                        && result.payload == [2]
+                        && let oteryn_client_ui::item_inscription::Known::Read { attribution, .. } =
+                            &mut properties.mail_inscription.known
+                    {
+                        // The writer and date describe the prior server text until another read.
+                        *attribution = None;
+                    }
                     apply(&mut properties.mail, command, result);
                 } else {
                     super::input::inscription_result(properties, command, result);

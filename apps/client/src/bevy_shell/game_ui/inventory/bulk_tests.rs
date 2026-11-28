@@ -972,3 +972,5 @@ mod classification;
 mod expiry;
 
 mod nested;
+
+mod inscription_attribution;

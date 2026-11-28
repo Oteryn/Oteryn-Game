@@ -200,6 +200,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::item_view::CAPABILITY_CORPSE_CONTAINER_48_V1,
     // Party join and leave notices on domain 57 (576, requires 42 and 92).
     party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
+    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
 ];
 
@@ -322,6 +323,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
     oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
     oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_READ_V1,
+    oteryn_protocol_oteryn::item_inscription::CAPABILITY_ITEM_INSCRIPTION_ATTRIBUTION_V1,
     // chsw in-game Channel switch, commands 6247, 6248 and 6251.
     oteryn_protocol_oteryn::channel_switch::CAPABILITY_CHANNEL_SWITCH_V1,
     // chsw Channel on Party, VIP and Guild rows (513).
