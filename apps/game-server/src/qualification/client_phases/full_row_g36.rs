@@ -90,6 +90,8 @@ fn core_count(client: &DevClientSession, definition: std::num::NonZeroU32) -> Te
     Ok(inventory
         .entries
         .iter()
+        .chain(inventory.main_backpack.iter())
+        .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
         .filter(|entry| entry.item_definition_ref == definition)
         .map(|entry| u64::from(entry.count.get()))
         .sum())
@@ -149,13 +151,17 @@ async fn require_refusal(
 ) -> TestResult {
     let before = position(client)?;
     let session = client.join_snapshot().game_session_id;
+    let inventory = client
+        .inventory()
+        .ok_or("step=inventory;observed=absent")?
+        .clone();
     if (before == ENTRY_SLOT) != at_slot || core_count(client, definition)? != 0 {
         return Err("step=refusal;observed=wrong-precondition".into());
     }
     obelisk_use(client, payload, expected_refusal(at_slot)).await?;
     if position(client)? != before
         || client.join_snapshot().game_session_id != session
-        || core_count(client, definition)? != 0
+        || client.inventory() != Some(&inventory)
     {
         return Err("step=refusal;observed=unexpected-state-change".into());
     }
