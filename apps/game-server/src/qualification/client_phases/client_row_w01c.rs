@@ -26,10 +26,24 @@ fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
-fn melee_amount(
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum IncomingDamage {
+    Melee { attacker: EntityRef, amount: u32 },
+    Poison { amount: u32 },
+}
+
+impl IncomingDamage {
+    fn amount(self) -> u32 {
+        match self {
+            Self::Melee { amount, .. } | Self::Poison { amount } => amount,
+        }
+    }
+}
+
+fn incoming_damage(
     fact: &AttributedFact,
     spiders: &[EntityRef],
-) -> TestResult<Option<(EntityRef, u32)>> {
+) -> TestResult<Option<IncomingDamage>> {
     let AnalyserFact::DamageInput {
         value,
         element,
@@ -38,16 +52,20 @@ fn melee_amount(
     else {
         return Ok(None);
     };
-    let Some(attacker) = fact.attacker.filter(|id| spiders.contains(id)) else {
-        return Err(format!("W01c unexpected incoming damage: {fact:?}").into());
-    };
-    if *element != DamageElement::Physical
-        || !matches!(source, AnalyserDamageSource::Creature(_))
-        || value.get() > 20
-    {
-        return Err(format!("W01c unexpected incoming damage: {fact:?}").into());
+    let amount = value.get();
+    match (element, source, fact.attacker) {
+        (DamageElement::Physical, AnalyserDamageSource::Creature(_), Some(attacker))
+            if amount <= 20 && spiders.contains(&attacker) =>
+        {
+            Ok(Some(IncomingDamage::Melee { attacker, amount }))
+        }
+        // The native poison tick projects a creature source without a live attacker.
+        // Global Poison Spider poison deals at most two damage per tick.
+        (DamageElement::Earth, AnalyserDamageSource::Creature(None), None) if amount <= 2 => {
+            Ok(Some(IncomingDamage::Poison { amount }))
+        }
+        _ => Err(format!("W01c unexpected incoming damage: {fact:?}").into()),
     }
-    Ok(Some((attacker, value.get())))
 }
 
 fn verify_relog<T: Eq, P: Eq, V: Eq>(
@@ -199,17 +217,16 @@ pub(super) async fn observe_damage(
         for event in client.take_events() {
             if let SessionEvent::AnalyserAttributedFacts(delta) = event {
                 for fact in delta.value {
-                    if let Some((attacker, amount)) = melee_amount(&fact, spiders)?
-                        && hit
-                            .replace((delta.server_sequence, attacker, amount))
-                            .is_some()
+                    if let Some(damage) = incoming_damage(&fact, spiders)?
+                        && hit.replace((delta.server_sequence, damage)).is_some()
                     {
                         return Err("W01c ambiguous damage attribution".into());
                     }
                 }
             }
         }
-        if let (Some(capture), Some((hit_sequence, attacker, amount))) = (&captured, hit) {
+        if let (Some(capture), Some((hit_sequence, damage))) = (&captured, hit) {
+            let amount = damage.amount();
             let vitals_sequence = decode_wire_envelope(&capture.frame)?.server_sequence();
             if !damage_matches(
                 vitals_sequence,
@@ -220,10 +237,23 @@ pub(super) async fn observe_damage(
             ) {
                 return Err(format!("W01c unrelated damage: vitals sequence={vitals_sequence} hit sequence={hit_sequence} amount={amount} HP {} -> {}", capture.before.health, capture.damaged.health).into());
             }
-            evidence(&format!(
-                "W01C_MELEE vitals_sequence={vitals_sequence} attribution_sequence={hit_sequence} attacker={attacker:?} amount={amount}"
-            ));
-            return captured.ok_or("W01c damage capture missing".into());
+            match damage {
+                IncomingDamage::Melee { attacker, .. } => {
+                    evidence(&format!(
+                        "W01C_MELEE vitals_sequence={vitals_sequence} attribution_sequence={hit_sequence} attacker={attacker:?} amount={amount}"
+                    ));
+                    return captured.ok_or("W01c damage capture missing".into());
+                }
+                IncomingDamage::Poison { .. } => {
+                    evidence(&format!(
+                        "W01C_POISON vitals_sequence={vitals_sequence} attribution_sequence={hit_sequence} amount={amount}"
+                    ));
+                    // Consume this verified poison pair. The original deadline still
+                    // applies and only the physical melee pair can return a capture.
+                    captured = None;
+                    hit = None;
+                }
+            }
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("W01c client capture: no spider damage delta in 45s".into());
@@ -312,10 +342,35 @@ mod tests {
                 attacker,
             };
             assert_eq!(
-                melee_amount(&fact, &[spider]).ok().flatten(),
-                accepted.then_some((spider, amount))
+                incoming_damage(&fact, &[spider]).ok().flatten(),
+                accepted.then_some(IncomingDamage::Melee {
+                    attacker: spider,
+                    amount
+                })
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn unattributed_earth_tick_can_only_be_classified_as_poison() -> TestResult {
+        let mut fact = AttributedFact {
+            fact: AnalyserFact::DamageInput {
+                value: std::num::NonZeroU32::new(2).ok_or("test amount is zero")?,
+                element: DamageElement::Earth,
+                source: AnalyserDamageSource::Creature(None),
+            },
+            attacker: None,
+        };
+        assert_eq!(
+            incoming_damage(&fact, &[])?,
+            Some(IncomingDamage::Poison { amount: 2 })
+        );
+        let AnalyserFact::DamageInput { value, .. } = &mut fact.fact else {
+            return Err("missing test damage input".into());
+        };
+        *value = std::num::NonZeroU32::new(3).ok_or("test amount is zero")?;
+        assert!(incoming_damage(&fact, &[]).is_err());
         Ok(())
     }
 
