@@ -149,6 +149,15 @@ pub(super) async fn exercise(
         "historical wire replay cannot mint or consume twice"
     );
     if captain {
+        let collected_at: i64 = sqlx::query_scalar(
+            "SELECT collected_at FROM game_captain_iglue_chest_stock
+             WHERE world_id = encode($1,'hex')::uuid AND channel_id = encode($2,'hex')::uuid",
+        )
+        .bind(admitted.world_id.as_bytes().as_slice())
+        .bind(admitted.channel_id.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(collected_at, epoch + wait);
         let rewards: Vec<(String, i64)> = sqlx::query_as(
             "SELECT i.definition_production_key,sum(i.quantity)::bigint
              FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id)
