@@ -2,18 +2,26 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::cyclopedia_map as wire;
+use std::collections::BTreeSet;
 
 fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
     std::fs::write(root.join(name), bytes)?;
     Ok(())
 }
 
+type Reply = oteryn_dev_client::client_runtime::server_mechanic::ServerMechanicResponse;
+
+fn capture_reply(root: &Path, file: &str, reply: &Reply) -> TestResult {
+    let mut frame = reply.command_id.to_le_bytes().to_vec();
+    frame.extend_from_slice(&reply.server_sequence.to_le_bytes());
+    frame.extend_from_slice(&reply.payload);
+    capture(root, file, &frame)
+}
+
 async fn exchange(
     client: &mut DevClientSession,
     operation: u8,
-    root: &Path,
-    file: &str,
-) -> TestResult<wire::MapResult> {
+) -> TestResult<(wire::MapResult, Reply)> {
     let (kind, payload) = wire::request(operation, 0).map_err(|_| "map request encoder")?;
     let reply = client
         .session_mut()
@@ -22,12 +30,150 @@ async fn exchange(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("map operation {operation} status={:?}", reply.status).into());
     }
-    let mut frame = reply.command_id.to_le_bytes().to_vec();
-    frame.extend_from_slice(&reply.server_sequence.to_le_bytes());
-    frame.extend_from_slice(&reply.payload);
-    capture(root, file, &frame)?;
-    wire::decode_result(&reply.payload)
-        .map_err(|_| format!("operation {operation} result malformed").into())
+    let state = wire::decode_result(&reply.payload)
+        .map_err(|_| format!("operation {operation} result malformed"))?;
+    Ok((state, reply))
+}
+
+fn exploration_tiles(
+    world: &BundleWorld,
+    origin: TilePos,
+    subarea: u32,
+) -> TestResult<BTreeSet<TilePos>> {
+    use crate::domain::cyclopedia::{BasicArea, Point};
+    let sampling = BasicArea::embedded().ok_or("W12 discovery sampling unavailable")?;
+    let point = |at: TilePos| Point {
+        x: at.x.into(),
+        y: at.y.into(),
+        floor: at.floor.into(),
+    };
+    // Cover the eligible terrain. The selected private points and their seed are
+    // available only through the game; neither is read by qualification.
+    let tiles = world
+        .base()
+        .subareas
+        .runs
+        .iter()
+        .filter(|run| run.subarea == subarea)
+        .flat_map(|run| {
+            (run.begin..run.end).map(|x| TilePos {
+                x,
+                y: run.y,
+                floor: run.floor,
+            })
+        })
+        .filter(|at| {
+            !point(*at).in_window(point(origin))
+                && !world.facts().doors().at(*at)
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|tile| tile.walkable())
+                && world.enterable(*at)
+        })
+        .take(sampling.pool_limit)
+        .collect::<BTreeSet<_>>();
+    if tiles.len() < sampling.generated_count {
+        return Err(format!(
+            "W12 exploration terrain has only {} eligible tiles",
+            tiles.len()
+        )
+        .into());
+    }
+    Ok(tiles)
+}
+
+async fn explore(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    subarea: u32,
+    completion_percent: u8,
+    mut pending: BTreeSet<TilePos>,
+    mut observed: wire::MapResult,
+    root: &Path,
+) -> TestResult<wire::MapResult> {
+    while !pending.is_empty() {
+        let from = tile(client.world_spatial().actor_position)?;
+        let path = route_avoiding(
+            world,
+            from,
+            |at| pending.contains(&at),
+            |at| {
+                world
+                    .base()
+                    .subareas
+                    .resolve(at.x, at.y, at.floor)
+                    .is_some_and(|(_, id)| id == subarea)
+            },
+        )
+        .ok_or_else(|| {
+            format!(
+                "W12 traversal has {} uncovered eligible tiles from {from:?}",
+                pending.len()
+            )
+        })?;
+        let mut at = from;
+        pending.remove(&at);
+        for direction in path {
+            let expected =
+                destination(world, at, direction).ok_or("W12 planned landing disappeared")?;
+            let stepped = client.session_mut().step(direction).await?;
+            let landed = tile(client.world_spatial().actor_position)?;
+            if stepped.disposition != StepDisposition::Moved
+                || stepped.world_spatial_delta.is_none()
+                || landed != expected
+            {
+                return Err(format!(
+                    "W12 movement {at:?} -> {expected:?} landed {landed:?}: {stepped:?}"
+                )
+                .into());
+            }
+            at = landed;
+            pending.remove(&at);
+            verdict::Harness::global().progress("w12-exploration-step");
+            let (next, reply) = exchange(client, 0).await?;
+            let visible_point = observed.visible.contains(&(at.x, at.y, -at.floor));
+            if next.code != 0
+                || next.found < observed.found
+                || next.found > observed.found + 1
+                || (visible_point && next.found != observed.found + 1)
+                || (next.found > observed.found && next.revision <= observed.revision)
+                || next.discovered != (next.found == 7)
+            {
+                return Err(format!(
+                    "W12 invalid movement discovery at {at:?}: {observed:?} -> {next:?}"
+                )
+                .into());
+            }
+            if next.found == 6 && observed.found == 5 {
+                capture_reply(root, "w12-progress.bin", &reply)?;
+                capture(
+                    root,
+                    "w12-progress.txt",
+                    describe("progress", &next).as_bytes(),
+                )?;
+            }
+            if next.discovered {
+                if observed.found != 6
+                    || next.area_percent != completion_percent
+                    || !next.visible.is_empty()
+                {
+                    return Err(format!(
+                        "W12 incomplete completion evidence: {observed:?} -> {next:?}"
+                    )
+                    .into());
+                }
+                capture_reply(root, "w12-complete.bin", &reply)?;
+                return Ok(next);
+            }
+            observed = next;
+            tokio::time::sleep(Duration::from_millis(stepped.step_wait_ms.into())).await;
+        }
+    }
+    Err(
+        format!("W12 traversed eligible terrain without discovering seven points: {observed:?}")
+            .into(),
+    )
 }
 
 fn describe(prefix: &str, result: &wire::MapResult) -> String {
@@ -52,20 +198,61 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .join("w12");
     std::fs::create_dir(&root)?;
-    let query = exchange(&mut client, 0, &root, "w12-query.bin").await?;
-    let find = exchange(&mut client, 3, &root, "w12-find.bin").await?;
-    if query.code != 0 || find != query {
+    let world = load_world(
+        std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+        &serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
+    let origin = tile(client.world_spatial().actor_position)?;
+    let (region, subarea) = world
+        .base()
+        .subareas
+        .resolve(origin.x, origin.y, origin.floor)
+        .ok_or("W12 origin has no admitted subarea")?;
+    let region_size = world
+        .base()
+        .subareas
+        .areas
+        .iter()
+        .filter(|area| area.parent == Some(region))
+        .count();
+    let completion_percent = u8::try_from(
+        100usize
+            .checked_div(region_size)
+            .ok_or("W12 empty region")?,
+    )?;
+    let terrain = exploration_tiles(world, origin, subarea)?;
+    let (query, initial_reply) = exchange(&mut client, 0).await?;
+    if query.code != 0 || query.found != 0 || query.discovered || query.area_percent != 0 {
+        return Err(format!("W12 expected a new exploration: {query:?}").into());
+    }
+    capture_reply(&root, "w12-query.bin", &initial_reply)?;
+    let complete = explore(
+        &mut client,
+        world,
+        subarea,
+        completion_percent,
+        terrain,
+        query.clone(),
+        &root,
+    )
+    .await?;
+    let (find, find_reply) = exchange(&mut client, 3).await?;
+    if find != complete {
         return Err(format!(
-            "stationary FIND changed the automatic exploration state: {query:?} -> {find:?}"
+            "stationary FIND changed completed exploration: {complete:?} -> {find:?}"
         )
         .into());
     }
-    let start = exchange(&mut client, 1, &root, "w12-start.bin").await?;
-    if start != find {
-        return Err(
-            format!("legacy START changed active exploration: {find:?} -> {start:?}").into(),
-        );
+    capture_reply(&root, "w12-find.bin", &find_reply)?;
+    let (start, start_reply) = exchange(&mut client, 1).await?;
+    let mut expected_refusal = complete.clone();
+    expected_refusal.code = 3;
+    if start != expected_refusal {
+        return Err(format!("legacy START did not refuse a completed area: {start:?}").into());
     }
+    capture_reply(&root, "w12-start.bin", &start_reply)?;
     let refused = client
         .session_mut()
         .gated_command(
@@ -77,30 +264,59 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refused.status != CommandStatus::Rejected || !refused.payload.is_empty() {
         return Err(format!("malformed intent was not refused: {refused:?}").into());
     }
-    let expected = format!(
-        "{}{}{}",
-        describe("query", &query),
-        describe("find", &find),
-        describe("start", &start)
+    capture_reply(&root, "w12-refused.bin", &refused)?;
+    let (retained, _) = exchange(&mut client, 0).await?;
+    if retained != complete {
+        return Err(format!("W12 refusal changed discovery: {complete:?} -> {retained:?}").into());
+    }
+    let session = client.join_snapshot().game_session_id;
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W12 first logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0xfd).await?;
+    let fresh_session = fresh.join_snapshot().game_session_id;
+    let landed = tile(fresh.world_spatial().actor_position)?;
+    if fresh_session == session
+        || world
+            .base()
+            .subareas
+            .resolve(landed.x, landed.y, landed.floor)
+            .is_none_or(|(_, id)| id != subarea)
+    {
+        return Err(
+            format!("W12 re-admission did not restore the test subarea: {landed:?}").into(),
+        );
+    }
+    let (after, after_reply) = exchange(&mut fresh, 0).await?;
+    let mut expected_after = complete.clone();
+    expected_after.revision = after.revision;
+    if after != expected_after || after.revision < complete.revision {
+        return Err(
+            format!("W12 discovery changed across relog: {complete:?} -> {after:?}").into(),
+        );
+    }
+    capture_reply(&root, "w12-relog.bin", &after_reply)?;
+    let binding = format!(
+        "session={session:?} sequence={} relog_session={fresh_session:?} relog_sequence={}",
+        refused.server_sequence, after_reply.server_sequence
     );
-    let mut frame = refused.command_id.to_le_bytes().to_vec();
-    frame.extend_from_slice(&refused.server_sequence.to_le_bytes());
-    frame.extend_from_slice(&refused.payload);
-    capture(&root, "w12-refused.bin", &frame)?;
-    let session = format!("{:?}", client.join_snapshot().game_session_id);
-    capture(
-        &root,
-        "w12-expected.txt",
-        format!("session={session}\n{expected}").as_bytes(),
-    )?;
-    Ok(format!(
-        "session={session} sequence={}",
-        refused.server_sequence
-    ))
+    let expected = format!(
+        "binding={binding}\n{}{}{}{}{}{}",
+        describe("query", &query),
+        std::fs::read_to_string(root.join("w12-progress.txt"))?,
+        describe("complete", &complete),
+        describe("find", &find),
+        describe("start", &start),
+        describe("relog", &after),
+    );
+    capture(&root, "w12-expected.txt", expected.as_bytes())?;
+    Ok(binding)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+    match verdict::indexed_timeout(Duration::from_secs(360), verdict::observe(journey(clients)))
         .await
     {
         Ok(Ok(observed)) => evidence(&format!(
