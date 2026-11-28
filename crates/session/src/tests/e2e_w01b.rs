@@ -191,6 +191,8 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
     let parts = recorded_sessions(tape)?;
     let target = parse_target(value(expected, "kill.target")?)?;
     let corpse = parse_target(value(expected, "corpse")?)?;
+    let corpse_reference: u32 = value(expected, "corpse.definition")?.parse()?;
+    assert_ne!(corpse_reference, 0);
     let replacement = parse_target(value(expected, "replacement")?)?;
     let before: u64 = value(expected, "before")?.parse()?;
     let killed: u64 = value(expected, "killed")?.parse()?;
@@ -262,9 +264,10 @@ async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
                             .find(|entry| entry.entity == corpse)
                             .ok_or("recorded Rat removal lacks its corpse entry")?;
                         assert_eq!(entry.kind, EntityKind::Corpse);
-                        assert!(matches!(entry.detail, Detail::ObjectWithAppearance {
-                            appearance_id, quantity: 1, ..
-                        } if appearance_id.get() == 5964));
+                        assert!(matches!(entry.detail,
+                            Detail::Object { item_definition_ref, quantity: 1, .. }
+                            | Detail::ObjectWithAppearance { item_definition_ref, quantity: 1, .. }
+                            if item_definition_ref == corpse_reference));
                         "absent".to_owned()
                     } else if let Some(entity) = delta
                         .value

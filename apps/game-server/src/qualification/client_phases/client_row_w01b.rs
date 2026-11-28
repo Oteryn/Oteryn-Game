@@ -260,6 +260,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("W01b expected a full-health Rat before attack: {target:?}").into());
     }
 
+    let corpse_reference = provisioning::item_reference(&provisioning::item_index()?, 5964)?.get();
     let prior_corpses: Vec<_> = client
         .world_entities()
         .ok_or("W01b entity view absent")?
@@ -313,9 +314,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                             entry.kind == oteryn_dev_client::EntityKind::Corpse
                                 && entry.position == last
                                 && !prior_corpses.contains(&entry.entity)
-                                && matches!(entry.detail, EntityDetail::ObjectWithAppearance {
-                                appearance_id, quantity: 1, ..
-                            } if appearance_id.get() == 5964)
+                                && matches!(entry.detail,
+                                EntityDetail::Object { item_definition_ref, quantity: 1, .. }
+                                | EntityDetail::ObjectWithAppearance { item_definition_ref, quantity: 1, .. }
+                                if item_definition_ref == corpse_reference)
                         })
                         .copied();
                     if corpse.is_none() {
@@ -363,7 +365,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         hex(first_session.as_bytes()),
     );
     expected.push_str(&format!(
-        "corpse={}:{}\ncorpse.position={},{},{}\nspawn={},{},{}\nreplacement={}:{}\n",
+        "corpse={}:{}\ncorpse.definition={corpse_reference}\ncorpse.position={},{},{}\nspawn={},{},{}\nreplacement={}:{}\n",
         hex(&corpse.entity.identity),
         corpse.entity.generation,
         corpse.position.x,
