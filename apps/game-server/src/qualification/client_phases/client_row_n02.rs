@@ -3,10 +3,10 @@
 //! `apps/client/src/features/0148-wheel-allocation/presets.rs` over client-ui `settings.rs`.
 //!
 //! The Save writes the core slot, the replies are captured, then the original allocation is
-//! restored so later rows start from the same Wheel.
+//! restored on the dedicated character after verifying its durable state.
 use super::*;
-use oteryn_dev_client::DevClientSession;
-use oteryn_dev_client::client_runtime::wheel_allocation::{self, WheelCommand, WheelResponse};
+use oteryn_dev_client::client_runtime::wheel_allocation::WheelResponse;
+use oteryn_dev_client::{DevClientSession, EntityRef};
 use oteryn_protocol_oteryn::wheel;
 
 const CORE_SLOT: usize = 20;
@@ -46,13 +46,55 @@ async fn send(
     if payload.is_empty() {
         return Err(format!("{name} request did not encode").into());
     }
-    let command = WheelCommand::new(wheel::COMMAND_TYPE_WHEEL_ALLOCATION, payload)
-        .ok_or("Wheel runtime rejected the command")?;
+    use oteryn_protocol_oteryn::atelier::{resources, v2};
     let before_sequence = client.last_server_sequence();
-    let response = wheel_allocation::send(client.session_mut(), &command).await?;
-    if response.status != CommandStatus::Accepted {
-        return Err(format!("{name} status={:?}", response.status).into());
+    let session = client.session_mut();
+    let result = session
+        .gated_command(
+            wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+            wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
+            &payload,
+        )
+        .await?;
+    let current = session
+        .gated_command(
+            wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+            wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
+            &[8, 0],
+        )
+        .await?;
+    let atelier = session
+        .gated_command(
+            v2::CAPABILITY_GEM_ATELIER_V2,
+            v2::COMMAND_TYPE_ATELIER_V2_QUERY,
+            &v2::encode_query(),
+        )
+        .await?;
+    let resources = session
+        .gated_command(
+            resources::CAPABILITY_ATELIER_RESOURCES_V1,
+            resources::COMMAND_TYPE_ATELIER_RESOURCES_QUERY,
+            &resources::encode_query(),
+        )
+        .await?;
+    for (frame, status) in [
+        ("receipt", result.status),
+        ("wheel", current.status),
+        ("atelier", atelier.status),
+        ("resources", resources.status),
+    ] {
+        if status != CommandStatus::Accepted {
+            return Err(format!("{name} {frame} status={status:?} expected Accepted").into());
+        }
     }
+    let response = WheelResponse {
+        kind: wheel::COMMAND_TYPE_WHEEL_ALLOCATION,
+        status: result.status,
+        payload: result.payload,
+        wheel: Some(current.payload),
+        atelier: Some(atelier.payload),
+        resources: Some(resources.payload),
+    };
     let receipt = wheel::decode_wheel_reply(&response.payload)
         .map_err(|error| format!("{name} receipt: {error:?}"))?;
     let current = response
@@ -73,10 +115,45 @@ async fn send(
         let atelier_v2 = client
             .selected_capabilities()
             .contains(&oteryn_protocol_oteryn::atelier::v2::CAPABILITY_GEM_ATELIER_V2);
+        capture(&format!("n02-{name}-request.bin"), &payload)?;
+        let atelier = atelier_view(&response)?;
+        use oteryn_protocol_oteryn::wheel_presentation as diagram;
+        let request = diagram::Request {
+            nonce: 1,
+            wheel_revision: receipt.revision,
+            atelier_revision: atelier.revision,
+            points: receipt.points,
+            vessels: [None; 4],
+        };
+        let payload = request
+            .encode()
+            .ok_or("N02 Wheel presentation request did not encode")?;
+        let display = client
+            .session_mut()
+            .gated_command(
+                wheel::CAPABILITY_WHEEL_ALLOCATION_V1,
+                diagram::COMMAND_TYPE_WHEEL_PRESENTATION,
+                &payload,
+            )
+            .await?;
+        let view = diagram::Reply::decode(&display.payload)
+            .ok_or("N02 invalid Wheel presentation reply")?;
+        if display.status != CommandStatus::Accepted
+            || view.request != request
+            || view.available != 25
+        {
+            return Err(format!(
+                "N02 Wheel presentation status={:?} available={} expected_available=25",
+                display.status, view.available
+            )
+            .into());
+        }
+        capture(&format!("n02-{name}-diagram.bin"), &display.payload)?;
+        let capture_sequence = client.last_server_sequence();
         capture(
             &format!("n02-{name}-wire.txt"),
             format!(
-                "{session} {sequence} {} {} {}\n",
+                "{session} {capture_sequence} {} {} {}\n",
                 response.kind,
                 response.status as u32,
                 u8::from(atelier_v2)
@@ -123,6 +200,7 @@ async fn journey(
         ..*clients
     };
     let mut prepare = connect_world(clients, 0xad).await?;
+    check_stats(&mut prepare, "knight", false).await?;
     request_fixture_control(
         uuid_text(prepare.join_snapshot().game_session_id.as_bytes()),
         "--profile",
@@ -134,26 +212,7 @@ async fn journey(
     drop(prepare);
     let mut client = connect_world(clients, 0xad).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let stats = client
-        .session_mut()
-        .gated_command(
-            oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
-            388,
-            &[
-                oteryn_protocol_oteryn::cyclopedia_character::CharacterTab::GeneralStats as u8,
-                0,
-                0,
-                1,
-            ],
-        )
-        .await?;
-    let selection = general_stats::selected(&client);
-    general_stats::validate(&stats.payload, selection)?;
-    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
-    let xp = u64::from_le_bytes(stats.payload[1..9].try_into()?);
-    if stats.status != CommandStatus::Accepted || level != 75 || xp != 6_489_800 {
-        return Err(format!("seeded stats level={level} xp={xp}").into());
-    }
+    check_stats(&mut client, "knight", true).await?;
     cross_castle_door(&mut client, world, StepDirection::North).await?;
     let placement = TilePos {
         x: 32311,
@@ -188,30 +247,24 @@ async fn journey(
         .ok_or("King Tibianus was not visible at his authored placement")?
         .entity;
     character_prep::grant_premium(&client).await?;
-    let (_, greeting) = client_row_p20::talk(&mut client, king, "Hail King").await?;
-    if greeting.is_empty() {
-        return Err("King Tibianus greeting was empty".into());
-    }
-    let (_, quote) = client_row_p20::talk(&mut client, king, "promotion").await?;
-    if quote != ["Do you want to be promoted for 20000 gold coins?"] {
-        return Err(format!("King Tibianus promotion quote: {quote:?}").into());
-    }
-    let unpaid = gold(&mut client).await?;
-    if unpaid != 20_050 {
-        return Err(format!("N02 pre-promotion gold was {unpaid}, expected 20050").into());
-    }
-    let (_, confirmation) = client_row_p20::talk(&mut client, king, "yes").await?;
-    if confirmation != ["You are now promoted."] {
-        return Err(format!("King Tibianus promotion confirmation: {confirmation:?}").into());
-    }
-    let paid = gold(&mut client).await?;
-    if paid != unpaid - 20_000 {
-        return Err(format!(
-            "N02 promotion charged {} -> {paid}, expected {unpaid} -> 50",
-            unpaid
-        )
-        .into());
-    }
+    talk(
+        &mut client,
+        king,
+        "Hail King",
+        "Greetings, I am King Tibianus.",
+    )
+    .await?;
+    talk(
+        &mut client,
+        king,
+        "promotion",
+        "Do you want to be promoted for 20000 gold coins?",
+    )
+    .await?;
+    check_gold(&mut client, 20_050).await?;
+    talk(&mut client, king, "yes", "You are now promoted.").await?;
+    check_gold(&mut client, 50).await?;
+    check_stats(&mut client, "elite_knight", true).await?;
     cross_castle_door(&mut client, world, StepDirection::South).await?;
     walk_route(&mut client, world, |at| at == start).await?;
     if !client
@@ -220,6 +273,7 @@ async fn journey(
     {
         return Err("admission omitted Wheel capability 148".into());
     }
+    require_protection_zone(&client, world)?;
     let (_, initial) = send(&mut client, vec![8, 0], "query", true).await?;
     let query_sequence = client.last_server_sequence();
     if initial.refused || initial.revision != 0 || initial.points != [0; 36] {
@@ -231,7 +285,7 @@ async fn journey(
     } else {
         25
     };
-    let (_, saved) = send(
+    let (saved_frames, saved) = send(
         &mut client,
         request(1, v7(0xad, 1), initial.revision, target),
         "save",
@@ -253,16 +307,32 @@ async fn journey(
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0xad).await?;
-    let (_, durable) = send(&mut client, vec![8, 0], "relog", false).await?;
+    let (durable_frames, durable) = send(&mut client, vec![8, 0], "relog", false).await?;
     if client.join_snapshot().game_session_id == session || durable != saved {
         return Err(format!("fresh Wheel differs from saved allocation: {durable:?}").into());
     }
-    if gold(&mut client).await? != paid {
-        return Err("N02 promotion debit did not survive relog".into());
+    check_gold(&mut client, 50).await?;
+    check_stats(&mut client, "elite_knight", true).await?;
+    require_protection_zone(&client, world)?;
+    let saved_atelier = atelier_view(&saved_frames)?;
+    let durable_atelier = atelier_view(&durable_frames)?;
+    if saved_atelier.refused
+        || durable_atelier.refused
+        || saved_atelier.wheel_revision != saved.revision
+        || durable_atelier.wheel_revision != durable.revision
+        || saved_atelier.gems != durable_atelier.gems
+        || saved_atelier.vessels != durable_atelier.vessels
+        || saved_atelier.vessel_nodes != durable_atelier.vessel_nodes
+        || durable_atelier.vessels.len() != 8
+        || durable_atelier.vessel_nodes.len() != 8
+        || !durable_atelier.premium
+        || durable_atelier
+            .vessels
+            .iter()
+            .any(|vessel| vessel.gem.is_some())
+    {
+        return Err(format!("N02 relog Atelier mismatch: saved_slots={} durable_slots={} durable_nodes={} durable_premium={} expected_slots=8 expected_nodes=8 expected_premium=true", saved_atelier.vessels.len(), durable_atelier.vessels.len(), durable_atelier.vessel_nodes.len(), durable_atelier.premium).into());
     }
-    // The last session's logout releases the disposable Premium view. Prepare
-    // the fresh session only after proving the saved Wheel survived admission.
-    character_prep::grant_premium(&client).await?;
     let (_, restored) = send(
         &mut client,
         request(1, v7(0xad, 2), saved.revision, initial.points),
@@ -288,14 +358,134 @@ async fn journey(
     ))
 }
 
-async fn gold(client: &mut DevClientSession) -> TestResult<u64> {
-    let balance = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
-        .await?
-        .ok_or("N02 live gold balance absent")?;
-    balance
-        .bank_gold
-        .checked_add(balance.carried_gold)
-        .ok_or_else(|| "N02 gold balance overflow".into())
+async fn check_stats(
+    client: &mut DevClientSession,
+    expected_vocation: &str,
+    seeded: bool,
+) -> TestResult {
+    let stats = client
+        .session_mut()
+        .gated_command(
+            oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            388,
+            &[
+                oteryn_protocol_oteryn::cyclopedia_character::CharacterTab::GeneralStats as u8,
+                0,
+                0,
+                1,
+            ],
+        )
+        .await?;
+    let selection = general_stats::selected(client);
+    let vocation = general_stats::validate(&stats.payload, selection)?;
+    let expected = oteryn_protocol_oteryn::cyclopedia_character::vocation_id(expected_vocation)
+        .ok_or("unknown N02 expected vocation")?;
+    if vocation != Some(expected) {
+        return Err(format!(
+            "N02 vocation expected {expected_vocation} ({expected}), got {vocation:?}"
+        )
+        .into());
+    }
+    let level = u32::from_le_bytes(stats.payload[9..13].try_into()?);
+    let xp = u64::from_le_bytes(stats.payload[1..9].try_into()?);
+    if stats.status != CommandStatus::Accepted || (seeded && (level != 75 || xp != 6_489_800)) {
+        return Err(format!("seeded stats level={level} xp={xp}").into());
+    }
+    Ok(())
+}
+
+fn require_protection_zone(client: &DevClientSession, world: &BundleWorld) -> TestResult {
+    let at = tile(client.world_spatial().actor_position)?;
+    if !world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.protection_zone())
+    {
+        return Err(format!("N02 Wheel mutation outside protection zone at {at:?}").into());
+    }
+    Ok(())
+}
+
+fn atelier_view(
+    response: &WheelResponse,
+) -> TestResult<oteryn_protocol_oteryn::atelier::v2::AtelierReply> {
+    oteryn_protocol_oteryn::atelier::v2::decode_reply(
+        response
+            .atelier
+            .as_deref()
+            .ok_or("missing Atelier v2 frame")?,
+    )
+    .map_err(|error| format!("N02 Atelier v2 decode: {error:?}").into())
+}
+
+async fn check_gold(client: &mut DevClientSession, expected_carried: u64) -> TestResult {
+    use oteryn_protocol_oteryn::atelier::resources as wire;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_ATELIER_RESOURCES_V1,
+            wire::COMMAND_TYPE_ATELIER_RESOURCES_QUERY,
+            &wire::encode_query(),
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("N02 balance status={:?} expected Accepted", reply.status).into());
+    }
+    let balance = wire::decode_reply(&reply.payload)
+        .map_err(|error| format!("N02 balance decode: {error:?}"))?;
+    if (balance.carried_gold, balance.bank_gold) != (expected_carried, 0) {
+        return Err(format!(
+            "N02 balance carried={} bank={} expected_carried={expected_carried} expected_bank=0",
+            balance.carried_gold, balance.bank_gold
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn talk(
+    client: &mut DevClientSession,
+    npc: EntityRef,
+    text: &str,
+    expected: &str,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service as wire;
+    tokio::time::sleep(Duration::from_millis(260)).await;
+    let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(|error| format!("N02 {text:?} talk encode: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_NPC_SERVICE_V1,
+            wire::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    let disposition = wire::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("N02 {text:?} talk decode: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != wire::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "N02 {text:?} talk status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
+    }
+    let delta = client
+        .session_mut()
+        .read_gated_delta(wire::STATE_DOMAIN_NPC_CONVERSATION, 1)
+        .await?;
+    let conversation = wire::decode_npc_conversation(&delta.payload)
+        .map_err(|error| format!("N02 {text:?} conversation decode: {error:?}"))?;
+    if delta.server_sequence <= reply.server_sequence
+        || conversation.open != Some((npc, wire::NpcConversationState::Open))
+        || conversation.lines != [expected]
+    {
+        return Err(format!("N02 {text:?} expected {expected:?}, got {conversation:?}").into());
+    }
+    Ok(())
 }
 
 async fn step_once(
@@ -355,6 +545,17 @@ async fn cross_castle_door(
     let key = keys.next().ok_or("missing fixed castle door")?;
     if keys.next().is_some() || doors.authored_closed(key).is_none() {
         return Err("ambiguous or unsupported fixed castle door".into());
+    }
+    let (_, ordinal) =
+        crate::map::view::placement_of(key).ok_or("invalid castle door placement")?;
+    let appearance = world
+        .base()
+        .tile(DOOR.x, DOOR.y, DOOR.floor)
+        .and_then(|tile| tile.appearance(ordinal));
+    if appearance != Some(1632) {
+        return Err(
+            format!("N02 castle door at {DOOR:?} appearance={appearance:?} expected=1632").into(),
+        );
     }
     walk_route(client, world, |at| at == TilePos { y: from, ..DOOR }).await?;
     let mut placement = world.base().digest().to_vec();

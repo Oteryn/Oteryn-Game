@@ -20,6 +20,8 @@ struct Frames {
     wheel: Vec<u8>,
     atelier: Vec<u8>,
     resources: Option<Vec<u8>>,
+    request: Option<Vec<u8>>,
+    diagram: Option<oteryn_client_runtime::wheel_presentation::Reply>,
 }
 
 struct Captured {
@@ -73,6 +75,8 @@ fn frames(revision: u64, points: [u16; 36]) -> Result<Frames, Error> {
             grade_quotes: Vec::new(),
         }))?,
         resources: None,
+        request: None,
+        diagram: None,
     })
 }
 
@@ -100,7 +104,8 @@ fn captured() -> Result<Captured, Error> {
         let [session, sequence, kind, status, atelier_v2] = fields.as_slice() else {
             return Err("invalid N02 wire metadata".into());
         };
-        if let Ok(binding) = std::env::var("N02_REPLAY_BINDING") {
+        {
+            let binding = std::env::var("N02_REPLAY_BINDING")?;
             let expected: Vec<_> = binding.split_whitespace().collect();
             let [expected_session, query, save] = expected.as_slice() else {
                 return Err("invalid N02 replay binding".into());
@@ -121,7 +126,6 @@ fn captured() -> Result<Captured, Error> {
             _ => return Err("N02 capture status was not Accepted".into()),
         };
         let atelier_v2 = match *atelier_v2 {
-            "0" => false,
             "1" => true,
             _ => return Err("invalid negotiated Atelier mode".into()),
         };
@@ -132,7 +136,16 @@ fn captured() -> Result<Captured, Error> {
             receipt: std::fs::read(path.join(format!("n02-{name}-receipt.bin")))?,
             wheel: std::fs::read(path.join(format!("n02-{name}-wheel.bin")))?,
             atelier: std::fs::read(path.join(format!("n02-{name}-atelier.bin")))?,
-            resources: std::fs::read(path.join(format!("n02-{name}-resources.bin"))).ok(),
+            resources: Some(std::fs::read(
+                path.join(format!("n02-{name}-resources.bin")),
+            )?),
+            request: Some(std::fs::read(path.join(format!("n02-{name}-request.bin")))?),
+            diagram: Some(
+                oteryn_client_runtime::wheel_presentation::Reply::decode(&std::fs::read(
+                    path.join(format!("n02-{name}-diagram.bin")),
+                )?)
+                .ok_or("invalid live Wheel presentation")?,
+            ),
         })
     };
     let expected = std::fs::read_to_string(path.join("n02-expected.txt"))?;
@@ -165,7 +178,13 @@ fn response(frames: &Frames) -> WheelResponse {
 fn synchronised(panel: &mut WheelPanel, frames: &Frames) -> Result<(), Error> {
     panel.selected = true;
     panel.atelier_v2 = frames.atelier_v2;
-    request(panel, Intent::Refresh, occurrence(1)).ok_or("refresh was not sent")?;
+    let refresh = request(panel, Intent::Refresh, occurrence(1)).ok_or("refresh was not sent")?;
+    if let Some(payload) = &frames.request {
+        assert_eq!(
+            &refresh.payload, payload,
+            "client Refresh differs from live request"
+        );
+    }
     assert!(apply_result(panel, &response(frames)));
     assert!(panel.ready());
     Ok(())
@@ -185,7 +204,30 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
             .wheel
             .set_points(CORE_SLOT, captured.saved[CORE_SLOT])
     );
-    request(&mut mailbox.wheel, Intent::Save, occurrence(2)).ok_or("save was not sent")?;
+    let id = captured
+        .save
+        .request
+        .as_deref()
+        .map(|bytes| wire(wheel::decode_wheel_request(bytes)).map(|request| request.occurrence))
+        .transpose()?
+        .unwrap_or_else(|| occurrence(2));
+    let save = request(&mut mailbox.wheel, Intent::Save, id).ok_or("save was not sent")?;
+    assert_eq!(save.kind, wheel::COMMAND_TYPE_WHEEL_ALLOCATION);
+    assert!(save.mutation);
+    if let Some(payload) = &captured.save.request {
+        assert_eq!(
+            &save.payload, payload,
+            "client Save differs from live request"
+        );
+    }
+    let decoded = wire(wheel::decode_wheel_request(&save.payload))?;
+    assert_eq!(decoded.action, 1);
+    assert_eq!(decoded.occurrence, id);
+    assert_eq!(decoded.expected_revision, captured.saved_revision - 1);
+    assert_eq!(decoded.points, captured.saved);
+    if captured.save.atelier_v2 {
+        assert!(decoded.vessels.is_none());
+    }
     assert!(apply_result(&mut mailbox.wheel, &response(&captured.save)));
     assert_eq!(
         mailbox.wheel.feedback,
@@ -220,9 +262,9 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
             .vessel_board
             .as_ref()
             .ok_or("live v2 Vessel board absent")?;
-        assert_eq!(board.slots.len(), 12);
+        assert_eq!(board.slots.len(), 8);
         assert!(board.slots.iter().all(|slot| slot.gem.is_none()));
-        format!("{code}#v2:{}", ["-"; 12].join(","))
+        format!("{code}#v2:{}", ["-"; 8].join(","))
     } else {
         code.clone()
     };
@@ -242,6 +284,15 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
     );
     submit(&mut mailbox, 3, &path);
     let exported = mailbox.wheel.preset_fields[1].clone();
+    let tibia = captured.save.diagram.as_ref().map(|diagram| {
+        assert_eq!(diagram.available, 25);
+        mailbox.wheel.diagram.reply = Some(diagram.clone());
+        submit(&mut mailbox, 7, &path);
+        assert_eq!(mailbox.wheel.preset_feedback, PRESET_OK);
+        let code = mailbox.wheel.preset_fields[1].clone();
+        assert!(code.starts_with("K0"));
+        code
+    });
     drop(mailbox);
 
     // A fresh panel, synchronised to the pre-save server state, imports the exported code.
@@ -255,7 +306,17 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
     assert_eq!(fresh.wheel.points, captured.saved);
     assert!(fresh.wheel.dirty());
 
-    // Malformed codes are refused and leave the panel exactly as it was.
+    if let Some(code) = tibia {
+        assert!(fresh.wheel.set_points(CORE_SLOT, 0));
+        fresh.wheel.diagram.reply = captured.query.diagram.clone();
+        fresh.wheel.preset_fields[1] = code;
+        submit(&mut fresh, 5, &path);
+        assert_eq!(fresh.wheel.preset_feedback, PRESET_OK);
+        assert_eq!(fresh.wheel.points, captured.saved);
+        assert!(fresh.wheel.dirty());
+    }
+
+    // Malformed codes leave the Wheel state and preset book unchanged.
     let before = fresh.wheel.clone();
     let mut over = captured.saved;
     over[CORE_SLOT] = 51;
@@ -274,7 +335,10 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
         fresh.wheel.preset_fields[1] = bad;
         submit(&mut fresh, 5, &path);
         assert_eq!(fresh.wheel.preset_feedback, message);
-        assert_eq!(fresh.wheel.points, before.points);
+        let mut expected = before.clone();
+        expected.preset_fields[1] = fresh.wheel.preset_fields[1].clone();
+        expected.preset_feedback = message.into();
+        assert_eq!(fresh.wheel, expected);
     }
     std::fs::remove_file(path)?;
     Ok(())
