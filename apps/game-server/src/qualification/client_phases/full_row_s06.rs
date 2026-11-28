@@ -6,7 +6,7 @@
 //! 2. Send APPEARANCE_CHANGE for an unearned addon (or mount when no addon refusal candidate is
 //!    served); expect Rejected and no catalogue selection/root-revision change.
 //! 3. Loot a slingshot from a real hunt, walk beside an authored bear, and send the native
-//!    USE-with-creature command. A refused tame can be retried after earning another slingshot.
+//!    USE-with-creature command with one draw armed through the node-boot fixture.
 //! 4. After a successful tame, select the newly earned mount with APPEARANCE_CHANGE; expect
 //!    Accepted/Committed and an own-actor appearance mapping carrying the new selection revision.
 //! 5. Log out, freshly admit the same character, and re-read the catalogue/binding; expect the
@@ -600,6 +600,17 @@ async fn tame_war_bear(
             use_with_position: None,
         })
         .map_err(|error| format!("taming USE encode: {error:?}"))?;
+        let armed = request_fixture_control(
+            uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+            "--taming-draw",
+            client.next_command_id().to_string(),
+        )
+        .await
+        .map_err(|error| format!("step=taming-attempt need=one-use-qualification-draw observed={error}"))?;
+        assert_eq!(
+            armed, "armed",
+            "qualification control must arm the live taming draw",
+        );
         let reply = client.session_mut().world_context_use(&payload).await?;
         let (disposition, _) = world_object::decode_use_result_with_gate(&reply.payload)
             .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
@@ -636,7 +647,9 @@ async fn tame_war_bear(
                 }
             }
             if failed {
-                break;
+                return Err(
+                    "step=taming-attempt forced qualification draw did not tame the bear".into(),
+                );
             }
             let unlocked = state.catalogue.mounts.iter().any(|mount| mount == WAR_BEAR);
             let removed = client

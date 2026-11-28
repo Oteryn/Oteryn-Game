@@ -163,6 +163,66 @@ pub(super) async fn prepare(
     }
 }
 
+#[cfg(feature = "qualification-spawn")]
+pub(super) async fn arm_taming_draw(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    config: &NodeConfig,
+    request: &[u8],
+) -> Option<&'static str> {
+    use crate::foundation::{CommandId, CommandRef, GameSessionId};
+
+    if !config.qualification_fixture {
+        return None;
+    }
+    let account = super::super::uuid_bytes(config.qualification_taming_account.as_deref()?)?;
+    let (session, command) = std::str::from_utf8(request)
+        .ok()?
+        .strip_prefix("qualify-taming-draw ")?
+        .strip_suffix('\n')?
+        .split_once(' ')?;
+    let session = GameSessionId::decode(&parse_operation_id(session.as_bytes())?).ok()?;
+    let command = CommandId::new(command.parse().ok()?).ok()?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let fence = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::authority_busy,
+        async || {
+            root.observe_current_gameplay_fence(authority, session, false)
+                .await
+        },
+    )
+    .await
+    .ok()??;
+    let scope = fence.runtime_scope;
+    if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
+        || scope.channel_id().map(|id| *id.as_bytes())
+            != super::super::uuid_bytes(&config.scope.channel_id)
+    {
+        return None;
+    }
+    let character = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        qualification_build::authority_busy,
+        async || {
+            root.read_current_character(authority, fence.character_id)
+                .await
+        },
+    )
+    .await
+    .ok()?;
+    if *character.account_id.as_bytes() != account {
+        return None;
+    }
+    crate::gameplay_transport::arm_qualification_taming_draw(
+        fence.item_fence(),
+        CommandRef::new(session, command),
+    )
+    .then_some("armed")
+}
+
 /// The live Channel owner and the room the `spawn` command places creatures in.
 /// Only the qualification-spawn build (and tests) reads the fields; other builds refuse unplaced.
 #[cfg_attr(not(any(test, feature = "qualification-spawn")), allow(dead_code))]

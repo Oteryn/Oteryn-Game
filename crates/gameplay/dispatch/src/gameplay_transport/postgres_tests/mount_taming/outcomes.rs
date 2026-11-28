@@ -194,9 +194,29 @@ pub(super) async fn run(
     assert_eq!(h.count("game_account_appearance_unlocks").await?, 0);
     assert_eq!(h.count("game_mount_taming_attempts").await?, 3);
     let (target, entity) = spawn(owner, actor, "oteryn:creature.bear", 1).await?;
-    crate::gameplay_transport::mount_taming::test_draw::set(0);
     let success = use_on(entity);
     let success_command = retained.continuity.next_command_id;
+    #[cfg(not(feature = "qualification-taming"))]
+    crate::gameplay_transport::mount_taming::test_draw::set(0);
+    #[cfg(feature = "qualification-taming")]
+    {
+        use crate::foundation::{CommandId, CommandRef};
+        use crate::gameplay_transport::{
+            arm_qualification_taming_draw, mount_taming::qualification_draw::consume,
+        };
+        let command = CommandRef::new(session, CommandId::new(success_command).map_err(debug)?);
+        assert!(arm_qualification_taming_draw(item_fence()?, command));
+        assert!(!arm_qualification_taming_draw(item_fence()?, command));
+        let mut stale = item_fence()?;
+        stale.connection_generation = crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
+        assert!(!consume(stale, command));
+        let next = CommandRef::new(session, CommandId::new(success_command + 1).map_err(debug)?);
+        assert!(!consume(item_fence()?, next));
+        // Without the live override, this command leaves the bear alive and earns no mount.
+        let draw = u64::try_from((62_u128 << 64).div_ceil(300))?;
+        assert_eq!(rule.decide(draw), 3);
+        crate::gameplay_transport::mount_taming::test_draw::set(draw);
+    }
     let payload = encode_item_use_intent(&success).map_err(debug)?;
     let (results, next) = wire::exchange(owner, retained, std::slice::from_ref(&payload)).await?;
     assert_eq!(results, [UseDisposition::Committed]);
@@ -207,12 +227,24 @@ pub(super) async fn run(
             .lock()
             .await
             .current_live_creature_identity(target)
-            .is_err()
+            .is_err(),
+        "the routed taming success must remove the live bear",
     );
     assert_eq!(quantity(h).await?, 18);
     assert_eq!(h.count("game_account_appearance_unlocks").await?, 1);
     assert_eq!(h.count("game_account_achievements").await?, 2);
     assert_eq!(h.count("game_item_use_records").await?, 2);
+    #[cfg(feature = "qualification-taming")]
+    assert!(
+        !crate::gameplay_transport::mount_taming::qualification_draw::consume(
+            item_fence()?,
+            crate::foundation::CommandRef::new(
+                session,
+                crate::foundation::CommandId::new(success_command).map_err(debug)?,
+            ),
+        ),
+        "the routed taming draw must be consumed once",
+    );
     // The same existing account-cosmetics view used by mount selection sees the earned key.
     let cosmetics = owner
         .active_generation
