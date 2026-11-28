@@ -575,6 +575,11 @@ const DEMONA_RING_APPROACH: TilePos = TilePos {
     x: 32514,
     ..DEMONA_RING_CHEST
 };
+const ENERGY_FIELD_APPROACH: TilePos = TilePos {
+    x: 32474,
+    y: 32248,
+    floor: -8,
+};
 
 async fn claim_demona_ring(
     client: &mut DevClientSession,
@@ -654,6 +659,32 @@ async fn energy_ring(
             .await?;
         }
     }
+    let here = tile(client.world_spatial().actor_position)?;
+    let restore = if energy_field_route(&world.bundle, here).is_none()
+        && energy_field_route(&world.bundle, ENERGY_FIELD_APPROACH).is_some()
+    {
+        // This authored field's room has no walking connection to Thais in the crop.
+        rejoin(client, clients, Some(ENERGY_FIELD_APPROACH)).await?;
+        Some(here)
+    } else {
+        None
+    };
+    let lifecycle = ring_lifecycle(client, clients, check, &world.bundle, base, active).await;
+    if let Some(at) = restore {
+        let returned = rejoin(client, clients, Some(at)).await;
+        return lifecycle.and(returned);
+    }
+    lifecycle
+}
+
+async fn ring_lifecycle(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    check: &mut Check,
+    world: &BundleWorld,
+    base: NonZeroU32,
+    active: NonZeroU32,
+) -> TestResult<()> {
     check.action = "equip";
     if let Some(source) = carried(client, base) {
         move_ring(
@@ -676,7 +707,7 @@ async fn energy_ring(
     }
 
     check.action = "damage-mana-at-two-to-one";
-    observe_shield(client, check, &world.bundle).await?;
+    observe_shield(client, check, world).await?;
     check.action = "unequip-pause";
     move_ring(client, handle, items::ItemMoveDestination::MainBackpack).await?;
     let paused_handle = wait(client, Duration::from_secs(5), |client| {
@@ -813,12 +844,7 @@ fn verify_ring_expiry_timing(
     Ok(())
 }
 
-async fn observe_shield(
-    client: &mut DevClientSession,
-    check: &mut Check,
-    world: &BundleWorld,
-) -> TestResult<()> {
-    // Native 2126 applies one 100-point energy hit per entry, with no residual tick.
+fn energy_field_route(world: &BundleWorld, from: TilePos) -> Option<Vec<StepDirection>> {
     let field = |at: TilePos| {
         world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| {
             !cell.protection_zone()
@@ -827,10 +853,18 @@ async fn observe_shield(
                     .any(|ordinal| cell.appearance(ordinal) == Some(2126))
         })
     };
-    let blocked = WOLF_BLOCKED_LANDING;
+    route_avoiding(world, from, field, |at| at != WOLF_BLOCKED_LANDING)
+}
+
+async fn observe_shield(
+    client: &mut DevClientSession,
+    check: &mut Check,
+    world: &BundleWorld,
+) -> TestResult<()> {
+    // Native 2126 applies one 100-point energy hit per entry, with no residual tick.
     let here = tile(client.world_spatial().actor_position)?;
-    let mut path = route_avoiding(world, here, field, |at| at != blocked).ok_or_else(|| {
-        format!("native Energy Field 2126 has no walk route from {here:?} avoiding {blocked:?}")
+    let mut path = energy_field_route(world, here).ok_or_else(|| {
+        format!("native Energy Field 2126 has no walk route from {here:?} avoiding {WOLF_BLOCKED_LANDING:?}")
     })?;
     let last = path.pop().ok_or("already standing on Energy Field 2126")?;
     let retreat = match last {
