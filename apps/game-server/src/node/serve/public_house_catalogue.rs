@@ -1,4 +1,4 @@
-//! Public read-model metadata only; the checked map determines active physical houses.
+//! The checked map determines active physical houses and their public metadata.
 use super::*;
 use crate::durability::public_projections::house_catalogue::{
     PublicHouseCatalogue, PublicHouseMetadata,
@@ -137,13 +137,7 @@ pub(super) async fn capture(
     reset_epoch: u64,
     bundle: Option<&crate::map::boot::BundleWorld>,
 ) {
-    if !material
-        .config
-        .platform
-        .public_projections
-        .as_ref()
-        .is_some_and(|p| p.enabled)
-    {
+    if bundle.is_none() && !public_enabled(material) {
         return;
     }
     let mut ticks = tokio::time::interval(Duration::from_secs(5));
@@ -157,13 +151,28 @@ pub(super) async fn capture(
             material,
             assignment,
             reset_epoch,
-            bundle,
+            bundle.map_or("", |world| world.map_revision()),
+            || {
+                bundle
+                    .map(metadata)
+                    .transpose()
+                    .map(Option::unwrap_or_default)
+            },
         )
         .await
         {
             return;
         }
     }
+}
+
+fn public_enabled(material: &Material) -> bool {
+    material
+        .config
+        .platform
+        .public_projections
+        .as_ref()
+        .is_some_and(|p| p.enabled)
 }
 
 async fn capture_once(
@@ -173,33 +182,48 @@ async fn capture_once(
     material: &Material,
     assignment: &RuntimeScopeAssignment,
     reset_epoch: u64,
-    bundle: Option<&crate::map::boot::BundleWorld>,
+    map_revision: &str,
+    metadata: impl FnOnce() -> Result<Vec<PublicHouseMetadata>, ()>,
 ) -> bool {
     let update = |houses| PublicHouseCatalogue {
         world: material.world,
         channel: material.channel,
         generation: assignment.ownership_generation,
         reset_epoch,
-        map_revision: bundle.map_or_else(String::new, |b| b.map_revision().to_owned()),
+        map_revision: map_revision.to_owned(),
         houses,
     };
-    if root.await_ready().await.is_err()
-        || root
-            .sync_public_house_catalogue(authority, node, update(None))
-            .await
-            .is_err()
+    let publish = public_enabled(material);
+    if publish
+        && (root.await_ready().await.is_err()
+            || root
+                .sync_public_house_catalogue(authority, node, update(None))
+                .await
+                .is_err())
     {
         event("event=public_projections family=house source=catalogue result=unavailable");
         return false;
     }
-    let records = match bundle.map(metadata).transpose() {
-        Ok(Some(rows)) => rows,
-        Ok(None) => Vec::new(),
+    let records = match metadata() {
+        Ok(rows) => rows,
         Err(()) => {
             event("event=public_projections family=house source=catalogue result=unavailable");
             return false;
         }
     };
+    if !records.is_empty()
+        && (root.await_ready().await.is_err()
+            || root
+                .admit_world_house_properties(authority, node, update(Some(records.clone())))
+                .await
+                .is_err())
+    {
+        event("event=public_projections family=house source=catalogue result=unavailable");
+        return false;
+    }
+    if !publish {
+        return true;
+    }
     if root.await_ready().await.is_err()
         || root
             .sync_public_house_catalogue(authority, node, update(Some(records)))
@@ -274,6 +298,75 @@ epoch_fence_file = "/missing/public.fence"
         })
     }
 
+    async fn seed_epoch(
+        h: &crate::bestiary_postgres_harness::Harness,
+        world: WorldId,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(123),'1970-01')")
+            .bind(world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+            .bind(world.as_bytes().as_slice())
+            .execute(&h.pool)
+            .await?;
+        Ok(())
+    }
+
+    #[test]
+    fn activated_catalogue_admits_private_properties_with_world_digest()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, TestResult, debug, runtime, scope};
+
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || -> Result<(), String> {
+                runtime().map_err(debug)?.block_on(async {
+                    let h = Harness::create(admin, "catalogue_house_admission", false).await?;
+                    let result: TestResult = async {
+                        let mut material = catalogue_material()?;
+                        material.config.platform.public_projections = None;
+                        seed_epoch(&h, material.world).await?;
+                        let seal = h.recovery.seal_current().map_err(debug)?;
+                        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                        let assignment = h.root.read_runtime_scope_assignment(scope()?).await.map_err(debug)?.ok_or("assignment")?;
+                        let house = PublicHouseMetadata {
+                            house_key: "oteryn:content.house.admiral_s_avenue_1".into(),
+                            name: "Admiral's Avenue 1".into(),
+                            kind: "private_house".into(),
+                            town: "oteryn:content.area.city.thais".into(),
+                            size_sqm: 35,
+                            beds: 1,
+                            rent_gold: 200,
+                            content_digest: "02".repeat(32),
+                        };
+                        let guildhall = PublicHouseMetadata {
+                            house_key: "oteryn:content.house.guildhall_fixture".into(),
+                            kind: "guildhall".into(),
+                            ..house.clone()
+                        };
+                        let records = || Ok(vec![house.clone(), guildhall.clone()]);
+                        for _ in 0..2 {
+                            assert!(capture_once(&h.root, &authority, &h.node, &material, &assignment, 0, "map-1", records).await);
+                        }
+                        let properties: Vec<(String, i16, i64, Vec<u8>)> = sqlx::query_as(
+                            "SELECT house_key,state,rent_gold,content_digest FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid"
+                        ).bind(material.world.as_bytes().as_slice()).fetch_all(&h.pool).await?;
+                        assert_eq!(properties, [(house.house_key.clone(), 1, 200, vec![1;32])], "activated personal property uses the World digest");
+                        assert!(!capture_once(&h.root, &authority, &h.node, &material, &assignment, 1, "map-1", records).await);
+                        for (table, count) in [("game_house_ownership", 1), ("game_house_auctions", 0), ("game_public_house_catalogue", 0)] {
+                            assert_eq!(h.count(table).await?, count, "{table}");
+                        }
+                        Ok(())
+                    }.await;
+                    h.cleanup().await?;
+                    result
+                }).map_err(debug)
+            })?
+            .join().map_err(|_| "house admission thread failed")?.map_err(Into::into)
+    }
+
     fn catalogue_recovery_case(fail_capture: bool) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{
             Harness, TestResult, configured_admin, debug, runtime, scope,
@@ -287,10 +380,7 @@ epoch_fence_file = "/missing/public.fence"
                 let h = Harness::create(admin, if fail_capture { "catalogue_capture" } else { "catalogue_pending" }, false).await?;
                 let result: TestResult = async {
                     let material = catalogue_material()?;
-                    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(123),'1970-01')")
-                        .bind(material.world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
-                    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
-                        .bind(material.world.as_bytes().as_slice()).execute(&h.pool).await?;
+                    seed_epoch(&h, material.world).await?;
                     if fail_capture {
                         h.pool.execute("CREATE SEQUENCE catalogue_failure; CREATE FUNCTION catalogue_fail_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.ready AND nextval('catalogue_failure')=1 THEN RAISE EXCEPTION 'transient capture failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER catalogue_fail_once BEFORE UPDATE ON game_public_house_catalogue_state FOR EACH ROW EXECUTE FUNCTION catalogue_fail_once() ").await?;
                     }
