@@ -3477,7 +3477,8 @@ pub(super) async fn connect_character(
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     connect_character_using(clients, tag, index, async |request| {
         Ok(oteryn_dev_client::connect_session(request).await?)
-    }).await
+    })
+    .await
 }
 
 async fn connect_character_using<T>(
