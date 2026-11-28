@@ -182,7 +182,7 @@ async fn wait_for_lever_arrival(
 }
 
 const CORRIDOR_Y: u16 = 31659;
-const WEAPON_ID: u32 = 28723; // Falcon Longsword.
+const WEAPON_ID: u32 = 30398; // Cobra Sword has a fully specified one-hand policy.
 const POTION_ID: u32 = 7643;
 const REWARD_ID: u32 = 3388;
 
