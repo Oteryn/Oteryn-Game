@@ -1833,6 +1833,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import engenc_cave_hydra
 
     engenc_cave_hydra.admit(root, creatures)
+    engenc_cave_hydra.admit_appearance(
+        generated, spell_import.PROVIDER_DESTINATIONS["spell_appearances"], NATIVE_MANIFEST
+    )
     nrwicked_profiles.admit_creatures(
         root,
         creatures,

@@ -1,5 +1,7 @@
 """Qualify the personal Asura Palace defender from its observed Global species facts."""
 
+import copy
+import hashlib
 import json
 
 from engenc_elemental_profiles import variant
@@ -46,3 +48,36 @@ def inventory(root, records):
         raise ValueError("Cave Hydra source/profile mismatch")
     behavior = actual["behavior"]["data"]["profile"]
     return sum(len(behavior.get(kind, ())) for kind in ("attacks", "defenses"))
+
+
+def admit_appearance(generated, destination, manifest_path):
+    """The illusionable Cave Hydra shares the Hydra's observed sprite and colours."""
+    document = json.loads(generated[destination])
+    records = document["records"]
+    (ordinary,) = (
+        row
+        for row in records
+        if (row.get("creature") or {}).get("key") == "oteryn:creature.hydra"
+    )
+    if ordinary["look_type"] != 121:
+        raise ValueError("Hydra appearance source changed")
+    appearance = copy.deepcopy(ordinary)
+    appearance["creature"]["key"] = KEY
+    del appearance["qualification_sha256"]
+    appearance["qualification_sha256"] = hashlib.sha256(
+        json.dumps(appearance, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    document["records"] = [
+        row for row in records if (row.get("creature") or {}).get("key") != KEY
+    ] + [appearance]
+    generated[destination] = (
+        json.dumps(document, ensure_ascii=False, indent=2) + "\n"
+    ).encode()
+    manifest = json.loads(generated[manifest_path])
+    manifest["spell_appearances"]["sha256"] = hashlib.sha256(
+        generated[destination]
+    ).hexdigest()
+    generated[manifest_path] = (
+        json.dumps(manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        + "\n"
+    ).encode()

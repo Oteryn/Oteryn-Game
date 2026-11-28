@@ -532,7 +532,11 @@ class QuestPc7QuestRewards(unittest.TestCase):
         ]
         qc_path = q.ROOT / "content/quests/npc-callbacks/qc-programmes.json"
         qc = json.loads(qc_path.read_bytes())["callbacks"] if qc_path.is_file() else []
-        qc_steel = [c for c in qc if c["key"] == "oteryn:quest-reward/qc-obsidian-draconian-steel"]
+        qc_steel = [
+            c
+            for c in qc
+            if c["key"] == "oteryn:quest-reward/qc-obsidian-draconian-steel"
+        ]
         self.assertEqual(len(selected), 18 if qc_steel else 21)
         services = [c for c in selected if c.get("counter")]
         services.extend(qc_steel)

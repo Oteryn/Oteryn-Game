@@ -27,7 +27,11 @@ fn engenc_authored_elementals_activate_with_exact_combat_facts() -> Result<(), S
             .ok_or("Cave Hydra policy")?;
         assert_eq!(hydra.display_name, "Cave Hydra");
         assert_eq!(hydra.maximum_health, 2350);
-        assert!(hydra.flags.attackable);
+        assert!(hydra.flags.attackable && hydra.flags.illusionable);
+        let appearance = native.spell_appearances()
+            .and_then(|catalogue| catalogue.for_creature(&hydra.definition_key, &hydra.definition_revision))
+            .ok_or("Cave Hydra appearance")?;
+        assert_eq!(appearance.look_type(), 121);
         Ok(())
     }).map_err(|e| e.to_string())?.join().map_err(|_| "elemental activation thread failed".to_string())?
 }

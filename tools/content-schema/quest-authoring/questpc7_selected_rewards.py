@@ -267,8 +267,13 @@ def append_friends(root, callbacks, offers, inputs, pin):
     # Older packages have no QC programme. Once its canonical settlement is
     # installed, that programme owns the entire quote and confirmation chain.
     qc_path = root / "content/quests/npc-callbacks/qc-programmes.json"
-    qc_callbacks = json.loads(qc_path.read_bytes())["callbacks"] if qc_path.is_file() else []
-    if not any(row["key"] == "oteryn:quest-reward/qc-obsidian-draconian-steel" for row in qc_callbacks):
+    qc_callbacks = (
+        json.loads(qc_path.read_bytes())["callbacks"] if qc_path.is_file() else []
+    )
+    if not any(
+        row["key"] == "oteryn:quest-reward/qc-obsidian-draconian-steel"
+        for row in qc_callbacks
+    ):
         cyclops = "a_sweaty_cyclops"
         add(
             "request-friendship",
@@ -313,7 +318,14 @@ def append_friends(root, callbacks, offers, inputs, pin):
                 "I can forge steel from a dragon shield. Do you want to trade?",
             ),
             (["yes"], 1, 2, -1, -1, "First, will you do a favour for me?"),
-            (["uth'lokr", "bast skirt"], 0, 4, 0, 0, "Did you bring three bast skirts?"),
+            (
+                ["uth'lokr", "bast skirt"],
+                0,
+                4,
+                0,
+                0,
+                "Did you bring three bast skirts?",
+            ),
             (
                 ["uth'lokr"],
                 0,
@@ -344,12 +356,25 @@ def append_friends(root, callbacks, offers, inputs, pin):
             )
     else:
         # The transcript also permits naming the materials at the hand-in.
-        offers.append({
-            "npc": "oteryn:npc.a_sweaty_cyclops", "keywords": ["bast skirt"],
-            "topic": 0, "any_topic": True, "next_topic": 4,
-            "storage": [{"track": track, "minimum": 0, "maximum": 0, "set": 0, "preserve": True}],
-            "reply": ["Did you bring three bast skirts?"],
-        })
+        offers.append(
+            {
+                "npc": "oteryn:npc.a_sweaty_cyclops",
+                "keywords": ["bast skirt"],
+                "topic": 0,
+                "any_topic": True,
+                "next_topic": 4,
+                "storage": [
+                    {
+                        "track": track,
+                        "minimum": 0,
+                        "maximum": 0,
+                        "set": 0,
+                        "preserve": True,
+                    }
+                ],
+                "reply": ["Did you bring three bast skirts?"],
+            }
+        )
     add(
         "honey",
         "marina",

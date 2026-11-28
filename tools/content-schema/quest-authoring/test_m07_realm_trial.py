@@ -34,7 +34,10 @@ class RealmTrialBindingTests(unittest.TestCase):
         entry = by_key[prefix + "entry"]
         self.assertNotIn("minimum_level", entry)
         book = by_key[prefix + "draconia-book"]["storage"][0]["track"]
-        self.assertIn({"track": book, "minimum": 1, "maximum": 1, "set": 1, "preserve": True}, entry["storage"])
+        self.assertIn(
+            {"track": book, "minimum": 1, "maximum": 1, "set": 1, "preserve": True},
+            entry["storage"],
+        )
         self.assertEqual(
             (begin["storage"][0]["minimum"], begin["storage"][0]["set"]), (-1, 1)
         )
@@ -50,10 +53,26 @@ class RealmTrialBindingTests(unittest.TestCase):
         self.assertTrue(begin["item_on_target"]["selected_instance"])
         plate = by_key[prefix + "plate"]
         self.assertEqual(plate["trigger"], "step_in")
-        self.assertEqual(plate["world_requirements"], [{"position": begin["selector"]["position"], "appearance": 2124, "hidden": True}])
+        self.assertEqual(
+            plate["world_requirements"],
+            [
+                {
+                    "position": begin["selector"]["position"],
+                    "appearance": 2124,
+                    "hidden": True,
+                }
+            ],
+        )
         stone = plate["passages"][0]
         self.assertEqual(stone["position"], trial["selector"]["position"])
-        self.assertIn({"position": stone["position"], "appearance": stone["appearance"], "hidden": True}, trial["world_requirements"])
+        self.assertIn(
+            {
+                "position": stone["position"],
+                "appearance": stone["appearance"],
+                "hidden": True,
+            },
+            trial["world_requirements"],
+        )
         self.assertNotIn("present", trial)
         self.assertEqual(entry["present"], [{"item": key, "count": 1}])
         self.assertNotIn("item_on_target", trial)
@@ -61,7 +80,12 @@ class RealmTrialBindingTests(unittest.TestCase):
         self.assertEqual(area["minimum"]["floor"], -3)
         self.assertEqual(area["additional_floors"], [-7, -6, -5, -4])
         footprints = {b["minimum"]["floor"]: b for b in area["floor_bounds"]}
-        for z, x, y in [(-7, 33070, 32574), (-6, 33107, 32602), (-5, 33101, 32591), (-4, 33085, 32589)]:
+        for z, x, y in [
+            (-7, 33070, 32574),
+            (-6, 33107, 32602),
+            (-5, 33101, 32591),
+            (-4, 33085, 32589),
+        ]:
             self.assertLessEqual(footprints[z]["minimum"]["x"], x)
             self.assertLessEqual(x, footprints[z]["maximum"]["x"])
             self.assertLessEqual(footprints[z]["minimum"]["y"], y)
