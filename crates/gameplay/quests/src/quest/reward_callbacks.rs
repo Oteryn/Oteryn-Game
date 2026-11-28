@@ -908,7 +908,13 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 
 fn embedded_document() -> Result<Document, String> {
     let mut document = parse_documents(DOCUMENTS)?;
-    document.callbacks.extend(sinatuki::feeding_rows(&document.callbacks)?);
+    let first = sinatuki::feeding_rows(&document.callbacks)?;
+    let template = first.first().ok_or("empty Sinatuki feeding catalogue")?;
+    document.tracks.push(TrackDeclaration {
+        key: sinatuki::CONTRIBUTION.into(), quest: template.quest.clone(),
+        initial: 0, min: 0, max: 99, writable: true, sources: template.sources.clone(),
+    });
+    document.callbacks.extend(first);
     document
         .callbacks
         .extend(super::world_change_journals::npc_callbacks()?);
@@ -3464,17 +3470,27 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         let callbacks = super::offered_for(loaded.catalogue())?;
         for trout in 0..=99 {
-            let held = BTreeMap::from([
+            let mut held = BTreeMap::from([
                 ("oteryn:item.tibia.i7158".to_owned(), trout),
                 ("oteryn:item.tibia.i7159".to_owned(), 99 - trout),
             ]);
-            let rows: Vec<_> = callbacks.iter().filter(|row| row.npc == "oteryn:npc.sinatuki"
-                && row.storage[0].minimum == -1
-                && row.inventory.iter().all(|rule| rule.holds(&held))).collect();
-            let [first] = rows.as_slice() else { return Err(format!("ambiguous feeding for {trout} trout")); };
-            assert_eq!(first.take.iter().map(|item| item.count).sum::<u16>(), 99);
-            assert_eq!(first.storage[0].set, 1);
-            assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
+            let mut progress = BTreeMap::new();
+            let mut stage = -1;
+            while held.values().sum::<u64>() > 0 {
+                let rows: Vec<_> = callbacks.iter().filter(|row| row.npc == "oteryn:npc.sinatuki"
+                    && (row.storage[0].minimum..=row.storage[0].maximum).contains(&stage)
+                    && row.inventory.iter().all(|rule| rule.holds(&held))
+                    && row.state_ops.iter().all(|op| op.advisory_holds(loaded.catalogue(), &progress))).collect();
+                let [first] = rows.as_slice() else { return Err(format!("ambiguous feeding for {trout} trout: {}", rows.len())); };
+                assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
+                let cost = &first.take[0];
+                *held.get_mut(&cost.item).ok_or("fish")? -= u64::from(cost.count);
+                let changes = loaded.catalogue().evaluate(loaded.catalogue().transition(&first.key).ok_or("payment")?, &progress, 1).map_err(|e| format!("{e:?}"))?;
+                for change in changes { progress.insert(change.track, change.after); }
+                stage = first.storage[0].set;
+            }
+            assert_eq!(stage, 1);
+            assert_eq!(progress.get(sinatuki::CONTRIBUTION), Some(&99));
         }
         for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
             let held = BTreeMap::from([(item.to_owned(), 1)]);

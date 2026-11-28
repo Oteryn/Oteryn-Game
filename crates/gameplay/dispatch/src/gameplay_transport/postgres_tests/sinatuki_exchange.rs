@@ -224,10 +224,13 @@ fn scenario(name: &str, case: Case) -> TestResult {
         if !resume {
             add_item(&h, 206, PERCH, 50, 6).await?;
         }
-        talk(&mut owner, &mut admitted, npc, "nupi", Some(&[GIGGLE])).await?;
-        assert_eq!(carried(&h, fish).await?, i64::from(first_stack), "short hand-in is kept");
-        assert_eq!(quest_state(&h).await?, (None, false, 0));
-
+        talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
+        assert_eq!(carried(&h, fish).await?, 0);
+        assert_eq!(quest_state(&h).await?, (Some(0), false, 0));
+        if !resume {
+            talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
+            assert_eq!(carried(&h, PERCH).await?, 0);
+        }
         add_item(&h, 203, fish, if resume { 2 } else { 1 }, 3).await?;
         talk(
             &mut owner,

@@ -1,9 +1,12 @@
 //! The first feeding costs 99 fish of either species. One further fish earns Jamjam.
-use super::{InventoryRequirement, ItemAmount, RewardCallback};
+use super::{
+    InventoryRequirement, ItemAmount, RewardCallback, StateCondition, StateMutation, StateOperation,
+};
 
 const TROUT: &str = "oteryn:item.tibia.i7158";
 const PERCH: &str = "oteryn:item.tibia.i7159";
 const FIRST: u16 = 99;
+pub(super) const CONTRIBUTION: &str = "oteryn:quest-progress/qc/sinatuki/contribution";
 const NPC: &str = "oteryn:npc.sinatuki";
 const HISTORICAL: &str = "oteryn:quest-reward/qc-sinatuki-";
 
@@ -33,38 +36,57 @@ pub(super) fn feeding_rows(rows: &[RewardCallback]) -> Result<Vec<RewardCallback
         .find(|row| row.key == "oteryn:quest-reward/qc-sinatuki-trout-99")
         .ok_or("missing Sinatuki reward definition")?;
     let mut result = Vec::new();
-    // Disjoint trout bounds select one exact payment even when both stacks exceed the cost.
-    for trout in 0..=FIRST {
-        let perch = FIRST - trout;
-        let mut row = template.clone();
-        row.key = format!("oteryn:quest-reward/sinatuki/feed-{trout}-{perch}");
-        row.take = [cost(TROUT, trout), cost(PERCH, perch)]
-            .into_iter()
-            .filter(|item| item.count > 0)
-            .collect();
-        row.inventory = vec![
-            carried(
-                TROUT,
-                trout,
-                if trout == FIRST {
-                    1_000_000
-                } else {
-                    trout.into()
-                },
-            ),
-            carried(PERCH, perch, 1_000_000),
-        ];
-        row.storage[0].set = 1;
-        row.give = None;
-        row.achievement = None;
-        row.completes = false;
-        row.reply = vec![
-            "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
-                .into(),
-        ];
-        result.push(row);
-    }
     for (species, item) in [("trout", TROUT), ("perch", PERCH)] {
+        for count in 1..=FIRST {
+            let remaining = i64::from(FIRST - count);
+            // Stop at 99 even if the last stack contains the final reward fish.
+            let mut full = template.clone();
+            full.key = format!("oteryn:quest-reward/sinatuki/{species}-finish-feeding-{count}");
+            full.inventory = vec![carried(item, count, 1_000_000)];
+            if item == PERCH {
+                full.inventory.push(carried(TROUT, 0, 0));
+            }
+            full.take = vec![cost(item, count)];
+            full.storage[0].maximum = 0;
+            full.storage[0].set = 1;
+            full.state_ops = vec![StateOperation {
+                track: CONTRIBUTION.into(),
+                from: StateCondition::Between {
+                    minimum: remaining,
+                    maximum: remaining,
+                },
+                effect: StateMutation::Add {
+                    value: count.into(),
+                },
+            }];
+            full.give = None;
+            full.achievement = None;
+            full.completes = false;
+            full.reply = vec![
+                "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
+                    .into(),
+            ];
+            if remaining > 0 {
+                let mut partial = full.clone();
+                partial.key = format!("oteryn:quest-reward/sinatuki/{species}-feed-{count}");
+                partial.inventory[0].maximum = count.into();
+                partial.storage[0].maximum = -1;
+                partial.storage[0].set = 0;
+                partial.state_ops[0].from = StateCondition::Between {
+                    minimum: 0,
+                    maximum: remaining - 1,
+                };
+                // Both intake phases advance through a closed transition. The contribution
+                // track carries the total across visits, species changes and reconnects.
+                let mut next = partial.clone();
+                next.key.push_str("-next");
+                next.storage[0].minimum = 0;
+                next.storage[0].maximum = 0;
+                next.storage[0].set = -1;
+                result.extend([partial, next]);
+            }
+            result.push(full);
+        }
         let mut row = template.clone();
         row.key = format!("oteryn:quest-reward/sinatuki/final-{species}");
         row.storage[0].minimum = 1;
