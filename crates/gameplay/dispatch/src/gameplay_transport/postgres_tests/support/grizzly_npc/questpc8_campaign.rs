@@ -166,30 +166,32 @@ pub(super) async fn exercise(
     let after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(after, before);
     assert_eq!(experience(h).await?, before_xp);
+    // Crocodiles settle quest credit only. Complete an independent Bestiary
+    // entry through the normal kill owner before checking both grants.
+    let (race, _) = crate::content::canonical_bestiary_difficulties(
+        super::super::character_title_sources_fixtures::source_limits(),
+    )?
+    .into_iter()
+    .find(|(race, _)| race.key() == "oteryn:creature.bane_of_light")
+    .ok_or("Bane of Light Bestiary entry")?;
+    assert_eq!(race.kill_thresholds(), [2, 3, 5]);
+    command += 1;
+    hunt(owner, admitted, race.key(), 5, command).await?;
     let achievements: Vec<String> = sqlx::query_scalar(
         "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key LIMIT 6",
     )
     .fetch_all(&h.pool)
     .await?;
-    // The three crocodile repetitions also complete their Bestiary entry.
-    let crocodile = quest::task(1).ok_or("crocodile task")?;
-    let (_, difficulty) = crate::content::canonical_bestiary_difficulties(
-        super::super::character_title_sources_fixtures::source_limits(),
-    )?
-    .into_iter()
-    .find(|(race, _)| race.key() == crocodile.creatures[0].key)
-    .ok_or("crocodile Bestiary entry")?;
-    let mut expected = vec![
-        "oteryn:achievement/blood_red_snapper",
-        "oteryn:achievement/huntsman",
-        "oteryn:achievement/one_less",
-        "oteryn:achievement/rootless_behaviour",
-    ];
-    expected.extend(
-        oteryn_gameplay_progression::bestiary_achievement::completion_keys([difficulty.as_str()]),
+    assert_eq!(
+        achievements,
+        [
+            "oteryn:achievement/blood_red_snapper",
+            "oteryn:achievement/hunting_permit",
+            "oteryn:achievement/huntsman",
+            "oteryn:achievement/one_less",
+            "oteryn:achievement/rootless_behaviour",
+        ]
     );
-    expected.sort_unstable();
-    assert_eq!(achievements, expected);
     let before_campaign_xp = experience(h).await?;
     eprintln!("QUESTPC8_CAMPAIGN POSTGRES_FINAL_PAYOUT_CHECK");
     command += 1;
