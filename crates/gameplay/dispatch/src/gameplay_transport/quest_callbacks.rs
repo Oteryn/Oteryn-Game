@@ -1184,17 +1184,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, pending.actor, pending.session)
                 .await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
-                return false;
-            }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         &permit,
-                        &mut runtime,
-                        &mut states,
+                        Some(pending.expected),
                         pending.actor,
                         pending.session,
                         map,
@@ -1219,6 +1213,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return false;
                 }
                 if let Some(origin) = pending.origin {
+                    let (mut runtime, mut states) =
+                        self.quest_turn_with(&self.states.spell_states).await;
+                    if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
+                        return false;
+                    }
                     self.refuse_quest_step(
                         optional_pvp,
                         &mut runtime,
@@ -1661,8 +1660,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(items) => items,
                 Err(disposition) => return disposition,
             };
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
             if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
                 publication.store(true, std::sync::atomic::Ordering::Relaxed);
             }
@@ -1670,8 +1667,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
-                &mut runtime,
-                &mut states,
+                None,
                 actor,
                 command.game_session_id,
                 map,
@@ -1688,8 +1684,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scene_items.as_ref().map(|_| &mut scene_publication),
             ))
             .await;
-            drop(states);
-            drop(runtime);
             drop(slot);
             if let (Some(items), Some(scene)) = (scene_items, scene_publication) {
                 return self.commit_scene_items(
@@ -1958,17 +1952,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            if runtime.read_actor_position(actor) != Ok(entered) {
-                return entered;
-            }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         permit,
-                        &mut runtime,
-                        &mut states,
+                        Some(entered),
                         actor,
                         session,
                         map,
@@ -2001,7 +1989,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             false
                         }
                     });
-            if result != UseDisposition::Committed && !unresolved {
+            let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
+            if result != UseDisposition::Committed
+                && !unresolved
+                && runtime.read_actor_position(actor) == Ok(entered)
+            {
                 self.refuse_quest_step(
                     optional_pvp,
                     &mut runtime,
@@ -2022,8 +2014,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-                let mut runtime = self.runtime.lock().await;
-                let mut states = self.states.spell_states.lock().await;
+                let (mut runtime, mut states) =
+                    self.quest_turn_with(&self.states.spell_states).await;
                 if runtime.read_actor_position(actor) == Ok(entered) {
                     self.refuse_quest_step(
                         optional_pvp,

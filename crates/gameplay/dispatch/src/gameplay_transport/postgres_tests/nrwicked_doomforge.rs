@@ -577,6 +577,14 @@ async fn two_player_encounter(
             () = barrier.0.notified() => {}
         }
         assert!(
+            owner.runtime.try_lock().is_ok(),
+            "world observations continue before payment"
+        );
+        assert!(
+            owner.states.spell_states.try_lock().is_ok(),
+            "spell observations continue before payment"
+        );
+        assert!(
             active_cooldowns(h, lever).await?.is_empty(),
             "staging and the lever reservation must precede payment"
         );
