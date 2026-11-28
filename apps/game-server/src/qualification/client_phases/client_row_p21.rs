@@ -135,8 +135,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("P21 result sequences are not increasing".into());
     }
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let window_sha256 = format!("{:x}", Sha256::digest(&payload));
-    let refused_sha256 = format!("{:x}", Sha256::digest(&refused));
+    let sha256_hex = |bytes: &[u8]| -> String {
+        Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect()
+    };
+    let window_sha256 = sha256_hex(&payload);
+    let refused_sha256 = sha256_hex(&refused);
     let refused_result = refusal.result;
     let mut expected = format!(
         "session={session}\nwindow_sequence={window_sequence}\nrefused_sequence={refused_sequence}\nwindow_sha256={window_sha256}\nrefused_sha256={refused_sha256}\nsuccess_selected={success_selected}\nslot_count={}\nclear_gold={}\napplied={}\noffers={}\n",

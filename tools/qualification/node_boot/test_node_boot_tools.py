@@ -764,6 +764,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (captured + failed, "0", True, "pass", False),
             (captured, "1", True, "pass", False),
             (captured, "0", False, "pass", False),
+            (captured, "0", "tampered", "pass", False),
             (captured, "0", True, "unmatched", False),
             (captured.replace("window_sequence=3", "window_sequence=2"), "0", True, "pass", False),
         ]:
@@ -773,7 +774,8 @@ class CloudRunSummaryTests(unittest.TestCase):
                 Path(temp, "p21-window.bin").write_text("capture")
                 Path(temp, "p21-expected.txt").write_text(expected)
                 if complete:
-                    Path(temp, "p21-refused.bin").write_text("capture")
+                    refusal = "stale" if complete == "tampered" else "capture"
+                    Path(temp, "p21-refused.bin").write_text(refusal)
                 result = subprocess.run(
                     ["bash", "-c", command, "test", str(log), temp, str(Path(temp, "client.log")), status],
                     env={**os.environ, "REPLAY_RESULT": replay},
