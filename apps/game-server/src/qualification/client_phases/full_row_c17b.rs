@@ -196,14 +196,6 @@ pub(super) async fn invisibility_sample(client: &mut DevClientSession) -> TestRe
         .map(|condition| condition.remaining_ms), reply.server_sequence))
 }
 
-pub(super) async fn logout_after_rat_combat(
-    caster: &mut DevClientSession,
-) -> TestResult<(u32, u32)> {
-    let paid = wait_rat_combat_end(caster).await?;
-    logout(caster).await?;
-    Ok(paid)
-}
-
 pub(super) async fn wait_rat_combat_end(caster: &mut DevClientSession) -> TestResult<(u32, u32)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
     loop {
@@ -362,30 +354,16 @@ impl<'a> Staging<'a> {
     }
 
     async fn return_to_town(&self, client: &mut DevClientSession) -> TestResult {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-        let path = loop {
-            let from = tile(client.world_spatial().actor_position)?;
-            let occupied = Self::occupied(client, None)?;
-            // Cleanup may start outside the outbound map bounds. Keep a
-            // bounded corridor between the live position and town.
-            if let Ok(path) = find_route(
-                from,
-                |at| at == TOWN,
-                |at, direction| {
-                    destination(self.world, at, direction)
-                        .filter(|next| in_return_search(*next, from) && !occupied.contains(next))
-                },
-            ) {
-                break path;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(
-                    format!("C17b no eligible return route from {from:?} to {TOWN:?}").into(),
-                );
-            }
-            client.service_liveness(Duration::from_millis(100)).await?;
-            client.take_events();
-        };
+        let from = tile(client.world_spatial().actor_position)?;
+        let occupied = Self::occupied(client, None)?;
+        let path = find_route(
+            from,
+            |at| at == TOWN,
+            |at, direction| {
+                destination(self.world, at, direction)
+                    .filter(|next| in_return_search(*next, from) && !occupied.contains(next))
+            },
+        ).map_err(|error| format!("C17b no eligible return route from {from:?} to {TOWN:?}: {error}"))?;
         self.walk(client, &path).await
     }
 
@@ -823,6 +801,55 @@ fn verify_regen_credit(
     Ok(())
 }
 
+fn require_continuous_visibility(
+    observer: &mut DevClientSession,
+    caster: oteryn_dev_client::EntityRef,
+) -> TestResult {
+    if observer.take_events().into_iter().any(|event| matches!(event,
+        SessionEvent::WorldSpatialEntities(delta)
+            if delta.value.leave.iter().any(|entity| entity.identity == caster.identity)))
+        || !visible(observer, caster)
+    {
+        return Err("C17b invisible caster left the observer view before logout".into());
+    }
+    Ok(())
+}
+
+fn verify_unchanged_recast(
+    caster: &mut DevClientSession,
+    outcome: &oteryn_dev_client::native_session::CastOutcome,
+    paid: oteryn_protocol_oteryn::actor_spell::ActorVitals,
+    sequence: u64,
+) -> TestResult {
+    let events = caster.take_events();
+    verify_recast(outcome, paid, sequence, caster.actor_vitals().copied(), &events, Duration::ZERO)?;
+    if events.iter().any(|event| matches!(event, SessionEvent::ActorVitals(delta)
+        if delta.server_sequence > sequence))
+    {
+        return Err("C17b cooldown probe changed vitals without an established source".into());
+    }
+    Ok(())
+}
+
+fn verify_relog_timer(
+    before: i64,
+    after: i64,
+    online_min: Duration,
+    online_max: Duration,
+    offline_min: Duration,
+) -> TestResult {
+    let min = i64::try_from(online_min.as_millis())?.saturating_sub(1).max(0);
+    let max = i64::try_from(online_max.as_micros().div_ceil(1_000))? + 1;
+    if i64::try_from(offline_min.as_millis())? <= max - min {
+        return Err("C17b offline interval cannot distinguish a paused timer".into());
+    }
+    let lost = before.checked_sub(after).ok_or("C17b condition loss overflow")?;
+    if after <= 0 || !(min..=max).contains(&lost) {
+        return Err(format!("C17b condition lost {lost}ms with only {min}..={max}ms online").into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -882,18 +909,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     require_mechanic_acceptance(cast.status, "C17b.full Invisibility")?;
     if cast.disposition != SpellCastDisposition::Cast
         || cast.actor_vitals_delta.as_ref().is_none_or(|d| {
-            d.server_sequence == 0 || before.mana.checked_sub(cost) != Some(d.value.mana)
+            d.server_sequence == 0 || before.mana.checked_sub(cost) != Some(d.value.mana) || before.soul != d.value.soul
         })
     {
-        return Err(format!("step=cast-and-cost observed=status:{:?}/disposition:{:?}/vitals:{:?} need=Cast-and-exact-mana-delta", cast.status, cast.disposition, cast.actor_vitals_delta).into());
+        return Err(format!("step=cast-and-cost observed=status:{:?}/disposition:{:?}/vitals:{:?} need=Cast-and-exact-mana-and-soul", cast.status, cast.disposition, cast.actor_vitals_delta).into());
     }
     row.pass("cast-and-cost", cast.result_server_sequence)?;
     let paid = cast.actor_vitals_delta.as_ref().ok_or("C17b cast vitals absent")?;
-    let started = tokio::time::Instant::now();
     let cooldown = caster.cast_spell(spell_index(&book)?, SpellTarget::None, false).await?;
-    let events = caster.take_events();
-    verify_recast(&cooldown, paid.value, paid.server_sequence, caster.actor_vitals().copied(), &events, started.elapsed())?;
-    row.pass("cooldown-no-cost", cooldown.result_server_sequence)?;
+    verify_unchanged_recast(&mut caster, &cooldown, paid.value, paid.server_sequence)?;
+    let light = super::client_spell_journey::spell_index(&book, "utevo lux")?;
+    if paid.value.mana < 20 {
+        return Err("C17b lacks mana for the 20-mana Support cooldown probe".into());
+    }
+    let support = caster.cast_spell(light, SpellTarget::None, false).await?;
+    verify_unchanged_recast(&mut caster, &support, paid.value, cooldown.result_server_sequence)?;
+    row.pass("cooldown-no-cost", support.result_server_sequence)?;
     let active = invisibility_remaining(&mut caster)
         .await?
         .ok_or("C17b active condition absent after cast")?;
@@ -907,9 +938,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     observer
         .service_liveness(Duration::from_millis(100))
         .await?;
-    if !visible(&observer, caster_ref) {
-        return Err("Global parity: other players must still see the invisible caster".into());
-    }
+    require_continuous_visibility(&mut observer, caster_ref)?;
     row.pass("player-sees-invisible", observer.last_server_sequence())?;
     use oteryn_protocol_oteryn::{
         attack::AttackIntentDisposition,
@@ -920,11 +949,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .and_then(|view| view.get(&rat))
         .ok_or("C17b exact Rat absent before caster attack")?
         .position;
-    full_e2ef5::with_observer_liveness(
-        &mut observer,
-        full_e2ef5::approach_melee(&mut caster, world, rat_position),
-    )
-    .await?;
+    let rat_tile = tile(rat_position)?;
+    let approach = staging.path(&caster, Some(&observer), |at| {
+        at.floor == rat_tile.floor && at.x.abs_diff(rat_tile.x).max(at.y.abs_diff(rat_tile.y)) == 1
+    })?;
+    full_e2ef5::with_observer_liveness(&mut observer, staging.walk(&mut caster, &approach)).await?;
+    if invisibility_remaining(&mut caster).await?.is_none_or(|time| time <= 0) {
+        return Err("C17b caster lost Invisible before attacking the Rat".into());
+    }
     caster.take_events();
     let selected = caster.session_mut().attack_target(Some(&rat)).await?;
     if selected.disposition != AttackIntentDisposition::Ok {
@@ -945,6 +977,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             caster.service_liveness(Duration::from_millis(100)).await?;
         }
     }).await?;
+    if invisibility_remaining(&mut caster).await?.is_none_or(|time| time <= 0) {
+        return Err("C17b caster lost Invisible by the attributed hit".into());
+    }
     row.pass("caster-damages-rat", damage)?;
     if caster
         .session_mut()
@@ -979,22 +1014,37 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     })
     .await?;
-    observer.take_events();
-
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
-    let durable_vitals =
-        full_e2ef5::with_observer_liveness(&mut observer, logout_after_rat_combat(&mut caster))
-            .await?;
-    if durable_vitals.0 >= before.mana {
-        return Err("C17b spent mana did not persist until logout".into());
+    let durable_vitals = full_e2ef5::with_observer_liveness(
+        &mut observer, wait_rat_combat_end(&mut caster)
+    ).await?;
+    if durable_vitals.0 >= before.mana || durable_vitals.1 != before.soul {
+        return Err("C17b persisted resources disagree with the paid cast".into());
     }
+    use tokio::time::Instant;
+    let pre_sent = Instant::now();
+    let (pre_logout, pre_sequence) = full_e2ef5::with_observer_liveness(
+        &mut observer, invisibility_sample(&mut caster)
+    ).await?;
+    let pre_received = Instant::now();
+    let pre_logout = pre_logout.ok_or("C17b missing pre-logout Invisible timer")?;
+    require_continuous_visibility(&mut observer, caster_ref)?;
+    let logout_sent = Instant::now();
+    full_e2ef5::with_observer_liveness(&mut observer, logout(&mut caster)).await?;
+    let logout_received = Instant::now();
     wait_visible(&mut observer, caster_ref, false).await?;
+    full_e2ef5::with_observer_liveness(&mut observer, async {
+        tokio::time::sleep(Duration::from_secs(20)).await;
+        Ok(())
+    }).await?;
+    let login_sent = Instant::now();
     caster = full_e2ef5::with_observer_liveness(
         &mut observer,
         connect_character(&caster_clients, 0xb3, 0),
     )
     .await?;
+    let login_received = Instant::now();
     if caster.join_snapshot().game_session_id == session
         || caster.world_spatial().actor_position != position
         || caster
@@ -1007,13 +1057,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if fresh_ref == caster_ref {
         return Err("C17b fresh admission reused entity incarnation".into());
     }
-    let enter_sequence = wait_visible(&mut observer, fresh_ref, true).await?;
-    if invisibility_remaining(&mut caster)
-        .await?
-        .is_none_or(|remaining| remaining <= 0 || remaining >= active)
-    {
-        return Err("C17b invisibility was absent or reset after relog".into());
+    let post_sent = Instant::now();
+    let (post_login, post_sequence) = full_e2ef5::with_observer_liveness(
+        &mut observer, invisibility_sample(&mut caster)
+    ).await?;
+    let post_received = Instant::now();
+    let post_login = post_login.ok_or("C17b missing post-login Invisible timer")?;
+    let online_min = (logout_sent - pre_received) + (post_sent - login_received);
+    let online_max = (logout_received - pre_sent) + (post_received - login_sent);
+    let offline_min = login_sent - logout_received;
+    evidence(&format!("C17B_FULL_TIMER pre_sequence={pre_sequence} post_sequence={post_sequence} before_ms={pre_logout} after_ms={post_login} online_min_us={} online_max_us={} offline_min_us={}", online_min.as_micros(), online_max.as_micros(), offline_min.as_micros()));
+    verify_relog_timer(pre_logout, post_login, online_min, online_max, offline_min)?;
+    if pre_logout >= active {
+        return Err("C17b Invisible timer did not decrease during the online encounter".into());
     }
+    let enter_sequence = wait_visible(&mut observer, fresh_ref, true).await?;
     row.pass("fresh-admission-condition", enter_sequence)?;
     provisioning::with_peer_liveness(&mut observer, staging.return_to_town(&mut caster)).await?;
     logout(&mut caster).await?;
@@ -1024,6 +1082,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn relog_timer_rejects_offline_decay_and_reset() -> TestResult {
+        let min = Duration::from_secs(2);
+        let max = Duration::from_secs(3);
+        let offline = Duration::from_secs(20);
+        verify_relog_timer(140_000, 137_500, min, max, offline)?;
+        assert!(verify_relog_timer(140_000, 117_500, min, max, offline).is_err());
+        assert!(verify_relog_timer(140_000, 199_000, min, max, offline).is_err());
+        Ok(())
+    }
     #[test]
     fn recast_regeneration_rejects_a_charge_and_unproved_credits() -> TestResult {
         use oteryn_protocol_oteryn::actor_spell::ActorVitals;
