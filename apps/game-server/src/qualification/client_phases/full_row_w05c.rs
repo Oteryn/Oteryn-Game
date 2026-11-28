@@ -587,7 +587,7 @@ mod tests {
     fn rashid_route_uses_the_authored_signed_floor() {
         use oteryn_gameplay_entities::rashid_schedule::destination_at;
 
-        let thursday = destination_at(0);
+        let thursday = destination_at(9 * 3_600_000);
         assert_eq!(
             destination_tile(thursday),
             TilePos {

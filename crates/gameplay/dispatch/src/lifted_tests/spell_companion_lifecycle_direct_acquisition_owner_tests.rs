@@ -171,6 +171,104 @@ fn infinite_mana_keeps_exact_source_training_cost_without_debit_or_profile_subst
     assert!(reservation.validate_current(&runtime, &current).is_ok());
 }
 #[test]
+fn summon_rat_uses_the_active_registration_with_duplicate_display_names() -> Result<(), String> {
+    let (reference, _, session) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_player(97);
+    let world = reference.binding().world_id();
+    let (controller, activation) =
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    assert_eq!(
+        native
+            .policies()
+            .policies()
+            .iter()
+            .filter(|p| p.summonable && p.display_name == "Rat")
+            .count(),
+        2
+    );
+    let room = activation.qualified_room();
+    let start = room.entry_start();
+    let pin = crate::foundation::ChannelContentPin::from_activation(
+        world,
+        1,
+        room.compiled().server_digest(),
+        room.compiled().client_digest(),
+        room.frame_binding().digest(),
+        room.map_revision_digest(),
+        (start.x, start.y, start.floor),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        reference.binding().channel_id().ok_or("channel")?,
+        crate::foundation::NodeId::decode(&[
+            1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 17,
+        ])
+        .map_err(|error| format!("{error:?}"))?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        pin,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+    native
+        .install_companion_policies(&mut runtime)
+        .map_err(|error| format!("{error:?}"))?;
+    let reserved = runtime
+        .reserve_fresh_session(session)
+        .map_err(|error| format!("{error:?}"))?;
+    let owner = runtime
+        .commit_fresh_session(reserved)
+        .map_err(|error| format!("{error:?}"))?;
+    runtime
+        .initialize_first_entry_position(owner)
+        .map_err(|error| format!("{error:?}"))?;
+    let spell = profile("named_creature");
+    let character = crate::domain::CharacterId::from_bytes([
+        1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16,
+    ])
+    .map_err(|error| format!("{error:?}"))?;
+    let facts = AcquisitionOwnerFacts {
+        mana: 500,
+        has_infinite_mana: false,
+        can_summon_all: false,
+        can_convince_all: false,
+        black_skull: false,
+    };
+    let prepare = |name: &str| {
+        prepare_direct_acquisition(
+            &runtime,
+            room.movement_cells(),
+            owner,
+            session,
+            character,
+            &spell,
+            AcquisitionSource::Named(name.into()),
+            &facts,
+        )
+    };
+    assert_eq!(
+        prepare("rat")
+            .as_ref()
+            .map(DirectCompanionReservation::creature_definition_key),
+        Ok("oteryn:creature.rat")
+    );
+    assert!(matches!(
+        prepare("S7 nonexistent creature"),
+        Err(CompanionExecutionError::Actor(
+            crate::domain::carrier_values::CarrierError::InvalidCreatureTarget
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
 fn bounded_exclusions_narrow_static_placement_without_granting_absent_cells() {
     let (reference, _, session) =
         crate::gameplay_transport::actor_spell::tests::runtime_with_player(97);

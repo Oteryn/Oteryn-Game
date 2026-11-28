@@ -127,6 +127,33 @@ fn scenario() -> TestResult {
             );
             assert_eq!((status.stamina, status.soul), (inside, inside));
             assert!((1..=180_000).contains(&status.food_remaining_ms));
+            for (streak, expected) in [
+                (0, (0, 0, false, false)),
+                (4, (1, 1, true, false)),
+                (6, (2, 2, true, false)),
+            ] {
+                owner.states.resting_areas.refresh(session, actor, streak);
+                let bytes = owner
+                    .rest_status_page(admitted, 901)
+                    .await
+                    .ok_or("status")?;
+                let status = RestStatus::decode(&bytes).ok_or("decode")?;
+                assert_eq!(status.streak, streak);
+                assert_eq!(
+                    (
+                        status.health_multiplier,
+                        status.mana_multiplier,
+                        status.stamina,
+                        status.soul
+                    ),
+                    if inside {
+                        expected
+                    } else {
+                        (0, 0, false, false)
+                    },
+                    "rest status at streak {streak}"
+                );
+            }
             let mut stale = admitted;
             stale.game_session_id =
                 crate::foundation::GameSessionId::decode(&id(99)).map_err(debug)?;
