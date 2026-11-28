@@ -24,10 +24,13 @@ use crate::gameplay_transport::spell_access_facts::UnavailableAccessOwner;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
 
 use oteryn_protocol_oteryn::actor_spell_v2::{ParameterSpellCastIntent, PrivateSpellEffect};
+use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 use serde_json::json;
 
 use std::num::NonZeroU32;
+
+pub(super) const ROPE_AFTER_STEP: u8 = 5;
 
 fn at(x: i32, y: i32, floor: i16) -> MovementLocalPosition {
     MovementLocalPosition { x, y, floor }
@@ -160,6 +163,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             0 => at(1, 5, -6),
             1 => at(1, 4, -5),
             2 => at(-4, -3, -6),
+            ROPE_AFTER_STEP => at(6, 14, -8),
             _ => at(7, 14, -8),
         }
     };
@@ -206,6 +210,8 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
     owner.admit_progression_session(&mut admitted).await;
     if use_bundle {
         owner.admit_premium(id(40), session);
+    }
+    if use_bundle || case == ROPE_AFTER_STEP {
         owner
             .states
             .chat
@@ -644,8 +650,23 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         },
         parameter: (case < 3).then(|| if case == 1 { "down" } else { "up" }.into()),
     };
+    let clock = (case == ROPE_AFTER_STEP)
+        .then(|| super::srx3_native_source_cast_fixtures::NativeOwnerClock::new(&owner));
+    let command_id = if let Some(clock) = &clock {
+        clock.set(owner.owner_now().get());
+        let (step, wait) = owner.paced_step(actor, session, StepDirection::East).await;
+        assert_eq!(step.disposition, StepDisposition::Moved);
+        assert!(wait.is_some_and(|wait| !wait.is_zero()));
+        assert_eq!(
+            deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+            at(7, 14, -8)
+        );
+        2
+    } else {
+        1
+    };
     let before = owner.observe_vitals(actor, session).await.ok_or("vitals")?;
-    if use_bundle {
+    if use_bundle || case == ROPE_AFTER_STEP {
         let text = match case {
             0 => "exani hur \"up",
             1 => "exani hur \"down",
@@ -655,7 +676,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             .complete_chat_intent(
                 actor,
                 session,
-                1,
+                command_id,
                 &oteryn_protocol_oteryn::chat::ChatIntent::Say {
                     mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
                     text: text.into(),
@@ -674,7 +695,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         );
     }
     let dispatch = owner
-        .cast_parameters(actor, session, 1, &intent, &UnavailableAccessOwner)
+        .cast_parameters(actor, session, command_id, &intent, &UnavailableAccessOwner)
         .await;
     assert!(
         matches!(dispatch.cast, NativeCastDispatch::Outcome(_)),
@@ -714,7 +735,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         match case {
             0 => at(1, 4, -5),
             1 => at(1, 5, -6),
-            3 => at(7, 13, -7),
+            3 | ROPE_AFTER_STEP => at(7, 13, -7),
             4 => at(7, 15, -7),
             _ => start,
         }
@@ -737,13 +758,13 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
         before.1.mana
             - match case {
                 2 => 0,
-                3 | 4 => 20,
+                3 | 4 | ROPE_AFTER_STEP => 20,
                 _ => 50,
             }
     );
     // All candidates reject the projectile barrier; the source south fallback ignores it.
     let replay = owner
-        .cast_parameters(actor, session, 1, &intent, &UnavailableAccessOwner)
+        .cast_parameters(actor, session, command_id, &intent, &UnavailableAccessOwner)
         .await;
     assert_eq!(replay.result, Some(result));
     assert_eq!(owner.observe_vitals(actor, session).await, Some(after));
@@ -756,6 +777,7 @@ async fn run(admin: String, case: u8, use_bundle: bool, tool: Option<(&str, u32,
             .position(),
         destination
     );
+    drop(clock);
     drop(owner);
     drop(authority);
     drop(seal);

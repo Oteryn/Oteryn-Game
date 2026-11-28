@@ -25,3 +25,20 @@ fn vertical_move_postgres_parameter_dispatch_levitate_and_magic_rope() -> TestRe
         .map_err(|_| "vertical movement thread panicked")?
         .map_err(Into::into)
 }
+
+#[test]
+fn magic_rope_casts_immediately_after_a_completed_walk_step() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("magic-rope-after-walk", move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(Box::pin(scenario(
+                admin,
+                super::vertical_move_fixtures::ROPE_AFTER_STEP,
+                false,
+            )))
+    })
+}

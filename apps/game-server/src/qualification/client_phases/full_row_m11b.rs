@@ -62,6 +62,43 @@ async fn say(client: &mut DevClientSession) -> TestResult<ChatOutcome> {
         .await?)
 }
 
+pub(super) async fn connect_rope_caster(
+    clients: &SeamClients<'_>,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    let mut client = connect_character(clients, tag, 1).await?;
+    if rope_available(&mut client)? {
+        return Ok(client);
+    }
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    request_fixture_control(session, "--profile", "magic-rope".into()).await?;
+    let (result, logout, _, _) = logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("Magic Rope fixture logout refused: {logout}").into());
+    }
+    drop(client);
+    let mut client = connect_character(clients, tag, 1).await?;
+    if !rope_available(&mut client)? {
+        return Err("Magic Rope is unavailable after the level-9 fixture admission".into());
+    }
+    Ok(client)
+}
+
+fn rope_available(client: &mut DevClientSession) -> TestResult<bool> {
+    use oteryn_protocol_oteryn::actor_spell_catalog as catalog;
+    let snapshot = client
+        .session_mut()
+        .gated_snapshot(catalog::STATE_DOMAIN_ACTOR_SPELL_CATALOG)
+        .ok_or("Magic Rope spell catalogue missing")?;
+    let spells = catalog::decode_catalog(&snapshot.payload)
+        .map_err(|error| format!("Magic Rope spell catalogue: {error:?}"))?;
+    let spell = spells
+        .iter()
+        .find(|spell| spell.words == WORDS)
+        .ok_or("Magic Rope missing from the spell catalogue")?;
+    Ok(spell.available)
+}
+
 fn rope_spots(bytes: &[u8]) -> TestResult<Vec<TilePos>> {
     let mut spots = Vec::new();
     oteryn_world_bundle::bundle::visit(bytes, |manifest, sector| {
@@ -129,7 +166,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let spots = rope_spots(&bytes)?;
-    let mut client = connect_character(clients, 0xb1, 1).await?;
+    let mut client = connect_rope_caster(clients, 0xb1).await?;
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| {
         spots.binary_search(&at).is_ok()

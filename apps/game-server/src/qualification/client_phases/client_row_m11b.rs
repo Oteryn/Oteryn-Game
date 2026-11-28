@@ -60,7 +60,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes.clone(), &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let spots = rope_spots(&bytes)?;
-    let mut client = connect_character(clients, 0xbb, 1).await?;
+    let mut client = full_row_m11b::connect_rope_caster(clients, 0xbb).await?;
     let start = tile(client.world_spatial().actor_position)?;
     let path = route(world, start, |at| spots.binary_search(&at).is_ok()).ok_or("no reachable rope spot")?;
     walk(&mut client, world, &path).await?;
