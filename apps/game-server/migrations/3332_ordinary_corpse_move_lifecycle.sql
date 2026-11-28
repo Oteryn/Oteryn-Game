@@ -709,11 +709,9 @@ LANGUAGE sql STABLE STRICT AS $$
           AND (game_ordinary_corpse_loop_ground(p_item) OR (
               m.death_scope_kind=1 AND m.death_channel_id=g.channel_id AND m.death_scope_ownership_generation=g.runtime_scope_ownership_generation
               AND g.corpse_ref=uuid_send(m.death_world_id)||uuid_send(m.death_channel_id)
-                ||decode(lpad(to_hex(trunc(m.death_scope_ownership_generation/4294967296)::bigint),8,'0')
-                    ||lpad(to_hex(mod(m.death_scope_ownership_generation,4294967296)::bigint),8,'0'),'hex')
+                ||game_activity_native_step_u64(m.death_scope_ownership_generation)
                 ||substring(int8send(m.death_actor_local_id) from 5 for 4)
-                ||decode(lpad(to_hex(trunc(m.death_actor_local_generation/4294967296)::bigint),8,'0')
-                    ||lpad(to_hex(mod(m.death_actor_local_generation,4294967296)::bigint),8,'0'),'hex'))))
+                ||game_activity_native_step_u64(m.death_actor_local_generation))))
 $$;
 REVOKE ALL ON FUNCTION game_skinning_prior_ground(UUID,NUMERIC) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_skinning_prior_ground(UUID,NUMERIC) TO oteryn_game_runtime,oteryn_game_control;

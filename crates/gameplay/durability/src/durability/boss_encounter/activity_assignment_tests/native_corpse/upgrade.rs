@@ -164,38 +164,40 @@ async fn read_after_writer(h: &fixture::Harness) -> TestResult {
         .await
         .map_err(fixture::debug)?;
     let permit = mint.fresh_death_lane_permit().await;
+    h.root
+        .commit_corpse_mint(
+            &permit,
+            &authority,
+            &h.node,
+            &mut mint,
+            *fence.character_id.as_bytes(),
+        )
+        .await
+        .map_err(fixture::debug)?;
+    let item = *mint.item_instance_id();
+    let mut write = h.pool.begin().await?;
+    crate::durability::spell_item_transaction::lock_ground_scope(&mut write, scope).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *write)
+        .await?;
+    let position: Vec<u8> = sqlx::query_scalar(
+        "UPDATE game_item_ground_locations SET spatial_position=overlay(spatial_position placing int4send(37) from 1 for 4) WHERE item_instance_id=encode($1,'hex')::uuid RETURNING spatial_position"
+    ).bind(item.as_slice()).fetch_one(&mut *write).await?;
     let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
-    let reader = crate::durability::item_loop_move::BEFORE_SCULPTURE_LOCK.scope(
-        barrier.clone(),
-        h.root.read_item_loop_ground_after_sculpture(scope),
-    );
-    let writer = async {
-        barrier.0.notified().await;
-        let result = h
-            .root
-            .commit_corpse_mint(
-                &permit,
-                &authority,
-                &h.node,
-                &mut mint,
-                *fence.character_id.as_bytes(),
-            )
-            .await;
-        barrier.1.notify_one();
-        result
-    };
-    let (rows, committed) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        tokio::join!(reader, writer)
-    })
-    .await?;
-    assert!(matches!(
-        committed.map_err(fixture::debug)?,
-        ItemMintOutcome::Committed(_)
-    ));
+    let latch = barrier.clone();
+    let root = h.root.clone();
+    let reader = tokio::spawn(async move {
+        crate::durability::item_loop_move::BEFORE_SCULPTURE_LOCK
+            .scope(latch, root.read_item_loop_ground_after_sculpture(scope))
+            .await
+    });
+    tokio::time::timeout(std::time::Duration::from_secs(5), barrier.0.notified()).await?;
+    write.commit().await?;
+    barrier.1.notify_one();
+    let rows = reader.await??;
     assert!(
-        rows?
-            .iter()
-            .any(|r| r.item.item_instance_id == *mint.item_instance_id()),
+        rows.iter()
+            .any(|r| r.item.item_instance_id == item && r.item.ground.spatial_position == position),
         "protected census must see the preceding commit"
     );
     Ok(())
