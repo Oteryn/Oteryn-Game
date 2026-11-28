@@ -22,7 +22,7 @@ async fn send(
     client: &mut DevClientSession,
     panel: &mut ui::StashPanel,
     intent: ui::Intent,
-) -> TestResult<(stash::StashReply, Vec<u8>)> {
+) -> TestResult<(stash::StashReply, Vec<u8>, u64)> {
     let command = ui::request(panel, intent).ok_or("stash request refused by the panel")?;
     let result = client
         .session_mut()
@@ -44,7 +44,7 @@ async fn send(
             reply: reply.clone(),
         },
     );
-    Ok((reply, result.payload))
+    Ok((reply, result.payload, result.server_sequence))
 }
 
 fn total(panel: &ui::StashPanel) -> u64 {
@@ -106,7 +106,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         selected: true,
         ..Default::default()
     };
-    let (opened, open_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
+    let (opened, open_bytes, open_sequence) =
+        send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     if opened.outcome != stash::StashOutcome::Opened {
         return Err(format!("stash open {:?}", opened.outcome).into());
     }
@@ -139,14 +140,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("E07 requires exactly two carried Health Potions".into());
     }
     panel.carried = vec![item];
-    let (stowed, stow_bytes) = send(&mut client, &mut panel, ui::Intent::Stow(item.handle)).await?;
+    let (stowed, stow_bytes, stow_sequence) =
+        send(&mut client, &mut panel, ui::Intent::Stow(item.handle)).await?;
     if stowed.outcome != stash::StashOutcome::Committed
         || stowed.stowed_quantity != item.count.get()
     {
         return Err(format!("stow reply {stowed:?}").into());
     }
     await_carried_quantity(&mut client, potion, 0).await?;
-    let (browsed, browse_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
+    let (browsed, browse_bytes, browse_sequence) =
+        send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     let after_stow = total(&panel);
     if after_stow != before + u64::from(item.count.get()) {
         return Err("stash total differs from stowed quantity".into());
@@ -161,7 +164,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             r.definition_key == key && r.definition_revision == revision && r.quantity == 2
         })
         .ok_or("stowed definition absent from stash page")?;
-    let (withdrawn, withdraw_bytes) = send(
+    let (withdrawn, withdraw_bytes, withdraw_sequence) = send(
         &mut client,
         &mut panel,
         ui::Intent::Withdraw { row, amount: 1 },
@@ -171,7 +174,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("withdraw outcome {:?}", withdrawn.outcome).into());
     }
     await_carried_quantity(&mut client, potion, 1).await?;
-    let (after, after_bytes) = send(&mut client, &mut panel, ui::Intent::Refresh).await?;
+    let (after, after_bytes, after_sequence) =
+        send(&mut client, &mut panel, ui::Intent::Refresh).await?;
     let after_withdraw = total(&panel);
     if after.outcome != stash::StashOutcome::Opened
         || after_withdraw != after_stow - 1
@@ -191,7 +195,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if fresh.join_snapshot().game_session_id == previous_session {
         return Err("E07 relog reused the old session".into());
     }
-    let (persisted, _) = send(&mut fresh, &mut panel, ui::Intent::Refresh).await?;
+    let (persisted, _, _) = send(&mut fresh, &mut panel, ui::Intent::Refresh).await?;
     if carried_quantity(&fresh, potion)? != 1
         || persisted.outcome != stash::StashOutcome::Opened
         || total(&panel) != after_withdraw
@@ -201,9 +205,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("E07 relog did not preserve exactly one stashed Health Potion".into());
     }
+    let session = uuid_text(previous_session.as_bytes());
+    let sequences = format!(
+        "{open_sequence},{stow_sequence},{browse_sequence},{withdraw_sequence},{after_sequence}"
+    );
     let expected = format!(
-        "key={key}\nrevision={revision}\nstowed={}\nopen_total={before}\nafter_stow={after_stow}\nafter_withdraw={after_withdraw}\n",
-        item.count.get()
+        "key={key}\nrevision={revision}\nstowed={}\nopen_total={before}\nafter_stow={after_stow}\nafter_withdraw={after_withdraw}\nsession={session}\nsequences={sequences}\nhandle={}\ndefinition_ref={}\n",
+        item.count.get(),
+        item.handle,
+        item.item_definition_ref
     );
     capture("e07-open.bin", &open_bytes);
     capture("e07-stow.bin", &stow_bytes);
@@ -212,7 +222,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e07-after.bin", &after_bytes);
     capture("e07-expected.txt", expected.as_bytes());
     Ok(format!(
-        "key={key} stowed={} after_stow={after_stow} after_withdraw={after_withdraw}",
+        "session={session} sequences={sequences} key={key} stowed={} after_stow={after_stow} after_withdraw={after_withdraw}",
         item.count.get()
     ))
 }

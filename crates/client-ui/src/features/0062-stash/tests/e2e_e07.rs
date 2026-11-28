@@ -81,6 +81,18 @@ fn total(panel: &StashPanel) -> u64 {
 #[test]
 fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
     let data = capture()?;
+    let live = std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some();
+    if let Ok(binding) = std::env::var("NODE_BOOT_E07_CAPTURE_BINDING") {
+        let session = value(&data.expected, "session")?;
+        let sequences = value(&data.expected, "sequences")?;
+        assert_eq!(binding, format!("session={session} sequences={sequences}"));
+        let sequences = sequences
+            .split(',')
+            .map(str::parse::<u64>)
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(sequences.len(), 5);
+        assert!(sequences.windows(2).all(|pair| pair[0] < pair[1]));
+    }
     let key = value(&data.expected, "key")?;
     let revision = value(&data.expected, "revision")?;
     let stowed: u32 = value(&data.expected, "stowed")?.parse()?;
@@ -99,8 +111,16 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
 
     let item = oteryn_client_runtime::depot::ItemEntry {
         appearance_id: 0,
-        handle: std::num::NonZeroU64::MIN,
-        item_definition_ref: std::num::NonZeroU32::MIN,
+        handle: if live {
+            value(&data.expected, "handle")?.parse()?
+        } else {
+            std::num::NonZeroU64::MIN
+        },
+        item_definition_ref: if live {
+            value(&data.expected, "definition_ref")?.parse()?
+        } else {
+            std::num::NonZeroU32::MIN
+        },
         count: std::num::NonZeroU32::new(stowed).ok_or("stowed zero")?,
         sub_type: 0,
     };
