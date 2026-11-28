@@ -10,7 +10,7 @@
 //!    returns mode 2 plus the caster's resolved character id and name.
 //! 4. The caster repeats `exiva "<target>"`; the server accepts the spell,
 //!    debits mana, and sends the directional Find Person reply. The caster then
-//!    drinks the fixture-provisioned Mana Potion to restore the refusal baseline.
+//!    drinks one starter Mana Potion to restore the refusal baseline.
 //! 5. The target sends malformed SetModes(32); the server rejects it and a
 //!    subsequent List proves that the allow-list state did not change.
 //! 6. The target logs out and makes a fresh admission; List must return the
@@ -194,6 +194,20 @@ async fn drink_mana_potion(caster: &mut DevClientSession) -> TestResult {
         return Err(format!("Mana Potion pre-state was already full: {before:?}").into());
     }
     let definition = provisioning::item_reference(&provisioning::item_index()?, MANA_POTION)?;
+    let potion_count = |client: &DevClientSession| {
+        client.inventory().map(|inventory| {
+            inventory
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == definition)
+                .map(|entry| u64::from(entry.count.get()))
+                .sum::<u64>()
+        })
+    };
+    let potions_before = potion_count(caster).ok_or("P17 caster inventory absent")?;
+    let potions_after = potions_before
+        .checked_sub(1)
+        .ok_or("P17 starter Mana Potion is absent")?;
     let handle = caster
         .inventory()
         .and_then(|inventory| {
@@ -203,36 +217,30 @@ async fn drink_mana_potion(caster: &mut DevClientSession) -> TestResult {
                 .find(|entry| entry.item_definition_ref == definition)
         })
         .map(|entry| entry.handle)
-        .ok_or("P17 fixture Mana Potion is absent")?;
+        .ok_or("P17 starter Mana Potion is absent")?;
     let result = caster.use_item(handle).await?;
     if result.status != CommandStatus::Accepted || result.disposition != UseDisposition::Committed {
         return Err(format!("P17 Mana Potion USE refused: {result:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        let consumed = caster.inventory().is_some_and(|inventory| {
-            !inventory
-                .entries
-                .iter()
-                .any(|entry| entry.item_definition_ref == definition)
-        });
-        if consumed
+        let observed_count = potion_count(caster);
+        if observed_count == Some(potions_after)
             && caster
                 .actor_vitals()
                 .is_some_and(|vitals| vitals.mana == before.max_mana)
         {
             evidence(&format!(
-                "E2E_P17_MANA_POTION consumed=true mana={}->{}",
+                "E2E_P17_MANA_POTION count={potions_before}->{potions_after} mana={}->{}",
                 before.mana, before.max_mana
             ));
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "P17 Mana Potion outcome: consumed={consumed} vitals={:?}",
+                "P17 Mana Potion outcome: count={potions_before}->{observed_count:?} expected={potions_after} vitals={:?}",
                 caster.actor_vitals()
-            )
-            .into());
+            ).into());
         }
         caster.service_liveness(Duration::from_millis(50)).await?;
     }
@@ -309,13 +317,6 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "c05-exiva".into(),
     )
     .await?;
-    request_fixture_control(
-        uuid_text(preparation_session.as_bytes()),
-        "--profile",
-        format!("item-{MANA_POTION}-1"),
-    )
-    .await?;
-    evidence("E2E_P17_FIXTURE input=one-mana-potion");
     logout(&mut caster).await?;
     drop(caster);
     let mut caster = connect_character(&caster_clients, 0xd7, 0).await?;
