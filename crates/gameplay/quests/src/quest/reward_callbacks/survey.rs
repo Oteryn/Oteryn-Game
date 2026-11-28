@@ -22,7 +22,7 @@ impl Survey {
         (1..=16).contains(&self.areas.len()) && self.areas.iter().all(SelfTarget::valid)
     }
 
-    pub fn uses_world_reset(&self) -> bool {
+    fn uses_world_reset(&self) -> bool {
         self.selection == Selection::WorldReset
     }
 
