@@ -311,7 +311,7 @@ async fn prepare_ranking_cut(
     // be readable from the real served job, including its correctly echoed World.
     // Keep this precondition and preparation inside the existing journey deadline.
     let mut served_achievement_cut = None;
-    for category in (1..=10).chain(std::iter::once(12)) {
+    for category in 1..=12 {
         let mut probe = request(category, 0, 1, 0);
         probe.details = true;
         progress.stage("served_job_cut", Some(probe));
@@ -325,7 +325,7 @@ async fn prepare_ranking_cut(
     }
     let served_achievement_cut =
         served_achievement_cut.ok_or("ranking served-job achievement snapshot absent")?;
-    evidence("E2EF7_SETUP S11 served-job-cut PASS categories=11 source=served-job");
+    evidence("E2EF7_SETUP S11 served-job-cut PASS categories=12 source=served-job");
 
     // Boot may publish before the ordinary admission initializes progression. Do not
     // alter the 30-minute scheduler or invent a planned reset: this existing test-only
@@ -397,9 +397,7 @@ async fn journey(
             .map_err(|e| format!("ranking own name: {e:?}"))?;
         prepare_ranking_cut(&mut client, clients, own_name, progress).await?;
         let mut observed_own = false;
-        // Charm points (11) have no activated source. Its unsupported response
-        // is exercised as a refusal; it must never masquerade as an empty list.
-        for category in (1..=10).chain(std::iter::once(12)) {
+        for category in 1..=12 {
             let (first, all) = list(&mut client, category, 0, 0, progress, "category_list").await?;
             if let Some(own) = &first.own_row {
                 if own.name != own_name {
@@ -472,8 +470,8 @@ async fn journey(
         row.pass("own-rank");
         progress.stage("unsupported_refusal", Some(request(u32::MAX, 0, 1, 0)));
         refused(&mut client, request(u32::MAX, 0, 1, 0), progress).await?;
-        progress.stage("unsupported_refusal", Some(request(11, 0, 1, 0)));
-        refused(&mut client, request(11, 0, 1, 0), progress).await?;
+        progress.stage("unsupported_refusal", Some(request(15, 0, 1, 0)));
+        refused(&mut client, request(15, 0, 1, 0), progress).await?;
         row.pass("unsupported-refusal");
         // Valid wire token outside the store's positive signed-bigint domain.
         // This is an invalid query, never a minted runtime actor/item handle.

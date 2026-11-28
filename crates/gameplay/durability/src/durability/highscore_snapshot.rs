@@ -15,6 +15,7 @@ use super::character_build::{DurableBuildState, SKILLS};
 use super::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
 use super::db::commit_semantic_transaction;
 use super::{DurabilityError, DurabilityRoot};
+use crate::content::{ProjectEvidenceLimits, canonical_bestiary_rows};
 use crate::foundation::{CharacterId, WorldId};
 use ranking::{RankingRow, ranked_lists};
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
@@ -129,12 +130,8 @@ pub trait AchievementPoints: Send + Sync {
     fn total_points(&self, earned: &[EarnedAchievement]) -> Option<u32>;
 }
 
-/// HIGHSCORES0 §3 category 11 source: the activated per-race Charm point catalogue. CHARM-6 has
-/// activated none yet, so this server withholds category 11: the job publishes no category 11
-/// snapshot and a query for it is `NOT_SUPPORTED`, never a ranking of fabricated zero points.
-pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
-    None
-}
+/// HIGHSCORES0 §3 category 11: lifetime Charm Points earned.
+const CHARM_POINTS_CATEGORY: u8 = 11;
 
 /// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
 pub const BOSS_POINTS_CATEGORY: u8 = 12;
@@ -148,10 +145,9 @@ pub const TIBIADROME_ROTATION_CATEGORY: u8 = 17;
 pub const PHOSPHORUS_RECORD_CATEGORY: u8 = 16;
 const DROME_ROTATION_MS: i64 = super::tibiadrome::ROTATION_SECONDS as i64 * 1000;
 
-/// Categories 1-10, 12, 13, 14, 16 and 17 are always served; category 11 requires an activated
-/// Charm point source.
+/// Categories published by the World snapshot job and served by the query handler.
 pub fn served_category(category: u8) -> bool {
-    (1..=10).contains(&category)
+    (1..=CHARM_POINTS_CATEGORY).contains(&category)
         || category == BOSS_POINTS_CATEGORY
         || matches!(
             category,
@@ -160,7 +156,6 @@ pub fn served_category(category: u8) -> bool {
                 | PHOSPHORUS_RECORD_CATEGORY
                 | TIBIADROME_ROTATION_CATEGORY
         )
-        || (category == 11 && activated_charm_points().is_some())
 }
 
 /// Actual owning catalogues from the activated content generation, never caller-provided scores.
@@ -168,20 +163,29 @@ pub fn served_category(category: u8) -> bool {
 pub struct SnapshotCatalogues {
     achievements: Arc<dyn AchievementPoints>,
     pub bestiary: BTreeMap<String, BestiaryCharmEntry>,
-    /// Whether a Charm point source backs category 11; without one it is not published.
-    charm_points: bool,
 }
 impl SnapshotCatalogues {
-    /// The serve job's catalogues: `achievements` and the activated Charm point source, if any.
+    /// Load the same canonical Bestiary source as the Charm progression command.
     pub fn activated(achievements: Arc<dyn AchievementPoints>) -> Result<Self> {
-        match activated_charm_points() {
-            Some(entries) => Self::new(achievements, entries),
-            None => Ok(Self {
-                achievements,
-                bestiary: BTreeMap::new(),
-                charm_points: false,
-            }),
-        }
+        let rows = canonical_bestiary_rows(ProjectEvidenceLimits {
+            max_documents: 5,
+            max_document_bytes: 2_500_000,
+            max_total_bytes: 8_000_000,
+            max_json_depth: 10,
+            max_decoded_fields: 65_000,
+            max_string_bytes: 1_000_000,
+            max_locator_bytes: 128,
+            max_locator_segments: 5,
+            max_reference_records: 4096,
+            max_import_records: 1,
+            max_reimport_states: 1,
+        })
+        .map_err(|_| corrupt())?;
+        Self::new(
+            achievements,
+            rows.into_iter()
+                .map(|(race, charm_points)| BestiaryCharmEntry { race, charm_points }),
+        )
     }
 
     /// Catalogues with the Charm point source `entries`, so category 11 is published.
@@ -198,25 +202,15 @@ impl SnapshotCatalogues {
                 .into_iter()
                 .map(|entry| (entry.race.key().to_owned(), entry))
                 .collect(),
-            charm_points: true,
         })
     }
 
-    /// The categories one publication writes, ascending: 1..=10, 12, 13, 14, 16 and 17, plus 11
-    /// with a Charm source.
-    fn published_categories(&self) -> Vec<i32> {
-        let mut categories: Vec<i32> = (1..=10).collect();
-        if self.charm_points {
-            categories.push(11);
-        }
-        categories.extend([
-            i32::from(BOSS_POINTS_CATEGORY),
-            i32::from(LOYALTY_CATEGORY),
-            i32::from(TIBIADROME_LIFETIME_CATEGORY),
-            i32::from(PHOSPHORUS_RECORD_CATEGORY),
-            i32::from(TIBIADROME_ROTATION_CATEGORY),
-        ]);
-        categories
+    /// The categories one publication writes, in ascending order.
+    fn published_categories() -> Vec<i32> {
+        (1..=TIBIADROME_ROTATION_CATEGORY)
+            .filter(|&category| served_category(category))
+            .map(i32::from)
+            .collect()
     }
 }
 
@@ -567,16 +561,14 @@ fn source_row(row: &PgRow) -> Result<Source> {
     })
 }
 
-/// Both additional categories use their actual source owners inside the same MVCC cut.
 /// Category 10 selects its representative before the vocation filter, including vocation none.
 /// Every read is keyset paged in the cut; more than `limits` ranked accounts refuse the cut.
-async fn read_extra_sources(
+async fn read_achievement_points(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
-    characters: &[Source],
     catalogues: &SnapshotCatalogues,
     limits: CutLimits,
-) -> Result<[Vec<Source>; 2]> {
+) -> Result<Vec<Source>> {
     let mut achievements = Vec::new();
     let mut after: Option<String> = None;
     loop {
@@ -647,38 +639,82 @@ async fn read_extra_sources(
         }
         after = accounts.last().cloned();
     }
-    // Without a Charm point source category 11 is not published, so its counters are not read.
-    if !catalogues.charm_points {
-        return Ok([achievements, Vec::new()]);
+    Ok(achievements)
+}
+
+/// Category 11 reads the Charm owner's completion counters and immutable Echo Warden rewards
+/// inside the same repeatable-read cut as the other categories. Unlock spending is irrelevant.
+async fn read_charm_points(
+    tx: &mut Transaction<'_, Postgres>,
+    characters: &[Source],
+    catalogues: &SnapshotCatalogues,
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    if characters.is_empty() {
+        return Ok(Vec::new());
     }
-    // One set-based read of the native kill counters per page of the already bounded Characters,
-    // avoiding a network call per Character. Both consumers use the owning
-    // BestiaryRace::is_complete predicate and content points; spent unlock currency is
-    // deliberately irrelevant to the earned-points category.
+    // Both Charm sources already grant reads to the runtime role. Use it for this read only;
+    // publication still requires the isolated job role.
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut **tx)
+        .await?;
+    let mut race_keys = Vec::with_capacity(catalogues.bestiary.len());
+    let mut thresholds = Vec::with_capacity(catalogues.bestiary.len());
+    let mut points = Vec::with_capacity(catalogues.bestiary.len());
+    for entry in catalogues.bestiary.values() {
+        race_keys.push(entry.race.key());
+        thresholds.push(i64::from(entry.race.final_kill_threshold()));
+        points.push(i64::from(entry.charm_points));
+    }
+    let echo_limit = i64::try_from(oteryn_protocol_oteryn::bestiary::MAX_BESTIARY_VIEW_ENTRIES)
+        .map_err(|_| corrupt())?;
     let mut charms = Vec::with_capacity(characters.len());
     for page in characters.chunks(limits.page_rows) {
         let ids: Vec<String> = page
             .iter()
             .map(|source| uuid_hex(source.character_id.as_bytes()))
             .collect();
-        let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,race_key,kill_count FROM game_character_bestiary_progress WHERE character_id=ANY($1::text[]::uuid[]) ORDER BY character_id,race_key")
-            .bind(&ids).fetch_all(&mut **tx).await?;
-        let mut earned: BTreeMap<CharacterId, u64> = BTreeMap::new();
+        // One row per Character. The validated catalogue bounds the completion join,
+        // and the Echo read probes one past its owner's per-Character cap.
+        let rows = sqlx::query(
+            "WITH bestiary AS ( \
+                 SELECT p.character_id, sum(race.points) AS points \
+                 FROM game_character_bestiary_progress p \
+                 JOIN unnest($2::text[], $3::bigint[], $4::bigint[]) AS race(key, threshold, points) \
+                   ON p.race_key=race.key AND p.kill_count>=race.threshold \
+                 WHERE p.character_id=ANY($1::text[]::uuid[]) GROUP BY p.character_id \
+             ) \
+             SELECT uuid_send(wanted.character_id) AS character_id, \
+                    coalesce(bestiary.points, 0)::bigint AS bestiary_points, \
+                    coalesce(echo.points, 0) AS echo_points, echo.reward_count \
+             FROM unnest($1::text[]::uuid[]) AS wanted(character_id) \
+             LEFT JOIN bestiary USING (character_id) \
+             CROSS JOIN LATERAL ( \
+                 SELECT sum(reward.charm_points) AS points, count(*) AS reward_count \
+                 FROM (SELECT charm_points FROM game_character_echo_warden_rewards \
+                       WHERE character_id=wanted.character_id ORDER BY species_key LIMIT $5) reward \
+             ) echo",
+        )
+        .bind(&ids)
+        .bind(&race_keys)
+        .bind(&thresholds)
+        .bind(&points)
+        .bind(echo_limit + 1)
+        .fetch_all(&mut **tx)
+        .await?;
+        let mut earned = BTreeMap::new();
         for row in rows {
-            let key: String = row.try_get("race_key")?;
-            let count = u32::try_from(nonnegative(&row, "kill_count")?).map_err(|_| corrupt())?;
-            if let Some(entry) = catalogues.bestiary.get(&key)
-                && entry.race.is_complete(count)
-            {
-                let sum = earned.entry(character(&row)?).or_default();
-                *sum = sum
-                    .checked_add(u64::from(entry.charm_points))
-                    .ok_or_else(corrupt)?;
+            if row.try_get::<i64, _>("reward_count")? > echo_limit {
+                return Err(corrupt());
             }
+            let total = nonnegative(&row, "bestiary_points")?
+                .checked_add(nonnegative(&row, "echo_points")?)
+                .ok_or_else(corrupt)?;
+            earned.insert(character(&row)?, total);
         }
         for source in page {
             let mut values = [(0, 0); 9];
-            values[0] = (earned.remove(&source.character_id).unwrap_or(0), 0);
+            values[0] = (earned.remove(&source.character_id).ok_or_else(corrupt)?, 0);
             charms.push(Source {
                 character_id: source.character_id,
                 name: source.name.clone(),
@@ -688,7 +724,10 @@ async fn read_extra_sources(
             });
         }
     }
-    Ok([achievements, charms])
+    sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
+        .execute(&mut **tx)
+        .await?;
+    Ok(charms)
 }
 
 /// HIGHSCORES0 §3 category 12: Bosstiary boss points, Crystal `game.cpp:9897` `boss_points`;
@@ -1021,7 +1060,7 @@ async fn publish_cut(
     sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
         .execute(&mut **tx)
         .await?;
-    let categories: Vec<i32> = catalogues.published_categories();
+    let categories = SnapshotCatalogues::published_categories();
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
     // concurrent head insertion also conflicts; an invisible head never becomes an empty cut.
@@ -1065,7 +1104,8 @@ async fn publish_cut(
         }
     }
     let source = read_source_within(tx, world, limits).await?;
-    let extra = read_extra_sources(tx, world, &source, catalogues, limits).await?;
+    let achievements = read_achievement_points(tx, world, catalogues, limits).await?;
+    let charms = read_charm_points(tx, &source, catalogues, limits).await?;
     let bosses = read_boss_points(tx, &source, limits).await?;
     let loyalty = read_loyalty(tx, &source, limits).await?;
     let drome_characters = read_tibiadrome_characters(tx, world, limits, computed_at_ms).await?;
@@ -1080,8 +1120,8 @@ async fn publish_cut(
         let old: Option<i64> = head.try_get("current_snapshot_id")?;
         let rows = match category {
             1..=9 => materialize(&source, usize::from(category) - 1)?,
-            10 => materialize(&extra[0], 0)?,
-            11 => materialize(&extra[1], 0)?,
+            10 => materialize(&achievements, 0)?,
+            CHARM_POINTS_CATEGORY => materialize(&charms, 0)?,
             BOSS_POINTS_CATEGORY => materialize(&bosses, 0)?,
             LOYALTY_CATEGORY => materialize(&loyalty, 0)?,
             PHOSPHORUS_RECORD_CATEGORY => materialize(&phosphorus, 0)?,
@@ -1232,11 +1272,11 @@ mod category_set_tests {
     }
 
     #[test]
-    fn served_category_admits_boss_points_and_withholds_unsourced_charm_points() {
+    fn served_category_admits_charm_and_boss_points() {
         assert!(served_category(12));
         assert!(served_category(1));
         assert!(served_category(10));
-        assert!(!served_category(11));
+        assert!(served_category(11));
         assert!(!served_category(0));
         assert!(served_category(13));
         assert!(served_category(14));

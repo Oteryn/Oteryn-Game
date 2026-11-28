@@ -21,8 +21,8 @@ use crate::durability::highscore_snapshot::reply::{
 use crate::durability::highscore_snapshot::{
     ACCOUNT_REPRESENTATIVE_PAGE_SQL, AchievementPoints, CHARACTER_SOURCE_PAGE_SQL,
     CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS, CutLimits, FILTERS, SnapshotCatalogues,
-    SnapshotError, SnapshotPage, SnapshotRow, activated_charm_points, begin_projection, job,
-    publish_in_transaction, read_source_within, served_category,
+    SnapshotError, SnapshotPage, SnapshotRow, begin_projection, job, publish_in_transaction,
+    read_source_within, served_category,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, FoundationProtocolError, GameSessionId, WorldId};
@@ -1442,14 +1442,11 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
     })
 }
 
-/// HIGHSCORES0 §3: with no activated per-race Charm point source (CHARM-6) the serve job's
-/// catalogues publish categories 1 to 10, 12, 13, 14, 16 and 17, and the client's category 11 query through the
-/// dispatched handler is `NOT_SUPPORTED` rather than a ranking of zero points.
+/// HIGHSCORES0 §3: the serve job includes category 11 in each complete publication.
 #[test]
-fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> TestResult {
+fn category_eleven_is_published_with_the_activated_charm_point_source() -> TestResult {
     run("hscharmsource", async |h| {
-        assert!(activated_charm_points().is_none());
-        assert!(!served_category(11) && served_category(12));
+        assert!(served_category(11) && served_category(12));
         let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(root.maintain_ready_once().await?);
         let catalogues =
@@ -1461,17 +1458,20 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
             wait_for_passes(&job, 1).await;
             assert_eq!(
                 h.count("game_world_highscore_snapshots").await?,
-                SNAPSHOTS_PER_CUT - 1
+                SNAPSHOTS_PER_CUT
             );
             let charm_heads: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_world_highscore_heads WHERE category=11",
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(charm_heads, 0);
+            assert_eq!(charm_heads, 1);
+            let HighscoresReply::Result(charms) = client_reply(h, 11, 0, 1, 0).await? else {
+                return Err("category 11 query was not accepted".into());
+            };
             assert_eq!(
-                client_reply(h, 11, 0, 1, 0).await?,
-                HighscoresReply::Terminal(FoundationProtocolError::NotSupported)
+                decode_highscores_result(&charms).map_err(debug)?.category,
+                11
             );
             let HighscoresReply::Result(accounts) = client_reply(h, 10, 0, 1, 0).await? else {
                 return Err("category 10 query was not accepted".into());
@@ -1480,12 +1480,11 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
                 decode_highscores_result(&accounts).map_err(debug)?.category,
                 10
             );
-            // Withholding Charm removes exactly one category from each complete cut.
             planned_resets.send(()).await?;
             wait_for_passes(&job, 2).await;
             assert_eq!(
                 h.count("game_world_highscore_snapshots").await?,
-                2 * (SNAPSHOTS_PER_CUT - 1)
+                2 * SNAPSHOTS_PER_CUT
             );
             drop(planned_resets);
             Ok(())
