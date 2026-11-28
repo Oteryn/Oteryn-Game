@@ -1,7 +1,7 @@
 use super::*;
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::map_position::TilePos;
-use crate::domain::soulpit::{EntryParticipant, MAX_PARTICIPANTS, entry_slot, validate_entry};
+use crate::domain::soulpit::{MAX_PARTICIPANTS, SOULSEAL_REQUIRED_LEVEL, entry_slot, validate_entry};
 use crate::durability::character_equipment::{
     EquipmentError, assert_current_equipment_in_transaction,
 };
@@ -85,7 +85,7 @@ pub(super) async fn write(
     if participants.len() != request.participants.len() {
         return Err(SoulpitWriteError::Rule(SoulpitError::InvalidParticipants));
     }
-    let mut entry_facts = Vec::with_capacity(participants.len());
+    let mut participant_slots = Vec::with_capacity(participants.len());
     let mut members = Vec::with_capacity(participants.len());
     let mut actor_slot = None;
     for participant in participants {
@@ -113,19 +113,15 @@ pub(super) async fn write(
             floor,
         };
         let slot = entry_slot(position).ok_or(SoulpitError::NotOnEntryTile)?;
-        let level = u32::try_from(participant.try_get::<i64, _>("level")?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        entry_facts.push(EntryParticipant {
-            slot,
-            level,
-            // Crystal 201189f soulpit_fight.lua:54-61 exempts current GMs. Resolve
-            // the trusted projection in this transaction; a captured hint cannot
-            // grant an exemption or survive roster/activation revocation.
-            game_master: root
-                .staff_group_in_transaction(tx, facts[0].character)
-                .await?
-                >= 4,
-        });
+        // Global Core-funded fights have no level gate. T114's separate solo
+        // Soulseal offer retains its level rule and trusted staff exemption.
+        if matches!(&request.funding, SoulpitFunding::Soulseals { .. })
+            && participant.try_get::<i64, _>("level")? < i64::from(SOULSEAL_REQUIRED_LEVEL)
+            && root.staff_group_in_transaction(tx, facts[0].character).await? < 4
+        {
+            return Err(SoulpitError::LevelTooLow.into());
+        }
+        participant_slots.push(slot);
         if character == *fence.character_id.as_bytes() {
             if uuid_text(participant.try_get("source_game_session_id")?)?
                 != *fence.game_session_id.as_bytes()
@@ -140,14 +136,11 @@ pub(super) async fn write(
     // fight row, retained shared group and source core proof close the admission barrier.
     validate_entry(
         actor_slot.ok_or(SoulpitError::NotOnEntryTile)?,
-        &entry_facts,
+        &participant_slots,
         false,
         1,
     )?;
-    let encounter = SoulpitEncounter::new(
-        request.started_at_micros,
-        &entry_facts.iter().map(|fact| fact.slot).collect::<Vec<_>>(),
-    )?;
+    let encounter = SoulpitEncounter::new(request.started_at_micros, &participant_slots)?;
     let seal_payment=matches!(&request.funding,SoulpitFunding::Soulseals {..});
     let debit=match &request.funding {
         SoulpitFunding::Core {..}=>burn_entry_core(tx,fence,request,native).await?,

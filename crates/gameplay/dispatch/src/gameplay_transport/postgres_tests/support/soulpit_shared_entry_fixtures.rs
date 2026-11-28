@@ -66,7 +66,7 @@ pub(super) async fn admit_inner(
     h: &Harness,
     deps: &Dependencies,
     evidence: &super::house_transfer_fixtures::RecoverySource,
-    gm_case: bool,
+    initialize_low_level: bool,
 ) -> TestResult<AdmittedSoulpit> {
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
@@ -224,24 +224,9 @@ pub(super) async fn admit_inner(
         .spell_lane_permit()
         .await
         .ok_or("current source spell lane")?;
-    let _staff = if gm_case {
-        Some(
-            staff::GmProof {
-                h,
-                authority: &authority,
-                source,
-                group: &group,
-                entry: &entry,
-                owner: &owner,
-                permit: &permit,
-                native,
-            }
-            .verify()
-            .await?,
-        )
-    } else {
-        None
-    };
+    if initialize_low_level {
+        low_level::initialize_level_one(h, &authority, source).await?;
+    }
     assert_eq!(
         owner
             .enter(&authority, &h.node, group.clone())
@@ -289,7 +274,7 @@ pub(super) async fn admit_inner(
         .await;
     assert!(
         rejected.is_err(),
-        "injected successor failure must roll back entry: {rejected:?}"
+        "an eligible Core-funded party must reach successor creation: {rejected:?}"
     );
     let reached_debit: (i64, bool) =
         sqlx::query_as("SELECT last_value,is_called FROM soulpit_test_after_debit")
@@ -440,5 +425,5 @@ pub(super) async fn entry_counts(h: &Harness) -> TestResult<(i64, i64, i64, i64)
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?)
 }
 
-#[path = "soulpit_shared_entry/staff.rs"]
-pub(super) mod staff;
+#[path = "soulpit_shared_entry/low_level.rs"]
+pub(super) mod low_level;
