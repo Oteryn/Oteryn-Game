@@ -1,12 +1,12 @@
 //! I17a: hotkey equip, a worn item by definition id from the backpack and from a loot pouch.
-//! Prepares a dedicated character with its starter leather helmet (3355) and gold to buy a bag (2853),
+//! Prepares a dedicated character with its starter leather helmet (3355) and a fixture bag (2853),
 //! equips the helmet from the backpack (Moved, Head slot, backpack debit), toggles it back,
 //! then moves it into the bag and equips from there: with capability 180 (carried selection)
 //! the server must equip it; without it the server must refuse `NotSupported` with no change
 //! (FAIL `needed:capability-180`). The worn state is re-read after logout and a fresh admission.
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -67,122 +67,6 @@ async fn wait_quantity(
     }
 }
 
-async fn acquire(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    id: u32,
-    amount: u32,
-) -> TestResult<u64> {
-    use oteryn_dev_client::client_runtime::npc_shop as runtime;
-    use oteryn_protocol_oteryn::npc_service as wire;
-    let index = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&index, id)?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records absent")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()?
-                .strip_prefix("oteryn:service.trade.")
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata
-        .npcs
-        .npcs
-        .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Npc
-                    && npc.placements.iter().any(|p| {
-                        entity.position.x == i32::from(p.x)
-                            && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("seller not visible after walk")?;
-    for text in ["hi", "trade"] {
-        let reply = runtime::talk(
-            client.session_mut(),
-            &wire::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != wire::NpcIntentDisposition::Ok {
-            return Err(format!("NPC {text} reply={reply:?}").into());
-        }
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("trade window decode: {error:?}"))?;
-    let (offer_index, offer) = window
-        .offers
-        .iter()
-        .enumerate()
-        .find(|(_, offer)| {
-            offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
-        })
-        .ok_or("live seller omitted requested offer")?;
-    let before = quantity(client, reference)?;
-    client.take_events();
-    let reply = runtime::buy(
-        client.session_mut(),
-        &wire::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("trade window closed")?.1,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity: amount,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if reply != wire::NpcIntentDisposition::Ok {
-        return Err(format!(
-            "buy item={id} reply={reply:?} price={} quantity={amount}",
-            offer.unit_price
-        )
-        .into());
-    }
-    let expected = before + u64::from(offer.count) * u64::from(amount);
-    wait_quantity(client, reference, expected).await
-}
-
 async fn logout(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -190,17 +74,6 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
         return Err("logout refused".into());
     }
     Ok(())
-}
-
-async fn open_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )
 }
 
 fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
@@ -266,20 +139,6 @@ async fn expect(
     Ok(())
 }
 
-async fn buy(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    id: u32,
-    amount: u32,
-) -> TestResult<()> {
-    acquire(client, world, id, amount)
-        .await
-        .map(|_| ())
-        .map_err(|error| {
-            format!("step=buy-{id} observed={error};needed:player-gold-and-reachable-seller").into()
-        })
-}
-
 async fn relog(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
@@ -329,10 +188,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let helmet = reference(3355)?;
     let bag = reference(2853)?;
     let mut client = connect_character(clients, 0xe1, 0).await?;
-    character_prep::grant_item(&client, 3031, 100).await?;
+    character_prep::grant_item(&client, 2853, 1).await?;
+    evidence("row=I17a.full fixture=bag item=2853 count=1");
     let mut client = relog(&mut client, clients, 0xe1).await?;
-    let world = open_world(clients).await?;
-    buy(&mut client, world, 2853, 1).await?;
     let spare = quantity(&client, helmet)?;
     if spare != 0
         || worn(&client, helmet).as_deref() != Some("Head")
