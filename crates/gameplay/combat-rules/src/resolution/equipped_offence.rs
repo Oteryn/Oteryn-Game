@@ -112,15 +112,15 @@ impl EquippedOffence {
         } else {
             5 * weapon * weapon + 40 * weapon + 5
         };
-        let mut amplification = if boots == 0 {
+        let amplification = if boots == 0 {
             0
         } else {
-            40 * boots * boots + 170 * boots + 40
+            let bonus = if self.exaltation_overload { 525 } else { 0 };
+            40 * boots * boots + 170 * boots + 40 + bonus
         };
         if self.exaltation_overload {
             // Global Amplification: each bonus is added before multiplying.
             base += 105;
-            amplification += 525;
         }
         if roll.saturating_mul(10_000) >= base * (10_000 + amplification) {
             return damage;
@@ -274,9 +274,9 @@ mod tests {
             exaltation_overload: true,
             ..EquippedOffence::default()
         };
-        // No equipment: 1.05% * 1.0525 = 1.105125%.
-        assert_eq!(offence.fatal(100, 110), 160);
-        assert_eq!(offence.fatal(100, 111), 100);
+        // With neither gear bonus, Global lists a tier-zero chance of 1.05%.
+        assert_eq!(offence.fatal(100, 104), 160);
+        assert_eq!(offence.fatal(100, 105), 100);
     }
 
     #[test]
