@@ -310,9 +310,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     }
     let coins = coin_refs()?;
     let before_fee = backpack_coins(&client, coins)?;
-    if before_fee != [0, 0, 2] {
+    // The first-admission build also carries 50 starter gold.
+    let expected_remainder = [50, 0, 0];
+    if before_fee != [50, 0, 2] {
         return Err(
-            format!("C11 promotion requires exactly 20,000 carried gold: {before_fee:?}").into(),
+            format!("C11 promotion requires exactly 20,050 carried gold: {before_fee:?}").into(),
         );
     }
     let confirmation = talk(&mut client, king, "yes").await?;
@@ -320,8 +322,14 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("C11 King Tibianus command=yes observed={confirmation:?}").into());
     }
 
-    wait_coins(&mut client, coins, [0; 3], "C11 promotion debit").await?;
-    evidence("C11_PROMOTION_FEE carried_before=20000 carried_after=0 charged=20000");
+    wait_coins(
+        &mut client,
+        coins,
+        expected_remainder,
+        "C11 promotion debit",
+    )
+    .await?;
+    evidence("C11_PROMOTION_FEE carried_before=20050 carried_after=50 charged=20000");
 
     query(&mut client, wire::BattleInstinctStatus::default()).await?;
     let read = wheel::WheelAllocationRequest {
@@ -368,13 +376,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if wheel_command(&mut client, &read).await? != saved {
         return Err("C11 exact Wheel allocation failed to survive relog".into());
     }
-    if backpack_coins(&client, coins)? != [0; 3] {
+    if backpack_coins(&client, coins)? != expected_remainder {
         return Err("C11 promotion debit did not survive relog".into());
     }
     query(&mut client, eligible)
         .await
         .map_err(|error| format!("C11 post-relog eligibility: {error}"))?;
-    evidence("C11_DURABILITY promotion_coins=0 wheel_allocation=exact perk_eligible=true");
+    evidence("C11_DURABILITY promotion_coins=50 wheel_allocation=exact perk_eligible=true");
     let mut creatures = adjacent_creatures(&client)?;
     if !creatures.is_empty() {
         return Err(
