@@ -141,7 +141,16 @@ impl DurabilityRoot {
                 tx.commit(deadline).await?; return Ok(Some(result));
             }
             if probe { tx.commit(deadline).await?; return Ok(None); }
-            if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),context.1.loop_content_digest()).await.is_err() {
+            let digest = context.1.loop_content_digest();
+            let current = if fence.runtime_scope.instance_id().is_some() {
+                crate::durability::db::lock_admission_relations(&mut tx).await?;
+                crate::durability::item_transfer::assert_activity_item_content(
+                    &mut tx, &node, &fence, request.craft.command, digest,
+                ).await?
+            } else {
+                assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),digest).await.is_ok()
+            };
+            if !current {
                 return Ok(Some(UseDisposition::Rejected.into()));
             }
             let mut attempt = Attempt { request: &request, catalogue: context.2, rabbit_feet: None };
@@ -170,16 +179,11 @@ pub(super) async fn prepare(
     native: &NativeGameplayState,
     catalogue: &oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue,
 ) -> Result<Option<Prepared>, DurabilityError> {
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
-    )
-    .bind(world.as_bytes().as_slice())
-    .bind(channel.as_bytes().as_slice())
-    .execute(&mut ***tx)
-    .await?;
-    let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,g.map_revision,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND (g.runtime_scope_ownership_generation=$4::text::numeric OR game_skinning_prior_ground(i.item_instance_id,$4::text::numeric)) AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i")
-        .bind(request.corpse.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut ***tx).await?;
+    let scope = fence.runtime_scope;
+    let (kind, channel, instance) = crate::durability::item_mint::ground_scope_columns(scope);
+    crate::durability::spell_item_transaction::lock_ground_scope(tx, scope).await?;
+    let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,g.map_revision,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.scope_kind=$5 AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($6,'hex')::uuid AND (g.runtime_scope_ownership_generation=$4::text::numeric OR game_skinning_prior_ground(i.item_instance_id,$4::text::numeric)) AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i")
+        .bind(request.corpse.as_slice()).bind(scope.world_id().as_bytes().as_slice()).bind(channel.as_ref().map(|id| id.as_slice())).bind(fence.scope_ownership_generation.get().to_string()).bind(kind).bind(instance.as_ref().map(|id| id.as_slice())).fetch_optional(&mut ***tx).await?;
     let Some(row) = row else {
         return Ok(None);
     };
@@ -350,9 +354,10 @@ pub(super) async fn record(
     prepared: &Prepared,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
-    let (_, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_corpse_skinning_records(transaction_id,corpse_item_instance_id,before_item,spent_key,spent_revision,channel_id,scope_ownership_generation) VALUES($1::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7::text::numeric)")
-        .bind(transaction).bind(prepared.corpse.as_slice()).bind(&prepared.before).bind(&prepared.spent.production_key).bind(&prepared.spent.revision_ref).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).execute(&mut ***tx).await?;
+    let (_, channel, instance) =
+        crate::durability::item_mint::ground_scope_columns(fence.runtime_scope);
+    sqlx::query("INSERT INTO game_corpse_skinning_records(transaction_id,corpse_item_instance_id,before_item,spent_key,spent_revision,channel_id,scope_ownership_generation,instance_id) VALUES($1::uuid,encode($2,'hex')::uuid,$3,$4,$5,encode($6,'hex')::uuid,$7::text::numeric,encode($8,'hex')::uuid)")
+        .bind(transaction).bind(prepared.corpse.as_slice()).bind(&prepared.before).bind(&prepared.spent.production_key).bind(&prepared.spent.revision_ref).bind(channel.as_ref().map(|id| id.as_slice())).bind(fence.scope_ownership_generation.get().to_string()).bind(instance.as_ref().map(|id| id.as_slice())).execute(&mut ***tx).await?;
     Ok(())
 }
 

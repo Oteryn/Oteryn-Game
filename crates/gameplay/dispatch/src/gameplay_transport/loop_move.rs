@@ -416,7 +416,7 @@ impl LoopGroundOverlay {
                     continue;
                 };
                 (*movable && *pickupable, projectile)
-            } else if committed_corpse && !native_axes {
+            } else if committed_corpse {
                 use crate::content::ReferenceItemField as F;
                 use crate::content::native_gameplay::NativeItemDestination;
                 native
@@ -1056,6 +1056,14 @@ async fn publish_current_corpse_custody(
     }
     match current {
         Some(corpse) => {
+            runtime
+                .refresh_corpse_item(
+                    item,
+                    &corpse.definition.family,
+                    &corpse.definition.production_key,
+                    &corpse.definition.revision_ref,
+                )
+                .ok()?;
             if let Some(bytes) = &corpse.loop_ground_spatial_position {
                 let cell = crate::durability::spell_items_abi::decode_ground_cell(bytes).ok()?;
                 let floor = i16::try_from(-cell.z).ok()?;
@@ -1463,49 +1471,29 @@ pub(super) async fn move_loop_item_with_house_capacity(
             .emit_movement_effect(TilePos { x, y, floor }, effect);
     }
     if let Ok(Ok(receipt)) = &committed
-        && !receipt.replayed
-        && ordinary_move
         && touches_ground
+        && (ordinary_move || receipt.replayed)
     {
-        let mut runtime = admission.runtime.lock().await;
-        if runtime.binding().runtime_scope() == fence.runtime_scope
-            && runtime
-                .owner_fence()
-                .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
-        {
-            match request.target {
-                LoopTarget::Ground(to) => {
-                    if let Some(floor) = to.floor.checked_neg() {
-                        let _ = runtime.set_corpse_item_ground_position(
-                            item,
-                            Some(crate::foundation::MovementLocalPosition {
-                                x: to.x,
-                                y: to.y,
-                                floor,
-                            }),
-                        );
-                    }
-                }
-                LoopTarget::MainBackpack | LoopTarget::Container(_) => {
-                    let _ = runtime.set_corpse_item_ground_position(item, None);
-                }
-            }
-        }
-    }
-    if let Ok(Ok(receipt)) = &committed
-        && receipt.replayed
-        && touches_ground
-    {
-        let Ok((LoopMoveReplay::Moved, corpse)) = admission
-            .root
-            .read_item_loop_move_receipt_with_corpse(
-                admission.character,
-                fence.character_id,
-                command_ref,
-            )
-            .await
-        else {
-            return LoopMoveResult::Unknown;
+        let corpse = if receipt.replayed {
+            let Ok((LoopMoveReplay::Moved, corpse)) = admission
+                .root
+                .read_item_loop_move_receipt_with_corpse(
+                    admission.character,
+                    fence.character_id,
+                    command_ref,
+                )
+                .await
+            else {
+                return LoopMoveResult::Unknown;
+            };
+            corpse
+        } else {
+            admission
+                .runtime
+                .lock()
+                .await
+                .has_corpse_item_binding(item)
+                .then_some(item)
         };
         if let Some(item) = corpse
             && publish_current_corpse_custody(admission, fence, item)

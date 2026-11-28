@@ -233,6 +233,53 @@ async fn scenario(admin: String, case: CaskCase, test: &str) -> TestResult {
     .await?;
     assert_eq!(charges, 998);
     let cask_id: [u8; 16] = cask.as_slice().try_into()?;
+    if case == CaskCase::Fill {
+        use crate::durability::spell_item_transaction as items;
+        use crate::durability::spell_items_abi::SpellGroundTarget;
+
+        let permit = owner.spell_lane_permit().await.ok_or("item lane")?;
+        let target = SpellGroundTarget::for_native_tile_read(
+            &room,
+            &*owner.runtime.lock().await,
+            MovementLocalPosition {
+                x: i32::from(pos.x),
+                y: i32::from(pos.y),
+                floor: -i16::from(pos.floor),
+            },
+        )?;
+        let mut tx = harness.pool.begin().await?;
+        let scope = items::assert_spell_item_scope_in_transaction(
+            &mut tx,
+            &permit,
+            owner.root,
+            owner.character,
+            owner.holder,
+            fence.runtime_scope,
+            fence.scope_ownership_generation.get(),
+        )
+        .await
+        .map_err(debug)?;
+        let empty = items::read_creature_empty_tiles_in_transaction(
+            &mut tx,
+            &scope,
+            std::slice::from_ref(&target.spatial_position),
+        )
+        .await
+        .map_err(debug)?;
+        assert!(
+            empty.is_empty(),
+            "a monster must read the occupied cask tile"
+        );
+        let tile = items::read_creature_scope_tile_in_transaction(&mut tx, &scope, &target)
+            .await
+            .map_err(debug)?;
+        assert!(
+            tile.items
+                .iter()
+                .any(|item| item.item_instance_id == cask_id && item.blocks_movement)
+        );
+        tx.rollback().await?;
+    }
     let placement_states = || {
         harness.root.read_map_item_mint_placement_states(
             deps.admitted.world_id,

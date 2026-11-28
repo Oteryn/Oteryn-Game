@@ -195,9 +195,9 @@ impl DurabilityRoot {
         item: [u8; 16],
         skinning: bool,
     ) -> Result<Option<GroundActionSource>, DurabilityError> {
-        let Ok(_) = scope_of(&fence) else {
+        if !skinning && scope_of(&fence).is_err() {
             return Ok(None);
-        };
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -205,12 +205,12 @@ impl DurabilityRoot {
             let mut tx = crate::durability::db::begin_semantic_transaction(holder, deadline).await?;
             crate::durability::character_authority::assert_recovery_fence(&mut tx, &record).await?;
             // Reuse the existing Ground owner lock before any item/location row lock.
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
-        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut *tx).await?;
-    let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location,i.definition_family,i.definition_production_key,i.definition_revision_ref,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,game_item_loop_map_mint_source(i.item_instance_id) AS map_mint,game_item_action_ground_source(i.item_instance_id) AS action_ground_output FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND (g.runtime_scope_ownership_generation=$4::text::numeric OR ($5 AND game_skinning_prior_ground(i.item_instance_id,$4::text::numeric))) AND i.lifecycle=1 AND i.quantity>0 AND g.stack_ordinal IS NOT NULL")
-                .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
-                .bind(fence.scope_ownership_generation.get().to_string()).bind(skinning).fetch_optional(&mut *tx).await?;
+            let scope = fence.runtime_scope;
+            let (kind, channel, instance) = crate::durability::item_mint::ground_scope_columns(scope);
+            crate::durability::spell_item_transaction::lock_ground_scope(&mut tx, scope).await?;
+            let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location,i.definition_family,i.definition_production_key,i.definition_revision_ref,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,game_item_loop_map_mint_source(i.item_instance_id) AS map_mint,game_item_action_ground_source(i.item_instance_id) AS action_ground_output FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.scope_kind=$6 AND g.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($7,'hex')::uuid AND (g.runtime_scope_ownership_generation=$4::text::numeric OR ($5 AND game_skinning_prior_ground(i.item_instance_id,$4::text::numeric))) AND i.lifecycle=1 AND i.quantity>0 AND g.stack_ordinal IS NOT NULL")
+                .bind(item.as_slice()).bind(scope.world_id().as_bytes().as_slice()).bind(channel.as_ref().map(|id| id.as_slice()))
+                .bind(fence.scope_ownership_generation.get().to_string()).bind(skinning).bind(kind).bind(instance.as_ref().map(|id| id.as_slice())).fetch_optional(&mut *tx).await?;
             let result = row.map(|row| -> Result<GroundActionSource, DurabilityError> {
                 let position: Vec<u8> = row.try_get("spatial_position")?;
                 let cell = crate::durability::spell_items_abi::decode_ground_cell(&position)
@@ -360,7 +360,7 @@ pub(super) async fn write<C: ItemLoopContent>(
     .bind(channel.as_bytes().as_slice())
     .execute(&mut ***tx)
     .await?;
-    let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid FOR UPDATE OF i")
+            let row = sqlx::query("SELECT to_jsonb(i) AS before_item,to_jsonb(g) AS location FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) WHERE i.item_instance_id=encode($1,'hex')::uuid FOR UPDATE OF i")
         .bind(request.source.as_slice()).fetch_optional(&mut ***tx).await?;
     let Some(row) = row else {
         return Ok(ConsumeTransformResult::refused(UseDisposition::StaleState));

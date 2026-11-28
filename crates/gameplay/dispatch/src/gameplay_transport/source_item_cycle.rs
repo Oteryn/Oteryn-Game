@@ -406,29 +406,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
-        let runtime = self.runtime.lock().await;
-        let mut states = self.states.spell_states.lock().await;
-        let now = self.owner_now().get();
-        if now < states.next_item_deadline_pass_us
-            || runtime.owner_fence().is_err()
-            || source.source_digest() != runtime.content_pin().server_artifact_digest()
-        {
-            return;
-        }
-        // Failed or uncertain commits also retry on the next bounded owner
-        // pass. Immutable SQL deadlines reconcile them without another cause.
-        states.next_item_deadline_pass_us = now.saturating_add(1_000_000);
-        let scope = runtime.binding().runtime_scope();
+        let (scope, generation) = {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            let now = self.owner_now().get();
+            if now < states.next_item_deadline_pass_us
+                || runtime.owner_fence().is_err()
+                || source.source_digest() != runtime.content_pin().server_artifact_digest()
+            {
+                return;
+            }
+            // Failed or uncertain commits also retry on the next bounded owner
+            // pass. Immutable SQL deadlines reconcile them without another cause.
+            states.next_item_deadline_pass_us = now.saturating_add(1_000_000);
+            (
+                runtime.binding().runtime_scope(),
+                runtime.binding().scope_generation().get(),
+            )
+        };
         let mut ground_change = super::loop_move::GroundChange(Some(&self.states.loop_ground));
         let result = self
             .root
-            .drain_spell_item_deadlines(
-                &permit,
-                self.character,
-                self.holder,
-                scope,
-                runtime.binding().scope_generation().get(),
-            )
+            .drain_spell_item_deadlines(&permit, self.character, self.holder, scope, generation)
             .await;
         if matches!(result, Ok(0)) {
             ground_change.0 = None;

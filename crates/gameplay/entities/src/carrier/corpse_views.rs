@@ -278,6 +278,14 @@ impl ChannelRuntimeV1 {
             .bound_corpses(Some(self.pinned_position_context()))
     }
 
+    /// A carried corpse retains its binding while absent from the visible Ground list.
+    pub fn has_corpse_item_binding(&self, item: [u8; 16]) -> bool {
+        self.carrier
+            .corpse_item_bindings
+            .iter()
+            .any(|binding| binding.item.item_instance_id == item)
+    }
+
     /// Refresh an existing projection from the current durable Item definition.
     /// The caller holds the item lane across its complete read and this update;
     /// this never creates a binding or changes a death's reward provenance.

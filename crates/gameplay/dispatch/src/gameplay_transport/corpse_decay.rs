@@ -78,18 +78,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
-        // A prior ambiguous commit may already have removed a corpse from the schedule. Only
-        // a successful complete read may hide it, and no runtime guard crosses a durable call.
+        // An incomplete page cannot prove absence. Rotate through visible bindings
+        // outside it, checking one exact Ground row per pass under the same lane.
+        let mut confirmed_absent = None;
+        if !schedule.complete {
+            let candidates: Vec<_> = self
+                .runtime
+                .lock()
+                .await
+                .visible_corpses()
+                .into_iter()
+                .map(|corpse| corpse.item.item_instance_id)
+                .filter(|item| !live.contains(item))
+                .collect();
+            let cursor = self.background_start("corpse_projection", candidates.len());
+            if let Some(&item) = candidates.get(cursor)
+                && let Ok(exact) = self
+                    .root
+                    .read_corpse_schedule_page(self.character, fence.runtime_scope, Some(item))
+                    .await
+            {
+                if exact.corpses.is_empty() {
+                    confirmed_absent = Some(item);
+                }
+                if let Ok(mut cursors) = self.states.background_cursors.lock() {
+                    cursors.insert("corpse_projection", cursor + 1);
+                }
+            }
+        }
         let mut runtime = self.runtime.lock().await;
         if runtime
             .owner_fence()
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
             && runtime.binding().runtime_scope() == fence.runtime_scope
         {
+            // A cache containing off-page items must be rebuilt from Ground custody.
+            self.states
+                .loop_ground
+                .reconcile_ground_corpses(fence.runtime_scope, &live);
+            if let Some(item) = confirmed_absent {
+                let _ = runtime.set_corpse_item_ground_position(item, None);
+            }
             if schedule.complete {
-                self.states
-                    .loop_ground
-                    .reconcile_ground_corpses(fence.runtime_scope, &live);
                 let _ = runtime.retain_live_corpse_items(&live);
             }
             for corpse in &schedule.corpses {

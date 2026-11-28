@@ -1359,7 +1359,9 @@ SELECT ARRAY[r.world_id::text,r.channel_id::text,r.creature_actor_generation::te
        i.item_instance_id::text,i.definition_family,i.definition_production_key,
        i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,
        g.stack_ordinal::text,
-       ARRAY[octet_length(g.spatial_position)=10 AND axes.cell_matches AND g.native_room_placement_context=$6
+       ARRAY[octet_length(g.spatial_position)=10 AND axes.cell_matches
+               AND (g.native_room_placement_context=$6
+                    OR (map.in_place_mint AND (g.map_revision=$4 OR map.native_map=$4)))
                AND (g.content_revision=$5 OR retained.ordinary_drop),
              g.runtime_scope_ownership_generation=$11::text::numeric
                OR CASE WHEN g.runtime_scope_ownership_generation<$11::text::numeric
@@ -1372,7 +1374,7 @@ SELECT ARRAY[r.world_id::text,r.channel_id::text,r.creature_actor_generation::te
              COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid,CASE WHEN ef.transaction_id IS NOT NULL THEN false END),
              nm.transaction_id IS NOT NULL,ef.transaction_id IS NOT NULL,
              COALESCE(game_item_loop_drop_ref(g.corpse_ref),false),
-             lm.transaction_id IS NOT NULL] AS collision_flags,
+             lm.transaction_id IS NOT NULL, map.in_place_mint] AS collision_flags,
        cm.envelope AS corpse_mint_envelope,
        ARRAY[g.world_id::text,g.channel_id::text,g.instance_id::text,g.scope_kind::text] AS corpse_current_scope,
        l.expires_at_unix_ms,l.definition_production_key AS origin_item_key,r.cause_kind AS origin_cause_kind,
@@ -1413,7 +1415,9 @@ LEFT JOIN LATERAL (
                    =(ll.definition_family,ll.definition_production_key,ll.definition_revision_ref)))
 ) lm ON true
 CROSS JOIN LATERAL (
-    SELECT 'sha256:'||encode(sha256(convert_to(g.map_revision,'UTF8')),'hex') AS native_map
+    SELECT 'sha256:'||encode(sha256(convert_to(g.map_revision,'UTF8')),'hex') AS native_map,
+           g.map_revision='sha256:'||encode(g.native_room_placement_context,'hex')
+             AND game_item_loop_map_mint_source(g.item_instance_id) AS in_place_mint
 ) map
 CROSS JOIN LATERAL (
     SELECT CASE WHEN g.map_revision=$4 THEN g.spatial_position=$3
@@ -1781,7 +1785,7 @@ pub fn decode_tile_rows(
             .try_into()
             .map_err(|_| SpellItemError::Rejected("field origin text width"))?;
         // Keep all collision and provenance facts within the bounded SQL wire projection.
-        let mut flags: [Option<bool>; 7] = row
+        let mut flags: [Option<bool>; 8] = row
             .try_get::<Vec<Option<bool>>, _>("collision_flags")?
             .try_into()
             .map_err(|_| SpellItemError::Rejected("tile collision flags width"))?;
@@ -1793,7 +1797,7 @@ pub fn decode_tile_rows(
             loop_receipt,
             &mut flags[..3],
         )?;
-        if flags[5] == Some(true)
+        if (flags[5] == Some(true) || flags[7] == Some(true))
             && !row.try_get::<bool, _>("corpse")?
             && flags[..3].contains(&None)
         {
@@ -4015,6 +4019,8 @@ pub async fn read_creature_empty_tiles_in_transaction(
         .iter()
         .map(|position| opposite_ground_floor(position))
         .collect();
+    // The prefetch has no map pin to qualify axes. Either address requires the
+    // full tile reader to decide occupancy.
     // Plan for the actual scope. A cached generic plan can scan both tables
     // when channel and instance populations are uneven.
     Ok(sqlx::query_scalar("WITH requested AS MATERIALIZED (
@@ -4024,7 +4030,7 @@ pub async fn read_creature_empty_tiles_in_transaction(
         FROM game_item_ground_locations g
         JOIN game_item_instances i USING(item_instance_id)
         LEFT JOIN requested p ON g.spatial_position=p.native
-            OR (g.spatial_position=p.loop AND game_item_loop_drop_ref(g.corpse_ref))
+            OR g.spatial_position=p.loop
         WHERE g.world_id=encode($1,'hex')::uuid
           AND (($4=1 AND g.scope_kind=1 AND g.channel_id=encode($2,'hex')::uuid AND g.instance_id IS NULL)
             OR ($4=2 AND g.scope_kind=2 AND g.instance_id=encode($5,'hex')::uuid AND g.channel_id IS NULL))

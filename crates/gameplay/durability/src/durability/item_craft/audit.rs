@@ -107,7 +107,7 @@ fn encode_proof(
     occurred: i64,
     tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, DurabilityError> {
-    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let scope = fence.runtime_scope;
     let payload = mint::encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
@@ -125,8 +125,9 @@ fn encode_proof(
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: occurred,
-        world_id: Some(world.as_bytes().to_vec()),
-        channel_id: Some(channel.as_bytes().to_vec()),
+        world_id: Some(scope.world_id().as_bytes().to_vec()),
+        channel_id: scope.channel_id().map(|id| id.as_bytes().to_vec()),
+        instance_id: scope.instance_id().map(|id| id.to_vec()),
         game_session_id: Some(fence.game_session_id.as_bytes().to_vec()),
         connection_generation: Some(fence.connection_generation.get()),
         command_id: Some(command.command_id().get()),
