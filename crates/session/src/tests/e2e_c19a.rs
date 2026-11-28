@@ -3,7 +3,7 @@
 //! `Session::inventory` (`session_access.rs`).
 use super::*;
 use crate::tests::{BoxError, admission_with, join_peer_with};
-use oteryn_protocol_oteryn::{encode_state_delta, item_view};
+use oteryn_protocol_oteryn::item_view;
 
 const SELECTED: &[u32] = &[
     item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -89,20 +89,12 @@ fn e2e_c19a_starter_backpack_replay() -> Result<(), BoxError> {
         assert!(inventory.main_backpack.is_some());
         assert_eq!(visible(Some(inventory)), expected);
 
-        // A malformed delta is rejected and leaves the starter inventory unchanged.
-        let before = session.inventory().cloned();
-        let malformed = encode_state_delta(
-            1,
-            1,
-            STATE_DOMAIN_CHARACTER_INVENTORY,
-            revision,
-            revision + 1,
-            item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
-            &[0xff],
-        )?;
-        let envelope = decode_wire_envelope(&malformed)?;
-        assert!(session.apply_state_delta(1, envelope.payload()).is_err());
-        assert_eq!(session.inventory(), before.as_ref());
+        let sequence = session.last_server_sequence();
+        assert_eq!(
+            session.verify_inventory_replay(&snapshot, revision, sequence + 1),
+            Err("inventory replay capture does not match the current session")
+        );
+        session.verify_inventory_replay(&snapshot, revision, sequence)?;
         peer.abort();
         assert!(peer.await.is_err());
         Ok(())

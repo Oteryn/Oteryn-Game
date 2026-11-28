@@ -84,6 +84,65 @@ const ENTITY_CAPABILITIES: &[u32] = &[
 ];
 
 impl<S: SessionStream> Session<S> {
+    /// Verify a captured inventory snapshot against this session and exercise the inventory
+    /// delta handler with malformed input at the captured revision. The probe stays local.
+    pub fn verify_inventory_replay(
+        &mut self,
+        payload: &[u8],
+        revision: u64,
+        sequence: u64,
+    ) -> Result<(), &'static str> {
+        let capture = self
+            .gated_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
+            .ok_or("inventory capture absent")?;
+        if capture.payload != payload
+            || capture.revision != revision
+            || self.inventory_revision != revision
+            || self.last_server_sequence() != sequence
+        {
+            return Err("inventory replay capture does not match the current session");
+        }
+        let decoded = item_view::decode_character_inventory_with_appearances(
+            payload,
+            self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+            self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+        )
+        .map_err(|_| "inventory replay payload did not decode")?;
+        if self.inventory() != Some(&decoded) {
+            return Err("inventory replay differed from admitted inventory");
+        }
+
+        let next_revision = revision
+            .checked_add(1)
+            .ok_or("inventory revision exhausted")?;
+        let next_sequence = sequence.checked_add(1).ok_or("server sequence exhausted")?;
+        let malformed = oteryn_protocol_oteryn::encode_state_delta(
+            self.connection_generation,
+            next_sequence,
+            item_view::STATE_DOMAIN_CHARACTER_INVENTORY,
+            revision,
+            next_revision,
+            item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+            &[0xff],
+        )
+        .map_err(|_| "malformed inventory probe encoding failed")?;
+        let probe =
+            decode_wire_envelope(&malformed).map_err(|_| "inventory probe envelope invalid")?;
+        if !matches!(
+            self.apply_state_delta(next_sequence, probe.payload()),
+            Err(SessionError::ItemView(_))
+        ) {
+            return Err("malformed inventory delta did not reach payload rejection");
+        }
+        if self.inventory() != Some(&decoded)
+            || self.inventory_revision != revision
+            || self.last_server_sequence() != sequence
+        {
+            return Err("malformed inventory delta changed replay state");
+        }
+        Ok(())
+    }
+
     /// Serialize the three C16c capture files as (file name, bytes) pairs.
     /// Call after observing the summoned creature enter and while it is still visible.
     /// Returns `None` if the summon or a complete replay chain is unavailable.
