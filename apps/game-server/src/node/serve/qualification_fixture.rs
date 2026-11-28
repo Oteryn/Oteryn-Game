@@ -84,9 +84,8 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     let allowed = spell_build(profile).is_some();
     #[cfg(feature = "qualification-spawn")]
-    let allowed = allowed
-        || named_item(profile).is_some()
-        || matches!(profile, "house-g01" | "house-g07-chair" | "premium");
+    let allowed =
+        allowed || named_item(profile).is_some() || matches!(profile, "house-g01" | "premium");
     allowed.then_some((session, profile))
 }
 
@@ -758,37 +757,6 @@ async fn prepare_build(
     .await
     .map_err(|error| format!("qualification admission: {error:?}"))?;
     let scope = current.current_runtime_scope();
-    #[cfg(feature = "qualification-spawn")]
-    if profile == "house-g07-chair" {
-        let house = crate::durability::house_scope_handoff::HouseId::new(
-            scope.world_id(),
-            "oteryn:content.house.upper_swamp_lane_4",
-        )
-        .ok_or("G07 fixture house identity")?;
-        if scope != house.runtime_scope()?
-            || Some(*scope.world_id().as_bytes())
-                != super::super::uuid_bytes(&config.scope.world_id)
-            || current.session_state() != crate::foundation::GameSessionState::Active
-            || current.current_transport().is_none()
-            || !config
-                .premium_activation
-                .as_ref()
-                .is_some_and(|activation| activation.activation_id == "node-boot-fixture-premium")
-        {
-            return Err("G07 chair fixture requires the active disposable house admission".into());
-        }
-        let origin_channel = super::super::uuid_bytes(&config.scope.channel_id)
-            .ok_or("G07 fixture origin channel identity")?;
-        return place_g07_chair(
-            root,
-            authority,
-            proof,
-            &current,
-            (house, origin_channel),
-            deadline,
-        )
-        .await;
-    }
     if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
         || scope.channel_id().map(|id| *id.as_bytes())
             != super::super::uuid_bytes(&config.scope.channel_id)
@@ -1047,102 +1015,6 @@ pub(crate) fn fixture_build_spec<'a>(
         xp_occurrence: fixture_occurrence(character, occurrence_profile, b"xp"),
         build_occurrence: fixture_occurrence(character, occurrence_profile, b"vocation"),
     })
-}
-
-#[cfg(feature = "qualification-spawn")]
-async fn place_g07_chair(
-    root: &DurabilityRoot,
-    authority: &ReconciledCharacterAuthority<'_, '_>,
-    proof: &NodeIncarnationProof,
-    current: &crate::foundation::GameSessionAuthoritySnapshot<
-        crate::foundation::AuthenticatedTransportRefV1,
-    >,
-    (house, origin_channel): (crate::durability::house_scope_handoff::HouseId, [u8; 16]),
-    deadline: tokio::time::Instant,
-) -> Result<(), Box<dyn std::error::Error>> {
-    use crate::durability::house_interior::{
-        HouseCharacterSource, HouseItemAction, HouseItemOutcome, HouseItemRequest,
-    };
-    use crate::durability::item_transfer::CurrentCharacterItemFence;
-    use qualification_build::debug;
-
-    let character_id = crate::domain::CharacterId::from_bytes(
-        *current.current_character_lease().character_id().as_bytes(),
-    )
-    .map_err(debug)?;
-    let record = qualification_build::retry_holder(
-        Some(root),
-        deadline,
-        qualification_build::authority_busy,
-        async || root.read_current_character(authority, character_id).await,
-    )
-    .await
-    .map_err(debug)?;
-    if uuid_text(record.account_id.as_bytes()) != "01934f10-7c00-7000-8000-000000000026" {
-        return Err("G07 chair fixture account mismatch".into());
-    }
-
-    let fence = CurrentCharacterItemFence {
-        character_id,
-        game_session_id: current.current_game_session_id(),
-        connection_generation: current.current_connection_generation(),
-        character_lease_generation: current.current_character_lease().generation(),
-        runtime_scope: current.current_runtime_scope(),
-        scope_ownership_generation: current.current_scope_generation(),
-    };
-    let inventory = root
-        .read_house_carried_inventory(authority, proof, fence, origin_channel)
-        .await
-        .map_err(|error| format!("G07 chair fixture inventory: {error:?}"))?;
-    let bag = inventory
-        .backpack
-        .ok_or("G07 chair fixture backpack missing")?;
-    let mut chairs = bag.entries.iter().filter(|entry| {
-        entry.item.definition.production_key == "oteryn:item.tibia.i2358"
-            && entry.item.quantity == 1
-    });
-    let chair = chairs.next().ok_or("G07 minted chair missing")?;
-    if chairs.next().is_some() {
-        return Err("G07 chair fixture found multiple chairs".into());
-    }
-    let request = HouseItemRequest {
-        // The high fixture command range is disjoint from both client and named mint IDs.
-        command: crate::foundation::CommandRef::new(
-            fence.game_session_id,
-            crate::foundation::CommandId::new(u64::MAX / 2)?,
-        ),
-        house,
-        item_instance_id: chair.item.item_instance_id,
-        action: HouseItemAction::Place {
-            source: HouseCharacterSource::Inventory {
-                parent: bag.backpack.item_instance_id,
-                ordinal: chair.placement_ordinal,
-            },
-            position: [32359_i32, 32253, 7]
-                .into_iter()
-                .flat_map(i32::to_be_bytes)
-                .collect(),
-        },
-        // The settled fixture house starts with an empty ACL at its initial revision.
-        expected_acl_revision: 1,
-        expected_guild_revisions: None,
-        backpack: None,
-        content_revision: inventory.content_revision,
-        ruleset_revision: inventory.ruleset_revision,
-        sim_revision: "qualification-v1".into(),
-    };
-    let candidate = root
-        .freeze_house_item(authority, proof, fence, request)
-        .await
-        .map_err(|error| format!("G07 chair fixture freeze: {error:?}"))?;
-    let outcome = root
-        .commit_house_item(authority, proof, fence, &candidate)
-        .await
-        .map_err(|error| format!("G07 chair fixture commit: {error:?}"))?;
-    if !matches!(outcome, HouseItemOutcome::Committed(_)) {
-        return Err(format!("G07 chair fixture placement: {outcome:?}").into());
-    }
-    Ok(())
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
