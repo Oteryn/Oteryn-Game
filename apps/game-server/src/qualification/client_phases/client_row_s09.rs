@@ -3,6 +3,12 @@ use super::*;
 use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, logout::LogoutResult};
 use std::io::Write;
 
+const LOGOUT_TILE: TilePos = TilePos {
+    x: 32369,
+    y: 32231,
+    floor: -7,
+};
+
 type SavedPosition = (i32, i32, i16, String, String);
 
 async fn saved_position(
@@ -67,6 +73,13 @@ fn bound_frame<'a>(contents: &'a [u8], binding: &[u8], original: &[u8]) -> TestR
         .ok_or_else(|| "S09 replay capture binding or frame mismatch".into())
 }
 
+fn require_step(disposition: StepDisposition, actual: TilePos, expected: TilePos) -> TestResult {
+    if disposition != StepDisposition::Moved || actual != expected {
+        return Err("S09 first movement reply did not prove the planned step".into());
+    }
+    Ok(())
+}
+
 async fn walk_s09(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -76,14 +89,19 @@ async fn walk_s09(
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
             destination(world, before, direction).ok_or("S09 planned step has no landing")?;
-        let step = client.step_retrying(direction).await?;
-        if step.disposition != StepDisposition::Moved
-            || tile(client.world_spatial().actor_position)? != expected
-        {
-            return Err(format!(
-                "step=move from={before:?} expected={expected:?} observed={step:?}"
-            )
-            .into());
+        let step = client.step(direction).await?;
+        require_step(
+            step.disposition,
+            tile(client.world_spatial().actor_position)?,
+            expected,
+        )
+        .map_err(|error| {
+            format!("step=move from={before:?} expected={expected:?} observed={step:?}: {error}")
+        })?;
+        if step.step_wait_ms != 0 {
+            client
+                .service_liveness(Duration::from_millis(u64::from(step.step_wait_ms)))
+                .await?;
         }
     }
     Ok(())
@@ -116,6 +134,10 @@ async fn establish_combat(
         }
         client.service_liveness(Duration::from_millis(25)).await?;
     };
+    evidence(&format!(
+        "FIXTURE_PLACEMENT scenario=S09.client session={:?} creature=oteryn:creature.rat entity={rat:?} tile={position:?}",
+        client.join_snapshot().game_session_id
+    ));
     let approach = route_avoiding(
         world,
         tile(client.world_spatial().actor_position)?,
@@ -160,9 +182,55 @@ fn require_combat_lock(in_fight: bool) -> TestResult {
     Ok(())
 }
 
+fn require_logout_tile(actual: TilePos, protection: bool) -> TestResult {
+    if actual != LOGOUT_TILE || !protection {
+        return Err(format!(
+            "step=pz expected={LOGOUT_TILE:?} actual={actual:?} logout_safe={protection}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn require_combat_refusal(status: CommandStatus, result: Option<LogoutResult>) -> TestResult {
+    if status != CommandStatus::Rejected
+        || !matches!(result, Some(LogoutResult::InFight { retry_after_ms }) if retry_after_ms > 0)
+    {
+        return Err(
+            format!("step=outside-logout expected=InFight observed={status:?}/{result:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+async fn live_transport(
+    clients: &SeamClients<'_>,
+    db: &mut sqlx::PgConnection,
+    session: &[u8; 16],
+) -> TestResult<(Vec<u8>, String)> {
+    Ok(sqlx::query_as(
+        "SELECT current_transport_ref,character_lease_generation::text \
+         FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid \
+         AND character_id=encode($2,'hex')::uuid AND session_state=2 \
+         AND current_transport_ref IS NOT NULL AND control_loss_epoch IS NULL",
+    )
+    .bind(session.as_slice())
+    .bind(clients.characters[0].as_slice())
+    .fetch_one(db)
+    .await?)
+}
+
+fn capture_directory(root: &Path, session: &[u8; 16]) -> TestResult<std::path::PathBuf> {
+    use std::os::unix::fs::DirBuilderExt;
+    let path = root.join(format!("s09-{}", uuid_text(session)));
+    std::fs::DirBuilder::new().mode(0o700).create(&path)?;
+    Ok(path)
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
-    let root =
-        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("S09 requires a fresh capture directory")?;
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
     let head = std::process::Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()?;
@@ -170,27 +238,47 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         return Err("S09 could not bind capture to the current commit".into());
     }
     let commit = std::str::from_utf8(&head.stdout)?.trim();
-    let path = Path::new(&root).join("s09-logout.bin");
-    let mut capture = std::fs::File::create_new(&path)?;
     let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let mut client = connect_character(clients, 0x43, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    let capture_dir = capture_directory(&root, session.as_bytes())?;
+    evidence(&format!("S09_CAPTURE_DIR path={}", capture_dir.display()));
     let start = tile(client.world_spatial().actor_position)?;
-    let default = TilePos {
-        x: 32369,
-        y: 32238,
-        floor: -7,
-    };
+    require_logout_tile(LOGOUT_TILE, is_logout_rest_tile(world, LOGOUT_TILE))?;
+    if start == LOGOUT_TILE {
+        return Err("S09 started on the logout tile".into());
+    }
     establish_combat(&mut client, world).await?;
-    let from = tile(client.world_spatial().actor_position)?;
-    let plan = route(world, from, |at| {
-        at != start && at != default && is_logout_rest_tile(world, at)
-    })
-    .ok_or("S09 has no route to a distinct authored logout tile")?;
+    let outside = tile(client.world_spatial().actor_position)?;
+    if !world
+        .base()
+        .tile(outside.x, outside.y, outside.floor)
+        .is_some_and(|tile| !tile.protection_zone() && !tile.no_logout())
+    {
+        return Err(format!("step=outside-logout invalid tile {outside:?}").into());
+    }
+    let live = live_transport(clients, &mut db, session.as_bytes()).await?;
+    let before_refusal = saved_position(clients, &mut db).await?;
+    let refused_command = client.next_command_id();
+    require_combat_lock(
+        client
+            .session_mut()
+            .combat_state()
+            .is_some_and(|state| state.in_fight),
+    )?;
+    let (refused, refused_frame) = client.session_mut().logout_with_frame().await?;
+    require_combat_refusal(refused.status, refused.result)?;
+    if tile(client.world_spatial().actor_position)? != outside
+        || live_transport(clients, &mut db, session.as_bytes()).await? != live
+        || saved_position(clients, &mut db).await? != before_refusal
+    {
+        return Err("step=outside-logout refusal changed position or durable session".into());
+    }
+    let plan = route(world, outside, |at| at == LOGOUT_TILE)
+        .ok_or("S09 has no route to the fixed logout tile")?;
     walk_s09(&mut client, world, &plan).await?;
     let target = tile(client.world_spatial().actor_position)?;
-    if target == start || target == default || !is_logout_rest_tile(world, target) {
-        return Err(format!("step=pz tile={target:?}").into());
-    }
+    require_logout_tile(target, is_logout_rest_tile(world, target))?;
     let expected = (
         i32::from(target.x),
         i32::from(target.y),
@@ -203,7 +291,6 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     {
         return Err(format!("step=pre-save already persisted {expected:?}").into());
     }
-    let session = client.join_snapshot().game_session_id;
     let command = client.next_command_id();
     require_combat_lock(
         client
@@ -240,25 +327,33 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     fresh.session_mut().observe_logout_close().await?;
     terminal_lease(clients, &mut db, fresh_session.as_bytes()).await?;
 
-    let binding = format!(
-        "{}\t{}\t{}\t{}\t{}\n",
-        commit,
-        std::env::var("OTERYN_E2E_ROW_BATCH")?,
-        uuid_text(session.as_bytes()),
-        command,
-        outcome.result_server_sequence,
-    );
-    capture.write_all(binding.as_bytes())?;
-    capture.write_all(&frame)?;
-    drop(capture);
-    let contents = std::fs::read(&path)?;
-    let replay_frame = bound_frame(&contents, binding.as_bytes(), &frame)?;
-    let decoded = oteryn_dev_client::DevClientSession::replay_logout_frame(replay_frame)?;
-    if decoded != outcome || decoded.command_id != command {
-        return Err(format!("step=replay original={outcome:?} decoded={decoded:?}").into());
+    let batch = std::env::var("OTERYN_E2E_ROW_BATCH")?;
+    for (name, command, outcome, frame) in [
+        ("s09-refused.bin", refused_command, refused, refused_frame),
+        ("s09-logout.bin", command, outcome, frame),
+    ] {
+        let binding = format!(
+            "{commit}\t{batch}\t{}\t{command}\t{}\n",
+            uuid_text(session.as_bytes()),
+            outcome.result_server_sequence,
+        );
+        let path = capture_dir.join(name);
+        let mut capture = std::fs::File::create_new(&path)?;
+        capture.write_all(binding.as_bytes())?;
+        capture.write_all(&frame)?;
+        drop(capture);
+        let contents = std::fs::read(path)?;
+        let replay_frame = bound_frame(&contents, binding.as_bytes(), &frame)?;
+        let decoded = oteryn_dev_client::DevClientSession::replay_logout_frame(replay_frame)?;
+        if decoded != outcome || decoded.command_id != command {
+            return Err(format!(
+                "step=replay file={name} original={outcome:?} decoded={decoded:?}"
+            )
+            .into());
+        }
     }
     Ok(format!(
-        "logout=Accepted combat_lock=active server_close=clean release=terminal saved={target:?} replay=PASS"
+        "outside_logout=InFight logout=Accepted combat_lock=active server_close=clean release=terminal saved={target:?} replay=PASS"
     ))
 }
 
@@ -285,6 +380,49 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rejects_first_movement_refusal_and_wrong_destination() -> TestResult {
+        assert!(require_step(StepDisposition::TooEarly, LOGOUT_TILE, LOGOUT_TILE).is_err());
+        let other = TilePos {
+            y: LOGOUT_TILE.y + 1,
+            ..LOGOUT_TILE
+        };
+        assert!(require_step(StepDisposition::Moved, other, LOGOUT_TILE).is_err());
+        assert!(require_logout_tile(other, true).is_err());
+        assert!(require_logout_tile(LOGOUT_TILE, false).is_err());
+        require_step(StepDisposition::Moved, LOGOUT_TILE, LOGOUT_TILE)?;
+        require_logout_tile(LOGOUT_TILE, true)
+    }
+
+    #[test]
+    fn rejects_accepted_busy_and_zero_wait_outside_protection() -> TestResult {
+        assert!(
+            require_combat_refusal(CommandStatus::Accepted, Some(LogoutResult::Accepted)).is_err()
+        );
+        assert!(require_combat_refusal(CommandStatus::Rejected, Some(LogoutResult::Busy)).is_err());
+        assert!(
+            require_combat_refusal(
+                CommandStatus::Rejected,
+                Some(LogoutResult::InFight { retry_after_ms: 0 })
+            )
+            .is_err()
+        );
+        require_combat_refusal(
+            CommandStatus::Rejected,
+            Some(LogoutResult::InFight { retry_after_ms: 1 }),
+        )
+    }
+
+    #[test]
+    fn creates_new_session_capture_and_rejects_existing_directory() -> TestResult {
+        let session = u128::from(std::process::id()).to_be_bytes();
+        let path = capture_directory(&std::env::temp_dir(), &session)?;
+        let duplicate = capture_directory(&std::env::temp_dir(), &session);
+        std::fs::remove_dir(path)?;
+        assert!(duplicate.is_err());
+        Ok(())
+    }
 
     #[test]
     fn rejects_logout_without_an_active_combat_lock() -> TestResult {
