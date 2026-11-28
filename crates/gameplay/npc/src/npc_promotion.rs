@@ -16,7 +16,11 @@ pub fn select<'a>(text: &str, services: &'a [PremiumNpcService]) -> Option<&'a P
         }
         PremiumNpcService::Promotion { .. } => text.eq_ignore_ascii_case("promotion"),
         PremiumNpcService::Blessing(blessing) => {
-            text.eq_ignore_ascii_case("blessing") || text.eq_ignore_ascii_case(&blessing.name)
+            text.eq_ignore_ascii_case("blessing")
+                || text.eq_ignore_ascii_case(&blessing.name)
+                || (blessing.service == "oteryn:service.blessing.the_wisdom_of_solitude"
+                    && (text.eq_ignore_ascii_case("wisdom")
+                        || text.eq_ignore_ascii_case("solitude")))
         }
     })
 }
