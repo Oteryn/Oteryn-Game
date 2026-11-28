@@ -136,6 +136,7 @@ class RewardBagProfilesTests(unittest.TestCase):
                               ('BAG_YOU_DESIRE', 21, True),
                               ('PRIMAL_BAG', 14, True),
                               ('BAG_YOU_COVET', 26, True)])
+        self.assertEqual({r['weight'] for r in overlay['bags'][1]['rewards']}, {1000})
         expected = {b['bag'] for b in overlay['bags']} | {
             r['item'] for b in overlay['bags'] for r in b['rewards']}
         self.assertEqual(expected, {r['production_definition']['production_key']

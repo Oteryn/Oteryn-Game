@@ -286,12 +286,12 @@ mod tests {
     }
 
     #[test]
-    fn overlay_admits_all_three_bags_with_canary_weights() {
+    fn overlay_admits_all_three_bags_with_pinned_weights() {
         let bags = reward_bags().expect("overlay parses");
         assert_eq!(bags.len(), 28);
         for (bag, (constant, key, count, total)) in bags.iter().zip([
             ("BAG_YOU_DESIRE", "oteryn:item.tibia.i34109", 21, 81_000),
-            ("PRIMAL_BAG", "oteryn:item.tibia.i39546", 14, 54_000),
+            ("PRIMAL_BAG", "oteryn:item.tibia.i39546", 14, 14_000),
             ("BAG_YOU_COVET", "oteryn:item.tibia.i43895", 26, 55_010),
         ]) {
             assert!(bag.playable);

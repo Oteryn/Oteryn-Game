@@ -1,7 +1,7 @@
 """REWARD-CHEST-WIRE-1: reward bag lists and their native Item profiles.
 
 Canary 47dfd51f `data/scripts/actions/items/reward_bags.lua` owns the lists and the
-relative weights; Crystal ff7ede59 carries the same bag ids and lists without weights
+relative weights for Desire and Covet; Crystal ff7ede59 carries the same bag ids and lists without weights
 (a uniform draw), so the id lists must match exactly. Weights are scaled to integers
 (1e-5 units) and must convert exactly. Rewards are single non-stackable items;
 the alicorn quiver is minted empty through the same receipt owner.
@@ -118,7 +118,11 @@ def capture(canary, crystal):
             weight = Decimal(row['weight']) * WEIGHT_SCALE
             if weight != weight.to_integral_value() or weight <= 0:
                 raise ValueError('REWARD_BAG_WEIGHT_SCALE')
-            rewards.append({'item': key(row['id']), 'name': row['name'], 'weight': int(weight)})
+            # Global documents a random reward without odds. Crystal 201189f8
+            # reward_bags.lua:81 draws uniformly, so give each Primal entry one ticket.
+            # https://www.tibiawiki.com.br/index.php?title=Primal_Bag&oldid=433568
+            tickets = 1000 if name == 'PRIMAL_BAG' else int(weight)
+            rewards.append({'item': key(row['id']), 'name': row['name'], 'weight': tickets})
         blocked = [r['id'] for r in rows if not mintable_reward(r['id'])]
         reason = 'NON_LEAF_REWARD:' + ','.join(map(str, blocked)) if blocked else None
         if reason is None:

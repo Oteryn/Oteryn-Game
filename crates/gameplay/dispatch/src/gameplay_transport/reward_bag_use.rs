@@ -237,13 +237,14 @@ mod tests {
         assert_eq!(bag.rewards.len(), 14);
         let mut cumulative = 0;
         for reward in &bag.rewards {
+            assert_eq!(reward.weight, 1_000);
             let plan = reward_bag_conversion(native, &item(&bag.bag), cumulative)
                 .expect("Primal Bag reward is mintable in active content");
             assert_eq!(plan.recipe, "oteryn:reward-bag.primal_bag");
             assert_eq!(plan.outputs, vec![(item(&reward.item), 1)]);
             cumulative += reward.weight;
         }
-        assert_eq!(cumulative, 54_000);
+        assert_eq!(cumulative, 14_000);
     }
 
     #[test]
