@@ -512,7 +512,7 @@ async fn settlement_scenarios(
 ) -> TestResult {
     const STAKE: u32 = 5000;
     let installed: bool =
-        sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=3332")
+        sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=3353")
             .fetch_one(&h.pool)
             .await?;
     assert!(installed);
