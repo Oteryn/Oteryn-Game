@@ -284,8 +284,72 @@ pub fn extend(base: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> 
     catalogue.authored_bindings = base.authored_bindings;
     catalogue.native_recipe_evidence = base.native_recipe_evidence;
     retain_alawar_predecessor(&mut catalogue, &rules)?;
+    retain_draconia_predecessor(&mut catalogue, &rules)?;
     catalogue.completion_sets = rules;
     Ok(catalogue)
+}
+
+// The two corrected door placements changed their transition binding digests.
+// Reconstruct the saved completion-set hash using the old depth byte.
+fn retain_draconia_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+    rules: &BTreeMap<String, CompletionSet>,
+) -> Result<(), String> {
+    const QUEST: &str = "oteryn:quest.draconia_quest";
+    let Some(binding) = catalogue.authored_bindings().and_then(|bindings| {
+        bindings
+            .quests
+            .iter()
+            .find(|binding| binding.quest == QUEST)
+    }) else {
+        return Ok(());
+    };
+    let mut transitions: BTreeMap<_, _> = catalogue
+        .transitions
+        .iter()
+        .filter(|(_, transition)| transition.quest == QUEST)
+        .map(|(key, transition)| (key.clone(), transition.clone()))
+        .collect();
+    for (x, y) in [(32675_u64, 31649_u64), (32676, 31671)] {
+        let placement = (x << 32) | (y << 16) | (10 << 8) | 1;
+        let Some((door, completes)) =
+            binding
+                .stages
+                .iter()
+                .find_map(|stage| match &stage.trigger {
+                    authored_bindings::Trigger::DoorUse { usage }
+                        if usage.native_placement_key == placement && usage.key_number == 3012 =>
+                    {
+                        Some((usage, stage.completes))
+                    }
+                    _ => None,
+                })
+        else {
+            return Ok(());
+        };
+        let mut previous = door.clone();
+        previous.native_placement_key = (x << 32) | (y << 16) | (246 << 8) | 1;
+        transitions.insert(previous.key.clone(), previous.transition(QUEST, completes)?);
+    }
+    let rule = rules.get(QUEST).ok_or("Draconia completion rule")?;
+    let hash = Sha256::new()
+        .chain_update(super::definition_hash(
+            QUEST,
+            &catalogue.tracks,
+            &transitions,
+        ))
+        .chain_update(serde_json::to_vec(rule).map_err(|error| error.to_string())?)
+        .finalize()
+        .into();
+    catalogue
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
+    Ok(())
 }
 
 // The original approach and the two independent chest transitions have the same

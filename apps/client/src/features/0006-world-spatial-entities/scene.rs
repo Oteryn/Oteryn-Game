@@ -122,6 +122,7 @@ impl Scene {
         if !same_world {
             next.cache.reset_atlas();
         }
+        next.stack_depth = self.stack_depth;
         next.own_identity = self.own_identity;
         next.drome_hazards = std::mem::take(&mut self.drome_hazards);
         next.actor_clocks = self.actor_clocks.clone();

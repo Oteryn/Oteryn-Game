@@ -46,6 +46,13 @@ class AsuraChambers(unittest.TestCase):
                 claim["storage"],
                 [
                     {
+                        "track": "oteryn:quest-progress/engenc/asura/orchid/count",
+                        "minimum": 1,
+                        "maximum": 1,
+                        "set": 1,
+                        "preserve": True,
+                    },
+                    {
                         "track": f"oteryn:quest-progress/engenc/asura/orchid/{name}",
                         "minimum": 0,
                         "maximum": 0,
@@ -78,7 +85,7 @@ class AsuraChambers(unittest.TestCase):
         self.assertEqual(hunt["track"], hydra["track"])
         self.assertEqual(
             stages["s3-entry"]["trigger"]["callback"]["storage"][0]["track"],
-            "oteryn:quest-progress/authored/asura_palace_quest/s1",
+            "oteryn:quest-progress/engenc/asura/s2/opened",
         )
         self.assertEqual(door["storage"][0]["track"], milestone["track"])
         self.assertNotEqual(counter["track"], milestone["track"])

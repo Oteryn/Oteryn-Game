@@ -92,7 +92,7 @@ def attach_chambers(document, root):
         source = f"oteryn:quest-callback/engenc/asura/{stage}/entry"
         previous = (
             "oteryn:quest-progress/authored/asura_palace_quest/s1"
-            if stage in ("s2", "s3")
+            if stage == "s2"
             else f"{BASE}/s{number - 1}/opened"
         )
         prior = gate(previous, 1)
@@ -247,6 +247,7 @@ def attach_chambers(document, root):
         [32959, 32679, 2],
         [
             gate(hydra_count, 3),
+            gate(f"{BASE}/s4/opened", 1),
             {"track": fire_door, "minimum": 1, "maximum": 2, "set": 2},
             gate(f"{BASE}/s3/count", 2),
             {"track": attempt, "minimum": 0, "maximum": 1, "set": 0},
@@ -342,6 +343,7 @@ def attach_chambers(document, root):
             f"oteryn:quest-callback/engenc/asura/orchid/{gem}",
             position,
             [
+                gate(count, 1),
                 {"track": claimed, "minimum": 0, "maximum": 0, "set": 1},
             ],
         )

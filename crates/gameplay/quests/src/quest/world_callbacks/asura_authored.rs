@@ -46,7 +46,7 @@ mod tests {
         let callbacks = world_callbacks::load_for(catalogue)?;
         for (stage, previous) in [
             ("s2", "oteryn:quest-progress/authored/asura_palace_quest/s1"),
-            ("s3", "oteryn:quest-progress/authored/asura_palace_quest/s1"),
+            ("s3", "oteryn:quest-progress/engenc/asura/s2/opened"),
             ("s4", "oteryn:quest-progress/engenc/asura/s3/opened"),
         ] {
             let entered = format!("oteryn:quest-progress/engenc/asura/{stage}/entered");
@@ -132,6 +132,8 @@ mod tests {
         let entry = catalogue
             .transition("oteryn:quest-callback/engenc/asura/orchid/entry")
             .ok_or("Orchid entry transition")?;
+        assert!(catalogue.evaluate(entry, &tracks, 100_000).is_err());
+        tracks.insert("oteryn:quest-progress/engenc/asura/s4/opened".into(), 1);
         assert!(
             catalogue.evaluate(entry, &tracks, 100_000).is_ok(),
             "saved admission cannot restart the unfinished encounter"
@@ -225,6 +227,15 @@ mod tests {
             .transition("oteryn:quest-transition/native-kills/engenc-asura-orchid")
             .ok_or("Orchid death")?;
         assert!(!death.completes);
+        for gem in ["ruby", "sapphire"] {
+            let claim = catalogue.transition(&find(gem)?.key).ok_or("gem claim")?;
+            assert!(catalogue.evaluate(claim, &Default::default(), 0).is_err());
+            let defeated = std::collections::BTreeMap::from([(
+                "oteryn:quest-progress/engenc/asura/orchid/count".into(),
+                1,
+            )]);
+            assert!(catalogue.evaluate(claim, &defeated, 0).is_ok());
+        }
         let ruby = find("ruby")?;
         assert!(
             catalogue

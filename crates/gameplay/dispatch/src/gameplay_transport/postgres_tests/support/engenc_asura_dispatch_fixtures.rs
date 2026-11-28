@@ -51,7 +51,7 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
     // Isolate each real caller at its authored predecessor, with no fabricated receipts.
     let predecessor = match stage(name)? {
         "s2" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
-        "s3" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
+        "s3" => "oteryn:quest-progress/engenc/asura/s2/opened",
         "s4" => "oteryn:quest-progress/engenc/asura/s3/opened",
         "orchid" => "oteryn:quest-progress/engenc/asura/hydra/count",
         _ => return Err("Asura stage".into()),
@@ -63,6 +63,8 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
         .ok_or("predecessor")?
         .initial = if stage(name)? == "orchid" { 3 } else { 1 };
     if stage(name)? == "orchid" {
+        b.quests[0].tracks.iter_mut().find(|t| t.key == "oteryn:quest-progress/engenc/asura/s4/opened")
+            .ok_or("energy chamber predecessor")?.initial = 1;
         b.quests[0].tracks.iter_mut().find(|t| t.key == "oteryn:quest-progress/engenc/asura/s3/count")
             .ok_or("fire defender kills")?.initial = 2;
         b.quests[0]

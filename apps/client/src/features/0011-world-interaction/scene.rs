@@ -60,13 +60,18 @@ impl Scene {
         let Some(top) = stack.clone().next().copied() else {
             return Ok(());
         };
-        let next = match self.target {
-            Some(current) => stack
-                .find(|entry| **entry == current)
-                .and_then(|_| stack.next().copied()),
-            None => None,
-        };
-        self.target = Some(next.unwrap_or(top));
+        let current = self.target.and_then(|target| {
+            if stack.clone().nth(self.stack_depth) == Some(&target) {
+                Some(self.stack_depth)
+            } else {
+                stack.clone().position(|entry| *entry == target)
+            }
+        });
+        let (depth, target) = current
+            .and_then(|depth| stack.nth(depth + 1).map(|entry| (depth + 1, *entry)))
+            .unwrap_or((0, top));
+        self.stack_depth = depth;
+        self.target = Some(target);
         self.rebuild_sprites()
     }
 

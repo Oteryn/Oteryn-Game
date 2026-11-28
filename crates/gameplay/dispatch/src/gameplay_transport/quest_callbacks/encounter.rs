@@ -256,25 +256,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let count = *count;
         drop(states_guard);
         drop(runtime_guard);
-        let delivery = self
-            .root
-            .deliver_vampire_coffin(
-                self.character,
-                self.holder,
-                permit,
-                fence.item_fence(),
-                command,
-                content,
-                kind,
-                count,
-                |previous| {
-                    self.runtime.try_lock().map_or(true, |runtime| {
-                        runtime.contains_live_creature(previous)
-                            || runtime.corpse_projection_pinned(previous)
-                    })
-                },
-            )
-            .await;
+        // A contended observation rolls back the read-only attempt. Wait outside
+        // the Character transaction, then retry for the same exact generation.
+        let mut retired = None;
+        let delivery = loop {
+            let mut contended = None;
+            let delivery = self
+                .root
+                .deliver_vampire_coffin(
+                    self.character,
+                    self.holder,
+                    permit,
+                    fence.item_fence(),
+                    command,
+                    content,
+                    kind,
+                    count,
+                    |previous| {
+                        if retired == Some(previous) {
+                            return false;
+                        }
+                        match self.runtime.try_lock() {
+                            Ok(runtime) => {
+                                runtime.contains_live_creature(previous)
+                                    || runtime.corpse_projection_pinned(previous)
+                            }
+                            Err(_) => {
+                                contended = Some(previous);
+                                true
+                            }
+                        }
+                    },
+                )
+                .await;
+            let Some(previous) = contended.filter(|_| matches!(delivery, Ok(false))) else {
+                break delivery;
+            };
+            let runtime = self.runtime.lock().await;
+            if runtime.contains_live_creature(previous)
+                || runtime.corpse_projection_pinned(previous)
+            {
+                break Ok(false);
+            }
+            retired = Some(previous);
+        };
         #[cfg(test)]
         let delivery = if matches!(delivery, Ok(true))
             && self

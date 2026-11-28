@@ -416,6 +416,30 @@ fn repeated_tile_selection_uses_the_lower_server_ordinal_and_revision() -> Resul
 }
 
 #[test]
+fn stack_cycle_passes_identical_display_items_after_a_rebuild() -> Result<(), BatchError> {
+    use oteryn_client_runtime::world_interaction::Target;
+    use oteryn_session::world_map::MapOrigin;
+    let mut view = view()?;
+    let mut map = live_snapshot(101);
+    let tile = &mut map.tiles[0];
+    tile.position.x += 1;
+    let at = TileCoord::new(tile.position.x, tile.position.y);
+    tile.items[0].origin = MapOrigin::BaseOrdinal { ordinal: 1, object_revision: 37 };
+    let mut coin = tile.items[0];
+    coin.origin = MapOrigin::DisplayOnly;
+    tile.items.extend([coin, coin]);
+    view.set_live_map(&map)?;
+    for _ in 0..2 {
+        view.click(at)?;
+        assert!(view.world_context_target_for(at, true).is_none());
+        view.rebuild()?;
+    }
+    view.click(at)?;
+    assert!(matches!(view.world_context_target_for(at, true), Some(Target::Object(target)) if target.expected_revision == 37));
+    Ok(())
+}
+
+#[test]
 fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::world_interaction::{Action, Target};
     use oteryn_input_actions::{ButtonState, Modifier, Modifiers, MouseButton, NormalizedInputEvent, PointerCoordinate, PointerDelta, PointerMotion, PointerPosition};

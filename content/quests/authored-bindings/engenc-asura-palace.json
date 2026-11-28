@@ -432,7 +432,7 @@
               "teleport": null,
               "storage": [
                 {
-                  "track": "oteryn:quest-progress/authored/asura_palace_quest/s1",
+                  "track": "oteryn:quest-progress/engenc/asura/s2/opened",
                   "minimum": 1,
                   "maximum": 1,
                   "set": 1,
@@ -963,6 +963,13 @@
                   "preserve": true
                 },
                 {
+                  "track": "oteryn:quest-progress/engenc/asura/s4/opened",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
                   "track": "oteryn:quest-progress/engenc/asura/s3/opened",
                   "minimum": 1,
                   "maximum": 2,
@@ -1153,6 +1160,13 @@
               "teleport": null,
               "storage": [
                 {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
+                {
                   "track": "oteryn:quest-progress/engenc/asura/orchid/sapphire",
                   "minimum": 0,
                   "maximum": 0,
@@ -1213,6 +1227,13 @@
               "passages": [],
               "teleport": null,
               "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 1,
+                  "preserve": true
+                },
                 {
                   "track": "oteryn:quest-progress/engenc/asura/orchid/ruby",
                   "minimum": 0,
