@@ -609,9 +609,17 @@ async fn claim_demona_ring(
         })
         .map_err(|error| format!("Demona ring chest USE encoding: {error:?}"))?;
         let reply = client.session_mut().world_context_use(&payload).await?;
+        let (disposition, gate, occurrence) =
+            world_object::decode_use_reward_result(&reply.payload).map_err(|error| {
+                format!("Demona ring chest USE result: {error:?}; reply={reply:?}")
+            })?;
+        let expects_occurrence = client
+            .selected_capabilities()
+            .contains(&world_object::CAPABILITY_GAMEPLAY_OCCURRENCES_V1);
         if reply.status != CommandStatus::Accepted
-            || world_object::decode_use_result(&reply.payload)
-                != Ok(world_object::UseDisposition::Committed)
+            || disposition != world_object::UseDisposition::Committed
+            || gate.is_some()
+            || occurrence.is_some() != expects_occurrence
         {
             return Err(format!("Demona ring chest USE refused: {reply:?}").into());
         }

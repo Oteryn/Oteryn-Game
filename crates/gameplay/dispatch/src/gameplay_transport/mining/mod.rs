@@ -2,13 +2,13 @@
 //! The original bounded intent binds the receipt; an unknown commit closes the
 //! connection without sequencing a false terminal refusal.
 
-use super::ComposedFreshAdmission;
 use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, pinned_index};
 use super::item_view::{ItemKey, SessionItemView};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission};
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
+use crate::durability::item_use::{ItemUseError, ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_gameplay_items::mining::{PICK, refined_item};
 use oteryn_protocol_oteryn::world_object::{
@@ -115,6 +115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let encoded = encode_item_use_intent(&intent).map_err(|_| UseDisposition::Rejected)?;
         let binding: [u8; 32] = Sha256::digest(&encoded).into();
+        let retry = AdmissionRetryBudget::for_command(self.root);
         let _permit = self
             .spell_lane_permit()
             .await
@@ -131,15 +132,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(UseDisposition::Rejected);
             }
         }
-        match self
-            .root
-            .read_pick_refining_receipt(self.character, fence, command_ref, binding)
+        match retry
+            .retry_command_guard(async || {
+                match self
+                    .root
+                    .read_pick_refining_receipt(self.character, fence, command_ref, binding)
+                    .await
+                {
+                    Err(ItemUseError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
         {
-            Ok(Some(_)) => return Ok(Some(UseDisposition::Committed)),
-            Ok(None) => {}
-            Err(crate::durability::item_use::ItemUseError::Unavailable(_)) => return Ok(None),
-            Err(_) => return Err(UseDisposition::Rejected),
+            Ok(Ok(Some(_))) => return Ok(Some(UseDisposition::Committed)),
+            Ok(Ok(None)) => {}
+            Err(_) => return Ok(None),
+            Ok(Err(_)) => return Err(UseDisposition::Rejected),
         }
         let native = self
             .active_generation
@@ -149,11 +158,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             pinned_index(&runtime, self.active_generation).ok_or(UseDisposition::Rejected)?
         };
-        let inventory = self
-            .root
-            .read_item_use_inventory(self.character, self.holder, fence)
+        let inventory = match retry
+            .retry_command_guard(async || {
+                match self
+                    .root
+                    .read_item_use_inventory(self.character, self.holder, fence)
+                    .await
+                {
+                    Err(ItemUseError::Unavailable(error)) => Err(error),
+                    result => Ok(result),
+                }
+            })
             .await
-            .map_err(|_| UseDisposition::Rejected)?;
+        {
+            Ok(Ok(inventory)) => inventory,
+            Ok(Err(_)) | Err(_) => return Err(UseDisposition::Rejected),
+        };
+        drop(retry);
         let bag = inventory
             .backpack
             .as_ref()
