@@ -23,7 +23,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("P16", "p16-greeting.bin", &greeting_bytes);
     let (quote_bytes, quote) = talk(&mut client, npc, "The Wisdom of Solitude").await?;
     if quote
-        != ["Do you want to buy The Wisdom of Solitude at the price for your current level?"]
+        != ["Would you like to receive that protection for a sacrifice of 2000 gold, child?"]
     {
         return Err(format!("blessing quote observed={quote:?}").into());
     }
