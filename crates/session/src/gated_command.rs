@@ -17,8 +17,11 @@ impl<S: SessionStream> Session<S> {
         payload: &[u8],
     ) -> Result<GatedCommandResult, SessionError> {
         self.ensure_usable()?;
-        let owned = gated_routes()
-            .any(|(id, commands, _)| id == capability && commands.contains(&command_type));
+        let parameter_cast = capability == actor_spell_v2::CAPABILITY_ACTOR_SPELL_PARAMETERS_V2
+            && command_type == actor_spell_v2::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2;
+        let owned = parameter_cast
+            || gated_routes()
+                .any(|(id, commands, _)| id == capability && commands.contains(&command_type));
         if !owned || !self.is_selected(capability) {
             return Err(SessionError::CapabilityNotSelected { capability });
         }
@@ -35,6 +38,35 @@ impl<S: SessionStream> Session<S> {
             let handoff = self.house_handoff(payload, &result).await;
             self.poison_on_error(handoff)?;
         }
+        if parameter_cast {
+            let outcome = self.publish_parameter_spell_result(&result);
+            self.poison_on_error(outcome)?;
+        }
         Ok(result)
+    }
+    fn publish_parameter_spell_result(
+        &mut self,
+        reply: &GatedCommandResult,
+    ) -> Result<(), SessionError> {
+        use actor_spell_v2::ParameterSpellCastResult;
+
+        let result = if reply.status == CommandStatus::Rejected && reply.payload.is_empty() {
+            ParameterSpellCastResult {
+                disposition: SpellCastDisposition::Rejected,
+                feedback: None,
+                editor: None,
+            }
+        } else {
+            actor_spell_v2::decode_parameter_spell_cast_result(&reply.payload)?
+        };
+        check_status_pairing(
+            reply.command_id,
+            reply.status,
+            result.disposition == SpellCastDisposition::Rejected,
+        )?;
+        self.queue_event(SessionEvent::ParameterSpellCast {
+            result,
+            position: self.world_spatial().actor_position,
+        })
     }
 }

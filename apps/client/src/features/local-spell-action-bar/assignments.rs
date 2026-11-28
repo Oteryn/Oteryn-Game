@@ -1,5 +1,6 @@
 //! Persisted heterogeneous slot assignments; every active action uses an existing command path.
 use super::item_actions::item_source;
+use super::super::protocol::{parameterless_cast_selected, send_parameter_cast, send_text_cast};
 use crate::combat_input::{BarFallback, PlayCommand};
 #[path = "readiness.rs"]
 mod readiness;
@@ -202,6 +203,8 @@ pub(crate) struct ItemCooldownRead {
 pub(crate) struct BarActionsState {
     pub scope: u64,
     pub saved: BarActions,
+    pub parameters_selected: bool,
+    pub parameter_feedback: Option<(String, std::time::Instant)>,
     pub item_cooldowns_selected: bool,
     pub item_cooldowns: BTreeMap<u32, (std::time::Instant, u64)>,
     pub item_cooldown_read: Option<ItemCooldownRead>,
@@ -367,6 +370,10 @@ fn activate_action(
             ) && entry.available
                 && let Some(index) = NonZeroU32::new(entry.cast_index)
             {
+                if fallback.is_none() && parameterless_cast_selected(mailbox, &entry.words) {
+                    send_parameter_cast(mailbox, commands, index, None);
+                    return;
+                }
                 let cursor_aim = if aim == SpellAim::Cursor {
                     let Some((_, cursor)) = &mailbox.bar_actions.cursor else {
                         mailbox.spell_bar.feedback =
@@ -461,7 +468,7 @@ fn activate_action(
             }
         }
         BarAction::Text { text, .. } => {
-            crate::play::feature_0007_chat::input::enqueue_hotkey_text(mailbox, commands, text);
+            send_text_cast(mailbox, commands, text);
         }
         BarAction::Passive { .. } => {
             mailbox.spell_bar.feedback = "Passive status: no cast command is sent".into();

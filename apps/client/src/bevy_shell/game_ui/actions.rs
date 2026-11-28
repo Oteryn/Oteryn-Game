@@ -118,6 +118,7 @@ pub(super) fn install(app: &mut App) {
                 projection::project,
                 editor::project,
                 cooldown::project,
+                projection::parameter_feedback,
                 projection::slot_timers,
             )
                 .chain(),

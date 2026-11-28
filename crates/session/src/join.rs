@@ -177,6 +177,14 @@ impl<S: SessionStream> Session<S> {
                     .map_err(|_| FoundationProtocolError::MalformedFrame)?,
             });
         }
+        if selected_capabilities.contains(&actor_spell_v2::CAPABILITY_ACTOR_SPELL_PARAMETERS_V2) {
+            if events.len() >= MAX_QUEUED_EVENTS {
+                return Err(SessionError::EventQueueOverflow {
+                    limit: MAX_QUEUED_EVENTS,
+                });
+            }
+            events.push(SessionEvent::SpellParametersSelected);
+        }
         Ok(Self {
             bulletin: None,
             stream,

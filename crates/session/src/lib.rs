@@ -153,15 +153,14 @@ pub use chat_extended::{
     ChannelListExtension, ChannelNotice, ChannelNoticeKind, ChannelParticipants, LineExtra,
     NoticeEntry,
 };
-use oteryn_protocol_oteryn::actor_spell::{
-    self, AimedSpellCastIntent, SpellAimMode, SpellCastIntent,
-};
+use oteryn_protocol_oteryn::actor_spell::{self, AimedSpellCastIntent, SpellAimMode};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::actor_spell::{
-    ActorVitals, CAPABILITY_SPELL_AIM_MODE_V1, SpellCastDisposition, SpellTarget,
+    ActorVitals, CAPABILITY_SPELL_AIM_MODE_V1, SpellCastDisposition, SpellCastIntent, SpellTarget,
     SpellTargetPosition,
 };
+pub use oteryn_protocol_oteryn::actor_spell_v2;
 use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
 /// The capability-17 attack types a client sends and draws from, re-exported so it needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).

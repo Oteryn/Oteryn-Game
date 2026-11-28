@@ -205,6 +205,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         commands.entity(frame).add_child(field);
         commands.entity(panel).add_children(&[label, frame]);
         if index == 0 {
+            catalog::spawn_parameter_field(&mut commands, panel, &skins);
             let choices = commands
                 .spawn((
                     catalog::CatalogRoot,
@@ -445,7 +446,7 @@ pub(super) fn project(
     if state.rendered != state.selected {
         state.pending = None;
         if let Some((slot, _)) = state.selected {
-            let mut values: [String; 6] = Default::default();
+            let mut values: [String; catalog::PARAMETER_FIELD + 1] = Default::default();
             if let Some(binding) = slot_binding(slot) {
                 let chat_on = owner
                     .play

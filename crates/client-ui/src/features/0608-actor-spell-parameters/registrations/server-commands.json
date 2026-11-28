@@ -2,17 +2,21 @@
   "mechanic": "0608-actor-spell-parameters",
   "kind": "handlers",
   "id": "0608-actor-spell-parameters-server-commands",
-  "status": "unsupported",
+  "status": "supported",
   "commands": [
     6380
   ],
   "direction": "client_to_server",
-  "reason": "Client wiring is delivered in its own lane.",
+  "capability": 608,
+  "entry_owner": "session",
+  "entry": "gated_command.rs::gated_command",
   "not_applicable": {
-    "state": "The native client has not integrated the new server command.",
-    "protocol": "The protocol-oteryn crate owns the wire grammar.",
-    "view": "The native client lane owns the corresponding view.",
-    "input": "The native client lane owns the corresponding input.",
-    "settings": "The server command introduces no local settings."
+    "panels": "The existing action-bar editor and feedback projection own the parameter cast.",
+    "settings": "The action bar retains the assignment in its existing hotkey preferences.",
+    "keybindings": "The existing action button and hotkey invoke the parameter cast.",
+    "state": "The action-bar state retains the current cast feedback.",
+    "protocol": "The Session exchanges command 6380 with the protocol-oteryn codec.",
+    "view": "The action bar displays private cast feedback.",
+    "input": "The action-bar spell picker accepts the parameter."
   }
 }

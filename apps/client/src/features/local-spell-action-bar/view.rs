@@ -111,6 +111,13 @@ fn spoken_slot<'a>(
     else {
         return None;
     };
+    spoken_spell(text, entries)
+}
+
+pub(super) fn spoken_spell<'a>(
+    text: &'a str,
+    entries: &'a [oteryn_session::spell_catalog::SpellCatalogEntry],
+) -> Option<(&'a oteryn_session::spell_catalog::SpellCatalogEntry, Option<&'a str>)> {
     let text = text.trim_matches(' ');
     let spell = entries
         .iter()
@@ -125,24 +132,63 @@ fn spoken_slot<'a>(
     if text.len() == spell.words.len() {
         return Some((spell, None));
     }
-    const PARAMETER_WORDS: &[&str] = include!(concat!(env!("OUT_DIR"), "/spell_parameters.rs"));
-    if !PARAMETER_WORDS
-        .iter()
-        .any(|words| words.eq_ignore_ascii_case(&spell.words))
-    {
+    if !accepts_parameter(&spell.words) {
         return None;
     }
     let rest = text
         .get(spell.words.len()..)?
         .strip_prefix(' ')?
         .trim_matches(' ');
-    let parameter = if let Some((_, quoted)) = rest.split_once('"') {
+    let parameter = if let Some(quoted) = rest.strip_prefix('"') {
         let value = quoted.strip_suffix('"').unwrap_or(quoted);
         (!value.contains('"')).then_some(value)?
     } else {
         (!rest.contains([' ', '"'])).then_some(rest)?
     };
-    (!parameter.is_empty()).then_some((spell, Some(parameter)))
+    Some((spell, Some(parameter)))
+}
+
+fn accepts_parameter(words: &str) -> bool {
+    const PARAMETER_WORDS: &[&str] = include!(concat!(env!("OUT_DIR"), "/spell_parameters.rs"));
+    PARAMETER_WORDS.iter().any(|known| known.eq_ignore_ascii_case(words))
+}
+
+impl crate::play::PlayLink {
+    #[cfg(any(test, bevy_shell))]
+    pub(crate) fn spell_parameter_feedback(&self) -> Option<String> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        let (text, received) = mailbox.bar_actions.parameter_feedback.as_ref()?;
+        (received.elapsed() < std::time::Duration::from_secs(5) && !text.is_empty())
+            .then(|| text.clone())
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn spell_parameters_selected(&self) -> bool {
+        crate::play::mailbox::lock(&self.mailbox).bar_actions.parameters_selected
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn stored_spell_parameter(&self, text: &str) -> Option<String> {
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        spoken_spell(text, mailbox.spell_catalog.catalog.entries())?
+            .1
+            .map(str::to_owned)
+    }
+
+    #[cfg(bevy_shell)]
+    pub(crate) fn parameter_spell_assignment(words: &str, parameter: &str) -> Option<BarAction> {
+        if !accepts_parameter(words)
+            || parameter.len() > oteryn_session::actor_spell_v2::MAX_PARAMETER_BYTES
+            || parameter.contains('"')
+            || parameter.chars().any(char::is_control)
+        {
+            return None;
+        }
+        Some(BarAction::Text {
+            text: format!("{words} \"{parameter}\""),
+            send_automatically: true,
+        })
+    }
 }
 
 fn slot_timer<'a>(

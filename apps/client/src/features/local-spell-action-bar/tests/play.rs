@@ -601,3 +601,6 @@ mod parity;
 
 #[path = "item_cooldowns.rs"]
 mod item_cooldowns;
+
+#[path = "spell_parameters.rs"]
+mod spell_parameters;

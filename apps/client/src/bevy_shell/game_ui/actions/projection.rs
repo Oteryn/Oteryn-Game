@@ -285,6 +285,31 @@ pub(super) fn project(
     }
 }
 
+pub(super) fn parameter_feedback(
+    owner: NonSend<HostOwner>,
+    mut hints: Query<(&mut Text, &mut Node), With<ActionHint>>,
+) {
+    let feedback = owner
+        .play
+        .as_ref()
+        .and_then(|play| play.link.spell_parameter_feedback());
+    let max_height = if feedback.is_some() {
+        Val::Auto
+    } else {
+        px(13.)
+    };
+    for (mut text, mut node) in &mut hints {
+        if let Some(line) = &feedback
+            && text.0 != *line
+        {
+            text.0.clone_from(line);
+        }
+        if node.max_height != max_height {
+            node.max_height = max_height;
+        }
+    }
+}
+
 pub(super) fn slot_timers(
     owner: NonSend<HostOwner>,
     mut overlays: Query<(&SlotCooldown, &mut Node)>,

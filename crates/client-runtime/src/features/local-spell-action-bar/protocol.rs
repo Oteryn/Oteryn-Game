@@ -84,3 +84,26 @@ pub(crate) async fn run_cast<S: SessionStream>(
 #[cfg(test)]
 #[path = "tests/cast.rs"]
 mod tests;
+
+/// Constructs the negotiated command. The server resolves the typed parameter to its target.
+pub fn parameter_cast(
+    spell: NonZeroU32,
+    parameter: Option<String>,
+) -> Option<crate::raw_feature::FeatureCommand> {
+    use oteryn_session::actor_spell_v2 as wire;
+
+    let payload = wire::encode_parameter_spell_cast_intent(&wire::ParameterSpellCastIntent {
+        intent: oteryn_session::SpellCastIntent {
+            spell,
+            target: SpellTarget::None,
+            aim_at_target: false,
+        },
+        parameter,
+    })
+    .ok()?;
+    Some(crate::raw_feature::FeatureCommand {
+        capability: wire::CAPABILITY_ACTOR_SPELL_PARAMETERS_V2,
+        kind: wire::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_PARAMETERS_V2,
+        payload,
+    })
+}

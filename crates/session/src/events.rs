@@ -17,10 +17,17 @@ impl std::ops::Deref for ActorCooldownUpdate {
     }
 }
 
-/// Server-sequenced updates, already validated and applied to the session's domain store
-/// (FND-02 §14, §15), in the order they were applied.
+/// Validated session updates, including server-sequenced domain changes (FND-02 §14, §15)
+/// in the order they were applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    /// The admission selected structured spell casts.
+    SpellParametersSelected,
+    /// Private completion of the active parameter cast, with the authoritative caster position.
+    ParameterSpellCast {
+        result: actor_spell_v2::ParameterSpellCastResult,
+        position: ActorPosition,
+    },
     CastCasterLine(AppliedDelta<cast_chat::CasterLine>),
     CastRoster(AppliedDelta<cast_chat::Roster>),
     /// A fully validated handoff and destination snapshot replaced this logical session.
@@ -118,6 +125,8 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            // Negotiation and command completions do not advance any domain revision.
+            Self::SpellParametersSelected | Self::ParameterSpellCast { .. } => 0,
             Self::CastCasterLine(_) | Self::CastRoster(_) => 103,
             Self::ActivityScope(_) => 99,
             Self::AnalyserFacts(_) | Self::AnalyserAttributedFacts(_) => 15,
