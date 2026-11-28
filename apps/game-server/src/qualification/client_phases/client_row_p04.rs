@@ -735,6 +735,7 @@ async fn observe_positive_delivery(
     let world = load_world(bytes, &pin, WorldId::decode(&scope.world)?, ChannelId::decode(&scope.channel)?)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| near_locker(world, at))
         .ok_or("P04 no route to an authored Stash locker")?;
+    evidence(&format!("P04_STASH_ROUTE steps={}", path.len()));
     for direction in path {
         let before = client.world_spatial().actor_position;
         let expected = destination(world, tile(before)?, direction)
@@ -749,6 +750,7 @@ async fn observe_positive_delivery(
                 client.last_server_sequence(),
             ).into());
         }
+        verdict::Harness::global().progress("p04-stash-step");
     }
 
     let session = client.join_snapshot().game_session_id;
