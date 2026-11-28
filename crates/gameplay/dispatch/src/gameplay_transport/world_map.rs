@@ -14,7 +14,7 @@
 //!   the header.
 //! - **Handles.** The handle-bearing entries within the budget are the session handle table's
 //!   map view ([`SessionItemView::map_view`]); an entry that leaves it loses its handle. A movable
-//!   leaf or read-only captured container's handle is bound to `(bundle_digest, placement_key, reset_epoch)`.
+//!   leaf, captured container or exercise dummy handle is bound to `(bundle_digest, placement_key, reset_epoch)`.
 //! - **Targets.** [`resolve_map_target`] resolves the 40-byte `WorldObjectTargetV1` of a
 //!   `base_ordinal` entry (contract §4) and [`resolve_map_handle`] a handle-bearing entry. Command
 //!   9 from a base-entry handle is `ITEM_MOVE_OUTCOME_NOT_SUPPORTED` until MAP-PICKUP-1
@@ -43,9 +43,9 @@ use crate::map::view::{
 use oteryn_gameplay_world::map_view_diff::{Planned, SentView, encode};
 use oteryn_protocol_oteryn::item_view::ItemMoveOutcome;
 use oteryn_protocol_oteryn::world_map::{
-    DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapItem, MapOrigin,
-    MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
-    WorldMapWireError,
+    DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1, MAP_TARGET_BYTES, MAX_MAP_VIEW_HANDLES, MapDefinition,
+    MapItem, MapOrigin, MapTile, MapViewHeader, SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
+    STATE_DOMAIN_WORLD_MAP_VIEW, WorldMapWireError,
 };
 #[cfg(test)]
 use oteryn_protocol_oteryn::world_map::{
@@ -115,6 +115,8 @@ impl From<WorldMapWireError> for MapViewError {
 struct PlannedEntry {
     source: EntrySource,
     item: MapItem,
+    /// An authored exercise dummy has an interaction handle without pickup eligibility.
+    exercise_dummy: bool,
     /// Within `MAPW-RL-04`; only for handle-bearing entries.
     in_budget: bool,
 }
@@ -186,7 +188,7 @@ impl MapPlan {
                         placement_key,
                         movable: false,
                         openable_source: false,
-                    } => MapOrigin::BaseOrdinal {
+                    } if !entry.exercise_dummy => MapOrigin::BaseOrdinal {
                         ordinal,
                         object_revision: source.facts.object_revision(placement_key),
                     },
@@ -400,7 +402,10 @@ fn plan_with_house<F: MapFacts>(
         let start = entries.len();
         for stack_index in kept {
             let entry = &stack[stack_index];
-            if entry.source.handle_bearing() {
+            let exercise_dummy = matches!(entry.source, EntrySource::Base { .. })
+                && matches!(entry.facts.definition, MapDefinition::Item(_))
+                && super::loop_training::is_exercise_dummy_appearance(entry.facts.appearance_id);
+            if entry.source.handle_bearing() || exercise_dummy {
                 ranked.push((view::budget_key(at, pos, stack_index), entries.len()));
             }
             entries.push(PlannedEntry {
@@ -412,6 +417,7 @@ fn plan_with_house<F: MapFacts>(
                     origin: MapOrigin::DisplayOnly,
                     appearance_id: entry.facts.appearance_id,
                 },
+                exercise_dummy,
                 in_budget: false,
             });
         }

@@ -430,6 +430,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .map_err(|_| reject)?,
         );
+        #[cfg(feature = "qualification-taming")]
+        let draw = if qualification_draw::consume(fence, command_ref) {
+            super::operator_event("event=qualification_taming_draw");
+            0
+        } else {
+            draw
+        };
         let event = AchievementSourceEvent {
             kind: "mount_taming".into(),
             event_id: transaction_id.to_vec(),
@@ -516,6 +523,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }))
             }
         }
+    }
+}
+
+#[cfg(feature = "qualification-taming")]
+pub use qualification_draw::arm as arm_qualification_taming_draw;
+
+#[cfg(feature = "qualification-taming")]
+pub(super) mod qualification_draw {
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
+    use crate::foundation::CommandRef;
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+
+    struct Draw {
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        expires: Instant,
+    }
+
+    static NEXT: Mutex<Option<Draw>> = Mutex::new(None);
+
+    /// Arms the fixture draw after the node has checked its disposable config and the
+    /// dedicated character's current fence. Only one request may be outstanding.
+    pub fn arm(fence: CurrentCharacterItemFence, command: CommandRef) -> bool {
+        let Ok(mut next) = NEXT.lock() else {
+            return false;
+        };
+        let now = Instant::now();
+        if command.game_session_id() != fence.game_session_id
+            || next.as_ref().is_some_and(|draw| now < draw.expires)
+        {
+            return false;
+        }
+        *next = Some(Draw {
+            fence,
+            command,
+            expires: now + Duration::from_secs(30),
+        });
+        true
+    }
+
+    pub(in crate::gameplay_transport) fn consume(
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+    ) -> bool {
+        let Ok(mut next) = NEXT.lock() else {
+            return false;
+        };
+        if next.as_ref().is_some_and(|draw| {
+            draw.fence == fence && draw.command == command && Instant::now() < draw.expires
+        }) {
+            next.take();
+            return true;
+        }
+        false
     }
 }
 
