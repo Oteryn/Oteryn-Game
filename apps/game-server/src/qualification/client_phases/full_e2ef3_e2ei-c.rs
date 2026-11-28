@@ -591,6 +591,9 @@ async fn decay(
         }
         live.service_liveness(Duration::from_millis(100)).await?;
     };
+    // A receipt first read after fresh admission could belong to a retirement
+    // that happened after the observed leave. Sample it at the leave boundary.
+    let timing = corpse_retirement(clients, materialization).await;
     *step = "retired-loot-unavailable";
     let stale_use = live.use_item(corpse.handle).await?;
     if stale_use.status != CommandStatus::Accepted
@@ -637,8 +640,16 @@ async fn decay(
         )
         .into());
     }
-    let timing = corpse_retirement(clients, materialization).await?;
-    verify_corpse_retirement_timing(step, leave_sequence, stale_use.disposition, timing)
+    *step = "verify-server-corpse-retirement-timing";
+    let timing = timing?;
+    verify_corpse_retirement_timing(step, leave_sequence, stale_use.disposition, timing)?;
+    if let Some((materialized_at, deadline, retired_at)) = timing {
+        evidence(&format!(
+            "I06 corpse={:?} leave_sequence={leave_sequence} materialized_at={materialized_at} deadline={deadline} retired_at={retired_at}",
+            corpse.entity.entity.identity
+        ));
+    }
+    Ok(())
 }
 
 fn request(action: Action) -> loot::QuickLootRequest {
