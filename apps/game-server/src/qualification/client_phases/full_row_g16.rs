@@ -1,7 +1,7 @@
 //! G16: daily reward details and one-click shrine claim (commands 738 and 354).
-//! Shrine collection and duplicate refusal follow Crystal 201189f8:
-//! data/modules/scripts/daily_reward/daily_reward.lua:407-428.
-//! Oteryn's current contract resolves reward quantities on the server.
+//! Global parity: https://www.tibiawiki.com.br/wiki/Daily_Reward_System
+//! The Winter Update 2026 rework uses one click and keeps the daily bounty
+//! reroll token on the Bounty Task Board.
 
 use super::*;
 use crate::map::view::MapFacts;
@@ -118,7 +118,7 @@ const FREE_TIER: details::Tier = details::Tier {
     temple_scrolls: 0,
     xp_percent: 0,
     xp_minutes: 0,
-    bounty_tokens: 1,
+    bounty_tokens: 0,
 };
 
 fn expected_lines(tier: details::Tier) -> Vec<RewardLine> {
@@ -255,13 +255,19 @@ async fn body(
 ) -> TestResult<(ClaimEvidence, (daily::DailyRewardWall, details::Details))> {
     let table = accepted(client, CAPABILITY, details::COMMAND_TYPE, &[]).await?;
     let table = details::Details::decode(&table)?;
+    let advertised = table.days[usize::from(DAY - 1)].free;
+    if advertised != FREE_TIER {
+        return Err(format!(
+            "step=catalogue day={DAY} tier=free observed={advertised:?} expected={FREE_TIER:?}"
+        )
+        .into());
+    }
     let initial = wall(client).await?;
     if initial.claimed
         || initial.claim_enabled
         || initial.lane_day != DAY
         || initial.streak != 0
         || table.history.iter().any(Option::is_some)
-        || table.days.first().map(|tiers| tiers.free) != Some(FREE_TIER)
     {
         return Err(format!(
             "step=wall observed={initial:?}-epoch:{} needed=unclaimed-unopened-day",
@@ -415,16 +421,17 @@ mod tests {
     #[test]
     fn first_free_claim_requires_both_balances_and_the_free_receipt() {
         let lines = expected_lines(FREE_TIER);
-        assert!(matches_free_delivery(&lines, false, (2, 1)));
+        assert!(matches_free_delivery(&lines, false, (2, 0)));
+        assert!(!matches_free_delivery(&lines, false, (2, 1)));
         assert!(!matches_free_delivery(&lines, false, (0, 0)));
         assert!(!matches_free_delivery(&lines, false, (2, 2)));
-        assert!(!matches_free_delivery(&lines, true, (2, 1)));
+        assert!(!matches_free_delivery(&lines, true, (2, 0)));
         let premium = expected_lines(details::Tier {
             cosmetic_tokens: 4,
             ..FREE_TIER
         });
-        assert!(!matches_free_delivery(&premium, true, (4, 1)));
-        assert!(!matches_free_delivery(&[], false, (2, 1)));
+        assert!(!matches_free_delivery(&premium, true, (4, 0)));
+        assert!(!matches_free_delivery(&[], false, (2, 0)));
     }
 
     #[test]
