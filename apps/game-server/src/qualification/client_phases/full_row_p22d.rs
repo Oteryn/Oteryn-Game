@@ -116,17 +116,29 @@ async fn walk_to_rat(
             })
     })
     .ok_or("step=route;observed=no-reachable-rat-spawn")?;
+    walk_path(client, world, path, |client| {
+        let here = tile(client.world_spatial().actor_position).ok()?;
+        world
+            .base()
+            .tile(here.x, here.y, here.floor)
+            .filter(|tile| !tile.protection_zone())?;
+        adjacent_rat(client)
+    })
+    .await?
+    .ok_or_else(|| "step=hunt;observed=no-adjacent-rat".into())
+}
+
+async fn walk_path(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: Vec<StepDirection>,
+    target: impl Fn(&DevClientSession) -> Option<oteryn_dev_client::WorldSpatialEntity>,
+) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
     let mut path = VecDeque::from(path);
     let mut detours = std::collections::BTreeSet::new();
     while let Some(direction) = path.pop_front() {
-        let here = tile(client.world_spatial().actor_position)?;
-        if world
-            .base()
-            .tile(here.x, here.y, here.floor)
-            .is_some_and(|at| !at.protection_zone())
-            && let Some(target) = adjacent_rat(client)
-        {
-            return Ok(target);
+        if let Some(target) = target(client) {
+            return Ok(Some(target));
         }
         let before = tile(client.world_spatial().actor_position)?;
         let expected =
@@ -203,7 +215,7 @@ async fn walk_to_rat(
             .await?;
         client.take_events();
     }
-    adjacent_rat(client).ok_or_else(|| "step=hunt;observed=no-adjacent-rat".into())
+    Ok(target(client))
 }
 
 async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
@@ -271,13 +283,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         .checked_add(1)
         .ok_or("step=add;observed=kill-count-overflow")?;
 
-    let mode = client
-        .session_mut()
-        .set_fight_modes(&FightModes {
-            chase: ChaseMode::Chase,
-            ..FightModes::DEFAULT
-        })
-        .await?;
+    let modes = FightModes {
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    let prior_combat = client.session_mut().combat_state().copied();
+    expect(
+        prior_combat
+            .is_some_and(|state| state.modes == FightModes::DEFAULT && state.target.is_none()),
+        "combat-pre-state",
+        prior_combat,
+    )?;
+    let mode = client.session_mut().set_fight_modes(&modes).await?;
     expect(
         mode.disposition == AttackIntentDisposition::Ok,
         "chase-mode",
@@ -308,6 +325,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         attack.disposition,
     )?;
 
+    client.service_liveness(Duration::from_millis(25)).await?;
+    let combat = client.session_mut().combat_state().copied();
+    expect(
+        combat.is_some_and(|state| state.target == Some(target.entity) && state.modes == modes),
+        "attack-target-state",
+        combat,
+    )?;
     let spell = client_spell_journey::spell_index(native_spell_book()?, "exori vis")?;
     let mana = client
         .actor_vitals()
@@ -409,16 +433,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "live-refresh",
         "confirmed-kill-without-domain-98-push",
     )?;
-    // The PvE in-fight lock lasts 60 seconds after the last hit.
-    let lock_duration = Duration::from_secs(60);
-    let lock_deadline = tokio::time::Instant::now() + lock_duration;
-    verdict::Harness::global().bounded_wait(lock_deadline, "p22d-combat-lock");
-    while let Some(remaining) = lock_deadline.checked_duration_since(tokio::time::Instant::now()) {
-        client
-            .service_liveness(remaining.min(Duration::from_secs(1)))
-            .await?;
-        client.take_events();
-    }
+    leave_combat(&mut client, world).await?;
     let original_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
 
@@ -453,6 +468,51 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         "PASS",
         format!("live-and-durable-kill-count:{before}->{expected}"),
     ))
+}
+
+async fn leave_combat(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let here = tile(client.world_spatial().actor_position)?;
+    let creatures: Vec<_> = client
+        .world_entities()
+        .ok_or("step=leave-combat;observed=no-entities")?
+        .iter()
+        .filter(|entry| entry.kind == EntityKind::Creature)
+        .map(|entry| entry.entity)
+        .collect();
+    let path = route(world, here, |at| {
+        at.floor == here.floor && u32::from(at.x) + 15 <= u32::from(here.x)
+    })
+    .ok_or("step=leave-combat;observed=no-westward-retreat")?;
+    evidence(&format!(
+        "p22d retreat from={here:?} creatures={creatures:?} steps={}",
+        path.len()
+    ));
+    walk_path(client, world, path, |_| None).await?;
+    let view = client
+        .world_entities()
+        .ok_or("step=leave-combat;observed=no-entities")?;
+    expect(
+        creatures.iter().all(|entity| view.get(entity).is_none()),
+        "leave-combat",
+        creatures,
+    )?;
+    // PvE combat can remain locked for up to 60 seconds after the last hit.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    verdict::Harness::global().bounded_wait(deadline, "p22d-combat-lock");
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.in_fight)
+    {
+        let remaining = deadline
+            .checked_duration_since(tokio::time::Instant::now())
+            .ok_or("step=combat-lock;observed=still-in-fight")?;
+        client
+            .service_liveness(remaining.min(Duration::from_secs(1)))
+            .await?;
+        client.take_events();
+    }
+    Ok(())
 }
 
 type Verdict = (&'static str, String);
