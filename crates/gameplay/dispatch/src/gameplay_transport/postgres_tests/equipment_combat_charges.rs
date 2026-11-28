@@ -24,3 +24,19 @@ fn pvp_late_commit_preserves_the_held_target_and_next_swing() -> TestResult {
     };
     super::item_look_fixtures::large_stack(|| super::pvp_live_fixtures::scenario(19))
 }
+
+#[test]
+fn full_pvp_ledger_does_not_block_next_pve_attack() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::item_look_fixtures::large_stack(|| super::pvp_live_fixtures::scenario(20))
+}
+
+#[test]
+fn full_pvp_aggression_list_does_not_block_next_pve_attack() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::item_look_fixtures::large_stack(|| super::pvp_live_fixtures::scenario(21))
+}

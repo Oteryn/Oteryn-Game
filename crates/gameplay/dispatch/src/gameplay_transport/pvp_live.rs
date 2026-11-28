@@ -644,7 +644,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .ok_or(DurabilityError::Unavailable)?;
                     let damage = u32::try_from(damage.health_before - damage.health_after)
                         .map_err(|_| DurabilityError::Unavailable)?;
-                    storage::record_live_pvp_harm_in_transaction(
+                    if let Err(refusal) = storage::record_live_pvp_harm_in_transaction(
                         &mut tx,
                         &authority,
                         &facts,
@@ -653,7 +653,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         damage,
                     )
                     .await
-                    .map_err(|_| DurabilityError::Unavailable)?;
+                    .map_err(PvpRefusal::from)
+                    {
+                        // A definite refusal rolls back the hit and lets the queue drop it.
+                        return match refusal {
+                            PvpRefusal::Illegal => Ok(false),
+                            PvpRefusal::Unavailable(error) => Err(error),
+                        };
+                    }
                     #[cfg(test)]
                     if faults::take(faults::Point::BeforeCommit) {
                         return Err(DurabilityError::Unavailable);

@@ -186,6 +186,73 @@ pub(super) async fn wait_for_login_protection_to_expire(
     Ok(())
 }
 
+#[derive(Clone, Copy)]
+enum SplashCase {
+    LatePayment,
+    BusyHolder,
+    FullLedger,
+    FullAggression,
+}
+
+async fn saturate_splash_harm(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    shooter: crate::foundation::ExactActorRef,
+    case: SplashCase,
+) -> TestResult {
+    let (limit, ledger) = match case {
+        SplashCase::FullLedger => (80_i32, true),
+        SplashCase::FullAggression => (64_i32, false),
+        _ => return Err("expected a saturated PvP store".into()),
+    };
+    let generation = owner
+        .runtime
+        .lock()
+        .await
+        .binding()
+        .scope_generation()
+        .get()
+        .to_string();
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_character_roots
+            (character_id,account_id,world_id,lifecycle,character_revision,profile_revision,
+             ruleset_revision,content_revision,starter_template_revision,name,sex,creation_vocation)
+         SELECT ('f0000000-0000-7000-8000-' || lpad(n::text,12,'0'))::uuid,
+                account_id,world_id,1,1,profile_revision,ruleset_revision,content_revision,
+                starter_template_revision,'Fixture Peer ' || chr(65+(n-1)/26) || chr(65+(n-1)%26),2,'knight'
+         FROM game_character_roots CROSS JOIN generate_series(1,$2) AS n
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(101).as_slice())
+    .bind(limit)
+    .execute(&mut *tx)
+    .await?;
+    let count = if ledger {
+        sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid) ON CONFLICT DO NOTHING")
+            .bind(id(101).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+        sqlx::query(
+            "INSERT INTO game_character_pvp_ledger(victim_character_id,contributor_character_id,last_at,compact,compact_kind)
+             SELECT encode($1,'hex')::uuid, character_id, clock_timestamp(),
+                    row_number() OVER peers > 16, CASE WHEN row_number() OVER peers > 16 THEN 1::smallint END
+             FROM game_character_roots WHERE character_id::text LIKE 'f0000000-0000-7000-8000-%'
+             WINDOW peers AS (ORDER BY character_id)",
+        ).bind(id(101).as_slice()).execute(&mut *tx).await?.rows_affected()
+    } else {
+        sqlx::query(
+            "INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement)
+             SELECT encode($1,'hex')::uuid, character_id, clock_timestamp()+interval '70 seconds',
+                    $2::text::numeric, $3, uuid_send(character_id)
+             FROM game_character_roots WHERE character_id::text LIKE 'f0000000-0000-7000-8000-%'",
+        ).bind(id(41).as_slice()).bind(&generation).bind(shooter.placement_identity().as_slice())
+            .execute(&mut *tx).await?.rows_affected()
+    };
+    assert_eq!(count, u64::try_from(limit)?);
+    tx.commit().await?;
+    Ok(())
+}
+
 async fn paid_splash(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -193,7 +260,7 @@ async fn paid_splash(
     (victim, _victim_session): (crate::foundation::ExactActorRef, GameSessionId),
     (second_shooter, second_session): (crate::foundation::ExactActorRef, GameSessionId),
     content: &crate::content::native_gameplay::NativeGameplayState,
-    retry_charged_impact: bool,
+    case: SplashCase,
 ) -> TestResult {
     use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
 
@@ -246,7 +313,7 @@ async fn paid_splash(
     assert_eq!((count(71).await?, count(73).await?), (9, 9), "both shots committed");
     assert_eq!(health(owner, victim).await?, before, "the later payment fenced the pending splash");
     assert!(owner.spell_lane.acquire().await.is_err(), "later shot is parked");
-    if retry_charged_impact {
+    if matches!(case, SplashCase::BusyHolder) {
         use crate::gameplay_transport::pvp_live::faults::{Point, arm};
         for point in [Point::ImpactHolderBusy, Point::SwingHolderBusy, Point::BeforeCommit] {
             let mut consumed = arm(point);
@@ -260,6 +327,40 @@ async fn paid_splash(
         owner.drain_auto_attacks_at(now).await;
         assert_eq!(protective_charges(h).await?, vec![(1, 1, true); 2]);
         assert_eq!((count(71).await?, count(73).await?), (9, 9));
+        return Ok(());
+    }
+    if matches!(case, SplashCase::FullLedger | SplashCase::FullAggression) {
+        // Seed the cap after the first payment so admission and ammo selection cannot mask
+        // the refusal at the harm writer. The next due shot is the peer's ordinary PvE shot.
+        saturate_splash_harm(h, owner, actor, case).await?;
+        owner.drain_auto_attacks().await;
+        let _clock = owner.freeze_owner_clock_for_test();
+        for step in 1..=3 {
+            let at = now.checked_add(step * 2_000_000).map_err(debug)?;
+            owner
+                .states
+                .test_owner_time
+                .store(at.get() + 1, std::sync::atomic::Ordering::Relaxed);
+            owner.refresh_attack_weapon(second_shooter, second_session).await;
+            owner.drain_auto_attacks().await;
+            if count(73).await? < 9 {
+                break;
+            }
+        }
+        assert_eq!(count(73).await?, 8, "the next PvE shot spends its arrow");
+        let pve_shots: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_spell_item_receipts
+             WHERE character_id=encode($1,'hex')::uuid AND swing_ordinal IS NOT NULL",
+        )
+        .bind(id(SPLASH_SECOND_SHOOTER).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(pve_shots, 2, "the next PvE shot has a new payment receipt");
+        assert_eq!(count(71).await?, 9, "the refused paid splash is never bought again");
+        assert_eq!(health(owner, victim).await?, before);
+        let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(receipts, 0, "the refused harm rolls back");
         return Ok(());
     }
     owner.drain_auto_attacks_at(now).await;
@@ -423,7 +524,14 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         prepare_current_session(&h).await?;
         h.seed_pvp_target().await?;
         observer::admit(&h).await?;
-        if matches!(mode, 16 | 18) {
+        let splash = match mode {
+            16 => Some(SplashCase::LatePayment),
+            18 => Some(SplashCase::BusyHolder),
+            20 => Some(SplashCase::FullLedger),
+            21 => Some(SplashCase::FullAggression),
+            _ => None,
+        };
+        if splash.is_some() {
             admit_splash_shooter(&h).await?;
         }
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -479,7 +587,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             room.map_revision_digest(),
             (2, if mode == 4 { 0 } else { 11 }, floor),
         );
-        let mut deps = if matches!(mode, 16 | 18) {
+        let mut deps = if splash.is_some() {
             // Two shooters, an unarmoured victim, a rat and spawn admission headroom.
             Dependencies::with_content_and_capacity(
                 cp.clone(),
@@ -666,10 +774,10 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 generation: p.generation,
             }
         };
-        if matches!(mode, 15 | 16 | 18 | 19) {
+        if matches!(mode, 15 | 19) || splash.is_some() {
             wait_for_login_protection_to_expire(&h.pool, session).await?;
         }
-        if matches!(mode, 16 | 18) {
+        if let Some(case) = splash {
             let second_shooter =
                 observer::initialize_peer(&deps, &owner, SPLASH_SECOND_SHOOTER, SPLASH_SECOND_SESSION)
                     .await?;
@@ -684,7 +792,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 (target, target_session),
                 (second_shooter, second_session),
                 native,
-                mode == 18,
+                case,
             )
             .await?;
             drop(owner);
