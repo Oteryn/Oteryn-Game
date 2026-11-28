@@ -1,6 +1,7 @@
 """Root-only node-boot control request; carries no proof or database credential."""
 
 import argparse
+import json
 import re
 import socket
 import time
@@ -8,11 +9,15 @@ import uuid
 
 
 PROFILES = (
-    "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel",
-    "levitate", "magic-rope",
+    "c16c-sorcerer", "druid", "explorer", "i12", "knight", "knight-underlevel",
+    "levitate", "magic-rope", "monk", "paladin", "premium", "sorcerer", "w10-primal",
 )
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
+FORGE_SPAWN = re.compile(
+    r"[A-Za-z0-9:._/-]{1,128} -?[0-9]{1,10} -?[0-9]{1,10} -?[0-9]{1,5}"
+    r" (?:influenced [1-5]|fiendish)"
+)
 
 
 def _request(socket_path, line, limit):
@@ -54,14 +59,33 @@ def spawn(socket_path, session, creature_key):
     Returns the node answer `spawned <entity identity hex> <generation>`; a refusal raises with
     the exact `rejected reason=<token>` answer.
     """
+    if not CREATURE_KEY.fullmatch(creature_key):
+        raise ValueError("invalid qualification spawn request")
+    return _spawn(socket_path, session, "spawn", creature_key)
+
+
+def spawn_forge(socket_path, session, arguments):
+    """Place a classified creature at the requested local x, y, floor."""
+    if not FORGE_SPAWN.fullmatch(arguments):
+        raise ValueError("invalid qualification Forge spawn request")
+    _, x, y, floor, *_ = arguments.split(" ")
+    if not (
+        -(2**31) <= int(x) < 2**31
+        and -(2**31) <= int(y) < 2**31
+        and -(2**15) <= int(floor) < 2**15
+    ):
+        raise ValueError("invalid qualification Forge spawn position")
+    return _spawn(socket_path, session, "spawn-forge", arguments)
+
+
+def _spawn(socket_path, session, command, arguments):
     identifier = uuid.UUID(session)
     if (
         identifier.version != 7
         or str(identifier) != session
-        or not CREATURE_KEY.fullmatch(creature_key)
     ):
         raise ValueError("invalid qualification spawn request")
-    answer = bytes(_request(socket_path, f"spawn {session} {creature_key}\n", 128))
+    answer = bytes(_request(socket_path, f"{command} {session} {arguments}\n", 128))
     if not SPAWNED.fullmatch(answer):
         raise RuntimeError(
             f"node refused qualification spawn: node_answer={answer[:128]!r} "
@@ -80,6 +104,22 @@ def inspect_damage(socket_path, session, target):
     return answer.decode("ascii").rstrip("\n")
 
 
+def inspect_forge(socket_path, session):
+    identifier = uuid.UUID(session)
+    if identifier.version != 7 or str(identifier) != session:
+        raise ValueError("invalid qualification Forge census session")
+    limit = 128 * 1024
+    answer = _request(socket_path, f"inspect-forge {session}\n", limit)
+    if len(answer) > limit:
+        raise RuntimeError("qualification Forge census exceeded response limit")
+    if answer.startswith(b"rejected "):
+        raise RuntimeError(f"node refused qualification Forge census: {bytes(answer[:128])!r}")
+    census = json.loads(answer)
+    if not isinstance(census, list):
+        raise RuntimeError("qualification Forge census is not an array")
+    return census
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
@@ -87,11 +127,17 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
     group.add_argument("--spawn", metavar="CREATURE_KEY")
+    group.add_argument("--spawn-forge", metavar='"KEY X Y FLOOR {influenced STACKS|fiendish}"')
     group.add_argument("--inspect-damage", metavar="TARGET")
+    group.add_argument("--inspect-forge", action="store_true")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
+    elif args.spawn_forge is not None:
+        print(spawn_forge(args.socket, args.session, args.spawn_forge))
     elif args.inspect_damage is not None:
         print(inspect_damage(args.socket, args.session, args.inspect_damage))
+    elif args.inspect_forge:
+        print(json.dumps(inspect_forge(args.socket, args.session), separators=(",", ":")))
     else:
         provision(args.socket, args.session, args.profile)

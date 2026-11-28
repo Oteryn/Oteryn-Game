@@ -2,8 +2,8 @@
 use super::TestResult;
 use super::fixture::{Harness, debug, id};
 use super::house_transfer_fixtures::{
-    RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, initialize_transfer_source_for_owner,
-    prepare_owned_session, prepare_transfer_scene,
+    RecoverySource, TRANSFER_TEST_HOUSE as HOUSE, create_other_house_owner,
+    initialize_transfer_source_for_owner, prepare_owned_session, prepare_transfer_scene,
 };
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::{GameSessionId, MessageType, decode_wire_envelope};
@@ -23,7 +23,7 @@ fn house_entry_owner_can_retry_after_preflight_refusal_postgres() -> TestResult 
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(admin, true)
+    scenario(admin, Entrant::Owner)
 }
 
 #[test]
@@ -31,23 +31,37 @@ fn house_entry_uninvited_non_owner_gets_refusal_postgres() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    scenario(admin, false)
+    scenario(admin, Entrant::OtherCharacter)
 }
 
-fn scenario(admin: String, is_owner: bool) -> TestResult {
+#[test]
+fn house_entry_uninvited_other_account_gets_refusal_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, Entrant::OtherAccount)
+}
+
+enum Entrant {
+    Owner,
+    OtherCharacter,
+    OtherAccount,
+}
+
+fn scenario(admin: String, entrant: Entrant) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("house-entry-reply", move || {
         let runtime = crate::bestiary_postgres_harness::runtime()?;
         runtime.block_on(async {
             let h = Harness::create_with_admission_seed(admin, "house_entry_reply", true, false)
                 .await?;
-            let result = exercise(&h, is_owner).await;
+            let result = exercise(&h, entrant).await;
             h.cleanup().await?;
             result
         })
     })
 }
 
-async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
+async fn exercise(h: &Harness, entrant: Entrant) -> TestResult {
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -56,10 +70,11 @@ async fn exercise(h: &Harness, is_owner: bool) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let house_owner = if is_owner {
-        id(41)
-    } else {
-        bootstrap_other_owner(h, &authority, &evidence.evidence).await?
+    let is_owner = matches!(entrant, Entrant::Owner);
+    let house_owner = match entrant {
+        Entrant::Owner => id(41),
+        Entrant::OtherCharacter => bootstrap_other_owner(h, &authority, &evidence.evidence).await?,
+        Entrant::OtherAccount => create_other_house_owner(h, &authority, &evidence.evidence).await?,
     };
     let (controller, cells, deps) = prepare_transfer_scene(h).await?;
     let mut owner = deps.owner(h, &authority);

@@ -150,6 +150,18 @@ impl<S: SessionStream> Session<S> {
         self.selected_capabilities.contains(&capability)
     }
 
+    /// The original payload and wire metadata for a domain in the current admission snapshot.
+    ///
+    /// Admission, resume, and activity or house handoff each establish a new baseline. A domain
+    /// absent from that baseline returns `None`. In-session replacements and deltas leave the
+    /// baseline intact.
+    pub fn admission_snapshot(&self, domain_id: u32) -> Option<&GatedSnapshot> {
+        self.admission_snapshots
+            .as_deref()?
+            .iter()
+            .find(|snapshot| snapshot.domain_id == domain_id)
+    }
+
     /// The latest full snapshot of a selected capability's domain, if the server sent it.
     pub fn gated_snapshot(&self, domain_id: u32) -> Option<&GatedSnapshot> {
         self.gated_snapshots

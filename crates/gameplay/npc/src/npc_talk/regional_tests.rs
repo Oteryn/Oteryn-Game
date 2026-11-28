@@ -12,6 +12,55 @@ fn model() -> Result<NpcServiceModel, String> {
 }
 
 #[test]
+fn placed_c16_rune_shops_retain_their_catalogue_offers() -> Result<(), String> {
+    let book = NpcTalkBook::from_model(&model()?);
+    for (npc, item) in [
+        ("oteryn:npc.alexander", "oteryn:item.tibia.i3203"),
+        ("oteryn:npc.asima", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.aurelia", "oteryn:item.tibia.i21351"),
+        ("oteryn:npc.chartan", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.fenech", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.frederik", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.ghorza", "oteryn:item.tibia.i3203"),
+        ("oteryn:npc.gnomegica", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.nelly", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.tandros", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.topsy", "oteryn:item.tibia.i3177"),
+        ("oteryn:npc.xodet", "oteryn:item.tibia.i3177"),
+    ] {
+        let entry = book
+            .get(npc)
+            .ok_or_else(|| format!("{npc} missing from the talk book"))?;
+        assert!(!entry.greeting_reply.is_empty(), "{npc} has no greeting");
+        assert!(
+            entry.offers().iter().any(|offer| {
+                offer.item.key == item
+                    && offer.direction
+                        == crate::content::ProjectV2ServiceOfferDirection::SellToPlayer
+                    && offer.currency.is_none()
+            }),
+            "{npc} does not sell {item}"
+        );
+    }
+    for (npc, item) in [
+        ("oteryn:npc.aurelia", "oteryn:item.tibia.i3178"),
+        ("oteryn:npc.topsy", "oteryn:item.tibia.i8084"),
+        ("oteryn:npc.xodet", "oteryn:item.tibia.i8084"),
+    ] {
+        let entry = book.get(npc).ok_or_else(|| format!("{npc} missing"))?;
+        assert!(
+            !entry.offers().iter().any(|offer| {
+                offer.item.key == item
+                    && offer.direction
+                        == crate::content::ProjectV2ServiceOfferDirection::SellToPlayer
+            }),
+            "{npc} exposes a donor-only sale of {item}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn regional_source_conversations_open_focus_and_keep_services() -> Result<(), String> {
     let book = NpcTalkBook::from_model(&model()?);
     let source: serde_json::Value =

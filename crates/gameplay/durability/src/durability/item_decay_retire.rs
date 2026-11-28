@@ -143,6 +143,8 @@ pub struct CorpseDecayDeadline {
     pub corpse_item_instance_id: [u8; 16],
     pub definition: super::item_mint::TypedDefinitionRef,
     pub materialized_at_unix_ms: i64,
+    /// Native Ground address of a moved Rat, for recovery of its live projection.
+    pub relocated_position: Option<crate::foundation::MovementLocalPosition>,
     /// None is the source's undecaying terminal, still counted as a live corpse.
     pub decay_at_unix_ms: Option<i64>,
 }
