@@ -67,7 +67,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut client = connect_world(clients, 0xb6).await?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_W16_ACCOUNT").await?;
+    let fixture_clients = fixture.clients(clients);
+    let clients = &fixture_clients;
+    let mut client = connect_character(clients, 0xb6, 0).await?;
 
     // The first mechanic command is deliberately local and must produce the same real delta as
     // every other player walk.  It prevents a missing remote route from becoming a probe-only row.
@@ -99,9 +102,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 y: i32::from(placement.y),
                 floor: -i16::from(placement.floor),
             };
-            let reply = client.session_mut().target_walk(target).await?;
-            require_target_walk(key, reply.status, &reply.payload)?;
-            wait_for_destination(&mut client, target, key).await?;
+            logout_w16(&mut client).await?;
+            drop(client);
+            client = approach(clients, world, 0xb6, key, target).await?;
             reached[index] += 1;
             talk(&mut client, key, target).await?;
         }
@@ -129,7 +132,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=logout observed=refused".into());
     }
     drop(client);
-    let mut fresh = connect_world(clients, 0xb7).await?;
+    let mut fresh = connect_character(clients, 0xb7, 0).await?;
     if fresh.world_spatial().actor_position != saved {
         return Err(format!(
             "step=fresh-admission observed={:?}-expected={saved:?}",
@@ -176,22 +179,80 @@ pub(super) fn require_target_walk(
     Err(format!("step=target-walk-{key} observed={disposition} status={status:?} payload={payload:?}").into())
 }
 
-async fn wait_for_destination(
-    client: &mut DevClientSession,
-    target: ActorPosition,
+pub(super) async fn logout_w16(client: &mut DevClientSession) -> TestResult {
+    let result = client.session_mut().logout().await?;
+    if result.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W16 logout refused: {result:?}").into());
+    }
+    Ok(())
+}
+
+pub(super) async fn approach(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    tag: u8,
     key: &str,
-) -> TestResult {
+    npc: ActorPosition,
+) -> TestResult<DevClientSession> {
+    let ((x, y), direction) = match (key, npc.x, npc.y, npc.floor) {
+        ("oteryn:npc.mayor_pocaro", 34073, 32504, -6) => ((34075, 32502), StepDirection::West),
+        ("oteryn:npc.wayland_smythers", 32961, 32076, -6) => ((32959, 32076), StepDirection::East),
+        ("oteryn:npc.wayland_smythers", 33955, 32642, -6) => ((33955, 32644), StepDirection::North),
+        _ => return Err(format!("W16 unexpected authored placement {key} at {npc:?}").into()),
+    };
+    let start = ActorPosition { x, y, floor: npc.floor };
+    let expected = destination_with_teleports(world, tile(start)?, direction, false)
+        .ok_or_else(|| format!("W16 no compiled landing from {start:?} toward {npc:?}"))?;
+    let landing = ActorPosition {
+        x: i32::from(expected.x),
+        y: i32::from(expected.y),
+        floor: -i16::from(expected.floor),
+    };
+    if landing == start || landing.floor != npc.floor
+        || landing.x.abs_diff(npc.x).max(landing.y.abs_diff(npc.y)) > 2
+    {
+        return Err(format!("W16 invalid landing {landing:?} from {start:?} toward {npc:?}").into());
+    }
+    wait_character_released(clients, 0).await?;
+    let staged_floor = tokio::time::timeout(Duration::from_secs(5), async {
+        let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+        sqlx::query_scalar::<_, i16>(
+            "UPDATE game_character_last_positions p
+             SET tile_x=$4, tile_y=$5, tile_floor=CASE WHEN p.tile_floor < 0 THEN -6 ELSE 6 END,
+                 write_sequence=p.write_sequence+1
+             WHERE p.character_id=encode($1,'hex')::uuid AND p.world_id=encode($2,'hex')::uuid
+             AND EXISTS (SELECT 1 FROM game_character_roots r
+                         WHERE r.character_id=p.character_id AND r.account_id=$3::uuid)
+             AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
+                             WHERE s.character_id=p.character_id AND s.world_id=p.world_id
+                             AND s.session_state<>3)
+             RETURNING p.tile_floor",
+        )
+        .bind(clients.characters[0].as_slice())
+        .bind(clients.world.as_slice())
+        .bind(&clients.accounts[0])
+        .bind(x)
+        .bind(y)
+        .fetch_one(&mut connection)
+        .await
+    })
+    .await??;
+    evidence(&format!("FIXTURE q_w16 npc={key} start={start:?} saved_floor={staged_floor} expected_walk_landing={landing:?}"));
+    let mut client = connect_character(clients, tag, 0).await?;
+    if client.world_spatial().actor_position != start {
+        return Err(format!("W16 fixture admission expected={start:?} observed={:?}", client.world_spatial().actor_position).into());
+    }
+    let reply = client.session_mut().target_walk(landing).await?;
+    require_target_walk(key, reply.status, &reply.payload)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop {
-        let at = client.world_spatial().actor_position;
-        if at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3 {
-            return Ok(());
-        }
+    while client.world_spatial().actor_position != landing {
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=target-walk-{key} observed=timeout-at-{at:?}").into());
+            return Err(format!("step=target-walk-{key} expected={landing:?} observed={:?}", client.world_spatial().actor_position).into());
         }
         client.service_liveness(Duration::from_millis(25)).await?;
     }
+    evidence(&format!("W16_WALK npc={key} start={start:?} landing={landing:?}"));
+    Ok(client)
 }
 
 async fn talk(client: &mut DevClientSession, key: &str, target: ActorPosition) -> TestResult {

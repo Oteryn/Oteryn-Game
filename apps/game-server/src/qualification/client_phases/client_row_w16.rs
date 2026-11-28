@@ -98,20 +98,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         y: i32::from(placement.y),
         floor: -i16::from(placement.floor),
     };
-    let mut client = connect_world(clients, 0x89).await?;
-    let walk = client.session_mut().target_walk(target).await?;
-    super::full_row_w16::require_target_walk(NPC, walk.status, &walk.payload)?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
-    loop {
-        let at = client.world_spatial().actor_position;
-        if at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 3 {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=target-walk timeout at {at:?}").into());
-        }
-        client.service_liveness(Duration::from_millis(25)).await?;
-    }
+    let world = full_e2ef7::qualification_world(clients)?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_W16_ACCOUNT").await?;
+    let fixture_clients = fixture.clients(clients);
+    let initial = &fixture_clients;
+    let mut client = connect_character(initial, 0x89, 0).await?;
+    super::full_row_w16::logout_w16(&mut client).await?;
+    drop(client);
+    let mut client = super::full_row_w16::approach(initial, world, 0x89, NPC, target).await?;
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -132,7 +126,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             }
         }
     }
-    let _ = client.session_mut().logout().await;
+    super::full_row_w16::logout_w16(&mut client).await?;
     if let Some(error) = failure {
         return Err(error);
     }
