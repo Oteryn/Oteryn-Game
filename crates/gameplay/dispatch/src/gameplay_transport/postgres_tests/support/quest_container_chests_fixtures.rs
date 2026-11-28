@@ -811,7 +811,7 @@ fn scenario_case(
                 let key =
                     oteryn_world_bundle::bundle::placement_key(chest.2, chest.0 - 1, chest.1, 1)
                         .ok_or("door")?;
-                super::annihilator_door::exercise(&owner, &mut admitted, deps.actor, &target, key)
+                super::annihilator_door::exercise(&owner, &mut admitted, deps.actor, &target, key, &harness)
                     .await?;
                 let bag = harness
                     .root

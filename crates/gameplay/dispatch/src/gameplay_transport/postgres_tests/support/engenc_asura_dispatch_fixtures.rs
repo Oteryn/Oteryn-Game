@@ -675,6 +675,23 @@ async fn exercise_orchid(
     ).await?;
     assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 0);
 
+    // Reconstruct the seller's immutable legacy receipt after a transfer.
+    // The real Orchid kill below must settle on the character's current account.
+    let mut history = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *history).await?;
+    let seller: sqlx::types::Uuid = sqlx::query_scalar(
+        "WITH made AS (
+             INSERT INTO game_account_achievement_grant_requests
+               (source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at)
+             SELECT 'oteryn:lost-palace-raider',uuid_send(character_id),'oteryn:achievement/lost_palace_raider',
+                    '1',uuidv7(),character_id,1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid
+             RETURNING account_id,achievement_key,source_kind,source_event_id)
+         INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id)
+         SELECT * FROM made RETURNING account_id",
+    ).bind(admitted.item_fence.ok_or("item fence")?.character_id.as_bytes().as_slice())
+    .fetch_one(&mut *history).await?;
+    history.commit().await?;
+
     let encounter = callback
         .effects
         .encounter
@@ -705,7 +722,12 @@ async fn exercise_orchid(
         Some(1)
     );
 
-    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 1);
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 2);
+    let owners: (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE account_id=$1), count(*) FILTER (WHERE account_id<>$1)
+         FROM game_account_achievements WHERE achievement_key='oteryn:achievement/lost_palace_raider'",
+    ).bind(seller).fetch_one(&h.pool).await?;
+    assert_eq!(owners, (1, 1));
 
     let library_door = TilePos {
         x: 32962,

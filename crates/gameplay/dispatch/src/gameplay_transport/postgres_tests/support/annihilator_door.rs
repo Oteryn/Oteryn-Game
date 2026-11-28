@@ -63,6 +63,7 @@ pub(super) async fn exercise(
     actor: ExactActorRef,
     chest: &WorldObjectTarget,
     door_key: u64,
+    harness: &super::fixture::Harness,
 ) -> TestResult {
     let offered = owner.offered_capabilities();
     let mut supported = std::collections::BTreeSet::new();
@@ -133,7 +134,8 @@ pub(super) async fn exercise(
         );
     }
     assert_eq!(
-        use_target(owner, admitted, 1, &target(0)).await?,
+        super::quest_world_callbacks_fixtures::while_blocked(owner, harness,
+            "LOCK game_reward_claims IN ACCESS EXCLUSIVE MODE", use_target(owner, admitted, 1, &target(0))).await?,
         UseDisposition::Committed
     );
     let inside = owner

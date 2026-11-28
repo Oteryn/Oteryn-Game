@@ -15,6 +15,32 @@ pub struct StagedQuestEncounter<'owner, T> {
     output: (Vec<MovementPositionSnapshot>, T),
 }
 
+/// Compare the original carrier before installing a batch prepared in an earlier turn.
+pub struct DetachedQuestEncounter<T> {
+    binding: ScopeRuntimeAssignmentBinding,
+    before: ChannelActorCarrier,
+    after: ChannelActorCarrier,
+    output: (Vec<MovementPositionSnapshot>, T),
+}
+
+impl<T> DetachedQuestEncounter<T> {
+    pub fn prepared(&self) -> &T {
+        &self.output.1
+    }
+
+    pub fn publish(
+        self,
+        runtime: &mut ChannelRuntimeV1,
+    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        runtime.owner_fence()?;
+        if runtime.binding() != self.binding || runtime.carrier != self.before {
+            return Err(CarrierError::PlanConflict);
+        }
+        runtime.carrier = self.after;
+        Ok(self.output)
+    }
+}
+
 impl<'owner, T> StagedQuestEncounter<'owner, T> {
     pub(super) fn new(
         runtime: &'owner mut ChannelRuntimeV1,
@@ -52,6 +78,15 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
         }
         *generation = staged_generation;
         Ok(())
+    }
+
+    pub fn detach(self) -> DetachedQuestEncounter<T> {
+        DetachedQuestEncounter {
+            binding: self.runtime.binding(),
+            before: self.runtime.carrier.clone(),
+            after: self.carrier,
+            output: self.output,
+        }
     }
 
     pub fn publish(

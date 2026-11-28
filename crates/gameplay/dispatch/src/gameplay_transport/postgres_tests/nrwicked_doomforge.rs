@@ -580,6 +580,8 @@ async fn two_player_encounter(
             active_cooldowns(h, lever).await?.is_empty(),
             "staging and the lever reservation must precede payment"
         );
+        assert!(owner.runtime.try_lock().is_ok(), "runtime available before charge");
+        assert!(owner.states.spell_states.try_lock().is_ok(), "spell state available before charge");
         // Advance the peer's actual durable generation after the party fences
         // were captured and the room was staged, before charging.
         let changed = sqlx::query(

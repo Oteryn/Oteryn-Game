@@ -133,21 +133,6 @@ pub(super) async fn exercise(
             if callback.offerings.is_empty() { 0 } else { 12 }
         )
     );
-    // A new transport retains its sequence, not its retired response cache.
-    // SQL replay after reconnect is covered by qready1_world_clock_rewards.
-    let replay = use_command(owner, admitted, &first_target, 2 - offset).await;
-    assert!(
-        replay
-            .as_ref()
-            .err()
-            .is_some_and(|error| error.to_string().contains("CommandOutcomeExpired")),
-        "expired historical wire command must close the transport"
-    );
-    assert_eq!(
-        snapshot(h, callback).await?,
-        after,
-        "historical wire replay cannot mint or consume twice"
-    );
     if captain {
         let collected_at: i64 = sqlx::query_scalar(
             "SELECT collected_at FROM game_captain_iglue_chest_stock
@@ -173,5 +158,38 @@ pub(super) async fn exercise(
         let reward:(String,i64)=sqlx::query_as("SELECT min(i.definition_production_key),sum(m.quantity)::bigint FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id)").fetch_one(&h.pool).await?;
         assert_eq!(reward, ("oteryn:item.tibia.i5953".into(), 2));
     }
+    if captain {
+        // Arrange the already collected stock in channel A. The same character
+        // enters channel B with the personal stamp and prior mint still intact.
+        let moved = sqlx::query("UPDATE game_captain_iglue_chest_stock SET channel_id=uuidv7()
+            WHERE channel_id=encode($1,'hex')::uuid")
+            .bind(admitted.channel_id.as_bytes().as_slice()).execute(&h.pool).await?;
+        assert_eq!(moved.rows_affected(), 1);
+        target.expected_revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
+        assert_eq!(use_command(owner, admitted, &target, 6).await?, UseDisposition::Committed);
+        assert_eq!(snapshot(h, callback).await?, (epoch + wait, 3, 3, 0));
+        let empty: i64 = sqlx::query_scalar("SELECT count(*) FROM game_captain_iglue_chest_stock WHERE collected_at=$1")
+            .bind(epoch + wait).fetch_one(&h.pool).await?;
+        assert_eq!(empty, 2);
+        target.expected_revision = owner.bundle_map().ok_or("map")?.facts.object_revision(key);
+        assert_eq!(use_command(owner, admitted, &target, 7).await?, UseDisposition::Rejected);
+    }
+    let before_replay = if captain { (epoch + wait, 3, 3, 0) } else { after };
+    assert_eq!(snapshot(h, callback).await?, before_replay);
+    // A new transport retains its sequence, not its retired response cache.
+    // SQL replay after reconnect is covered by qready1_world_clock_rewards.
+    let replay = use_command(owner, admitted, &first_target, 2 - offset).await;
+    assert!(
+        replay
+            .as_ref()
+            .err()
+            .is_some_and(|error| error.to_string().contains("CommandOutcomeExpired")),
+        "expired historical wire command must close the transport"
+    );
+    assert_eq!(
+        snapshot(h, callback).await?,
+        before_replay,
+        "historical wire replay cannot mint or consume twice"
+    );
     Ok(())
 }

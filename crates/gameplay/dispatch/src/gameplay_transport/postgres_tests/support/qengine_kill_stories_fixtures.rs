@@ -638,6 +638,39 @@ async fn spike(
             AND u.unlock_key='oteryn:outfit.cave_explorer/quest-grant/2'"
     ).fetch_one(&mut *sale).await?;
     assert_eq!((purchaser, progress), (true, 0));
+    // Reuse the two historical purchases. Move the completing purchase to the
+    // seller's retained alt and leave the earlier purchaser on the buyer's account.
+    for (addon, suffix) in [(1, "first"), (2, "second")] {
+        let mut split = sqlx::Acquire::begin(&mut *sale).await?;
+        sqlx::raw_sql("SET LOCAL session_replication_role=replica;
+            DELETE FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist';
+            DELETE FROM game_account_achievement_grant_requests WHERE achievement_key='oteryn:achievement/cave_completionist'")
+            .execute(&mut *split).await?;
+        let key = format!("oteryn:quest-reward/l12-cave-explorer-{suffix}");
+        let alt: sqlx::types::Uuid = sqlx::query_scalar("SELECT character_id FROM game_character_roots WHERE name='Retained Alt'")
+            .fetch_one(&mut *split).await?;
+        let changed = sqlx::query("UPDATE game_character_quest_receipts SET character_id=$1,
+                committed_at=(SELECT max(committed_at)+1 FROM game_character_quest_receipts) WHERE transition_key=$2")
+            .bind(alt).bind(&key).execute(&mut *split).await?;
+        assert_eq!(changed.rows_affected(), 1);
+        sqlx::query("UPDATE game_quest_reward_sources SET character_id=$1 WHERE transition_key=$2")
+            .bind(alt).bind(&key).execute(&mut *split).await?;
+        sqlx::query("UPDATE game_account_appearance_unlock_receipts SET granting_character_id=$1,
+                source_event_id=overlay(source_event_id placing uuid_send($1) from length('oteryn:quest-callback-outfit:v1')+2 for 16)
+                WHERE unlock_key=$2")
+            .bind(alt).bind(format!("oteryn:outfit.cave_explorer/quest-grant/{addon}"))
+            .execute(&mut *split).await?;
+        sqlx::raw_sql("SET LOCAL session_replication_role=origin; DROP TABLE cave_completionist_backfill_eligible")
+            .execute(&mut *split).await?;
+        sqlx::raw_sql(migration).execute(&mut *split).await?;
+        let earned: (sqlx::types::Uuid, i64) = sqlx::query_as(
+            "SELECT r.character_id, p.progress FROM game_account_achievement_grant_requests r
+             JOIN game_character_achievement_progress p USING (character_id,achievement_key)
+             WHERE r.achievement_key='oteryn:achievement/cave_completionist'",
+        ).fetch_one(&mut *split).await?;
+        assert_eq!(earned, (alt, 2), "addon {addon} completed the pair");
+        split.rollback().await?;
+    }
     sale.rollback().await?;
     let mut fixture = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -665,6 +698,91 @@ async fn spike(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/cave_completionist'"
     ).fetch_one(&h.pool).await?;
     assert_eq!(achievement, 1, "both main-era addons earn the achievement");
+    Box::pin(spike_surveys(owner, admitted, h)).await
+}
+
+pub(super) async fn recover_nest(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::questpc8_authored_programmes_fixtures::{object_target, use_target};
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    const PROGRESS: &str = "oteryn:quest-progress/spike/nests/progress";
+    const STAMP: &str = "oteryn:quest-progress/spike/nests/transformed_at";
+    let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+        .fetch_one(&h.pool).await?;
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(PROGRESS.into(), 1), (STAMP.into(), now)], 217,
+    ).await?;
+    let session = admitted.game_session_id;
+    owner.refresh_quest_session(session, false).await;
+    owner.refresh_quest_disguise(session).await;
+    let tile = crate::map::overlay::TilePos { x: 32162, y: 32507, floor: -11 };
+    let target = object_target(owner, tile, 1)?;
+    owner.states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
+    let command = admitted.continuity.next_command_id;
+    assert!(use_target(owner, admitted, command, &target).await.is_err());
+    assert_eq!(count(h, PROGRESS).await?, 2);
+    assert!(owner.has_pending_quest_callback(session));
+    owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(121)).ok_or("clock")?;
+    assert!(owner.reconcile_quest_callbacks(session).await);
+    assert!(!owner.has_pending_quest_callback(session));
+    assert_eq!(use_target(owner, admitted, command, &target).await?, UseDisposition::Committed);
+    assert_eq!(count(h, PROGRESS).await?, 2);
+    Ok(())
+}
+
+async fn spike_surveys(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_voucher_stories_fixtures as items;
+    use crate::foundation::MovementLocalPosition;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    const TRACK: &str = "oteryn:quest-progress/spike/tracking/progress";
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(TRACK.into(), 1)], 216,
+    ).await?;
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    items::mint(owner, admitted, 19205, 1, &mut 30_100).await?;
+    let detector: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT item_instance_id FROM game_item_instances
+         WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i19205'",
+    ).fetch_one(&h.pool).await?;
+    let character = admitted.item_fence.ok_or("fence")?.character_id;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let rows = oteryn_gameplay_quests::quest::reward_callbacks::load()?;
+    for phase in 1..=3 {
+        let key = format!("oteryn:quest-reward/l12-spike-tracking-survey-{phase}");
+        let survey = rows.iter().find(|row| row.key == key)
+            .and_then(|row| row.survey.as_ref()).ok_or("survey")?;
+        let areas = serde_json::to_value(survey)?;
+        let at = areas["areas"].as_array().ok_or("survey areas")?.iter().find_map(|area| {
+            let p: oteryn_gameplay_quests::quest::world_callbacks::Position =
+                serde_json::from_value(area["minimum"].clone()).ok()?;
+            let at = MovementLocalPosition { x: p.x.into(), y: p.y.into(), floor: -i16::from(p.floor) };
+            survey.clue(character.as_bytes(), owner.reset_epoch, at.x, at.y, at.floor)
+                .is_none().then_some(at)
+        }).ok_or("selected survey area")?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let before = runtime.read_actor_position(actor).map_err(debug)?;
+            runtime.relocate_arena_player(actor, admitted.game_session_id, before, at).map_err(debug)?;
+        }
+        items::use_native(owner, admitted, 19205, UseDisposition::Committed).await?;
+        assert_eq!(count(h, TRACK).await?, phase + 1);
+        assert_eq!(items::quantity(h, 19205).await?, i64::from(phase < 3));
+    }
+    let retained: Vec<sqlx::types::Uuid> = sqlx::query_scalar(
+        "SELECT retained_detector FROM game_quest_reward_sources WHERE retained_detector IS NOT NULL",
+    ).fetch_all(&h.pool).await?;
+    assert_eq!(retained, [detector, detector]);
+    let consumed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_quest_callback_consumptions WHERE item_instance_id=$1",
+    ).bind(detector).fetch_one(&h.pool).await?;
+    assert_eq!(consumed, 1);
     Ok(())
 }
 
