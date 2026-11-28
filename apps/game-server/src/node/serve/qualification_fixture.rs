@@ -60,7 +60,8 @@ fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
         "c05-exiva" => Some(("sorcerer", 8)),
         "c11-unassigned" => Some((crate::durability::character_build::NO_VOCATION, 8)),
         "c11-knight" => Some(("knight", 625)),
-        "p12b-knight" => Some(("knight", 501)),
+        "p12b-knight" => Some(("knight", 499)),
+        "p12b-peer" => Some(("knight", 2)),
         "c12-monk" => Some(("monk", 20)),
         "c06-sorcerer" => Some(("sorcerer", 15)),
         "f5-c17a" => Some(("sorcerer", 20)),
@@ -771,6 +772,7 @@ async fn prepare_build(
             | "c12-monk"
             | "c06-sorcerer"
             | "p12b-knight"
+            | "p12b-peer"
             | "s13-party"
             | "w20b-light"
             | "s08-knight"
@@ -805,7 +807,7 @@ async fn prepare_build(
                 }
                 return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
             }
-            ("p12b-knight", account)
+            ("p12b-knight" | "p12b-peer", account)
                 if std::env::var("NODE_BOOT_P12B_ACCOUNT").as_deref() == Ok(account) => {}
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
