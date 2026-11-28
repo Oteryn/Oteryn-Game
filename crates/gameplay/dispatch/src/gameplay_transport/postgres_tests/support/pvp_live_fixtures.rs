@@ -39,6 +39,9 @@ mod bundle_fixture;
 #[path = "pvp_live/expert_cases.rs"]
 mod expert_cases;
 
+#[path = "pvp_live/melee_presentation.rs"]
+mod melee_presentation;
+
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
 const SPLASH_SECOND_MEMBER: u8 = 2;
@@ -82,12 +85,23 @@ async fn command(
     kind: u32,
     payload: &[u8],
 ) -> TestResult<Vec<u8>> {
+    command_observing(client, id, kind, payload, |_| Ok(())).await
+}
+
+async fn command_observing(
+    client: &mut DuplexStream,
+    id: u64,
+    kind: u32,
+    payload: &[u8],
+    mut observe: impl FnMut(&oteryn_protocol_oteryn::WireEnvelopeView<'_>) -> TestResult,
+) -> TestResult<Vec<u8>> {
     let frame = test_command(id, kind, payload);
     client.write_u32(u32::try_from(frame.len())?).await?;
     client.write_all(&frame).await?;
     loop {
         let frame = super::item_look_fixtures::read_frame(client).await?;
         let env = decode_wire_envelope(&frame).map_err(debug)?;
+        observe(&env)?;
         if env.message_type() == MessageType::LivenessProbe {
             ack(client, env.payload()).await?;
         }
@@ -314,6 +328,14 @@ async fn melee_fault(
 }
 
 pub(super) fn scenario(mode: i16) -> TestResult {
+    scenario_with_presentation(mode, None)
+}
+
+pub(super) fn melee_presentation(selected: bool) -> TestResult {
+    scenario_with_presentation(6, Some(selected))
+}
+
+fn scenario_with_presentation(mode: i16, presentation: Option<bool>) -> TestResult {
     // One mechanic uses one database bootstrap at a time on the owner's shared cluster.
     static CASES: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _case = CASES
@@ -712,6 +734,13 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 attack::AttackIntentDisposition::Ok
             );
             wait_live(&mut client, Duration::from_secs(10)).await?;
+            if let Some(selected) = presentation {
+                melee_presentation::drive(
+                    &mut client, &owner, admitted, target_admitted, &payload, selected,
+                ).await?;
+                client.shutdown().await?;
+                return Ok(());
+            }
             use crate::gameplay_transport::pvp_live::faults::Point;
             melee_fault(&mut client, &owner, 3, &payload, Point::BeforeCommit).await?;
             assert_eq!(health(&owner, target).await?, original_health);
@@ -922,7 +951,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
             .fetch_one(&h.pool)
             .await?;
-        if matches!(mode, 7 | 11 | 13..=15) {
+        if presentation.is_some() || matches!(mode, 7 | 11 | 13..=15) {
             assert!(receipt_count > 0);
             assert!(health(&owner, target).await? < original_health);
         } else if mode != 2 && mode != 6 {
@@ -951,7 +980,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         drop(owner);
         drop(authority);
         drop(seal);
-        if mode == 2 || mode == 6 {
+        if presentation.is_none() && (mode == 2 || mode == 6) {
             h.restart_appearance_root().await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
             let a = h
