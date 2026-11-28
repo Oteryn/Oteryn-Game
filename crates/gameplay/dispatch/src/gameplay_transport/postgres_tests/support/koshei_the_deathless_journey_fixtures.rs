@@ -762,6 +762,7 @@ pub(super) async fn exercise(
         DrainOutcome::Deferred
     );
     blocker.rollback().await?;
+    super::maintain_ready(owner.root).await?;
     let occurred: i64 = sqlx::query_scalar(
         "SELECT occurred_at FROM game_item_mint_reservations WHERE loot_table_production_key='oteryn:item.tibia.i7535' AND loot_purpose_key='CORPSE_MATERIALIZATION'",
     )
