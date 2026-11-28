@@ -7,6 +7,7 @@ use oteryn_dev_client::client_ui::cyclopedia_character::{
 };
 use oteryn_dev_client::{DevClientSession, SessionEvent};
 
+const CREATURE: &str = "oteryn:creature.dragon";
 const BEFORE: (u64, u32) = (9300, 10);
 const AFTER: (u64, u32) = (8370, 9);
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_character as wire};
@@ -125,40 +126,127 @@ async fn capture_journey(
     }
     client.take_events();
     let session_label = uuid_text(session.as_bytes());
-    travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
-    let encounter = client.world_spatial().actor_position;
-    if encounter == temple {
-        return Err("C20a encounter and temple positions coincide".into());
+    if !spawns.creatures.iter().any(|entry| entry.key == CREATURE) {
+        return Err("C20a native Dragon definition missing from the world bundle".into());
     }
-    let spider = client
-        .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && entity.position.floor == encounter.floor
-                    && entity
-                        .position
-                        .x
-                        .abs_diff(encounter.x)
-                        .max(entity.position.y.abs_diff(encounter.y))
-                        <= 1
-                    && entity.display_name.is_some_and(|name| {
-                        name.as_str()
-                            .is_ok_and(|name| name.eq_ignore_ascii_case("Poison Spider"))
-                    })
-            })
-        })
-        .ok_or("C20a encounter has no adjacent Poison Spider")?;
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| {
+        at.floor == from.floor
+            && open(at)
+            && [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .filter(|direction| destination(world, at, *direction).is_some_and(open))
+            .count()
+                >= 3
+    })
+    .ok_or("C20a no reachable open encounter staging ground")?;
+    let expected = path
+        .iter()
+        .try_fold(from, |at, direction| destination(world, at, *direction))
+        .ok_or("C20a route does not reach its encounter site")?;
+    let mut at = from;
+    for direction in path {
+        let landing = destination(world, at, direction).ok_or("C20a route step has no landing")?;
+        let step = client.step(direction).await?;
+        let observed = tile(client.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved || observed != landing {
+            let occupant = client.world_entities().and_then(|entities| {
+                entities
+                    .iter()
+                    .find(|entry| tile(entry.position).ok() == Some(landing))
+                    .map(|entry| entry.entity)
+            });
+            return Err(format!(
+                "C20a encounter step failed: from={at:?} expected={landing:?} actual={observed:?} occupant={occupant:?} reply={step:?}"
+            ).into());
+        }
+        verdict::Harness::global().progress("walk");
+        at = observed;
+        tokio::time::sleep(Duration::from_millis(u64::from(step.step_wait_ms))).await;
+    }
+    let encounter = client.world_spatial().actor_position;
+    if tile(encounter)? != expected || encounter == temple {
+        return Err(format!(
+            "C20a wrong encounter position: {encounter:?}, expected={expected:?}, temple={temple:?}"
+        )
+        .into());
+    }
+    if !client
+        .actor_vitals()
+        .is_some_and(|vitals| vitals.health == baseline.health)
+    {
+        return Err("C20a incoming damage before the controlled encounter".into());
+    }
+    client.take_events();
+    if !client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::analyser::CAPABILITY_ANALYSER_HIT_ATTRIBUTION_V1)
+    {
+        return Err("C20a live attacker attribution capability missing".into());
+    }
+    let answer = request_spawn(session_label.clone(), CREATURE.into()).await?;
+    let actor = parse_spawned_entity(&answer)?;
     evidence(&format!(
-        "C20A_ENCOUNTER session={session_label} actor={:?} actor_position={:?} player={encounter:?} temple={temple:?} baseline_health={}",
-        spider.entity, spider.position, baseline.health
+        "C20A_ENCOUNTER session={session_label} input=fixture-native-dragon spawn={answer:?} player={encounter:?} temple={temple:?} baseline_health={}",
+        baseline.health
     ));
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
+    let mut spawn_visible = false;
+    let mut attacker_sequence = None;
     let mut damage_sequence = None;
     let mut min_health = baseline.health;
     loop {
+        if !spawn_visible
+            && client.world_entities().is_some_and(|entities| {
+                entities.iter().any(|entry| {
+                    entry.entity == actor
+                        && entry.kind == oteryn_dev_client::EntityKind::Creature
+                        && entry.position.floor == encounter.floor
+                        && entry.display_name.is_some_and(|name| {
+                            name.as_str()
+                                .is_ok_and(|name| name.eq_ignore_ascii_case("Dragon"))
+                        })
+                })
+            })
+        {
+            spawn_visible = true;
+            evidence(&format!(
+                "C20A_SPAWN_VISIBLE session={session_label} actor={actor:?} server_sequence={}",
+                client.last_server_sequence()
+            ));
+        }
         for event in client.take_events() {
+            if let SessionEvent::AnalyserAttributedFacts(ref delta) = event {
+                for fact in &delta.value {
+                    if let Some(attacker) = fact.attacker {
+                        if attacker != actor {
+                            return Err(format!(
+                                "C20a unexpected attacker: expected={actor:?} observed={attacker:?} server_sequence={}",
+                                delta.server_sequence
+                            ).into());
+                        }
+                        if attacker_sequence.is_none() {
+                            attacker_sequence = Some(delta.server_sequence);
+                            evidence(&format!(
+                                "C20A_ATTACKER session={session_label} actor={actor:?} server_sequence={}",
+                                delta.server_sequence
+                            ));
+                        }
+                    }
+                }
+            }
             if let SessionEvent::ActorVitals(delta) = event
                 && delta.value.health < min_health
             {
@@ -171,7 +259,9 @@ async fn capture_journey(
             }
         }
         let position = client.world_spatial().actor_position;
-        if damage_sequence.is_some()
+        if spawn_visible
+            && attacker_sequence.is_some()
+            && damage_sequence.is_some()
             && position == temple
             && client
                 .actor_vitals()
@@ -181,7 +271,7 @@ async fn capture_journey(
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "C20a missing temple respawn: session={session_label} first_damage_sequence={damage_sequence:?} min_health={min_health} position={position:?} expected={temple:?}"
+                "C20a missing temple respawn: session={session_label} spawn_visible={spawn_visible} attacker_sequence={attacker_sequence:?} first_damage_sequence={damage_sequence:?} min_health={min_health} position={position:?} expected={temple:?}"
             ).into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
