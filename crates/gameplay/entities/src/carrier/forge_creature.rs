@@ -10,6 +10,9 @@ use sha2::{Digest, Sha256};
 // Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
 pub(super) const POPULATION_TICK_MICROS: u64 = 10_000_000;
 
+// Global Exaltation Overload Events: candidates replace a killed fiend in five seconds.
+const OVERLOAD_FIENDISH_RESPAWN_MICROS: u64 = 5_000_000;
+
 impl ChannelRuntimeV1 {
     /// Echo's influenced family uses the existing Forge stack draw and modifier owner.
     pub(super) fn apply_echo_influenced(
@@ -81,17 +84,24 @@ impl ChannelRuntimeV1 {
     }
 
     pub(super) fn drive_forge_population(&mut self, now: u64) -> Result<(), CarrierError> {
-        // Observe only the three retained incarnations on ordinary owner turns. A dead
-        // fiend holds its population slot until its own replacement deadline.
+        let overload =
+            oteryn_gameplay_foundation::scheduled_events::current_rates().exaltation_overload;
+        let respawn_delay = if overload {
+            OVERLOAD_FIENDISH_RESPAWN_MICROS
+        } else {
+            FIENDISH_RESPAWN_MICROS
+        };
+        // A dead fiend holds its slot until its replacement deadline.
+        let mut replacement_due = false;
         for index in 0..self.forge_fiends.len() {
             let (actor, due) = self.forge_fiends[index];
             if due.is_none() && self.companion_snapshot(actor).is_err() {
-                let due = now.saturating_add(FIENDISH_RESPAWN_MICROS);
-                self.forge_fiends[index].1 = Some(due);
-                self.forge_next_tick_micros = self.forge_next_tick_micros.min(due);
+                self.forge_fiends[index].1 = Some(now.saturating_add(respawn_delay));
             }
+            replacement_due |= self.forge_fiends[index].1.is_some_and(|due| now >= due);
         }
-        if now < self.forge_next_tick_micros {
+        let population_tick_due = now >= self.forge_next_tick_micros;
+        if !population_tick_due && !replacement_due {
             return Ok(());
         }
         self.forge_fiends
@@ -141,8 +151,13 @@ impl ChannelRuntimeV1 {
                 selected += 1;
             }
         }
-        // The pinned engines add one influenced creature per maintenance interval until the
-        // configured population ceiling, rather than converting a fraction of every spawn set.
+        // Do not increase the influenced spawn rate again on event-only fiend replacements.
+        if overload && !population_tick_due {
+            return Ok(());
+        }
+        // Global doubles the influenced spawn rate. Use twice the ordinary allowance
+        // on a regular population tick, subject to the existing population ceiling.
+        let influenced_per_tick = if overload { 2 } else { 1 };
         let influenced_count = actors
             .iter()
             .filter(|(_, actor)| {
@@ -165,20 +180,13 @@ impl ChannelRuntimeV1 {
         for (roll, actor) in influenced.into_iter().take(
             usize::from(INFLUENCED_SIMULTANEOUS_MAX)
                 .saturating_sub(influenced_count)
-                .min(1),
+                .min(influenced_per_tick),
         ) {
             if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
                 self.apply_forge_classification(actor, kind)?;
             }
         }
-        let next_scan = now.saturating_add(POPULATION_TICK_MICROS);
-        self.forge_next_tick_micros = self
-            .forge_fiends
-            .iter()
-            .filter_map(|(_, due)| *due)
-            .min()
-            .unwrap_or(next_scan)
-            .min(next_scan);
+        self.forge_next_tick_micros = now.saturating_add(POPULATION_TICK_MICROS);
         Ok(())
     }
 }
@@ -191,8 +199,7 @@ mod tests {
     };
     use super::*;
 
-    #[test]
-    fn forge_creature_native_spawn_scales_health_retains_marker_and_replaces_incarnation() {
+    fn spawn_forge_fixture(points: i32) -> ChannelRuntimeV1 {
         let mut current = super::super::tests::runtime(16);
         let pin = current.content_pin().clone();
         let policy = CompiledCreaturePolicy {
@@ -234,7 +241,7 @@ mod tests {
                 .unwrap(),
             )
             .unwrap();
-        let points = (2..8)
+        let points = (2..(2 + points))
             .map(|x| {
                 (
                     (x, 0, 0),
@@ -255,6 +262,74 @@ mod tests {
                 .remaining,
             0
         );
+        current
+    }
+
+    #[test]
+    fn exaltation_overload_spawn_drive_doubles_influence_and_replaces_fiend_at_five_seconds() {
+        use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+
+        let schedule = Schedule::parse(
+            r#"{"events":[{"name":"Exaltation Overload","startdate":"01/01/2030","enddate":"01/02/2030"}]}"#,
+        )
+        .unwrap();
+        let _clock = test_clock::set(schedule, 1_893_456_000);
+        let mut current = spawn_forge_fixture(10);
+        let forge_actors = |current: &ChannelRuntimeV1| {
+            current
+                .spawn_point_creatures()
+                .into_iter()
+                .filter_map(|(_, _, actor)| actor)
+                .filter_map(|actor| {
+                    let kind = current.companion_snapshot(actor).ok()?.forge?;
+                    Some((actor, kind))
+                })
+                .collect::<Vec<_>>()
+        };
+        let influenced = |current: &ChannelRuntimeV1| {
+            forge_actors(current)
+                .into_iter()
+                .filter(|(_, kind)| matches!(kind, ForgeCreature::Influenced(_)))
+                .count()
+        };
+        let fiends = |current: &ChannelRuntimeV1| {
+            forge_actors(current)
+                .into_iter()
+                .filter_map(|(actor, kind)| (kind == ForgeCreature::Fiendish).then_some(actor))
+                .collect::<Vec<_>>()
+        };
+
+        current
+            .drive_spawn_respawns(10_000_000, |_, _| true)
+            .unwrap();
+        assert_eq!(influenced(&current), 2);
+        let before = fiends(&current);
+        let killed = before[0];
+        current.set_test_creature_health(killed, 0).unwrap();
+        current
+            .drive_spawn_respawns(10_001_000, |_, _| true)
+            .unwrap();
+        current
+            .drive_spawn_respawns(15_000_999, |_, _| true)
+            .unwrap();
+        assert_eq!(fiends(&current).len(), before.len() - 1);
+        current
+            .drive_spawn_respawns(15_001_000, |_, _| true)
+            .unwrap();
+        let replaced = fiends(&current);
+        assert_eq!(replaced.len(), before.len());
+        assert!(!replaced.contains(&killed));
+        assert_eq!(influenced(&current), 2);
+
+        current
+            .drive_spawn_respawns(20_000_000, |_, _| true)
+            .unwrap();
+        assert_eq!(influenced(&current), 4);
+    }
+
+    #[test]
+    fn forge_creature_native_spawn_scales_health_retains_marker_and_replaces_incarnation() {
+        let mut current = spawn_forge_fixture(6);
         for (_, _, actor) in current.spawn_point_creatures() {
             let snapshot = current.companion_snapshot(actor.unwrap()).unwrap();
             assert_eq!(
