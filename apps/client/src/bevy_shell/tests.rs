@@ -66,23 +66,41 @@ fn ctrl_k_opens_the_hotkey_options_only_outside_blocked_input() -> TestResult {
         modifiers: Modifiers::one(Modifier::Control),
         repeat: false,
     };
-    let mut press = |host: &mut HostOwner, blocked, editor| {
-        crate::bevy_shell::input::route_keyboard(host, shortcut.clone(), blocked, editor);
+    let mut adapter = oteryn_input_platform::InputPlatformAdapter::default();
+    let mut press = |host: &mut HostOwner, focused, modal, editor| -> TestResult {
+        let _ = adapter.process_window_event(&winit::event::WindowEvent::Focused(focused))?;
+        crate::bevy_shell::input::route_window_keyboard(
+            host,
+            &adapter,
+            shortcut.clone(),
+            modal,
+            editor,
+        );
         if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
             *state = ButtonState::Released;
         }
-        crate::bevy_shell::input::route_keyboard(host, shortcut.clone(), blocked, editor);
+        crate::bevy_shell::input::route_window_keyboard(
+            host,
+            &adapter,
+            shortcut.clone(),
+            modal,
+            editor,
+        );
         if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
             *state = ButtonState::Pressed;
         }
+        Ok(())
     };
-    press(&mut host, true, None);
-    assert!(host.preferences_draft().is_none());
-    assert_eq!(host.hotkey_options, 0);
-    press(&mut host, false, Some(false));
-    assert!(host.preferences_draft().is_none());
-    assert_eq!(host.hotkey_options, 0);
-    press(&mut host, false, None);
+    for (focused, modal, editor) in [
+        (false, false, None),
+        (true, true, None),
+        (true, false, Some(false)),
+    ] {
+        press(&mut host, focused, modal, editor)?;
+        assert!(host.preferences_draft().is_none());
+        assert_eq!(host.hotkey_options, 0);
+    }
+    press(&mut host, true, false, None)?;
     assert!(
         host.preferences_draft().is_some(),
         "Ctrl+K opens the options"

@@ -369,10 +369,35 @@ mod tests {
             bevy_tasks::TaskPoolBuilder::new().num_threads(1).build()
         });
         let fixture = tempfile::tempdir()?;
-        let path = fixture.path().join("preferences.json");
-        let export = fixture.path().join("export.json");
-        let character = [3; 16];
+        let configured = std::env::var_os("OTERYN_G05_SETTINGS_DIR");
+        let root = configured.as_deref().map_or(fixture.path(), Path::new);
+        let phase = std::env::var("OTERYN_G05_PHASE");
+        let character = if configured.is_some() {
+            let encoded = std::env::var("OTERYN_G05_CHARACTER")?;
+            let mut bytes = [0; 16];
+            assert!(encoded.len() == 32 && encoded.is_ascii());
+            for (index, byte) in bytes.iter_mut().enumerate() {
+                *byte = u8::from_str_radix(&encoded[index * 2..index * 2 + 2], 16)?;
+            }
+            bytes
+        } else {
+            [3; 16]
+        };
+        let path = root.join("preferences.json");
+        let export = root.join("export.json");
         let active = PreferenceStore::character_path(&path, character);
+        let expected = root.join("expected-after-restore.json");
+        if configured.is_some() && phase.as_deref() == Ok("reopen") {
+            let expected = PreferenceStore::read_transfer(&expected)?;
+            assert_eq!(expected.audio_device, "Desk");
+            assert_eq!(expected.audio.master_volume, 81);
+            assert_eq!(PreferenceStore::read_transfer(&active)?, expected);
+            let mut owner = HostOwner::new(Some(path))?;
+            install_character(&mut owner, character, root)?;
+            assert_eq!(owner.settings.preferences, expected);
+            return Ok(());
+        }
+        assert!(configured.is_none() || phase.as_deref() == Ok("transfer"));
         let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
         app.add_plugins((
             bevy::input::InputPlugin,
@@ -384,12 +409,7 @@ mod tests {
             .spawn((Window::default(), bevy::window::PrimaryWindow));
         {
             let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-            let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
-            view.set_preference_character(character);
-            view.bind_test_minimap(fixture.path().join("maps"));
-            let (link, _, _) = play_channel();
-            assert!(owner.install_play(view, link));
-            assert_eq!(owner.settings.character_scope(), Some(character));
+            install_character(&mut owner, character, root)?;
             owner.open_graphics();
         }
         let generation = app.world().non_send::<HostOwner>().generation();
@@ -485,6 +505,19 @@ mod tests {
         let mut reopened = HostOwner::new(Some(path))?;
         reopened.settings.select_character(Some(character));
         assert_eq!(reopened.settings.preferences, overwritten);
+        if configured.is_some() {
+            PreferenceStore::export_to(&overwritten, &expected)?;
+        }
+        Ok(())
+    }
+
+    fn install_character(owner: &mut HostOwner, character: [u8; 16], root: &Path) -> TestResult {
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 7, &[])?;
+        view.set_preference_character(character);
+        view.bind_test_minimap(root.join("maps"));
+        let (link, _, _) = play_channel();
+        assert!(owner.install_play(view, link));
+        assert_eq!(owner.settings.character_scope(), Some(character));
         Ok(())
     }
 

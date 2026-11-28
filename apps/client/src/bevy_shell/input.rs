@@ -123,7 +123,6 @@ pub(super) fn route(
             let consumed = capture.before(&owner, *ui.viewport, physical, &event, allowed);
             let world_owned =
                 physical.is_some_and(|point| ui.hits.allows_world_start(ui.regions.world, point));
-            let blocked = !input.adapter.focused() || modal || consumed;
             match event {
                 NormalizedInputEvent::PointerMoved { position, motion } => {
                     if consumed || !world_owned {
@@ -192,12 +191,33 @@ pub(super) fn route(
                     ) {
                         input.physical_pointer = None;
                     }
-                    route_keyboard(&mut owner, event, blocked, editing.then_some(composer));
+                    route_window_keyboard(
+                        &mut owner,
+                        &input.adapter,
+                        event,
+                        modal || consumed,
+                        editing.then_some(composer),
+                    );
                 }
             }
         }
     }
 }
+pub(super) fn route_window_keyboard(
+    owner: &mut HostOwner,
+    adapter: &InputPlatformAdapter,
+    event: NormalizedInputEvent,
+    modal_or_consumed: bool,
+    editor: Option<bool>,
+) {
+    route_keyboard(
+        owner,
+        event,
+        !adapter.focused() || modal_or_consumed,
+        editor,
+    );
+}
+
 pub(super) fn route_keyboard(
     owner: &mut HostOwner,
     event: NormalizedInputEvent,
