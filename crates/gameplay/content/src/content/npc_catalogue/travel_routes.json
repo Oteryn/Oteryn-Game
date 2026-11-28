@@ -1238,7 +1238,7 @@
   {
     "key": "oteryn:service.travel.chemar/edron",
     "keyword": "edron",
-    "price": 60,
+    "price": 40,
     "premium": false,
     "x": 33193,
     "y": 31784,
@@ -2370,7 +2370,7 @@
   {
     "key": "oteryn:service.travel.petros/ankrahmun",
     "keyword": "ankrahmun",
-    "price": 150,
+    "price": 100,
     "premium": false,
     "x": 33092,
     "y": 32883,
@@ -2383,7 +2383,7 @@
   {
     "key": "oteryn:service.travel.petros/gray_island",
     "keyword": "gray island",
-    "price": 160,
+    "price": 150,
     "premium": false,
     "x": 33196,
     "y": 31984,
@@ -2409,7 +2409,7 @@
   {
     "key": "oteryn:service.travel.petros/krailos",
     "keyword": "krailos",
-    "price": 200,
+    "price": 110,
     "premium": false,
     "x": 33493,
     "y": 31712,
@@ -2422,7 +2422,7 @@
   {
     "key": "oteryn:service.travel.petros/liberty_bay",
     "keyword": "liberty bay",
-    "price": 140,
+    "price": 200,
     "premium": false,
     "x": 32285,
     "y": 32892,
@@ -2435,7 +2435,7 @@
   {
     "key": "oteryn:service.travel.petros/port_hope",
     "keyword": "port hope",
-    "price": 50,
+    "price": 180,
     "premium": false,
     "x": 32527,
     "y": 32784,
@@ -2448,7 +2448,7 @@
   {
     "key": "oteryn:service.travel.petros/venore",
     "keyword": "venore",
-    "price": 180,
+    "price": 60,
     "premium": false,
     "x": 32954,
     "y": 32022,
