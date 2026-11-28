@@ -102,7 +102,31 @@ fn receipt_effect_matches(keys: &[String], before: &[i64], after: &[i64], comple
         && after == [1, 1]
 }
 
-/// Identify the single command receipt bound to the track’s exact before and after values.
+type ReceiptRow = (String, String, Vec<String>, Vec<i64>, Vec<i64>, bool, bool);
+
+fn validate_receipt(track: &str, receipts: &[ReceiptRow]) -> TestResult<Option<String>> {
+    match receipts {
+        [] => Ok(None),
+        [(identity, transition, keys, before, after, completes, bound)] => {
+            if transition != TRANSITION
+                || !bound
+                || !receipt_effect_matches(keys, before, after, *completes)
+            {
+                return Err(format!(
+                    "step=receipt;transition={transition};bound={bound};keys={keys:?};before={before:?};after={after:?};completes={completes}"
+                ).into());
+            }
+            Ok(Some(identity.clone()))
+        }
+        _ => Err(format!(
+            "track={track};expected=one-command-receipt;observed={}",
+            receipts.len()
+        )
+        .into()),
+    }
+}
+
+/// Count all receipts for this wire command before checking transition and track binding.
 async fn bound_receipt(
     clients: &SeamClients<'_>,
     track: &str,
@@ -111,56 +135,54 @@ async fn bound_receipt(
     command: u64,
 ) -> TestResult<Option<String>> {
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    type ReceiptRow = (String, Vec<String>, Vec<i64>, Vec<i64>, bool);
     let receipts: Vec<ReceiptRow> = sqlx::query_as(
         "SELECT concat_ws(':', r.cause_id, r.cause_ordinal, r.committed_character_revision), \
-                r.track_keys, r.values_before, r.values_after, r.completes \
+                r.transition_key, r.track_keys, r.values_before, r.values_after, r.completes, \
+                r.cause_kind = 'command' AND COALESCE(r.values_after[array_position(r.track_keys, $2)] = $3 \
+                    AND r.values_before[array_position(r.track_keys, $2)] = $4, FALSE) \
+                AND EXISTS(SELECT 1 FROM game_character_quest_tracks t \
+                    WHERE t.character_id = r.character_id AND t.track_key = $2 \
+                      AND t.committed_character_revision = r.committed_character_revision \
+                      AND t.quest_key = r.quest_key AND t.value = $3) \
          FROM game_character_quest_receipts r \
-         JOIN game_character_quest_tracks t ON t.character_id = r.character_id AND t.track_key = $2 \
          WHERE r.character_id = encode($1, 'hex')::uuid \
-           AND r.committed_character_revision = t.committed_character_revision \
-           AND t.quest_key = r.quest_key AND t.value = $3 \
-           AND r.values_after[array_position(r.track_keys, $2)] = $3 \
-           AND r.values_before[array_position(r.track_keys, $2)] = $4 \
-           AND r.transition_key = $5 AND r.cause_kind = 'command' \
-           AND r.cause_id = encode($6, 'hex')::uuid \
-           AND r.cause_ordinal = $7::text::numeric LIMIT 2",
+           AND r.cause_id = encode($5, 'hex')::uuid \
+           AND r.cause_ordinal = $6::text::numeric LIMIT 2",
     )
     .bind(clients.characters[1].as_slice())
     .bind(track)
     .bind(1_i64)
     .bind(before)
-    .bind(TRANSITION)
     .bind(session.as_slice())
     .bind(command.to_string())
     .fetch_all(&mut database)
     .await?;
     database.close().await?;
-    match receipts.as_slice() {
-        [] => Ok(None),
-        [(identity, keys, before, after, completes)] => {
-            if !receipt_effect_matches(keys, before, after, *completes) {
-                return Err(format!(
-                    "step=receipt;observed=unexpected-effects;keys={keys:?};before={before:?};after={after:?};completes={completes}"
-                ).into());
-            }
-            Ok(Some(identity.clone()))
-        }
-        _ => Err(format!(
-            "track={track};expected=one-bound-receipt;observed={}",
-            receipts.len()
+    validate_receipt(track, &receipts)
+}
+
+fn expect_no_conversation(events: Vec<SessionEvent>) -> TestResult {
+    if let Some(SessionEvent::NpcConversation(delta)) = events
+        .into_iter()
+        .find(|event| matches!(event, SessionEvent::NpcConversation(_)))
+    {
+        return Err(format!(
+            "step=reply;observed=unsolicited-conversation;sequence={};reply={:?}",
+            delta.server_sequence, delta.value
         )
-        .into()),
+        .into());
     }
+    Ok(())
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
+    expect_no_conversation(client.take_events())?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=logout;observed=refused".into());
     }
-    Ok(())
+    expect_no_conversation(client.take_events())
 }
 
 fn conversation_batch_matches(
@@ -173,13 +195,33 @@ fn conversation_batch_matches(
             && dialogue_matches(&reply.lines, expected_line))
 }
 
+fn conversation_after_result(
+    events: Vec<SessionEvent>,
+    result_sequence: u64,
+) -> TestResult<Vec<wire::NpcConversation>> {
+    let mut replies = Vec::new();
+    for event in events {
+        if let SessionEvent::NpcConversation(delta) = event {
+            if delta.server_sequence <= result_sequence {
+                return Err(format!(
+                    "step=reply;observed=conversation-before-result;sequence={}",
+                    delta.server_sequence
+                )
+                .into());
+            }
+            replies.push(delta.value);
+        }
+    }
+    Ok(replies)
+}
+
 async fn talk(
     client: &mut DevClientSession,
     actor: oteryn_dev_client::EntityRef,
     text: &str,
     expected_line: &str,
 ) -> TestResult<u64> {
-    client.take_events();
+    expect_no_conversation(client.take_events())?;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: actor,
         text: text.into(),
@@ -201,18 +243,7 @@ async fn talk(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        let replies: Vec<_> = client
-            .take_events()
-            .into_iter()
-            .filter_map(|event| match event {
-                SessionEvent::NpcConversation(delta)
-                    if delta.server_sequence > reply.server_sequence =>
-                {
-                    Some(delta.value)
-                }
-                _ => None,
-            })
-            .collect();
+        let replies = conversation_after_result(client.take_events(), reply.server_sequence)?;
         if !replies.is_empty() {
             if !conversation_batch_matches(&replies, actor, expected_line) {
                 return Err(format!(
@@ -299,7 +330,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
         wait_ms = outcome.step_wait_ms;
         verdict::Harness::global().progress("walk");
-        client.take_events();
+        expect_no_conversation(client.take_events())?;
     }
     let hanna = |client: &DevClientSession| -> TestResult<oteryn_dev_client::EntityRef> {
         let player = client.world_spatial().actor_position;
@@ -373,7 +404,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if committed_receipts.windows(2).any(|pair| pair[0] != pair[1]) {
         return Err("step=receipt;observed=tracks-committed-by-different-commands".into());
     }
-    // A real earlier command from the same admission must not match the confirmation receipt.
+    // The prompt must never commit a quest transition, even under another key.
     let wrong_command = bound_receipt(
         clients,
         TRACKS[0],
@@ -383,7 +414,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .await?;
     if wrong_command.is_some() {
-        return Err("step=receipt;wrong-command-negative-check-failed".into());
+        return Err("step=receipt;prompt-committed-receipt".into());
     }
     let approach = client.world_spatial().actor_position;
     logout(&mut client).await?;
@@ -501,5 +532,48 @@ mod tests {
             actor,
             RETURN_PROMPT
         ));
+    }
+    #[test]
+    fn receipt_count_rejects_other_transition_and_stale_prompt() {
+        let expected = (
+            "identity".into(),
+            TRANSITION.into(),
+            TRACKS.map(str::to_owned).to_vec(),
+            vec![0, 0],
+            vec![1, 1],
+            false,
+            true,
+        );
+        assert!(matches!(
+            validate_receipt(TRACKS[0], std::slice::from_ref(&expected)),
+            Ok(Some(_))
+        ));
+        let mut extra = expected.clone();
+        extra.1 = "other-transition".into();
+        assert!(validate_receipt(TRACKS[0], &[expected.clone(), extra]).is_err());
+        let mut stale = expected;
+        stale.6 = false;
+        assert!(validate_receipt(TRACKS[0], &[stale]).is_err());
+        assert!(matches!(validate_receipt(TRACKS[0], &[]), Ok(None)));
+    }
+    #[test]
+    fn late_conversation_is_rejected_at_command_boundaries() {
+        let late = || {
+            SessionEvent::NpcConversation(oteryn_dev_client::AppliedDelta {
+                server_sequence: 12,
+                base_revision: 1,
+                new_revision: 2,
+                value: wire::NpcConversation {
+                    open: None,
+                    lines: vec![PROMPT.into()],
+                },
+            })
+        };
+        assert!(expect_no_conversation(vec![]).is_ok());
+        assert!(expect_no_conversation(vec![late()]).is_err());
+        assert!(conversation_after_result(vec![late()], 13).is_err());
+        assert!(
+            matches!(conversation_after_result(vec![late()], 11), Ok(replies) if replies.len() == 1)
+        );
     }
 }
