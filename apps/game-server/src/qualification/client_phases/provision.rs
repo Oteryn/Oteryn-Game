@@ -27,10 +27,10 @@ pub(in crate::qualification) async fn provision_profile(
     profile: &str,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let vocation = if profile == "explorer" {
-        "knight"
-    } else {
-        profile
+    let vocation = match profile {
+        "explorer" => "knight",
+        "g23" => "sorcerer",
+        _ => profile,
     };
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         vocation,

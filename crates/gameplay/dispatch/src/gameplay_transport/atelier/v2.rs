@@ -81,9 +81,8 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Some(bytes) => AtelierWireReply::Payload(bytes),
-            // A query has no outcome to reconcile; a change whose reply cannot be built is
-            // indeterminate for the client, as on the allocation route.
-            None if kind == wire::COMMAND_TYPE_ATELIER_V2_QUERY => AtelierWireReply::Rejected,
+            // A refresh may already have committed initialization. Failure to
+            // project the reply is unavailable even when there was no write.
             None => AtelierWireReply::Unavailable,
         }
     }
@@ -165,7 +164,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             admitted.game_session_id,
         )
         .await;
-        let Some(read) = self.atelier_wheel_read(expected).await else {
+        let Some(read) = self.atelier_wheel_read(expected, false).await else {
             return AtelierWireReply::Unavailable;
         };
         // Admission binds fresh writes only: a refused request still reaches the writer as
@@ -195,17 +194,49 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     async fn atelier_wheel_read(
         &self,
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        refresh: bool,
     ) -> Option<crate::durability::character_wheel::WheelPresentationRead> {
-        self.root
-            .read_wheel_presentation(
-                self.character,
-                self.holder,
-                fence,
-                std::sync::Arc::clone(self.wheel_ruleset.as_ref()?),
-                self.premium_coordinator?,
-            )
-            .await
-            .ok()
+        use crate::durability::{
+            DurabilityError, character_progression::CharacterProgressionError,
+        };
+
+        let ruleset = self.wheel_ruleset.as_ref()?;
+        let premium = self.premium_coordinator?;
+        let retry = refresh
+            .then(|| crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root));
+        #[cfg(test)]
+        let mut checkout = refresh
+            .then(|| {
+                super::checkout_probe::hold(self.root, super::checkout_probe::Read::Projection)
+            })
+            .flatten();
+        loop {
+            let result = self
+                .root
+                .read_wheel_presentation(
+                    self.character,
+                    self.holder,
+                    fence,
+                    std::sync::Arc::clone(ruleset),
+                    premium,
+                )
+                .await;
+            #[cfg(test)]
+            super::checkout_probe::release(checkout.take()).await;
+            if matches!(
+                result,
+                Err(CharacterProgressionError::Unavailable(
+                    DurabilityError::RootUnavailable
+                ))
+            ) && let Some(retry) = &retry
+                && retry
+                    .retries_unavailable(crate::gameplay_transport::AdmissionRefusal::Unavailable)
+                    .await
+            {
+                continue;
+            }
+            return result.ok();
+        }
     }
 
     async fn atelier_v2_reply(
@@ -218,7 +249,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         let fence = admitted.item_fence?;
         let actor = admitted.runtime_actor?;
         let rules = self.wheel_ruleset.as_ref()?;
-        let read = self.atelier_wheel_read(fence).await?;
+        let read = self.atelier_wheel_read(fence, quotes).await?;
         let in_temple = crate::gameplay_transport::wheel_allocation::removal_permitted(
             self,
             actor,

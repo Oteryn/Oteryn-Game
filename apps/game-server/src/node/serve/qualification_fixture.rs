@@ -81,7 +81,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     let allowed = matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
+        "g23" | "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
     );
     #[cfg(feature = "qualification-spawn")]
     let allowed = allowed
@@ -757,6 +757,7 @@ async fn prepare_build(
             &current,
             native,
             deadline,
+            false,
             Some(item),
         )
         .await;
@@ -841,6 +842,7 @@ async fn prepare_build(
     let (vocation, level) = match profile {
         "knight-underlevel" => ("knight", 66),
         "explorer" => ("knight", 100),
+        "g23" => ("sorcerer", 100),
         _ => (profile, 100),
     };
     #[cfg(feature = "qualification-spawn")]
@@ -877,6 +879,7 @@ async fn prepare_build(
         &current,
         native,
         deadline,
+        profile == "g23",
         #[cfg(feature = "qualification-spawn")]
         None,
     )
@@ -977,6 +980,7 @@ async fn prepare_items(
     >,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
+    fund_promotion: bool,
     #[cfg(feature = "qualification-spawn")] named: Option<(u32, u32)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "qualification-spawn")]
@@ -1058,10 +1062,21 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Legacy build profiles retain their axe, rope and shovel.
     let legacy = [(3276, 1), (3003, 1), (3457, 1)];
+    let promotion_coins = if fund_promotion {
+        let coin = crate::domain::currency::Coin::Crystal;
+        let price = oteryn_gameplay_progression::promotion::PROMOTION_PRICE;
+        if !price.is_multiple_of(coin.worth()) {
+            return Err("promotion price is not a whole number of crystal coins".into());
+        }
+        Some((3043, u32::try_from(price / coin.worth())?))
+    } else {
+        None
+    };
     for (ordinal, &(id, count)) in named
         .as_slice()
         .iter()
         .chain(legacy.iter().filter(|_| named.is_none()))
+        .chain(promotion_coins.iter())
         .enumerate()
     {
         let key = format!("oteryn:item.tibia.i{id}");
@@ -1078,7 +1093,7 @@ async fn prepare_items(
                 .equipment
                 .iter()
                 .chain(bag.entries.iter().map(|entry| &entry.item))
-                .any(|existing| existing.definition == definition && existing.quantity == 1)
+                .any(|existing| existing.definition == definition && existing.quantity == count)
         {
             continue;
         }

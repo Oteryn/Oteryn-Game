@@ -298,10 +298,10 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 29)
+        self.assertEqual(len(accounts), 30)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
-        self.assertEqual(accounts[-1], "01934f10-7c00-7000-8000-000000000020")
+        self.assertEqual(accounts[-2], "01934f10-7c00-7000-8000-000000000020")
         basic = bash('set -Eeuo pipefail\nNODE_BOOT_WORLD=0\n' + fixtures
                      + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(basic.returncode, 0, basic.stdout + basic.stderr)
