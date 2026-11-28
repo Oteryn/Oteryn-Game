@@ -52,6 +52,20 @@ const fn rejected(class: PublicClass) -> GameplayEntryError {
 }
 
 /// Any failure of the browser sign-in itself: the player starts the login again.
+async fn bind_login_callback() -> Result<LoopbackRedirect, GameplayEntryError> {
+    let port = match std::env::var("GAME_PLATFORM_CALLBACK_PORT") {
+        Ok(value) => value
+            .parse::<std::num::NonZeroU16>()
+            .map_err(|_| GameplayEntryError::InvalidConfiguration)?
+            .get(),
+        Err(std::env::VarError::NotPresent) => 0,
+        Err(std::env::VarError::NotUnicode(_)) => {
+            return Err(GameplayEntryError::InvalidConfiguration);
+        }
+    };
+    LoopbackRedirect::bind_port(port).await.map_err(retry_login)
+}
+
 fn retry_login<E>(_error: E) -> GameplayEntryError {
     rejected(PublicClass::RetryLogin)
 }

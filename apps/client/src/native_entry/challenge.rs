@@ -34,7 +34,7 @@ pub(super) async fn exchange(
             .collect::<String>(),
     )
     .map_err(retry_login)?;
-    let redirect = LoopbackRedirect::bind().await.map_err(retry_login)?;
+    let redirect = bind_login_callback().await?;
     let url = client
         .challenge_url(&challenge, &redirect.redirect_uri(), state.as_str())
         .map_err(login_rejected)?;

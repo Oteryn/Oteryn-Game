@@ -213,7 +213,12 @@ pub struct LoopbackRedirect {
 
 impl LoopbackRedirect {
     pub async fn bind() -> Result<Self, IdentityError> {
-        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+        Self::bind_port(0).await
+    }
+
+    /// Binds the exact IPv4 loopback port. Zero lets the OS choose the port.
+    pub async fn bind_port(port: u16) -> Result<Self, IdentityError> {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
             .await
             .map_err(|_error| IdentityError::Listener)?;
         let address = listener
@@ -423,6 +428,29 @@ mod tests {
         let mut response = String::new();
         stream.read_to_string(&mut response).await?;
         Ok(response)
+    }
+
+    #[test]
+    fn loopback_redirect_uses_registered_port_and_rejects_contention()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let reservation = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
+            let port = reservation.local_addr()?.port();
+            assert!(matches!(
+                LoopbackRedirect::bind_port(port).await,
+                Err(IdentityError::Listener)
+            ));
+            drop(reservation);
+            let redirect = LoopbackRedirect::bind_port(port).await?;
+            assert_eq!(
+                redirect.redirect_uri(),
+                format!("http://127.0.0.1:{port}/callback")
+            );
+            Ok(())
+        })
     }
 
     #[test]
