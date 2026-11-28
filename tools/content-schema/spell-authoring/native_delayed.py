@@ -11,8 +11,9 @@ from copy import deepcopy
 from pathlib import Path
 
 from build_executable_catalog import (
+    GRENADE_COOLDOWNS_MS,
     apply_c18b_death_echo_formula,
-    apply_crystal_grenade_parameters,
+    apply_grenade_parameters,
 )
 
 REVISIONS = {
@@ -321,7 +322,7 @@ def _raw_snapshot(name):
                 "marker_asset_binding": "canary.appearance:effect/divine_grenade",
                 "marker_ms": 3000,
                 "marker_removal_requires_caster_online": False,
-                "cooldown_ms_by_stage": [26000, 20000, 14000],
+                "cooldown_ms_by_stage": list(GRENADE_COOLDOWNS_MS),
                 "base_damage_bonus_percent_by_stage": [0, 16, 32],
                 "snapshot_inputs": ["magic_level", "flat_damage"],
                 "expiry_inputs": [
@@ -545,7 +546,7 @@ def schemas():
     apply_c18b_death_echo_formula(registered)
     schemas["delayed_strike"]["oneOf"].append(_closed_snapshot_schema(registered))
     registered_grenade = _snapshot("divine grenade")["parameters"]
-    apply_crystal_grenade_parameters(registered_grenade)
+    apply_grenade_parameters(registered_grenade)
     schemas["delayed_strike"]["oneOf"].append(
         _closed_snapshot_schema(registered_grenade)
     )

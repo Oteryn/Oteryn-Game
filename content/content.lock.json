@@ -109,10 +109,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "f94d1db6bb67d87bcbfc259bfb68ffb5d8789e2bd0b30b9cc07c631cf71b31dc",
+          "sha256": "f9c9414ad20f84a669816c8a813eb6d954c4d3f6a157145b98a8e7a0e5aa3255",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "f2291fc6ed704af8118177ca04d4a2afdf776fd26c78ef95c54372898e4faea2"
+            "sha256": "888ae0f9cac17a4a8b70f280be1a4b37ec33d37c759b6879885f0ea4f8b28613"
           }
         },
         {
@@ -227,7 +227,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
           },
-          "sha256": "4e699383872e77a93eb643f4eac962203ba06ed7537b77faad30faa31e7b9ba6"
+          "sha256": "8e4ac5ed77f6cd44922c93109fa262478ad0b2165130f68e9578057b488b9a4f"
         }
       ],
       "Item": [

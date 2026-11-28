@@ -2418,7 +2418,8 @@ fn delayed_snapshot_selection_keeps_current_gems_and_focus_exactly_once() {
         combat.hits[0].bonus_percent = 0;
         combat.hits[0].side_percent = None;
         let hit = combat.hits[0].clone();
-        for (focus, expected) in [(true, 163), (false, 130)] {
+        let (focused, unfocused) = if echo { (163, 130) } else { (206, 173) };
+        for (focus, expected) in [(true, focused), (false, unfocused)] {
             if !focus {
                 f.state
                     .complete_wheel_focus_cast(false, 100_000)
@@ -2440,8 +2441,8 @@ fn delayed_snapshot_selection_keeps_current_gems_and_focus_exactly_once() {
                 Ok(expected)
             );
             // 100 minus source creature mitigation5%; then retained10% plus
-            // current gem20% and current Focus35% (or zero after consumption),
-            // then the current flat7 rather than the cast-time flat50.
+            // current gem20% and current Focus35% (or zero after consumption).
+            // Echo adds the current flat7. Divine Grenade adds the planted flat50.
             owner
                 .validate_current(&f.runtime, &f.state, &f.attributes, &[])
                 .expect("fresh owner binding remains intact");
@@ -2484,8 +2485,8 @@ fn delayed_snapshot_selection_keeps_current_gems_and_focus_exactly_once() {
                 assert_eq!((low, high), (1, 10_000));
                 low
             }),
-            Ok(147),
-            "current gem critical14.2%, target mitigation5%, source30%, current flat7"
+            Ok(if echo { 147 } else { 190 }),
+            "current gem critical14.2%, target mitigation5%, source30%, spell's flat bonus"
         );
     }
 }

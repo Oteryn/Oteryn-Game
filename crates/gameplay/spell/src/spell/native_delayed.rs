@@ -112,6 +112,7 @@ pub struct NativeDelayedFacts {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueTiming {
+    CastInputs,
     RecomputeAtOccurrence,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -596,7 +597,11 @@ pub fn plan(
                             expected_caster: f.cast.identity.clone(),
                             position: f.cast_position,
                             explicit_target: f.explicit_target,
-                            value_timing: ValueTiming::RecomputeAtOccurrence,
+                            value_timing: if name == "divine grenade" {
+                                ValueTiming::CastInputs
+                            } else {
+                                ValueTiming::RecomputeAtOccurrence
+                            },
                             modifier_timing: match name {
                                 "death echo" => ModifierTiming::CastStanceSnapshot,
                                 "divine grenade" => ModifierTiming::CastBuffsAndOccurrenceModifiers,
@@ -664,8 +669,15 @@ pub fn plan(
                             dropped: true,
                         });
                     }
+                    // The planted grenade uses the cast's raw inputs. Target and
+                    // occurrence modifiers are still resolved when it explodes.
+                    let strike_caster = if name == "divine grenade" {
+                        &f.cast
+                    } else {
+                        current
+                    };
                     Ok(NativeDelayedPlan::Occurrence {
-                        strike: Some(strike(p, f, current, true, draw)?),
+                        strike: Some(strike(p, f, strike_caster, true, draw)?),
                         marker_removed,
                         dropped: false,
                     })
@@ -831,7 +843,7 @@ mod tests {
             "effect_asset_binding":"canary.appearance:effect/death_echo",
             "chain_effect_asset_binding":"canary.appearance:effect/blow_white",
             "marker_asset_binding":"canary.appearance:effect/divine_grenade",
-            "cooldown_ms_by_stage":[26000,20000,16000],"base_damage_bonus_percent_by_stage":[30,60,100]})
+            "cooldown_ms_by_stage":[26000,20000,14000],"base_damage_bonus_percent_by_stage":[30,60,100]})
     }
     #[test]
     fn area_strikes_share_one_roll_while_outburst_keeps_independent_draws() {
@@ -1059,7 +1071,7 @@ mod tests {
                     },
                 ) => {
                     assert_eq!(schedule.due_ms, 3100);
-                    assert_eq!(schedule.value_timing, ValueTiming::RecomputeAtOccurrence);
+                    assert_eq!(schedule.value_timing, ValueTiming::CastInputs);
                     assert_eq!(marker.remove_at_ms, 3100);
                 }
                 (
@@ -1139,7 +1151,7 @@ mod tests {
     }
 
     #[test]
-    fn grenade_detonation_uses_current_magic_level_and_wheel_grade() {
+    fn grenade_detonation_keeps_cast_magic_level_and_wheel_grade() {
         use super::super::native::{Facts, Plan};
         let compiled = grenade_profile();
         let mut f = facts();
@@ -1160,8 +1172,7 @@ mod tests {
         f.now_ms = schedule.due_ms;
         let current = f.current.as_mut().unwrap();
         current.inputs.magic_level = 200;
-        // At level 1200, Crystal's flat 214 plus 4x/6x magic level
-        // gives 1014..1414 before applying the current grade multiplier.
+        // Cast inputs give (214 + [400, 600]) multiplied by the grade-two bonus.
         let mut bounds_by_grade = Vec::new();
         for stage in 0..=3 {
             f.current.as_mut().unwrap().stage = stage;
@@ -1183,18 +1194,15 @@ mod tests {
                 }
             ));
         }
-        assert_eq!(
-            bounds_by_grade,
-            [(1014, 1414), (1318, 1838), (1622, 2262), (2028, 2828)]
-        );
+        assert_eq!(bounds_by_grade, [(982, 1302); 4]);
     }
 
     #[test]
-    fn grenade_cast_selects_crystal_cooldown_at_each_wheel_grade() {
+    fn grenade_cast_selects_global_cooldown_at_each_wheel_grade() {
         use super::super::native::{Facts, Plan};
         let compiled = grenade_profile();
         let mut f = facts();
-        for (stage, expected) in [(1, 26000), (2, 20000), (3, 16000)] {
+        for (stage, expected) in [(1, 26000), (2, 20000), (3, 14000)] {
             f.cast.stage = stage;
             let Plan::Delayed(result) = compiled
                 .plan(Facts::Delayed(&f), &mut |_, _| panic!("no cast damage"))
@@ -1210,7 +1218,7 @@ mod tests {
     }
 
     #[test]
-    fn grenade_recomputes_bounds_and_marker_cleanup_survives_logout() {
+    fn grenade_keeps_cast_bounds_and_marker_cleanup_survives_logout() {
         let mut f = facts();
         let p = strike_parameters("divine grenade");
         let NativeDelayedPlan::Cast {
@@ -1226,7 +1234,7 @@ mod tests {
         else {
             panic!("grenade")
         };
-        assert_eq!(schedule.value_timing, ValueTiming::RecomputeAtOccurrence);
+        assert_eq!(schedule.value_timing, ValueTiming::CastInputs);
         assert_eq!(marker.remove_at_ms, 3100);
         f.event = Event::DelayedOccurrence;
         f.now_ms = 3100;
@@ -1237,7 +1245,7 @@ mod tests {
         else {
             panic!("explosion")
         };
-        assert_eq!(hit.hits[0].magnitude, 1940);
+        assert_eq!(hit.hits[0].magnitude, 502);
         f.current = None;
         assert_eq!(
             plan("delayed_strike", &p, &f, &mut |_, _| panic!("offline draw")).unwrap(),

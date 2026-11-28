@@ -2,11 +2,11 @@
   "schema": "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v1",
   "catalog": {
     "path": "../spell-authoring/samples/executable-spell-catalog.json",
-    "sha256": "ce6b92e0f0904d39c93acd62e545e846919dbfc0a5e7c4ba1f934f440c134bfe"
+    "sha256": "4e1490eb505ffe138e1abdceafdff73eb34b11aa796c953abc4162b247f63fed"
   },
   "source_selection": {
     "path": "../spell-authoring/samples/executable-spell-source-selection.json",
-    "sha256": "756290830a5df60c8317cbe5ae43735764780bcd43a875cf3c7fe1e92fe86acf"
+    "sha256": "473bb58154f83e9e93b493f6d5f106ae7950f58b8b5d2ad675962634a1b731c6"
   },
   "creature_profiles": {
     "path": "creature_profiles.json",

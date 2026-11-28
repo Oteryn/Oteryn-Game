@@ -301,6 +301,7 @@ pub struct PreparedMagnitudeOwner {
 pub struct StrikeCastModifiers {
     source_bonus: u32,
     damage_percent: u32,
+    wheel_flat_damage: Option<i32>,
     base_damage_augments:
         Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
 }
@@ -327,6 +328,7 @@ impl StrikeCastModifiers {
             // Crystal's delayed Combat reads current gem and Focus bonuses.
             source_bonus: needed(a.source_damage_multiplier_percent)?,
             damage_percent,
+            wheel_flat_damage: a.wheel_flat_damage,
             base_damage_augments: a.item_augments.iter().filter(|augment| {
                 augment.spell.eq_ignore_ascii_case(spell_name)
                     && augment.kind == oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage
@@ -670,8 +672,9 @@ impl PreparedMagnitudeOwner {
         self.selected_item_augments.retain(|augment| augment.kind != oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage);
         self.selected_item_augments
             .extend(snapshot.base_damage_augments.iter().cloned());
-        // Wheel flat belongs to the current Combat after target block,
-        // alongside its current gem/Focus modifiers.
+        // Divine Grenade samples flat damage at planting. Gem and Focus
+        // multipliers still come from the current Combat.
+        self.resolved_attributes.wheel_flat_damage = snapshot.wheel_flat_damage;
         self.resolved_attributes.source_damage_multiplier_percent = Some(
             snapshot
                 .source_bonus

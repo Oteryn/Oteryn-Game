@@ -31,6 +31,7 @@ C18B_SOURCE = {
     "repository": "zimbadev/crystalserver",
     "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
 }
+GRENADE_COOLDOWNS_MS = (26000, 20000, 14000)
 C18B_HEADERS = {
     "divine_barrage": (
         (
@@ -110,15 +111,18 @@ def _crystal_damage_bounds(slug):
     )
 
 
-def apply_crystal_grenade_parameters(parameters):
-    # Crystal 201189f8: divine_grenade.lua:6-24,26-42,110 and
-    # player_wheel.cpp:1408-1411,2315-2323.
-    if parameters["value_timing"] != "at_expiry":
-        parameters["expiry_inputs"][:0] = ["level", "magic_level", "wheel_stage"]
-    parameters.pop("snapshot_inputs", None)
+def apply_grenade_parameters(parameters):
+    # Fandom Divine Grenade (2026-06-20) gives the cooldowns and cast-time raw damage.
+    if parameters["value_timing"] == "at_expiry":
+        parameters["expiry_inputs"] = [
+            value for value in parameters["expiry_inputs"]
+            if value not in {"level", "magic_level", "wheel_stage"}
+        ]
     parameters.update(
-        value_timing="at_expiry",
-        cooldown_ms_by_stage=[26000, 20000, 16000],
+        value_timing="raw_at_cast_modifiers_at_expiry",
+        snapshot_inputs=["magic_level", "flat_damage"],
+        cooldown_ms_by_stage=list(GRENADE_COOLDOWNS_MS),
+        # Crystal 201189f8: player_wheel.cpp:1408-1411,2315-2323.
         base_damage_bonus_percent_by_stage=[30, 60, 100],
     )
 
@@ -135,7 +139,7 @@ def apply_c18b_spell_policy(spell):
         )
     elif slug == "divine_grenade":
         # Keep the S22 Wheel unlock and the Global four-tile range.
-        apply_crystal_grenade_parameters(
+        apply_grenade_parameters(
             spell["execution"]["native_behavior"]["parameters"]
         )
 

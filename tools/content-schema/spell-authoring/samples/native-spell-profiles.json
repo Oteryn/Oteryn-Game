@@ -2569,7 +2569,7 @@
                 "selection_rule": "S5/S21"
               },
               "immediate_strike": false,
-              "value_timing": "at_expiry",
+              "value_timing": "raw_at_cast_modifiers_at_expiry",
               "suppress_charms": false,
               "ignore_caster_floor": false,
               "identity_gate": "player_id_source_baseline",
@@ -2579,7 +2579,7 @@
               "cooldown_ms_by_stage": [
                 26000,
                 20000,
-                16000
+                14000
               ],
               "base_damage_bonus_percent_by_stage": [
                 30,
@@ -2587,9 +2587,6 @@
                 100
               ],
               "expiry_inputs": [
-                "level",
-                "magic_level",
-                "wheel_stage",
                 "critical_chance",
                 "extra_critical_damage",
                 "divine_empowerment",
@@ -2598,7 +2595,11 @@
                 "bounty_talisman"
               ],
               "late_damage_buffs_apply": false,
-              "placement_gate": "existing_tile_and_no_pz_from_outside_pz"
+              "placement_gate": "existing_tile_and_no_pz_from_outside_pz",
+              "snapshot_inputs": [
+                "magic_level",
+                "flat_damage"
+              ]
             }
           }
         }
@@ -2710,7 +2711,7 @@
               "selection_rule": "S5/S21"
             },
             "immediate_strike": false,
-            "value_timing": "at_expiry",
+            "value_timing": "raw_at_cast_modifiers_at_expiry",
             "suppress_charms": false,
             "ignore_caster_floor": false,
             "identity_gate": "player_id_source_baseline",
@@ -2720,7 +2721,7 @@
             "cooldown_ms_by_stage": [
               26000,
               20000,
-              16000
+              14000
             ],
             "base_damage_bonus_percent_by_stage": [
               30,
@@ -2728,9 +2729,6 @@
               100
             ],
             "expiry_inputs": [
-              "level",
-              "magic_level",
-              "wheel_stage",
               "critical_chance",
               "extra_critical_damage",
               "divine_empowerment",
@@ -2739,7 +2737,11 @@
               "bounty_talisman"
             ],
             "late_damage_buffs_apply": false,
-            "placement_gate": "existing_tile_and_no_pz_from_outside_pz"
+            "placement_gate": "existing_tile_and_no_pz_from_outside_pz",
+            "snapshot_inputs": [
+              "magic_level",
+              "flat_damage"
+            ]
           }
         }
       },

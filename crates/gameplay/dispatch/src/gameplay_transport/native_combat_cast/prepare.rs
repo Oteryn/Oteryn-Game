@@ -436,7 +436,6 @@ async fn prepare_spatial(
     };
     let is_delayed = parameters.get("delay_ms").is_some();
     let is_divine_grenade = parameters["spell_name"] == "divine grenade";
-    // Crystal 201189f spells.cpp:1252-1257 uses the caster tile when no position is sent.
     let held = (is_delayed && !is_divine_grenade)
         .then(|| delayed_strikes::held_target(runtime, attack_target))
         .flatten();
@@ -460,6 +459,21 @@ async fn prepare_spatial(
                 if parameters["spell_name"] == "death echo" =>
             {
                 position
+            }
+            SpellTarget::None | SpellTarget::AttackTarget if is_divine_grenade => {
+                let range = spell.range_tiles.ok_or(SpellCastDisposition::Rejected)?;
+                // Divine Grenade plants on the selected target's tile within range.
+                super::ordinary_combat::aim_point(
+                    runtime,
+                    states,
+                    actor,
+                    current.position(),
+                    super::ordinary_combat::Aim::Target,
+                    attack_target,
+                    now,
+                )?
+                .filter(|p| position.x.abs_diff(p.x).max(position.y.abs_diff(p.y)) <= range)
+                .unwrap_or(position)
             }
             SpellTarget::None | SpellTarget::AttackTarget if is_delayed => {
                 if spell

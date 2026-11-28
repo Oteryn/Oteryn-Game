@@ -6190,6 +6190,7 @@
                       "marker_removal_requires_caster_online",
                       "cooldown_ms_by_stage",
                       "base_damage_bonus_percent_by_stage",
+                      "snapshot_inputs",
                       "expiry_inputs",
                       "late_damage_buffs_apply",
                       "placement_gate"
@@ -6578,7 +6579,7 @@
                         "const": false
                       },
                       "value_timing": {
-                        "const": "at_expiry"
+                        "const": "raw_at_cast_modifiers_at_expiry"
                       },
                       "suppress_charms": {
                         "const": false
@@ -6610,7 +6611,7 @@
                             "const": 20000
                           },
                           {
-                            "const": 16000
+                            "const": 14000
                           }
                         ],
                         "items": false
@@ -6632,20 +6633,25 @@
                         ],
                         "items": false
                       },
-                      "expiry_inputs": {
+                      "snapshot_inputs": {
                         "type": "array",
-                        "minItems": 9,
-                        "maxItems": 9,
+                        "minItems": 2,
+                        "maxItems": 2,
                         "prefixItems": [
-                          {
-                            "const": "level"
-                          },
                           {
                             "const": "magic_level"
                           },
                           {
-                            "const": "wheel_stage"
-                          },
+                            "const": "flat_damage"
+                          }
+                        ],
+                        "items": false
+                      },
+                      "expiry_inputs": {
+                        "type": "array",
+                        "minItems": 6,
+                        "maxItems": 6,
+                        "prefixItems": [
                           {
                             "const": "critical_chance"
                           },

@@ -42,6 +42,7 @@ enum Case {
     Grenade,
     GrenadeBlocked,
     GrenadeHeld { position_cast: bool },
+    GrenadeTargetTile,
     Pz,
     StageZero,
     Outburst(u8),
@@ -106,15 +107,33 @@ fn delayed_strikes_postgres_grenade_hotkey_uses_caster_and_position_cast_uses_ai
     )
 }
 
+#[test]
+fn delayed_strikes_postgres_grenade_stays_on_the_selected_targets_tile() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    grenade_with_admin(Case::GrenadeTargetTile, "delayed_grenade_target", admin)
+}
+
 fn grenade(case: Case, tag: &'static str) -> TestResult {
-    scenario(Plan {
-        tag,
-        vocation: "paladin",
-        experience: 30_000_000_000,
-        weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/divine_grenade", 300, 160)],
-        case,
-    })
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    grenade_with_admin(case, tag, admin)
+}
+
+fn grenade_with_admin(case: Case, tag: &'static str, admin: String) -> TestResult {
+    scenario_with_admin(
+        Plan {
+            tag,
+            vocation: "paladin",
+            experience: 30_000_000_000,
+            weapon: "oteryn:item.tibia.i3277",
+            spells: &[("candidate:spell/divine_grenade", 300, 160)],
+            case,
+        },
+        admin,
+    )
 }
 #[test]
 fn delayed_strikes_postgres_outburst_full_harmony_repeats() -> TestResult {
@@ -214,14 +233,18 @@ fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestRes
 }
 
 fn scenario(plan: Plan) -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    scenario_with_admin(plan, admin)
+}
+
+fn scenario_with_admin(plan: Plan, admin: String) -> TestResult {
     let started = std::time::Instant::now();
     let result = std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, plan).await)
+            run(async move |_| scenario_inner(admin, plan).await)
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -315,7 +338,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             y: -10,
             floor: -7,
         },
-        Case::GrenadeHeld { .. } => crate::content::NativeEntryStart {
+        Case::GrenadeHeld { .. } | Case::GrenadeTargetTile => crate::content::NativeEntryStart {
             // Thalom has clear ground six cells east.
             x: -10,
             y: -9,
@@ -423,7 +446,12 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         .map_err(debug)?;
     if matches!(
         plan.case,
-        Case::Grenade | Case::GrenadeBlocked | Case::GrenadeHeld { .. } | Case::Pz | Case::Outburst(_)
+        Case::Grenade
+            | Case::GrenadeBlocked
+            | Case::GrenadeHeld { .. }
+            | Case::GrenadeTargetTile
+            | Case::Pz
+            | Case::Outburst(_)
     ) {
         let purchase = super::atelier_fixtures::fixture::prepare(&h).await?;
         let fence = current_fence(&owner, session).await?;
@@ -528,7 +556,8 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .position();
         let offset_x = match plan.case {
             Case::EchoCorners | Case::EchoHeldTarget => -1,
-            Case::GrenadeHeld { .. } => 6,
+            Case::GrenadeHeld { position_cast: false } => 6,
+            Case::GrenadeHeld { position_cast: true } | Case::GrenadeTargetTile => 4,
             _ => match plan.tag {
                 "monk_flurry" => 3,
                 "monk_takedown" => 4,
@@ -566,6 +595,9 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 spawns.push((position.x + dx, position.y + dy, position.floor));
             }
         }
+        if plan.case == Case::GrenadeTargetTile {
+            spawns.push((primary.x + 1, primary.y, primary.floor));
+        }
         if plan.case == Case::EchoHeldTarget {
             spawns.push((p.x + 3, p.y, p.floor));
         }
@@ -592,7 +624,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                         generation: row.generation,
                     },
                 ));
-            } else if plan.case == Case::EchoCorners {
+            } else if matches!(plan.case, Case::EchoCorners | Case::GrenadeTargetTile) {
                 corners.push((row.actor, at));
             } else if plan.case == Case::EchoHeldTarget {
                 held_target = Some((
@@ -717,14 +749,17 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .ok_or("before vitals")?
             .1
             .mana;
-        if matches!(plan.case, Case::GrenadeBlocked | Case::GrenadeHeld { .. }) {
+        if matches!(
+            plan.case,
+            Case::GrenadeBlocked | Case::GrenadeHeld { .. } | Case::GrenadeTargetTile
+        ) {
             let caster = crate::foundation::MovementLocalPosition {
                 x: start.x,
                 y: start.y,
                 floor: start.floor,
             };
             let mut commands = Vec::new();
-            if matches!(plan.case, Case::GrenadeHeld { .. }) {
+            if matches!(plan.case, Case::GrenadeHeld { .. } | Case::GrenadeTargetTile) {
                 commands.push((
                     attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
                     attack::encode_attack_target_intent(Some(&target_ref)).map_err(debug)?,
@@ -748,12 +783,13 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 Case::GrenadeBlocked => (wire_position(blocked), None),
                 Case::GrenadeHeld { position_cast: true } => {
                     let aimed = crate::foundation::MovementLocalPosition {
-                        // Aim within Divine Grenade's four-tile range, with the rat still held at six.
-                        x: caster.x + 4,
+                        // The selected rat is also in range, one tile beyond the cursor.
+                        x: caster.x + 3,
                         ..position
                     };
                     (wire_position(aimed), Some(aimed))
                 }
+                Case::GrenadeTargetTile => (actor_spell::SpellTarget::AttackTarget, Some(position)),
                 _ => (actor_spell::SpellTarget::AttackTarget, Some(caster)),
             };
             commands.push((
@@ -771,7 +807,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 assert_eq!(
                     attack::decode_attack_intent_result(&results[0].1).map_err(debug)?,
                     attack::AttackIntentDisposition::Ok,
-                    "the monster six tiles away is held"
+                    "the monster is held"
                 );
             }
             let disposition = actor_spell::decode_spell_cast_result(
@@ -807,12 +843,81 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                     markers[0].event.source_binding,
                     "canary.appearance:effect/divine_grenade"
                 );
-                assert_eq!(markers[0].event.position, expected);
+                assert_eq!(
+                    markers[0].event.position, expected,
+                    "the marker lands on the cast tile"
+                );
             }
             assert_eq!(
                 states.spell_timers.as_ref().map_or(0, |t| t.payloads.len()),
                 usize::from(expected_marker.is_some())
             );
+            if plan.case == Case::GrenadeTargetTile {
+                use crate::spell::delayed_execution::TimerPayload;
+
+                let timer = states
+                    .spell_timers
+                    .as_ref()
+                    .and_then(|timers| timers.payloads.first())
+                    .ok_or("grenade timer")?;
+                let TimerPayload::Strike(saved) = &timer.payload else {
+                    return Err("grenade strike payload".into());
+                };
+                assert_eq!(saved.scheduled.due_ms - saved.binding.cast_at.get() / 1000, 3000);
+            }
+            drop(states);
+            drop(runtime);
+            if plan.case == Case::GrenadeTargetTile {
+                let &[(witness, _)] = corners.as_slice() else {
+                    return Err("expected one rat beside the planted marker".into());
+                };
+                let health = u64::try_from(RAT_HEALTH)?;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    let context = runtime.encounter_position_context();
+                    let (carrier, continuity) = runtime.encounter_parts_mut();
+                    let old = carrier.read_position(continuity, target.0).map_err(debug)?;
+                    carrier
+                        .compare_commit_position(
+                            continuity,
+                            old,
+                            context,
+                            crate::domain::carrier_values::LocalPosition {
+                                x: position.x - 3,
+                                y: position.y,
+                                floor: position.floor,
+                            },
+                        )
+                        .map_err(debug)?;
+                }
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(Duration::from_secs(2))
+                    .ok_or("clock")?;
+                let early = owner.drain_native_ai_timers().await.map_err(debug)?;
+                assert!(early.receipts.is_empty());
+                assert_eq!(
+                    deps.runtime.lock().await.live_creature_health(witness),
+                    Some(health)
+                );
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(Duration::from_millis(1100))
+                    .ok_or("clock")?;
+                let due = owner.drain_native_ai_timers().await.map_err(debug)?;
+                assert!(due.blocked.is_none());
+                assert_eq!(due.receipts.len(), 1);
+                let runtime = deps.runtime.lock().await;
+                assert_eq!(
+                    runtime.live_creature_health(target),
+                    Some(health),
+                    "the grenade does not follow the selected rat"
+                );
+                assert!(
+                    runtime.live_creature_health(witness).is_some_and(|hp| hp < health),
+                    "the blast hits a creature beside the original tile"
+                );
+            }
             continue;
         }
         if let Case::Outburst(charges) = plan.case {
@@ -1210,11 +1315,11 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             let state = states.get_mut(&runtime, actor, session).ok_or("caster")?;
             assert_eq!(
                 state.cooldowns.spells.get(*key).map(|ready| ready.get() - cast_at),
-                Some(16_000_000),
+                Some(14_000_000),
                 "paid grade-three cooldown"
             );
-            // Make the live range clearly distinguishable from the planted range,
-            // regardless of the damage and critical rolls.
+            // Give the caster a raw-damage input that would dominate the planted range
+            // if the callback mistakenly used the caster's live magic level.
             let magic_boost = ConditionDefinition::new(
                 "fixture:grenade_magic_level",
                 1,
@@ -1366,8 +1471,8 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         }
         if plan.case == Case::Grenade {
             assert!(
-                hit - echo >= 4000,
-                "fresh 1000 magic levels contribute 8000 minimum raw damage before mitigation, got {} HP loss",
+                hit - echo < 4000,
+                "post-plant magic levels must not increase raw damage, got {} HP loss",
                 hit - echo
             );
         }
