@@ -9,6 +9,7 @@ pub(super) mod step;
 pub(super) use reply::result;
 
 pub(super) struct State {
+    pub(super) cooldowns: Option<super::cooldowns::CooldownFeed>,
     spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     actor: ExactActorRef,
     enabled: bool,
@@ -551,6 +552,13 @@ impl State {
         } else {
             authority.observe_house_vitals(self.actor, *admitted).await
         };
+        let frames = super::cooldowns::frames(
+            authority,
+            self.cooldowns.as_ref(),
+            &mut admitted.continuity,
+            None,
+        )?;
+        super::cooldowns::write_batch(stream, &frames, None).await?;
         if let Some((_, vitals)) = &current
             && self
                 .capacity_vitals_max

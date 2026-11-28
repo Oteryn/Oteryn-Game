@@ -338,9 +338,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             store
         };
         let release = TerminalRelease::Logout(controller.transport);
+        if !self.settle_paid_quest_callbacks(session).await {
+            return Ok(LogoutReply::Result(LogoutResult::Busy));
+        }
         // Nothing is fenced yet when no transition id can be minted.
         let token = {
             let mut runtime = self.runtime.lock().await;
+            if self.has_pending_paid_quest_callback(session) {
+                return Ok(LogoutReply::Result(LogoutResult::Busy));
+            }
             if channel_switch
                 && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
             {

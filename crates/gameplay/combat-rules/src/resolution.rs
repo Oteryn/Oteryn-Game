@@ -5,7 +5,9 @@ use oteryn_gameplay_content::content::creature_policy::{
     CompiledCreaturePolicy, CreatureExactRatio,
 };
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
-use oteryn_gameplay_content::content::{ReferenceItemField, ReferenceWeaponType};
+use oteryn_gameplay_content::content::{
+    ProjectV2RangedElement, ReferenceItemField, ReferenceWeaponElement, ReferenceWeaponType,
+};
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -22,7 +24,52 @@ pub const WEAPON_REFRESH_MICROS: u64 = 1_000_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SwingWeapon {
     Fists,
-    Melee { attack: u32, skill: MeleeSkill },
+    Melee {
+        attack: u32,
+        skill: MeleeSkill,
+        elemental: Option<(u32, ProjectV2RangedElement)>,
+    },
+}
+
+impl SwingWeapon {
+    /// The physical attack plus any intrinsic elemental attack on the weapon.
+    pub fn attack(self, fist_attack: u32) -> u32 {
+        match self {
+            Self::Fists => fist_attack,
+            Self::Melee {
+                attack, elemental, ..
+            } => attack.saturating_add(elemental.map_or(0, |(points, _)| points)),
+        }
+    }
+
+    pub const fn has_elemental_attack(self) -> bool {
+        matches!(
+            self,
+            Self::Melee {
+                elemental: Some(_),
+                ..
+            }
+        )
+    }
+
+    /// Split a single draw by attack points, truncating both components as in
+    /// Crystal 201189f8 weapons.cpp:346-358.
+    pub fn split_damage(self, damage: i64) -> Option<(i64, i64, ProjectV2RangedElement)> {
+        let Self::Melee {
+            attack,
+            elemental: Some((points, element)),
+            ..
+        } = self
+        else {
+            return Some((damage, 0, ProjectV2RangedElement::Physical));
+        };
+        let total = i64::from(attack) + i64::from(points);
+        Some((
+            damage.checked_mul(i64::from(attack))?.checked_div(total)?,
+            damage.checked_mul(i64::from(points))?.checked_div(total)?,
+            element,
+        ))
+    }
 }
 
 /// The skill a melee weapon trains and swings with (`player.cpp` `getWeaponSkill`): a club,
@@ -90,9 +137,32 @@ pub fn swing_weapon<'a>(
                     ReferenceWeaponType::Axe => MeleeSkill::Axe,
                     _ => MeleeSkill::Fist,
                 };
+                let elemental = match &weapon.elemental {
+                    ReferenceItemField::Known(elements) => match elements.as_slice() {
+                        [] => None,
+                        [element] => {
+                            let ReferenceItemField::Known(points) = element.points else {
+                                return None;
+                            };
+                            let points = u32::try_from(points.0).ok()?;
+                            let kind = match element.element {
+                                ReferenceWeaponElement::Death => ProjectV2RangedElement::Death,
+                                ReferenceWeaponElement::Earth => ProjectV2RangedElement::Earth,
+                                ReferenceWeaponElement::Energy => ProjectV2RangedElement::Energy,
+                                ReferenceWeaponElement::Fire => ProjectV2RangedElement::Fire,
+                                ReferenceWeaponElement::Ice => ProjectV2RangedElement::Ice,
+                            };
+                            (points > 0).then_some((points, kind))
+                        }
+                        _ => return None,
+                    },
+                    ReferenceItemField::Unknown | ReferenceItemField::NotApplicable => None,
+                    ReferenceItemField::Conflict => return None,
+                };
                 return Some(SwingWeapon::Melee {
                     attack: u32::try_from(attack.0).ok()?,
                     skill,
+                    elemental,
                 });
             }
         }
@@ -189,6 +259,26 @@ pub fn swing_mitigated(
     defence: Option<(u32, u32)>,
     armor: u32,
 ) -> Option<i64> {
+    swing_mitigated_with_block(
+        root, constants, attacker, lineage, ordinal, damage, defence, armor,
+    )
+    .map(|(remaining, _)| remaining)
+}
+
+/// Resolve a swing's defence and armor and retain the block that training observes
+/// before innate mitigation or elemental response.
+#[allow(clippy::too_many_arguments)]
+pub fn swing_mitigated_with_block(
+    root: &GameplayDecisionRoot,
+    constants: &AttackConstants,
+    attacker: [u8; 16],
+    lineage: ([u8; 16], u64),
+    ordinal: u16,
+    damage: i64,
+    defence: Option<(u32, u32)>,
+    armor: u32,
+) -> Option<(i64, oteryn_gameplay_progression::hit_training::HitBlock)> {
+    use oteryn_gameplay_progression::hit_training::HitBlock;
     let mut remaining = damage;
     if let Some((minimum, maximum)) = defence {
         let defence = swing_draw(
@@ -203,7 +293,7 @@ pub fn swing_mitigated(
         )?;
         remaining = remaining.saturating_sub(defence);
         if remaining <= 0 {
-            return Some(0);
+            return Some((0, HitBlock::Defence));
         }
     }
     let (minimum, maximum) = armor_reduction_bounds(constants, armor);
@@ -217,7 +307,15 @@ pub fn swing_mitigated(
         i64::from(minimum),
         i64::from(maximum),
     )?;
-    Some(remaining.saturating_sub(reduction).max(0))
+    let remaining = remaining.saturating_sub(reduction).max(0);
+    Some((
+        remaining,
+        if remaining == 0 {
+            HitBlock::Armor
+        } else {
+            HitBlock::Unblocked
+        },
+    ))
 }
 
 /// The damage key a melee swing deals (`COMBAT_PHYSICALDAMAGE`).
@@ -263,21 +361,55 @@ pub fn creature_damage_response_with_reduction(
     if policy.damage_immunities.iter().any(|key| key == element) {
         return Some(0);
     }
-    let ratio = |r: CreatureExactRatio| {
-        (r.denominator != 0).then(|| r.numerator as f64 / r.denominator as f64)
-    };
+    let mitigated = mitigated_creature_damage(policy, damage as f64)?;
+    creature_magnitude(resisted_creature_damage(
+        policy,
+        mitigated,
+        element,
+        resistance_reduction,
+    )?)
+}
+
+/// Physical resistance on a melee component, before the armor draw.
+pub fn creature_physical_resistance(policy: &CompiledCreaturePolicy, damage: i64) -> Option<i64> {
+    if creature_physically_immune(policy) {
+        return Some(0);
+    }
+    let resisted = resisted_creature_damage(policy, damage as f64, PHYSICAL, 0)?;
+    (resisted.is_finite() && resisted < i64::MAX as f64).then_some(resisted.max(0.0) as i64)
+}
+
+/// Creature mitigation on a melee component after the armor draw.
+pub fn creature_melee_mitigation(policy: &CompiledCreaturePolicy, damage: i64) -> Option<i64> {
+    creature_magnitude(mitigated_creature_damage(policy, damage as f64)?)
+}
+
+fn creature_percent(ratio: CreatureExactRatio) -> Option<f64> {
+    (ratio.denominator != 0).then(|| ratio.numerator as f64 / ratio.denominator as f64)
+}
+
+fn mitigated_creature_damage(policy: &CompiledCreaturePolicy, damage: f64) -> Option<f64> {
     let mitigation = match policy.mitigation {
-        Some(m) => ratio(m)?.min(30.0),
+        Some(ratio) => creature_percent(ratio)?.min(30.0),
         None => 0.0,
     };
+    Some((damage - damage * mitigation / 100.0).trunc())
+}
+
+fn resisted_creature_damage(
+    policy: &CompiledCreaturePolicy,
+    damage: f64,
+    element: &str,
+    resistance_reduction: u32,
+) -> Option<f64> {
     let resistance = match policy.resistances.iter().find(|v| v.damage_type == element) {
-        Some(v) => ratio(v.percent)?,
+        Some(v) => creature_percent(v.percent)?,
         None => 0.0,
     };
-    let damage = damage as f64;
-    let mitigated = (damage - damage * mitigation / 100.0).trunc();
-    let landed =
-        (mitigated * (100.0 - resistance + f64::from(resistance_reduction)) / 100.0).round();
+    Some((damage * (100.0 - resistance + f64::from(resistance_reduction)) / 100.0).round())
+}
+
+fn creature_magnitude(landed: f64) -> Option<i64> {
     if !landed.is_finite() || landed > f64::from(i32::MAX) || landed < f64::from(i32::MIN) {
         return None;
     }

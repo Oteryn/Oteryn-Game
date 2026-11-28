@@ -223,6 +223,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .await
                             .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?
                             .map_err(|_| DurabilityError::Unavailable)?;
+                    self.resolve_player_trades(&permit).await?;
                     let selection_binding = DailyBoostBinding {
                         scope: binding.runtime_scope(),
                         generation: binding.scope_generation().get(),
@@ -287,6 +288,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }))
     }
 
+    #[cfg(test)]
+    async fn load_with_test_trade_contention(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+        load: impl std::future::Future<Output = Result<Option<wire::DailyBoostView>, DailyBoostRefusal>>,
+    ) -> Result<Option<wire::DailyBoostView>, DailyBoostRefusal> {
+        use std::sync::atomic::Ordering;
+        if !self
+            .states
+            .test_daily_boost_parked_trade
+            .swap(false, Ordering::Relaxed)
+        {
+            return load.await;
+        }
+        // Enter after command ingress has read its own fences. The reservation
+        // now belongs specifically to the lane reconciliation this query calls.
+        let binding = self.runtime.lock().await.binding();
+        super::monk_save::postgres_tests::maintain_authority_ready(self).await;
+        let holder = self
+            .root
+            .try_issue_semantic_pass()
+            .map_err(selection_refusal)?;
+        self.states
+            .player_trades
+            .retain_test_request(binding, fence).map_err(selection_refusal)?;
+        let result = load.await;
+        self.states
+            .player_trades
+            .remove_test_request(fence.game_session_id).map_err(selection_refusal)?;
+        drop(holder);
+        result
+    }
+
     pub(super) async fn daily_boost_wire(
         &self,
         admitted: AdmittedSession,
@@ -317,17 +351,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let budget =
             AdmissionRetryBudget::for_session_read(self.root).map_err(selection_refusal)?;
-        let view = self
-            .load_daily_boost(
-                &budget,
-                Some(DailyBoostQuery {
-                    admitted,
-                    fence,
-                    command_id: id,
-                }),
-            )
-            .await?
-            .ok_or(DailyBoostRefusal::SelectionMissing)?;
+        let load = self.load_daily_boost(
+            &budget,
+            Some(DailyBoostQuery { admitted, fence, command_id: id }),
+        );
+        #[cfg(test)]
+        let load = self.load_with_test_trade_contention(fence, load);
+        let view = load.await?.ok_or(DailyBoostRefusal::SelectionMissing)?;
         wire::encode_view(&view).map_err(|_| DailyBoostRefusal::ViewEncoding)
     }
 

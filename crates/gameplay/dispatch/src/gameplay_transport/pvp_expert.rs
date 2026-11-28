@@ -95,9 +95,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         mut modes: ExpertFightModes,
     ) -> Result<AttackIntentDisposition, DurabilityError> {
-        let Some(permit) = self.spell_lane_permit().await else {
-            return Ok(AttackIntentDisposition::Rejected);
-        };
+        let permit = self.try_spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         if states.get(&runtime, actor, session).is_none() {

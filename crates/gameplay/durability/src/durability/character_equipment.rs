@@ -19,6 +19,7 @@ pub(crate) use house_read::{HouseEquipmentAccess, assert_house_equipment_content
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::equipment_policy_abi::{EquipmentPolicyLookup, claims};
+use super::item_mint::TypedDefinitionRef;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -123,24 +124,65 @@ impl DurabilityRoot {
             let content=*content;
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
             let actual=read_current_equipment_snapshot_in_transaction(&mut tx,&record,&node,&fence,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
-            let world=*fence.runtime_scope.world_id().as_bytes();
             if actual != expected { return Err(DurabilityError::Unavailable); }
-            let mut entries=Vec::new();
-            for slot in [10,6] {
-                let Some(quiver)=actual.items.iter().find(|i|i.slot==slot && content.is_quiver(&i.definition)) else { continue; };
-                let rows=sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
-                    .bind(quiver.item_instance_id.as_slice()).bind(world.as_slice()).fetch_all(&mut *tx).await?;
-                if rows.len()>20 { return Err(DurabilityError::InvalidStoredState); }
-                for row in rows {
-                    let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
-                    if !content.is_ammunition(&definition) { return Err(DurabilityError::InvalidStoredState); }
-                    entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
-                }
-            }
+            let world = *fence.runtime_scope.world_id().as_bytes();
+            let entries = read_quiver_entries(&mut tx, &world, &actual, content).await?;
             super::db::commit_semantic_read(tx,deadline).await?;Ok(entries)
         })).await.map_err(EquipmentError::from)
     }
 }
+
+async fn read_quiver_entries<C: super::item_loop_move::ItemLoopContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    world: &[u8; 16],
+    equipment: &EquipmentSnapshot,
+    content: &C,
+) -> std::result::Result<Vec<EquippedItem>, DurabilityError> {
+    let mut entries = Vec::new();
+    for slot in [10, 6] {
+        let Some(quiver) = equipment
+            .items
+            .iter()
+            .find(|item| item.slot == slot && content.is_quiver(&item.definition))
+        else {
+            continue;
+        };
+        let rows = sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
+            .bind(quiver.item_instance_id.as_slice())
+            .bind(world.as_slice())
+            .fetch_all(&mut **tx)
+            .await?;
+        if rows.len() > 20 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        for row in rows {
+            let definition = super::item_mint::TypedDefinitionRef {
+                family: row.try_get("definition_family")?,
+                production_key: row.try_get("definition_production_key")?,
+                revision_ref: row.try_get("definition_revision_ref")?,
+            };
+            if !content.is_ammunition(&definition) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            entries.push(EquippedItem {
+                slot,
+                tier: u8::try_from(row.try_get::<i16, _>("tier")?)
+                    .ok()
+                    .filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX)
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+                item_instance_id: uuid(row.try_get("item_instance_id")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                definition,
+                quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                state_revision: number(row.try_get("state_revision")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            });
+        }
+    }
+    Ok(entries)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum EquipmentIntent {
     Move {
@@ -178,6 +220,8 @@ pub struct EquipmentReceipt {
     pub event_id: [u8; 16],
     pub revision_after: u64,
     pub replayed: bool,
+    /// Destination slot and qualified definition, present only on a fresh equip.
+    pub newly_equipped: Option<(u8, TypedDefinitionRef)>,
 }
 /// Private current proof, issued only after recovery, node/session/lease/scope and independently
 /// issued active Content have been checked against actual durable owners in this transaction.
@@ -573,6 +617,7 @@ async fn apply_resolved_equipment_in_transaction(
             event_id: uuid(row.try_get("event_id")?)?,
             revision_after: number(row.try_get("revision_after")?)?,
             replayed: true,
+            newly_equipped: None,
         });
     }
     let actual = read_equipment_in_transaction(tx, authority).await?;
@@ -587,6 +632,7 @@ async fn apply_resolved_equipment_in_transaction(
     let mut item = None;
     let mut from = None;
     let mut to = None;
+    let mut newly_equipped = None;
     let mut parent = None;
     let mut ordinal = None;
     let mut item_revision = None;
@@ -612,16 +658,16 @@ async fn apply_resolved_equipment_in_transaction(
             }
             let row=sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE")
                 .bind(identity.as_slice()).bind(authority.world.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment actual live item"))?;
+            let key: String = row.try_get("definition_production_key")?;
+            let revision: String = row.try_get("definition_revision_ref")?;
+            let family: String = row.try_get("definition_family")?;
             let policy = content
-                .equipment_policy(
-                    &row.try_get::<String, _>("definition_production_key")?,
-                    &row.try_get::<String, _>("definition_revision_ref")?,
-                )
+                .equipment_policy(&key, &revision)
                 .ok_or(rejected("equipment active item definition"))?;
             if policy.source_digest() != authority.content_digest {
                 return Err(rejected("equipment member profile pin"));
             }
-            if row.try_get::<String, _>("definition_family")? != "Item" {
+            if family != "Item" {
                 return Err(rejected("equipment item family"));
             }
             // The Character root and backpack item serialize this immutable slot.
@@ -775,8 +821,6 @@ async fn apply_resolved_equipment_in_transaction(
                     if nested_source_parent.is_some() {
                         hotkey::main_vacancy(tx, authority, content, backpack_id).await?;
                     }
-                    let key: String = row.try_get("definition_production_key")?;
-                    let revision: String = row.try_get("definition_revision_ref")?;
                     if !content.is_quiver_item(&key, &revision)
                         && (policy.container_capacity().is_some()
                             || !content.is_plain_item(&key, &revision))
@@ -843,6 +887,14 @@ async fn apply_resolved_equipment_in_transaction(
                     ]);
                     swap = Some((old.clone(), replacement));
                 }
+                newly_equipped = Some((
+                    *slot,
+                    TypedDefinitionRef {
+                        family,
+                        production_key: key,
+                        revision_ref: revision,
+                    },
+                ));
             } else {
                 if !actual
                     .items
@@ -988,6 +1040,7 @@ async fn apply_resolved_equipment_in_transaction(
         event_id,
         revision_after: next,
         replayed: false,
+        newly_equipped,
     })
 }
 
@@ -1696,6 +1749,7 @@ async fn committed_move(
         event_id: uuid(row.try_get("event_id")?)?,
         revision_after: number(row.try_get("revision_after")?)?,
         replayed: true,
+        newly_equipped: None,
     })))
 }
 

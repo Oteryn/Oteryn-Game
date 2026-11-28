@@ -128,16 +128,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let callbacks = self.callback_content();
-        let Some(callback) = callbacks.iter().find(|callback| {
-            quest_objects::accepts(callback)
-                && super::quest_callbacks::matches(map, callback, resolved.placement_key)
-        }) else {
+        let required_tools = self
+            .callback_content()
+            .iter()
+            .filter(|callback| {
+                quest_objects::accepts(callback)
+                    && super::quest_callbacks::matches(map, callback, resolved.placement_key)
+            })
+            .filter_map(|callback| callback.item_on_target.as_ref())
+            .collect::<Vec<_>>();
+        if required_tools.is_empty() {
             return Ok(None);
-        };
-        let Some(required) = &callback.item_on_target else {
-            return Err(());
-        };
+        }
         let Some(fence) = command.item_fence else {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         };
@@ -151,25 +153,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|bag| &bag.entries)
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
-            .find(|entry| {
-                quest_objects::is_required_tool(required, &entry.item.definition.production_key)
-                    && quest_objects::matches_source(
-                        &intent.target,
-                        source,
-                        entry.item.item_instance_id,
-                        self.active_generation
-                            .and_then(crate::content::ActiveGeneration::native_gameplay)
-                            .and_then(|native| native.item_index())
-                            .and_then(|index| {
-                                index.definition_ref(
-                                    &entry.item.definition.family,
-                                    &entry.item.definition.production_key,
-                                    &entry.item.definition.revision_ref,
-                                )
-                            }),
-                    )
+            .find_map(|entry| {
+                let required = required_tools.iter().copied().find(|required| {
+                    quest_objects::is_required_tool(required, &entry.item.definition.production_key)
+                })?;
+                quest_objects::matches_source(
+                    &intent.target,
+                    source,
+                    entry.item.item_instance_id,
+                    self.active_generation
+                        .and_then(crate::content::ActiveGeneration::native_gameplay)
+                        .and_then(|native| native.item_index())
+                        .and_then(|index| {
+                            index.definition_ref(
+                                &entry.item.definition.family,
+                                &entry.item.definition.production_key,
+                                &entry.item.definition.revision_ref,
+                            )
+                        }),
+                )
+                .then_some((entry, required))
             });
-        let Some(selected) = selected else {
+        let Some((selected, required)) = selected else {
             return Ok(Some(outcome(UseDisposition::NothingToUse)));
         };
         let intent =

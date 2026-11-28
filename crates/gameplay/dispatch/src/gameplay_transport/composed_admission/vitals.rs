@@ -27,19 +27,82 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
             );
         }
-        self.load_wheel_gift(actor, game_session_id).await;
-        self.refresh_wheel_vitals(actor, game_session_id).await;
-        let restored = pvp_live::tracked(
-            &*self.states.spell_states.lock().await,
-            actor,
-            game_session_id,
-        );
-        if !restored && !self.refresh_pvp_locks(actor, game_session_id).await {
+        if !self
+            .prepare_channel_vitals(actor, game_session_id, None)
+            .await
+        {
             return None;
         }
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
+    }
+
+    pub(in crate::gameplay_transport) async fn observe_actor_join(
+        &self,
+        actor: ExactActorRef,
+        admitted: crate::gameplay_transport::connection::AdmittedSession,
+        house: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        let session = admitted.game_session_id;
+        let generation = admitted.continuity.connection_generation;
+        if !self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .current_cooldown_transport(actor, session, generation)
+        {
+            return (None, None);
+        }
+        let ready = house
+            || self
+                .prepare_channel_vitals(actor, session, Some(generation))
+                .await;
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if !states.current_cooldown_transport(
+            actor,
+            session,
+            admitted.continuity.connection_generation,
+        ) {
+            return (None, None);
+        }
+        let cooldowns = states.subscribe_cooldowns(&runtime, actor, admitted, self.spells);
+        let vitals = if house {
+            admitted
+                .item_fence
+                .filter(|fence| {
+                    fence.connection_generation.get() == admitted.continuity.connection_generation
+                })
+                .and_then(|fence| states.house_vitals(&runtime, actor, session, fence))
+        } else if ready {
+            actor_spell::observe_vitals(&runtime, &states, actor, session)
+        } else {
+            None
+        };
+        (vitals, cooldowns)
+    }
+
+    async fn prepare_channel_vitals(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        generation: Option<u64>,
+    ) -> bool {
+        self.load_wheel_gift_for_transport(actor, game_session_id, generation)
+            .await;
+        self.refresh_wheel_vitals_for_transport(actor, game_session_id, generation)
+            .await;
+        let restored = pvp_live::tracked(
+            &*self.states.spell_states.lock().await,
+            actor,
+            game_session_id,
+        );
+        restored
+            || self
+                .refresh_pvp_locks_for_transport(actor, game_session_id, generation)
+                .await
     }
 
     async fn prepare_actor_vitals(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
@@ -56,16 +119,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<(u64, actor_spell::ActorVitals)> {
         let session = admitted.game_session_id;
         let fence = admitted.item_fence?;
-        if fence.connection_generation.get() != admitted.continuity.connection_generation {
+        let generation = admitted.continuity.connection_generation;
+        if fence.game_session_id != session
+            || fence.connection_generation.get() != generation
+            || !self
+                .states
+                .spell_states
+                .lock()
+                .await
+                .current_cooldown_transport(actor, session, generation)
+        {
             return None;
         }
-        let ready = self.prepare_actor_vitals(actor, session).await;
+        self.expire_house_furniture_on_tick(actor, session, Some(fence))
+            .await;
+        let ready = self.reconcile_pending_item_effects(actor, session).await
+            && super::super::item_use::gourmet::checkpoint_for_house_transport(self, actor, fence)
+                .await;
         if ready {
-            self.load_wheel_gift(actor, session).await;
+            self.load_wheel_gift_for_transport(actor, session, Some(generation))
+                .await;
         }
         let deadline = self.cake_regeneration_deadline();
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if !states.current_cooldown_transport(actor, session, fence.connection_generation.get()) {
+            return None;
+        }
         if ready
             && self
                 .active_generation

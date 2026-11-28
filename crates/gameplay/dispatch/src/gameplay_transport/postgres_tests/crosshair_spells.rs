@@ -1,5 +1,5 @@
-//! C18b: position-target ("crosshair") casts of Divine Barrage, Ethereal Barrage and Thousand
-//! Fist Blows through the wire command, with real Character, Equipment and Premium owners.
+//! C18b: crosshair and legacy position requests through the wire command, with real Character,
+//! Equipment and Premium owners. Barrages require a held target.
 use super::death_ml_loss_composed_fixtures::{current_fence, production_generation_with_source};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -22,7 +22,8 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::{
-    ClientCommandValue, CommandStatus, actor_spell, decode_command_result, encode_client_command,
+    ClientCommandValue, CommandStatus, actor_spell, attack, decode_command_result,
+    encode_client_command, world_spatial_entities::EntityRef,
 };
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
@@ -38,39 +39,83 @@ struct Plan {
     spells: &'static [(&'static str, u32, i64)],
 }
 
-/// The rat's health before every cast: far above any one hit, so the health lost is the damage.
+#[derive(Clone, Copy)]
+enum Targeting {
+    PositionOnly,
+    MissingHeldTarget,
+    ClickHeldTarget,
+    ClickOtherCreature,
+    HeldPlayer,
+}
+
+/// Each rat's health before every cast: far above any one hit.
 const RAT_HEALTH: i64 = 10_000;
+
+const PALADIN: Plan = Plan {
+    tag: "crosshair_paladin",
+    vocation: "paladin",
+    // Level 70 needs 5_246_300 experience (50/3 * (L^3 - 6L^2 + 17L - 12)).
+    experience: 6_000_000,
+    // A DISTANCE weapon with a known attack: Ethereal Barrage reads attack_skill.
+    weapon: "oteryn:item.tibia.i3277",
+    spells: &[
+        ("candidate:spell/divine_barrage", 70, 175),
+        ("candidate:spell/ethereal_barrage", 60, 135),
+    ],
+};
 
 #[test]
 fn crosshair_spells_postgres_paladin_barrages_hit_position_target() -> TestResult {
-    scenario(Plan {
-        tag: "crosshair_paladin",
-        vocation: "paladin",
-        // Level 70 needs 5_246_300 experience (50/3 * (L^3 - 6L^2 + 17L - 12)).
-        experience: 6_000_000,
-        // A DISTANCE weapon with a known attack: Ethereal Barrage reads attack_skill.
-        weapon: "oteryn:item.tibia.i3277",
-        spells: &[
-            ("candidate:spell/divine_barrage", 70, 175),
-            ("candidate:spell/ethereal_barrage", 60, 135),
-        ],
-    })
+    scenario(PALADIN, Targeting::ClickHeldTarget)
+}
+
+#[test]
+fn crosshair_spells_postgres_paladin_barrages_require_held_target() -> TestResult {
+    scenario(
+        Plan {
+            tag: "crosshair_paladin_no_target",
+            ..PALADIN
+        },
+        Targeting::MissingHeldTarget,
+    )
+}
+
+#[test]
+fn crosshair_spells_postgres_paladin_barrages_prefer_held_target() -> TestResult {
+    scenario(
+        Plan {
+            tag: "crosshair_paladin_other_tile",
+            ..PALADIN
+        },
+        Targeting::ClickOtherCreature,
+    )
+}
+
+#[test]
+fn crosshair_spells_postgres_paladin_barrages_accept_held_player_in_both_encodings() -> TestResult {
+    scenario(
+        Plan { tag: "crosshair_pvp_paladin", ..PALADIN },
+        Targeting::HeldPlayer,
+    )
 }
 
 #[test]
 fn crosshair_spells_postgres_monk_thousand_fist_blows_hits_position_target() -> TestResult {
-    scenario(Plan {
-        tag: "crosshair_monk",
-        vocation: "monk",
-        // Level 120 needs 27_393_800 experience.
-        experience: 30_000_000,
-        // A FIST weapon with a known attack: Thousand Fist Blows reads attack_skill.
-        weapon: "oteryn:item.tibia.i50157",
-        spells: &[("candidate:spell/thousand_fist_blows", 120, 145)],
-    })
+    scenario(
+        Plan {
+            tag: "crosshair_monk",
+            vocation: "monk",
+            // Level 120 needs 27_393_800 experience.
+            experience: 30_000_000,
+            // A FIST weapon with a known attack: Thousand Fist Blows reads attack_skill.
+            weapon: "oteryn:item.tibia.i50157",
+            spells: &[("candidate:spell/thousand_fist_blows", 120, 145)],
+        },
+        Targeting::PositionOnly,
+    )
 }
 
-fn scenario(plan: Plan) -> TestResult {
+fn scenario(plan: Plan, targeting: Targeting) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -79,7 +124,7 @@ fn scenario(plan: Plan) -> TestResult {
         .spawn(move || {
             run(async move |admin| {
                 for native_frame in [false, true] {
-                    scenario_inner(admin.clone(), plan, native_frame).await?;
+                    scenario_inner(admin.clone(), plan, targeting, native_frame).await?;
                 }
                 Ok(())
             })
@@ -90,9 +135,22 @@ fn scenario(plan: Plan) -> TestResult {
         .map_err(Into::into)
 }
 
-async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestResult {
+async fn scenario_inner(
+    admin: String,
+    plan: Plan,
+    targeting: Targeting,
+    native_frame: bool,
+) -> TestResult {
+    use super::appearance_change_postgres_fixtures::observer_visibility_tests as observer;
+    use oteryn_protocol_oteryn::pvp_expert::{ExpertFightModes, ExpertMode};
+
+    let pvp = matches!(targeting, Targeting::HeldPlayer);
     let h = Harness::create_with_admission_seed(admin, plan.tag, false, false).await?;
     prepare_current_session(&h).await?;
+    if pvp {
+        h.seed_pvp_target().await?;
+        observer::admit(&h).await?;
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -138,7 +196,7 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
         cp,
         room.clone(),
         native.spell_book().clone(),
-        3,
+        5,
     )?;
     deps.combat_room = Some(room);
     // Every spell here is premium: the account holds a Current Premium.
@@ -215,8 +273,7 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
         assert!(i64::from(facts.level) >= i64::from(*level), "{key} level");
         assert!(i64::from(facts.max_mana) >= *mana, "{key} max mana");
     }
-    let target;
-    let position;
+    let (target, other, target_position, other_position, target_ref);
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -238,10 +295,15 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
             .map_err(debug)?
             .position();
         assert_eq!(p.floor, if native_frame { 7 } else { -7 });
-        position = crate::foundation::MovementLocalPosition {
+        target_position = crate::foundation::MovementLocalPosition {
             x: p.x + 1,
             y: p.y,
             floor: p.floor,
+        };
+        // The rats are three tiles apart, outside each other's 5-by-5 spell area.
+        other_position = crate::foundation::MovementLocalPosition {
+            x: p.x - 2,
+            ..target_position
         };
         runtime
             .install_companion_policies(native.policies().clone())
@@ -252,19 +314,30 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
             .maximum_health;
         runtime
             .realize_activation_spawns(vec![(
-                vec![(position.x, position.y, position.floor)],
+                vec![
+                    (target_position.x, target_position.y, target_position.floor),
+                    (other_position.x, other_position.y, other_position.floor),
+                ],
                 60_000,
                 5_000,
                 "oteryn:creature.rat".into(),
                 u64::try_from(health)?,
             )])
             .map_err(|error| format!("realize crosshair target spawn: {error:?}"))?;
-        target = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
+        let visible = runtime.visible_entities();
+        let rat_at = |position| {
+            visible
+                .creatures
+                .iter()
+                .find(|rat| rat.position == position)
+        };
+        let rat = rat_at(target_position).ok_or("first rat")?;
+        target = rat.actor;
+        target_ref = EntityRef {
+            identity: target.placement_identity(),
+            generation: rat.generation,
+        };
+        other = rat_at(other_position).ok_or("second rat")?.actor;
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -317,7 +390,45 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
-    for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
+    let player = if pvp {
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
+            .bind(id(101).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
+            .bind(id(42).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'crosshair-pvp-fixture')")
+            .bind(id(42).as_slice()).execute(&h.pool).await?;
+        let victim = observer::initialize(&deps, &owner).await?;
+        let target_session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
+        let target_ref = {
+            let mut runtime = deps.runtime.lock().await;
+            let before = runtime.read_actor_position(victim).map_err(debug)?;
+            runtime.borrow_movement_position().commit_cardinal(before, crate::foundation::MovementLocalPosition {
+                x: target_position.x - 2, ..target_position
+            }).map_err(debug)?;
+            let visible = runtime.visible_entities();
+            let row = visible.players.iter().find(|entry| entry.actor == victim).ok_or("visible player")?;
+            EntityRef { identity: victim.placement_identity(), generation: row.generation }
+        };
+        super::pvp_live_fixtures::wait_for_login_protection_to_expire(&h.pool, session).await?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17, 21, 87]).ok_or("PvP capabilities")?;
+        assert_eq!(owner.expert_fight_modes(actor, session, admitted.continuity.next_command_id,
+            ExpertFightModes { modes: attack::FightModes { secure: false, ..attack::FightModes::DEFAULT }, expert: ExpertMode::RedFist }).await.map_err(debug)?,
+            attack::AttackIntentDisposition::Ok);
+        Some((victim, target_session, target_ref))
+    } else {
+        None
+    };
+    let position = if matches!(targeting, Targeting::ClickOtherCreature) {
+        other_position
+    } else {
+        target_position
+    };
+    let mut observed = Vec::new();
+    let mut expected = Vec::new();
+    let casts = plan.spells.iter().flat_map(|spell| {
+        [false, true].into_iter().take(if pvp { 2 } else { 1 }).map(move |hotkey| (spell, hotkey))
+    });
+    for (index, ((key, _, mana), hotkey)) in casts.enumerate() {
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
                 std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|i| {
@@ -327,6 +438,11 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
                 })
             })
             .ok_or("spell index")?;
+        let (definition, _) = deps.spells.source_indexed(spell).ok_or("spell profile")?;
+        let policy = &definition.authored.as_ref().ok_or("cast policy")?.header.targeting;
+        let needs_target = !matches!(targeting, Targeting::PositionOnly);
+        assert_eq!(policy.cast_at_position, Some(true), "{key}");
+        assert_eq!(policy.needs_target, needs_target, "{key}");
         if index > 0 {
             // Clear the 2 s attack group cooldown of the previous cast.
             owner.clock_origin = owner
@@ -334,24 +450,55 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
                 .checked_sub(Duration::from_secs(5))
                 .ok_or("clock advance")?;
         }
-        deps.runtime
-            .lock()
-            .await
-            .set_test_creature_health(target, RAT_HEALTH)
-            .map_err(debug)?;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            for rat in [target, other] {
+                runtime
+                    .set_test_creature_health(rat, RAT_HEALTH)
+                    .map_err(debug)?;
+            }
+        }
+        if matches!(
+            targeting,
+            Targeting::ClickHeldTarget | Targeting::ClickOtherCreature | Targeting::HeldPlayer
+        ) {
+            assert_eq!(
+                owner
+                    .select_attack_target(
+                        actor,
+                        session,
+                        admitted.continuity.next_command_id,
+                        Some(player.map_or(target_ref, |player| player.2))
+                    )
+                    .await,
+                attack::AttackIntentDisposition::Ok,
+                "{key} select held target"
+            );
+        }
         let before = owner
             .observe_vitals(actor, session)
             .await
             .ok_or("before vitals")?
             .1
             .mana;
+        let victim_health = if let Some((victim, target_session, _)) = player {
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states.get_mut(&runtime, victim, target_session).ok_or("victim")?;
+            state.restore_saved_vitals(state.character_facts().max_health, 0);
+            Some(state.vitals().health)
+        } else {
+            None
+        };
         let payload = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
             spell,
-            target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
-                x: position.x,
-                y: position.y,
-                floor: position.floor.abs(),
-            }),
+            target: if hotkey {
+                actor_spell::SpellTarget::AttackTarget
+            } else {
+                actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                    x: position.x, y: position.y, floor: position.floor.abs(),
+                })
+            },
             aim_at_target: false,
         });
         let results = exchange(
@@ -363,33 +510,60 @@ async fn scenario_inner(admin: String, plan: Plan, native_frame: bool) -> TestRe
             )],
         )
         .await?;
-        assert_eq!(
-            actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?,
-            actor_spell::SpellCastDisposition::Cast,
-            "{key}"
-        );
-        let hit = deps
-            .runtime
-            .lock()
-            .await
-            .live_creature_health(target)
-            .ok_or("rat survives")?;
-        assert!(
-            hit < u64::try_from(RAT_HEALTH)?,
-            "{key} must damage the creature on the targeted tile: {hit}"
-        );
+        let disposition = actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?;
+        let damaged = {
+            let runtime = deps.runtime.lock().await;
+            let health = u64::try_from(RAT_HEALTH)?;
+            let mut damaged = [false; 2];
+            for (hit, rat) in damaged.iter_mut().zip([target, other]) {
+                let remaining = runtime.live_creature_health(rat).ok_or("rat survives")?;
+                assert!(remaining <= health, "{key} unexpectedly healed a rat");
+                *hit = remaining < health;
+            }
+            if let (Some((victim, target_session, _)), Some(health)) = (player, victim_health) {
+                let states = owner.states.spell_states.lock().await;
+                let after = states.get(&runtime, victim, target_session).ok_or("victim after cast")?.vitals().health;
+                vec![after < health]
+            } else {
+                damaged.to_vec()
+            }
+        };
         let after = owner
             .observe_vitals(actor, session)
             .await
             .ok_or("after vitals")?
             .1
             .mana;
-        assert_eq!(i64::from(before) - i64::from(after), *mana, "{key} mana");
+        observed.push((
+            *key,
+            disposition,
+            damaged,
+            i64::from(before) - i64::from(after),
+        ));
+        let outcome = if matches!(targeting, Targeting::MissingHeldTarget) {
+            (
+                actor_spell::SpellCastDisposition::TargetRequired,
+                vec![false, false],
+                0,
+            )
+        } else {
+            (
+                actor_spell::SpellCastDisposition::Cast,
+                if pvp { vec![true] } else { vec![true, false] },
+                *mana,
+            )
+        };
+        expected.push((*key, outcome.0, outcome.1, outcome.2));
     }
     drop(owner);
     drop(authority);
     drop(seal);
-    h.cleanup().await
+    h.cleanup().await?;
+    assert_eq!(
+        observed, expected,
+        "disposition, target damage, and mana spent (native frame: {native_frame})"
+    );
+    Ok(())
 }
 
 async fn exchange(

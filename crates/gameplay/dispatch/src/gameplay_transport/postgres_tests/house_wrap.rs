@@ -31,17 +31,26 @@ const POSITION: [i32; 3] = [32310, 32804, 7];
 
 #[test]
 fn house_wrap_dispatch_postgres_roundtrip_replay_and_refusal() -> TestResult {
+    run_wrap_case(false)
+}
+
+#[test]
+fn cach1_snowman_counts_each_fresh_unwrap() -> TestResult {
+    run_wrap_case(true)
+}
+
+fn run_wrap_case(snowman: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| {
+        .spawn(move || {
             run(async |admin| {
                 let started = std::time::Instant::now();
                 let h =
                     Harness::create_with_admission_seed(admin, "house_wrap", true, false).await?;
-                let result = scenario(&h,false,false).await;
+                let result = scenario(&h, false, snowman, false).await;
                 h.cleanup().await?;
                 result?;
                 println!(
@@ -64,7 +73,7 @@ fn srx1_house_cask_charge_checkpoint_exhaustion_and_replay_postgres()->TestResul
         run(async |admin|{
             let started=std::time::Instant::now();
             let h=Harness::create_with_admission_seed(admin,"srx1_house_cask",true,false).await?;
-            let result=scenario(&h,true,false).await;
+            let result=scenario(&h,true,false,false).await;
             h.cleanup().await?;result?;
             eprintln!("SRX1_PG House cask checkpoint/exhaustion/replay elapsed={:?}",started.elapsed());
             Ok(())
@@ -81,14 +90,14 @@ fn house_store_refuses_ordinary_items_before_platform_debit() -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("house-store-capacity", || {
         run(async |admin| {
             let harness = Harness::create_with_admission_seed(admin, "house_store", true, false).await?;
-            let result = scenario(&harness, false, true).await;
+            let result = scenario(&harness, false, false, true).await;
             harness.cleanup().await?;
             result
         })
     })
 }
 
-async fn scenario(h: &Harness,cask:bool,store:bool) -> TestResult {
+async fn scenario(h: &Harness,cask:bool,snowman:bool,store:bool) -> TestResult {
     super::reset();
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -279,14 +288,16 @@ async fn scenario(h: &Harness,cask:bool,store:bool) -> TestResult {
 
     if cask {return house_cask(&owner,h,admitted).await;}
 
-    // Seed a real placed oven and a backpack, then restore every constraint before commands.
+    // Seed placed furniture and a backpack, then restore every constraint before commands.
     super::item_look_fixtures::seed_main_backpack(h, &[]).await?;
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i6355','definition-r1',1,1,encode($3,'hex')::uuid)")
-        .bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(73).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
+        .bind(id(71).as_slice()).bind(id(42).as_slice())
+        .bind(if snowman { "oteryn:item.tibia.i10208" } else { "oteryn:item.tibia.i6355" })
+        .bind(id(73).as_slice()).execute(&mut *tx).await?;
     let position: Vec<u8> = POSITION.iter().flat_map(|v| v.to_be_bytes()).collect();
     sqlx::query(
         "INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING",
@@ -314,6 +325,9 @@ async fn scenario(h: &Harness,cask:bool,store:bool) -> TestResult {
         .bind(id(75).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(id(77).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     admitted.continuity.next_command_id = 1;
+    if snowman {
+        return snowman_unwraps(&owner, h, &mut admitted, request).await;
+    }
     assert_eq!(
         exchange_checked(&owner, &mut admitted, 1, request, true).await?,
         (CommandStatus::Accepted, wire::Reply::Committed(2))
@@ -425,6 +439,51 @@ async fn scenario(h: &Harness,cask:bool,store:bool) -> TestResult {
     );
     Ok(())
 }
+
+async fn snowman_unwraps(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &mut AdmittedSession,
+    wrap: wire::Request,
+) -> TestResult {
+    use super::achievement_granters::{assert_progress, seed_progress};
+    let key = "oteryn:achievement/the_snowman";
+    seed_progress(h, key, 98).await?;
+    assert_eq!(exchange(owner, admitted, 1, wrap).await?.1, wire::Reply::Committed(2));
+    assert_custody(h, "oteryn:item.tibia.i23398", false).await?;
+    let unwrap = wire::Request {
+        action: wire::Action::Unwrap,
+        expected_revision: 2,
+        ..wrap
+    };
+    let blocked = wire::Request { position: [0, 0, 7], ..unwrap };
+    assert_eq!(
+        exchange(owner, admitted, 2, blocked).await?.1,
+        wire::Reply::Refused(wire::Refusal::Blocked)
+    );
+    assert_progress(h, key, 98, false, "oteryn:house-wrap").await?;
+    assert_eq!(exchange(owner, admitted, 3, unwrap).await?.1, wire::Reply::Committed(3));
+    assert_custody(h, "oteryn:item.tibia.i10208", true).await?;
+    assert_eq!(
+        owner.house_wrap(*admitted, 3, unwrap).await,
+        Some(wire::Reply::Committed(3)),
+        "bypass the ingress cache and reach the durable replay"
+    );
+    assert_progress(h, key, 99, false, "oteryn:house-wrap").await?;
+    let wrap = wire::Request { expected_revision: 3, ..wrap };
+    assert_eq!(exchange(owner, admitted, 4, wrap).await?.1, wire::Reply::Committed(4));
+    let unwrap = wire::Request { expected_revision: 4, ..unwrap };
+    assert_eq!(exchange(owner, admitted, 5, unwrap).await?.1, wire::Reply::Committed(5));
+    let grant = assert_progress(h, key, 100, true, "oteryn:house-wrap").await?;
+    let receipt: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(transaction_id) FROM game_house_furniture_wrap_receipts WHERE command_id=5",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grant.as_ref().map(|(_, event, _)| event.as_slice()), Some(receipt.as_slice()));
+    Ok(())
+}
+
 async fn assert_custody(h: &Harness, key: &str, house: bool) -> TestResult {
     let (stored,placed,carried):(String,bool,bool)=sqlx::query_as("SELECT definition_production_key,EXISTS(SELECT 1 FROM game_item_house_interior_locations WHERE item_instance_id=i.item_instance_id),EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?;

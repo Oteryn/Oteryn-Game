@@ -8,6 +8,91 @@ use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::daily_boost::*;
 
+async fn assert_parked_trade_query(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    expected: &[u8],
+) -> TestResult {
+    use crate::foundation::{MessageType, decode_wire_envelope};
+    use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
+    use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, decode_command_result, encode_client_command,
+    };
+    use tokio::io::{AsyncWriteExt, DuplexStream};
+
+    async fn query(
+        stream: &mut DuplexStream,
+        generation: u64,
+        id: u64,
+    ) -> TestResult<(CommandStatus, Vec<u8>)> {
+        let frame = encode_client_command(
+            generation,
+            &ClientCommandValue {
+                command_id: id,
+                command_type: COMMAND_TYPE_DAILY_BOOST_QUERY,
+                payload: &[],
+            },
+        )
+        .map_err(debug)?;
+        write_frame(stream, &frame).await?;
+        loop {
+            let frame = read_frame(stream).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(reply.command_id, id);
+                return Ok((reply.status, reply.payload.to_vec()));
+            }
+        }
+    }
+
+    let (mut server, mut client) = tokio::io::duplex(4096);
+    let before = *admitted;
+    let serving = async move { serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await };
+    let driving = async move {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        owner
+            .states
+            .test_daily_boost_parked_trade
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        let generation = before.continuity.connection_generation;
+        let rejected = query(&mut client, generation, 5).await;
+        assert_eq!(
+            rejected?,
+            (
+                CommandStatus::Rejected,
+                DailyBoostRefusal::HolderBusy.encode().to_vec()
+            )
+        );
+        super::maintain_authority_ready(owner).await;
+        assert_eq!(
+            query(&mut client, generation, 6).await?,
+            (CommandStatus::Accepted, expected.to_vec())
+        );
+        client.shutdown().await?;
+        TestResult::Ok(())
+    };
+    let (end, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        super::fixture::join_two(serving, driving),
+    )
+    .await?;
+    if let crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(current)
+    | crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenClosed(current, _) = end
+    {
+        *admitted = current;
+    }
+    result
+}
+
 #[test]
 fn daily_boost_postgres_real_dispatch_restart_and_epoch_fence() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -416,6 +501,7 @@ fn scenario(case: Case) -> TestResult {
             .0,
             CommandStatus::Rejected
         );
+        assert_parked_trade_query(&owner, &mut admitted, &first).await?;
         let mut reset_tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *reset_tx)

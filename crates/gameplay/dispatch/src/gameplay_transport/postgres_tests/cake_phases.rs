@@ -8,11 +8,20 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[test]
 fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResult {
+    run_case(false)
+}
+
+#[test]
+fn cach1_stage_three_cake_isle_step_awards_i_did_my_part() -> TestResult {
+    run_case(true)
+}
+
+fn run_case(achievement: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    std::thread::Builder::new().stack_size(256<<20).spawn(||{
-        run(async|admin|{
+    std::thread::Builder::new().stack_size(256<<20).spawn(move ||{
+        run(async move |admin|{
             let started=std::time::Instant::now();
             let h=Harness::create_with_admission_seed(admin,"cake_stage_two",true,false).await?;
             {
@@ -25,7 +34,8 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 let start=MovementLocalPosition{x:33302,y:32070,floor:7};
                 let first=MovementLocalPosition{x:33303,y:32070,floor:7};
                 let second=MovementLocalPosition{x:33303,y:32071,floor:7};
-                let world=cake_bundle(native,deps.admitted.world_id,deps.admitted.channel_id,start,&[(first,12085),(second,12086)])?;
+                let source = if achievement { 12090 } else { 12085 };
+                let world=cake_bundle(native,deps.admitted.world_id,deps.admitted.channel_id,start,&[(first,source),(second,12086)])?;
                 let cells=world.movement_cells(pin.qualified_room().movement_cells()).map_err(debug)?;
                 let room=super::rust_lottery_fixtures::bundle_action_room(pin.qualified_room(),&world,deps.admitted.world_id,&cells)?;
                 let content_pin=ChannelContentPin::from_activation(deps.admitted.world_id,pin.activation_sequence(),pin.identity().server_artifact_digest(),pin.identity().client_artifact_digest(),room.frame_binding().digest(),room.map_revision_digest(),(start.x,start.y,start.floor));
@@ -66,6 +76,13 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
                 sqlx::query("INSERT INTO game_cake_phases(world_id,event_year,stage,layer) VALUES(encode($1,'hex')::uuid,2026,2,1)").bind(id(42).as_slice()).execute(&mut *tx).await?;
                 tx.commit().await?;
                 owner.refresh_terrain_tools().await;
+                if achievement {
+                    cake_isle_steps(&h, &owner, deps.actor, deps.admitted.game_session_id).await?;
+                    drop(owner);
+                    drop(authority);
+                    drop(seal);
+                    return h.cleanup().await;
+                }
                 let target=|position:MovementLocalPosition|->TestResult<WorldObjectTarget>{
                     let key=crate::map::view::placement_key(crate::map::overlay::TilePos{x:u16::try_from(position.x)?,y:u16::try_from(position.y)?,floor:i8::try_from(-position.floor)?},1).ok_or("cake placement")?;
                     Ok(WorldObjectTarget{placement:bundle.into_iter().chain(key.to_be_bytes()).collect(),expected_revision:map.facts.object_revision(key)})
@@ -97,6 +114,48 @@ fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResul
     })?.join().map_err(|_|"Cake phase thread panicked")??;
     Ok(())
 }
+
+async fn cake_isle_steps(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+
+    let step = |direction| async move {
+        assert_eq!(owner.paced_step(actor, session, direction).await.0.disposition, StepDisposition::Moved);
+    };
+    let facts = || async {
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/i_did_my_part'")
+            .fetch_one(&h.pool)
+            .await
+    };
+
+    step(StepDirection::East).await;
+    assert_eq!(facts().await?, 0, "the base tile alone is insufficient during stage two");
+    step(StepDirection::West).await;
+    sqlx::query("UPDATE game_cake_phases SET stage=3, layer=4 WHERE event_year=2026")
+        .execute(&h.pool)
+        .await?;
+    step(StepDirection::East).await;
+    assert_eq!(facts().await?, 1);
+    step(StepDirection::West).await;
+    step(StepDirection::East).await;
+    assert_eq!(facts().await?, 1);
+    let evidence: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests r
+         JOIN game_cake_errand_steps s ON r.character_id=s.character_id
+          AND r.source_event_id=uuid_send(s.actor_placement) || int8send(s.movement_revision::bigint) || int8send(s.reset_epoch::bigint)
+         WHERE r.achievement_key='oteryn:achievement/i_did_my_part' AND r.source_kind='oteryn:cake-isle'
+           AND s.source_item=12090",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(evidence, 1);
+    Ok(())
+}
+
 /// Test-only open terrain at real donor coordinates. Item identities and compact
 /// references come from the actual active generation; production geometry is untouched.
 fn cake_bundle(

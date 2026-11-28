@@ -178,6 +178,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = self.restore_house_admission_views(&admitted, None).await;
         } else {
             self.admit_quest_session(&admitted).await;
+            self.finish_recovered_terrain_use(&admitted).await;
         }
     }
 }

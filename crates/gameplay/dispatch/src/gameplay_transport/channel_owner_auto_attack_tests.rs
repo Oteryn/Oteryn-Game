@@ -632,9 +632,130 @@ fn fight_modes_are_runtime_state_with_the_admission_defaults() {
         owner.attack.combat_state(player, session, at(T0)).modes,
         modes
     );
-    assert_eq!(fight_mode(WireFightMode::Offensive), FightMode::Offensive);
-    assert_eq!(fight_mode(WireFightMode::Balanced), FightMode::Balanced);
-    assert_eq!(fight_mode(WireFightMode::Defensive), FightMode::Defensive);
+}
+
+#[test]
+fn global_parity_creature_resistance_precedes_armor_and_mitigation() {
+    use oteryn_gameplay_content::content::creature_policy::{
+        CreatureExactRatio, CreatureResistance,
+    };
+    let policies = rat_policy([1; 32]);
+    let mut policy = (*policies.policies()[0]).clone();
+    policy.resistances.push(CreatureResistance {
+        damage_type: "physical".into(),
+        percent: CreatureExactRatio {
+            numerator: 50,
+            denominator: 1,
+        },
+    });
+    policy.mitigation = Some(CreatureExactRatio {
+        numerator: 10,
+        denominator: 1,
+    });
+    let constants = AttackConstants::checked_in().unwrap();
+    let root = GameplayDecisionRoot::from_bytes([3; 32]);
+    let reduce = |damage, blocked: bool, armor| {
+        oteryn_gameplay_combat_rules::resolution::swing_mitigated_with_block(
+            &root,
+            constants,
+            [1; 16],
+            ([2; 16], 1),
+            0,
+            damage,
+            blocked.then_some((0, 0)),
+            armor,
+        )
+    };
+    // 200 -> 100 after resistance -> 99 after armor -> 89 after mitigation.
+    assert_eq!(
+        drain::creature_melee_damage(&policy, 200, false, 2, reduce),
+        Some((
+            oteryn_gameplay_progression::hit_training::HitBlock::Unblocked,
+            89
+        )),
+    );
+}
+
+#[test]
+fn global_parity_legacy_fight_mode_messages_leave_swing_damage_unchanged() {
+    use crate::spell::Vocation;
+    use crate::spell::cast::{CharacterCastFacts, SwingSkills};
+    use oteryn_gameplay_combat_rules::resolution::MeleeSkill;
+    use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+    use oteryn_protocol_oteryn::attack::{decode_fight_modes_intent, encode_fight_modes_intent};
+
+    let mut owner = owner();
+    let (player, session) = (owner.player, owner.session);
+    let constants = AttackConstants::checked_in().unwrap();
+    let at = at(T0);
+    let selected = drain::SelectedSwing {
+        target: player,
+        character_facts: CharacterCastFacts {
+            vocation: Vocation::Knight,
+            level: 100,
+            magic_level: 0,
+            max_health: 1_000,
+            max_mana: 500,
+            max_soul: 100,
+        },
+        skills: SwingSkills {
+            attack: 100,
+            shielding: 0,
+        },
+        weapon: WeaponFacts {
+            weapon: SwingWeapon::Melee {
+                attack: 50,
+                skill: MeleeSkill::Sword,
+                elemental: None,
+            },
+            item_key: None,
+            ranged: None,
+            content_digest: [0; 32],
+            read_at: at,
+            talisman_equipped: false,
+        },
+        swing: oteryn_gameplay_combat_rules::attack::target::Swing {
+            target: player,
+            lineage: CommandRef::new(session, CommandId::new(1).unwrap()),
+            at,
+            sequence: 0,
+        },
+        ordinal: 0,
+    };
+    let draw = |states: &mut ChannelAttackStates| {
+        drain::draw_swing_damage(
+            states.entry(&owner.runtime, player, session).unwrap(),
+            &owner.runtime,
+            &selected,
+            constants,
+            drain::SwingDamageContext {
+                root: &GameplayDecisionRoot::from_bytes([3; 32]),
+                offence: &EquippedOffence::default(),
+                pure_elemental_with_attack_points: false,
+                area: false,
+            },
+        )
+        .unwrap()
+    };
+    let baseline = draw(&mut owner.attack);
+    for fight_mode in [
+        WireFightMode::Offensive,
+        WireFightMode::Balanced,
+        WireFightMode::Defensive,
+    ] {
+        let payload = encode_fight_modes_intent(&FightModes {
+            fight_mode,
+            ..FightModes::DEFAULT
+        });
+        let modes = decode_fight_modes_intent(&payload).unwrap();
+        assert_eq!(modes.fight_mode, fight_mode);
+        assert!(
+            owner
+                .attack
+                .set_modes(&owner.runtime, player, session, modes)
+        );
+        assert_eq!(draw(&mut owner.attack), baseline, "{fight_mode:?}");
+    }
 }
 
 #[test]

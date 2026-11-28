@@ -76,6 +76,7 @@ struct ChatSession {
     walked_away: Vec<String>,
     /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
     npc_service: bool,
+    female_npc_speaker: bool,
     /// Historical local rule fixture; production capability80 uses private_world.
     #[cfg(test)]
     channels: private_channel::PrivateChannels,
@@ -207,6 +208,7 @@ impl ChatRuntime {
                 joined: 0,
                 walked_away: Vec::new(),
                 npc_service: false,
+                female_npc_speaker: false,
                 #[cfg(test)]
                 channels: private_channel::PrivateChannels::default(),
                 public_rooms: public_channels::PublicRoomState::default(),
@@ -215,6 +217,7 @@ impl ChatRuntime {
             entry.name = name.to_owned();
             entry.mount_sounds = false;
             entry.character = character;
+            entry.female_npc_speaker = false;
             entry.egress.clear();
             entry.echoes.clear();
             entry.engaged = None;
@@ -373,6 +376,22 @@ impl ChatRuntime {
             entry.engaged = None;
             entry.walked_away.clear();
         }
+    }
+
+    pub(super) fn set_female_npc_speaker(&self, session: GameSessionId, female: bool) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.female_npc_speaker = female;
+        }
+    }
+
+    pub(super) fn female_npc_speaker(&self, session: GameSessionId) -> bool {
+        self.sessions.lock().ok().is_some_and(|sessions| {
+            sessions
+                .get(&session)
+                .is_some_and(|entry| entry.female_npc_speaker)
+        })
     }
 
     /// The actual chat owner's engagement generation. Display-only binding data; this does
@@ -914,6 +933,33 @@ fn crowded(
     others >= MAX_OPEN_CONVERSATIONS_PER_NPC as usize
 }
 
+/// Keep authored replies within the same scalar and UTF-8 bounds as player chat.
+fn npc_chat_chunks(mut remaining: &str) -> impl Iterator<Item = &str> {
+    use crate::durability::chat_text::TEXT_MAX_CHARS;
+
+    std::iter::from_fn(move || {
+        remaining = remaining.trim_start();
+        if remaining.is_empty() {
+            return None;
+        }
+        let split_at = remaining.char_indices().nth(TEXT_MAX_CHARS).map_or(
+            remaining.len(),
+            |(limit, next)| {
+                if next.is_whitespace() {
+                    limit
+                } else {
+                    remaining[..limit]
+                        .rfind(char::is_whitespace)
+                        .unwrap_or(limit)
+                }
+            },
+        );
+        let (chunk, tail) = remaining.split_at(split_at);
+        remaining = tail;
+        Some(chunk)
+    })
+}
+
 /// The answer of a nearby NPC to a `say`, queued like any other local line (NPC-TALK-1).
 #[allow(
     clippy::too_many_arguments,
@@ -962,7 +1008,13 @@ fn npc_answer(
         return;
     }
     let prior = speaking.engaged;
-    let Some(mut reply) = talk(at, text, &npcs, &mut speaking.engaged) else {
+    let Some(mut reply) = talk(
+        at,
+        text,
+        &npcs,
+        &mut speaking.engaged,
+        speaking.female_npc_speaker,
+    ) else {
         return;
     };
     if prior != Some(reply.id)
@@ -977,9 +1029,9 @@ fn npc_answer(
             return;
         };
         reply.text = greeting.to_owned();
+        reply.continuation.clear();
     }
-    reply.text =
-        oteryn_gameplay_npc::quest_greetings::render_player_name(&reply.text, &speaking.name);
+    let name = speaking.name.clone();
     if speaking.engaged.is_some_and(|npc| prior != Some(npc))
         && crowded(sessions, session, reply.id)
     {
@@ -1000,24 +1052,30 @@ fn npc_answer(
     else {
         return;
     };
-    let Ok(line) = ChatText::parse(&reply.text) else {
-        return;
-    };
     let npc_speaker = ChatSpeaker {
         identity: actor.placement_identity(),
         generation: *generation,
     };
-    for (listener, heard) in local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
-    {
-        if let Some(entry_of) = sessions.get_mut(&listener) {
-            entry_of.egress.push(local_line(
-                npc_speaker,
-                &entry.name,
-                SpeechMode::Say,
-                &line,
-                *position,
-                heard,
-            ));
+    for raw in reply.into_lines() {
+        let rendered = oteryn_gameplay_npc::quest_greetings::render_player_name(&raw, &name);
+        for chunk in npc_chat_chunks(&rendered) {
+            let Ok(line) = ChatText::parse(chunk) else {
+                continue;
+            };
+            for (listener, heard) in
+                local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
+            {
+                if let Some(entry_of) = sessions.get_mut(&listener) {
+                    entry_of.egress.push(local_line(
+                        npc_speaker,
+                        &entry.name,
+                        SpeechMode::Say,
+                        &line,
+                        *position,
+                        heard,
+                    ));
+                }
+            }
         }
     }
 }
@@ -1998,6 +2056,75 @@ mod tests {
         assert_eq!(
             texts(chat.drain(second.1)).last().map(|l| l.1.clone()),
             Some("Farewell.".to_owned())
+        );
+    }
+
+    #[test]
+    fn local_say_delivers_muriels_complete_rune_reply_within_chat_limits() {
+        use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+        const MURIEL: &str = "oteryn:npc.muriel";
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("NPC catalogue");
+        let book =
+            NpcTalkBook::from_model(&catalogue.service_model_for_project().expect("NPC model"));
+        let (mut runtime, chat, first, second) = two_players(0);
+        let spot = runtime
+            .read_actor_position(first.0)
+            .expect("position")
+            .position();
+        runtime
+            .place_npcs(
+                &NpcPlacementTable {
+                    npcs: vec![NpcPlacements {
+                        key: MURIEL.into(),
+                        placements: vec![NpcPlacement {
+                            floor: -i8::try_from(spot.floor).expect("floor"),
+                            y: u16::try_from(spot.y).expect("y"),
+                            x: u16::try_from(spot.x + 2).expect("x"),
+                            direction: MovementFacing::South,
+                        }],
+                    }],
+                },
+                |_| true,
+                true,
+            )
+            .expect("Muriel placed");
+        chat.install_npc_talk(Arc::new(book));
+        chat.set_npc_service(first.1);
+        assert_eq!(
+            speak(&chat, &runtime, first, &say("hi"), BASE),
+            result(ChatDisposition::Ok)
+        );
+        chat.drain(first.1);
+        chat.drain(second.1);
+        assert_eq!(
+            speak(&chat, &runtime, first, &say("runes"), BASE),
+            result(ChatDisposition::Ok)
+        );
+        let heard = texts(chat.drain(first.1));
+        assert_eq!(heard, texts(chat.drain(second.1)));
+        let replies: Vec<_> = heard
+            .iter()
+            .filter(|(speaker, _)| speaker == "Muriel")
+            .map(|(_, reply)| reply.as_str())
+            .collect();
+        let authored = include_str!("../../../npc/src/npc_talk/source_dialogue.json");
+        let source: serde_json::Value = serde_json::from_str(authored).expect("source replies");
+        let keyword = source[MURIEL]["keywords"]
+            .as_array()
+            .expect("keywords")
+            .iter()
+            .find(|row| row["key"] == "runes")
+            .expect("runes");
+        assert!(replies.len() > 1);
+        assert!(replies.iter().all(|line| ChatText::parse(line).is_ok()));
+        assert_eq!(
+            replies.join(" "),
+            keyword["reply"][0].as_str().expect("authored reply")
         );
     }
 

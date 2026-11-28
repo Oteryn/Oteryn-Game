@@ -197,12 +197,12 @@ impl DurabilityRoot {
         let world = scope.world_id();
         let recovery = authority.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let (projection, skipped) = self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
             if !assert_runtime_scope_fence(&mut tx, scope, generation, &node).await? {
-                return Ok(None);
+                return Ok((None, Vec::new()));
             }
             let world_id = world.as_bytes().as_slice();
             let channel_id = channel.as_bytes().as_slice();
@@ -210,7 +210,7 @@ impl DurabilityRoot {
             let activated: Option<i64> = sqlx::query_scalar(
                 "SELECT activated_at_unix_ms FROM game_world_reset_read_locked(encode($1,'hex')::uuid) WHERE reset_epoch=$2::text::numeric"
             ).bind(world_id).bind(&epoch_id).fetch_optional(&mut *tx).await?;
-            let Some(activated) = activated else { return Ok(None); };
+            let Some(activated) = activated else { return Ok((None, Vec::new())); };
             lock_epoch(&mut tx, world, &epoch_id).await?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
             // Keep the prior boot basis across committed saves. A World with
@@ -244,25 +244,30 @@ impl DurabilityRoot {
                 }
                 2..=4 => {
                     commit_semantic_transaction(tx, deadline).await?;
-                    return Ok(None);
+                    return Ok((None, Vec::new()));
                 }
                 _ => return Err(DurabilityError::InvalidStoredState),
             };
+            let mut skipped = Vec::new();
             if state == 0 {
                 let boot: i64 = row.try_get("boot_ms")?;
                 let checked: i64 = row.try_get("last_checked_hour")?;
-                let last = ((now-boot)/HOUR_MS).min(checked.saturating_add(MAX_HOURS_PER_POLL));
+                let current_hour = (now - boot) / HOUR_MS;
+                let last = current_hour.min(checked.saturating_add(MAX_HOURS_PER_POLL));
                 if last > checked {
                     let mut checked_through = last;
                     for hour in checked + 1..=last {
                         if let Some(city) = select(config, world, epoch, hour) {
                             let index = config.cities.iter().position(|c| c.key == city.key)
                                 .ok_or(DurabilityError::InvalidStoredState)?;
-                            // A different Channel may provide this site. Leave the same
-                            // deterministic hour pending while no loaded site claims it.
                             if !loaded_cities[index] {
-                                checked_through = hour - 1;
-                                break;
+                                // Another Channel can claim the draw until the next hourly roll.
+                                if hour == current_hour {
+                                    checked_through = hour - 1;
+                                    break;
+                                }
+                                skipped.push((hour, city.key.as_str()));
+                                continue;
                             }
                             let firing = crate::durability::starter_grant::new_uuid(&mut tx).await?;
                             selected = Some((index, firing));
@@ -292,8 +297,20 @@ impl DurabilityRoot {
                 projection = Some(Projection { firing_id, city: &config.cities[index], scope, generation });
             }
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(projection)
-        })).await
+            Ok((projection, skipped))
+        })).await?;
+        for (hour, city) in skipped {
+            use oteryn_error_codes::{FieldValue, Level, Line, emit};
+            emit(
+                "oteryn-game-server",
+                &Line::new(Level::Warn, "node", "bank_robbery_poll")
+                    .field("state", FieldValue::Token("skipped"))
+                    .field("error", FieldValue::Owned(format!(
+                        "hideout unavailable at deadline (epoch {epoch}, hour {hour}, city {city})"
+                    ))),
+            );
+        }
+        Ok(projection)
     }
 }
 
@@ -531,6 +548,35 @@ impl DurabilityRoot {
             }
             announced(&mut tx, scope.world_id(), epoch).await
         })).await
+    }
+
+    /// Observe just the Board's robbery announcement under a live player fence.
+    pub async fn bank_robbery_board_announcement(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        epoch: u64,
+    ) -> Result<bool, ProgressionError> {
+        let recovery = authority.record_for(self).map_err(|_| ProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            let world = fence.runtime_scope.world_id();
+            let current: Option<String> = sqlx::query_scalar(
+                "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)"
+            ).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            if current.as_deref().unwrap_or("0") != epoch.to_string()
+                || !player_fenced(&mut tx, &node, &fence).await?
+            {
+                return Ok(Err(ProgressionError::AuthorityRejected));
+            }
+            let announced = announced(&mut tx, world, epoch).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(announced))
+        })).await?
     }
 
     pub async fn bank_robbery_dialogue(

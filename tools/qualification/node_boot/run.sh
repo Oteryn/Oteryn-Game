@@ -18,6 +18,8 @@ readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
 readonly EXIVA_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000e
+readonly G01_ACCOUNT=01934f10-7c00-7000-8000-000000000024
+readonly G17_ACCOUNT=01934f10-7c00-7000-8000-000000000023
 readonly LIGHT_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000d
 readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
 readonly F5_C17A_ACCOUNT=01934f10-7c00-7000-8000-00000000000f
@@ -43,9 +45,9 @@ readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422 01934f10-7c04-7023-805b-3b1122334423 01934f10-7c04-7024-805b-3b1122334424)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "Primal Challenger" "Concoction Tester" "Spotlight Hunter")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "Primal Challenger" "Concoction Tester" "Spotlight Hunter" "Returner Reward Player" "House Control Player")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -193,7 +195,7 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$W10_ACCOUNT" "$W09_ACCOUNT" "$Q_W13_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$W10_ACCOUNT" "$W09_ACCOUNT" "$Q_W13_ACCOUNT" "$G17_ACCOUNT" "$G01_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
@@ -345,6 +347,8 @@ ACTIVE_STAGE=setup
 PG_OBS="$WORK/postgres"
 PG_SAMPLER_PID=""
 STACK_KEPT=0
+node_seasonal_fixture=""
+kept_seasonal_fixture=""
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
 if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   rm -rf -- "$WORK"
@@ -388,7 +392,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$W10_ACCOUNT" "$W09_ACCOUNT" "$Q_W13_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$W10_ACCOUNT" "$W09_ACCOUNT" "$Q_W13_ACCOUNT" "$G17_ACCOUNT" "$G01_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -492,6 +496,7 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
     { declare -p "${names[@]}"
       printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT"
       printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+      printf 'kept_seasonal_fixture=%q\n' "${node_seasonal_fixture:-}"
     } > "$REUSE_STATE" )
   STACK_KEPT=1
 }
@@ -878,6 +883,9 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
+  if [[ "${OTERYN_QUALIFICATION_ECHO_PORTAL:-0}" == 1 ]]; then
+    NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_ECHO_PORTAL=1")
+  fi
 fi
 if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   # Use the Platform's disposable Premium-purpose client and trust root.
@@ -1163,6 +1171,55 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+# Give the journey runner the same parsed range used by the fixture and verifier.
+node_boot_row_selection() { # batch|w19a
+  python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
+import os
+import re
+import struct
+import sys
+
+def env_text(value, default):
+    try:
+        return os.fsencode(value).decode("utf-8")
+    except UnicodeDecodeError:
+        # Rust env::var treats non-Unicode values as unset at this caller.
+        return default
+
+mode, raw_batch, raw_groups = sys.argv[1:]
+batch = env_text(raw_batch, "0:15")
+usize_max = (1 << (8 * struct.calcsize("P"))) - 1
+if batch == "all":
+    start, length = 0, usize_max
+else:
+    # Match Rust's unsigned decimal parser, including one optional leading +.
+    match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+    if not match:
+        sys.exit(0)
+    digits = tuple(part.lstrip("0") or "0" for part in match.groups())
+    if any(len(part) > len(str(usize_max)) for part in digits):
+        sys.exit(0)
+    start, length = map(int, digits)
+    if max(start, length) > usize_max:
+        sys.exit(0)
+
+if mode == "batch":
+    print(batch if batch == "all" else f"{start}:{length}")
+else:
+    groups = env_text(raw_groups, "").strip()
+    if not groups or "rows" in (group.strip() for group in groups.split(",")):
+        # Indices passed to e2e_row_selected in the Rust journeys.
+        for index, row in ((12, "W19a.full"), (216, "W19a.client")):
+            if index >= start and index - start < length:
+                print(row)
+PY_ROW_SELECTION
+}
+
+w19a_rows() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 0
+  node_boot_row_selection w19a
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -1216,6 +1273,17 @@ stage() { # name prerequisite... -- function
       # Keep the failing incarnation before later probes truncate the live log.
       [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+    fi
+    if [[ "$name" == seam_stages ]]; then
+      local row expected w19a
+      w19a="$(w19a_rows)"
+      for row in $w19a; do
+        case "$row" in W19a.full) expected=PASS ;; W19a.client) expected=CAPTURED ;; esac
+        if ! stage_rows "$WORK/stage-$name.log" "$expected" | grep -Fx "$row" >/dev/null; then
+          STATUS[$name]="FAIL(rows)"
+          echo "NODE_BOOT_STAGE_FAILED $name row=$row required_status=$expected"
+        fi
+      done
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
@@ -1385,11 +1453,27 @@ node_complete_assignment() {
   node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
+  local w19a
+  w19a="$(w19a_rows)"
+  if [[ -n "$w19a" ]]; then
+    local christmas_epoch
+    christmas_epoch="$({
+      echo 'PREPARE node_boot_christmas(UUID, UUID, TEXT, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/christmas_epoch.sql"
+      printf "EXECUTE node_boot_christmas('%s', '%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST" "$MAP_REVISION"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$christmas_epoch" == 1 ]] || { fail "Christmas epoch fixture"; return 1; }
+    evidence "world_epoch=1 source=qualification_fixture seasonal_event=christmas"
+  fi
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" "$NODE_ACTIVATION_WAIT_SECONDS"
+  if [[ -n "$w19a" ]]; then
+    await_log 'event=seasonal_calendar .*detail="reset_epoch=1 active=\[\\"christmas\\"\]"$' 60
+    remember node_seasonal_fixture christmas_epoch_1
+  fi
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1411,8 +1495,13 @@ node_complete_assignment() {
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
-    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    if [[ -n "${w19a:-}" ]]; then
+      [[ "$epoch_result" == $'f\nf' ]] || fail "Christmas fixture epoch zero replay"
+      evidence "world_epoch_history=0 source=qualification_fixture replay=idempotent"
+    else
+      [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+      evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    fi
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
@@ -1582,9 +1671,11 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
     test_env+=("NODE_BOOT_CAST_EVIDENCE_LOG=$node_log" "NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
-    local extra_accounts
+    local extra_accounts row_batch
+    row_batch="$(node_boot_row_selection batch)"
+    test_env+=("OTERYN_E2E_ROW_BATCH=$row_batch")
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
-    test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_EXIVA_ACCOUNT_ID=$EXIVA_ACCOUNT_ID")
+    test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_EXIVA_ACCOUNT_ID=$EXIVA_ACCOUNT_ID" "NODE_BOOT_G17_ACCOUNT=$G17_ACCOUNT" "NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
     test_env+=("NODE_BOOT_F5_C17A_ACCOUNT=$F5_C17A_ACCOUNT" "NODE_BOOT_F5_C17C_ACCOUNT=$F5_C17C_ACCOUNT" "NODE_BOOT_F5_C13_ACCOUNT=$F5_C13_ACCOUNT" "NODE_BOOT_F5_C18A_ACCOUNT=$F5_C18A_ACCOUNT" "NODE_BOOT_F5_C17D_ACCOUNT=$F5_C17D_ACCOUNT")
     test_env+=("NODE_BOOT_C11_UNASSIGNED_ACCOUNT=$C11_UNASSIGNED_ACCOUNT" "NODE_BOOT_C11_KNIGHT_ACCOUNT=$C11_KNIGHT_ACCOUNT" "NODE_BOOT_C12_MONK_ACCOUNT=$C12_MONK_ACCOUNT" "NODE_BOOT_S13_ACCOUNT=$S13_ACCOUNT")
     test_env+=("NODE_BOOT_W19A_ACCOUNT=$W19A_ACCOUNT")
@@ -1831,6 +1922,19 @@ ORDER BY r.account_id;
 SQL
 )"
   [[ "$births" == "knight|${INTERPRETATION[3]}|1"$'\n'"sorcerer|${INTERPRETATION[3]}|1" ]] || pvp_fail "PvP bootstrap vocation, starter or account projection readback"
+  # MP01 fights in Thais. Seed the victim's hometown before first admission
+  # so the real death/respawn flow returns within walking range of the fight.
+  local victim_town
+  victim_town="$(psql_admin "$PVP_DATABASE" <<SQL
+INSERT INTO game_character_home_towns (character_id, town_id)
+SELECT character_id, 8 FROM game_character_roots
+WHERE world_id = '$PVP_WORLD_ID' AND account_id = '${PVP_ACCOUNT_IDS[1]}'
+ON CONFLICT (character_id) DO NOTHING;
+SELECT h.town_id FROM game_character_home_towns h JOIN game_character_roots r USING (character_id)
+WHERE r.world_id = '$PVP_WORLD_ID' AND r.account_id = '${PVP_ACCOUNT_IDS[1]}';
+SQL
+)"
+  [[ "$victim_town" == 8 ]] || pvp_fail "PvP victim Thais hometown readback"
   evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
 }
 
@@ -1866,6 +1970,11 @@ esac
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+  reused_w19a="$(w19a_rows)"
+  if [[ -n "$reused_w19a" && "${kept_seasonal_fixture:-}" != christmas_epoch_1 ]]; then
+    result='BLOCKED reason=kept_stack_requires_christmas_epoch_1'
+    exit 2
+  fi
   stage "$seam_stage_name" -- seam_stages
 else
 stage operator_setup -- operator_setup
@@ -1905,10 +2014,11 @@ NODE_PID=""
 elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
   # The shutdown and restart stages did not run, so this is never a qualification pass.
   if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
-    # The node was started inside a stage subshell; its pid is in $VARS.
+    # The assignment stage records the node PID and any verified seasonal fixture.
     # shellcheck source=/dev/null
     NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
     PVP_GAME_PORT="$(source "$VARS"; printf '%s' "$PVP_GAME_PORT")"
+    node_seasonal_fixture="$(source "$VARS"; printf '%s' "${node_seasonal_fixture:-}")"
     [[ -z "$NODE_PID" ]] || save_reuse_state
   fi
   ORDER+=(stack_kept)

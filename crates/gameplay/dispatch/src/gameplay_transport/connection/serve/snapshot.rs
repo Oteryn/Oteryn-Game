@@ -5,6 +5,7 @@ use super::*;
 use crate::gameplay_transport::item_view::ItemViewSnapshotDomain as OwnedDomain;
 
 pub(super) struct InitialSnapshot {
+    pub(super) cooldowns: Option<super::cooldowns::CooldownFeed>,
     pub(super) spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     pub(super) overlay_served: bool,
     pub(super) overlay_revision: u64,
@@ -62,9 +63,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     note_admission_phase("actor_vitals");
     #[cfg(test)]
     before_join_phase("actor_vitals").await;
-    let vitals = authority
-        .observe_vitals(actor, admitted.game_session_id)
-        .await;
+    let (vitals, cooldowns) = authority.observe_join_vitals(actor, *admitted, false).await;
     let vitals_payload;
     // ACHIEVEMENT-0 §5: with capability 8, the account's watermark at the current revision. A
     // join, resync or reconnect sends this snapshot and never re-sends a delta. A selected
@@ -183,6 +182,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
             .await
             .map_err(|end| super::setup::failed("spell_catalog", end))?;
     Ok(InitialSnapshot {
+        cooldowns,
         spell_catalog,
         overlay_served,
         overlay_revision,

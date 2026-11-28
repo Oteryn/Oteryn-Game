@@ -12,7 +12,7 @@ use crate::durability::reward_claim_mint::RewardClaimMintRequest;
 
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 
-use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
 
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 
@@ -75,13 +75,14 @@ fn definition(key: &str) -> TypedDefinitionRef {
 }
 
 fn scenario(case: Case) -> TestResult {
-    scenario_case(case, None, None, None)
+    scenario_case(case, None, None, None, false)
 }
 
 pub(super) struct CatalogueBatch<'a> {
     pub(super) template: &'a super::fixture::MigratedDatabaseTemplate,
     pub(super) quests: Arc<QuestStateCatalogue>,
     pub(super) pinned_world: Option<&'a crate::map::boot::BundleWorld>,
+    pub(super) use_classic_regions: bool,
 }
 
 pub(super) fn embedded_catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
@@ -94,15 +95,41 @@ pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), None)
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), None, false)
 }
 
 pub(super) fn catalogue_scenario_in_batch(
     chest: &super::quest_catalogue_chests_fixtures::CatalogueChest,
     activation: &super::quest_catalogue_chests_fixtures::CatalogueActivation,
     batch: &CatalogueBatch,
+    committed: bool,
 ) -> TestResult {
-    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch))
+    scenario_case(Case::Catalogue, Some(chest), Some(activation), Some(batch), committed)
+}
+
+type NativeRegion = (&'static [u8], (u8, u16, u16));
+
+fn restored_classic_region(unique: u16) -> Option<NativeRegion> {
+    macro_rules! region {
+        ($z:literal, $x:literal, $y:literal, $name:literal) => {
+            Some((include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/", $name)), ($z, $x, $y)))
+        };
+    }
+    match unique {
+        6168 => region!(7, 128, 125, "region-z07-x128-y125.b3"),
+        6219 => region!(9, 125, 121, "region-z09-x125-y121.b3"),
+        5014 => region!(9, 125, 125, "region-z09-x125-y125.b3"),
+        6146..=6148 => region!(9, 127, 124, "region-z09-x127-y124.b3"),
+        6183 => region!(10, 129, 126, "region-z10-x129-y126.b3"),
+        6162 | 6163 => region!(11, 125, 125, "region-z11-x125-y125.b3"),
+        6192 => region!(11, 128, 127, "region-z11-x128-y127.b3"),
+        5026 | 6120 | 6121 => region!(12, 125, 125, "region-z12-x125-y125.b3"),
+        6080..=6082 => region!(14, 127, 125, "region-z14-x127-y125.b3"),
+        5009 => region!(15, 126, 125, "region-z15-x126-y125.b3"),
+        5016 => region!(15, 127, 125, "region-z15-x127-y125.b3"),
+        _ => None,
+    }
 }
 
 fn scenario_case(
@@ -110,6 +137,7 @@ fn scenario_case(
     catalogue: Option<&super::quest_catalogue_chests_fixtures::CatalogueChest>,
     activation: Option<&super::quest_catalogue_chests_fixtures::CatalogueActivation>,
     batch: Option<&CatalogueBatch>,
+    committed: bool,
 ) -> TestResult {
     let (claim, chest, unique, root_key, expected) = match case {
         Case::Catalogue => {
@@ -297,11 +325,53 @@ fn scenario_case(
         let pinned_completion_chest = catalogue.is_some_and(|chest| {
             super::qc_pinned_world::COMPLETION_CHEST_UIDS.contains(&chest.unique)
         });
-        let world = if pinned_completion_chest {
+        let classic_region = batch
+            .filter(|batch| batch.use_classic_regions)
+            .and(catalogue)
+            .and_then(|case| restored_classic_region(case.unique));
+        let start = if classic_region.is_some() {
+            match unique {
+                5009 | 5014 | 6146..=6148 | 6080..=6082 | 6219 => (chest.0, chest.1 + 1),
+                5026 | 6120 | 6121 => (chest.0, chest.1 - 1),
+                6183 => (chest.0 + 1, chest.1 - 1),
+                6192 => (chest.0, chest.1),
+                _ => (chest.0 - 1, chest.1),
+            }
+        } else if committed {
+            match unique {
+                6038 | 6113 | 6155 => (chest.0, chest.1 + 1),
+                6171 | 6176 | 6178 => (chest.0 + 1, chest.1),
+                _ => (chest.0 - 1, chest.1),
+            }
+        } else {
+            (chest.0 - u16::from(!matches!(case, Case::ChoiceDoor)), chest.1)
+        };
+        let pinned_source = pinned_completion_chest || committed || classic_region.is_some();
+        let world = if committed && classic_region.is_none() {
+            use oteryn_gameplay_quests::quest::world_callbacks::Position;
+            let floor = chest.2;
+            super::qc_pinned_world::crop(
+                native,
+                Position { x: start.0, y: start.1, floor },
+                &[Position { x: chest.0, y: chest.1, floor }],
+            )?
+        } else if pinned_completion_chest {
             match batch.and_then(|batch| batch.pinned_world) {
                 Some(pinned_world) => pinned_world.fresh_channel_for_test()?,
                 None => super::qc_pinned_world::world(native)?,
             }
+        } else if let Some((bytes, region)) = classic_region {
+            use super::l6_world_pickups_fixtures::{NativeCrop, native_crop};
+            native_crop(native, NativeCrop {
+                bytes,
+                region,
+                bounds: (
+                    chest.0.min(start.0), chest.1.min(start.1),
+                    chest.0.max(start.0) + 1, chest.1.max(start.1) + 1,
+                ),
+                start,
+                expected: Vec::new(),
+            })?
         } else if matches!(case, Case::Choice | Case::ChoiceDoor | Case::ChoiceCaptured) {
             super::quest_callbacks_fixtures::source_world_choices_with_door(
                 chest,
@@ -437,7 +507,7 @@ fn scenario_case(
                 deps.room.movement_cells()
             })
             .map_err(debug)?;
-        let frame_binding = if pinned_completion_chest {
+        let frame_binding = if pinned_source {
             world.frame_binding_digest(deps.admitted.world_id)
         } else {
             activated_pin.frame_binding().digest()
@@ -450,8 +520,8 @@ fn scenario_case(
             frame_binding,
             world.map_revision_digest(),
             (
-                i32::from(chest.0) - 1,
-                i32::from(chest.1),
+                i32::from(if classic_region.is_some() || committed { start.0 } else { chest.0 - 1 }),
+                i32::from(start.1),
                 -i16::from(chest.2),
             ),
         );
@@ -475,8 +545,8 @@ fn scenario_case(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(chest.0) - i32::from(!matches!(case, Case::ChoiceDoor)),
-                    y: i32::from(chest.1),
+                    x: i32::from(start.0),
+                    y: i32::from(start.1),
                     floor: -i16::from(chest.2),
                 },
             )
@@ -522,7 +592,7 @@ fn scenario_case(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         let target_at = |x| -> TestResult<WorldObjectTarget> {
-            let ordinal = if pinned_completion_chest {
+            let ordinal = if pinned_source {
                 let source = catalogue.ok_or("completion chest")?;
                 let tile = world
                     .base()
@@ -729,8 +799,15 @@ fn scenario_case(
             phase("cleanup");
             return cleaned;
         }
+        let paradox_reward = super::source_quest_rewards_fixtures::paradox_reward(claim);
+        let paradox_premium = if paradox_reward {
+            super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?
+        } else {
+            None
+        };
         {
             let mut owner = deps.owner(&harness, &authority);
+            owner.premium_coordinator = paradox_premium.as_ref();
             if let Some(shard) = &authored_shard {
                 assert!(
                     owner
@@ -747,6 +824,33 @@ fn scenario_case(
             owner.admit_progression_session(&mut admitted).await;
             owner.admit_quest_session(&admitted).await;
             deps.initialize(&owner).await;
+            if paradox_reward {
+                super::source_quest_rewards_fixtures::admit_reward_character(
+                    &owner, &admitted, claim,
+                )
+                .await?;
+                super::l6_paradox_fixtures::raise_level(
+                    &owner, &admitted, &authority, &harness, 30,
+                )
+                .await?;
+                let outcome = owner.use_object(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 9_001,
+                        item_fence: admitted.item_fence,
+                    },
+                    target.clone(),
+                ).await;
+                assert_eq!(outcome.disposition, UseDisposition::Rejected);
+                let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(count, 0, "the unlearned character cannot claim a cache");
+                super::source_quest_rewards_fixtures::seed_paradox_reward_progress(
+                    &owner, &admitted, &harness,
+                )
+                .await?;
+            }
             let mut stale = admitted;
             let mut stale_fence = fence;
             stale_fence.character_lease_generation += 1;
@@ -763,6 +867,7 @@ fn scenario_case(
                 count, 0,
                 "stale authority cannot reserve any part of the reward"
             );
+
         }
         if matches!(case, Case::Full | Case::Weight) {
             // Establish real durable before-state through the existing leaf
@@ -963,8 +1068,11 @@ fn scenario_case(
                 } else {
                     target.clone()
                 };
-            let premium =
-                super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?;
+            let premium = if paradox_reward {
+                paradox_premium
+            } else {
+                super::source_quest_rewards_fixtures::reward_premium(&harness, claim).await?
+            };
             let mut first_root = None;
             // One live stream starts at 1. Replay its retained result before
             // command 2 replaces the single terminal-record slot. A new owner
@@ -1092,6 +1200,12 @@ fn scenario_case(
                     (SELECT count(DISTINCT created_xact_id::text) FROM game_item_audit_outbox WHERE item_instance_id=encode($2,'hex')::uuid OR item_instance_id IN (SELECT item_instance_id FROM game_item_nested_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid))")
                     .bind(claim).bind(root.item_instance_id.as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(counts, (1, 1, 1 + expected.len() as i64, 1));
+                if paradox_reward {
+                    let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_paradox_tower_quest'")
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .fetch_one(&harness.pool).await?;
+                    assert!(completed);
+                }
                 if let Some(chest) = catalogue {
                     let texts: Vec<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,t.text \
                         FROM game_item_texts t JOIN game_item_instances i USING(item_instance_id) \

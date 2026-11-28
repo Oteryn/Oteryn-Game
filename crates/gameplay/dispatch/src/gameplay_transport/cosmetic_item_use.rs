@@ -880,6 +880,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             let mut selected = bound.into_iter().filter(|c| {
                 quest_targets::accepts(c, intent)
+                    && reward_callbacks::fresh_carried_source(c, catalogue, tracks)
                     && eligible(&c.storage)
                     && c.requires.iter().all(|r| r.holds(catalogue, tracks))
                     && c.state_ops
@@ -962,6 +963,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &callback,
                     intent,
                     corpse,
+                    &permit,
                 )
             } else if let Some(operand) = corpse_operand {
                 QuestCreatureUseProof::read_corpse(
@@ -1001,6 +1003,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             recipe_target,
             intent: encoded,
         };
+        let samples_corpse = callback.corpse_target.is_some();
         let capture_target = creature.as_ref().and_then(|proof| proof.live_target());
         let capture_key = callback.creature_target.clone();
         if let Some(guard) = capture_guard.as_ref() {
@@ -1042,6 +1045,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             result,
             QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)
         ) {
+            if samples_corpse {
+                self.states.loop_ground.invalidate();
+            }
             self.refresh_quest_session(command.game_session_id, false)
                 .await;
             UseDisposition::Committed

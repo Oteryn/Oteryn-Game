@@ -8,6 +8,11 @@ use oteryn_protocol_oteryn::activity_scope::{
     ActivityScope, ActivityScopeSnapshot, encode_activity_scope,
 };
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ACTIVITY_INPUT_HOLDER_BUSY: std::sync::Arc<tokio::sync::Notify>;
+}
+
 pub(super) fn projection_refusal(
     error: crate::durability::DurabilityError,
 ) -> super::connection::AdmissionRefusal {
@@ -34,9 +39,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
             return Err(crate::durability::DurabilityError::Unavailable);
         };
-        if admitted.continuity.non_activity_session == Some(fence.game_session_id)
-            && fence.game_session_id == admitted.game_session_id
-        {
+        let proven_non_activity = admitted.continuity.non_activity_session
+            == Some(fence.game_session_id)
+            && fence.game_session_id == admitted.game_session_id;
+        // The scoped fixture exercises the durable guard when there is no cached proof.
+        #[cfg(test)]
+        let proven_non_activity =
+            proven_non_activity && ACTIVITY_INPUT_HOLDER_BUSY.try_with(|_| ()).is_err();
+        if proven_non_activity {
             return Ok(());
         }
         // Re-prove the same transport/fences on every idempotent attempt, retaining
@@ -44,9 +54,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
             .retry_command_guard(async || {
-                ActivityHandoffOwner::new(self.root.clone())
+                let result = ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
-                    .await
+                    .await;
+                #[cfg(test)]
+                if matches!(
+                    &result,
+                    Err(crate::durability::DurabilityError::RootUnavailable)
+                ) {
+                    let _ = ACTIVITY_INPUT_HOLDER_BUSY.try_with(|busy| busy.notify_one());
+                }
+                result
             })
             .await
     }

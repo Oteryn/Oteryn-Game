@@ -24,6 +24,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         admitted.continuity.selected_capabilities.as_slice(),
         command.payload,
     );
+    let ledger = authority.session_commands();
+    let reference = crate::foundation::CommandId::new(command.command_id)
+        .ok()
+        .map(|id| crate::foundation::CommandRef::new(admitted.game_session_id, id));
+    if decoded.is_ok() && let (Some(ledger), Some(reference)) = (ledger, reference) {
+        ledger.remember_use_wire(reference, command.payload).ok_or("use_receipt_wire")?;
+    }
     // Spatial item handles name corpse projections, never a carried rune.
     // Resolve plain corpse clicks before the carried-item receipt probes.
     if let Ok(UseIntent {
@@ -94,6 +101,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
         )
     {
+        // A committed Cube may have consumed the last source unit. Probe its
+        // receipt even if the original handle no longer resolves.
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
             _ => None,
@@ -102,6 +111,10 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             item_view.as_ref().and_then(|view| view.shown_definition(key))
                 .or_else(|| container_views.as_ref().and_then(|views| views.shown_definition(key)))
         });
+        let receipt = ledger.zip(reference);
+        if let Some((ledger, reference)) = receipt {
+            ledger.set_use_receipt(reference, Some(transport::session_ingress::UseReceipt::Drome));
+        }
         if let Some(outcome) = authority.use_drome_cube(
             actor,
             UseCommand {
@@ -117,6 +130,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         .map_err(|_| "drome_use_fence_or_unresolved_write")?
         {
             return Ok(Dispatch::Use(outcome));
+        }
+        if let Some((ledger, reference)) = receipt {
+            ledger.set_use_receipt(reference, None);
         }
     }
     if let Ok(intent) = &decoded {
@@ -165,6 +181,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     }
     // A map handle reaches only its explicit world owner. It never widens the
     // carried-item or container admissions below; stale handles keep their refusal.
+    // A ladder timeout can arrive after a movement-triggered quest write was sent.
     if let Ok(UseIntent {
         target: UseTarget::Item(handle),
         use_with: None,
@@ -218,6 +235,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         && let UseTarget::Item(handle) = intent.target
     {
         let source = item_view.as_ref().and_then(|view| view.resolve(handle));
+        // Event-item commits may have been sent before the owner returns an opaque error.
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_event_item(
@@ -252,6 +270,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             }
             _ => None,
         };
+        // Soul War source consumption may already be committing on an opaque failure.
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.use_soul_war_source_items(
@@ -291,6 +310,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         };
         // Probe the quest receipt before fresh handle/custody admission. A
         // committed sample remains replayable after either handle disappears.
+        // An opaque failure can follow a sent quest-tool commit.
         if transport::cosmetic_item_use::quest_targets::probes(intent)
             && let Some(outcome) = tokio::time::timeout(
                 std::time::Duration::from_secs(10),
@@ -312,7 +332,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         {
             return Ok(Dispatch::Use(outcome));
         }
-        if let Some(outcome) = tokio::time::timeout(
+        match tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.tame_mount(
                 actor,
@@ -330,10 +350,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             ),
         )
         .await
-        .map_err(|_| "mount_taming_timeout")?
-        .map_err(|_| "mount_taming_unresolved")?
         {
-            return Ok(Dispatch::Use(outcome));
+            Ok(Ok(Some(outcome))) => return Ok(Dispatch::Use(outcome)),
+            Ok(Ok(None)) => {}
+            Ok(Err(()))
+                if matches!(
+                    intent.use_with_map_item,
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(_))
+                ) =>
+            {
+                // Base-object USE cannot reach the taming write or the two-carried-item
+                // quest write. The base-object callback reports its pending write separately.
+                return Ok(Dispatch::Use(UseOutcome::rejected()));
+            }
+            // Other target arms can lose a taming or quest commit acknowledgement,
+            // and a timeout can interrupt the base-object callback while it commits.
+            Ok(Err(())) => return Err("mount_taming_unresolved"),
+            Err(_) => return Err("mount_taming_timeout"),
         }
     }
     // Direct USE can open a reachable container even with rune USE selected.
@@ -379,6 +412,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     }
                     _ => None,
                 };
+                // The dispenser mutation can have been sent before an opaque failure.
                 if admitted.item_fence.is_some_and(|fence| matches!(fence.runtime_scope,
                     crate::foundation::RuntimeScopeRefV1::Instance{..}))
                     && let Some(outcome)=tokio::time::timeout(std::time::Duration::from_secs(10),
@@ -389,6 +423,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }
                 // Carried targets otherwise enter the pick owner directly. Probe W07
                 // here, including historical receipts whose source handle was retired.
+                // An opaque failure can follow a sent Soulpit entry or soul-core commit.
                 if let Some(outcome) = tokio::time::timeout(
                     std::time::Duration::from_secs(10),
                     authority.use_soulpit_items(
@@ -400,6 +435,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 ).await.map_err(|_| "soulpit_timeout")?.map_err(|_| "soulpit_unresolved")? {
                     return Ok(Dispatch::Use(outcome));
                 }
+                // Converter and catalyst failures can hide a sent, unacknowledged commit.
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_coin_converter(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await.map_err(|_| "coin_converter_unresolved")?
                 { return Ok(Dispatch::Use(outcome)); }
@@ -583,6 +619,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 };
                 match (item_view.as_mut(), key, observation) {
                     (_, Some(key), _) if consumable => {
+                        // The consumable writer may have sent a commit before its timeout or lost ACK.
                         let outcome = tokio::time::timeout(
                             std::time::Duration::from_secs(10),
                             authority.use_item_completion(
@@ -672,6 +709,10 @@ mod fluid_routing_tests {
         assert!(key < fluid, "key handler before fluid");
     }
 }
+
+#[cfg(test)]
+#[path = "use_item/tests.rs"]
+mod tests;
 
 
 fn log_corpse_open_refusal(command_id: u64, refusal: &CorpseOpenRefusal) {

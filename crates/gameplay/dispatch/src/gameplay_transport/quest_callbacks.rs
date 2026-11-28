@@ -5,6 +5,7 @@ use super::{
     connection::{UseCommand, UseOutcome},
 };
 mod admission;
+mod amphoras;
 mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
@@ -23,6 +24,7 @@ mod goblin_elevator;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod paid_projection;
 mod party_transfer;
 mod personal_encounter;
 mod personal_trial;
@@ -45,7 +47,7 @@ use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
-    quest_world_callback::QuestWorldContext,
+    quest_world_callback::{QuestWorldContext, may_debit, paid_projection::PaidArrival},
     spell_owner_commit::SpellLanePermit,
 };
 use crate::foundation::{
@@ -74,6 +76,7 @@ struct Pending {
     cause: QuestCause,
     origin: Option<MovementPositionSnapshot>,
     context: Option<QuestWorldContext>,
+    paid_arrivals: Vec<PaidArrival>,
     flame: Option<crate::durability::quest_state::rotten_flame::RottenFlameUse>,
     ingress_settled: bool,
     participants: Vec<GameSessionId>,
@@ -118,6 +121,7 @@ pub(super) struct PendingCallbacks {
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
+    closing: std::sync::Mutex<std::collections::HashSet<GameSessionId>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
     soul_rewards:
@@ -132,7 +136,45 @@ pub(super) struct PendingCallbacks {
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
 }
 
+pub(super) struct PaidCallbackClose<'a> {
+    callbacks: &'a PendingCallbacks,
+    session: GameSessionId,
+}
+
+impl Drop for PaidCallbackClose<'_> {
+    fn drop(&mut self) {
+        if let Ok(mut closing) = self.callbacks.closing.lock() {
+            closing.remove(&self.session);
+        }
+    }
+}
+
 impl PendingCallbacks {
+    pub(super) fn begin_paid_callback_close(
+        &self,
+        session: GameSessionId,
+    ) -> Option<PaidCallbackClose<'_>> {
+        if !self.closing.lock().ok()?.insert(session) {
+            return None;
+        }
+        Some(PaidCallbackClose {
+            callbacks: self,
+            session,
+        })
+    }
+
+    fn closing(&self, session: GameSessionId) -> bool {
+        self.closing
+            .lock()
+            .map_or(true, |closing| closing.contains(&session))
+    }
+
+    pub(super) fn forget(&self, session: GameSessionId) {
+        if let Ok(mut records) = self.records.lock() {
+            records.remove(&session);
+        }
+    }
+
     pub(super) fn complete_native_quest(
         &self,
         runtime: &mut ChannelRuntimeV1,
@@ -184,12 +226,32 @@ fn unique_eligible<'a>(
     candidates: impl IntoIterator<Item = &'a Callback>,
     tracks: &std::collections::BTreeMap<String, i64>,
 ) -> Option<&'a Callback> {
-    let mut eligible = candidates.into_iter().filter(|callback| {
+    let mut candidates = candidates.into_iter().peekable();
+    let first = candidates.next()?;
+    let second = candidates.next();
+    let passes_storage = |callback: &&Callback| {
         callback.storage.iter().all(|storage| {
             (storage.minimum..=storage.maximum)
                 .contains(&tracks.get(&storage.track).copied().unwrap_or(-1))
         })
-    });
+    };
+    if let Some(second) = second
+        && candidates.peek().is_none()
+        && let Some((authored, supplemental)) = ape_city_route_pair(first, second)
+    {
+        // The saved route owns the placement even when its use gate is closed.
+        // Falling through then could grant the other route's reward or bypass its switches.
+        let stage = tracks
+            .get("oteryn:quest-progress/chosen/ape-city/stage")
+            .copied()
+            .unwrap_or_default();
+        let selected = if stage > 0 { authored } else { supplemental };
+        return passes_storage(&selected).then_some(selected);
+    }
+    let mut eligible = std::iter::once(first)
+        .chain(second)
+        .chain(candidates)
+        .filter(passes_storage);
     let selected = eligible.next()?;
     let Some(other) = eligible.next() else {
         return Some(selected);
@@ -212,6 +274,44 @@ fn unique_eligible<'a>(
         | (EROTH_AUTHORED_MIRROR, EROTH_LEGACY_MIRROR) => Some(selected),
         _ => None,
     }
+}
+
+fn ape_city_route_pair<'a>(
+    first: &'a Callback,
+    second: &'a Callback,
+) -> Option<(&'a Callback, &'a Callback)> {
+    const AUTHORED: &str = "oteryn:quest-callback/authored-ape-city-";
+    const SUPPLEMENTAL: &str = "oteryn:quest-callback/ape-city-";
+    let (authored, supplemental) = if first.key.starts_with(AUTHORED) {
+        (first, second)
+    } else {
+        (second, first)
+    };
+    let authored_source = authored.key.strip_prefix(AUTHORED)?;
+    let supplemental_source = supplemental.key.strip_prefix(SUPPLEMENTAL)?;
+    let counterpart = match authored_source {
+        "deepest-catacombs" => "catacombs-amphora-gate",
+        "gate" => "wall-1040",
+        "exit-gate" => "wall-1041",
+        "holy-hair" | "lever-1" | "lever-2" | "lever-3" | "lever-4" | "lever-5" | "lever-6" => {
+            authored_source
+        }
+        _ => return None,
+    };
+    (supplemental_source == counterpart).then_some((authored, supplemental))
+}
+
+// Retain published keys for receipt reconciliation. Fresh USE has one owner
+// for each of these chests when both source programmes are loaded.
+fn superseded_chest(callback: &Callback, callbacks: &[Callback]) -> bool {
+    let owner = match callback.key.as_str() {
+        "oteryn:quest-callback/outlaw-camp-treasure" => {
+            "oteryn:quest-callback/authored-outlaw-camp-s3-treasure"
+        }
+        "oteryn:quest-callback/paradox-tower/talons" => "oteryn:quest-callback/paradox-claim-talon",
+        _ => return false,
+    };
+    callbacks.iter().any(|candidate| candidate.key == owner)
 }
 
 fn tile(p: Position) -> TilePos {
@@ -306,6 +406,25 @@ fn shared_added_source(
         .then_some((pos, entry.facts))
 }
 
+// The shared claim proof authorizes a retained UID at the callback's exact
+// selector. An object with a different action keeps that action's owner.
+fn matches_legacy_chest_uid(
+    map: &BundleMap,
+    callback: &Callback,
+    key: u64,
+    appearance: u16,
+) -> bool {
+    map.facts.quest_callback_source_bound(key)
+        && map.facts.action_at(key).is_none()
+        && !map.facts.base_hidden(key)
+        && world_callbacks::legacy_world_source_unique(callback).is_ok_and(|unique| {
+            unique.is_some_and(|uid| {
+                map.facts
+                    .quest_callback_matches(key, Some(uid), None, Some(appearance))
+            })
+        })
+}
+
 pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
     if callback.effects.loot_merchant
         || oteryn_gameplay_items::event_planting::world_change_item_source(key).is_some()
@@ -364,6 +483,7 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
                         || map
                             .facts
                             .quest_callback_native_object(key, id, binding.appearance)
+                        || matches_legacy_chest_uid(map, callback, key, binding.appearance)
                 });
         // Counterpart adapters retain a separately authoritative legacy route.
         // Native-only selectors must never become an unconstrained fallback.
@@ -531,9 +651,13 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || selector.appearance.is_some()
             || callback.trigger == Trigger::Use
             || ordinal == 0)
-        && map
+        && (map
             .facts
             .quest_callback_matches(key, selector.unique, selector.action, None)
+            || (selector.action.is_some()
+                && selector.appearance.is_some_and(|appearance| {
+                    matches_legacy_chest_uid(map, callback, key, appearance)
+                })))
         && (map
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
@@ -664,7 +788,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     None => return false,
                 },
                 None => context.into(),
-            };
+            }
+            .with_paid_arrivals(pending.paid_arrivals);
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
                 return false;
             };
@@ -801,6 +926,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || p.values()
                             .any(|pending| pending.participants.contains(&session))
                 })
+    }
+
+    /// A debit receipt belongs to the original World occurrence. Keep the
+    /// actor and its reservation available until that occurrence is projected.
+    pub(super) fn has_pending_paid_quest_callback(&self, session: GameSessionId) -> bool {
+        self.states
+            .quest_callbacks
+            .records
+            .lock()
+            .map_or(true, |records| {
+                records.values().any(|pending| {
+                    (pending.session == session || pending.participants.contains(&session))
+                        && self
+                            .callback_content()
+                            .iter()
+                            .any(|callback| callback.key == pending.callback && may_debit(callback))
+                })
+            })
+    }
+
+    pub(super) async fn settle_paid_quest_callbacks(&self, session: GameSessionId) -> bool {
+        if self.has_pending_paid_quest_callback(session) {
+            Box::pin(self.reconcile_quest_callbacks(session)).await
+                && !self.has_pending_paid_quest_callback(session)
+        } else {
+            true
+        }
+    }
+
+    /// Called with the common node input gate quiesced. Enumerate the
+    /// initiators directly so an untracked actor cannot strand a party payment.
+    pub(super) async fn drain_paid_quest_callbacks(&self) -> usize {
+        let sessions = match self.states.quest_callbacks.records.lock() {
+            Ok(records) => records
+                .values()
+                .filter_map(|pending| {
+                    self.callback_content()
+                        .iter()
+                        .any(|callback| callback.key == pending.callback && may_debit(callback))
+                        .then_some(pending.session)
+                })
+                .collect::<Vec<_>>(),
+            Err(_) => return 1,
+        };
+        let mut failed = 0;
+        for session in sessions {
+            if !self.settle_paid_quest_callbacks(session).await {
+                failed += 1;
+            }
+        }
+        failed
+    }
+
+    fn paid_callback_can_start(
+        &self,
+        session: GameSessionId,
+        initiator: GameSessionId,
+        source: impl FnOnce(&Pending) -> bool,
+    ) -> bool {
+        let callbacks = &self.states.quest_callbacks;
+        !callbacks.closing(session)
+            || callbacks
+                .records
+                .lock()
+                .is_ok_and(|records| records.get(&initiator).is_some_and(source))
     }
 
     pub(super) fn callback_content(&self) -> &[Callback] {
@@ -1164,12 +1354,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(UseOutcome::rejected());
         }
-        let mut selected = self
-            .callback_content()
+        let callbacks = self.callback_content();
+        let mut selected = callbacks
             .iter()
             .filter(|c| {
                 c.actor_kind == world_callbacks::ActorKind::Player
                     && c.trigger == Trigger::Use
+                    && !superseded_chest(c, callbacks)
                     && !oteryn_gameplay_quests::quest::ice_seal_paint::historical_only(&c.key)
                     && matches(map, c, resolved.placement_key)
                     && c.activation.as_ref().is_none_or(|activation| {
@@ -1866,6 +2057,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         cause,
                         origin: Some(origin),
                         context: None,
+                        paid_arrivals: Vec::new(),
                         flame: None,
                         ingress_settled: false,
                         participants: Vec::new(),
@@ -1950,7 +2142,7 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// A conditional source callback owns the portal only when its full native binding
+/// A conditional source callback owns the route only when its full native binding
 /// matches and callback selection at this tile is unambiguous. Ordinary step proofs
 /// still enforce entry collision, doors, pacing, occupancy and protection-zone rules.
 pub(super) struct CallbackPortals<'a> {
@@ -1962,7 +2154,7 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
     fn blocks(&self, cell: crate::content::LogicalCell) -> bool {
         self.inner.blocks(cell)
     }
-    fn suppresses_native_teleport(&self, cell: crate::content::LogicalCell) -> bool {
+    fn owns_native_transition(&self, cell: crate::content::LogicalCell) -> bool {
         let Some(map) = self.map else {
             return false;
         };
@@ -1976,9 +2168,21 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
         }) else {
             return false;
         };
+        let guarded = |c: &Callback| {
+            c.trigger == Trigger::StepIn
+                && c.actor_kind == world_callbacks::ActorKind::Player
+                && c.teleport.is_some()
+                && c.return_on_failure
+                && (c.has_state() || !c.world_requirements.is_empty())
+                && c.selector
+                    .native
+                    .as_ref()
+                    .is_some_and(|source| tile(source.position) == at)
+        };
         if !self.callbacks.iter().any(|c| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
-                .is_some_and(|b| tile(b.position) == at)
+            guarded(c)
+                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key)
+                    .is_some_and(|b| tile(b.position) == at)
         }) {
             return false;
         }
@@ -1986,31 +2190,49 @@ impl crate::map::floor::CellBlocker for CallbackPortals<'_> {
             return false;
         };
         let mut selected = None;
-        for ordinal in 0..base.depths().iter().filter(|d| **d == 0).count() {
-            let Some(key) = u8::try_from(ordinal)
-                .ok()
-                .and_then(|o| placement_key(at, o))
-            else {
+        for (ordinal, (&id, _)) in base
+            .ids()
+            .iter()
+            .zip(base.depths())
+            .filter(|(_, depth)| **depth == 0)
+            .enumerate()
+        {
+            let Ok(ordinal) = u8::try_from(ordinal) else {
+                return false;
+            };
+            let Some(key) = placement_key(at, ordinal) else {
                 return false;
             };
             if map.facts.base_hidden(key) {
                 continue;
             }
-            for callback in self
-                .callbacks
-                .iter()
-                .filter(|c| c.trigger == Trigger::StepIn && matches(map, c, key))
-            {
-                if selected.replace((callback, key)).is_some() {
+            for callback in self.callbacks.iter().filter(|c| {
+                c.actor_kind == world_callbacks::ActorKind::Player
+                    && c.trigger == Trigger::StepIn
+                    && matches(map, c, key)
+            }) {
+                if selected.replace((callback, key, ordinal, id)).is_some() {
                     return false;
                 }
             }
         }
-        selected.is_some_and(|(c, key)| {
-            oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(|b| {
-                map.facts
-                    .quest_callback_native_teleport(key, b.appearance, tile(b.raw_destination))
-            })
+        selected.is_some_and(|(c, key, ordinal, id)| {
+            (guarded(c)
+                && c.selector.native.as_ref().is_some_and(|source| {
+                    source.ordinal == ordinal
+                        && map
+                            .facts
+                            .quest_callback_native_object(key, id, source.appearance)
+                }))
+                || oteryn_gameplay_quests::quest::carried_step::native_binding(&c.key).is_some_and(
+                    |b| {
+                        map.facts.quest_callback_native_teleport(
+                            key,
+                            b.appearance,
+                            tile(b.raw_destination),
+                        )
+                    },
+                )
         })
     }
 }

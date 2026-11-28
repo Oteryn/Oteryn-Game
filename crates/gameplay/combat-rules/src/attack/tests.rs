@@ -76,7 +76,7 @@ fn checked_in_table_carries_the_decision_values() {
     .into_iter()
     .map(|mode| table.fight_mode(mode).attack_factor)
     .collect();
-    assert_eq!(factors, [1.0, 0.75, 0.5]);
+    assert_eq!(factors, [1.2; 3]);
     assert_eq!(
         table
             .fight_mode(FightMode::Offensive)
@@ -149,14 +149,14 @@ fn table_parse_rejects_bad_tables() {
 // --- formulas ---
 
 #[test]
-fn fist_damage_follows_the_pinned_tibiatools_expression_per_fight_mode() {
+fn fist_damage_uses_the_same_factor_for_every_legacy_mode() {
     let fist = player_fist_formula(table());
     assert!(!fist.reads(Input::AttackValue));
     let cases = [
-        (8, 10, FightMode::Offensive, 3, 9),
-        (8, 10, FightMode::Balanced, 2, 7),
-        (8, 10, FightMode::Defensive, 2, 5),
-        (100, 50, FightMode::Offensive, 27, 50),
+        (8, 10, FightMode::Offensive, 3, 10),
+        (8, 10, FightMode::Balanced, 3, 10),
+        (8, 10, FightMode::Defensive, 3, 10),
+        (100, 50, FightMode::Offensive, 29, 57),
     ];
     for (level, skill, mode, minimum, maximum) in cases {
         // The attack value input is ignored: fists always hit with attack 7.
@@ -174,12 +174,26 @@ fn melee_damage_follows_the_pinned_tibiatools_expression() {
     let melee = player_melee_formula(table());
     assert!(melee.reads(Input::AttackValue));
     assert_eq!(
-        melee.bounds(&attack_inputs(100, 100, 50, FightMode::Offensive)),
-        Ok((131, 465))
-    );
-    assert_eq!(
         melee.bounds(&attack_inputs(300, 120, 45, FightMode::Balanced)),
-        Ok((149, 418))
+        Ok((203, 633))
+    );
+}
+
+#[test]
+fn global_parity_melee_bounds_use_the_crystal_attack_factor() {
+    let melee = player_melee_formula(table());
+    assert_eq!(
+        melee.bounds(&attack_inputs(100, 100, 50, FightMode::Offensive)),
+        Ok((153, 554))
+    );
+}
+
+#[test]
+fn global_parity_distance_bounds_use_the_crystal_attack_factor() {
+    let distance = super::ranged::player_distance_formula();
+    assert_eq!(
+        distance.bounds(&attack_inputs(100, 80, 25, FightMode::Offensive)),
+        Ok((74, 236))
     );
 }
 
@@ -189,12 +203,12 @@ fn melee_level_term_follows_the_official_curve() {
     // Up to level 500 the curve equals Canary's level / 5.
     assert_eq!(
         fist.bounds(&attack_inputs(500, 10, 0, FightMode::Offensive)),
-        Ok((102, 108))
+        Ok((102, 109))
     );
     // Above it the official curve (the level term at 600 is 116, not 120).
     assert_eq!(
         fist.bounds(&attack_inputs(600, 10, 0, FightMode::Offensive)),
-        Ok((118, 124))
+        Ok((118, 125))
     );
 }
 
@@ -274,11 +288,14 @@ fn zero_skill_defence_is_one_or_two() {
 }
 
 #[test]
-fn armor_reduction_matches_canary() {
+fn global_parity_armor_reduction_matches_the_wiki_bounds() {
     let table = table();
-    assert_eq!(armor_reduction_bounds(table, 0), (0, 0));
-    for armor in 1..=3 {
-        assert_eq!(armor_reduction_bounds(table, armor), (1, 1));
+    for (armor, expected) in [(0, (0, 0)), (1, (0, 0)), (2, (1, 1)), (9, (4, 7))] {
+        assert_eq!(
+            armor_reduction_bounds(table, armor),
+            expected,
+            "armor {armor}"
+        );
     }
     assert_eq!(armor_reduction_bounds(table, 4), (2, 3));
     assert_eq!(armor_reduction_bounds(table, 5), (2, 3));

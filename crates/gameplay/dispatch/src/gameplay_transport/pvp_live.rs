@@ -16,6 +16,15 @@ use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
 
+pub(super) const POISON_ARROW_CONDITION: &str = "oteryn:weapon.poison_arrow";
+
+pub(super) fn is_poison_arrow(
+    provenance: &oteryn_gameplay_foundation::foundation::condition::ConditionProvenance<String>,
+) -> bool {
+    provenance.source_kind == crate::foundation::ConditionSourceKind::Player
+        && provenance.definition_key == POISON_ARROW_CONDITION
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn legal_player(
     tx: &mut Transaction<'_, Postgres>,
@@ -325,6 +334,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
         expected_black: bool,
         damage: crate::spell::cast::PreparedWheelAttackHit,
+        condition: Option<(
+            crate::foundation::ConditionDefinition,
+            oteryn_simulation_determinism::DecisionOccurrenceId,
+        )>,
     ) -> Result<bool, DurabilityError> {
         let Some(effect) = batch.effects.first() else {
             return Ok(false);
@@ -358,18 +371,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !physical.will_apply() {
             return Ok(false);
         }
-        let Ok(player) =
+        let Ok(mut player) =
             super::actor_spell::stage_player_batch_with_attack(runtime, states, &batch, &damage)
         else {
             return Ok(false);
         };
+        if let Some((definition, occurrence)) = &condition {
+            player.stage_pvp_hit_condition(
+                runtime.content_pin().server_artifact_digest(),
+                target,
+                definition,
+                *occurrence,
+            );
+        }
         if states.deaths.try_reserve(batch.effects.len()).is_err()
             || states.pvp_locks.try_reserve(2).is_err()
             || runtime.reserve_spell_batch(&mut physical).is_err()
         {
             return Ok(false);
         }
-        let binding: [u8; 32] = Sha256::digest(format!("{batch:?}").as_bytes()).into();
+        let mut binding = Sha256::new();
+        binding.update(format!("{batch:?}").as_bytes());
+        if let Some((definition, occurrence)) = condition {
+            binding.update(format!("{definition:?}{occurrence:?}").as_bytes());
+        }
+        let binding = binding.finalize().into();
         let hit = PendingPvpHit {
             batch,
             physical,

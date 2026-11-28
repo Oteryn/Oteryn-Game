@@ -65,13 +65,14 @@ pub(super) async fn finish<S, A>(
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: Dispatch,
-    result: Vec<u8>,
+    batch: (Vec<Vec<u8>>, Vec<u8>),
     outcome: CommandOutcome,
 ) -> Result<(), ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let (cooldown_frames, result) = batch;
     if session
         .commands
         .terminalize_with(command.command_id, &result, || {
@@ -104,7 +105,9 @@ where
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
         // committed release keeps this a logout end.
-        if write_frame(stream, &result).await.is_ok()
+        if cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
+            .await
+            .is_ok()
             && (!outcome.second_logout
                 || send_error(
                     stream,
@@ -122,9 +125,11 @@ where
         }
         return Err(ServeEnd::LoggedOut);
     }
-    write_frame(stream, &result)
+    cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
         .await
-        .map_err(|error| command::disconnect(command, "command_result_write", error.kind()))?;
+        .map_err(|end| {
+            command::disconnect_at(command, "command_result_write", "write_failed", end)
+        })?;
     // A read-only refusal has no effects to flush. Leave pending cues
     // to the normal view refresh and keep this result independent of them.
     let daily_boost =

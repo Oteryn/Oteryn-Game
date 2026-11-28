@@ -1,0 +1,151 @@
+{
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/world/world-monster.xml",
+    "sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "evidence": "OtsHypothesisOnly"
+  },
+  "baseline": {
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "sha256": "a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570"
+  },
+  "points": [
+    {
+      "name": "deer",
+      "cell": [
+        33852,
+        32179,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33870,
+        32172,
+        3
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33876,
+        32195,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33877,
+        32197,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33878,
+        32197,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33887,
+        32142,
+        4
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33887,
+        32144,
+        4
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33892,
+        32140,
+        4
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33893,
+        32146,
+        4
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33894,
+        32107,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33903,
+        32120,
+        4
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33903,
+        32179,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33903,
+        32221,
+        6
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33905,
+        32193,
+        5
+      ]
+    },
+    {
+      "name": "deer",
+      "cell": [
+        33909,
+        32199,
+        5
+      ]
+    },
+    {
+      "name": "night harpy",
+      "cell": [
+        33828,
+        32242,
+        5
+      ]
+    },
+    {
+      "name": "ungreez",
+      "cell": [
+        33161,
+        31642,
+        12
+      ]
+    }
+  ]
+}

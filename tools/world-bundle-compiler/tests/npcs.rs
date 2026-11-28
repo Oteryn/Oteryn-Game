@@ -675,3 +675,6 @@ mod regional_placements;
 
 #[path = "npcs/regional_population.rs"]
 mod regional_population;
+
+#[path = "npcs/source_quest_npcs.rs"]
+mod source_quest_npcs;

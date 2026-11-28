@@ -75,6 +75,7 @@ where
     let observed = authority
         .observe_vitals(session.actor, session.admitted.game_session_id)
         .await;
+    cooldowns::refresh(stream, authority, session).await?;
     if session.admitted.continuity.vitals_revision != 0
         && let Some((to, value)) = observed
             .filter(|(observed_revision, _)| {
@@ -99,9 +100,6 @@ where
             return Err(ServeEnd::Disconnected);
         }
         session.admitted.continuity.vitals_revision = to;
-    }
-    if outcome.disposition == SpellCastDisposition::Cast {
-        native_cues::refresh_cooldowns(stream, authority, session).await?;
     }
     if outcome.refresh_inventory
         && let Some(view) = session.item_view.as_mut()

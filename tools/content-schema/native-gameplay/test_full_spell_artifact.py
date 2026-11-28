@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -25,8 +26,8 @@ class CorpseSourceCohortTests(unittest.TestCase):
     def test_current_complete_capture_qualifies_without_changing_source(self):
         checked = full.checked_boss_corpse_capture()
         self.assertEqual(checked, self.capture)
-        self.assertEqual(len(checked['roots']), 55)
-        self.assertEqual(len(checked['records']), 199)
+        self.assertEqual(len(checked['roots']), 56)
+        self.assertEqual(len(checked['records']), 203)
         terminal = [row for row in checked['records']
                     if row['production_binding']['external_id'] == '43666']
         self.assertEqual(len(terminal), 1)
@@ -313,11 +314,12 @@ class LootTablesTests(unittest.TestCase):
                                   {entry['item']['key'] for entry in row['definition']['entries']})
 
     def test_checked_in_section_is_generated_from_the_production_profiles(self):
-        _, creatures = full.read(full.CREATURE_PROFILES)
-        with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / 'loot-tables.json'
-            full.refresh_loot_tables(output)
-            raw = output.read_bytes()
+        sys.path.insert(0, str(full.ROOT / 'tools/content-migration'))
+        from register_spell_families import outputs
+
+        generated = outputs(full.ROOT, include_prey=False)
+        raw = generated[full.LOOT_TABLES.relative_to(full.ROOT).as_posix()]
+        creatures = json.loads(generated[full.CREATURE_PROFILES.relative_to(full.ROOT).as_posix()])
         self.assertEqual(raw, full.LOOT_TABLES.read_bytes())
         self.assertLessEqual(len(raw), full.LIMITS['loot_tables'])
         document = json.loads(raw)

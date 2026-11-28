@@ -802,43 +802,39 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
     }
 }
 
+const SOURCE_PLAIN_CORPSES: &[(&str, &str)] = &[
+    (
+        "oteryn:creature.aspect_of_power",
+        "oteryn:item.tibia.i33949",
+    ),
+    ("oteryn:creature.blue_butterfly", "oteryn:item.tibia.i4993"),
+    ("oteryn:creature.hateful_soul", "oteryn:item.tibia.i33793"),
+    (
+        "oteryn:creature.necromantic_focus",
+        "oteryn:item.tibia.i33984",
+    ),
+    ("oteryn:creature.poor_soul", "oteryn:item.tibia.i33891"),
+    (
+        "oteryn:creature.purple_butterfly",
+        "oteryn:item.tibia.i4992",
+    ),
+    ("oteryn:creature.red_butterfly", "oteryn:item.tibia.i4991"),
+    (
+        "oteryn:creature.symbol_of_hatred",
+        "oteryn:item.tibia.i33792",
+    ),
+    ("oteryn:creature.weeping_soul", "oteryn:item.tibia.i33876"),
+];
+
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef, private_reward: bool) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
-        && matches!(
-            (creature, corpse.key.as_str(), private_reward),
-            (
-                "oteryn:creature.glitterscale",
-                "oteryn:item.tibia.i11589",
-                true
-            ) | (
-                "oteryn:creature.symbol_of_hatred",
-                "oteryn:item.tibia.i33792",
-                false
-            ) | (
-                "oteryn:creature.hateful_soul",
-                "oteryn:item.tibia.i33793",
-                false
-            ) | (
-                "oteryn:creature.weeping_soul",
-                "oteryn:item.tibia.i33876",
-                false
-            ) | (
-                "oteryn:creature.poor_soul",
-                "oteryn:item.tibia.i33891",
-                false
-            ) | (
-                "oteryn:creature.aspect_of_power",
-                "oteryn:item.tibia.i33949",
-                false
-            ) | (
-                "oteryn:creature.necromantic_focus",
-                "oteryn:item.tibia.i33984",
-                false
-            )
-                // Crystal's first Explorer Society specimen is the fresh purple corpse.
-                | ("oteryn:creature.purple_butterfly", "oteryn:item.tibia.i4992", false)
-        )
+        && if private_reward {
+            (creature, corpse.key.as_str())
+                == ("oteryn:creature.glitterscale", "oteryn:item.tibia.i11589")
+        } else {
+            SOURCE_PLAIN_CORPSES.contains(&(creature, corpse.key.as_str()))
+        }
 }
 
 #[derive(Default)]
@@ -901,17 +897,11 @@ fn verified_source_corpses(
             && matches!(&record.semantics.physical, F::Known(value)
                 if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
-        let source_plain = matches!(
-            definition.production_key.as_str(),
-            "oteryn:item.tibia.i11589"
-                | "oteryn:item.tibia.i33792"
-                | "oteryn:item.tibia.i33793"
-                | "oteryn:item.tibia.i33876"
-                | "oteryn:item.tibia.i33891"
-                | "oteryn:item.tibia.i33949"
-                | "oteryn:item.tibia.i33984"
-                | "oteryn:item.tibia.i4992"
-        ) && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
+        let source_plain = (SOURCE_PLAIN_CORPSES
+            .iter()
+            .any(|(_, key)| *key == definition.production_key)
+            || definition.production_key == "oteryn:item.tibia.i11589")
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
             "oteryn:item.tibia.i6048" => Some(36),
@@ -1869,6 +1859,129 @@ mod protected_loot_tests {
     }
 
     #[test]
+    fn active_private_raid_loot_admits_exact_silver_token_drops()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, corpse, chance) in [
+            ("furyosa", 18118, 450_000),
+            ("hirintror", 7282, 2_000),
+            ("ocyakao", 7320, 2_000),
+            ("the_welter", 18974, 2_000),
+            ("tyrn", 18970, 50_000),
+            ("weakened_shlorg", 18982, 30_000),
+            ("white_pale", 18978, 2_000),
+            ("willi_wasp", 5989, 50_000),
+            ("zushuka", 18265, 920_000),
+        ] {
+            let key = format!("oteryn:creature.{creature}");
+            let row = table
+                .row(&key)
+                .map_err(|reason| format!("{key}: {}", reason.as_str()))?;
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(format!("oteryn:item.tibia.i{corpse}").as_str()),
+            );
+            let tokens: Vec<_> = row
+                .loot_table
+                .entries
+                .iter()
+                .filter(|entry| entry.item.production_key == "oteryn:item.tibia.i19083")
+                .map(|entry| (entry.min_count, entry.max_count, entry.probability_ppm))
+                .collect();
+            assert_eq!(tokens, [(1, 1, Some(chance))], "{key}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn explorer_society_butterflies_admit_the_authored_plain_corpses()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let items = serde_json::from_str(include_str!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let table = CreatureRewardTable::from_pin_with_native_corpses(
+            &creatures,
+            Some(&loot),
+            Some(&items),
+        );
+        let callbacks: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../content/quests/npc-callbacks/explorer-society.json"
+        ))?;
+        let mut count = 0;
+        for callback in callbacks["callbacks"].as_array().ok_or("callbacks")? {
+            let Some(species) = callback["creature_target"].as_str() else {
+                continue;
+            };
+            if !species.ends_with("_butterfly") {
+                continue;
+            }
+            let appearance = callback["corpse_target"]["appearance"]
+                .as_u64()
+                .ok_or("appearance")?;
+            let reward = table.row(species).map_err(NoSettlementReason::as_str)?;
+            let corpse = reward.corpse_item.as_ref().ok_or("missing native corpse")?;
+            assert_eq!(
+                corpse.production_key,
+                format!("oteryn:item.tibia.i{appearance}")
+            );
+            assert!(reward.loot_table.entries.is_empty());
+            count += 1;
+        }
+        assert_eq!(count, 3);
+        Ok(())
+    }
+
+    #[test]
+    fn crystal_boss_loot_resolves_named_source_items() -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let rewards = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, item, chance) in [
+            (
+                "ayana_the_crimson_curse",
+                "oteryn:item.tibia.i3039",
+                263_600,
+            ),
+            (
+                "ayana_the_crimson_curse",
+                "oteryn:item.tibia.i43888",
+                178_300,
+            ),
+            ("malvaroth", "oteryn:item.tibia.i49909", 70_000),
+        ] {
+            let reward = rewards
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(NoSettlementReason::as_str)?;
+            let entry = reward
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == item)
+                .ok_or_else(|| format!("{creature} lacks admitted {item}"))?;
+            assert_eq!(
+                (entry.probability_ppm, entry.min_count, entry.max_count),
+                (Some(chance), 1, 1)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn arbaziloth_loads_admitted_crystal_loot() -> Result<(), Box<dyn std::error::Error>> {
         let (creatures, _) = documents()?;
         let loot = LootTablesSection::decode(
@@ -1946,6 +2059,49 @@ mod protected_loot_tests {
             }),
             "Merlkin's 10,000 ppm ape fur is missing"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_quest_loot_settles_the_backpack_and_hunter_music_sheets()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (creatures, _) = documents()?;
+        let loot = LootTablesSection::decode(
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/loot-tables.json"),
+            &creatures,
+        )?;
+        let table = CreatureRewardTable::from_pin(&creatures, Some(&loot));
+        for (creature, corpse, item, chance) in [
+            ("orc_sambackpack", 5966, 3244, 1_000_000),
+            ("novice_of_the_cult", 18186, 6087, 9_700),
+            ("acolyte_of_the_cult", 18038, 6088, 4_800),
+            ("adept_of_the_cult", 18030, 6089, 7_000),
+            ("enlightened_of_the_cult", 18110, 6090, 4_900),
+        ] {
+            let row = table
+                .row(&format!("oteryn:creature.{creature}"))
+                .map_err(|error| format!("{creature}: {}", error.as_str()))?;
+            let corpse_key = format!("oteryn:item.tibia.i{corpse}");
+            assert_eq!(
+                row.corpse_item
+                    .as_ref()
+                    .map(|item| item.production_key.as_str()),
+                Some(corpse_key.as_str()),
+                "{creature} source corpse"
+            );
+            let key = format!("oteryn:item.tibia.i{item}");
+            let entry = row
+                .loot_table
+                .entries
+                .iter()
+                .find(|entry| entry.item.production_key == key)
+                .ok_or_else(|| format!("{creature} drops no {key}"))?;
+            assert_eq!(
+                (entry.min_count, entry.max_count, entry.probability_ppm),
+                (1, 1, Some(chance)),
+                "{creature} source loot"
+            );
+        }
         Ok(())
     }
 

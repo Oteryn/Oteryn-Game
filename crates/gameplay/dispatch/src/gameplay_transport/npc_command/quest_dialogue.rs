@@ -5,6 +5,7 @@ use super::*;
 use crate::domain::CharacterId;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
+use oteryn_gameplay_quests::quest::QuestRefusal;
 use std::collections::BTreeMap;
 
 pub(super) type Context = (u64, u64, String);
@@ -253,15 +254,29 @@ fn publish_committed_reply(
     }
 }
 
-fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId, committed: bool) {
+enum Completion {
+    Committed,
+    Refused,
+    ClearTopic,
+}
+
+fn finish(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    completion: Completion,
+) {
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
         && let Some(state) = sessions.get_mut(&session)
         && let Some(pending) = state.quest_dialogue.pending.take()
-        && committed
     {
+        let next_topic = match completion {
+            Completion::Committed => pending.next_topic,
+            Completion::Refused => return,
+            Completion::ClearTopic => Some(Topic::default()),
+        };
         state
             .quest_dialogue
-            .apply_topic(pending.context, pending.next_topic);
+            .apply_topic(pending.context, next_topic);
     }
 }
 
@@ -436,7 +451,7 @@ pub(super) async fn apply(
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
             Ok(payment) => Some(payment),
             Err(outcome) => {
-                finish(admission, command.game_session_id, false);
+                finish(admission, command.game_session_id, Completion::Refused);
                 return *outcome;
             }
         }
@@ -448,7 +463,7 @@ pub(super) async fn apply(
             .active_generation
             .and_then(|g| g.native_gameplay())
         else {
-            finish(admission, command.game_session_id, false);
+            finish(admission, command.game_session_id, Completion::Refused);
             return rejected();
         };
         let weights = super::super::item_ref_admission::NativeItemWeights(native)
@@ -504,7 +519,7 @@ pub(super) async fn apply(
                 state.quest_dialogue.interrupt_after_commit = None;
                 return unknown();
             }
-            finish(admission, command.game_session_id, true);
+            finish(admission, command.game_session_id, Completion::Committed);
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
@@ -540,8 +555,22 @@ pub(super) async fn apply(
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
         )) => unknown(),
-        _ => {
-            finish(admission, command.game_session_id, false);
+        other => {
+            // The locked reward writer reports a missing payment as StageMismatch.
+            // Crystal storkus.lua:142-197 closes each rank offer after a refusal.
+            let completion = if matches!(
+                other,
+                Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
+            ) && reward_callback.as_ref().is_some_and(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-reward/vampire-hunter-rank-")
+            }) {
+                Completion::ClearTopic
+            } else {
+                Completion::Refused
+            };
+            finish(admission, command.game_session_id, completion);
             if step.failure_reply.is_empty() {
                 return rejected();
             }
@@ -604,7 +633,12 @@ pub(in crate::gameplay_transport) async fn resume(
         .await
     {
         Ok(receipt) => {
-            finish(admission, command.game_session_id, receipt.is_some());
+            let completion = if receipt.is_some() {
+                Completion::Committed
+            } else {
+                Completion::Refused
+            };
+            finish(admission, command.game_session_id, completion);
             if receipt.is_some() {
                 admission
                     .refresh_quest_session(command.game_session_id, false)

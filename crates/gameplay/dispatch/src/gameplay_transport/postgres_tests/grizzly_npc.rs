@@ -35,6 +35,11 @@ fn grizzly_npc_wire_task_xp_crosses_level_50_and_unlocks_live_promotion() -> Tes
 }
 
 #[test]
+fn cach1_grizzly_npc_wire_awards_confirmed_huntsman_and_elite_hunter() -> TestResult {
+    postgres_case(7)
+}
+
+#[test]
 fn grizzly_npc_holder_contention_replies_without_disconnect_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
@@ -67,6 +72,7 @@ fn postgres_case(case: u8) -> TestResult {
         2 => || scenario(2),
         3 => || scenario(3),
         4 => || scenario(4),
+        7 => || scenario(7),
         _ => || scenario(0),
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run("grizzly-npc", runner)

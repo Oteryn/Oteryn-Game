@@ -117,6 +117,22 @@ impl DurabilityRoot {
             let balance: i16 = sqlx::query_scalar("SELECT balance FROM game_account_prey_wildcards WHERE account_id=$1::text::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE").bind(&account).bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0);
             let expansion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_prey_expansions WHERE character_id=encode($1,'hex')::uuid)").bind(character.as_slice()).fetch_one(&mut **tx).await?;
             let (mut reply, mut metrics) = storage::load(&mut tx, character, balance as u8, level, expansion, &catalogue.rules).await?;
+            // Select indexes the saved grid as it stood when the command arrived.
+            // Removing an unavailable offer must never redirect that index.
+            let requested_offer = match &mutation {
+                PreyMutation::Command(Request::Select { slot, index }) => reply.slots.iter()
+                    .find(|saved| saved.slot == *slot)
+                    .and_then(|saved| usize::from(*index).checked_sub(1)
+                        .and_then(|index| saved.creatures.get(index)))
+                    .cloned(),
+                _ => None,
+            };
+            // Reconciliation keeps the relative order and accounting of the saved offers.
+            for (slot, metric) in reply.slots.iter_mut().zip(&metrics) {
+                if retain_eligible_offers(slot, catalogue) {
+                    storage::save(&mut tx, character, slot, metric).await?;
+                }
+            }
             if matches!(&mutation, PreyMutation::Command(Request::Query)) {
                 mask_locked(&mut reply, &access); tx.commit(deadline).await?; return Ok(Ok((reply, permanent, None)));
             }
@@ -238,11 +254,17 @@ impl DurabilityRoot {
                             slot.state = 1; slot.selected.clear(); slot.hunting_seconds = 0;
                             new_offers.extend(list.iter().cloned()); slot.creatures = list;
                         }
-                        Request::Select {index,..} => {
+                        Request::Select {..} => {
                             if slot.state != 1 { return Ok(Err(Error::InvalidInput)); }
-                            let Some(key) = slot.creatures.get(usize::from(*index).wrapping_sub(1)).cloned() else { return Ok(Err(Error::InvalidInput)); };
+                            let Some(key) = requested_offer else { return Ok(Err(Error::InvalidInput)); };
+                            if !catalogue.can_offer(&key) {
+                                reply.status = wire::STATUS_CONTENT_UNAVAILABLE;
+                                mask_locked(&mut reply, &access);
+                                write_receipt(&mut tx, character, &occurrence, &binding, &reply, root.revision, ReceiptChange::default()).await?;
+                                tx.commit(deadline).await?;
+                                return Ok(Ok((reply, permanent, None)));
+                            }
                             if black.contains(&key) { return Ok(Err(Error::InvalidInput)); }
-                            if catalogue.unsupported_loot.contains(&key) { reply.status = wire::STATUS_CONTENT_UNAVAILABLE; mask_locked(&mut reply, &access); write_receipt(&mut tx, character, &occurrence, &binding, &reply, root.revision, ReceiptChange::default()).await?; tx.commit(deadline).await?; return Ok(Ok((reply, permanent, None))); }
                             m.start(now, catalogue.rules.creatures.get(&key).ok_or(DurabilityError::InvalidStoredState)?.tier, 0, 0);
                             select(slot, key, &mut bonus_draw)?;
                         }
@@ -327,6 +349,15 @@ fn blacklist(reply: &Reply, i: usize) -> Vec<String> {
         })
         .collect()
 }
+fn retain_eligible_offers(slot: &mut Slot, catalogue: &PreyCatalogue) -> bool {
+    if slot.state != 1 {
+        return false;
+    }
+    let before = slot.creatures.len();
+    slot.creatures.retain(|key| catalogue.can_offer(key));
+    slot.creatures.len() != before
+}
+
 fn bonus(slot: &Slot) -> Option<PreyBonus> {
     let kind = match slot.bonus {
         1 => BonusType::Damage,

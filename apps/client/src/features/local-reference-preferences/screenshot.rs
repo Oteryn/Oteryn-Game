@@ -110,6 +110,7 @@ pub(crate) struct CaptureObservations {
 }
 impl crate::play::mailbox::Mailbox {
     pub(in crate::play) fn observe_capture_event(&mut self, event: &oteryn_session::SessionEvent) {
+        use crate::play::feature_local_death_respawn::protocol::event_actor_vitals;
         use oteryn_session::{SessionEvent, analyser_transport::AnalyserFact};
         let mut observe = |fact: &AnalyserFact| {
             #[cfg(bevy_shell)]
@@ -141,17 +142,18 @@ impl crate::play::mailbox::Mailbox {
             SessionEvent::AnalyserAttributedFacts(delta) => {
                 delta.value.iter().for_each(|row| observe(&row.fact))
             }
-            SessionEvent::ActorVitals(delta) if delta.value.max_health > 0 => {
-                let vitals = &delta.value;
-                let low = vitals.health > 0
-                    && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
-                if self.capture_observations.was_low == Some(false) && low {
-                    self.capture_observations.low_health =
-                        self.capture_observations.low_health.wrapping_add(1);
-                }
-                self.capture_observations.was_low = (vitals.health > 0).then_some(low);
-            }
             _ => {}
+        }
+        if let Some(vitals) = event_actor_vitals(event)
+            && vitals.max_health > 0
+        {
+            let low = vitals.health > 0
+                && u64::from(vitals.health) * 100 <= u64::from(vitals.max_health) * 4;
+            if self.capture_observations.was_low == Some(false) && low {
+                self.capture_observations.low_health =
+                    self.capture_observations.low_health.wrapping_add(1);
+            }
+            self.capture_observations.was_low = (vitals.health > 0).then_some(low);
         }
     }
 }
