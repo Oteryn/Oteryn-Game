@@ -70,13 +70,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let baseline_sequence = client.session_mut().last_server_sequence();
     let selected = client.session_mut().selected_capabilities().to_vec();
     let reply = client.session_mut().world_context_use(&payload).await?;
+    let reply_received_ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis();
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("pick reply: {error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("pick refine returned {:?}/{disposition:?}", reply.status).into());
     }
     evidence(&format!(
-        "I12_REFINE_COMMITTED session={} command_id={} result_server_sequence={}",
+        "I12_REFINE_COMMITTED session={} command_id={} result_server_sequence={} client_observed_ts={reply_received_ts}",
         uuid_text(session.as_bytes()),
         reply.command_id,
         reply.server_sequence,
@@ -90,7 +91,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             _ => None,
         })
         .ok_or("committed pick refine sent no inventory delta")?;
-    let frame = client
+    let (frame, received_at) = client
         .session_mut()
         .take_inventory_frame()
         .ok_or("no received inventory frame")?;
@@ -101,6 +102,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("inventory frame does not match refining observation".into());
     }
+    evidence(&format!(
+        "I12_INVENTORY_RECEIVED session={} server_sequence={} client_received_ts={}",
+        uuid_text(session.as_bytes()),
+        delta.server_sequence,
+        received_at.duration_since(std::time::UNIX_EPOCH)?.as_millis(),
+    ));
     let observed = super::full_row_w19a::quantities(&client)?;
     // Global: https://tibia.fandom.com/wiki/Shiny_Stone (documented outputs).
     let mut matches_reward = false;

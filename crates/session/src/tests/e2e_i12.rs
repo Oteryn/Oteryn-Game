@@ -92,8 +92,11 @@ fn idle_inventory_delta_retains_original_envelope() -> Result<(), BoxError> {
             Ok::<(), BoxError>(())
         });
         let mut session = Session::admit(client, item_admission()?).await?;
+        let before_receive = std::time::SystemTime::now();
         session.service_liveness(Duration::from_millis(30)).await?;
-        assert_eq!(session.take_inventory_frame(), Some(frame));
+        let (received, received_at) = session.take_inventory_frame().ok_or("missing frame")?;
+        assert_eq!(received, frame);
+        assert!(received_at >= before_receive && received_at <= std::time::SystemTime::now());
         peer.await??;
         Ok::<(), BoxError>(())
     })?

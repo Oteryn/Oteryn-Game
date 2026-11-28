@@ -353,6 +353,7 @@ impl<S: SessionStream> Session<S> {
         loop {
             let frame = bounded(self.deadline, label, read_frame(&mut self.stream)).await?;
             self.last_received = tokio::time::Instant::now();
+            let received_at = std::time::SystemTime::now();
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
@@ -372,7 +373,7 @@ impl<S: SessionStream> Session<S> {
                 && decode_state_delta(envelope.payload())?.domain_id
                     == STATE_DOMAIN_CHARACTER_INVENTORY
             {
-                self.replay.inventory_frame = Some(frame.clone());
+                self.replay.inventory_frame = Some((frame.clone(), received_at));
             }
             if envelope.message_type() != MessageType::LivenessProbe {
                 return Ok(frame);

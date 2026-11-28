@@ -377,6 +377,7 @@ impl<S: SessionStream> Session<S> {
             )
             .await?;
             self.last_received = tokio::time::Instant::now();
+            let received_at = std::time::SystemTime::now();
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
@@ -390,7 +391,7 @@ impl<S: SessionStream> Session<S> {
                     let server_sequence = self.next_sequence(&envelope)?;
                     let event = self.apply_state_delta(server_sequence, envelope.payload())?;
                     if matches!(&event, SessionEvent::Inventory(_)) {
-                        self.replay.inventory_frame = Some(frame);
+                        self.replay.inventory_frame = Some((frame, received_at));
                     }
                     self.queue_event(event)?;
                 }
