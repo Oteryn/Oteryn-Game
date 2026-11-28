@@ -12,6 +12,7 @@
 //! [`CharmFacts`] inside the command's transaction. Earned currency only grows, and every writer
 //! of the unlocks takes the same root lock and revision, so a double spend is impossible.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -583,7 +584,7 @@ impl DurabilityRoot {
                         balance,
                         slot_entitlement,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(result))
                 })
             })
@@ -1011,7 +1012,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -1033,7 +1034,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let state = load_charm_state(&mut tx, character_id).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state))
                 })
             })

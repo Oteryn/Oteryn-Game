@@ -482,21 +482,33 @@ def outputs(
         ]
         index_path = "content/world/terrain/index.json"
         index = json.loads(files[index_path])
+        import crystal_delta_ground
+
+        files[crystal_delta_ground.SHARD] = crystal_delta_ground.outputs()[
+            crystal_delta_ground.SHARD
+        ]
         index["notes"] += engnpc2_ram_world.NOTE
         index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
+        import blood_vestibule_ground
         import spawn_ground
         import spawn_map_ground
         from scoped_spawn_ground import catalogue_outputs
 
         files[spawn_ground.SHARD] = spawn_ground.terrain_output()
         files.update(catalogue_outputs(files[index_path]))
+        files[blood_vestibule_ground.SHARD] = blood_vestibule_ground.outputs()[
+            blood_vestibule_ground.SHARD
+        ]
         files[spawn_map_ground.SHARD] = spawn_map_ground.terrain_output()
         index = json.loads(files[index_path])
         index["notes"] = activity_static.compose_terrain_notes(
-            index["notes"] + spawn_map_ground.NOTE
+            index["notes"]
+            + blood_vestibule_ground.NOTE
+            + spawn_map_ground.NOTE
+            + crystal_delta_ground.MARKER_NOTE
         )
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
@@ -552,6 +564,8 @@ def official_shards():
 def qualified_shards():
     import activity_static
     import alawar_static
+    import blood_vestibule_ground
+    import crystal_delta_ground
     import feroxa_static
     import spawn_ground
     import spawn_map_ground
@@ -571,7 +585,9 @@ def qualified_shards():
             "content/world/objects/objects-12917-12931.json",
             *activity_static.SHARDS.values(),
             alawar_static.SHARD,
+            crystal_delta_ground.SHARD,
             feroxa_static.SHARD,
+            blood_vestibule_ground.SHARD,
             spawn_ground.SHARD,
             SCOPED_SPAWN_GROUND_SHARD,
             spawn_map_ground.SHARD,

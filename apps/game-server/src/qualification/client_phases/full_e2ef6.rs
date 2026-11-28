@@ -14,13 +14,15 @@ fn bundle_route(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
 ) -> Option<Vec<StepDirection>> {
-    find_route(from, goal, |at, direction| destination(world, at, direction))
-        .inspect_err(|explored| {
-            evidence(&format!(
-                "f6_route_unreachable from={from:?} explored_tiles={explored}"
-            ));
-        })
-        .ok()
+    find_route(from, goal, |at, direction| {
+        destination(world, at, direction)
+    })
+    .inspect_err(|explored| {
+        evidence(&format!(
+            "f6_route_unreachable from={from:?} explored_tiles={explored}"
+        ));
+    })
+    .ok()
 }
 
 async fn travel_to_bundle_spawn(
@@ -162,7 +164,10 @@ pub(super) async fn run(
 
     run_blessing_services(clients, world, spawns, npcs).await;
 
-    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[character_release_need(clients, 0), character_release_need(clients, 1)]);
+    let mut consumption = Row::new("C20c", BLESSING_DEATH).needs(&[
+        character_release_need(clients, 0),
+        character_release_need(clients, 1),
+    ]);
     let watch = consumption.0.watch();
     let result = watch
         .bound(
@@ -193,7 +198,10 @@ pub(super) async fn run_blessing_services(
 ) {
     // Purchase qualification precedes consumption: Character 0 must retain its
     // never-aggressed low-level Adventurer eligibility for both protected deaths.
-    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[character_release_need(clients, 1), character_release_need(clients, 0)]);
+    let mut services = Row::new("P16", BLESSING_SERVICES).needs(&[
+        character_release_need(clients, 1),
+        character_release_need(clients, 0),
+    ]);
     let watch = services.0.watch();
     let result = watch
         .bound(
@@ -212,22 +220,35 @@ async fn first_vocation_rows(
     npcs: &oteryn_world_bundle::npc::Table,
 ) {
     use verdict::Need::Row as After;
-    character_prep::declare_seeded("S16a", "unassigned-level-1-zero-xp-birth", "first vocation and earned level progression");
+    character_prep::declare_seeded(
+        "S16a",
+        "unassigned-level-1-zero-xp-birth",
+        "first vocation and earned level progression",
+    );
     let scope = async {
         let dedicated = character_prep::dedicated_named_character(
-            clients, "NODE_BOOT_C11_UNASSIGNED_ACCOUNT", Some("First Vocation Candidate"),
-        ).await?;
+            clients,
+            "NODE_BOOT_C11_UNASSIGNED_ACCOUNT",
+            Some("First Vocation Candidate"),
+        )
+        .await?;
         dedicated.replace_slot(clients, 1)
-    }.await;
+    }
+    .await;
     let (accounts, characters) = match scope {
         Ok(scope) => scope,
         Err(error) => {
             Row::new("S16a", VOCATION).finish(Err(error));
-            Row::new("C20a", EXPERIENCE_LOSS).finish(Err("S16a dedicated birth unavailable".into()));
+            Row::new("C20a", EXPERIENCE_LOSS)
+                .finish(Err("S16a dedicated birth unavailable".into()));
             return;
         }
     };
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let clients = &SeamClients {
+        accounts: &accounts,
+        characters: &characters,
+        ..*clients
+    };
     let mut vocation = Row::new("S16a", VOCATION).needs(&[character_release_need(clients, 1)]);
     let watch = vocation.0.watch();
     let result = watch
@@ -240,7 +261,8 @@ async fn first_vocation_rows(
     vocation.finish(result);
 
     // Promotion starts from the knight the first-vocation row produces.
-    let mut loss = Row::new("C20a", EXPERIENCE_LOSS).needs(&[character_release_need(clients, 1), After("S16a")]);
+    let mut loss = Row::new("C20a", EXPERIENCE_LOSS)
+        .needs(&[character_release_need(clients, 1), After("S16a")]);
     let watch = loss.0.watch();
     let result = watch
         .bound(
@@ -253,7 +275,6 @@ async fn first_vocation_rows(
         Ok(Some(source)) => finish_missing_receipt(loss, source),
         other => loss.finish(other.map(|_| ())),
     }
-
 }
 
 // P10 owns its connection and never borrows the fixture-provisioned character.
@@ -2416,7 +2437,8 @@ pub(super) async fn walk_once(
 ) -> TestResult {
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
-        let expected = destination(world, from, direction).ok_or("C20c planned step has no landing")?;
+        let expected =
+            destination(world, from, direction).ok_or("C20c planned step has no landing")?;
         let outcome = client.step(direction).await?;
         let observed = tile(client.world_spatial().actor_position)?;
         if outcome.status != CommandStatus::Accepted
@@ -2429,7 +2451,9 @@ pub(super) async fn walk_once(
             ).into());
         }
         verdict::Harness::global().progress("walk");
-        client.service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms))).await?;
+        client
+            .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
+            .await?;
         client.take_events();
     }
     Ok(())
@@ -2670,7 +2694,10 @@ pub(super) async fn drive_pvp_death(
     let mut damaged = false;
     let mut player_hit = false;
     if require_first_attack
-        && attacker.session_mut().combat_state().is_none_or(|state| state.target.is_some())
+        && attacker
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.target.is_some())
     {
         return Err("C20c attacker must start without a combat target".into());
     }
@@ -2683,7 +2710,11 @@ pub(super) async fn drive_pvp_death(
     }
     if require_first_attack {
         let target_deadline = tokio::time::Instant::now() + Duration::from_secs(12);
-        while attacker.session_mut().combat_state().is_none_or(|state| state.target != Some(target)) {
+        while attacker
+            .session_mut()
+            .combat_state()
+            .is_none_or(|state| state.target != Some(target))
+        {
             if tokio::time::Instant::now() >= target_deadline {
                 return Err("C20c accepted first attack did not select the exact victim".into());
             }
@@ -2692,6 +2723,8 @@ pub(super) async fn drive_pvp_death(
         verdict::Harness::global().progress("pvp-target");
     }
     let mut lowest_health = hp;
+    let mut first_hp_loss = None;
+    let mut first_damage_value = None;
     loop {
         victim.service_liveness(Duration::from_millis(50)).await?;
         attacker.service_liveness(Duration::from_millis(50)).await?;
@@ -2705,6 +2738,7 @@ pub(super) async fn drive_pvp_death(
             match event {
                 SessionEvent::ActorVitals(delta) => {
                     if require_first_attack && delta.value.health < lowest_health {
+                        first_hp_loss.get_or_insert(u64::from(hp - delta.value.health));
                         lowest_health = delta.value.health;
                         verdict::Harness::global().progress("pvp-damage");
                     }
@@ -2733,12 +2767,31 @@ pub(super) async fn drive_pvp_death(
                                 )
                                 .into());
                             }
-                            player_hit = true;
+                            if require_first_attack {
+                                first_damage_value.get_or_insert(primary.value);
+                            } else {
+                                player_hit = true;
+                            }
                         }
                     }
                 }
                 _ => {}
             }
+        }
+        if require_first_attack
+            && !player_hit
+            && let (Some(hp_loss), Some(damage)) = (first_hp_loss, first_damage_value)
+        {
+            if hp_loss != damage {
+                return Err(format!(
+                    "C20c first attributed damage differs from the victim HP delta: damage={damage} hp_loss={hp_loss}"
+                )
+                .into());
+            }
+            player_hit = true;
+            evidence(&format!(
+                "C20c_CHECK first-pvp-damage PASS hp_loss={hp_loss}"
+            ));
         }
         attacker.take_events();
         if damaged
@@ -2751,10 +2804,11 @@ pub(super) async fn drive_pvp_death(
             break;
         }
         if tokio::time::Instant::now() >= deadline
-            || (require_first_attack && !player_hit
+            || (require_first_attack
+                && !player_hit
                 && tokio::time::Instant::now() + Duration::from_secs(120) >= deadline)
         {
-            return Err(format!("PvP player prerequisite/encounter blocked: required both level>=8, Open policy, legal damage and lethal hit; incoming_damage={damaged} matching_player_damage_frame={player_hit} last={attack:?} victim_build={before:?}").into());
+            return Err(format!("PvP player prerequisite/encounter blocked: required both level>=8, Open policy, legal damage and lethal hit; incoming_damage={damaged} matching_player_damage_frame={player_hit} hp_loss={first_hp_loss:?} damage_value={first_damage_value:?} last={attack:?} victim_build={before:?}").into());
         }
         if !require_first_attack {
             attack = attacker.session_mut().attack_target(Some(&target)).await?;

@@ -3,6 +3,7 @@
 
 Donor 201189f: skinning.lua:1,4,29,51,71,75,109,113,158-172,333-339,356;
 data-crystal/scripts/actions/tools/fishing.lua:65-81; items.xml:18878-18881.
+Ice sculpture stages: skinning.lua:153-175 and items.xml:20423-20451.
 P11 mechanical rod: data-global/scripts/actions/other/mechanical_fishing.lua:334-378;
 items.xml:25156-25159. Its already qualified Global 920 weight is retained over XML 919.
 """
@@ -23,7 +24,7 @@ OUTPUT = 'tools/content-schema/native-gameplay/gathering-item-profiles.json'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
 IDS = {3580, 4012, 4026, 4063, 4098, 4138, 4325, 5876, 5877, 5878, 5905, 5906,
        5908, 5942, 5948, 5969, 5973, 5984, 5995, 6006, 6040, 7158, 7159, 7200,
-       7236, 7237, 7441, 7442, 9306}
+       7236, 7237, 7441, 7442, 7444, 7445, 7446, 9306}
 
 
 def build(checkout):

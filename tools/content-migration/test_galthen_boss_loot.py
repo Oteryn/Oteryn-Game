@@ -98,7 +98,9 @@ class GalthenBossLootTests(unittest.TestCase):
             identifier = row["production_binding"]["external_id"]
             if identifier in weights:
                 physical = row["semantics"]["physical"]["value"]
-                source_weight = 128_000 if identifier == "50255" else 0
+                # The Crystal equipment capture already binds the robe to its
+                # verified Global weight. Other donor rows retain their zero.
+                source_weight = 12_800 if identifier == "50255" else 0
                 self.assertEqual(
                     physical["weight"], {"state": "KNOWN", "value": source_weight}
                 )

@@ -13,6 +13,8 @@ mod channel_boot;
 mod public_house_catalogue;
 mod qualification_fixture;
 #[cfg(test)]
+pub(crate) use qualification_fixture::fixture_build_spec;
+#[cfg(test)]
 #[path = "serve/postgres_tests/readiness.rs"]
 mod readiness_postgres_tests;
 mod supervision;
@@ -73,6 +75,7 @@ use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, Sy
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners};
 use oteryn_foundation::CancellationToken;
+use oteryn_gameplay_entities::carrier::ActivationSpawnPoint;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
@@ -231,7 +234,7 @@ impl From<StartupError> for BootError {
 static BOOT_TRACE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
 static LAST_ERRORS: std::sync::OnceLock<std::sync::Mutex<std::collections::VecDeque<OpsError>>> =
     std::sync::OnceLock::new();
-const PROCESS: &str = "oteryn-game-server";
+pub(super) const PROCESS: &str = "oteryn-game-server";
 
 #[derive(Clone, serde::Serialize)]
 struct OpsError {
@@ -525,6 +528,86 @@ fn private_key(key: &'static str, pem: &[u8]) -> Result<PrivateKeyDer<'static>, 
     PrivateKeyDer::from_pem_slice(pem).map_err(|_| invalid(key))
 }
 
+fn leaf_spki(chain: &[CertificateDer<'_>]) -> Option<Vec<u8>> {
+    chain
+        .first()
+        .and_then(|leaf| rustls::server::ParsedCertificate::try_from(leaf).ok())
+        .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
+}
+
+const STORE_CLIENT_CERTIFICATE: &str = "platform.store.client_certificate_file";
+const PLATFORM_ENV_IDENTITIES: [&str; 8] = [
+    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
+    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
+];
+
+fn store_descriptor(
+    config: &NodeConfig,
+    evidence: &ProducerDescriptor,
+    endpoint: &(String, u16),
+    roots: &[CertificateDer<'static>],
+    gameplay_chain: &[CertificateDer<'static>],
+    secret: impl Fn(&'static str, &Path, usize) -> Result<Vec<u8>, StartupError>,
+) -> Result<ProducerDescriptor, BootError> {
+    let platform = &config.platform;
+    let Some(store) = &platform.store else {
+        return Ok(evidence.clone());
+    };
+    let read_chain = |key, path: &Path| {
+        certificates(&secret(key, path, MAX_PEM_BYTES)?).map_err(|_| invalid(key))
+    };
+    let chain = read_chain(STORE_CLIENT_CERTIFICATE, &store.client_certificate_file)?;
+    let key = private_key(
+        "platform.store.client_key_file",
+        &secret(
+            "platform.store.client_key_file",
+            &store.client_key_file,
+            MAX_GAMEPLAY_KEY_BYTES,
+        )?,
+    )?;
+    let own =
+        webpki::EndEntityCert::try_from(chain.first().ok_or_else(|| invalid("platform.store"))?)
+            .map_err(|_| invalid("platform.store"))?;
+    let check_identity = |key, other: &[CertificateDer<'_>]| {
+        let other = webpki::EndEntityCert::try_from(other.first().ok_or_else(|| invalid(key))?)
+            .map_err(|_| invalid(key))?;
+        if own.subject() == other.subject()
+            || own.subject_public_key_info() == other.subject_public_key_info()
+        {
+            return Err(invalid("platform.store"));
+        }
+        Ok(())
+    };
+    check_identity("listener.certificate_chain_file", gameplay_chain)?;
+    for (key, path) in platform_client_identity_paths(config)
+        .into_iter()
+        .filter(|(key, _)| *key != STORE_CLIENT_CERTIFICATE)
+    {
+        check_identity(key, &read_chain(key, path)?)?;
+    }
+    for key in PLATFORM_ENV_IDENTITIES {
+        if let Some(path) = std::env::var_os(key) {
+            check_identity(key, &read_chain(key, Path::new(&path))?)?;
+        }
+    }
+    ProducerDescriptor::new(
+        platform.source_authority.clone(),
+        endpoint.clone(),
+        platform.peer_name.clone(),
+        platform.peer_name.clone(),
+        roots.to_vec(),
+        chain,
+        key,
+    )
+    .map_err(|_| invalid("platform.store"))
+}
+
 /// The projection identity is its own, never the evidence or status one (§3); the
 /// runtime-status chain is compared only when `[platform.runtime_status]` is configured.
 fn projection_descriptor(
@@ -770,16 +853,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                         path,
                     )?);
                 }
-                for name in [
-                    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
-                    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
-                ] {
+                for name in PLATFORM_ENV_IDENTITIES {
                     if let Some(path) = std::env::var_os(name) {
                         other_chains.push(chain(
                             "platform.character_services.identity_separation",
@@ -965,20 +1039,23 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 )?,
             )?;
             // Same issuer and compiled endpoint; refuse reuse of the evidence key.
-            let spki = |chain: &[rustls::pki_types::CertificateDer<'_>]| {
-                chain
-                    .first()
-                    .and_then(|leaf| rustls::server::ParsedCertificate::try_from(leaf).ok())
-                    .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
-            };
-            let own = spki(&chain).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
-            let evidence = spki(&client).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            let own = leaf_spki(&chain).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            let evidence =
+                leaf_spki(&client).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
             if own == evidence {
                 return Err(invalid("platform.bootstrap_intents"));
             }
             (chain, key)
         }
     };
+    let store = store_descriptor(
+        &config,
+        &evidence,
+        &endpoint,
+        &roots,
+        &gameplay_chain,
+        secret,
+    )?;
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -1029,7 +1106,7 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         config,
         gameplay_chain,
         gameplay_key,
-        store: evidence.clone(),
+        store,
         evidence: FreshEvidenceSource::new(evidence),
         intents,
         runtime_status,
@@ -1165,7 +1242,7 @@ async fn resync_projection(
         .map_err(ResyncError::Durability)?
         .run(move |holder, deadline| {
             Box::pin(async move {
-                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
                 let millis = u64::try_from(remaining.as_millis().max(1))
                     .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
                 let mut tx = sqlx::Connection::begin(&mut **holder).await?;
@@ -3485,13 +3562,16 @@ pub(crate) async fn realize_bundle_spawns(
 ) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
     let mut sources = world
-        .activation_spawns(|key| {
-            let policy = runtime.companion_policy(key).ok()?;
-            Some((
-                u64::try_from(policy.maximum_health).ok()?,
-                policy.blocked_by_nearby_players,
-            ))
-        })
+        .activation_spawns_with_eligibility(
+            |key| {
+                let policy = runtime.companion_policy(key).ok()?;
+                Some((
+                    u64::try_from(policy.maximum_health).ok()?,
+                    policy.blocked_by_nearby_players,
+                ))
+            },
+            |key| runtime.bundle_spawn_eligibility(key),
+        )
         .ok_or_else(refuse)?;
     let bindings =
         crate::durability::world_event::changes::counters::bindings().map_err(|_| refuse())?;
@@ -3506,7 +3586,7 @@ pub(crate) async fn realize_bundle_spawns(
             .companion_policy(&point.creature)
             .map_err(|_| refuse())?;
         sources.push((
-            vec![(
+            vec![ActivationSpawnPoint::from((
                 (
                     i32::from(point.cell.x),
                     i32::from(point.cell.y),
@@ -3516,7 +3596,7 @@ pub(crate) async fn realize_bundle_spawns(
                 point.creature.clone(),
                 u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
                 policy.blocked_by_nearby_players,
-            )],
+            ))],
             5_000,
         ));
     }
@@ -3544,13 +3624,13 @@ pub(crate) async fn realize_bundle_spawns(
                 let index = u16::try_from(sources.len()).map_err(|_| refuse())?;
                 voice_sources.push((index, cohort));
                 sources.push((
-                    vec![(
+                    vec![ActivationSpawnPoint::from((
                         (x, y, z),
                         86_400_000,
                         key.to_owned(),
                         u64::try_from(policy.maximum_health).map_err(|_| refuse())?,
                         policy.blocked_by_nearby_players,
-                    )],
+                    ))],
                     5_000,
                 ));
             }
@@ -3622,14 +3702,15 @@ fn enforcement_startup(
     Ok(clients)
 }
 
-fn platform_client_identities(
-    config: &NodeConfig,
-) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+fn platform_client_identity_paths(config: &NodeConfig) -> Vec<(&'static str, &Path)> {
     let platform = &config.platform;
-    let mut paths = vec![(
+    let mut paths: Vec<(&'static str, &Path)> = vec![(
         "platform.client_certificate_file",
         &platform.client_certificate_file,
     )];
+    if let Some(v) = &platform.store {
+        paths.push((STORE_CLIENT_CERTIFICATE, &v.client_certificate_file));
+    }
     if let Some(v) = &platform.bootstrap_intents {
         paths.push((
             "platform.bootstrap_intents.client_certificate_file",
@@ -3692,7 +3773,13 @@ fn platform_client_identities(
             &v.client_certificate_file,
         ));
     }
-    let identities = paths
+    paths
+}
+
+fn platform_client_identities(
+    config: &NodeConfig,
+) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+    let identities = platform_client_identity_paths(config)
         .into_iter()
         .map(|(key, path)| {
             read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
@@ -3966,6 +4053,50 @@ async fn boot_and_serve(
             return Ok(());
         }
     };
+    // Claim/restore the World occurrence at native boot after the same
+    // readiness fence used by live scheduler ticks becomes current.
+    if bundle.is_some() {
+        use oteryn_error_codes::{FieldValue, Level, Line};
+        use oteryn_gameplay_world::bank_robbery;
+        let scope_generation = runtime.lock().await.binding().scope_generation();
+        let projection = match bank_robbery::loaded(&movement_cells) {
+            Ok(sites) => {
+                root.poll_bank_robbery(
+                    &authority,
+                    &proof,
+                    scope,
+                    scope_generation,
+                    reset_epoch,
+                    sites,
+                )
+                .await
+            }
+            Err(error) => Err(error),
+        };
+        match projection {
+            Ok(robbery) => {
+                if let Some(robbery) = robbery {
+                    let mut channel = runtime.lock().await;
+                    if let Err(error) =
+                        bank_robbery::project(&mut channel, &movement_cells, robbery)
+                    {
+                        emit(
+                            PROCESS,
+                            &Line::new(Level::Warn, "node", "bank_robbery_boot")
+                                .field("state", FieldValue::Token("retry"))
+                                .field("error", FieldValue::Owned(format!("{error:?}"))),
+                        );
+                    }
+                }
+            }
+            Err(error) => emit(
+                PROCESS,
+                &Line::new(Level::Warn, "node", "bank_robbery_boot")
+                    .field("state", FieldValue::Token("retry"))
+                    .field("error", FieldValue::Owned(error.to_string())),
+            ),
+        }
+    }
     // Contract §8.1: report the committed publication; never gates serving.
     let reporter = material.runtime_status.as_ref().map(|(descriptor, epoch)| {
         super::runtime_status::start_platform(
@@ -4113,10 +4244,26 @@ async fn boot_and_serve(
         // enforcement-owner exit authoritative while this auxiliary worker is idle.
         std::future::pending::<()>().await;
     };
-    first(first(serving, enforcement_owner), catalogue)
-        .await
-        .flatten()
-        .unwrap_or(Err(BootError::Serve))
+    let receipts = crate::gameplay_transport::run_store_receipt_outbox(
+        root,
+        authority,
+        crate::native_admission_source::store::StoreClient::new(
+            Box::new(
+                crate::native_admission_source::store::MtlsStoreTransport::new(
+                    material.store.clone(),
+                ),
+            ),
+            material.store.source_authority().to_owned(),
+        ),
+    );
+    first(
+        first(first(serving, enforcement_owner), catalogue),
+        Box::pin(receipts),
+    )
+    .await
+    .flatten()
+    .flatten()
+    .unwrap_or(Err(BootError::Serve))
 }
 
 #[cfg(test)]
@@ -4592,11 +4739,23 @@ source_authority = "OTERYN_GAME_JOURNAL"
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
     }
 
+    fn issue_client_certificate() -> rcgen::CertifiedKey<rcgen::KeyPair> {
+        rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("leaf")
+    }
+
+    fn store_certificate(key: &rcgen::KeyPair) -> rcgen::Certificate {
+        let mut params = rcgen::CertificateParams::new(vec!["store.localhost".to_owned()])
+            .expect("Store certificate parameters");
+        params
+            .distinguished_name
+            .push(rcgen::DnType::CommonName, "Fixture Store");
+        params.self_signed(key).expect("Store certificate")
+    }
+
     #[test]
     fn account_characters_boots_without_a_runtime_status_section() {
         let issue = || {
-            let pair =
-                rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("leaf");
+            let pair = issue_client_certificate();
             let key = PrivateKeyDer::Pkcs8(rustls::pki_types::PrivatePkcs8KeyDer::from(
                 pair.signing_key.serialize_der(),
             ));
@@ -4626,6 +4785,160 @@ source_authority = "OTERYN_GAME_JOURNAL"
             }))
         ));
         assert!(build(&status, Some(&status.0)).is_err());
+    }
+
+    const STORE_SECTION: &str = r#"
+[platform.world_event_outcomes]
+enabled = false
+
+[platform.store]
+client_certificate_file = "/etc/oteryn/node/store.crt"
+client_key_file = "/etc/oteryn/node/store.key"
+"#;
+
+    fn select_store_descriptor(
+        section: &str,
+        evidence: &rcgen::CertifiedKey<rcgen::KeyPair>,
+        store: &rcgen::Certificate,
+        key: &rcgen::KeyPair,
+        status: Option<&rcgen::Certificate>,
+    ) -> Result<ProducerDescriptor, BootError> {
+        use super::super::config::tests::NODE;
+        use base64::Engine as _;
+        let pem = |label: &str, der: &[u8]| {
+            let encoded = base64::engine::general_purpose::STANDARD.encode(der);
+            format!("-----BEGIN {label}-----\n{encoded}\n-----END {label}-----\n").into_bytes()
+        };
+        let certificate = |cert: &rcgen::Certificate| pem("CERTIFICATE", cert.der().as_ref());
+        let status_section = if status.is_some() {
+            r#"
+[platform.runtime_status]
+client_certificate_file = "/etc/oteryn/node/status.crt"
+client_key_file = "/etc/oteryn/node/status.key"
+assignment_epoch = 1
+"#
+        } else {
+            ""
+        };
+        let config = NodeConfig::parse(format!("{NODE}{section}{status_section}").as_bytes())
+            .expect("Store node config");
+        let endpoint = ("127.0.0.1".to_owned(), 8443);
+        let roots = vec![evidence.cert.der().clone()];
+        let descriptor = ProducerDescriptor::new(
+            "fixture-evidence".into(),
+            endpoint.clone(),
+            "localhost".into(),
+            "localhost".into(),
+            roots.clone(),
+            roots.clone(),
+            PrivateKeyDer::Pkcs8(evidence.signing_key.serialize_der().into()),
+        )
+        .expect("evidence descriptor");
+        store_descriptor(
+            &config,
+            &descriptor,
+            &endpoint,
+            &roots,
+            &roots,
+            |config_key, _, _| {
+                match config_key {
+                    "platform.client_certificate_file" => Some(certificate(&evidence.cert)),
+                    "platform.store.client_certificate_file" => Some(certificate(store)),
+                    "platform.store.client_key_file" => {
+                        Some(pem("PRIVATE KEY", &key.serialize_der()))
+                    }
+                    "platform.runtime_status.client_certificate_file" => status.map(certificate),
+                    _ => None,
+                }
+                .ok_or(StartupError::Invalid { key: config_key })
+            },
+        )
+    }
+
+    #[test]
+    fn store_section_absent_keeps_evidence_identity() {
+        let evidence = issue_client_certificate();
+        let descriptor =
+            select_store_descriptor("", &evidence, &evidence.cert, &evidence.signing_key, None)
+                .expect("evidence fallback");
+        assert_eq!(descriptor.source_authority(), "fixture-evidence");
+    }
+
+    #[test]
+    fn store_section_present_uses_dedicated_identity() {
+        let evidence = issue_client_certificate();
+        let key = rcgen::KeyPair::generate().expect("Store key");
+        let store = store_certificate(&key);
+        let descriptor = select_store_descriptor(STORE_SECTION, &evidence, &store, &key, None)
+            .expect("distinct Store identity");
+        assert_eq!(
+            descriptor.source_authority(),
+            "urn:oteryn:platform:game-auth"
+        );
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &store,
+                &evidence.signing_key,
+                None
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
+    }
+
+    #[test]
+    fn store_identity_equal_to_evidence_is_refused() {
+        let evidence = issue_client_certificate();
+        let reissued = store_certificate(&evidence.signing_key);
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &reissued,
+                &evidence.signing_key,
+                None
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
+    }
+
+    #[test]
+    fn store_subject_cannot_be_reused_with_a_different_key() {
+        let (evidence, store) = (issue_client_certificate(), issue_client_certificate());
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &store.cert,
+                &store.signing_key,
+                None
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
+    }
+
+    #[test]
+    fn store_identity_equal_to_other_purpose_is_refused() {
+        let (evidence, status) = (issue_client_certificate(), issue_client_certificate());
+        assert!(matches!(
+            select_store_descriptor(
+                STORE_SECTION,
+                &evidence,
+                &status.cert,
+                &status.signing_key,
+                Some(&status.cert)
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.store"
+            }))
+        ));
     }
 
     #[test]
@@ -4972,13 +5285,13 @@ source_authority = "OTERYN_GAME_JOURNAL"
                 .map(|_| {
                     let points = (0..63)
                         .map(|x| {
-                            (
+                            ActivationSpawnPoint::from((
                                 (x, 0, 7),
                                 60_000,
                                 "oteryn:creature/rat".to_string(),
                                 20,
                                 false,
-                            )
+                            ))
                         })
                         .collect::<Vec<_>>();
                     (points, 5_000)

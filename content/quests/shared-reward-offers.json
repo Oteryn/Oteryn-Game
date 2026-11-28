@@ -718,6 +718,16 @@
           "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/start",
           "minimum": 0,
           "maximum": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/marid_door",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/faction/efreet_door",
+          "minimum": 0,
+          "maximum": 0
         }
       ],
       "reply": [
@@ -1837,6 +1847,13 @@
           "set": 1
         }
       ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ],
       "reply": [
         "Do you have the old cape with you?"
       ]
@@ -1855,6 +1872,13 @@
           "minimum": -1,
           "maximum": 0,
           "set": 1
+        }
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/l6/spirit/stage",
+          "minimum": 2,
+          "maximum": 2
         }
       ],
       "reply": [
@@ -2052,7 +2076,8 @@
     {
       "npc": "oteryn:npc.duncan",
       "keywords": [
-        "hooks"
+        "hooks",
+        "pirate hooks"
       ],
       "topic": 0,
       "next_topic": 5,
@@ -2213,6 +2238,79 @@
     {
       "npc": "oteryn:npc.elane",
       "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "We are always looking for sniper gloves. They are supposed to raise accuracy. If you find a pair, bring them here. Maybe I can offer you a nice trade."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "You found sniper gloves?! Incredible! Listen, if you give them to me, I will grant you the right to wear the sniper gloves accessory. How about it?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "premium": true
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 8,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find sniper gloves AGAIN?! Incredible! I cannot grant you other accessories, but would you like to sell them to me for 2000 gold pieces?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
         "steel"
       ],
       "topic": 0,
@@ -2277,6 +2375,45 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "no"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "No problem, maybe another time."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "no"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Maybe another time."
       ]
     },
     {
@@ -2809,7 +2946,9 @@
     {
       "npc": "oteryn:npc.habdel",
       "keywords": [
-        "comb"
+        "comb",
+        "mermaid comb",
+        "mermaid's comb"
       ],
       "topic": 0,
       "next_topic": 3,
@@ -3509,7 +3648,9 @@
     {
       "npc": "oteryn:npc.ishina",
       "keywords": [
-        "comb"
+        "comb",
+        "mermaid comb",
+        "mermaid's comb"
       ],
       "topic": 0,
       "next_topic": 3,
@@ -3610,6 +3751,33 @@
       ]
     },
     {
+      "npc": "oteryn:npc.jorge",
+      "keywords": [
+        "replica rewards",
+        "souvenir"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/tokens/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Each replica costs 20 Silver Raid Tokens. Which would you like?",
+        "{Abacus}, {Assassin Doll}, {Bag of Oriental Spices}, {Bookworm Doll}, {Citizen Doll}, {Crimson Doll}, {Doll of Durin the Almighty}, {Dragon Eye}",
+        "{Dragon Goblet}, {Draken Doll}, {Emblem}, {Encyclopedia}, {Friendship Amulet}, {Frozen Heart}, {Golden Falcon}, {Golden Newspaper}",
+        "{Goromaphone}, {Hand Puppets}, {Imortus}, {Jade Amulet}, {Key of Numerous Locks}, {Little Adventurer Doll}, {Loremaster Doll}, {Lucky Clover Amulet}",
+        "{Mathmaster Shield}, {Medusa Skull}, {Music Box}, {Noble Sword}, {Norseman Doll}, {Old Radio}, {Orc's Jaw Shredder}, {Phoenix Statue}",
+        "{Pigeon Trophy}, {Shield of Destiny}, {Shield of Endless Search}, {The Mexcalibur}, {Tibiora's Box}"
+      ]
+    },
+    {
       "npc": "oteryn:npc.kasmir",
       "keywords": [
         "stake prayer"
@@ -3646,7 +3814,7 @@
         }
       ],
       "reply": [
-        "The basic Golden outfit costs 100000 gold. Do you agree?"
+        "The basic Golden outfit costs 100000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3666,7 +3834,7 @@
         }
       ],
       "reply": [
-        "The Golden boots and gloves costs 50000 gold. Do you agree?"
+        "The Golden boots and gloves costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3686,7 +3854,7 @@
         }
       ],
       "reply": [
-        "The Golden helmet costs 50000 gold. Do you agree?"
+        "The Golden helmet costs 50000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3726,11 +3894,12 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 0,
           "maximum": 0,
-          "set": 1
+          "set": 0,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 100000 gold. Do you agree?"
+        "The chosen commission costs 500000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3745,11 +3914,12 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 1,
           "maximum": 1,
-          "set": 2
+          "set": 1,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The chosen commission costs 250000000 gold. Do you agree? If your account already owns it, say {already owned}."
       ]
     },
     {
@@ -3764,11 +3934,31 @@
           "track": "oteryn:quest-progress/crystalserver/outfit_quest/golden_outfit",
           "minimum": 2,
           "maximum": 2,
-          "set": 3
+          "set": 2,
+          "preserve": true
         }
       ],
       "reply": [
-        "The chosen commission costs 50000 gold. Do you agree?"
+        "The chosen commission costs 250000000 gold. Do you agree? If your account already owns it, say {already owned}."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "We are always looking for sniper gloves. They are supposed to raise accuracy. If you find a pair, bring them here. Maybe I can offer you a nice trade."
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 0,
+          "maximum": 0
+        }
       ]
     },
     {
@@ -3787,7 +3977,81 @@
         }
       ],
       "reply": [
-        "Will you help me with this task?"
+        "You found sniper gloves?! Incredible! Listen, if you give them to me, I will grant you the right to wear the sniper gloves accessory. How about it?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "premium": true
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "sniper gloves"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you find sniper gloves AGAIN?! Incredible! I cannot grant you other accessories, but would you like to sell them to me for 2000 gold pieces?"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "No problem, maybe another time."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.legola",
+      "keywords": [
+        "no"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Maybe another time."
       ]
     },
     {
@@ -5093,6 +5357,26 @@
       ]
     },
     {
+      "npc": "oteryn:npc.phillip",
+      "keywords": [
+        "book"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/between_the_lines/phase",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "A creature escaped from my book. Will you track it down?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.quentin",
       "keywords": [
         "finish prayer"
@@ -5133,6 +5417,176 @@
       ]
     },
     {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "advertising",
+        "advertisement"
+      ],
+      "topic": 0,
+      "next_topic": 120,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/signs",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the advertisement task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "busy"
+      ],
+      "topic": 0,
+      "next_topic": 123,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/urine",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the busy task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "destroy"
+      ],
+      "topic": 0,
+      "next_topic": 124,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the destroy task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guards"
+      ],
+      "topic": 0,
+      "next_topic": 122,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the guards task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "kill"
+      ],
+      "topic": 0,
+      "next_topic": 125,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/stalkers",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the kill task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "perfume"
+      ],
+      "topic": 0,
+      "next_topic": 121,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you take the perfume task?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.rahkem",
       "keywords": [
         "stake prayer"
@@ -5156,7 +5610,8 @@
       "npc": "oteryn:npc.rata_mari",
       "keywords": [
         "spyreport",
-        "mission"
+        "mission",
+        "spy report"
       ],
       "topic": 0,
       "next_topic": 1,
@@ -5514,6 +5969,26 @@
     {
       "npc": "oteryn:npc.simon_the_beggar",
       "keywords": [
+        "help"
+      ],
+      "topic": 0,
+      "next_topic": 9,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/fibula/simon-donations",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Could you spare 100 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.simon_the_beggar",
+      "keywords": [
         "outfit"
       ],
       "topic": 0,
@@ -5696,6 +6171,40 @@
     {
       "npc": "oteryn:npc.the_bone_master",
       "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring 1500 demonic essences to advance to Dread Lord?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_bone_master",
+      "keywords": [
         "join"
       ],
       "topic": 0,
@@ -5811,6 +6320,40 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/brotherhood_outfits/outfits",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.the_dream_master",
+      "keywords": [
+        "advancement",
+        "demonic",
+        "essence"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_9/nightmare_outfits/outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?"
       ],
       "requires": [
         {
@@ -6188,6 +6731,54 @@
       ]
     },
     {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "addon"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "Would you like to earn an addon for your Dream Warrior outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "talk"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Ask me about your task for the Court."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 7,
+      "storage": [],
+      "reply": [
+        "Bring five pomegranates for the first addon or an ice shield for the second."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.undal",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 8,
+      "storage": [],
+      "reply": [
+        "Which are you turning in, pomegranates or an ice shield?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.ustan",
       "keywords": [
         "paws",
@@ -6216,19 +6807,19 @@
       "next_topic": 6,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
+        "Would you like to earn an addon for your Dream Warrior outfit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.vanys",
+      "keywords": [
+        "talk"
       ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Ask me about your task for the Court."
       ]
     },
     {
@@ -6240,19 +6831,7 @@
       "next_topic": 7,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
+        "Bring five pomegranates for the first addon or an ice shield for the second."
       ]
     },
     {
@@ -6264,19 +6843,7 @@
       "next_topic": 8,
       "storage": [],
       "reply": [
-        "Will you help me with this task?"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/ward_stones/questline",
-          "minimum": 3,
-          "maximum": 3
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u12_00/the_dream_courts/main/the_summer_court",
-          "minimum": 1,
-          "maximum": 1
-        }
+        "Which are you turning in, pomegranates or an ice shield?"
       ]
     },
     {
@@ -6485,6 +7052,147 @@
       ],
       "reply": [
         "Will you help me with this task?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "basic"
+      ],
+      "topic": 0,
+      "next_topic": 101,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The basic exchange costs 2500 radiant attire scraps. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "halo"
+      ],
+      "topic": 0,
+      "next_topic": 103,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The halo exchange costs 1250 radiant attire scraps. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "insignia"
+      ],
+      "topic": 0,
+      "next_topic": 102,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The insignia exchange costs 1250 radiant attire scraps. Do you agree?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "If you have collected enough radiant attire scraps, I can arrange the creation of an Illuminated Warrior for you.",
+        "The full outfit requires 2500 scraps. Each addon requires 1250 more. Are you interested in the {basic} outfit, the {insignia}, or the {halo} helmet?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "no"
+      ],
+      "topic": 101,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Come back when you are ready."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "no"
+      ],
+      "topic": 102,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Come back when you are ready."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.wayland_smythers",
+      "keywords": [
+        "no"
+      ],
+      "topic": 103,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
+          "minimum": 0,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Come back when you are ready."
       ]
     },
     {

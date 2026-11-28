@@ -7,12 +7,12 @@ pub(super) async fn after_tool(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     command: UseCommand,
-) {
+) -> bool {
     let Some(catalogue) = owner.quest_catalogue.as_ref() else {
-        return;
+        return true;
     };
     let Some(bindings) = catalogue.authored_bindings() else {
-        return;
+        return true;
     };
     if !bindings
         .quests
@@ -20,13 +20,13 @@ pub(super) async fn after_tool(
         .flat_map(|quest| &quest.stages)
         .any(|stage| matches!(stage.trigger, Trigger::TerrainUse { .. }))
     {
-        return;
+        return true;
     }
     let Some(fence) = command.item_fence else {
-        return;
+        return false;
     };
     let Ok(ordinal) = CommandId::new(command.command_id) else {
-        return;
+        return false;
     };
     let observed = owner
         .root
@@ -39,24 +39,24 @@ pub(super) async fn after_tool(
         .await;
     let observation = match observed {
         Ok(Some(observation)) => observation,
-        Ok(None) => return,
+        Ok(None) => return true,
         Err(error) => {
             super::operator_event(&format!(
                 "quest_terrain_use_observation_refused reason={error:?}"
             ));
             owner.schedule_quest_refresh(command.game_session_id);
-            return;
+            return false;
         }
     };
     let keys = {
         let Ok(sessions) = owner.states.quest_sessions.lock() else {
-            return;
+            return false;
         };
         let Some(copy) = sessions
             .get(&command.game_session_id)
             .and_then(|state| state.copy.as_ref())
         else {
-            return;
+            return false;
         };
         bindings.terrain_use_candidates(
             catalogue,
@@ -66,5 +66,5 @@ pub(super) async fn after_tool(
             observation.result,
         )
     };
-    super::quest_stage_events::commit_keys(owner, actor, command, keys).await;
+    super::quest_stage_events::commit_keys(owner, actor, command, keys).await
 }

@@ -461,13 +461,15 @@ pub(super) fn grimvale_spawns(
                 creatures[(daily.pick(x, y, "grimvale-kind", creatures.len() as u64)) as usize];
             let (health, blockable) = profile(creature)?;
             sources.push((
-                vec![(
-                    (i32::from(x), i32::from(y), 7),
-                    90_000,
-                    creature.to_owned(),
-                    health,
-                    blockable,
-                )],
+                vec![
+                    oteryn_gameplay_entities::carrier::ActivationSpawnPoint::from((
+                        (i32::from(x), i32::from(y), 7),
+                        90_000,
+                        creature.to_owned(),
+                        health,
+                        blockable,
+                    )),
+                ],
                 super::boot::BUNDLE_OCCUPANCY_RETRY_MS,
             ));
             break;

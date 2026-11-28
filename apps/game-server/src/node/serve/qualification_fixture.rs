@@ -51,15 +51,15 @@ const PARTY_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000017";
 const C06_CASTER_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000001c";
 
 #[cfg(feature = "qualification-spawn")]
-const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+const C10_FULL_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
 #[cfg(feature = "qualification-spawn")]
-const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000021";
+const C10_CLIENT_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000025";
 
 #[cfg(feature = "qualification-spawn")]
-const C20C_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000024";
+const C20C_ACCOUNT: &str = "01934f10-7c00-7000-8000-00000000c20c";
 
 #[cfg(feature = "qualification-spawn")]
-fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
+fn lane_spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
@@ -85,16 +85,27 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
     let (session, profile) = text.strip_prefix("qualify ")?.split_once(' ')?;
     let session = parse_operation_id(session.as_bytes())?;
-    let allowed = matches!(
-        profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "knight-underlevel"
-    );
+    let allowed = spell_build(profile).is_some();
     #[cfg(feature = "qualification-spawn")]
-    let allowed = allowed
-        || spell_build(profile).is_some()
-        || named_item(profile).is_some()
-        || profile == "premium";
+    let allowed = allowed || named_item(profile).is_some() || profile == "premium";
     allowed.then_some((session, profile))
+}
+
+fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
+    #[cfg(feature = "qualification-spawn")]
+    if let Some((vocation, level)) = lane_spell_build(profile) {
+        return Some((vocation, level, false));
+    }
+    match profile {
+        "explorer" => Some(("knight", 100, false)),
+        "knight-underlevel" => Some(("knight", 66, false)),
+        "levitate" => Some(("sorcerer", 12, true)),
+        "magic-rope" => Some(("sorcerer", 9, true)),
+        vocation if qualification_build::PLAYABLE_VOCATIONS.contains(&vocation) => {
+            Some((vocation, 100, false))
+        }
+        _ => None,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -531,7 +542,7 @@ async fn begin_spawn_transaction(
     // cutoff. A slower setup may have armed the timer late, so take no locks.
     let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
         holder,
-        (backend_deadline - setup).into_std(),
+        backend_deadline - setup,
     )
     .await
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
@@ -844,37 +855,14 @@ async fn prepare_build(
         .progression()
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
-    let context = policy.context.clone();
-    let (vocation, level) = match profile {
-        "knight-underlevel" => ("knight", 66),
-        "explorer" => ("knight", 100),
-        _ => (profile, 100),
-    };
-    #[cfg(feature = "qualification-spawn")]
-    let (vocation, level) = spell_build(profile).unwrap_or((vocation, level));
-    let occurrence_profile = if level == 100 { vocation } else { profile };
+    let spec = fixture_build_spec(profile, character.as_bytes(), policy.context.clone())
+        .ok_or("qualification build profile unavailable")?;
     qualification_build::prepare_character_with_policy_until(
-        root,
-        authority,
-        proof,
-        &current,
-        qualification_build::QualificationBuildSpec {
-            vocation,
-            level,
-            context,
-            xp_occurrence: fixture_occurrence(character.as_bytes(), occurrence_profile, b"xp"),
-            build_occurrence: fixture_occurrence(
-                character.as_bytes(),
-                occurrence_profile,
-                b"vocation",
-            ),
-        },
-        policy,
-        deadline,
+        root, authority, proof, &current, spec, policy, deadline,
     )
     .await?;
     #[cfg(feature = "qualification-spawn")]
-    if spell_build(profile).is_some() {
+    if lane_spell_build(profile).is_some() {
         return Ok(());
     }
     prepare_items(
@@ -954,6 +942,23 @@ async fn grant_premium(
         .await
         .require()
         .map_err(|_| "qualification Premium gate remained closed".into())
+}
+
+pub(crate) fn fixture_build_spec<'a>(
+    profile: &'a str,
+    character: &[u8; 16],
+    context: crate::domain::progression::ProgressionRevisionContext<String>,
+) -> Option<qualification_build::QualificationBuildSpec<'a>> {
+    let (vocation, level, exact_level) = spell_build(profile)?;
+    let occurrence_profile = if level == 100 { vocation } else { profile };
+    Some(qualification_build::QualificationBuildSpec {
+        vocation,
+        level,
+        exact_level,
+        context,
+        xp_occurrence: fixture_occurrence(character, occurrence_profile, b"xp"),
+        build_occurrence: fixture_occurrence(character, occurrence_profile, b"vocation"),
+    })
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
@@ -1819,6 +1824,8 @@ mod tests {
                                 "sorcerer",
                                 "explorer",
                                 "monk",
+                                "levitate",
+                                "magic-rope",
                                 "c05-exiva",
                                 "item-6506-2",
                             ] {
@@ -2041,6 +2048,8 @@ mod tests {
         }
         for text in [
             format!("qualify {id} master_sorcerer"),
+            format!("qualify {id} levitate 13"),
+            format!("qualify {id} magic-rope 10"),
             format!("qualify {id} c11-oressa-entry"),
             format!("qualify {id} c11-town-return"),
             format!("qualify {id} item-0-1"),

@@ -1,0 +1,2505 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/tibia-tales/fill-ale-bottle",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32573,
+          "y": 31906,
+          "floor": -4
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5538
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/ultimate_booze_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i138",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i136",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "player_speech": "Gulp, gulp, gulp!",
+        "magic": {
+          "position": {
+            "x": 32573,
+            "y": 31906,
+            "floor": -4
+          },
+          "effect": 22
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tibia_tales/actions_ultimate_booze_beer_bottle.lua:2-16:sha256:33798752a0b666c40d0124f188f298d29db288649d3e7172f1384013768262e3",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:77"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/lion-sign-hyena",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33127,
+          "y": 32340,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/hyena_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The scroll tells how the lion took the greedy hyaena’s red blood.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/lion-sign-lizard",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33130,
+          "y": 32300,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/lizard_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The scroll tells how the lion took a blue egg from the slothful lizard.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/lion-sign-scorpion",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33109,
+          "y": 32329,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/scorpion_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The scroll tells how the lion took the treacherous scorpion’s violet poison.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/lion-sign-snake",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33095,
+          "y": 32244,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/inner_sanctum/snake_sign",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_70/lions_rock/questline",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21467",
+          "count": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The scroll tells how the lion took the jealous snake’s yellow eye.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/lions_rock/movements_lions_rock.lua:1-26,109-126:sha256:6c2ae2f15c8df502ce1f24cbd1d814097f3f9f0ffd53454ded08b12cdaf398a9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/outfox-helmet",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32467,
+          "y": 31970,
+          "floor": -5
+        },
+        "unique": 6257,
+        "action": null,
+        "appearance": 2469
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/mining_helmet",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i139",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2582-2589:sha256:7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/poison-slime-pool-31821",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32306,
+          "y": 31821,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 4207,
+        "appearance": 622
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/the_exterminator",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i135",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32306,
+            "y": 31821,
+            "floor": -9
+          },
+          "effect": 9
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_exterminator_flask.lua:12-20:sha256:5ca4e55338fe67f67c246fa0ae9f8e97ea32c5ccef1bae121097e507ecc1217c",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:453-460:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:64"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/poison-slime-pool-31822",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32306,
+          "y": 31822,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 4207,
+        "appearance": 622
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/the_exterminator",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i135",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32306,
+            "y": 31822,
+            "floor": -9
+          },
+          "effect": 9
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_exterminator_flask.lua:12-20:sha256:5ca4e55338fe67f67c246fa0ae9f8e97ea32c5ccef1bae121097e507ecc1217c",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:453-460:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/utils/utils_definitions.hpp:64"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4208",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33188,
+          "y": 31688,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4208,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33188,
+            "y": 31688,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:462:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4208-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33188,
+          "y": 31688,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4208,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33188,
+            "y": 31688,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:462:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4209",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33190,
+          "y": 31691,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4209,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33190,
+            "y": 31691,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:466:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4209-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33190,
+          "y": 31691,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4209,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33190,
+            "y": 31691,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:466:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4210",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33192,
+          "y": 31688,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4210,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33192,
+            "y": 31688,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:470:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4210-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33192,
+          "y": 31688,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4210,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33192,
+            "y": 31688,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:470:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4211",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33196,
+          "y": 31691,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4211,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33196,
+            "y": 31691,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:474:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4211-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33196,
+          "y": 31691,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4211,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33196,
+            "y": 31691,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:474:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4212",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33197,
+          "y": 31687,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4212,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave5",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33197,
+            "y": 31687,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:478:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4212-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33197,
+          "y": 31687,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4212,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave5",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33197,
+            "y": 31687,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:478:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4213",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33202,
+          "y": 31689,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4213,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave6",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33202,
+            "y": 31689,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:482:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4213-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33202,
+          "y": 31689,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4213,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave6",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33202,
+            "y": 31689,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:482:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4214",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33203,
+          "y": 31687,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4214,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave7",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33203,
+            "y": 31687,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:486:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4214-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33203,
+          "y": 31687,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4214,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave7",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33203,
+            "y": 31687,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:486:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4215",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33204,
+          "y": 31688,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4215,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave8",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33204,
+            "y": 31688,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:490:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4215-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33204,
+          "y": 31688,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4215,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave8",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33204,
+            "y": 31688,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:490:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4216",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33203,
+          "y": 31682,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4216,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave9",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33203,
+            "y": 31682,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:494:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4216-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33203,
+          "y": 31682,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4216,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave9",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33203,
+            "y": 31682,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:494:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4217",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33205,
+          "y": 31680,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4217,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave10",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33205,
+            "y": 31680,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:498:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4217-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33205,
+          "y": 31680,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4217,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave10",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33205,
+            "y": 31680,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:498:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4218",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33203,
+          "y": 31677,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4218,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave11",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33203,
+            "y": 31677,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:502:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4218-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33203,
+          "y": 31677,
+          "floor": -6
+        },
+        "unique": null,
+        "action": 4218,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave11",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33203,
+            "y": 31677,
+            "floor": -6
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:502:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4219",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33210,
+          "y": 31670,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4219,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave12",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33210,
+            "y": 31670,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:506:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4219-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33210,
+          "y": 31670,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4219,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave12",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33210,
+            "y": 31670,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:506:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4220",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33215,
+          "y": 31667,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4220,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave13",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33215,
+            "y": 31667,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:510:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4220-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33215,
+          "y": 31667,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4220,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave13",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33215,
+            "y": 31667,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:510:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4221",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33219,
+          "y": 31671,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4221,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave14",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33219,
+            "y": 31671,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:514:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4221-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33219,
+          "y": 31671,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4221,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave14",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33219,
+            "y": 31671,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:514:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4222",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33223,
+          "y": 31665,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4222,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave15",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33223,
+            "y": 31665,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:518:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4222-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33223,
+          "y": 31665,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4222,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave15",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33223,
+            "y": 31665,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:518:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4223",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33217,
+          "y": 31661,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4223,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave16",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 0,
+          "maximum": 13,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33217,
+            "y": 31661,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:522:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    },
+    {
+      "key": "oteryn:quest-callback/tibia-tales/sanctify-grave-4223-finish",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33217,
+          "y": 31661,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 4223,
+        "appearance": 1979
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/graves/grave16",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+          "minimum": 14,
+          "maximum": 14,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/rest_in_hallowed_ground/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i2874",
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 33217,
+            "y": 31661,
+            "floor": -7
+          },
+          "effect": 13
+        }
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:20-37,77-99:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:522:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "requires_world_admission": true
+    }
+  ]
+}

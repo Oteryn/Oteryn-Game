@@ -15,6 +15,10 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) const PREFIX: &str = "qd-world-";
 
+pub(super) const AHMET: &str = "qd-world-steal-from-thieves";
+pub(super) const OASIS_BOX: Position = Position { x: 33131, y: 32661, floor: -7 };
+const OASIS_APPROACH: Position = Position { x: 33130, y: 32660, floor: -7 };
+
 pub(super) const SAMS: &str = "qd-world-sams-old-backpack";
 
 const SAMS_NPC: &str = "oteryn:quest-progress/quest/u7_5/sams_old_backpack/sams_old_backpack_npc";
@@ -35,6 +39,7 @@ const SAMS_GATE: Position = Position {
 
 pub(super) fn start(name: &str) -> TestResult<Position> {
     match name {
+        AHMET => Ok(OASIS_APPROACH),
         SAMS => Ok(Position {
             x: 32455,
             y: 31966,
@@ -46,6 +51,7 @@ pub(super) fn start(name: &str) -> TestResult<Position> {
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     let key = match name {
+        AHMET => "oteryn:quest-callback/qd-steal-from-thieves-oasis-box",
         SAMS => "oteryn:quest-callback/qd-sams-old-backpack-chest",
         _ => return Err(format!("unknown qd world case {name}").into()),
     };
@@ -63,6 +69,24 @@ pub(super) fn world(
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups_fixtures::{native_scene, ExpectedTile, NativeCrop};
     match name {
+        AHMET => native_scene(
+            native,
+            vec![NativeCrop {
+                bytes: include_bytes!(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../../content/world/placements/region-z07-x129-y127.b3"
+                )),
+                region: (7, 129, 127),
+                bounds: (33128, 32659, 33134, 32665),
+                start: (OASIS_APPROACH.x, OASIS_APPROACH.y),
+                expected: vec![ExpectedTile {
+                    position: (33131, 32661),
+                    ids: vec![4515, 2473],
+                    counted_entry: None,
+                }],
+            }],
+            &[],
+        ),
         SAMS => native_scene(
             native,
             vec![NativeCrop {
@@ -100,6 +124,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     match name {
+        AHMET => super::qd_steal_from_thieves_fixtures::exercise(owner, admitted, h, authority).await,
         SAMS => sams_old_backpack(owner, admitted, h, authority).await,
         _ => Err(format!("unknown qd world case {name}").into()),
     }
@@ -115,7 +140,7 @@ async fn completed(h: &Harness, quest: &str) -> TestResult<bool> {
         .bind(quest).fetch_one(&h.pool).await?)
 }
 
-async fn use_at(
+pub(super) async fn use_at(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     at: Position,
@@ -262,7 +287,7 @@ async fn sams_old_backpack(
         kroox_npc,
         kroox,
         false,
-        vec!["hi", "sam sent me"],
+        vec!["hi", "sam send me"],
     )
     .await?;
     assert_eq!(result, NpcIntentDisposition::Ok);

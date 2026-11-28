@@ -18,6 +18,7 @@ import json
 from pathlib import Path
 
 from engine_items import decode_appearance_object, protobuf_fields
+from lower_client_market_mint_packet import refresh_rust_packet_pin
 from lower_wiki_stack_default_packet import sha
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -25,6 +26,9 @@ COMPILER = (
     "tools/content-schema/item-authoring/lower_client_market_crystal_parity_packet.py"
 )
 OUTPUT = ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
+RUST_PIN = (
+    ROOT / "crates/gameplay/content-promotion/src/content/item_market_crystal_parity.rs"
+)
 V2 = "docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json"
 DONOR_REPOSITORY = "zimbadev/crystalserver"
 DONOR_REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -138,7 +142,11 @@ def main():
             raise SystemExit("Market Crystal parity packet drift")
     else:
         OUTPUT.write_bytes(data)
-    print(json.dumps(packet["counts"]), sha(data))
+    digest = sha(data)
+    refresh_rust_packet_pin(
+        RUST_PIN, "ITEM_MARKET_CRYSTAL_PARITY_PACKET_SHA256", digest, check=args.check
+    )
+    print(json.dumps(packet["counts"]), digest)
 
 
 if __name__ == "__main__":

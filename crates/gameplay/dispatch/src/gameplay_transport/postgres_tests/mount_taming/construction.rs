@@ -61,6 +61,10 @@ pub(super) async fn run(
             .await
             .remove_test_actor(target)
             .map_err(debug)?;
+        let is_wind_up_loco = rule.item_key == "oteryn:item.tibia.i37397";
+        if is_wind_up_loco {
+            assert_eq!(engine_driver_grants(h).await?, 0);
+        }
         let command = retained.continuity.next_command_id;
         let (results, next) =
             wire::exchange(owner, retained, std::slice::from_ref(&payload)).await?;
@@ -95,6 +99,9 @@ pub(super) async fn run(
             [UseDisposition::Committed]
         );
         assert_eq!(quantity(h, &rule.item_key).await?, before - 1);
+        if is_wind_up_loco {
+            assert_eq!(engine_driver_grants(h).await?, 1);
+        }
         let (results, next) = wire::exchange(owner, retained, &[payload]).await?;
         assert_eq!(results, [UseDisposition::RequirementNotMet]);
         retained = next;
@@ -103,6 +110,15 @@ pub(super) async fn run(
     }
     assert_eq!(count, 3, "all one-item source construction pairs exercised");
     Ok(())
+}
+
+async fn engine_driver_grants(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievements
+         WHERE achievement_key = 'oteryn:achievement/engine_driver'",
+    )
+    .fetch_one(&h.pool)
+    .await?)
 }
 
 async fn quantity(h: &Harness, key: &str) -> TestResult<i64> {

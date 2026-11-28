@@ -76,6 +76,10 @@ fn hireling_postgres_store_named_house_lamp_entitlement_and_replay() -> TestResu
     run_case(Case::Store)
 }
 #[test]
+fn hireling_postgres_store_lamp_claim_uses_the_placement_recovery_generation() -> TestResult {
+    run_case(Case::StoreClaimAfterRecovery)
+}
+#[test]
 fn hireling_postgres_house_position_ordered_capture_and_same_actor_resume() -> TestResult {
     run_case(Case::PositionCapture)
 }

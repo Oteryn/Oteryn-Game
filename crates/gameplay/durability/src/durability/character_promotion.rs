@@ -2,7 +2,7 @@
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{CharacterProgressionError, assert_item_only_fence};
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, lock_admission_relations,
 };
 use super::item_transfer::CurrentCharacterItemFence;
 use super::npc_purchase::PurchaseReceipt;
@@ -37,7 +37,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let promoted = read_durable_promotion(&mut tx, character).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(promoted))
                 })
             })
@@ -98,7 +98,7 @@ impl DurabilityRoot {
                         .map(|(_, receipt)| receipt),
                         None => None,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok((promoted, receipt)))
                 })
             })

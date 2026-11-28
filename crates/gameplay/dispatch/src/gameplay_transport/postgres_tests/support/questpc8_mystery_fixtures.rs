@@ -1,5 +1,5 @@
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::fixture::{Harness, debug};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
@@ -9,6 +9,8 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 
 use crate::foundation::{CommandId, CommandRef};
 
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+
 const STAGE: &str = "oteryn:quest-progress/chosen/mystery-of-the-valley/stage";
 
 pub(super) async fn exercise_intro(
@@ -16,9 +18,26 @@ pub(super) async fn exercise_intro(
     admitted: &mut AdmittedSession,
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
-) -> TestResult {
+) -> TestResult<EntityRef> {
     eprintln!("POSTGRES_CASE_STARTED questpc8_mystery_lai after PostgreSQL fixture initialization");
-    let [lai] = super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.lai"]).await?;
+    let [lai] = if owner
+        .bundle_map()
+        .is_some_and(|map| map.overlay.base().tile(33834, 32352, -4).is_some())
+    {
+        super::classic_quests_fixtures::install_positions(
+            owner,
+            admitted,
+            ["oteryn:npc.lai"],
+            [oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33834,
+                y: 32352,
+                floor: -4,
+            }],
+        )
+        .await?
+    } else {
+        super::classic_quests_fixtures::install(owner, admitted, ["oteryn:npc.lai"]).await?
+    };
     talk(owner, admitted, lai, 5100, "hi").await?;
     talk(owner, admitted, lai, 5101, "statue").await?;
     assert_eq!(progress(h).await?, -1);
@@ -130,6 +149,36 @@ pub(super) async fn exercise_intro(
         .fetch_one(&h.pool).await?;
     assert_eq!(before, after);
     assert_eq!(progress(h).await?, 1);
+    let before_hint = revision(owner, admitted, h).await?;
+    assert_lai_reply(
+        owner,
+        admitted,
+        lai,
+        5120,
+        "fragment of a statue",
+        "ice and snow",
+    )
+    .await?;
+    assert_lai_reply(owner, admitted, lai, 5121, "legend", "three dragons").await?;
+    assert_lai_reply(owner, admitted, lai, 5122, "yes", "snow and ice").await?;
+    assert_eq!(revision(owner, admitted, h).await?, before_hint);
+    Ok(lai)
+}
+
+pub(super) async fn assert_lai_reply(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    lai: EntityRef,
+    command: u64,
+    text: &str,
+    expected: &str,
+) -> TestResult {
+    let result = talk(owner, admitted, lai, command, text).await?;
+    let lines = result.conversation.ok_or("Lai conversation")?.lines;
+    assert!(
+        lines.iter().any(|line| line.contains(expected)),
+        "{text}: {lines:?}"
+    );
     Ok(())
 }
 
@@ -143,13 +192,13 @@ async fn progress(h: &Harness) -> TestResult<i64> {
     )
 }
 
-async fn talk(
+pub(super) async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    npc: EntityRef,
     command_id: u64,
     text: &str,
-) -> TestResult {
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -179,7 +228,7 @@ async fn talk(
             oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Ok
         );
     }
-    Ok(())
+    Ok(result)
 }
 
 async fn revision(

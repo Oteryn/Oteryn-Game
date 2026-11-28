@@ -19,6 +19,84 @@ fn state() -> Result<PlayerSpellState, &'static str> {
 }
 
 #[test]
+fn crystal_equipment_melee_intrinsic_attack_projects_to_offence()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))?;
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(
+        crate::content::native_gameplay_test_world_id()?,
+    )?;
+    let native = decode(&compile_native_gameplay(room.compiled(), &input)?.server_artifact)?.state;
+    let mut state = state()?;
+    let build =
+        crate::durability::character_build::DurableBuildState::new("knight", (0, 0), [(100, 0); 7])
+            .map_err(|error| format!("{error:?}"))?;
+    state
+        .load_owned_build(&build)
+        .map_err(|error| format!("{error:?}"))?;
+    let offence = EquippedOffence::default();
+    let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+    for id in [47368, 49523, 53207] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let weapon = oteryn_gameplay_combat_rules::resolution::swing_weapon(&native, |slot| {
+            (slot == 5).then_some((key.as_str(), "definition-r1"))
+        })
+        .ok_or("melee weapon")?;
+        let attack = weapon.attack(constants.fist.attack);
+        let (physical_ppm, elemental_ppm, element) =
+            weapon.split_damage(1_000_000).ok_or("damage split")?;
+        assert!(elemental_ppm > 0);
+        let SwingWeapon::Melee {
+            attack: physical, ..
+        } = weapon
+        else {
+            return Err("expected a melee weapon".into());
+        };
+        let observation = Observation {
+            state: &state,
+            now_micros: 1,
+            mode: FightMode::Balanced,
+            weapon,
+            ranged: None,
+            equipment_only: &offence,
+            offence: &offence,
+            wheel: None,
+            battle_instinct: BattleInstinctBonuses::default(),
+            skill_bonuses: [0; 8],
+            mantra: 0,
+        };
+        let mut wire = CombatStats::new(CharacterTab::Offence, 1, 1, 1)
+            .map_err(|error| format!("{error:?}"))?;
+        observation
+            .offence(&mut wire)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            wire.get(Stat::AttackSkill),
+            Some(attack_skill(physical, 100)),
+            "{id}"
+        );
+        assert_eq!(
+            wire.get(Stat::AttackEquipment),
+            Some(i64::from(attack)),
+            "{id}"
+        );
+        assert_eq!(
+            wire.get(Stat::ConvertedElement),
+            Some(element_id(element)),
+            "{id}"
+        );
+        assert_eq!(
+            wire.get(Stat::ConvertedDamage),
+            Some(if physical_ppm == 0 { 0 } else { elemental_ppm }),
+            "{id}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn p12c_attack_display_formula_matches_crystal_values() {
     assert_eq!(attack_totals(20, 7, 50, FightMode::Balanced), (33, 33));
     assert_eq!(attack_totals(20, 7, 50, FightMode::Offensive), (35, 33));
@@ -130,6 +208,7 @@ fn p12c_melee_attack_total_follows_live_skill_and_fight_mode() -> Result<(), Str
         mode: FightMode::Offensive,
         weapon: SwingWeapon::Melee {
             attack: 30,
+            elemental: None,
             skill: MeleeSkill::Sword,
         },
         ranged: None,

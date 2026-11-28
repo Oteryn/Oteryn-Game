@@ -82,8 +82,8 @@ The client queues it after current-location map actions and shows the confirmed
 value in the native hover tooltip and accessible panel text. Legacy 72/73 layouts
 and receipt replay remain unchanged.
 
-Owner decision 2026-11-09 (T187) sets content-defined `PARITY_PENDING` starting
-endpoints in `content/cyclopedia/discovery-speed.json`. For n fully discovered
+Owner decision 2026-11-25 adopts the T187 interpolation and the
+`OWNER_DECIDED` endpoints in `content/cyclopedia/discovery-speed.json`. For n fully discovered
 areas among N discoverable areas, the bonus is
 `minimum + floor((maximum-minimum)*(n-1)/(N-1))`; N=1 uses maximum.
 The contribution applies only inside a fully discovered area. The existing actor
@@ -91,8 +91,7 @@ speed owner adds it once alongside condition and equipment contributions. Actual
 movement refreshes it before stepping and after arrival/completion; reset refreshes
 it immediately. Runtime values are rebuilt from fenced PostgreSQL progress, never
 used as an independent source of completion truth. Official news 8834 establishes
-the 100–195 envelope; the formula is the owner's enabled starting interpretation,
-not a newly claimed official formula.
+the 100–195 envelope. The interpolation is Oteryn's owner-decided rule.
 
 ## Public atlas extension (O078)
 

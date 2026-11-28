@@ -5,8 +5,8 @@
 //! registry is the one place that answers it; it is to be superseded by that data. Recognition
 //! goes through [`open_of`] and [`key_door_of`], so replacing the source touches nothing else.
 
-/// `(closed id, open id)` of every plain door appearance: ascending by closed id, the open id
-/// always the next one.
+/// Plain door pairs in closed-id order. Crystal 201189f8 data/libs/tables/doors.lua:85-191
+/// supplies the irregular and shared poses.
 const DOOR_PAIRS: &[(u32, u32)] = &[
     (1629, 1630),
     (1632, 1633),
@@ -94,8 +94,12 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
     (7721, 7722),
     (7723, 7724),
     (7868, 7869),
+    (8255, 8256),
+    (8257, 8258),
     (8259, 8260),
     (8261, 8262),
+    (8357, 8358),
+    (8359, 8360),
     (8361, 8362),
     (8363, 8364),
     (9352, 9353),
@@ -121,6 +125,8 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
     (11239, 11240),
     (11242, 11243),
     (11248, 11249),
+    (11705, 11708),
+    (11714, 11716),
     (12033, 12034),
     (12035, 12036),
     (12249, 12250),
@@ -147,21 +153,35 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
     (18003, 18004),
     (18005, 18006),
     (18009, 18010),
+    (18025, 18026),
     (20444, 20445),
     (20446, 20447),
     (20450, 20451),
     (20453, 20454),
     (20455, 20456),
     (20459, 20460),
+    (22502, 22503),
+    (22504, 22505),
     (22506, 22507),
     (22508, 22509),
     (24541, 24542),
     (24543, 24544),
+    (24903, 28520),
     (28519, 28520),
     (30041, 30042),
     (30043, 30044),
     (30045, 30046),
     (30047, 30048),
+    (30833, 30837),
+    (30834, 30837),
+    (30835, 30838),
+    (30836, 30838),
+    (30849, 30853),
+    (30850, 30854),
+    (30851, 30855),
+    (30852, 30856),
+    (31494, 31496),
+    (31495, 31497),
     (31568, 31569),
     (31570, 31571),
     (31663, 31664),
@@ -170,22 +190,35 @@ const DOOR_PAIRS: &[(u32, u32)] = &[
     (33273, 33274),
     (34221, 34222),
     (34223, 34224),
+    (39660, 39666),
+    (39661, 39667),
     (42627, 42628),
     (42744, 42745),
     (43953, 43954),
     (44916, 44917),
-    (48496, 48497),
-    (48500, 48501),
+    (48495, 48497),
+    (48496, 48498),
+    (48499, 48501),
+    (48500, 48502),
+    (48520, 48524),
+    (48522, 48526),
     (48523, 48524),
-    (48529, 48530),
-    (49681, 49682),
-    (49687, 49688),
+    (48528, 48530),
+    (48529, 48531),
+    (49678, 49682),
+    (49679, 49682),
+    (49680, 49683),
+    (49681, 49683),
+    (49684, 49688),
+    (49685, 49688),
+    (49686, 49689),
+    (49687, 49689),
     (50284, 50285),
 ];
 
-// Canary data/libs/tables/doors.lua:8-76. Keep the explicit triples: several families
+// Crystal 201189f8 data/libs/tables/doors.lua:8-82. Keep the explicit triples: several families
 // have nonconsecutive ids, and some locked ids also appear in the legacy plain registry.
-const KEY_DOORS: &[(u32, u32, u32)] = &[
+pub(super) const KEY_DOORS: &[(u32, u32, u32)] = &[
     (1628, 1629, 1630),
     (1631, 1632, 1633),
     (1650, 1651, 1652),
@@ -249,10 +282,16 @@ const KEY_DOORS: &[(u32, u32, u32)] = &[
     (28366, 28367, 28369),
     (30772, 30773, 30776),
     (30774, 30775, 30777),
+    (33633, 33632, 33636),
+    (33635, 33634, 33637),
     (37982, 37981, 37985),
     (37984, 37983, 37986),
+    (39935, 39934, 39938),
+    (39937, 39936, 39939),
     (44914, 44913, 44917),
     (44916, 44915, 44918),
+    (49731, 49732, 49735),
+    (49733, 49734, 49736),
 ];
 
 /// Locked and unlocked closed appearances for a key door's authored appearance.
@@ -434,20 +473,33 @@ pub fn open_of(closed: u32) -> Option<u32> {
     Some(DOOR_PAIRS[found].1)
 }
 
+/// Crystal's custom door action closes a shared open pose using the first matching pair.
+pub(super) fn plain_closed_of(open_id: u32) -> Option<u32> {
+    DOOR_PAIRS
+        .iter()
+        .find_map(|&(closed, open)| (open == open_id).then_some(closed))
+}
+
+/// Explicit exceptions to the ordinary closed-door collision policy.
+pub(super) fn closed_collision(id: u32) -> (bool, bool) {
+    // Crystal 201189f8 appearances.dat and items.xml: unblocked counter, sight-open gates.
+    match id {
+        18025 => (false, false),
+        2177 | 2179 | 5733 | 5735 | 39934..=39937 | 49684..=49686 => (true, false),
+        _ => (true, true),
+    }
+}
+
 /// Canonical closed pose of any registered open counterpart.
 pub(super) fn closed_of(open_id: u32) -> Option<u32> {
     level_door_pair(open_id, true)
         .or_else(|| quest_door_pair(open_id, true))
         .or_else(|| {
-            DOOR_PAIRS
-                .iter()
-                .find_map(|&(closed, open)| (open == open_id).then_some(closed))
-        })
-        .or_else(|| {
             KEY_DOORS
                 .iter()
                 .find_map(|&(_, closed, open)| (open == open_id).then_some(closed))
         })
+        .or_else(|| plain_closed_of(open_id))
 }
 
 #[cfg(test)]
@@ -478,9 +530,49 @@ mod tests {
     }
 
     #[test]
-    fn pairs_are_ascending_and_consecutive() {
+    fn pairs_are_ascending_with_exact_irregular_poses() {
         assert!(DOOR_PAIRS.windows(2).all(|pair| pair[0].0 < pair[1].0));
-        assert!(DOOR_PAIRS.iter().all(|(closed, open)| *open == closed + 1));
+        let irregular: Vec<_> = DOOR_PAIRS
+            .iter()
+            .copied()
+            .filter(|(closed, open)| *open != closed + 1)
+            .collect();
+        assert_eq!(
+            irregular,
+            [
+                (11705, 11708),
+                (11714, 11716),
+                (24903, 28520),
+                (30833, 30837),
+                (30834, 30837),
+                (30835, 30838),
+                (30836, 30838),
+                (30849, 30853),
+                (30850, 30854),
+                (30851, 30855),
+                (30852, 30856),
+                (31494, 31496),
+                (31495, 31497),
+                (39660, 39666),
+                (39661, 39667),
+                (48495, 48497),
+                (48496, 48498),
+                (48499, 48501),
+                (48500, 48502),
+                (48520, 48524),
+                (48522, 48526),
+                (48528, 48530),
+                (48529, 48531),
+                (49678, 49682),
+                (49679, 49682),
+                (49680, 49683),
+                (49681, 49683),
+                (49684, 49688),
+                (49685, 49688),
+                (49686, 49689),
+                (49687, 49689),
+            ]
+        );
         assert!(DOOR_PAIRS.len() > 100);
         assert_eq!(open_of(1629), Some(1630));
         assert_eq!(open_of(1628), None);

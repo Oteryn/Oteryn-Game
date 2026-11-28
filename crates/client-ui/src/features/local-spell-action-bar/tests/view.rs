@@ -62,23 +62,41 @@ fn hud_clamps_overfull_and_handles_largest_vitals() {
 fn docked_row_counts_down_server_cooldown_without_changing_authority() -> Result<(), &'static str> {
     let mut panel = super::super::ActionBarPanel::default();
     panel.bar.bind(11, std::num::NonZeroU32::new(71));
-    panel.bar.cooldowns = Some(oteryn_client_runtime::spell::ActorCooldowns {
-        server_now_ms: 100,
-        rtt_ms: None,
-        entries: vec![oteryn_client_runtime::spell::ActorCooldown {
-            kind: oteryn_client_runtime::spell::ActorCooldownKind::Spell,
-            id: 71,
-            expires_at_ms: 600,
-        }],
+    let received_at = std::time::Instant::now();
+    panel.apply_cooldowns(&oteryn_client_runtime::spell::ActorCooldownUpdate {
+        received_at,
+        snapshot: true,
+        value: oteryn_client_runtime::spell::ActorCooldowns {
+            server_now_ms: 100,
+            rtt_ms: None,
+            entries: vec![oteryn_client_runtime::spell::ActorCooldown {
+                kind: oteryn_client_runtime::spell::ActorCooldownKind::Spell,
+                id: 71,
+                expires_at_ms: 600,
+            }],
+        },
     });
     let catalog = oteryn_client_runtime::spell_catalog::CatalogState::default();
-    assert!(slot_labels_after(&panel, &catalog, 250)[11].contains("250 ms"));
-    assert!(slot_labels_after(&panel, &catalog, 500)[11].contains("Ready"));
+    assert!(
+        slot_labels_at(
+            &panel,
+            &catalog,
+            received_at + std::time::Duration::from_millis(250)
+        )[11]
+            .contains("250 ms")
+    );
+    assert!(
+        slot_labels_at(
+            &panel,
+            &catalog,
+            received_at + std::time::Duration::from_millis(500)
+        )[11]
+            .contains("Ready")
+    );
     assert_eq!(
         panel
             .bar
-            .cooldowns
-            .as_ref()
+            .last_cooldown_observation()
             .ok_or("cooldowns")?
             .server_now_ms,
         100
@@ -92,15 +110,19 @@ fn cooldown_bar_overlay_does_not_restart_when_another_snapshot_arrives() {
     let mut panel = super::super::ActionBarPanel::default();
     let catalog = oteryn_client_runtime::spell_catalog::CatalogState::default();
     for now in [100, 600] {
-        panel.replace_cooldowns(Some(ActorCooldowns {
-            server_now_ms: now,
-            rtt_ms: None,
-            entries: vec![ActorCooldown {
-                kind: ActorCooldownKind::Group,
-                id: 2,
-                expires_at_ms: 1100,
-            }],
-        }));
+        panel.apply_cooldowns(&oteryn_client_runtime::spell::ActorCooldownUpdate {
+            received_at: std::time::Instant::now(),
+            snapshot: true,
+            value: ActorCooldowns {
+                server_now_ms: now,
+                rtt_ms: None,
+                entries: vec![ActorCooldown {
+                    kind: ActorCooldownKind::Group,
+                    id: 2,
+                    expires_at_ms: 1100,
+                }],
+            },
+        });
     }
     let icons = cooldown_icons(&panel, &catalog);
     assert_eq!(icons.len(), 1);

@@ -385,7 +385,15 @@ pub(super) fn scenario_with_step(
                 return h.cleanup().await;
             }
             if matches!(extra, Extra::PortalStep) {
-                super::srx3_rotten_portal_step::exercise(&h, &mut owner, &admitted).await?;
+                // Replay the native Think and summon placement draws observed on main f4a89b3e9.
+                const MAIN_SEED: [u8; 32] = [
+                    0x38, 0x86, 0x5b, 0x88, 0x17, 0x3a, 0x1b, 0xd5, 0x66, 0xe7, 0xfb, 0xa1, 0x4a,
+                    0x04, 0xf9, 0xff, 0xf5, 0x55, 0xbb, 0x4b, 0x4a, 0xc0, 0xef, 0xb4, 0x20, 0x3b,
+                    0x01, 0x4b, 0x95, 0x30, 0x8f, 0xf0,
+                ];
+                let turn = super::srx3_rotten_portal_step::exercise(&h, &owner, &admitted);
+                crate::gameplay_transport::monster_profile_cycle::with_native_ai_seed(MAIN_SEED, turn)
+                    .await?;
                 drop(owner);
                 drop(authority);
                 drop(seal);

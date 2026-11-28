@@ -24,7 +24,7 @@ impl FreshAdmissionStore {
                             .await?;
                     super::super::db::lock_admission_relations(&mut tx).await?;
                     let clock = store.training_login_clock_locked(&mut tx, fence).await?;
-                    super::super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    super::super::admission_journal::commit_pass_read(tx, deadline).await?;
                     Ok(clock)
                 })
             })

@@ -2,7 +2,7 @@
 use super::super::admission_authority_guards::AdmissionGuardStore;
 use super::super::character_authority::ReconciledCharacterAuthority;
 use super::super::character_progression::assert_item_only_fence;
-use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::*;
 use crate::foundation::admission_authority_publication::{
@@ -164,7 +164,7 @@ impl super::super::DurabilityRoot {
                             entry.kills=rows.iter().find(|(key,_)|key==&entry.key).map_or(Ok(0),|(_,kills)|u64::try_from(*kills).map_err(|_|DurabilityError::InvalidStoredState))?;
                         }
                         let bytes=page.encode().ok_or(DurabilityError::InvalidStoredState)?;
-                        commit_semantic_transaction(tx,deadline).await?;return Ok(Some(bytes));
+                        commit_semantic_read(tx,deadline).await?;return Ok(Some(bytes));
                     }
                     // C collation is also the primary-key collation, matching Rust key ordering.
                     // One extra row establishes continuation without a count or an unbounded scan.
@@ -250,7 +250,7 @@ impl super::super::DurabilityRoot {
                             },
                         ).map_err(|_| DurabilityError::InvalidStoredState)?;
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(payload))
                 })
             })
@@ -326,7 +326,7 @@ impl super::super::DurabilityRoot {
                 item_count: u32::try_from(item_count).map_err(|_| DurabilityError::InvalidStoredState)?,
             })).collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
             let payload = encode_reward_chest(u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?, &entries).map_err(|_| DurabilityError::InvalidStoredState)?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Some(payload))
         })).await
     }

@@ -1,0 +1,23 @@
+{
+  "quest": "oteryn:quest.the_ape_city_quest",
+  "items": [
+    {
+      "item": "oteryn:item.tibia.i4828",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/padreia.lua:62-92"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i4832",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:430-437"
+      ]
+    },
+    {
+      "item": "oteryn:item.tibia.i4835",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:444-446"
+      ]
+    }
+  ]
+}

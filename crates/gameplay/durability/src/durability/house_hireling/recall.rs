@@ -5,7 +5,7 @@ use super::super::character_inbox::{
 };
 use super::super::character_progression::numeric_u64;
 use super::super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, lock_admission_relations,
 };
 use super::super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::super::{DurabilityError, DurabilityRoot};
@@ -67,7 +67,7 @@ impl DurabilityRoot {
                     item_instance_ids:vec![receipts::command_identity(command,b"lamp-forced-return-item")]};
                 result.push(HirelingRecallState{hireling:h,authority:recall,source,content_revision:row.try_get("content_revision")?,ruleset_revision:row.try_get("ruleset_revision")?});
             }
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            commit_semantic_read(tx,deadline).await?;Ok(result)
         })).await
     }
 

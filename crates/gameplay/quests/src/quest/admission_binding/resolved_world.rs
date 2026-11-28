@@ -1,6 +1,10 @@
 //! Extend admission with an immutable resolved World source, preserving published owners.
 use super::*;
 
+// Existing native readers can supply the entire embedded source, including
+// both paid coffin routes. The unpublished subset keeps its document bound.
+const MAX_RESOLVED_CALLBACKS: usize = world_callbacks::MAX_EMBEDDED_CALLBACKS;
+
 pub fn validate_resolved_world(
     catalogue: &super::super::QuestStateCatalogue,
     transition: &QuestTransition,
@@ -8,6 +12,29 @@ pub fn validate_resolved_world(
     callbacks: &[world_callbacks::Callback],
 ) -> Result<(), String> {
     let published = registry()?;
+    let composed = catalogue.authored_world_callbacks();
+    if !composed.is_some_and(|registered| std::ptr::eq(registered, callbacks))
+        && (callbacks.len() > MAX_RESOLVED_CALLBACKS
+            || callbacks
+                .iter()
+                .map(|callback| &callback.key)
+                .collect::<BTreeSet<_>>()
+                .len()
+                != callbacks.len()
+            || callbacks
+                .iter()
+                .filter(|callback| !published.owners.contains_key(&callback.key))
+                .count()
+                > world_callbacks::MAX_CALLBACKS)
+    {
+        let registered = match composed {
+            Some(registered) => registered,
+            None => world_callbacks::embedded_callbacks()?,
+        };
+        if registered != callbacks {
+            return Err("resolved World source bounds".into());
+        }
+    }
     if published.owners.contains_key(&transition.key) {
         return validate_for_catalogue(catalogue, transition, world_context);
     }
@@ -25,18 +52,6 @@ pub fn validate_resolved_world(
                 }
             }
         }
-    }
-    // The exact immutable catalogue registry already passed both composition bounds.
-    // Independently resolved inputs still share the boot and per-source bounds.
-    if (callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS
-        || callbacks
-            .iter()
-            .filter(|callback| !published.owners.contains_key(&callback.key))
-            .count()
-            > world_callbacks::MAX_CALLBACKS)
-        && catalogue.authored_world_callbacks() != Some(callbacks)
-    {
-        return Err("resolved World source bounds".into());
     }
     let mut owned = None;
     let mut protected = BTreeSet::new();
@@ -106,6 +121,29 @@ mod tests {
     }
 
     #[test]
+    fn jack_retains_exact_npc_writes_to_the_zelos_passage_track() -> Result<(), String> {
+        use crate::quest::{QuestComparison, grave_danger, loader};
+
+        let source =
+            loader::load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+        let catalogue = source.catalogue();
+        let callbacks = world_callbacks::load_for(catalogue)?;
+        for key in [grave_danger::START, grave_danger::ACCESS] {
+            let transition = catalogue.transition(key).ok_or(key)?;
+            validate_resolved_world(catalogue, transition, false, &callbacks)?;
+
+            let mut renamed = transition.clone();
+            renamed.key.push_str("-alias");
+            assert!(validate_resolved_world(catalogue, &renamed, false, &callbacks).is_err());
+
+            let mut modified = transition.clone();
+            modified.effects[0].from = QuestComparison::Any;
+            assert!(validate_resolved_world(catalogue, &modified, false, &callbacks).is_err());
+        }
+        Ok(())
+    }
+
+    #[test]
     fn published_registry_does_not_exhaust_the_resolved_source_bound() -> Result<(), String> {
         let source = super::super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
@@ -113,11 +151,12 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
+        assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
+        assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()
         );
-        assert!(callbacks.len() > world_callbacks::MAX_RUNTIME_CALLBACKS);
         let expected: BTreeSet<_> = base
             .iter()
             .chain(bindings.world_callbacks())
@@ -160,9 +199,60 @@ mod tests {
             validate_resolved_world(catalogue, transition, false, &additional),
             Err("resolved World source bounds".into())
         );
-        let oversized = vec![callback.clone(); world_callbacks::MAX_RUNTIME_CALLBACKS + 1];
+        let mut oversized = world_callbacks::load()?;
+        let existing: BTreeSet<_> = oversized.iter().map(|row| row.key.clone()).collect();
+        let required = MAX_RESOLVED_CALLBACKS + 1 - oversized.len();
+        let published = registry()?;
+        oversized.extend(
+            reward_callbacks::load()?
+                .into_iter()
+                .filter(|row| {
+                    published.owners.contains_key(&row.key) && !existing.contains(&row.key)
+                })
+                .take(required)
+                .map(|row| {
+                    let mut extra = callback.clone();
+                    extra.key = row.key;
+                    extra
+                }),
+        );
+        assert_eq!(oversized.len(), MAX_RESOLVED_CALLBACKS + 1);
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &oversized),
+            Err("resolved World source bounds".into())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn embedded_fallback_accepts_the_registry_and_keeps_the_resolved_bounds() -> Result<(), String>
+    {
+        let catalogue =
+            super::super::super::QuestStateCatalogue::new("resolved-fixture", vec![], vec![])
+                .map_err(|error| format!("{error:?}"))?;
+        assert!(catalogue.authored_world_callbacks().is_none());
+        let source = super::super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let transition = source
+            .catalogue()
+            .transition("oteryn:quest-transition/kv/bear_chest3/chest")
+            .ok_or("bear claim transition")?;
+        let callbacks = world_callbacks::load_for(&catalogue)?;
+        assert_eq!(callbacks, world_callbacks::load()?);
+        validate_resolved_world(&catalogue, transition, false, &callbacks)?;
+
+        let mut substituted = callbacks.clone();
+        substituted[0].quest.push_str("-substituted");
+        // The embedded loader caps the total length, so exercise the duplicate-key guard.
+        substituted[0].key = callbacks[1].key.clone();
+        assert_eq!(
+            validate_resolved_world(&catalogue, transition, false, &substituted),
+            Err("resolved World source bounds".into())
+        );
+        let oversized = vec![callbacks[0].clone(); MAX_RESOLVED_CALLBACKS + 1];
+        assert!(oversized.len() > MAX_RESOLVED_CALLBACKS);
+        assert_eq!(
+            validate_resolved_world(&catalogue, transition, false, &oversized),
             Err("resolved World source bounds".into())
         );
         Ok(())

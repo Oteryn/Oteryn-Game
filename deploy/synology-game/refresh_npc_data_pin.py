@@ -1,5 +1,6 @@
-"""Refresh the NPC data pin shared by Synology and Oracle game deploys."""
+"""Refresh the deployment pin from the canonical project and staged catalogue."""
 
+import argparse
 import json
 from pathlib import Path
 
@@ -12,7 +13,13 @@ from stage_npc_data import (
 
 
 def main():
-    content = Path(__file__).resolve().parents[2] / "content"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "repository_root", nargs="?", type=Path, default=Path(__file__).resolve().parents[2]
+    )
+    args = parser.parse_args()
+
+    content = args.repository_root / "content"
     revision, project = project_files(content / "world")
     catalogue = collect_catalogue(content)
     if not catalogue:
@@ -23,9 +30,8 @@ def main():
         "project_sha256": catalogue_digest(project.items()),
         "catalogue_sha256": catalogue_digest(catalogue),
     }
-    Path(__file__).with_name("npc-data.pin.json").write_text(
-        json.dumps(pin, indent=2) + "\n", encoding="utf-8"
-    )
+    path = args.repository_root / "deploy/synology-game/npc-data.pin.json"
+    path.write_text(json.dumps(pin, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

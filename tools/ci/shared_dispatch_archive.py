@@ -646,7 +646,13 @@ def main():
         print(f"Shared Dispatch archive unavailable: {error}", file=sys.stderr)
         return 3
     except (OSError, ValueError, subprocess.CalledProcessError, zipfile.BadZipFile) as error:
-        print(f"Shared Dispatch archive rejected: {type(error).__name__}", file=sys.stderr)
+        # ValueError texts are fixed messages of this module; other types may carry paths or argv.
+        detail = f": {error}" if type(error) is ValueError else ""
+        print(f"Shared Dispatch archive rejected: {type(error).__name__}{detail}", file=sys.stderr)
+        if args.command == "restore":
+            # A rejected archive is never reused; the consumer builds the exact head itself.
+            print("::warning title=Shared Dispatch archive rejected::building this exact head locally")
+            return 3
         return 1
     return 0
 
