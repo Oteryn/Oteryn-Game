@@ -2,4 +2,4 @@
 #[path = "full_row_g17.rs"]
 mod full_row_g17;
 #[cfg(test)]
-pub(crate) use full_row_g17::setup_pending as g17_setup_pending;
+pub(crate) use full_row_g17::validate_offer_source as g17_validate_offer_source;
