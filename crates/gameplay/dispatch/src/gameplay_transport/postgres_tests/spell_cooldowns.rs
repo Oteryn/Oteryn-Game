@@ -49,3 +49,11 @@ fn spell_cooldowns_follow_committed_indexed_and_spoken_casts() -> TestResult {
 fn spell_cast_omits_cooldowns_without_negotiated_presentation() -> TestResult {
     scenario(COOLDOWN_WITHOUT_PRESENTATION_CASE)
 }
+
+#[test]
+fn aggressive_cast_in_protection_zone_refuses_with_text_without_spending() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::parameter_spell_fixtures::protection_zone_scenario(admin)
+}

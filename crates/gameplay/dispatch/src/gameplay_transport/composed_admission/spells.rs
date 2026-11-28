@@ -153,24 +153,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ));
             return Some(actor_spell::SpellCastOutcome::rejected());
         }
+        if self
+            .spells
+            .source_indexed(intent.spell)
+            .is_some_and(|(spell, _)| spell.aggressive)
         {
-            let runtime = self.runtime.lock().await;
+            let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
-            if self
-                .spells
-                .source_indexed(intent.spell)
-                .is_some_and(|(spell, _)| spell.aggressive)
-                && states
-                    .get(&runtime, actor, game_session_id)
-                    .is_some_and(|state| {
-                        state
-                            .cooldowns
-                            .group_ready_at(
-                                oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY,
-                            )
-                            .is_some_and(|until| self.owner_now() < until)
-                    })
+            let state = states.get(&runtime, actor, game_session_id);
+            // Do not replace a retained commit's result with a new protection-zone refusal.
+            if state.is_some()
+                && !states.has_pending_spell_commit(actor, game_session_id)
+                && actor_spell::qualified_protection_zone(
+                    &mut runtime,
+                    self.movement_cells(),
+                    actor,
+                ) == Some(true)
             {
+                drop(states);
+                drop(runtime);
+                use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+                self.states.tutorial_sessions.notice(
+                    game_session_id,
+                    TutorialNotice::StatusText(
+                        "This action is not permitted in a protection zone.".into(),
+                    ),
+                );
+                return Some(actor_spell::SpellCastOutcome::rejected());
+            }
+            if state.is_some_and(|state| {
+                state
+                    .cooldowns
+                    .group_ready_at(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
+                    .is_some_and(|until| self.owner_now() < until)
+            }) {
                 return Some(actor_spell::SpellCastOutcome {
                     disposition:
                         oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::CoolingDown,

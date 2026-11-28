@@ -2,6 +2,7 @@ use super::super::autowalk_fixtures::{read, send};
 use super::super::srx3_native_source_cast_fixtures::NativeOwnerClock;
 use super::*;
 use crate::gameplay_transport::native_cue_offer;
+use oteryn_protocol_oteryn::tutorial_notices::{self, TutorialNotice};
 use oteryn_protocol_oteryn::{decode_state_delta, presentation as wire};
 use std::num::NonZeroU32;
 use tokio::io::DuplexStream;
@@ -179,6 +180,153 @@ async fn result(
             _ => (),
         }
     }
+}
+
+pub(super) async fn check_protection_zone(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    book: &crate::spell::SpellBook,
+) -> TestResult {
+    use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+
+    let offered = native_cue_offer::offered(owner.offered_capabilities(), true);
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        &offered,
+        &[
+            4,
+            6,
+            7,
+            wire::CAPABILITY_PRESENTATION_V1,
+            tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+        ],
+    )
+    .ok_or("spell, presentation and status notice capabilities")?;
+    let scorch = book.spoken("exevo infir flam hur").ok_or("Scorch")?.spell;
+    assert!(scorch.aggressive);
+    let spell = (1..=u32::try_from(book.source_len())?)
+        .filter_map(NonZeroU32::new)
+        .find(|&index| book.indexed(index) == Some(scorch))
+        .ok_or("Scorch index")?;
+    let actor = admitted.runtime_actor.ok_or("caster")?;
+    let session = admitted.game_session_id;
+    let clock = NativeOwnerClock::new(owner);
+    clock.set(1_000_000);
+    let before_cooldowns = {
+        let mut runtime = owner.runtime.lock().await;
+        assert_eq!(
+            crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                &mut runtime,
+                owner.movement_cells(),
+                actor,
+            ),
+            Some(true)
+        );
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states
+            .get_mut(&runtime, actor, session)
+            .ok_or("spell state")?;
+        let until = owner
+            .owner_now()
+            .checked_add(STAIRHOP_MICROS)
+            .map_err(debug)?;
+        state
+            .cooldowns
+            .groups
+            .insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+        state.cooldowns.clone()
+    };
+    let before_vitals = owner
+        .observe_vitals(actor, session)
+        .await
+        .ok_or("caster vitals")?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+    let driving = async move {
+        while decode_wire_envelope(&read(&mut client).await?)
+            .map_err(debug)?
+            .message_type()
+            != MessageType::SnapshotCommit
+        {}
+        let cast = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+            spell,
+            target: actor_spell::SpellTarget::None,
+            aim_at_target: false,
+        });
+        let command = actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT;
+        send(&mut client, 1, command, &cast).await?;
+        let mut saw_result = false;
+        let mut notices = Vec::new();
+        loop {
+            let bytes = read(&mut client).await?;
+            let envelope = decode_wire_envelope(&bytes).map_err(debug)?;
+            match envelope.message_type() {
+                MessageType::StateDelta => {
+                    let delta = decode_state_delta(envelope.payload()).map_err(debug)?;
+                    assert_ne!(delta.domain_id, actor_spell::STATE_DOMAIN_ACTOR_VITALS);
+                    assert_ne!(delta.domain_id, wire::STATE_DOMAIN_ACTOR_COOLDOWNS);
+                    if delta.domain_id == tutorial_notices::STATE_DOMAIN_TUTORIAL_NOTICES {
+                        notices.push(
+                            tutorial_notices::decode_tutorial_notice(delta.payload)
+                                .map_err(debug)?,
+                        );
+                    }
+                }
+                MessageType::CommandResult => {
+                    let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(result.command_id, 1);
+                    if saw_result {
+                        assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                        break;
+                    }
+                    assert_eq!(
+                        result.status,
+                        CommandStatus::Rejected,
+                        "PZ takes precedence over stair-hop cooldown"
+                    );
+                    assert_eq!(
+                        actor_spell::decode_spell_cast_result(result.payload).map_err(debug)?,
+                        actor_spell::SpellCastDisposition::Rejected
+                    );
+                    saw_result = true;
+                    // The duplicate result delimits the frames sent after the refusal.
+                    send(&mut client, 1, command, &cast).await?;
+                }
+                _ => (),
+            }
+        }
+        assert_eq!(
+            notices,
+            vec![TutorialNotice::StatusText(
+                "This action is not permitted in a protection zone.".into()
+            )]
+        );
+        assert_eq!(
+            owner.observe_vitals(actor, session).await,
+            Some(before_vitals),
+            "PZ refusal changed mana or soul"
+        );
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states
+                .get(&runtime, actor, session)
+                .ok_or("spell state after refusal")?;
+            assert_eq!(state.cooldowns, before_cooldowns);
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let (end, result): (_, TestResult) =
+        tokio::time::timeout(Duration::from_secs(45), join_two(serving, driving)).await?;
+    result?;
+    assert!(
+        matches!(
+            end,
+            crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(_)
+        ),
+        "{end:?}"
+    );
+    Ok(())
 }
 
 fn assert_cooldowns(

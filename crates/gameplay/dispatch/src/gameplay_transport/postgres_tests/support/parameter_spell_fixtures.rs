@@ -41,6 +41,15 @@ pub(super) fn scenario(case: u8) -> TestResult {
     scenario_in_world(case, None)
 }
 
+pub(super) fn protection_zone_scenario(admin: String) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("protection-zone-spell", move || {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(Box::pin(scenario_inner(admin, PROTECTION_ZONE_CASE, None)))
+    })
+}
+
 pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -76,8 +85,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         None
     };
     h.seed_pvp_target().await?;
-    let cooldown_cast_replay_case = matches!(case, COOLDOWN_CASE | COOLDOWN_WITHOUT_PRESENTATION_CASE);
-    let has_observer = !matches!(case, 1 | 5 | 6) && !cooldown_cast_replay_case;
+    let starts_in_protection_zone = matches!(
+        case,
+        PROTECTION_ZONE_CASE | COOLDOWN_CASE | COOLDOWN_WITHOUT_PRESENTATION_CASE
+    );
+    let has_observer = !matches!(case, 1 | 5 | 6) && !starts_in_protection_zone;
     if has_observer {
         observer::admit(&h).await?;
     }
@@ -110,7 +122,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         pin.identity().client_artifact_digest(),
         room.frame_binding().digest(),
         room.map_revision_digest(),
-        if cooldown_cast_replay_case {
+        if starts_in_protection_zone {
             (12, 14, -7) // Walkable, ground-only protection-zone tile in the pinned Thalom map.
         } else {
             (2, 11, -7)
@@ -134,7 +146,13 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
     owner.admit_progression_session(&mut admitted).await;
     let progression = owner.progression_binding(session).ok_or("progression")?;
     let formula = native.training_formula().ok_or("training")?;
-    let druid = convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
+    let vocation = if case == PROTECTION_ZONE_CASE {
+        "sorcerer"
+    } else {
+        "druid"
+    };
+    let build = convert_vocation(formula, &DurableBuildState::default(), vocation).map_err(debug)?;
+    let cast_vocation = crate::spell::Vocation::from_key(vocation).ok_or("caster vocation")?;
     h.root
         .commit_character_build(
             &authority,
@@ -144,7 +162,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
                 cause: BuildCause::VocationChoice,
                 before: DurableBuildState::default(),
-                after: druid.clone(),
+                after: build.clone(),
                 pruned_stance: None,
             },
             formula,
@@ -229,6 +247,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     actor,
                     session,
                     crate::spell::cast::CharacterCastFacts {
+                        vocation: cast_vocation,
                         level: 20,
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
@@ -237,11 +256,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 )
                 .is_some()
         );
-        assert!(states.load_owned_build(&runtime, actor, session, &druid));
+        assert!(states.load_owned_build(&runtime, actor, session, &build));
         states
             .get_mut(&runtime, actor, session)
             .ok_or("caster")?
-            .enable_owned_training(&druid, formula)
+            .enable_owned_training(&build, formula)
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
@@ -367,12 +386,17 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         drop(seal);
         return h.cleanup().await;
     }
-    if cooldown_cast_replay_case {
-        cooldown_cast_replay::check(&owner, admitted, native.spell_book(), case == COOLDOWN_CASE).await?;
+    if starts_in_protection_zone {
+        let result = if case == PROTECTION_ZONE_CASE {
+            cooldown_cast_replay::check_protection_zone(&owner, admitted, native.spell_book()).await
+        } else {
+            cooldown_cast_replay::check(&owner, admitted, native.spell_book(), case == COOLDOWN_CASE)
+                .await
+        };
         drop(owner);
         drop(authority);
         drop(seal);
-        return h.cleanup().await;
+        return result.and(h.cleanup().await);
     }
     if (101..=108).contains(&case) {
         cooldowns::exercise(&owner, admitted, native.spell_book(), case).await?;
@@ -793,5 +817,6 @@ mod cooldown_cast_replay;
 #[path = "parameter_spell/cooldowns.rs"]
 mod cooldowns;
 
+const PROTECTION_ZONE_CASE: u8 = 252;
 pub(super) const COOLDOWN_WITHOUT_PRESENTATION_CASE: u8 = 253;
 pub(super) const COOLDOWN_CASE: u8 = 254;

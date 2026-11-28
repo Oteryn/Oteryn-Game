@@ -101,6 +101,16 @@ where
         }
         session.admitted.continuity.vitals_revision = to;
     }
+    if outcome.disposition == SpellCastDisposition::Rejected {
+        tutorial_notices_transport::emit(
+            stream,
+            authority,
+            &mut session.admitted,
+            &mut session.sequence,
+        )
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
+    }
     Ok(())
 }
 
