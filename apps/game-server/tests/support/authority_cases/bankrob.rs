@@ -75,6 +75,25 @@ async fn hourly(h: &fixture::Harness) -> fixture::TestResult {
         "SELECT state,last_checked_hour FROM game_bank_robbery_occurrences WHERE reset_epoch=1",
     ).fetch_one(&h.pool).await?;
     assert_eq!(pending, (0, 0));
+    sqlx::query(
+        "UPDATE game_bank_robbery_occurrences SET boot_ms=boot_ms-3600000 WHERE reset_epoch=1",
+    )
+    .execute(&h.pool)
+    .await?;
+    assert!(
+        bank_robbery::with_test_roll(
+            "thais",
+            h.root.poll_bank_robbery(&authority, &h.node, scope, generation, 1, [false; 4]),
+        )
+        .await?
+        .is_none()
+    );
+    let pending: (i16, i64) = sqlx::query_as(
+        "SELECT state,last_checked_hour FROM game_bank_robbery_occurrences WHERE reset_epoch=1",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(pending, (0, 1));
     let first = bank_robbery::with_test_roll(
         "thais",
         h.root
@@ -154,6 +173,6 @@ async fn hourly(h: &fixture::Harness) -> fixture::TestResult {
     assert_eq!(replay.city.key, "thais");
     let last_hour: i64 = sqlx::query_scalar("SELECT last_checked_hour FROM game_bank_robbery_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
         .bind(world.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(last_hour, 1);
+    assert_eq!(last_hour, 2);
     Ok(())
 }

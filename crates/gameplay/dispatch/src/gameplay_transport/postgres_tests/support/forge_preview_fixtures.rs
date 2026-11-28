@@ -78,6 +78,9 @@ pub(super) async fn exercise(
             (104, "oteryn:item.tibia.i3043", 3, 0),
             (105, EXALTED_CORE_KEY, 2, 0),
             (106, FORGE_SLIVER_KEY, 17, 0),
+            (107, "oteryn:item.tibia.i25973", 1, 0),
+            (108, "oteryn:item.tibia.i3208", 1, 0),
+            (109, "oteryn:item.tibia.i3309", 1, 0),
         ],
     )
     .await?;
@@ -115,10 +118,29 @@ pub(super) async fn exercise(
             ),
             (300, 300, 2, 17)
         );
+        assert_eq!(page.items.iter().filter(|item| !item.container).count(), 5);
+        for (appearance, classification, maximum_tier) in
+            [(25973, 1, 1), (3208, 2, 2), (3309, 4, 10)]
+        {
+            let item = page
+                .items
+                .iter()
+                .find(|item| item.appearance == appearance)
+                .ok_or_else(|| format!("missing Forge candidate {appearance}"))?;
+            assert_eq!(
+                (
+                    item.container,
+                    item.classification,
+                    item.tier,
+                    item.maximum_tier
+                ),
+                (false, classification, 0, maximum_tier)
+            );
+        }
         let swords = page
             .items
             .iter()
-            .filter(|item| !item.container)
+            .filter(|item| !item.container && item.appearance == 3264)
             .collect::<Vec<_>>();
         assert_eq!(swords.len(), 2);
         assert!(swords.iter().all(|item| !item.name.is_empty()

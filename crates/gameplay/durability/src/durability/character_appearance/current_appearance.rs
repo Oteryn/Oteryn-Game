@@ -1,5 +1,6 @@
 //! Current appearance state loaded under recovery, admission and Character fences.
 use super::*;
+use crate::durability::db::commit_semantic_read;
 #[path = "current_appearance/house_fence.rs"]
 mod house_fence;
 use house_fence::observe_house_root;
@@ -44,8 +45,14 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel { gallery: false })
-            .await
+        self.read_appearance_state_in_scope(
+            authority,
+            node,
+            fence,
+            grant_keys,
+            ReadScope::Channel { gallery: false },
+        )
+        .await
     }
 
     /// Observe durable appearance grants and familiar looks under one current Character fence.
@@ -56,8 +63,14 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         grant_keys: Vec<String>,
     ) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
-        self.read_appearance_state_in_scope(authority, node, fence, grant_keys, ReadScope::Channel { gallery: true })
-            .await
+        self.read_appearance_state_in_scope(
+            authority,
+            node,
+            fence,
+            grant_keys,
+            ReadScope::Channel { gallery: true },
+        )
+        .await
     }
 
     /// Read-only House projection. The native named-House proof replaces only the Channel
@@ -104,7 +117,7 @@ impl DurabilityRoot {
         let node = node.clone();
         let pass = match scope {
             ReadScope::Channel { gallery: false } => self.try_issue_semantic_pass_by(
-                std::time::Instant::now() + std::time::Duration::from_secs(1),
+                tokio::time::Instant::now() + std::time::Duration::from_secs(1),
             )?,
             _ => self.try_issue_semantic_pass()?,
         };
@@ -170,7 +183,7 @@ impl DurabilityRoot {
                     } else {
                         Vec::new()
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(CurrentCharacterAppearance { sex, selected, earned, earned_sources, familiar_looks }))
                 })
             })

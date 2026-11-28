@@ -218,7 +218,9 @@ impl<S: SessionStream> Session<S> {
                 self.read_sequenced_push("CommandResult").await?;
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
-                let event = self.apply_state_delta(server_sequence, &result_payload)?;
+                let event = self
+                    .apply_pushed_delta(server_sequence, &result_payload)
+                    .await?;
                 self.queue_event(event)?;
                 continue;
             }
@@ -280,9 +282,16 @@ impl<S: SessionStream> Session<S> {
             let (server_sequence, payload) = self
                 .read_sequenced("StateDelta", MessageType::StateDelta)
                 .await?;
-            let event = self.apply_state_delta(server_sequence, &payload)?;
+            let event = self.apply_pushed_delta(server_sequence, &payload).await?;
             if event.domain_id() == domain_id {
                 return Ok(event);
+            }
+            if domain_id == actor_spell::STATE_DOMAIN_ACTOR_VITALS
+                && let SessionEvent::GiftOfLife { vitals, .. } = &event
+            {
+                let claimed = vitals.clone();
+                self.queue_event(event)?;
+                return Ok(SessionEvent::ActorVitals(claimed));
             }
             self.queue_event(event)?;
         }
@@ -324,7 +333,7 @@ impl<S: SessionStream> Session<S> {
                         actual: delta.domain_id,
                     });
                 }
-                let event = self.apply_state_delta(server_sequence, &payload)?;
+                let event = self.apply_pushed_delta(server_sequence, &payload).await?;
                 self.queue_event(event)?;
                 continue;
             }

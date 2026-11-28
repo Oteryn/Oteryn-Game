@@ -29,6 +29,7 @@
 
 use super::db::{IssuedSemanticPass, begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -202,7 +203,7 @@ impl DurabilityRoot {
             let mut waiter = None;
             loop {
                 attempt = attempt.saturating_add(1);
-                let result = self.try_issue_semantic_pass_by(deadline.into_std());
+                let result = self.try_issue_semantic_pass_by(deadline);
                 self.premium_checkout_attempt(attempt, started.elapsed(), result.is_ok());
                 match result {
                     Err(DurabilityError::RootUnavailable) => {
@@ -246,25 +247,48 @@ impl DurabilityRoot {
     }
 
     /// Premium keeps its own authority sequence; Profile-B contributes only a durable deny floor.
-    pub async fn accept_premium_with_profile_b_hint(&self,evidence:&PremiumEvidence)->Result<(PremiumFenceOutcome,u64),DurabilityError>{
-        let evidence=evidence.clone();
-        self.checkout_premium_snapshot().await?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let outcome=accept(&mut tx,&evidence).await?;
-            let hint=profile_b_hint(&mut tx,evidence.account_id).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok((outcome,hint))
-        })).await
+    pub async fn accept_premium_with_profile_b_hint(
+        &self,
+        evidence: &PremiumEvidence,
+    ) -> Result<(PremiumFenceOutcome, u64), DurabilityError> {
+        let evidence = evidence.clone();
+        self.checkout_premium_snapshot()
+            .await?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let outcome = accept(&mut tx, &evidence).await?;
+                    let hint = profile_b_hint(&mut tx, evidence.account_id).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok((outcome, hint))
+                })
+            })
+            .await
     }
-    pub async fn load_premium_with_profile_b_hint(&self,account:[u8;16])->Result<(PremiumAccountRecord,u64),DurabilityError>{
-        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let record=match account_fence(&mut tx,account,false).await? {
-                Some((high,conflicting))=>PremiumAccountRecord{fence:Some(view(&mut tx,account,high,conflicting).await?),conflicting},
-                None=>PremiumAccountRecord{fence:None,conflicting:semantic_conflict(&mut tx,account).await?},
-            };
-            let hint=profile_b_hint(&mut tx,account).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok((record,hint))
-        })).await
+    pub async fn load_premium_with_profile_b_hint(
+        &self,
+        account: [u8; 16],
+    ) -> Result<(PremiumAccountRecord, u64), DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let record = match account_fence(&mut tx, account, false).await? {
+                        Some((high, conflicting)) => PremiumAccountRecord {
+                            fence: Some(view(&mut tx, account, high, conflicting).await?),
+                            conflicting,
+                        },
+                        None => PremiumAccountRecord {
+                            fence: None,
+                            conflicting: semantic_conflict(&mut tx, account).await?,
+                        },
+                    };
+                    let hint = profile_b_hint(&mut tx, account).await?;
+                    commit_semantic_read(tx, deadline).await?;
+                    Ok((record, hint))
+                })
+            })
+            .await
     }
 
     /// Record one unsupported response (PREMIUM-DELIVERY-0 §3.1 rule 2): the account's durable
@@ -275,7 +299,8 @@ impl DurabilityRoot {
         failure: &PremiumSemanticFailure,
     ) -> Result<(), DurabilityError> {
         let failure = failure.clone();
-        self.checkout_premium_snapshot().await?
+        self.checkout_premium_snapshot()
+            .await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -307,7 +332,7 @@ impl DurabilityRoot {
                             conflicting: semantic_conflict(&mut tx, account_id).await?,
                         },
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(record)
                 })
             })
@@ -316,9 +341,11 @@ impl DurabilityRoot {
 }
 
 /// Serialize every Premium write of one account, whether or not it has a fence row yet.
-async fn profile_b_hint(tx:&mut Tx<'_>,account:[u8;16])->Result<u64,DurabilityError>{
+async fn profile_b_hint(tx: &mut Tx<'_>, account: [u8; 16]) -> Result<u64, DurabilityError> {
     // Non-native fixture/compatibility identities cannot occur in the UUIDv7-only B2 feed.
-    if account[6]>>4!=7||account[8]&0xc0!=0x80 {return Ok(0);}
+    if account[6] >> 4 != 7 || account[8] & 0xc0 != 0x80 {
+        return Ok(0);
+    }
     let floor:Option<i64>=sqlx::query_scalar("SELECT hint_revision FROM game_profile_b_products WHERE account_id=encode($1,'hex')::uuid AND product_id='oteryn.premium_time' AND product_version=1").bind(account.as_slice()).fetch_optional(&mut **tx).await?;
     Ok(floor.unwrap_or(0) as u64)
 }

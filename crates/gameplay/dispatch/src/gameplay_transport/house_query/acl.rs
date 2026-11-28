@@ -63,25 +63,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 HouseManagementList::Door { x, y, floor }
             }
         };
-        match self
-            .root
-            .read_house_acl(
-                self.character,
-                self.holder,
-                fence,
-                house,
-                list,
-                content_digest,
-            )
-            .await
+        match super::super::house_intent::retry_management(self.root, async || {
+            self.root
+                .read_house_acl(
+                    self.character,
+                    self.holder,
+                    fence,
+                    house.clone(),
+                    list,
+                    content_digest,
+                )
+                .await
+        })
+        .await
         {
             Ok(view) => wire::encode_house_acl_snapshot(&wire::HouseAclSnapshot {
                 revision: view.revision,
                 members: view.members,
             })
             .ok(),
-            Err(crate::durability::house_management::HouseManagementError::Unavailable(_)) => None,
-            Err(_) => refuse(),
+            Err(error) => super::super::house_intent::reply(Err(error)),
         }
     }
 }

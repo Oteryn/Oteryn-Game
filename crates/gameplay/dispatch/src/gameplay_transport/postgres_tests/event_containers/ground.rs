@@ -5,12 +5,14 @@ use serde_json::Value;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Case {
     Anniversary,
+    Christmas,
     Special,
 }
 impl Case {
     fn key(self) -> &'static str {
         match self {
             Self::Anniversary => "oteryn:item.tibia.i39710",
+            Self::Christmas => "oteryn:item.tibia.i6508",
             Self::Special => "oteryn:item.tibia.i37457",
         }
     }
@@ -19,6 +21,11 @@ impl Case {
 #[test]
 fn w19_ground_event_container_anniversary_defers_to_sp04() -> TestResult {
     run_case(Case::Anniversary)
+}
+
+#[test]
+fn cach1_ground_christmas_bundle_counts_only_the_committed_open() -> TestResult {
+    run_case(Case::Christmas)
 }
 
 #[test]
@@ -175,7 +182,13 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, 2)]).await?;
+        let christmas = case == Case::Christmas;
+        let santa = "oteryn:achievement/santa_s_li_l_helper";
+        if christmas {
+            super::super::achievement_granters::seed_progress(&harness, santa, 24).await?;
+        }
+        let quantity = if christmas { 1 } else { 2 };
+        super::super::item_look_fixtures::seed_main_backpack(&harness, &[(key, quantity)]).await?;
         let source = id(71);
         assert!(oteryn_gameplay_items::reward_bag::is_reward_bag(key));
         assert!(oteryn_gameplay_items::event_items::is_event_reward(key));
@@ -210,7 +223,11 @@ fn scenario(case: Case) -> TestResult {
             id(79).as_slice(),
         ]
         .concat();
-        for ordinal in 0..if case == Case::Special { 63 } else { 7 } {
+        for ordinal in 0..match case {
+            Case::Anniversary => 7,
+            Case::Christmas => 14,
+            Case::Special => 63,
+        } {
             let item: String = sqlx::query_scalar(
                 "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i3588','definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id::text",
             ).bind(id(42).as_slice()).fetch_one(&mut *tx).await?;
@@ -332,7 +349,14 @@ fn scenario(case: Case) -> TestResult {
         ).ok_or("ground source definition")?;
         let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), 2, source);
         let expected = reward_bag_conversion(native, &definition, draw).ok_or("ground conversion")?;
-        assert_eq!(expected.outputs.len(), if drops_reward { 1 } else { 14 });
+        assert_eq!(
+            expected.outputs.len(),
+            match case {
+                Case::Anniversary => 14,
+                Case::Christmas => 7,
+                Case::Special => 1,
+            }
+        );
         let (recipe, mut outputs): (String, Vec<(String, i64)>) = {
             let (recipe, receipt_outputs): (String, Value) = sqlx::query_as(
                 "SELECT recipe,outputs FROM game_item_consume_transform_records WHERE command_id=2",
@@ -403,6 +427,25 @@ fn scenario(case: Case) -> TestResult {
             "SELECT (SELECT count(*) FROM game_item_consume_transform_records), (SELECT count(*) FROM game_item_craft_records), (SELECT count(*) FROM game_item_audit_outbox)",
         ).fetch_one(&harness.pool).await?;
         assert_eq!(counts, (1, 0, 1), "one ground receipt and audit, no carried craft");
+        if christmas {
+            let granted = super::super::achievement_granters::assert_progress(
+                &harness,
+                santa,
+                25,
+                true,
+                "oteryn:consume-transform",
+            )
+            .await?;
+            let event: String = sqlx::query_scalar(
+                "SELECT event_id::text FROM game_item_consume_transform_records",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(
+                granted.as_ref().map(|(_, event, _)| event.as_slice()),
+                Some(event.as_bytes())
+            );
+        }
         eprintln!(
             "W19 POSTGRES_CASE_COMPLETED mode=POSTGRES ground_reward case={case:?} sp04_owner=true refusal=true replay=true"
         );

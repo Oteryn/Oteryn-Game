@@ -8,11 +8,12 @@
 //! 4. QUERY again: the rotated target must be listed with a newer revision (the state delta).
 //! 5. Log out, freshly admit, QUERY: the durable revision equals the one seen after the rotate.
 //!
-//! The shared G01 fixture settles the authored property through its owner. The journey
-//! proves ownership from the served catalogue before entering through the live doorway.
+//! The G01 fixture settles the authored house through its owner. Control assigns the scope
+//! to the serving node before the live journey enters through the authored doorway.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::house_rotation as wire;
+use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -77,22 +78,79 @@ async fn first_entry(client: &mut DevClientSession) -> TestResult<Option<wire::E
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, _, _) = fixture_logout_retrying_busy(client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
+    }
+    Ok(())
+}
+
+async fn assign_fixture_scope(clients: &SeamClients<'_>) -> TestResult {
+    use crate::durability::house_scope_handoff::{
+        HouseId, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome,
+        HouseScopeAssignmentRequest,
+    };
+    use crate::durability::runtime_scope_assignment::{
+        ControlActor, NodeRegistrationFact, OperationKey,
+    };
+    use full_row_g01::HOUSE;
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let (node, revision, role): (Vec<u8>, String, String) = sqlx::query_as(
+        "SELECT uuid_send(holder_node_id),holder_registration_revision::text,session_user::text
+         FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid
+           AND channel_id=encode($2,'hex')::uuid AND state=1",
+    )
+    .bind(clients.world.as_slice())
+    .bind(clients.channel.as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    let house =
+        HouseId::new(WorldId::decode(&clients.world)?, HOUSE).ok_or("G07 House identity")?;
+    sqlx::query(
+        "INSERT INTO game_control_house_scope_grants(control_role,world_id,house_key,operation)
+         VALUES(session_user,encode($1,'hex')::uuid,$2,1) ON CONFLICT DO NOTHING",
+    )
+    .bind(clients.world.as_slice())
+    .bind(HOUSE)
+    .execute(&mut database)
+    .await?;
+    let target =
+        NodeRegistrationFact::new(crate::foundation::NodeId::decode(&node)?, revision.parse()?);
+    let root = crate::durability::DurabilityRoot::connect_test_runtime(clients.url)?;
+    root.maintain_ready_once().await?;
+    let request = HouseScopeAssignmentRequest {
+        operation_key: OperationKey::from_bytes([0xc9; 32]),
+        actor: ControlActor::new(&role).map_err(|error| format!("G07 Control actor: {error:?}"))?,
+        actor_role: role,
+        command: HouseScopeAssignmentCommand::Assign { house, target },
+    };
+    let outcome = root
+        .assign_house_scope(request)
+        .await
+        .map_err(|error| format!("G07 scope assignment: {error:?}"))?;
+    if !matches!(
+        outcome,
+        HouseScopeAssignmentOutcome::Committed(_) | HouseScopeAssignmentOutcome::Replayed
+    ) {
+        return Err(format!("G07 scope assignment refused: {outcome:?}").into());
     }
     Ok(())
 }
 
 async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    use full_row_g01::HOUSE;
     use oteryn_dev_client::client_runtime::house_transfer as transfer;
     let world = full_e2ef7::qualification_world(clients)?;
-    // Authored Upper Swamp Lane 4 entry is the tile outside its south-adjacent door.
+    let house = full_row_g01::authored_house()?;
+    let coordinate = |name| {
+        house["entrance"][name]
+            .as_u64()
+            .ok_or("G07 authored entrance coordinate")
+    };
     let entrance = TilePos {
-        x: 32360,
-        y: 32252,
-        floor: -7,
+        x: u16::try_from(coordinate("x")?)?,
+        y: u16::try_from(coordinate("y")?)?,
+        floor: -i8::try_from(coordinate("z")?)?,
     };
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at == entrance
@@ -102,9 +160,9 @@ async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -
     evidence("G07_CHECK step=authored-house-entrance status=PASS");
     let request = transfer::encode_house_transfer_intent(&transfer::HouseTransferIntent {
         exit: false,
-        house: full_row_g01::HOUSE.into(),
+        house: HOUSE.into(),
     })
-    .map_err(|error| format!("step=house-entry encoding={error:?}"))?;
+    .map_err(|error| format!("G07 house entry encoding: {error:?}"))?;
     let reply = client
         .session_mut()
         .gated_command(
@@ -119,8 +177,7 @@ async fn enter_house(client: &mut DevClientSession, clients: &SeamClients<'_>) -
             reply.status
         )
     })?;
-    if reply.status != CommandStatus::Accepted || ack.house.as_deref() != Some(full_row_g01::HOUSE)
-    {
+    if reply.status != CommandStatus::Accepted || ack.house.as_deref() != Some(HOUSE) {
         return Err("step=house-entry observed=missing-authorized-house-scope".into());
     }
     evidence("G07_CHECK step=house-transfer status=PASS");
@@ -136,6 +193,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G01_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
     let mut client = full_row_g01::prepare_owned_house(clients, 0xc9).await?;
+    assign_fixture_scope(clients).await?;
     if !client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1)
@@ -174,7 +232,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xca, 0).await?;
-    enter_house(&mut fresh, clients).await?;
+    // Fresh admission may restore the saved House scope. Enter from the
+    // authored door only when the join snapshot is in the Channel.
+    if fresh
+        .session_mut()
+        .gated_snapshot(oteryn_protocol_oteryn::house_transfer::STATE_DOMAIN_HOUSE_SCOPE)
+        .is_none()
+    {
+        enter_house(&mut fresh, clients).await?;
+    }
     let durable = first_entry_with(&mut fresh, &key).await;
     logout(&mut fresh).await?;
     if durable? != after {

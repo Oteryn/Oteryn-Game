@@ -122,35 +122,46 @@ def ground_records(identifiers, root=ROOT):
     return records
 
 
-def outputs(root=ROOT):
-    [record] = ground_records([IDENTIFIER], root)
-    if record["ground_speed"]["value"] != 150:
-        raise ValueError("Summer ground differs from the accepted appearance")
+def outputs_for(root, ground_speeds, shard, marker_note):
+    records = ground_records(ground_speeds, root)
+    if any(
+        row["ground_speed"]["value"]
+        != ground_speeds[row["provenance"]["source_item_id"]]
+        for row in records
+    ):
+        raise ValueError("Ground speed differs from the accepted appearance")
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    if any(row["external_id"] == str(IDENTIFIER) for row in bindings["bindings"]):
+    external_ids = set(map(str, ground_speeds))
+    if any(row["external_id"] in external_ids for row in bindings["bindings"]):
         raise ValueError("appearance-only ground unexpectedly has an Item binding")
     index_path = "content/world/placements/index.json"
     index = json.loads((root / index_path).read_bytes())
-    selected = [row for row in index["palette"] if row["source_item_id"] == IDENTIFIER]
-    if len(selected) != 1:
-        raise ValueError("Summer ground must have one stable palette position")
-    selected[0].update(key=KEY, provisional=False)
+    for record in records:
+        item = record["provenance"]["source_item_id"]
+        selected = [row for row in index["palette"] if row["source_item_id"] == item]
+        if len(selected) != 1:
+            raise ValueError(f"ground {item} must have one stable palette position")
+        selected[0].update(key=record["identity"]["key"], provisional=False)
     encode = lambda value: (
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         + "\n"
     ).encode()
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((root / marker_path).read_bytes())
-    if MARKER_NOTE not in marker["notes"]:
-        marker["notes"] += MARKER_NOTE
+    if marker_note not in marker["notes"]:
+        marker["notes"] += marker_note
     marker_bytes = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     return {
-        SHARD: encode({"family": "Terrain", "records": [record]}),
+        shard: encode({"family": "Terrain", "records": records}),
         index_path: encode(index),
         marker_path: marker_bytes,
     }
+
+
+def outputs(root=ROOT, *, identifiers=(IDENTIFIER,), shard=SHARD, note=MARKER_NOTE):
+    return outputs_for(root, dict.fromkeys(identifiers, 150), shard, note)
 
 
 def main():

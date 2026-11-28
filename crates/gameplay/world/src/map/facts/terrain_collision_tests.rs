@@ -175,7 +175,7 @@ fn door_poses_preserve_independent_crystal_collision_flags() {
             door: flags.door,
         })
     };
-    for (id, initially_locked, starts_open, open_solid, open_blocks_projectile) in [
+    for (id, initially_locked, expected_open, open_solid, open_blocks_projectile) in [
         (1631, true, false, false, false),
         (1632, false, false, false, false),
         (1633, false, true, false, false),
@@ -184,10 +184,12 @@ fn door_poses_preserve_independent_crystal_collision_flags() {
         (8352, false, false, false, true),
         (12249, false, false, true, false),
     ] {
-        let pose = palette_door(&format!("oteryn:item.tibia.i{id}"), &items);
+        let closed = crate::map::door_registry::closed_of(id).unwrap_or(id);
+        let pose = palette_door(&format!("oteryn:item.tibia.i{id}"), id, closed, &items);
         assert!(
-            matches!(pose, PaletteDoor::Pair { locked, authored_closed, open, open_solid: solid, key_forms, .. }
-                if locked == initially_locked && authored_closed.is_some() == starts_open
+            matches!(pose, PaletteDoor::Pair { locked, starts_open, close_pose, open, open_solid: solid, key_forms, .. }
+                if locked == initially_locked && starts_open == expected_open
+                    && (!starts_open || close_pose.is_some())
                     && solid == open_solid && open.blocks_projectile == open_blocks_projectile
                     && key_forms.is_some() == (id != 12249)),
             "Crystal door {id} has unexpected pose {pose:?}"

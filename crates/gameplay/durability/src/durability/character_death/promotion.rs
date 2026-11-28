@@ -1,4 +1,5 @@
 //! Per-death Premium is evaluated in the fenced death transaction, never at login.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use std::{future::Future, pin::Pin};
 
@@ -113,7 +114,7 @@ pub(super) async fn held_blessings(
         if let Err(error)=crate::durability::character_progression::assert_item_only_fence(&mut tx,&fence.item_fence(),&node).await? {return Ok(Err(error));}
         let held=sqlx::query_scalar("SELECT blessing_key COLLATE \"C\" FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid ORDER BY 1 LIMIT 33")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
-        commit_semantic_transaction(tx,deadline).await?;
+        commit_semantic_read(tx,deadline).await?;
         Ok(Ok(held))
     })).await?
 }

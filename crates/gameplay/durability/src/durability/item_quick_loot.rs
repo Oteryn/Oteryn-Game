@@ -565,7 +565,7 @@ fn destination_row((category, target): (Option<LootCategory>, Recipient<[u8; 16]
     QuickLootDestination { category, recipient, recipient_id }
 }
 
-pub(super) fn preferred_category<C: ItemLoopContent>(
+pub(in super::super) fn preferred_category<C: ItemLoopContent>(
     content: &C,
     definition: &TypedDefinitionRef,
     assigned: impl FnOnce(LootCategory) -> bool,

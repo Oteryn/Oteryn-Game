@@ -73,7 +73,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         command_id: u64,
         modes: ExpertFightModes,
-    ) -> AttackIntentDisposition {
+    ) -> Result<AttackIntentDisposition, DurabilityError> {
         super::AdmissionRetryBudget::for_holder_window(
             self.root,
             super::AdmissionRetryBudget::holder_wait_window(),
@@ -87,7 +87,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             |error| matches!(error, DurabilityError::RootUnavailable),
         )
         .await
-        .unwrap_or(AttackIntentDisposition::Rejected)
     }
 
     async fn try_set_expert_fight_modes(
@@ -97,10 +96,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         mut modes: ExpertFightModes,
     ) -> Result<AttackIntentDisposition, DurabilityError> {
-        let permit = self
-            .spell_lane_permit()
-            .await
-            .ok_or(DurabilityError::Unavailable)?;
+        let permit = self.try_spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         if states.get(&runtime, actor, session).is_none() {

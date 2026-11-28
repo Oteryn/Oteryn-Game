@@ -3,12 +3,11 @@
 //! is fenced like any session read and never writes, enforces or derives a sanction.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::assert_session_fence;
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, lock_admission_relations};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use oteryn_protocol_oteryn::sanction_record as wire;
 use sqlx::Row;
 
@@ -93,7 +92,7 @@ impl DurabilityRoot {
                         .collect::<Result<Vec<_>, sqlx::Error>>()?;
                     let bytes =
                         encode_own_record(rows).ok_or(DurabilityError::InvalidStoredState)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(bytes))
                 })
             })

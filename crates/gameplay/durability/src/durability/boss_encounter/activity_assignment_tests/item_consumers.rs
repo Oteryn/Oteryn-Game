@@ -3,7 +3,7 @@
 use super::{TestResult, fixture, id};
 use crate::durability::character_authority::assert_recovery_fence;
 use crate::durability::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, lock_admission_relations,
 };
 use crate::durability::item_transfer::{
     CurrentCharacterItemFence, character_item_fence_is_current, character_item_fence_without_root,
@@ -53,7 +53,7 @@ async fn item_fences(
                     reserved_channel,
                 )
                 .await?;
-                commit_semantic_transaction(tx, deadline).await?;
+                commit_semantic_read(tx, deadline).await?;
                 Ok((session, root))
             })
         })

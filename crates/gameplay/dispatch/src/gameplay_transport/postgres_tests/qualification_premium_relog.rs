@@ -145,6 +145,7 @@ fn scenario() -> TestResult {
                 provision::QualificationBuildSpec {
                     vocation: "monk",
                     level: 8,
+                    exact_level: false,
                     context: policy.context.clone(),
                     xp_occurrence: id(183),
                     build_occurrence: id(184),

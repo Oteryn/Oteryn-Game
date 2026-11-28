@@ -270,6 +270,103 @@ pub(in crate::gameplay_transport) async fn dispatch<A: FreshAdmissionAuthority>(
     };
     authority.appearance_change(actor, command, change).await
 }
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) struct RegressionAppearanceWire {
+    appearances: SessionAppearance,
+    view: SessionVisibility,
+    admitted: AdmittedSession,
+    cursor: (u64, u64),
+}
+
+#[cfg(test)]
+impl RegressionAppearanceWire {
+    pub(in crate::gameplay_transport) async fn initial(
+        authority: &impl FreshAdmissionAuthority,
+        admitted: AdmittedSession,
+    ) -> Option<(Self, Vec<WorldSpatialEntity>, Vec<wire::Binding>)> {
+        use oteryn_protocol_oteryn::world_spatial_entities::*;
+        let actor = admitted.runtime_actor?;
+        let selected = admitted.continuity.selected_capabilities;
+        let channel = authority
+            .observe_projected_entities(actor, selected)
+            .await
+            .ok()?;
+        let mut state = Self {
+            appearances: SessionAppearance::new(selected),
+            view: SessionVisibility::default(),
+            admitted,
+            cursor: (admitted.continuity.server_sequence, 1),
+        };
+        let (kind, spatial) = state
+            .appearances
+            .initial(authority, actor, &admitted, &mut state.view, &channel, None)
+            .await?;
+        if kind != SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2 {
+            return None;
+        }
+        let spatial = decode_world_spatial_entities_snapshot_with_fields(
+            &spatial,
+            EntityFields::selected(selected.as_slice()),
+        )
+        .ok()?;
+        let appearance = wire::Snapshot::decode(state.appearances.snapshot.as_deref()?).ok()?;
+        Some((state, spatial.0.entities, appearance.bindings))
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh(
+        &mut self,
+        authority: &impl FreshAdmissionAuthority,
+    ) -> Option<(Vec<WorldSpatialEntity>, Vec<wire::Binding>)> {
+        use oteryn_protocol_oteryn::world_spatial_entities::*;
+        let actor = self.admitted.runtime_actor?;
+        let selected = self.admitted.continuity.selected_capabilities;
+        let channel = authority
+            .observe_projected_entities(actor, selected)
+            .await
+            .ok()?;
+        let mut stream = Vec::new();
+        self.cursor = self
+            .appearances
+            .refresh_result(
+                &mut stream,
+                authority,
+                actor,
+                &mut self.admitted,
+                &mut self.view,
+                &channel,
+                None,
+                self.cursor,
+                true,
+            )
+            .await
+            .ok()?;
+        let mut peer = stream.as_slice();
+        let mut upserts = Vec::new();
+        while !peer.is_empty() {
+            let frame = read_frame(&mut peer).await.ok()?;
+            let envelope = decode_wire_envelope(&frame).ok()?;
+            let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).ok()?;
+            match (delta.domain_id, delta.delta_type) {
+                (wire::STATE_DOMAIN_APPEARANCE, wire::DELTA_TYPE_APPEARANCE_MAPPINGS) => {
+                    upserts.extend(wire::Mappings::decode(delta.payload).ok()?.upserts);
+                }
+                (STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, DELTA_TYPE_WORLD_SPATIAL_ENTITIES_V2) => {
+                    let spatial = decode_world_spatial_entities_delta_with_fields(
+                        delta.payload,
+                        EntityFields::selected(selected.as_slice()),
+                    )
+                    .ok()?
+                    .0;
+                    return Some((spatial.update, upserts));
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+}
+
 pub(super) fn result(result: wire::ChangeResult) -> Option<(CommandStatus, Vec<u8>)> {
     Some((
         if matches!(result, wire::ChangeResult::Committed(_)) {

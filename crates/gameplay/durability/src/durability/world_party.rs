@@ -1076,7 +1076,7 @@ impl super::DurabilityRoot {
                 .into_iter()
                 .map(|id| id.try_into().map_err(|_| super::DurabilityError::InvalidStoredState))
                 .collect::<std::result::Result<Vec<_>, _>>()?;
-                super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(roster)
             })
         }).await
@@ -1117,7 +1117,7 @@ impl super::DurabilityRoot {
                     )
                     .await
                     .map_err(|_| super::DurabilityError::Unavailable)?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(views)
                 })
             })

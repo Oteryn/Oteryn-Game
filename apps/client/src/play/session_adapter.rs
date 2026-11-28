@@ -348,6 +348,9 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
         oteryn_client_runtime::raw_feature::send(self, command).await
     }
+    fn actor_cooldown_snapshot(&self) -> Option<oteryn_session::ActorCooldownUpdate> {
+        Session::actor_cooldown_snapshot(self).cloned()
+    }
     fn feature_snapshot(&self, domain: u32) -> Option<Vec<u8>> {
         self.gated_snapshot(domain)
             .map(|snapshot| snapshot.payload.clone())

@@ -128,7 +128,7 @@ where
             session,
             command,
             dispatch,
-            result,
+            (Vec::new(), result),
             CommandOutcome {
                 second_logout: false,
                 lost_while_logging_out: false,
@@ -408,6 +408,19 @@ where
     if matches!(dispatch, Dispatch::Vip(None)) {
         return Err(ServeEnd::Disconnected);
     }
+    let cast_revision = match &dispatch {
+        Dispatch::Spell(cast) | Dispatch::ParameterSpell(cast, _) => {
+            cast.vitals.map(|(revision, _)| revision)
+        }
+        _ => None,
+    };
+    let cooldown_frames = cooldowns::frames(
+        authority,
+        session.cooldowns.as_ref(),
+        &mut session.admitted.continuity,
+        cast_revision,
+    )?;
+    session.sequence = session.admitted.continuity.server_sequence;
     let Some(result_sequence) = session.sequence.checked_add(1) else {
         return Err(ServeEnd::Disconnected);
     };
@@ -431,6 +444,16 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => {
+                Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
+            }
+            oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
+            | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY => {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+                )
+            }
             oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT
                 if decode_logout_intent(command.payload).is_ok() =>
             {
@@ -454,7 +477,13 @@ where
         result::encode(session, command, &mut dispatch)?
     };
     outbound::finish(
-        stream, authority, session, command, dispatch, result, outcome,
+        stream,
+        authority,
+        session,
+        command,
+        dispatch,
+        (cooldown_frames, result),
+        outcome,
     )
     .await?;
     if no_path {

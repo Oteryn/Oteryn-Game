@@ -1,8 +1,7 @@
 //! G01: house controls in the production session (apps/client feature 0049-house).
 //! 1. Admit the node-boot character; require the HOUSE capability in the negotiated session.
-//! 2. Drive the native house panel (`client_ui::house`): query each town catalogue page.
-//! 3. Owned house: set the guest list through the panel, then re-query and require the ACL
-//!    revision to move; auction row: bid and require an accepted, decodable result.
+//! 2. Drive the native house panel (`client_ui::house`) and find the served owned row.
+//! 3. Set the guest list through the panel and re-query to prove the ACL revision advances.
 //! 4. Log out, freshly admit, re-query and require the durable ACL revision/ownership to agree.
 //!
 //! The disposable fixture prepares an ended authored auction. The live owner settles it.
@@ -13,8 +12,7 @@ use oteryn_dev_client::client_runtime::{
     raw_feature,
 };
 use oteryn_dev_client::client_ui::house as panel_ui;
-
-const TOWNS: [&str; 5] = ["thais", "carlin", "venore", "edron", "ab_dendriel"];
+use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
@@ -50,39 +48,58 @@ async fn send(
     Ok(reply)
 }
 
-/// Query every town until a catalogue page carries rows; returns the town key used.
-async fn catalogue(
-    client: &mut DevClientSession,
-    panel: &mut panel_ui::Panel,
-) -> TestResult<Option<String>> {
-    for town in TOWNS {
-        panel.town = format!("oteryn:content.area.city.{town}");
-        let reply = send(client, panel, None, false).await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(
-                format!("step=query town={town} observed=status:{:?}", reply.status).into(),
-            );
-        }
-        if !panel.page.rows.is_empty() {
-            return Ok(Some(panel.town.clone()));
-        }
+pub(super) fn authored_house() -> TestResult<serde_json::Value> {
+    let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../content/houses/houses-00500-00994.json"
+    ))?;
+    let house = catalogue["houses"]
+        .as_array()
+        .and_then(|houses| {
+            houses
+                .iter()
+                .find(|house| house["identity"]["key"] == HOUSE)
+        })
+        .ok_or("house fixture authored property missing")?;
+    Ok(house.clone())
+}
+
+pub(super) async fn fixture_character(
+    clients: &SeamClients<'_>,
+    account: &str,
+) -> TestResult<[u8; 16]> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let characters: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT uuid_send(character_id) FROM game_character_roots
+         WHERE account_id=$1::text::uuid AND world_id=encode($2,'hex')::uuid LIMIT 2",
+    )
+    .bind(account)
+    .bind(clients.world.as_slice())
+    .fetch_all(&mut database)
+    .await?;
+    let [character] = characters.as_slice() else {
+        return Err("expected one dedicated character in the qualification World".into());
+    };
+    Ok(character.as_slice().try_into()?)
+}
+
+async fn catalogue(client: &mut DevClientSession, panel: &mut panel_ui::Panel) -> TestResult {
+    let house = authored_house()?;
+    panel.town = house["town"]["key"]
+        .as_str()
+        .ok_or("house fixture town")?
+        .into();
+    let reply = send(client, panel, None, false).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=catalogue observed={:?}", reply.status).into());
     }
-    Ok(None)
+    Ok(())
 }
 
 pub(super) const HOUSE: &str = "oteryn:content.house.upper_swamp_lane_4";
 const AUCTION: &str = "01934f10-7c04-7021-805b-3b1122334491";
 
 async fn seed_auction(clients: &SeamClients<'_>) -> TestResult {
-    let catalogue: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../content/houses/houses-00500-00994.json"
-    ))?;
-    let house = catalogue["houses"]
-        .as_array()
-        .ok_or("house fixture catalogue")?
-        .iter()
-        .find(|house| house["identity"]["key"] == HOUSE)
-        .ok_or("house fixture authored property missing")?;
+    let house = authored_house()?;
     let rent = house["rent_gold"]
         .as_i64()
         .ok_or("house fixture authored rent missing")?;
@@ -93,7 +110,7 @@ async fn seed_auction(clients: &SeamClients<'_>) -> TestResult {
     let channel = uuid_text(&clients.channel);
     let character = uuid_text(&clients.characters[0]);
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let mut tx = sqlx::Connection::begin(&mut database).await?;
+    let mut tx = database.begin().await?;
     let property = sqlx::query(
         "INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest)
          SELECT world_id,$3,'private_house',2,$4,server_artifact_digest
@@ -179,11 +196,14 @@ pub(super) async fn prepare_owned_house(
         }
         client = prepared;
     }
-    evidence(&format!("G01_CHECK step=served-ownership status=PASS house={HOUSE}"));
+    evidence(&format!(
+        "G01_CHECK step=served-ownership status=PASS house={HOUSE}"
+    ));
     Ok(client)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let guest = *clients.characters.first().ok_or("G01 guest character")?;
     character_prep::declare_seeded(
         "G01",
         "level 20 and ended authored auction",
@@ -198,57 +218,60 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let world = WorldId::decode(&clients.world)?;
     let mut panel = panel_ui::Panel::default();
     panel.admitted(*world.as_bytes(), client.selected_capabilities());
-    let town = catalogue(&mut client, &mut panel).await?;
-    let rows = panel.page.rows.clone();
-    let owned = rows.iter().position(|row| row.house == HOUSE && row.owned);
-    let auction = rows.iter().position(|row| row.ends.is_some());
-    let mut observed = format!("rows={}", rows.len());
-    let mut revision_after = None;
-    if let (Some(index), Some(town)) = (owned, town.as_ref()) {
-        panel.index = index;
-        let before = rows[index].acl_revision;
-        let reply = send(
-            &mut client,
-            &mut panel,
-            Some(&Action::Guests(Vec::new())),
-            false,
-        )
-        .await?;
-        let (disposition, _) = house::result(&reply.payload)?;
-        if reply.status != CommandStatus::Accepted
-            || disposition != oteryn_protocol_oteryn::house::HouseDisposition::Ok as u64
-        {
-            return Err(format!("step=set-guests observed={:?}/{disposition}", reply.status).into());
-        }
-        evidence("G01_CHECK step=set-guests status=PASS");
-        panel.town.clone_from(town);
-        send(&mut client, &mut panel, None, false).await?;
-        let after = panel.page.rows.get(index).map(|row| row.acl_revision);
-        observed.push_str(&format!(";acl:{disposition}:{before}->{after:?}"));
-        revision_after = after.filter(|after| *after > before);
-    } else if let Some(index) = auction {
-        panel.index = index;
-        let reply = send(&mut client, &mut panel, Some(&Action::Bid(1)), false).await?;
-        let (disposition, revision) = house::result(&reply.payload)?;
-        observed.push_str(&format!(";bid:{disposition}:rev{revision}"));
+    let authored = authored_house()?;
+    let town = authored["town"]["key"]
+        .as_str()
+        .ok_or("house fixture town")?;
+    panel.town = town.into();
+    let query = send(&mut client, &mut panel, None, false).await?;
+    if query.status != CommandStatus::Accepted {
+        return Err(format!("step=catalogue observed={:?}", query.status).into());
     }
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=logout observed=refused".into());
-    }
-    if owned.is_none() {
+    panel.index = panel
+        .page
+        .rows
+        .iter()
+        .position(|row| row.house == HOUSE && row.owned)
+        .ok_or("step=catalogue observed=authored-house-not-served-as-owned")?;
+    let before = panel.page.rows[panel.index].acl_revision;
+    evidence("G01_CHECK step=served-ownership status=PASS");
+    let reply = send(
+        &mut client,
+        &mut panel,
+        Some(&Action::Guests(vec![guest])),
+        false,
+    )
+    .await?;
+    let (disposition, revision) = house::result(&reply.payload)?;
+    if reply.status != CommandStatus::Accepted
+        || disposition != oteryn_protocol_oteryn::house::HouseDisposition::Ok as u64
+        || before.checked_add(1) != Some(revision)
+    {
         return Err(format!(
-            "step=house-controls observed={observed};needed=owned-house;settlement-only:crates/gameplay/durability/src/durability/house_ownership/settlement.rs"
+            "step=set-guests observed={:?}/{disposition}:revision:{before}->{revision}",
+            reply.status
         )
         .into());
     }
-    let Some(revision) = revision_after else {
-        return Err(format!("step=acl observed={observed};needed=acl-revision-advance").into());
-    };
+    evidence("G01_CHECK step=set-guests status=PASS");
+    send(&mut client, &mut panel, None, false).await?;
+    if !panel
+        .page
+        .rows
+        .iter()
+        .any(|row| row.house == HOUSE && row.owned && row.acl_revision == revision)
+    {
+        return Err("step=set-guests observed=acl-revision-missing-from-catalogue".into());
+    }
+    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
+    }
+    drop(client);
     let mut fresh = connect_character(clients, 0xc2, 0).await?;
     let mut again = panel_ui::Panel::default();
     again.admitted(*world.as_bytes(), fresh.selected_capabilities());
-    again.town = town.ok_or("step=fresh observed=no-town")?;
+    again.town = town.into();
     send(&mut fresh, &mut again, None, false).await?;
     let durable = again
         .page
@@ -256,9 +279,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .iter()
         .find(|row| row.house == HOUSE && row.owned)
         .map(|row| row.acl_revision);
-    let out = fresh.session_mut().logout().await?;
-    if out.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err("step=logout observed=refused".into());
+    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut fresh).await?;
+    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={detail}").into());
     }
     if durable != Some(revision) {
         return Err(format!("step=fresh observed=acl:{durable:?};needed={revision}").into());

@@ -182,7 +182,9 @@ async fn apply(
         return Err(HouseManagementError::Rejected);
     }
     let ownership = numeric_u64(&property, "ownership_generation")?;
-    let owner: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(game_house_effective_owner(world_id,house_key)) FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND ownership_revision=$3::text::numeric FOR UPDATE")
+    // The property lock already serializes tenure writes. The runtime role can
+    // read the matching ownership revision but cannot take a write lock on it.
+    let owner: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(game_house_effective_owner(world_id,house_key)) FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND ownership_revision=$3::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(house).bind(ownership.to_string()).fetch_one(&mut **tx).await?;
     let owner = owner.ok_or(HouseManagementError::Rejected)?;
     let mut qualified_guild = None;
