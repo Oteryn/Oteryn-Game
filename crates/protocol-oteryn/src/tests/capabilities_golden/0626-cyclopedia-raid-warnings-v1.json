@@ -1,0 +1,17 @@
+{
+  "id": 626,
+  "name": "CYCLOPEDIA_RAID_WARNINGS_V1",
+  "constant": "cyclopedia::raid_warnings::CAPABILITY_CYCLOPEDIA_RAID_WARNINGS_V1",
+  "requires": [
+    57
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

@@ -10,7 +10,7 @@ No new state domain. Generic CommandResult payloads carry the following bytes.
 ## Request
 
 All multibyte scalars little endian. Command 72 uses an empty payload for the legacy discovery query; the opt-in
-atlas payload is defined below. Command 73
+atlas and advance raid-warning queries are defined below. Command 73
 has exactly 9 bytes: operation u8 (1 start, 2 shuffle, 3 find at server position,
 4 donate), area u32 (1), amount u32 (1..10,000,000 for donate; zero otherwise).
 The retained wire value 1 aliases the current canonical subarea resolved from the
@@ -174,3 +174,26 @@ A page carries at most 64 exact runs, their subareas and parent regions (at most
 coverage stays empty; the client must not fill gaps between runs. This atlas
 contains static region geometry, independently of the viewport-restricted
 exploration POIs in the existing result. A new activity scope clears cursors.
+
+
+## Advance raid warnings (capability 626)
+
+Command 72 accepts the one-byte selector 129 only when both CYCLOPEDIA_MAP_V1
+and CYCLOPEDIA_RAID_WARNINGS_V1 were selected. Existing requests and replies
+keep their wire layouts. The read-only reply contains a little-endian
+`count:u16` followed by up to 1024 pairs `area:u32, subarea:u32`. Pairs are
+unique and sorted in ascending order. An area ID is nonzero. A zero subarea
+marks the area itself. A nonzero subarea identifies a child of that area.
+A zero count clears the warning overlay. The consumer is the Cyclopedia Map
+command-result reducer and map renderer. It refreshes while the map is open
+and clears the overlay on activity handoff.
+
+The warning is visible to a character only after completing all subareas of
+the affected area. The current World and Channel's committed raid plan supplies
+the first wave time and the pinned map supplies area membership. The area is
+marked when the first wave is within the next hour. During the last 15 minutes,
+the affected subarea is also marked if any part of it reaches ground floor.
+A firing leaves the projection at its first wave or on cancellation. Firings
+without a committed pre-wave interval carry no advance warning. This observation
+shares the current Character, session, node, bundle and scope fences and creates
+no raid or discovery state. [Global reference](https://tibia.fandom.com/wiki/Raid)

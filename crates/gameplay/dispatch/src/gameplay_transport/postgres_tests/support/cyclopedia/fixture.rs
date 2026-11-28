@@ -105,6 +105,23 @@ pub(in super::super) fn world_with_subareas(
     generation: &crate::content::ActiveGeneration,
     canonical: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    build_world(deps, generation, canonical, None)
+}
+
+pub(in super::super) fn world_with_raid_subarea(
+    deps: &Dependencies,
+    generation: &crate::content::ActiveGeneration,
+    raid_position: oteryn_gameplay_encounter_rules::raid::RaidPosition,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    build_world(deps, generation, true, Some(raid_position))
+}
+
+fn build_world(
+    deps: &Dependencies,
+    generation: &crate::content::ActiveGeneration,
+    canonical: bool,
+    raid_position: Option<oteryn_gameplay_encounter_rules::raid::RaidPosition>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         bundle,
         sector::{Attrs, Item, Tile},
@@ -199,6 +216,36 @@ pub(in super::super) fn world_with_subareas(
                 .collect(),
             ..Table::default()
         };
+    }
+    if let Some(position) = raid_position {
+        let x = u16::try_from(position.x)?;
+        let y = u16::try_from(position.y)?;
+        let floor = i8::try_from(-position.floor)?;
+        let table = &mut parsed.manifest.subareas;
+        let tile = parsed.sectors[0].tiles.first().ok_or("fixture tile")?.clone();
+        for floor in std::collections::BTreeSet::from([floor, -7]) {
+            table.runs.push(oteryn_world_bundle::subarea::Run {
+                floor,
+                y,
+                begin: x,
+                end: x + 1,
+                subarea: 3,
+            });
+            table.masks[1].admitted_tiles += 1;
+            parsed.sectors.push(Sector {
+                floor,
+                sx: x / 32,
+                sy: y / 32,
+                tiles: vec![Tile { x, y, ..tile.clone() }],
+            });
+            parsed.manifest.world.floors.push(floor);
+        }
+        table.runs.sort_by_key(|run| (run.floor, run.y, run.begin));
+        parsed.manifest.world.max_x = parsed.manifest.world.max_x.max(x + 1);
+        parsed.manifest.world.max_y = parsed.manifest.world.max_y.max(y + 1);
+        parsed.manifest.world.floors.sort_unstable();
+        parsed.manifest.world.floors.dedup();
+        parsed.sectors.sort_by_key(bundle::order);
     }
     let bytes =
         oteryn_world_bundle::writer::write(&parsed.manifest, &parsed.sectors, &Default::default())?;
