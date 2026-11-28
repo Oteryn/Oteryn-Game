@@ -151,6 +151,100 @@ fn market_page_statistics_keep_items_and_sides_separate() {
 }
 
 #[test]
+fn market_book_warns_on_prices_strictly_outside_the_matching_side_average()
+-> Result<(), &'static str> {
+    use oteryn_client_runtime::market::market_details::{self, PriceSummary};
+
+    let mut panel = MarketPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let definition = 42;
+    let rows = [(1, 74), (1, 75), (1, 125), (1, 126), (2, 150), (2, 251)]
+        .into_iter()
+        .enumerate()
+        .map(|(index, (side, price))| {
+            let mut offer = [0; 16];
+            offer[6] = 0x70;
+            offer[8] = 0x80;
+            offer[15] = index as u8;
+            market::MarketRow {
+                offer,
+                definition,
+                side,
+                amount: 1,
+                price,
+                state: 1,
+                anonymous: false,
+            }
+        })
+        .collect();
+    let summary = |price| PriceSummary {
+        trades: 1,
+        units: 1,
+        minimum: Some(price),
+        maximum: Some(price),
+        average: Some(price),
+    };
+    let statistics = details::Statistics {
+        buy: summary(100),
+        sell: summary(200),
+        definition,
+        as_of_us: 2_592_000_000_000,
+        since_us: 0,
+        trades: 2,
+        units: 2,
+        minimum: Some(100),
+        maximum: Some(200),
+        average: Some(150),
+    };
+    let command = details::request(
+        &mut panel,
+        details::Query::Book {
+            definition,
+            page: 0,
+        },
+    )
+    .ok_or("book request")?;
+    let reply = market_details::encode_reply(&details::Reply::Book {
+        definition,
+        page: 0,
+        rows,
+        statistics,
+        has_next: false,
+    })
+    .map_err(|_| "valid book reply")?;
+    assert!(details::apply(
+        &mut panel,
+        &command,
+        CommandStatus::Accepted,
+        &reply
+    ));
+
+    let text = panel_text(&panel);
+    let warnings: Vec<_> = text
+        .lines()
+        .filter_map(|line| line.strip_prefix("Warning: "))
+        .collect();
+    assert_eq!(
+        warnings,
+        [
+            "Item 42 · buy · amount 1 · price 74 · total 74",
+            "Item 42 · buy · amount 1 · price 126 · total 126",
+            "Item 42 · sell · amount 1 · price 251 · total 251",
+        ]
+    );
+
+    if let Some(stats) = &mut panel.details.statistics {
+        stats.sell = PriceSummary::default();
+    }
+    assert!(!panel_text(&panel).contains("Warning: Item 42 · sell"));
+    panel.view = MarketView::History;
+    assert!(!panel_text(&panel).contains("Warning: "));
+    Ok(())
+}
+
+#[test]
 fn t124_market_distinguishes_completed_30_day_statistics_from_loaded_quotes()
 -> Result<(), Box<dyn std::error::Error>> {
     let panel = MarketPanel {

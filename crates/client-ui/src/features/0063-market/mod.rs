@@ -12,7 +12,9 @@ mod view;
 pub use input::{coin_open_key, edit_details, open_key};
 pub use protocol::{Intent, apply_result, request};
 pub use state::{MarketPanel, MarketView};
-pub use view::{coin_panel_text, panel_text, row_text, table_selection, visible_rows};
+pub use view::{
+    coin_panel_text, offer_price_outlier, panel_text, row_text, table_selection, visible_rows,
+};
 
 #[cfg(test)]
 #[path = "tests/e2e_e05.rs"]

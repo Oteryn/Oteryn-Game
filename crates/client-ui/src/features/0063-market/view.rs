@@ -18,6 +18,32 @@ pub fn row_text(row: &market::MarketRow) -> String {
         }
     )
 }
+
+/// Whether an active book offer is outside 75%–125% of its side's settled average.
+pub fn offer_price_outlier(panel: &MarketPanel, row: &market::MarketRow) -> bool {
+    if panel.view != MarketView::Browse || row.state != 1 || row.definition != panel.definition {
+        return false;
+    }
+    let Some(statistics) = panel
+        .details
+        .statistics
+        .as_ref()
+        .filter(|statistics| statistics.definition == row.definition)
+    else {
+        return false;
+    };
+    let average = match row.side {
+        1 => statistics.buy.average,
+        2 => statistics.sell.average,
+        _ => None,
+    };
+    average.is_some_and(|average| {
+        let average = u128::from(average);
+        let scaled_price = u128::from(row.price) * 100;
+        scaled_price < average * 75 || scaled_price > average * 125
+    })
+}
+
 pub fn panel_text(panel: &MarketPanel) -> String {
     let mut lines = vec![
         match panel.view {
@@ -72,6 +98,12 @@ pub fn panel_text(panel: &MarketPanel) -> String {
                 lines.push(lfmt!("Loaded page {name}: {count} offers, {units} units, price {min}–{max}, weighted average {average}",average=average,count=count,max=max,min=min,name=name,units=units));
             } else {
                 lines.push(lfmt!("Loaded page {name}: no offers", name = name));
+            }
+        }
+        for index in visible_rows(panel) {
+            let row = &panel.rows[index];
+            if offer_price_outlier(panel, row) {
+                lines.push(lfmt!("Warning: {text}", text = row_text(row)));
             }
         }
     }
