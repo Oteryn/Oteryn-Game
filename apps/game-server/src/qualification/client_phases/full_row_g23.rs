@@ -75,6 +75,25 @@ fn consistent(eligible: bool, reason: &str, nodes: usize, catalogue: &str, vocat
     nodes > 0 && !catalogue.is_empty() && !vocation.is_empty() && (eligible || !reason.is_empty())
 }
 
+fn committed_requests(
+    allocation: &allocation::WheelAllocationReply,
+    atelier_revision: u64,
+) -> (wheel::Request, gem::Request) {
+    (
+        wheel::Request {
+            nonce: 1,
+            wheel_revision: allocation.revision,
+            atelier_revision,
+            points: allocation.points,
+            vessels: allocation.vessels.unwrap_or([None; 4]),
+        },
+        gem::Request {
+            nonce: 2,
+            revision: atelier_revision,
+        },
+    )
+}
+
 async fn presentations(
     client: &mut DevClientSession,
 ) -> TestResult<(wheel::Reply, gem::Reply, atelier::AtelierReply)> {
@@ -116,13 +135,7 @@ async fn presentations(
         return Err(format!("step=atelier-query observed={status:?}/{state:?}").into());
     }
 
-    let request = wheel::Request {
-        nonce: 1,
-        wheel_revision: alloc.revision,
-        atelier_revision: state.revision,
-        points: alloc.points,
-        vessels: alloc.vessels.unwrap_or([None; 4]),
-    };
+    let (request, gem_request) = committed_requests(&alloc, state.revision);
     let (status, bytes) = send(
         client,
         CAPABILITY,
@@ -149,10 +162,7 @@ async fn presentations(
         return Err(format!("step=wheel observed={wheel:?}").into());
     }
 
-    let request = gem::Request {
-        nonce: 2,
-        revision: state.revision,
-    };
+    let request = gem_request;
     let (status, bytes) = send(
         client,
         gem::CAPABILITY_GEM_PRESENTATION_V1,
@@ -520,6 +530,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn catalogue_requests_use_committed_revisions() {
+        let mut points = [0; allocation::WHEEL_SLOTS];
+        points[0] = 3;
+        let vessels = [Some([7; 16]), None, None, None];
+        let allocation = allocation::WheelAllocationReply {
+            refused: false,
+            revision: 41,
+            points,
+            vessels: Some(vessels),
+        };
+        let (wheel, gem) = committed_requests(&allocation, 73);
+        assert_eq!(
+            (wheel.wheel_revision, wheel.atelier_revision, gem.revision),
+            (41, 73, 73)
+        );
+        assert_eq!((wheel.points, wheel.vessels), (points, vessels));
+    }
 
     #[test]
     fn promotion_requires_the_exact_debit() {
