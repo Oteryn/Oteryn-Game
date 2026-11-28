@@ -110,7 +110,7 @@ impl DurabilityRoot {
                     LoopMoveReplay::Moved
                 } else { LoopMoveReplay::Conflicting }
             } else { LoopMoveReplay::Absent };
-            super::super::db::commit_semantic_transaction(tx,deadline).await?;
+            super::super::db::commit_semantic_read(tx,deadline).await?;
             Ok(replay)
         })).await
     }

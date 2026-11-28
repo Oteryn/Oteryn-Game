@@ -3,8 +3,6 @@ use super::qengine_rewards_fixtures::scenario;
 
 use super::TestResult;
 
-
-
 #[path = "qengine_rewards/m39_any_topic.rs"]
 mod m39_any_topic;
 
@@ -25,6 +23,21 @@ fn qengine_rewards_hallowed_ground_exchange() -> TestResult {
     scenario("qengine-rewards-hallowed")
 }
 #[test]
+fn qengine_rewards_eroth_starts_mission_and_issues_mirror() -> TestResult {
+    scenario("qengine-rewards-eroth-start")
+}
+
+#[test]
+fn qengine_rewards_eroth_legacy_save_uses_tagged_crystal() -> TestResult {
+    scenario("qengine-rewards-eroth-legacy")
+}
+
+#[test]
+fn qengine_rewards_one_eyed_joe_accepts_cursed_crystal_mission() -> TestResult {
+    scenario("qengine-rewards-joe-start")
+}
+
+#[test]
 fn qengine_rewards_outfox_exchange() -> TestResult {
     scenario("qengine-rewards-outfox")
 }
@@ -34,11 +47,33 @@ fn qengine_rewards_backpack_exchange() -> TestResult {
 }
 
 #[test]
+fn qengine_elane_buys_gloves_from_free_and_completed_characters() -> TestResult {
+    scenario("qengine-rewards-elane-gloves-free")?;
+    scenario("qengine-rewards-elane-gloves-completed")
+}
+
+#[test]
+fn qengine_outfit_handins_complete_an_account_owned_set_in_both_orders() -> TestResult {
+    for name in [
+        "qengine-rewards-l1-warmaster-account-set",
+        "qengine-rewards-l1-warmaster-tribal-account-set",
+        "qengine-rewards-l1-wayfarer-account-set",
+        "qengine-rewards-l1-wayfarer-hat-account-set",
+    ] {
+        scenario(name)?;
+    }
+    Ok(())
+}
+
+#[test]
 fn qengine_l1_warmaster_crest() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster-owned")?;
     scenario("qengine-rewards-l1-warmaster")
 }
 #[test]
 fn qengine_l1_wayfarer_cape() -> TestResult {
+    scenario("qengine-rewards-l1-wayfarer-free")?;
+    scenario("qengine-rewards-l1-wayfarer-addon-only")?;
     scenario("qengine-rewards-l1-wayfarer")
 }
 #[test]
@@ -48,6 +83,7 @@ fn qengine_l1_yalaharian_addon_sage() -> TestResult {
 
 #[test]
 fn qengine_l1_warmaster_tribal() -> TestResult {
+    scenario("qengine-rewards-l1-warmaster-tribal-owned")?;
     scenario("qengine-rewards-l1-warmaster-tribal")
 }
 #[test]

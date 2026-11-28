@@ -1,5 +1,5 @@
 //! Wake/mutex composition for the World-owned, session-independent respawn job.
-use super::{ComposedFreshAdmission, operator_event};
+use super::ComposedFreshAdmission;
 use crate::foundation::owner_timer::{OwnerClock, SemanticTimeMicros};
 use crate::monster_owner_cycle::respawn_job::{MonsterRespawnJob, RespawnExit};
 use oteryn_foundation::CancellationToken;
@@ -9,6 +9,10 @@ pub(super) mod elemental;
 
 pub(super) trait RespawnWake: OwnerClock {
     fn sleep_until(&self, due: SemanticTimeMicros) -> impl Future<Output = ()> + Send;
+
+    fn world_clock_utc_ms(&self) -> Option<u64> {
+        crate::world_clock::now_utc_ms()
+    }
 }
 
 pub(super) struct MonotonicRespawnWake {
@@ -100,7 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
     ) -> Result<bool, RespawnExit> {
-        use crate::durability::boss_encounter::{BossClockClaim, BossClockKey};
+        use crate::durability::boss_encounter::{BossClockClaim, BossClockError, BossClockKey};
         let mut checked_all = true;
         let (binding, spawns) = {
             let runtime = self.runtime.lock().await;
@@ -203,15 +207,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
                 Ok(BossClockClaim::CompareFailed) => {}
-                Err(error) if error.retryable_activation() => {
+                Err(BossClockError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                )) => {
+                    // This operation emits RootUnavailable at pass acquisition, before
+                    // any transaction begins. Normal holder contention is safe to retry.
                     checked_all = false;
                 }
-                Err(error) => {
+                Err(_) => {
                     // A commit can be uncertain. End this owner rather than inventing
                     // a second installation from an ALIVE row of the same generation.
-                    operator_event(&format!(
-                        "event=boss_clock_activation_failed error={error:?}"
-                    ));
                     self.runtime.lock().await.retire_owner_cycle();
                     return Err(RespawnExit::StaleOwner);
                 }
@@ -273,7 +278,7 @@ pub(super) async fn drive(
                 return Err(RespawnExit::StaleOwner);
             };
             let now = wake.now().get();
-            job.pass(&mut runtime, now)?;
+            job.pass(&mut runtime, now, wake.world_clock_utc_ms())?;
             job.next_owner_window(now)
                 .ok_or(RespawnExit::ClockExhausted)
         };

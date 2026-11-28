@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/ape-city-cough-syrup",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 31,
+      "next_topic": 0,
+      "storage": [],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i4828",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your cough syrup."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/padreia.lua:62-64"
+      ],
+      "fee": {
+        "gold": 50,
+        "include_bank": true
+      },
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/ape-city-moss",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 33,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "required_claims": [
+        "oteryn:reward-claim.quest.u7_6.whisper_moss"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i4827",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i4827",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for the whisper moss. Ask for another mission when you are ready."
+      ],
+      "failure_reply": [
+        "Bring me the whisper moss you collected from the Dworc lair."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:85-91",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:267-280",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1361-1367"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-city-moss-recovery",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 33,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/whisper_moss_recovery",
+        "maximum": 1000000000000
+      },
+      "required_claims": [
+        "oteryn:reward-claim.quest.u7_6.whisper_moss"
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i4827",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The Dworc lair may have been restocked. Bring me another whisper moss."
+      ],
+      "failure_reply": [
+        "Bring me the whisper moss you collected from the Dworc lair."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:267-280"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/ape-city-shaman",
+      "quest": "oteryn:quest.the_ape_city_quest",
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 18,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 18,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/shaman_outfit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.shaman",
+        "addons": 0
+      },
+      "achievement": null,
+      "reply": [
+        "You may now wear the Shaman outfit."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/hairycles.lua:453-456"
+      ]
+    }
+  ]
+}

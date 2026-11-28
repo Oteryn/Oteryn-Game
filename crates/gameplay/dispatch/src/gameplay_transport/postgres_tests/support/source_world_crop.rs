@@ -166,6 +166,45 @@ pub(super) fn compiled_regions(
     start: crate::map::overlay::TilePos,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    compile_regions(minimum, maximum, start, native, |diagnostic| {
+        (minimum.floor..=maximum.floor).contains(&diagnostic.floor)
+            && (minimum.x..=maximum.x).contains(&diagnostic.x)
+            && (minimum.y..=maximum.y).contains(&diagnostic.y)
+    })
+}
+
+/// A direct STEP passage uses its approach, trigger and landing on their source floors.
+pub(super) fn compiled_step_passage(
+    cells: [crate::map::overlay::TilePos; 3],
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use crate::map::overlay::TilePos;
+
+    let [start, trigger, landing] = cells;
+    let minimum = TilePos {
+        x: start.x.min(trigger.x).min(landing.x),
+        y: start.y.min(trigger.y).min(landing.y),
+        floor: start.floor.min(trigger.floor).min(landing.floor),
+    };
+    let maximum = TilePos {
+        x: start.x.max(trigger.x).max(landing.x),
+        y: start.y.max(trigger.y).max(landing.y),
+        floor: start.floor.max(trigger.floor).max(landing.floor),
+    };
+    compile_regions(minimum, maximum, start, native, |diagnostic| {
+        cells.iter().any(|cell| {
+            (cell.x, cell.y, cell.floor) == (diagnostic.x, diagnostic.y, diagnostic.floor)
+        })
+    })
+}
+
+fn compile_regions(
+    minimum: crate::map::overlay::TilePos,
+    maximum: crate::map::overlay::TilePos,
+    start: crate::map::overlay::TilePos,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    is_route_geometry: impl Fn(&oteryn_world_bundle_compiler::compile::Diagnostic) -> bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle_compiler::{compile, project};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     if minimum.x > maximum.x
@@ -202,11 +241,10 @@ pub(super) fn compiled_regions(
         },
         &registry,
     )?;
-    let unresolved = compiled.diagnostics.iter().find(|diagnostic| {
-        (minimum.floor..=maximum.floor).contains(&diagnostic.floor)
-            && (minimum.x..=maximum.x).contains(&diagnostic.x)
-            && (minimum.y..=maximum.y).contains(&diagnostic.y)
-    });
+    let unresolved = compiled
+        .diagnostics
+        .iter()
+        .find(|diagnostic| is_route_geometry(diagnostic));
     assert!(unresolved.is_none(), "unresolved source quest geometry: {unresolved:?}");
     let pins = crate::map::BundlePins {
         digest: compiled.digest,

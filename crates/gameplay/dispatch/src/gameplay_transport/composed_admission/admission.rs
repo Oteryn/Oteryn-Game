@@ -419,7 +419,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 transport: attempt.transport,
                 account_id: *record.account_id.as_bytes(),
             }),
-            continuity: SessionContinuity::FRESH,
+            continuity: SessionContinuity {
+                house_input_pending: Some(false),
+                ..SessionContinuity::FRESH
+            },
             item_fence,
         };
         self.states.command_ingress.admit(admitted.game_session_id);
@@ -645,12 +648,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         reservation: PlayerActorReservation,
     ) -> Result<ExactActorRef, AdmissionRefusal> {
+        let mut runtime = self.runtime.lock().await;
         let now = self.owner_now().get();
-        self.runtime
-            .lock()
-            .await
+        let actor = runtime
             .commit_fresh_session_at(reservation, now)
-            .map_err(|_| AdmissionRefusal::Unavailable)
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
+        drop(runtime);
+        log_monster_target_protection_start("fresh_login", now);
+        Ok(actor)
     }
 
     pub(in crate::gameplay_transport) async fn rollback_runtime_player(

@@ -131,8 +131,6 @@ impl DurabilityRoot {
             let transaction = uuid_text(ids.try_get("transaction_id")?)?;
             let occurred_at: i64 = ids.try_get("occurred_at")?;
             let payload = encode_bootstrap(&account, &character, &world);
-            #[cfg(feature = "qualification-spawn")]
-            let vocation = (!vocation.is_empty()).then_some(vocation);
             sqlx::query("INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, name, sex, creation_vocation) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1, 1, $4, $5, $6, $7, $8, $9, $10)")
                 .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).bind(name).bind(sex).bind(vocation).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_audit_outbox(event_id, transaction_id, transaction_ordinal, transaction_count, event_type_id, schema_revision, retention_profile_id, character_id, occurred_at, expires_at, payload, payload_sha256, server_build_id, publication_state) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, $3, $4, $5, encode($6,'hex')::uuid, $9, $9 + 7776000000, $7, sha256($7), $8, 1)")

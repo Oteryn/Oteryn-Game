@@ -32,11 +32,9 @@ fn pairs(client: &DevClientSession) -> String {
     })
 }
 
-pub(super) fn encoded_backpack(client: &DevClientSession) -> TestResult<Vec<u8>> {
-    // The coin replays negotiate the backpack-only inventory capability.
-    let mut inventory = client.inventory().cloned().ok_or("inventory absent")?;
-    inventory.equipment.clear();
-    item_view::encode_character_inventory(&inventory)
+fn encoded(client: &DevClientSession) -> TestResult<Vec<u8>> {
+    let inventory = client.inventory().ok_or("inventory absent")?;
+    item_view::encode_character_inventory(inventory)
         .map_err(|error| format!("inventory encode: {error:?}").into())
 }
 
@@ -114,19 +112,13 @@ pub(super) async fn approach(
     world: &BundleWorld,
     npc: &oteryn_world_bundle::npc::Npc,
 ) -> TestResult<EntityRef> {
-    let path = npc_approach_path(client, world, npc)
-        .await?
-        .ok_or_else(|| format!("step=walk-npc observed=no-route:{}", npc.key))?;
-    approach_along(client, world, npc, &path).await
-}
-
-async fn approach_along(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    npc: &oteryn_world_bundle::npc::Npc,
-    path: &[StepDirection],
-) -> TestResult<EntityRef> {
-    walk(client, world, path).await?;
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        npc.placements.iter().any(|placement| {
+            placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3
+        })
+    }).ok_or_else(|| format!("step=walk-npc observed=no-route:{}", npc.key))?;
+    walk(client, world, &path).await?;
     visible_npc(client, npc).ok_or_else(|| format!("step=walk-npc observed=actor-not-visible:{}", npc.key).into())
 }
 
@@ -134,18 +126,16 @@ async fn find_exchange_npc(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-    book: &crate::gameplay_transport::NpcTalkBook,
 ) -> TestResult<(EntityRef, String)> {
     let mut attempted = Vec::new();
-    for npc in npcs
-        .npcs
-        .iter()
-        .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
-    {
-        let Some(path) = npc_approach_path(client, world, npc).await? else {
+    for npc in &npcs.npcs {
+        if route(world, tile(client.world_spatial().actor_position)?, |at| {
+            npc.placements.iter().any(|placement| placement.floor == at.floor
+                && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
+        }).is_none() {
             continue;
-        };
-        let actor = approach_along(client, world, npc, &path).await?;
+        }
+        let actor = approach(client, world, npc).await?;
         let greeting = talk(client, actor, "hi").await?;
         attempted.push(format!("{}:hi={:?}", npc.key, greeting.lines));
         let reply = talk(client, actor, "change gold").await?;
@@ -173,25 +163,20 @@ async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-    book: &crate::gameplay_transport::NpcTalkBook,
     refs: [std::num::NonZeroU32; 3],
 ) -> TestResult<[u64; 3]> {
     let mut observed = backpack_coins(client, refs)?;
     let mut attempts = Vec::new();
-    for npc in npcs.npcs.iter().filter(|npc| {
-        book.get(&npc.key).is_some_and(|entry| {
-            entry.offers().iter().any(|offer| {
-                offer.direction == crate::content::ProjectV2ServiceOfferDirection::BuyFromPlayer
-            })
-        })
-    }) {
-        if observed[0] >= 100 {
+    for npc in &npcs.npcs {
+        if observed[0] >= 100
+            || route(world, tile(client.world_spatial().actor_position)?, |at| {
+                npc.placements.iter().any(|placement| placement.floor == at.floor
+                    && at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)) <= 3)
+            }).is_none()
+        {
             continue;
         }
-        let Some(path) = npc_approach_path(client, world, npc).await? else {
-            continue;
-        };
-        let actor = approach_along(client, world, npc, &path).await?;
+        let actor = approach(client, world, npc).await?;
         let greeting = talk(client, actor, "hi").await?;
         let trade = talk(client, actor, "trade").await?;
         attempts.push(format!("{}:hi={:?}:trade={:?}", npc.key, greeting.lines, trade.lines));
@@ -267,11 +252,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let refs = coin_refs()?;
     let mut client = connect_world(clients, 0x33).await?;
-    let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
-    let initial = earn_gold(&mut client, world, &metadata.npcs, &talk_book, refs).await?;
-    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
+    let initial = earn_gold(&mut client, world, &metadata.npcs, refs).await?;
+    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs).await?;
     let before_pairs = pairs(&client);
-    let before_payload = encoded_backpack(&client)?;
+    let before_payload = encoded(&client)?;
     let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
     let platinum = [initial[0] - 100, initial[1] + 1, initial[2]];
     wait_coins(&mut client, refs, platinum, "gold-to-platinum").await?;
@@ -280,7 +264,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let after_pairs = pairs(&client);
     capture("e02-before.bin", &before_payload);
-    capture("e02-after.bin", &encoded_backpack(&client)?);
+    capture("e02-after.bin", &encoded(&client)?);
     capture(
         "e02-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),

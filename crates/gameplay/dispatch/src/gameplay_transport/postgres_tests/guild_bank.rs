@@ -260,18 +260,7 @@ fn scenario() -> TestResult {
         sqlx::raw_sql("DROP TRIGGER guild_bank_test_fail ON game_guild_bank_event_outbox; DROP FUNCTION guild_bank_test_fail()")
             .execute(&h.pool).await?;
         member = initial;
-        let command_id = member.continuity.next_command_id;
-        let (status, bytes) = super::guild_wire_fixtures::exchange_with_holder_pressure(
-            &owner,
-            &mut member,
-            command_id,
-            COMMAND_TYPE_GUILD_BANK_INTENT,
-            &encode_guild_bank_intent(&deposit).map_err(debug)?,
-            true,
-        ).await?;
-        assert_eq!(status, CommandStatus::Accepted);
-        let paid = decode_guild_bank_reply(&bytes).map_err(debug)?;
-        assert_eq!(paid.code, 1);
+        let paid = command(&owner, &mut member, deposit.clone(), 1).await?;
         assert_eq!((paid.bank_balance, paid.guild_balance), (500, 500));
         let paid_id = initial.continuity.next_command_id;
         assert_eq!(

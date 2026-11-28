@@ -101,17 +101,6 @@ async fn wait_quantities(client: &mut DevClientSession, expected: &[(std::num::N
     }
 }
 
-pub(super) fn decode_trade_window(
-    selected: &[u32],
-    payload: &[u8],
-) -> TestResult<oteryn_protocol_oteryn::npc_service::NpcTradeWindow> {
-    let details = selected.contains(
-        &oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
-    );
-    oteryn_protocol_oteryn::npc_service::decode_npc_trade_window_for(payload, details)
-        .map_err(|error| format!("trade window decode: {error:?}").into())
-}
-
 pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, id: u32, amount: u32) -> TestResult<u64> {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
@@ -138,7 +127,7 @@ pub(super) async fn acquire(client: &mut DevClientSession, world: &BundleWorld, 
         if reply != wire::NpcIntentDisposition::Ok { return Err(format!("NPC {text} reply={reply:?}").into()); }
     }
     let delta = client.session_mut().read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1).await?;
-    let window = decode_trade_window(client.selected_capabilities(), &delta.payload)?;
+    let window = wire::decode_npc_trade_window(&delta.payload).map_err(|error| format!("trade window decode: {error:?}"))?;
     let (offer_index, offer) = window.offers.iter().enumerate().find(|(_, offer)| offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()).ok_or("live seller omitted requested offer")?;
     let before = quantity(client, reference)?;
     client.take_events();
@@ -286,32 +275,4 @@ mod tests {
         passed.insert("npc-purchase");
         assert_eq!(next_step(&passed), "food-consume");
     }
-}
-
-#[test]
-fn trade_window_respects_negotiated_quote_details() -> TestResult {
-    use oteryn_protocol_oteryn::{
-        npc_service::{self as wire, NpcOffer, NpcTradeSide, NpcTradeWindow},
-        trade_details::{CAPABILITY_TRADE_DETAILS_V1, NpcQuoteDetails},
-    };
-
-    let mut window = NpcTradeWindow {
-        open: Some((oteryn_dev_client::EntityRef { identity: [1; 16], generation: 1 }, 9)),
-        offers: vec![NpcOffer {
-            item_definition_ref: 42,
-            side: NpcTradeSide::Buy,
-            count: 1,
-            unit_price: 17,
-        }],
-        details: Vec::new(),
-    };
-    let legacy = wire::encode_npc_trade_window(&window)
-        .map_err(|error| format!("legacy fixture encoding: {error:?}"))?;
-    assert_eq!(decode_trade_window(&[], &legacy)?, window);
-    window.details.push(NpcQuoteDetails { name: "fish".into(), maximum_quantity: 37 });
-    let extended = wire::encode_npc_trade_window_for(&window, true)
-        .map_err(|error| format!("extended fixture encoding: {error:?}"))?;
-    assert!(decode_trade_window(&[], &extended).is_err());
-    assert_eq!(decode_trade_window(&[CAPABILITY_TRADE_DETAILS_V1], &extended)?, window);
-    Ok(())
 }

@@ -1,5 +1,6 @@
 //! Chosen Outlaw Camp route through the shipped map, USE, STEP and the quest journal.
 use super::fixture::{Harness, debug, id};
+use super::outlaw_camp_treasure_fixtures::{TREASURE_KEY, seed_treasure_key};
 use super::quest_world_callbacks_fixtures::wire;
 use super::questpc8_authored_programmes_fixtures::use_target as use_object;
 use super::{
@@ -296,6 +297,9 @@ async fn journey(admin: String) -> TestResult {
         UseDisposition::Locked
     );
     assert_snapshot(&h, &owner, &admitted, &keys, (1, 1, false)).await?;
+    // The treasure key comes from a separate mine pickup outside this route.
+    seed_treasure_key(&h).await?;
+    let keys = [3301, 3302, 3303, 3304];
     unlock(&mut owner, &mut admitted, door).await?;
     assert_snapshot(&h, &owner, &admitted, &keys, (1, 1, false)).await?;
     step(&mut owner, &mut admitted, North).await?;
@@ -460,12 +464,17 @@ async fn unlock(
     admitted: &mut AdmittedSession,
     door: WorldObjectTarget,
 ) -> TestResult {
-    let reference = owner
+    let index = owner
         .active_generation
         .and_then(|generation| generation.native_gameplay())
         .and_then(|native| native.item_index())
-        .and_then(|index| index.definition_ref("Item", "oteryn:item.tibia.i2970", "definition-r1"))
+        .ok_or("key definitions")?;
+    let copper = index
+        .definition_ref("Item", "oteryn:item.tibia.i2970", "definition-r1")
         .ok_or("copper key definition")?;
+    let treasure = index
+        .definition_ref("Item", TREASURE_KEY, "definition-r1")
+        .ok_or("treasure key definition")?;
     let payload = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
         use_with: None,
@@ -473,9 +482,8 @@ async fn unlock(
         use_with_position: None,
     })
     .map_err(debug)?;
-    // Both copper keys have the same client appearance. A failed key use
-    // preserves the revision and exposes KeyMismatch for the other handle.
-    for offset in 0..2 {
+    // The collected copper keys refuse the treasure lock without changing its revision.
+    for (reference, offset) in [(copper, 0), (copper, 1), (treasure, 0)] {
         owner.clock_origin = owner
             .clock_origin
             .checked_sub(Duration::from_secs(2))
@@ -490,12 +498,13 @@ async fn unlock(
         )
         .await?;
         *admitted = next;
-        if result == UseDisposition::Committed {
-            return Ok(());
+        if reference == treasure {
+            assert_eq!(result, UseDisposition::Committed);
+        } else {
+            assert_eq!(result, UseDisposition::KeyMismatch);
         }
-        assert_eq!(result, UseDisposition::KeyMismatch);
     }
-    Err("neither claimed copper key opened the Outlaw passage".into())
+    Ok(())
 }
 
 async fn assert_snapshot(

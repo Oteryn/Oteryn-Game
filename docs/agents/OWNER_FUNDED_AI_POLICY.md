@@ -52,11 +52,20 @@ turned into a new owner prompt.
 
 ### Owner review rule for every PR (2026-11-09)
 
-The owner authorizes one manual Codex review (Codex Cloud, read-only, single
-agent, model `gpt-6.2-astra`, reasoning effort `high`, never `codex exec` on the
-PC, per owner rules 2026-11-17 and 2026-11-18, or, from a session without
-the PC, one native `@codex review` PR comment naming the exact head) of every
-Game PR before it merges. This
+The owner authorizes one manual Codex review (Codex Cloud, read-only, one
+holistic whole-diff run, model `gpt-6.2-sol`, reasoning effort `high`, plus,
+the `gpt-6.2-astra` runs at effort `high` that the run-selection table of
+`.claude/skills/oteryn-review/references/batch-review.md` §1 names for the PR
+on the same head, never at effort `medium` and never `codex exec` on the PC,
+per owner rule 2026-11-17 and the calibration decision of 2026-11-25; or, from
+a session without Codex Cloud, one native `@codex review` PR comment naming
+the exact head) of every Game PR before it merges. The sol and astra runs of
+one head are together that one review. An astra P0/P1 is fixed only after the
+review owner traced it to a REAL verdict (input, caller, wrong result);
+an astra finding the review owner disproves is recorded FALSE and closed, and
+one it cannot trace either way goes to the P2/P3 backlog. Every session launches, polls and
+reads its Codex Cloud tasks from its own chat session; the owner's PC is never
+a launch relay (owner rule 2026-11-25). This
 replaces the 2026-10-29 trial and its "at most 5 a day" limit. These reviews
 are owner-authorized, not optional extras:
 
@@ -78,25 +87,28 @@ implementation, repair or any other Codex use.
 Owner decision 2026-11-11 (fix of confirmed findings): the review run itself stays
 read-only and never edits code. Findings the coordinator has verified against the
 code may then be handed, as one list, to a single code-writing Codex run at
-reasoning effort `high`, model `gpt-6.2-sol` (owner rule 2026-11-18; on the PC: `codex-review.sh <worktree> <tag>
---fix-confirmed <file>`). That run writes a red test per finding before any fix,
+reasoning effort `high` for a P0/P1 in a risk class (persistence, session fencing,
+protocol, authority, durable value, migrations, several consumers) and `medium` for any other
+fix, model `gpt-6.2-sol` (owner rules 2026-11-18 and 2026-11-25), launched as a
+Codex Cloud task from the review owner's chat session. That run writes a red test per finding before any fix,
 reports a finding it cannot reproduce without changing code, changes no existing
 assertion, timeout or budget and nothing outside the list, and commits nothing;
 the coordinator reviews its diff before committing. This is ordinary code-writing
 Codex use under the 2026-11-11 effort decision, not a further review.
 
-Owner decision 2026-11-18 (lens runs): one review of one exact head may run as
-the parallel read-only lens tasks of `.claude/skills/oteryn-review/references/batch-review.md`,
-including its holistic whole-diff runs for a package or chunked diff
-(same model and effort, one dispatch by the single review-dispatch owner). Those
-tasks together are the one covered invocation for that head; they never add a
-review to the per-PR count.
+Owner decision 2026-11-18, revised 2026-11-25 (one round per head): one review
+of one exact head is one holistic whole-diff run under
+`.claude/skills/oteryn-review/references/batch-review.md`, with its chunk runs
+for a diff above about 1500 changed lines and the `gpt-6.2-astra` runs of the
+same head that its run-selection table names (one dispatch by the single
+review-dispatch owner). Those tasks together are the one covered invocation
+for that head; they never add a review to the per-PR count.
 
 ### Owner review loop (2026-11-18)
 
 The owner authorizes, when the owner asks for it by name for an area or product,
 a review loop over merged code on `main`, run as rounds of read-only Codex Cloud
-tasks (model `gpt-6.2-astra`, effort `high`) under
+tasks (model `gpt-6.2-sol`, effort `high`) under
 `.claude/skills/oteryn-review/references/review-loop.md`. This is the one
 exception to "never a loop" above and is limited to it:
 

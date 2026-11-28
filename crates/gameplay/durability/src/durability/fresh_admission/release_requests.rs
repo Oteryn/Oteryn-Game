@@ -85,7 +85,9 @@ impl FreshAdmissionStore {
         {
             return Ok(ExpiredLossReleaseV1::NotApplicable);
         }
-        self.release_current_claims(current, now, account_id).await
+        let mut store = self.clone();
+        store.explicit_logout = true;
+        store.release_current_claims(current, now, account_id).await
     }
 
     /// Signed staff removal of the exact recorded loss, independent of its

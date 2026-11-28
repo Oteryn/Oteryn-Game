@@ -51,6 +51,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(result) = self.use_falcon_chest(actor, command, map, target).await {
             return Some(result);
         }
+        // A supplied item fence must remain current even when an unbound
+        // source falls through without reserving or minting a reward.
+        // A busy holder proves nothing about the fence: every door USE passes here, so the
+        // read keeps the command's bounded holder retry and still fails closed.
+        if let Some(expected) = command.item_fence {
+            let retry = super::AdmissionRetryBudget::for_command(self.root);
+            if !matches!(
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(10),
+                    retry.retry_command_guard(async || {
+                        self.current_quest_fence_durable(command.game_session_id).await
+                    }),
+                )
+                .await,
+                Ok(Ok(Some(current))) if current.item_fence() == expected
+            ) {
+                return Some(outcome(UseDisposition::Rejected));
+            }
+        }
         #[cfg(test)]
         if let Some(shards) = self.states.quest_callbacks.reward_claims_fixture.get() {
             return self
@@ -126,23 +145,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
-        // Only bound reward claims take the durable fence. A busy holder
-        // queues the claim within the command budget without intercepting doors.
-        if let Some(expected) = command.item_fence {
-            let retry = super::AdmissionRetryBudget::for_command(self.root);
-            if !matches!(
-                tokio::time::timeout(
-                    std::time::Duration::from_secs(10),
-                    retry.retry_command_guard(async || {
-                        self.current_quest_fence_durable(command.game_session_id).await
-                    }),
-                )
-                .await,
-                Ok(Ok(Some(current))) if current.item_fence() == expected
-            ) {
-                return Some(outcome(UseDisposition::Rejected));
-            }
-        }
         // The tower's authored final USE owns this same once claim and its progress.
         if claim.key.as_str()
             == oteryn_gameplay_quests::quest::world_callbacks::SERPENTINE_PEARL_CLAIM

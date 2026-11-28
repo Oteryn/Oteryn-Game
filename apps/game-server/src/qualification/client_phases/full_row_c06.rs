@@ -20,14 +20,7 @@ const CONJURED_CHARGES: u64 = 10;
 const XODET: &str = "oteryn:npc.xodet";
 const XODET_WANDER_RADIUS: u32 = 2;
 
-const PREPARATION: character_prep::Seeded = character_prep::Seeded {
-    profile: "c06-sorcerer",
-    reason: "C06 tests native rune purchase, conjure and use at the authored spell eligibility level.",
-};
-const PREREQUISITES: &str = "level-15-sorcerer";
-
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("C06", PREREQUISITES, PREPARATION.reason);
     let started = std::time::Instant::now();
     let result =
         verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
@@ -35,11 +28,12 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
+    let result: TestResult = result.and(Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into()));
     if let Err(error) = &result {
         evidence(&format!("C06_GAP {error}"));
     }
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3} mode=seeded prerequisites={PREREQUISITES}{}",
+        "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
         if result.is_ok() {
@@ -51,15 +45,6 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let caster = character_prep::dedicated_character(clients, "NODE_BOOT_C06_CASTER_ACCOUNT").await?;
-    let (accounts, characters) = caster.replace_slot(clients, 1)?;
-    let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
-    let peer = character_prep::dedicated_character(&scope, "NODE_BOOT_C06_PEER_ACCOUNT").await?;
-    let (accounts, characters) = peer.replace_slot(&scope, 0)?;
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..scope };
-    if clients.accounts.iter().any(|account| !requires_platform_grant(account)) {
-        return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
-    }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -73,7 +58,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let damage = provisioning::item_reference(&index, DAMAGE_RUNE_ID)?;
     let healing = provisioning::item_reference(&index, HEAL_RUNE_ID)?;
     let blank = provisioning::item_reference(&index, BLANK_RUNE_ID)?;
-    let mut client = PREPARATION.connect(clients, 0xc6, 1).await?;
+    let mut client = connect_world(clients, 0xc6).await?;
     // Xodet's pinned price is ten gold per blank rune. The second blank
     // makes the immediate repeat test cooldown rather than reagent absence.
     super::full_row_c02::earn_gold(&mut client, world, &metadata.spawns, 20)
@@ -435,14 +420,15 @@ async fn acquire(
         })
         .collect();
     let here = tile(client.world_spatial().actor_position)?;
-    let candidates = npcs.npcs.iter().filter(|n| {
-        sellers.contains(&n.key)
-            && (item_id != BLANK_RUNE_ID
-                || (n.key == XODET
-                    && n.placements.iter().any(|p| (p.x, p.y, p.floor) == (32398, 32222, 7))))
-    });
-    let placed = candidates.clone().count();
-    let (npc, path) = candidates
+    let placed = npcs
+        .npcs
+        .iter()
+        .filter(|n| sellers.contains(&n.key))
+        .count();
+    let (npc, path) = npcs
+        .npcs
+        .iter()
+        .filter(|n| sellers.contains(&n.key))
         .filter_map(|n| {
             let wander = if n.key == XODET {
                 XODET_WANDER_RADIUS
@@ -452,8 +438,7 @@ async fn acquire(
             let approach = wire::TALK_RANGE_TILES - wander;
             route(world, here, |at| {
                 n.placements.iter().any(|p| {
-                    (item_id != BLANK_RUNE_ID || (p.x, p.y, p.floor) == (32398, 32222, 7))
-                        && p.floor == at.floor
+                    p.floor == at.floor
                         && u32::from(at.x.abs_diff(p.x).max(at.y.abs_diff(p.y))) <= approach
                 })
             })

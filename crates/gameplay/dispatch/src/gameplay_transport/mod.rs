@@ -226,6 +226,7 @@ pub mod spectate_session;
 mod spell_access_facts;
 mod spell_catalog;
 mod spell_character_facts;
+mod spell_cooldowns;
 mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
@@ -246,6 +247,7 @@ mod timed_item_wire;
 mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
+mod use_receipt_recovery;
 mod viola_book;
 mod vip_presence;
 mod vocation_choice;
@@ -268,6 +270,7 @@ use bundle_map_position::bundle_world_map;
 pub use coin_market::reconcile_coin_market;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
+pub use npc_command::validate_quest_reward_offers;
 pub use npc_talk::NpcTalkBook;
 pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
 pub use promotion_login::PremiumSessions;
@@ -278,7 +281,10 @@ pub use seam_rooms::SeamRooms;
 )]
 pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 pub use staff::StaffReply;
-pub use store::{StorePurchaseMode, with_store_offer};
+pub use store::{
+    StorePurchaseMode, run_retained_store_reconciliation, run_store_receipt_outbox,
+    with_store_offer,
+};
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
 use crate::content::NativeEntryMovementCells;
@@ -1223,7 +1229,7 @@ impl FenceHolders {
 /// One attempt of a terminal release.
 enum ReleaseAttempt {
     /// A step before the durable transaction had no outcome; nothing was sent.
-    Retry,
+    Retry(&'static str),
     /// The transaction's outcome, or its settle, is unknown: the fence and the kill mark stay.
     Unknown,
     /// The release settled.
@@ -1389,6 +1395,25 @@ fn operator_event(line: &str) {
     operator_event_with_trace(line, connection::diagnostic_connection_trace());
 }
 
+fn log_monster_target_protection_start(kind: &'static str, started_owner_us: u64) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let Some(trace) = connection::diagnostic_connection_trace() else {
+        return;
+    };
+    let trace = format_connection_trace(trace);
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &Line::new(
+            Level::Info,
+            "gameplay_transport",
+            "monster_target_protection_started",
+        )
+        .trace(&trace)
+        .field("kind", FieldValue::Token(kind))
+        .field("started_owner_us", FieldValue::U64(started_owner_us)),
+    );
+}
+
 fn format_connection_trace(trace: [u8; 16]) -> String {
     format!(
         "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
@@ -1499,21 +1524,6 @@ const HOLDER_RETRY_FLOOR: Duration = Duration::from_millis(50);
 /// its lane meanwhile, so the window stays short of the root recovery window.
 const COMMAND_HOLDER_WINDOW: Duration = Duration::from_secs(1);
 
-fn root_holder_busy(error: &crate::durability::DurabilityError) -> bool {
-    matches!(error, crate::durability::DurabilityError::RootUnavailable)
-}
-
-fn progression_holder_busy(
-    error: &crate::durability::character_progression::CharacterProgressionError,
-) -> bool {
-    matches!(
-        error,
-        crate::durability::character_progression::CharacterProgressionError::Unavailable(
-            crate::durability::DurabilityError::RootUnavailable,
-        )
-    )
-}
-
 impl<'r> AdmissionRetryBudget<'r> {
     fn new(game_session_id: &GameSessionId) -> Self {
         Self {
@@ -1530,12 +1540,8 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// lock refresh (NODEBOOT-1): a busy holder is retried, waiting for its return, for at most
     /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
     fn for_command(root: &'r DurabilityRoot) -> Self {
-        Self::for_holder_window(root, COMMAND_HOLDER_WINDOW)
-    }
-
-    fn for_holder_window(root: &'r DurabilityRoot, window: Duration) -> Self {
         Self {
-            deadline: tokio::time::Instant::now() + window,
+            deadline: tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW,
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
@@ -1593,8 +1599,8 @@ impl<'r> AdmissionRetryBudget<'r> {
     }
 
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
-    /// as a busy durability holder) is transient. A queued owner can use the last partial
-    /// backoff while its deadline still permits a checkout. With a root, the attempt
+    /// as a busy durability holder) is transient: it waits at most one backoff, unless the
+    /// retry would start past the window, which fails closed at once. With a root, the attempt
     /// queues for the holder from its first retry on: a returned holder is its turn once every
     /// owner refused before it is served, and it then retries at once, ahead of later owners and
     /// of the background passes that poll the holder on their own cadence. A retrier woken
@@ -1603,10 +1609,7 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
         let now = tokio::time::Instant::now();
-        if refusal != AdmissionRefusal::Unavailable
-            || now >= self.deadline
-            || (self.root.is_none() && now + self.backoff >= self.deadline)
-        {
+        if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
             // A given-up owner holds no later owner back.
             if let Some(Some(waiter)) = self.waiter.get() {
                 waiter.stop_waiting();
@@ -1617,7 +1620,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             Some(root) => {
                 let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
-                let latest = (now + self.backoff).min(self.deadline);
+                let latest = now + self.backoff;
                 if !root.wait_holder_turn(earliest, latest).await {
                     // A retired holder cannot emit a return notification. Service
                     // real readiness within this same retry window, then retry on
@@ -1633,13 +1636,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             }
             None => tokio::time::sleep(self.backoff).await,
         }
-        if tokio::time::Instant::now() < self.deadline {
-            return true;
-        }
-        if let Some(Some(waiter)) = self.waiter.get() {
-            waiter.stop_waiting();
-        }
-        false
+        true
     }
 
     /// Runs one durable `step` of the attempt, retrying an unavailable outcome (such as a
@@ -1656,27 +1653,6 @@ impl<'r> AdmissionRetryBudget<'r> {
                         return Err(refusal);
                     }
                 }
-            }
-        }
-    }
-
-    /// Retries errors that prove the operation could not acquire a holder.
-    async fn retry_holder<T, E>(
-        &self,
-        mut step: impl AsyncFnMut() -> Result<T, E>,
-        busy: impl Fn(&E) -> bool,
-    ) -> Result<T, E> {
-        loop {
-            match step().await {
-                Err(error) if busy(&error) => {
-                    if !self
-                        .retries_unavailable(AdmissionRefusal::Unavailable)
-                        .await
-                    {
-                        return Err(error);
-                    }
-                }
-                result => return result,
             }
         }
     }

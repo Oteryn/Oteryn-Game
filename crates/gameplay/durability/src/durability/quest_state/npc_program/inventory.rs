@@ -1,4 +1,5 @@
 //! Advisory branch classification reads the same bounded custody as the writer.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::item_loop_move::ItemLoopContent;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -90,7 +91,9 @@ impl DurabilityRoot {
                     if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         return Ok(Err(error));
                     }
-                    let snapshot = if equipped {
+                    let snapshot = if npc == postman_olrik::NPC {
+                        postman_olrik::inventory(&mut tx, fence).await?
+                    } else if equipped {
                         super::equipped::inventory(
                             &mut tx,
                             &recovery,
@@ -114,7 +117,7 @@ impl DurabilityRoot {
                     } else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(NpcProgramInventory {
                         npc,
                         fence: fence.item_fence(),

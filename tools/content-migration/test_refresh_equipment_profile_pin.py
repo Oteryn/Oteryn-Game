@@ -16,23 +16,31 @@ def document(*ids):
     }
 
 
+def qengine_speed_packet():
+    packet = document(*(f'oteryn:item.tibia.i{item}' for item in (3456, 31266, 31268, 19357)))
+    for row, speed in zip(packet['records'], ({}, {}, {}, {'speed_bonus': 10}), strict=True):
+        row['attributes'] = speed
+    return packet
+
+
 class EquipmentPinTests(unittest.TestCase):
-    def test_source_speed_pin_retains_unknown_pick_and_rejects_other_unknowns(self):
-        packet = document('oteryn:item.tibia.i3456', 'oteryn:item.tibia.i123')
-        packet['records'][0]['attributes'] = {}
-        packet['records'][1]['attributes'] = {'speed_bonus': 0}
+    def test_source_speed_pin_requires_exact_exceptions_and_rejects_other_nonzero_facts(self):
+        packet = qengine_speed_packet()
+        ordinary, = document('oteryn:item.tibia.i123')['records']
+        ordinary['attributes'] = {'speed_bonus': 0}
+        packet['records'].append(ordinary)
         source = TEST.read_text()
         fixed = source_speed_pin(source, packet)
-        self.assertIn('("qengine-reward-item-profiles.json", 2)', fixed)
-        self.assertIn('assert_eq!(actual.attributes.speed_bonus, None', fixed)
-        self.assertIn('assert_eq!(actual.attributes.speed_bonus, Some(0)', fixed)
+        self.assertIn('("qengine-reward-item-profiles.json", 5)', fixed)
+        self.assertIn('expected_qengine_reward_speed(key)', fixed)
+        self.assertIn('assert_eq!(actual.attributes.speed_bonus, expected', fixed)
         self.assertEqual(source_speed_pin(fixed, packet), fixed)
-        packet['records'][1]['attributes'] = {}
-        with self.assertRaisesRegex(ValueError, 'unknown-speed pick'):
-            source_speed_pin(source, packet)
-        packet['records'][1]['attributes'] = {'speed_bonus': 1}
-        with self.assertRaisesRegex(ValueError, 'unknown-speed pick'):
-            source_speed_pin(source, packet)
+        for index, mutated_speed in [(0, 0), (1, 0), (2, 0), (3, 9), (4, None), (4, 1)]:
+            with self.subTest(index=index, speed=mutated_speed):
+                changed = copy.deepcopy(packet)
+                changed['records'][index]['attributes'] = {'speed_bonus': mutated_speed}
+                with self.assertRaisesRegex(ValueError, 'QENGINE exact source speed facts differ'):
+                    source_speed_pin(source, changed)
 
     SOURCE = """const ORIGINAL_PROFILES: usize = 1;
 const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
@@ -173,17 +181,16 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[("QNPCFX", 1)];
             '        }\n    }\n'
             '    for id in [2949, 2950] {}\n'
         )
-        pick = 'oteryn:item.tibia.i3456'
-        qengine = document(pick)
-        qengine['records'][0]['attributes'] = {'speed_bonus': None}
-        args = (document(pick, 1, 2, 3), document(4), qengine, document(1))
+        qengine = qengine_speed_packet()
+        qengine_keys = [row['production_definition']['production_key'] for row in qengine['records']]
+        args = (document(*qengine_keys, 1, 2, 3), document(4), qengine, document(1))
         fixed, count = regenerate(source, *args)
-        self.assertEqual(count, 5)
-        self.assertIn("assert_eq!(added_keys.len(), 1);", fixed)
-        self.assertIn('("qengine-reward-item-profiles.json", 1)', fixed)
+        self.assertEqual(count, 8)
+        self.assertIn("assert_eq!(added_keys.len(), 4);", fixed)
+        self.assertIn('("qengine-reward-item-profiles.json", 4)', fixed)
         self.assertIn("assert_eq!(venison.attributes.speed_bonus, Some(0))", fixed)
-        self.assertIn("assert_eq!(actual.attributes.speed_bonus, None", fixed)
-        self.assertEqual(regenerate(fixed, *args), (fixed, 5))
+        self.assertIn("assert_eq!(actual.attributes.speed_bonus, expected", fixed)
+        self.assertEqual(regenerate(fixed, *args), (fixed, 8))
 
 
     def srx3_source(self):
@@ -987,6 +994,7 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
     def setUpClass(cls):
         import authored_static_item_constructors as authored
         import boss_reward_yield_profiles as yields
+        from crystal_equipment_slice import complete_boss_yield_pairs
         import lion_trial_item_profiles as lion
         import quest_callback_profiles as callbacks
         cls.authored, cls.yields, cls.callbacks = authored, yields, callbacks
@@ -1013,8 +1021,9 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
         yields.admit(refresh.ROOT, generated, 'profiles', 'manifest',
                      lambda row: row['production_definition']['production_key'],
                      yields.corpses.encode)
-        cls.actual = refresh.registered_source_document(
-            refresh.ROOT, json.loads(generated['profiles']))
+        completed = json.loads(generated['profiles'])
+        complete_boss_yield_pairs(refresh.ROOT, completed)
+        cls.actual = refresh.registered_source_document(refresh.ROOT, completed)
         cls.selection = next(row for row in refresh.SRX3_SOURCES if row[0] == 'SRX3-BOSS-YIELDS')
         with patch.object(refresh, 'SRX3_SOURCES', (cls.selection,)):
             cls.cohort = refresh.source_cohorts(refresh.ROOT)[0]
@@ -1022,8 +1031,9 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
         yields.admit(refresh.ROOT, isolated, 'profiles', 'manifest',
                      lambda row: row['production_definition']['production_key'],
                      yields.corpses.encode)
-        cls.isolated = refresh.registered_source_document(
-            refresh.ROOT, json.loads(isolated['profiles']))
+        completed = json.loads(isolated['profiles'])
+        complete_boss_yield_pairs(refresh.ROOT, completed)
+        cls.isolated = refresh.registered_source_document(refresh.ROOT, completed)
         definitions = [(path, row['definition'])
                        for path in sorted((refresh.ROOT / 'content/items/definitions').glob('items-*.json'))
                        for row in json.loads(path.read_bytes())['records']
@@ -1096,6 +1106,20 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
         self.assertEqual({row['key'] for row in self.trader_callbacks},
                          {'oteryn:quest-reward/chosen/trader/buy-sword',
                           'oteryn:quest-reward/chosen/trader/sword'})
+
+    def test_crimson_sword_cohort_checks_crystal_imbuement_allowances(self):
+        _, expected, _ = self.cohort
+        allowances = self.row(expected)['semantics']['imbuement']['value']['allowed_family_tiers']
+        self.assertEqual(allowances, {'state': 'KNOWN', 'value': [
+            {'family': family, 'tier': 'Three'} for family in
+            ('CRITICAL_HIT', 'ELEMENTAL_DAMAGE', 'LIFE_LEECH', 'MANA_LEECH', 'SKILL_SWORD')
+        ]})
+        stale = copy.deepcopy(self.actual)
+        self.row(stale)['semantics']['imbuement']['value']['allowed_family_tiers'] = {
+            'state': 'UNKNOWN',
+        }
+        with self.assertRaisesRegex(ValueError, 'SRX3 source profile differs: SRX3-BOSS-YIELDS'):
+            self.generate(stale)
 
     def test_requested_membership_and_unique_canonical_identity_are_required(self):
         requested, authored, callbacks = copy.deepcopy(self.requests)
@@ -1206,6 +1230,20 @@ class BossYieldPriorOwnerTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,
                         'SRX3 source profile differs: SRX3-BOSS-YIELDS/oteryn:item.tibia.i7385'):
                     self.generate(actual)
+
+    def test_energy_drink_adds_exact_food_policy_without_relaxing_yield_proof(self):
+        key = 'oteryn:item.tibia.i23545'
+        actual = copy.deepcopy(self.actual)
+        row = next(row for row in actual['records']
+                   if row['production_definition']['production_key'] == key)
+        food = row['semantics']['consumption']
+        self.assertEqual(food, {'state': 'KNOWN', 'value': {
+            'kind': 'FOOD', 'value': {'regeneration_seconds': 360},
+        }})
+        self.generate(actual)
+        food['value']['value']['regeneration_seconds'] = 30
+        with self.assertRaisesRegex(ValueError, f'SRX3 source profile differs: SRX3-BOSS-YIELDS/{key}'):
+            self.generate(actual)
 
 
 

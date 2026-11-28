@@ -5,6 +5,7 @@ use super::starter;
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{SessionEvent, client_ui::cyclopedia_character as panel};
+use oteryn_gameplay_world::movement::interest::{VisibilityPosition, VisibilitySettings};
 use oteryn_protocol_oteryn::{
     attack::FightMode, cyclopedia_character as character, party_skull, pvp_expert,
 };
@@ -60,11 +61,9 @@ pub(super) async fn run(
         && check(
             "profiles",
             bounded("profiles", 30, async {
-                profiles(&mut bots, &["knight", "druid", "paladin"]).await?;
-                bots::with_peer_liveness(&mut bots, 3, async |victim| {
-                    starter::check_profile(victim, Some(birth)).await
-                })
-                .await
+                let (victim, party_members) = bots.split_last_mut().ok_or("MP01 victim missing")?;
+                profiles(party_members, &["knight", "druid", "paladin"]).await?;
+                starter::check_profile(victim, Some(birth)).await
             })
             .await,
             &mut failures,
@@ -214,8 +213,7 @@ async fn bounded<T>(
 }
 
 async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
-    for (index, &vocation) in vocations.iter().enumerate() {
-        bots::with_peer_liveness(bots, index, async |bot| {
+    for (bot, &vocation) in bots.iter_mut().zip(vocations) {
         let view = tab(bot, character::CharacterTab::GeneralStats).await?;
         let expected =
             character::vocation_id(vocation).ok_or("MP01 vocation has no protocol id")?;
@@ -244,8 +242,6 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
             bot.name,
             view.general.as_ref().map(|stats| stats.level)
         ));
-            Ok(())
-        }).await?;
     }
     Ok(())
 }
@@ -263,12 +259,8 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
     let expected = expected.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let leader = bots[0].name.to_owned();
     let mut party_id = None;
-    for index in 0..3 {
-        let (view, rows) = bots::with_peer_liveness(bots, index, async |bot| {
-            Ok((party(bot, None).await?, durable_party(bot).await?))
-        })
-        .await?;
-        let bot = &bots[index];
+    for bot in &mut bots[..3] {
+        let view = party(bot, None).await?;
         let mut members = view
             .members
             .iter()
@@ -285,6 +277,7 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             )
             .into());
         }
+        let rows = durable_party(bot).await?;
         let mut names = rows.iter().map(|r| r.1.as_str()).collect::<Vec<_>>();
         names.sort_unstable();
         if names != expected
@@ -305,13 +298,12 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             bot.name
         ));
     }
-    bots::with_peer_liveness(bots, 3, async |bot| {
-        if !party(bot, None).await?.members.is_empty() || !durable_party(bot).await?.is_empty() {
-            return Err("MP01 D unexpectedly belongs to the party".into());
-        }
-        Ok(())
-    })
-    .await
+    if !party(&mut bots[3], None).await?.members.is_empty()
+        || !durable_party(&bots[3]).await?.is_empty()
+    {
+        return Err("MP01 D unexpectedly belongs to the party".into());
+    }
+    Ok(())
 }
 
 /// Read-only qualification observation, following death.rs's bounded durable receipt reader.
@@ -371,24 +363,8 @@ async fn snapshots(
 }
 
 async fn pvp_status(bot: &mut Bot<'_, '_>) -> TestResult<party_skull::PvpStatus> {
-    let reply = bot
-        .client()?
-        .session_mut()
-        .gated_command(
-            party_skull::CAPABILITY_PARTY_SKULL_V1,
-            party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
-            &[8, 1],
-        )
-        .await?;
-    if reply.status != CommandStatus::Accepted {
-        return Err(format!(
-            "PvP status={:?};source:crates/protocol-oteryn/src/party_skull/status.rs:1",
-            reply.status
-        )
-        .into());
-    }
-    party_skull::PvpStatus::decode(&reply.payload)
-        .map_err(|e| format!("PvP status decode:{e:?}").into())
+    let payload = bots::party_skull_query(bot, &[8, 1]).await?;
+    party_skull::PvpStatus::decode(&payload).map_err(|e| format!("PvP status decode:{e:?}").into())
 }
 
 async fn verify_pvp_state(bot: &mut Bot<'_, '_>) -> TestResult {
@@ -439,6 +415,47 @@ fn expert_update(events: &[SessionEvent], after: u64) -> Option<pvp_expert::Expe
     })
 }
 
+async fn set_expert_modes(
+    bot: &mut Bot<'_, '_>,
+    requested: &pvp_expert::ExpertFightModes,
+) -> TestResult {
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, decode_attack_intent_result};
+
+    let client = bot.client()?;
+    let payload = pvp_expert::encode_expert_fight_modes(requested);
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let reply = client
+                .session_mut()
+                .gated_command(
+                    pvp_expert::CAPABILITY_PVP_EXPERT_V1,
+                    pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+                    &payload,
+                )
+                .await?;
+            if reply.status == CommandStatus::Rejected
+                && decode_attack_intent_result(&reply.payload)
+                    == Ok(AttackIntentDisposition::Rejected)
+            {
+                client.service_liveness(Duration::from_millis(50)).await?;
+                continue;
+            }
+            if reply.status != CommandStatus::Accepted {
+                return Err(format!("expert modes refused: {reply:?}").into());
+            }
+            let disposition = decode_attack_intent_result(&reply.payload)
+                .map_err(|error| format!("expert mode decode:{error:?};reply={reply:?}"))?;
+            if disposition != AttackIntentDisposition::Ok {
+                return Err(format!("expert modes disposition={disposition:?}").into());
+            }
+            return Ok(());
+        }
+    })
+    .await
+    .map_err(|_| "expert modes exchange deadline")?
+}
+
 /// The node-boot World is no-PvP (`tools/qualification/node_boot/run.sh:1021`, `world_type=1`), so
 /// the server pins every expert mode to Dove (`pvp_expert.rs:83-92` set, `:121-131` observe).
 async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
@@ -450,22 +467,7 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
         expert: pvp_expert::ExpertMode::RedFist,
     };
     let after = bots[0].client()?.last_server_sequence();
-    let reply = bots[0]
-        .client()?
-        .session_mut()
-        .gated_command(
-            pvp_expert::CAPABILITY_PVP_EXPERT_V1,
-            pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
-            &pvp_expert::encode_expert_fight_modes(&requested),
-        )
-        .await?;
-    let disposition = oteryn_protocol_oteryn::attack::decode_attack_intent_result(&reply.payload)
-        .map_err(|error| format!("expert mode decode:{error:?};status={:?};source:crates/protocol-oteryn/src/attack.rs:300", reply.status))?;
-    if reply.status != CommandStatus::Accepted
-        || disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-    {
-        return Err(format!("expert modes status={:?};disposition={disposition:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83", reply.status).into());
-    }
+    set_expert_modes(&mut bots[0], &requested).await?;
     bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(5), "expert fight mode update", |_, events| {
         if let Some(served) = expert_update(&events[0], after) {
             if served.expert != pvp_expert::ExpertMode::Dove {
@@ -938,22 +940,7 @@ async fn pvp_journey(
         expert: pvp_expert::ExpertMode::RedFist,
     };
     let after = bots[0].client()?.last_server_sequence();
-    let reply = bots[0]
-        .client()?
-        .session_mut()
-        .gated_command(
-            pvp_expert::CAPABILITY_PVP_EXPERT_V1,
-            pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
-            &pvp_expert::encode_expert_fight_modes(&mode),
-        )
-        .await?;
-    let disposition = oteryn_protocol_oteryn::attack::decode_attack_intent_result(&reply.payload)
-        .map_err(|error| format!("expert mode decode:{error:?};status={:?};source:crates/protocol-oteryn/src/attack.rs:300", reply.status))?;
-    if reply.status != CommandStatus::Accepted
-        || disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
-    {
-        return Err(format!("expert modes status={:?};disposition={disposition:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:1", reply.status).into());
-    }
+    set_expert_modes(&mut bots[0], &mode).await?;
     // An Open PvP World serves the requested Red Fist, not the no-PvP Dove.
     bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(5), "expert fight mode update", |_, events| {
         if let Some(served) = expert_update(&events[0], after) {
@@ -1050,23 +1037,43 @@ async fn pvp_journey(
     {
         return Err(format!("MP01 durable frag points={points:?};death={}", death.id).into());
     }
-    // B has already proved its temple respawn; bring its new incarnation back into interest.
-    bots::approach(bots, 1, 0, world, true).await?;
+    // The frag blocks the attacker from entering protection zones. Move only
+    // the attacker along legal tiles into the victim's temple view.
+    let temple_view =
+        VisibilityPosition::new(temple.x.into(), temple.y.into(), temple.floor.into())?;
+    let positions = bots::positions(bots)?;
+    let path = route_avoiding(
+        world,
+        positions[0],
+        |at| {
+            VisibilityPosition::new(at.x.into(), at.y.into(), at.floor.into())
+                .is_ok_and(|at| VisibilitySettings::REFERENCE.can_see(temple_view, at))
+        },
+        |at| {
+            bots::tile_available(&positions, 0, at)
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|t| !t.protection_zone())
+        },
+    )
+    .ok_or("no legal attacker route into the temple view")?;
+    bots::walk_bot(bots, 0, world, &path).await?;
+    bots::wait_observation(
+        bots,
+        tokio::time::Instant::now() + Duration::from_secs(15),
+        "MP01 attacker visible to the victim at the temple",
+        |bots, _| {
+            Ok(bots[1]
+                .session
+                .as_ref()
+                .and_then(|client| client.world_entities())
+                .is_some_and(|entities| entities.get(&attacker).is_some()))
+        },
+    )
+    .await?;
     for bot in bots.iter_mut() {
-        let reply = bot
-            .client()?
-            .session_mut()
-            .gated_command(
-                party_skull::CAPABILITY_PARTY_SKULL_V1,
-                party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
-                &[],
-            )
-            .await?;
-        if reply.status != CommandStatus::Accepted {
-            return Err(format!("skull icons status={:?};source:crates/gameplay/dispatch/src/gameplay_transport/party_skull.rs:85", reply.status).into());
-        }
-        let icons = party_skull::decode_party_icons(&reply.payload)
-            .map_err(|e| format!("skull icons:{e:?}"))?;
+        let icons = bots::party_icons(bot).await?;
         if !icons
             .iter()
             .any(|icon| icon.entity == attacker && icon.skull == 3)
@@ -1081,6 +1088,10 @@ async fn pvp_journey(
             "MP_CHECK MP01 attacker-skull-view PASS participant={} A_skull=white",
             bot.name
         ));
+    }
+    let victim_position = bots[1].client()?.world_spatial().actor_position;
+    if victim_position != temple_position {
+        return Err(format!("MP01 victim left temple during skull observation;expected={temple_position:?};observed={victim_position:?}").into());
     }
     let awarded = pvp_status(&mut bots[0]).await?;
     let increment = oteryn_gameplay_combat_rules::pvp::skull::contributor_points(

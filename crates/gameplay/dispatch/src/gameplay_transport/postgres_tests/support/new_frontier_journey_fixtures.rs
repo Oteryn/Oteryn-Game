@@ -22,6 +22,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 pub(super) const NAME: &str = "authored-new-frontier";
 pub(super) const BAIT_RECOVERY: &str = "authored-new-frontier-bait-recovery";
+pub(super) const POLISHER_RETRY: &str = "authored-new-frontier-polisher-retry";
 const QUEST: &str = "oteryn:quest.the_new_frontier_quest";
 const TRACK: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/";
 const BOSS: &str = "oteryn:creature.shard_of_corruption";
@@ -204,7 +205,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     a: &mut AdmittedSession,
     h: &Harness,
-    recover_bait: bool,
+    name: &str,
 ) -> TestResult {
     use NpcIntentDisposition::{Ok as Spoken, Rejected};
     use UseDisposition::{Committed, Rejected as UseRejected};
@@ -269,7 +270,7 @@ pub(super) async fn exercise(
     travel_to(owner, a, CONTACTS[1].2).await?;
     say(owner, a, melfar, &["hi", "mission", "yes"], Spoken).await?;
     state(h, 5, ("mission02_1", 2), 1).await?;
-    if recover_bait {
+    if name == BAIT_RECOVERY {
         bait_tree(owner, a, TREES[2], Committed).await?;
         state(h, 5, ("mission02/beaver3", 1), 0).await?;
         let fence = owner
@@ -368,7 +369,7 @@ pub(super) async fn exercise(
     state(h, 14, ("mission05_1", 1), 0).await?;
     say(owner, a, ongulf, &["hi", "mission"], Rejected).await?;
     state(h, 14, ("mission05_1", 1), 0).await?;
-    for (npc, (name, _, approach)) in [humgolf, wyrdin, angus, telas, king]
+    for (npc, (name, _, approach)) in [humgolf, wyrdin, angus, telas]
         .into_iter()
         .zip(CONTACTS.into_iter().skip(3))
     {
@@ -376,6 +377,46 @@ pub(super) async fn exercise(
         say(owner, a, npc, &["hi", "farmine", "reason"], Spoken).await?;
         state(h, 14, (&format!("mission05/{name}"), 3), 0).await?;
     }
+    let king_approach = CONTACTS[7].2;
+    travel_to(owner, a, king_approach).await?;
+    assert_eq!(carried(h, 10009).await?, 0);
+    if name == POLISHER_RETRY {
+        say(owner, a, king, &["hi", "farmine", "plea"], Spoken).await?;
+        state(h, 14, ("mission05/king_tibianus", 2), 0).await?;
+        say(owner, a, king, &["hi", "farmine", "yes"], Spoken).await?;
+        state(h, 14, ("mission05/king_tibianus", 2), 0).await?;
+    }
+    let fence = owner
+        .current_quest_fence(a.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("crown polisher item fence")?;
+    for ordinal in [90_011, 90_012] {
+        super::quest_world_callbacks_fixtures::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: king_approach,
+                item: "oteryn:item.tibia.i10009".into(),
+                count: 1,
+            },
+            ordinal,
+            true,
+        )
+        .await?;
+    }
+    assert_eq!(carried(h, 10009).await?, 2);
+    if name == POLISHER_RETRY {
+        say(owner, a, king, &["hi", "farmine", "yes"], Spoken).await?;
+        state(h, 14, ("mission05/king_tibianus_prepaid", 1), 0).await?;
+        assert_eq!(carried(h, 10009).await?, 1);
+        say(owner, a, king, &["hi", "farmine", "plea"], Spoken).await?;
+        assert_eq!(carried(h, 10009).await?, 1);
+    } else {
+        say(owner, a, king, &["hi", "farmine", "reason"], Spoken).await?;
+        assert_eq!(carried(h, 10009).await?, 2);
+    }
+    state(h, 14, ("mission05/king_tibianus", 3), 0).await?;
     travel_to(owner, a, CONTACTS[0].2).await?;
     travel_to(owner, a, CITY).await?;
     use_object(owner, a, pos(33062, 31527, 12), 2, UseRejected).await?;

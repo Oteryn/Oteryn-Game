@@ -1,4 +1,4 @@
-"""Complete unknown native equipment level and vocations from pinned source facts.
+"""Complete unknown native weapon equip level and vocations from pinned source facts.
 
 The server projects an equip pattern only when its level and vocations are known
 (`projected_equipment_claims`), but the Wiki lowering keeps an absent or zero requirement
@@ -39,8 +39,7 @@ def complete(profiles, facts, packet=False):
         patterns = equipment['value']['patterns']['value']
         if packet and len(patterns) != 1:
             continue
-        slot = {'state': 'KNOWN', 'value': fact.get('slot', 'WEAPON')}
-        if len(patterns) != 1 or patterns[0]['primary_slot'] != slot:
+        if len(patterns) != 1 or patterns[0]['primary_slot'] != {'state': 'KNOWN', 'value': 'WEAPON'}:
             raise ValueError('WEAPON_EQUIP_PATTERN_SHAPE:' + fact['key'])
         for field, value in (('level', fact['level']), ('vocations', fact['vocations'])):
             wanted = {'state': 'KNOWN', 'value': value}

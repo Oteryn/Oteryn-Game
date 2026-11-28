@@ -120,41 +120,8 @@ async fn pump(a: &mut DevClientSession, b: &mut DevClientSession) -> TestResult 
 async fn see_each_other(
     a: &mut DevClientSession,
     b: &mut DevClientSession,
-    clients: &SeamClients<'_>,
 ) -> TestResult<EntityRef> {
     let target = own(b)?.identity;
-    if let Some(found) = seen(a, target) {
-        return Ok(found);
-    }
-    let from = tile(a.world_spatial().actor_position)?;
-    let peer = tile(b.world_spatial().actor_position)?;
-    let world = full_e2ef7::qualification_world(clients)?;
-    let path = route(world, from, |at| {
-        at.floor == peer.floor
-            && at != peer
-            && at.x.abs_diff(peer.x).max(at.y.abs_diff(peer.y)) <= 1
-    })
-    .ok_or("step=admit observed=no-route-to-peer")?;
-    let (done, mut walking) = tokio::sync::oneshot::channel();
-    // Finish any peer frame in flight before giving the session back to the party journey.
-    let (walked, serviced) = tokio::join!(
-        async {
-            let result = walk(a, world, &path).await;
-            let _ = done.send(());
-            result
-        },
-        async {
-            while matches!(
-                walking.try_recv(),
-                Err(tokio::sync::oneshot::error::TryRecvError::Empty)
-            ) {
-                b.service_liveness(Duration::from_millis(25)).await?;
-            }
-            Ok::<(), oteryn_dev_client::DevClientError>(())
-        },
-    );
-    walked?;
-    serviced?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     loop {
         if let Some(found) = seen(a, target) {
@@ -237,7 +204,7 @@ async fn body(
     b: &mut DevClientSession,
     clients: &SeamClients<'_>,
 ) -> TestResult {
-    let b_seen = see_each_other(a, b, clients).await?;
+    let b_seen = see_each_other(a, b).await?;
     let (reply, _) = party(a, Some(PartyIntent::Invite(b_seen))).await?;
     if reply != PartyDisposition::Ok {
         return Err(format!("step=invite observed={reply:?}").into());

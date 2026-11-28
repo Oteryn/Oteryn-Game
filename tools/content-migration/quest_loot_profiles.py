@@ -65,6 +65,16 @@ def required_items(root, creatures, tables):
         if table is None or table['identity'] != reference:
             raise ValueError('QUEST_LOOT_EXACT_TABLE_BINDING')
         entries(table['entries'])
+    # The Count's ring already has exact portable native custody. Qualify its
+    # loot facts against the same XML-backed source as other quest yields.
+    for creature in ('the_count', 'the_weakened_count'):
+        table = tables.get(f'oteryn:loot.creature.{creature}')
+        if table is None:
+            continue
+        drops = [row for row in table['entries'] if row['item']['key'] == 'oteryn:item.tibia.i7924']
+        if not drops or any(row != drops[0] for row in drops):
+            raise ValueError(f'QUEST_LOOT_COUNT_RING_SOURCE_DRIFT:{creature}')
+        entries(drops)
     return found
 
 
@@ -150,7 +160,7 @@ def project(fact, record, binding, *, source_charges_absent=False):
     result = copy.deepcopy(fact)
     result['materializable'] = True
     result['container_capacity'] = capacity
-    charges = semantics['charges']
+    charges = semantics.get('charges', corpse.grizzly.source.U)
     if charges.get('state') == 'KNOWN':
         count = charges['value']['count']
         if count.get('state') != 'KNOWN' or type(count.get('value')) is not int or not 1 <= count['value'] <= 65535:
@@ -196,4 +206,12 @@ def apply_loot_facts(facts, root, creatures, tables, profiles=None):
         updates[key] = project(fact, native[key], matches[0],
                                source_charges_absent='charges' not in corpse.grizzly.source.attrs(xml[number]))
     # Publish only after the complete scoped cohort passes; no partial input mutation.
+    weakened = tables.get('oteryn:loot.creature.the_weakened_count')
+    if weakened is not None:
+        # The donor has one guaranteed ring. The legacy weakened table repeats
+        # the exact row, which was previously unmintable.
+        rows = weakened['entries']
+        ring = next(row for row in rows if row['item']['key'] == 'oteryn:item.tibia.i7924')
+        index = rows.index(ring)
+        weakened['entries'] = rows[:index + 1] + [row for row in rows[index + 1:] if row != ring]
     facts.update(updates)

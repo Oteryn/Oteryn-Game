@@ -138,23 +138,12 @@ async fn talk(
 }
 
 async fn journey(clients: &SeamClients<'_>) -> Result<(), StepFailure> {
-    character_prep::declare_seeded(
-        "E12.full",
-        "level 20 and ended authored auction",
-        "hireling summon requires an owned house",
-    );
-    let mut client = async {
-        let identity =
-            character_prep::dedicated_character(clients, "NODE_BOOT_G01_ACCOUNT").await?;
-        full_row_g01::prepare_owned_house(&identity.clients(clients), 0xe1).await
-    }
-    .await
-    .map_err(|error| {
+    let mut client = connect_world(clients, 0xe1).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         StepFailure {
             step: 1,
             observed: format!("admission-{error}"),
-            need: "fresh-player-admission-with-owned-house",
+            need: "fresh-player-admission",
             source: Some(error),
         }
     })?;

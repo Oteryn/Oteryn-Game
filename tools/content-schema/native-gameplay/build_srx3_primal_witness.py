@@ -7,11 +7,14 @@ runtime binds every consumed Creature/Behavior/Ability/Effect/Formula record.
 Crystal callback bytes are read-only compatibility evidence, never executed.
 """
 from __future__ import annotations
+
 import argparse
+import copy
 import hashlib
 import json
-import build_native_callback_witness as canonical_witness
 from pathlib import Path
+
+import build_native_callback_witness as canonical_witness
 
 ROOT = Path(__file__).resolve().parents[3]
 PIN = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -20,6 +23,25 @@ KEYS = ('fungosaurus', 'emerald_tortoise_primal', 'gore_horn_primal', 'gorerilla
 CALLBACKS = {'data-global/monster/quests/primal_ordeal_quest/the_primal_menace.lua': '468add6e4f49914100f38068be11075c86a7baa566f31fb0b20066d855c3a973', 'data-global/scripts/systems/hazard_primal.lua': '395f109a693fdaa0391801c8c1aae701d0e21cfe1cf701ff6b5ec373063e75b3', 'data-global/lib/quests/the_primal_ordeal.lua': '18e68a281c1b1245dd1f01fd70fe2947c2ae5ac7011c39be686fe027bc4bda0a'}
 REVIEWED_PROFILES = {'oteryn:creature.fungosaurus': '27e372cade8dd1c166cc13f7fc61f4a8ed4623b63f30ac4976a19744d3cf71a9', 'oteryn:creature.emerald_tortoise_primal': '48a315ebf9a08f77a0f6e7033c33729415066496b0cea0f55b8999632380fc5b', 'oteryn:creature.gore_horn_primal': '456475d3a9688505217a9991601c49b5cc2b0f18b616b86a19c023da1aa20590', 'oteryn:creature.gorerilla_primal': '6adc13dba672e514e976f5abdbfe822117f47974eeffe0035d2431455ae9a989', 'oteryn:creature.headpecker_primal': 'ebd5c783ca6e34a978f2e23319516909d982134d6e52c6c451d0147290c67fc6', 'oteryn:creature.hulking_prehemoth_primal': '48925e9bb3fdc1160540f437ec43df066171fbda3a03ada187784d9ed60bf6d5', 'oteryn:creature.mantosaurus_primal': 'd18235eba9484c5ae5e98df713ced9e82f2d2e7dd5b7ad5c7615caeb5993de76', 'oteryn:creature.nighthunter_primal': '7430bf6b8c348b0352e2ccf90ba9753593e0ae12ffcb7c3f85b7ab4bb67efaf8', 'oteryn:creature.noxious_ripptor_primal': '992517585fe7562cfefc6f9d9b6acda966e648b6a4c4d4949b6863afcbaff5d6', 'oteryn:creature.sabretooth_primal': 'b2d27e7bd853180de68719ffae6eef09b2ca761322585897374219e80dff1fef', 'oteryn:creature.stalking_stalk_primal': '8796d2e24a066f0e6dba0ade3e2170593b61fd397706062598417d41b412cdfc', 'oteryn:creature.sulphider_primal': '6dfb25b16a7a70c2ed0cd58bf80233e1456757cc0de31c4b5d5d97d0f33d2b0c', 'oteryn:creature.the_primal_menace': 'cbcea77726286580896d408e22e4d4328b0998afe1412b4f0847823c87fcf3a5'}
 OUTPUT = ROOT / "tools/content-schema/native-gameplay/srx3-primal-witness.json"
+
+
+def reviewed_body(record, key):
+    if key != "oteryn:creature.the_primal_menace":
+        return record
+    # Crystal the_primal_menace.lua:71-74 declares Archfoe. Require that exact
+    # static catalogue supplement in both copies of the native Creature root.
+    # The earlier combat review still pins every other field of the body.
+    expected = {"category": "archfoe", "prowess_kills": 5, "expertise_kills": 20,
+                "mastery_kills": 60, "prowess_points": 10,
+                "expertise_points": 30, "mastery_points": 60}
+    body = copy.deepcopy(record)
+    profile = body["profile"]
+    mirror, = (row for row in body["attack_definitions"]["profiles"]
+               if row["target"] == profile["target"])
+    for root in (profile, mirror):
+        if root["data"]["profile"]["details"].pop("bosstiary", None) != expected:
+            raise ValueError("native Primal Ordeal Bosstiary supplement changed")
+    return body
 
 
 def build(documents=None):
@@ -35,7 +57,7 @@ def build(documents=None):
         if len(matches) != 1:
             raise ValueError("missing or duplicated native participant: " + key)
         record = matches[0]
-        actual = hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":"),
+        actual = hashlib.sha256(json.dumps(reviewed_body(record, key), sort_keys=True, separators=(",", ":"),
                                            ensure_ascii=False).encode()).hexdigest()
         if actual != REVIEWED_PROFILES[key]:
             raise ValueError("native Primal Ordeal body changed; source qualification review required: " + key)

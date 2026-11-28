@@ -5,36 +5,6 @@ use super::{
 use crate::durability::SqlxFailureClass;
 
 impl DurabilityRoot {
-    /// Retry a foreground step whose typed refusal guarantees that it did no work.
-    /// Keep its place across wakeups so later checkouts cannot race it for each return.
-    pub async fn retry_foreground_holder<T, E>(
-        &self,
-        deadline: tokio::time::Instant,
-        busy: impl Fn(&E) -> bool,
-        mut step: impl AsyncFnMut() -> Result<T, E>,
-    ) -> Result<T, E> {
-        let mut waiting = None;
-        loop {
-            let outcome = step().await;
-            let now = tokio::time::Instant::now();
-            if !outcome.as_ref().is_err_and(&busy) || now >= deadline {
-                return outcome;
-            }
-            // Scheduled passes still get their bounded fairness window. If the guard
-            // capacity is full, the FIFO ticket continues to order foreground owners.
-            waiting.get_or_insert_with(|| (self.foreground_demand().ok(), self.holder_waiter()));
-            let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
-            let earliest = (now + std::time::Duration::from_millis(50)).min(latest);
-            if !self.wait_holder_turn(earliest, latest).await {
-                // A retired holder has no turn. Wait for maintenance within the same budget.
-                self.wait_holder_retry(earliest, latest).await;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return outcome;
-            }
-        }
-    }
-
     /// Recover or wait for the holder before issuing work. A previous successful
     /// pass can retire its connection during cleanup. Maintenance remains the
     /// only connector, and the issued pass keeps its ordinary independent budget.

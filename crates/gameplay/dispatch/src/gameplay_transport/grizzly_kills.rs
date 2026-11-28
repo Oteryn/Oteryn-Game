@@ -2,7 +2,7 @@
 //! the task runs observed at death never change while a delayed settlement is retried.
 //! Crystal 201189f `creaturescripts_monster_kill.lua:18-56`, `party.lua:129-139`.
 
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 mod encounters;
 pub(super) use encounters::PreparedEncounter;
 mod guardians;
@@ -89,6 +89,8 @@ pub(super) struct FrozenGrizzlyDeath {
     source: Option<PartySnapshot>,
     recipients: Vec<Recipient>,
     pub(super) native: Vec<super::quest_kills::Recipient>,
+    pub(super) source_party_at_death: Option<crate::durability::world_party::SourceDeathParty>,
+    pub(super) source_party: OnceLock<Vec<[u8; 16]>>,
     native_goals: Option<native_goals::Recipient>,
 }
 
@@ -133,7 +135,7 @@ impl GrizzlyCaptureCache {
 
 /// Select only the observed source roster. Cache absence is unavailable, never an
 /// invented solo group. Mutation authority is qualified separately at settlement.
-fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 16]>> {
+pub(super) fn participants(source: &PartySnapshot, principal: [u8; 16]) -> Option<Vec<[u8; 16]>> {
     if source.character != principal || !source.is_well_formed() {
         return None;
     }
@@ -265,6 +267,8 @@ fn freeze_at(
         source: Some(source),
         recipients,
         native,
+        source_party_at_death: None,
+        source_party: OnceLock::new(),
         native_goals: None,
     }
 }
@@ -318,6 +322,7 @@ pub(super) fn capture(
     runtime: &mut ChannelRuntimeV1,
     queue: &KillSettlementQueue,
     entry: &mut PendingKillSettlement,
+    lethal_unix_micros: Option<i64>,
 ) {
     let Ok(mut cache) = queue.1.lock() else {
         return;
@@ -386,6 +391,14 @@ pub(super) fn capture(
                 Some(entry.facts.corpse),
                 &live,
             );
+            frozen.source_party_at_death = frozen.source.as_ref().and_then(|party| {
+                Some(crate::durability::world_party::SourceDeathParty {
+                    id: party.party_id?,
+                    observed_revision: party.revision?,
+                    shared_xp_enabled: party.shared_xp_enabled,
+                    captured_at_unix_micros: lethal_unix_micros?,
+                })
+            });
             if matches!(entry.facts.death.runtime_scope(), crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
                 for recipient in &mut frozen.native {
                     if recipient.death.transition != "oteryn:quest-transition/native-kills/first-dragon-selected" { continue; }

@@ -314,9 +314,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             store
         };
         let release = TerminalRelease::Logout(controller.transport);
+        if !self.settle_paid_quest_callbacks(session).await {
+            return Ok(LogoutReply::Result(LogoutResult::Busy));
+        }
         // Nothing is fenced yet when no transition id can be minted.
         let token = {
             let mut runtime = self.runtime.lock().await;
+            if self.has_pending_paid_quest_callback(session) {
+                return Ok(LogoutReply::Result(LogoutResult::Busy));
+            }
             if channel_switch
                 && let Some(lock) = self.switch_encounter_lock(&runtime, actor, session)
             {
@@ -356,9 +362,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=logout_unknown stage=release_attempt kind=unknown");
                 LogoutReply::Unknown
             }
-            ReleaseAttempt::Retry => match self.settle_unended(&store, actor, &mut hold).await {
+            ReleaseAttempt::Retry(stage) => match self
+                .settle_unended(&store, actor, &mut hold)
+                .await
+            {
                 UnendedSettle::Lifted => {
+                    // Retain the summary consumed by node-boot diagnostics.
                     operator_event("event=logout_busy stage=release_retry_lifted");
+                    operator_event(&format!("event=logout_busy stage={stage}"));
                     LogoutReply::Result(LogoutResult::Busy)
                 }
                 UnendedSettle::Terminal => {

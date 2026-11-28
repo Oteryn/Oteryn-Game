@@ -557,42 +557,37 @@ async fn restore_fixture_health(client: &mut DevClientSession) -> TestResult {
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
 async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let roomy = |at: TilePos| {
+        open(at)
+            && [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .filter(|direction| destination(world, at, *direction).is_some_and(open))
+            .count()
+                >= 3
+    };
     let from = tile(client.world_spatial().actor_position)?;
-    let snapshot = world.clone();
+    if roomy(from) {
+        return Ok(());
+    }
     verdict::Harness::global().progress("creature-sweep-route");
-    let path = route_work(client, move || {
-        let world = &snapshot;
-        let open = |at: TilePos| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-        };
-        let roomy = |at: TilePos| {
-            open(at)
-                && [
-                    StepDirection::North,
-                    StepDirection::East,
-                    StepDirection::South,
-                    StepDirection::West,
-                ]
-                .into_iter()
-                .filter(|direction| destination(world, at, *direction).is_some_and(open))
-                .count()
-                    >= 3
-        };
-        if roomy(from) {
-            return Ok(Vec::new());
-        }
-        far_route(world, from, roomy).map_err(|reachable| {
-            format!(
-                "no open ground from {} ({} tiles reachable)",
-                at(from),
-                reachable.len()
-            )
-        })
-    })
-    .await?;
+    let path = far_route(world, from, roomy).map_err(|reachable| {
+        format!(
+            "no open ground from {} ({} tiles reachable)",
+            at(from),
+            reachable.len()
+        )
+    })?;
     walk(client, world, &path).await
 }
 

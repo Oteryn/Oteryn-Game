@@ -531,6 +531,61 @@ mod main_native_contract {
     }
 
     #[test]
+    fn knightwatch_join_and_rank_four_require_dreamer_puzzle() -> Result<(), String> {
+        use crate::quest::reward_callbacks::{TrackRequirement, offered_for};
+        use std::collections::BTreeMap;
+
+        #[derive(serde::Deserialize)]
+        struct Offers {
+            offers: Vec<Offer>,
+        }
+        #[derive(serde::Deserialize)]
+        struct Offer {
+            npc: String,
+            next_topic: u16,
+            #[serde(default)]
+            requires: Vec<TrackRequirement>,
+        }
+
+        let loaded = crate::quest::loader::load_embedded_quest_state("knightwatch-prerequisite")
+            .map_err(|error| format!("{error:?}"))?;
+        let catalogue = loaded.catalogue();
+        let callbacks = offered_for(catalogue)?;
+        let offers: Offers = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/quests/shared-reward-offers.json"
+        )))
+        .map_err(|error| error.to_string())?;
+        let puzzle = "oteryn:quest-progress/chosen-source/dreamer_s_challenge_quest/s4";
+        // PARTIAL: the terminal Dreamer puzzle is an independent writer.
+        let without_puzzle = BTreeMap::new();
+        for npc in ["oteryn:npc.the_bone_master", "oteryn:npc.the_dream_master"] {
+            for topic in [2, 5] {
+                let callback = callbacks
+                    .iter()
+                    .find(|callback| callback.npc == npc && callback.topic == topic)
+                    .ok_or("Knightwatch confirmation")?;
+                let offer = offers
+                    .offers
+                    .iter()
+                    .find(|offer| offer.npc == npc && offer.next_topic == topic)
+                    .ok_or("Knightwatch offer")?;
+                for requirements in [&callback.requires, &offer.requires] {
+                    let required = requirements
+                        .iter()
+                        .find(|requirement| requirement.track == puzzle)
+                        .ok_or("donor Dreamer prerequisite")?;
+                    assert!(
+                        !required.holds(catalogue, &without_puzzle),
+                        "{npc} topic {topic}"
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn explicit_empty_native_bindings_preserve_the_legacy_catalogue() -> Result<(), String> {
         use crate::quest::{QuestTrack, arena_completion, completion_sets, native_kills};
 
@@ -582,7 +637,7 @@ mod main_native_contract {
             }
             Ok(())
         };
-        for (stage, max) in [(4, 2), (5, 1), (6, 1)] {
+        for (stage, max) in [(4, 2), (6, 1)] {
             track(
                 &format!("oteryn:quest-progress/chosen-source/the_first_dragon_quest/s{stage}"),
                 "oteryn:quest.the_first_dragon_quest",
@@ -602,7 +657,7 @@ mod main_native_contract {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
         // Package C adds three Skull of Ratha claim markers and one Legion Helmet marker.
-        assert_eq!(additions.len(), 72);
+        assert_eq!(additions.len(), 71);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
@@ -617,7 +672,34 @@ mod main_native_contract {
         let after = explicit.catalogue();
         // Rottin Wall repair adds its legacy wall-count track (`classic_dialogue::extend_rottin`).
         // Rottin dialogue and Bushwhacking add five KV tracks and the net replacement counter.
-        assert_eq!(before.tracks.len(), 2137 + 7);
+        // Knightwatch adds the shared tower permit and the diamond lever claim.
+        // Main contributes its 44 native tracks, including the two Vampire Hunter tracks.
+        // Hairycles' missing-moss reply owns one recovery counter.
+        assert_eq!(before.tracks.len(), 2_237 + 44 + 1);
+        for (name, max) in [("rank", 6), ("door", 1)] {
+            let key = format!("oteryn:quest-progress/quest/u8_2/vampire_hunter_quest/{name}");
+            assert_eq!(
+                before.tracks.get(&key),
+                Some(&QuestTrack {
+                    key: key.clone(),
+                    quest: "oteryn:quest.vampire_hunter_quest".into(),
+                    initial: 0,
+                    min: 0,
+                    max,
+                })
+            );
+        }
+        let festive_guard = "oteryn:quest-progress/chosen-source/the_first_dragon_quest/s5";
+        assert_eq!(
+            before.tracks.get(festive_guard),
+            Some(&QuestTrack {
+                key: festive_guard.into(),
+                quest: "oteryn:quest.the_first_dragon_quest".into(),
+                initial: 0,
+                min: 0,
+                max: 1,
+            })
+        );
         for pharaoh in ["omruc", "vashresamun"] {
             let key = format!(
                 "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/{pharaoh}_sarcophagus_claim"
@@ -655,9 +737,10 @@ mod main_native_contract {
         }
         // Empty imported bindings must preserve the complete native admission
         // result, including rule-bound hashes, rather than the raw lowerer's hashes.
-        let expected = arena_completion::extend(completion_sets::extend(native_kills::extend(
-            before.clone(),
-        )?)?)?;
+        let mut expected = arena_completion::extend(completion_sets::extend(
+            native_kills::extend(before.clone())?,
+        )?)?;
+        crate::quest::published_quest_pins::retain_predecessors(&mut expected);
         assert_eq!(expected.tracks, after.tracks);
         assert_eq!(expected.transitions, after.transitions);
         assert_eq!(expected.hashes, after.hashes);

@@ -200,18 +200,16 @@ fn scenario(warring_killer: bool) -> TestResult {
         leader.continuity.selected_capabilities = selected;
         // Global: same-World declaration, agreed 10..1000 kills and 7..180 days.
         // https://www.tibia.com/gameguides/?section=guilds&subtopic=manual (5.8.4)
-        let command_id = leader.continuity.next_command_id;
-        let payload = encode_guild_war_intent(&GuildWarIntent::Declare {
-            opponent: *opposing.as_bytes(),
-            frag_limit: 10,
-            duration_days: 7,
-        }).map_err(debug)?;
-        let (status, payload) = super::guild_wire_fixtures::exchange_with_holder_pressure(
-            &owner, &mut leader, command_id, COMMAND_TYPE_GUILD_WAR_INTENT, &payload, true,
-        ).await?;
-        assert_eq!(status, CommandStatus::Accepted);
-        let declared = decode_guild_war_result(&payload).map_err(debug)?;
-        assert_eq!(declared.code, 1);
+        let declared = command(
+            &owner,
+            &mut leader,
+            GuildWarIntent::Declare {
+                opponent: *opposing.as_bytes(),
+                frag_limit: 10,
+                duration_days: 7,
+            },
+        )
+        .await?;
         assert_eq!(score(&h, declared.war).await?, (1, 0, 0, None));
         let timing: (Option<i64>, Option<i64>) = sqlx::query_as(
             "SELECT started_at,ends_at FROM game_guild_wars WHERE war_id=encode($1,'hex')::uuid",

@@ -7,9 +7,11 @@ import time
 import uuid
 
 
-PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel", "c05-exiva", "w20b-light", "s13-party", "s08-knight", "s08-sorcerer", "f5-c17a", "f5-c17c", "f5-c13", "f5-c18a", "f5-c17d", "c11-unassigned", "c11-knight", "c12-monk", "house-g01", "house-g01-build", "premium")
+PROFILES = (
+    "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel",
+    "levitate", "magic-rope",
+)
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
-NAMED_ITEM = re.compile(r"item-([1-9][0-9]{0,9})-(?:[1-9]|1[0-9]|20)")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 
 
@@ -35,10 +37,7 @@ def _request(socket_path, line, limit):
 
 def provision(socket_path, session, profile):
     identifier = uuid.UUID(session)
-    item = NAMED_ITEM.fullmatch(profile)
-    valid_profile = (profile in PROFILES or profile == "item-3031-100"
-                     or (item is not None and int(item[1]) <= 0xFFFFFFFF))
-    if identifier.version != 7 or str(identifier) != session or not valid_profile:
+    if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
     if answer != b"qualified\n":
@@ -86,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("--socket", required=True)
     parser.add_argument("--session", required=True)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--profile")
+    group.add_argument("--profile", choices=PROFILES)
     group.add_argument("--spawn", metavar="CREATURE_KEY")
     group.add_argument("--inspect-damage", metavar="TARGET")
     args = parser.parse_args()

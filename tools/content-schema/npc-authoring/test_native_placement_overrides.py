@@ -1,5 +1,6 @@
 """Native scheduled placements replace a single-cell migration hypothesis explicitly."""
 import copy
+import json
 import unittest
 import convert_placements as producer
 
@@ -28,6 +29,26 @@ class NativePlacementOverrides(unittest.TestCase):
         self.assertEqual(evidence[0]["source_sha256"], "a" * 64)
         self.assertIn("4" * 40, evidence[0]["url"])
         self.assertEqual(producer.apply_placement_overrides(candidates, {"npcs": [key]}), original)
+
+    def test_project_places_lai_at_the_castle_at_the_crystal_revision(self):
+        files = producer.convert()
+        placements = [
+            row["declaration"]
+            for name, contents in files.items() if name.startswith("placements-")
+            for row in json.loads(contents)["records"]
+            if row["declaration"]["npc"] == "oteryn:npc.lai"
+        ]
+        self.assertEqual(len(placements), 1)
+        self.assertEqual(placements[0]["cell"], {"x": 33834, "y": 32352, "floor": 4})
+        self.assertEqual(
+            placements[0]["provenance"][0]["revision"],
+            "201189f871d23597b82caf88fd611454a2ddefb8",
+        )
+
+    def test_pinned_cell_can_supply_the_placement_of_an_admitted_definition(self):
+        key, _, scope = self.fixture()
+        actual = producer.apply_placement_overrides({}, scope, {key})
+        self.assertEqual(actual[key]["placements"], scope["placement_overrides"][key]["placements"])
 
     def test_refuses_unbounded_ambiguous_or_unpinned_overrides(self):
         for case in range(9):

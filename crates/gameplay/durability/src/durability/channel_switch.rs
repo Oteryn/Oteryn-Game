@@ -4,12 +4,11 @@
 //! itself only advances inside the fresh admission receipt insert.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::assert_session_fence;
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
-};
+use super::db::{begin_semantic_transaction, lock_admission_relations};
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use oteryn_protocol_oteryn::channel_switch::{
     COOLDOWN_MS, MAX_LOAD_CHANNELS, SwitchLock, SwitchStatus,
 };
@@ -81,9 +80,6 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    // Capacity is an advisory preflight. Yield the shared holder
-                    // on a contended read so admission can retry within its budget.
-                    super::db::bound_periodic_lock_wait(&mut tx).await?;
                     let full = sqlx::query_scalar(
                         "SELECT game_channel_full(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
                     )
@@ -92,7 +88,7 @@ impl DurabilityRoot {
                     .bind(channel.as_slice())
                     .fetch_one(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(full)
                 })
             })
@@ -136,7 +132,7 @@ impl DurabilityRoot {
                         target.is_some(),
                     )
                     .ok_or(DurabilityError::InvalidStoredState)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(status))
                 })
             })
@@ -183,7 +179,7 @@ impl DurabilityRoot {
                                 .map_err(|_| DurabilityError::InvalidStoredState)?,
                         ));
                     }
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Some(load))
                 })
             })

@@ -1,7 +1,9 @@
-"""Keep main's three portable corpse Items under their pinned source owner."""
+"""Keep portable corpse Items under their pinned source owner."""
 import sys
 
-IDS = frozenset({3990, 4103, 4104})
+# Crystal 201189f8 Elvira uses 6013 -> 4164 -> 4165 -> 4143.
+# The terminal corpse shares the source-qualified Dwarf custody policy.
+IDS = frozenset({3990, 4103, 4104, 4143})
 
 
 def profiles(root):

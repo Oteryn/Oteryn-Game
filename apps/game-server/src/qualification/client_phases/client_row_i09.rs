@@ -52,53 +52,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let mut approaches = BTreeMap::new();
+    let mut furniture = None;
     oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
         for tile in sector.tiles {
             for (ordinal, item) in tile.items.iter().filter(|item| item.depth == 0).enumerate() {
                 if manifest.palette[item.palette as usize].key == BEFORE {
-                    let chair = TilePos {
-                        x: tile.x,
-                        y: tile.y,
-                        floor: sector.floor,
-                    };
-                    if world.facts().house_id(chair).is_some() {
-                        continue;
-                    }
-                    let ordinal = u8::try_from(ordinal).map_err(|_| {
-                        oteryn_world_bundle::Error::Limit("I09 furniture ordinal".into())
-                    })?;
-                    for x in chair.x.saturating_sub(1)..=chair.x.saturating_add(1) {
-                        for y in chair.y.saturating_sub(1)..=chair.y.saturating_add(1) {
-                            approaches
-                                .entry(TilePos {
-                                    x,
-                                    y,
-                                    floor: chair.floor,
-                                })
-                                .or_insert((chair, ordinal));
-                        }
-                    }
+                    furniture.get_or_insert((
+                        TilePos {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: sector.floor,
+                        },
+                        u8::try_from(ordinal).map_err(|_| {
+                            oteryn_world_bundle::Error::Limit("I09 furniture ordinal".into())
+                        })?,
+                    ));
                 }
             }
         }
         Ok(())
     })?;
-    if approaches.is_empty() {
-        return Err("no compiled non-house fixed chair 2358".into());
-    }
+    let (at, ordinal) = furniture.ok_or("no compiled fixed chair 2358")?;
     let mut client = connect_world(clients, 0xc9).await?;
     let path = route(
         world,
         tile(client.world_spatial().actor_position)?,
-        |cell| approaches.contains_key(&cell),
+        |cell| cell.floor == at.floor && cell.x.abs_diff(at.x).max(cell.y.abs_diff(at.y)) <= 1,
     )
     .ok_or("no route to fixed chair 2358")?;
     walk(&mut client, world, &path).await?;
-    let arrived = tile(client.world_spatial().actor_position)?;
-    let &(at, ordinal) = approaches
-        .get(&arrived)
-        .ok_or("arrived outside use distance of a fixed chair 2358")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(
         &crate::map::view::placement_key(at, ordinal)
@@ -130,48 +112,29 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("rotation refused: {:?}", reply.status).into());
     }
     capture("i09-result.bin", &reply.payload);
-    let target = oteryn_protocol_oteryn::world_spatial::ActorPosition {
-        x: i32::from(at.x),
-        y: i32::from(at.y),
-        floor: -i16::from(at.floor),
-    };
-    let rotated = MapOrigin::BaseOrdinal {
-        ordinal,
-        object_revision: 1,
-    };
-    let started = tokio::time::Instant::now();
-    let delta = loop {
-        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
-            SessionEvent::WorldMap(delta)
-                if delta.value.tiles.iter().any(|tile| {
-                    tile.position == target && tile.items.iter().any(|item| item.origin == rotated)
-                }) =>
-            {
-                Some(delta)
-            }
+    client.service_liveness(Duration::from_millis(100)).await?;
+    let delta = client
+        .take_events()
+        .into_iter()
+        .find_map(|event| match event {
+            SessionEvent::WorldMap(delta) => Some(delta),
             _ => None,
-        }) {
-            break delta;
-        }
-        // Match the full row's map observation budget. USE may publish on a later
-        // visibility refresh, whose nominal cadence already exceeds 100 ms.
-        if started.elapsed() >= Duration::from_secs(5) {
-            return Err("rotation sent no map delta for the revised chair".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    };
-    evidence(&format!("I09 rotation_delta_ms={}", started.elapsed().as_millis()));
+        })
+        .ok_or("rotation sent no map delta")?;
     let tile = delta
         .value
         .tiles
         .iter()
-        .find(|tile| tile.position == target)
+        .find(|tile| {
+            tile.position
+                == oteryn_protocol_oteryn::world_spatial::ActorPosition {
+                    x: i32::from(at.x),
+                    y: i32::from(at.y),
+                    floor: -i16::from(at.floor),
+                }
+        })
         .ok_or("rotation delta omitted target tile")?;
-    let item = tile
-        .items
-        .iter()
-        .find(|item| item.origin == rotated)
-        .ok_or("rotation delta omitted revised furniture")?;
+    let item = tile.items.iter().find(|item| matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: value, object_revision: 1 } if value == ordinal)).ok_or("rotation delta omitted revised furniture")?;
     let MapDefinition::Item(definition) = item.definition else {
         return Err("rotated furniture was not an item".into());
     };

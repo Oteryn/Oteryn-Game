@@ -33,11 +33,11 @@ impl DurabilityRoot {
             }
             let world = house.world_id().as_bytes().to_vec();
             let key = house.house_key();
-            // Preserve the writer's Guild -> property lock order. A shared property lock
-            // keeps membership and its global revision from changing between these reads.
+            // Preserve the writer's Guild -> property lock order. Use the property lock
+            // port so the runtime role can keep the ACL members and revision consistent.
             sqlx::query("SELECT g.guild_id FROM game_guilds g JOIN game_house_properties p ON p.owner_guild_id=g.guild_id WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 FOR SHARE OF g")
                 .bind(&world).bind(key).fetch_optional(&mut *tx).await?;
-            let property = sqlx::query("SELECT p.state,p.content_digest,p.acl_revision::text,coalesce(game_house_effective_owner(p.world_id,p.house_key)=encode($3,'hex')::uuid,false) AS owned FROM game_house_properties p WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 FOR SHARE OF p")
+            let property = sqlx::query("SELECT p.state,p.content_digest,p.acl_revision::text,coalesce(game_house_effective_owner(p.world_id,p.house_key)=encode($3,'hex')::uuid,false) AS owned FROM game_house_property_lock(encode($1,'hex')::uuid,$2) p")
                 .bind(&world).bind(key).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let Some(property) = property else { return Ok(Err(HouseManagementError::Rejected)) };
             if ![3_i16,4].contains(&property.try_get("state")?) || property.try_get::<Vec<u8>,_>("content_digest")? != content_digest {

@@ -34,15 +34,14 @@ struct Sample {
     content: Option<String>,
 }
 
-#[derive(Clone)]
-pub(super) struct MapModel {
-    world: BundleWorld,
-    tiles: std::sync::Arc<BTreeMap<TilePos, MapTile>>,
+pub(super) struct MapModel<'a> {
+    world: &'a BundleWorld,
+    tiles: BTreeMap<TilePos, MapTile>,
     samples: Vec<Sample>,
 }
 
-impl MapModel {
-    pub(super) fn load(world: &BundleWorld, bytes: &[u8], root: &Path) -> TestResult<Self> {
+impl<'a> MapModel<'a> {
+    pub(super) fn load(world: &'a BundleWorld, bytes: &[u8], root: &Path) -> TestResult<Self> {
         // Classification supplements the bundle, never parses map geometry a second time.
         // UNKNOWN catalogue fields stay unknown; no appearance/name heuristics.
         let mut kinds = BTreeMap::new();
@@ -165,11 +164,11 @@ impl MapModel {
             return Err("map oracle and boot world have different bundle digests".into());
         }
         let mut model = Self {
-            world: world.clone(),
-            tiles: std::sync::Arc::new(tiles),
+            world,
+            tiles,
             samples: Vec::new(),
         };
-        for (&position, facts) in model.tiles.iter() {
+        for (&position, facts) in &model.tiles {
             let mut add = |kind, content| {
                 model.samples.push(Sample {
                     kind,
@@ -270,7 +269,7 @@ impl MapModel {
     fn destination(&self, from: TilePos, direction: StepDirection) -> Option<TilePos> {
         // The same resolver as the movement owner, including automatic floor chains.
         // `destination`'s ground test includes live boot door state through enterable().
-        destination(&self.world, from, direction)
+        destination(self.world, from, direction)
     }
 
     fn path(
@@ -342,7 +341,7 @@ impl MapModel {
     }
 }
 
-fn in_town(at: TilePos, start: TilePos) -> bool {
+pub(super) fn in_town(at: TilePos, start: TilePos) -> bool {
     at.x.abs_diff(start.x) <= RADIUS
         && at.y.abs_diff(start.y) <= RADIUS
         && at.floor.abs_diff(start.floor) <= 2
