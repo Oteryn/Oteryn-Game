@@ -96,10 +96,24 @@ async fn global_period(
         ("2026-07-20 07:59:59+00", 20647),
         ("2026-07-20 08:00:00+00", 20654),
     ] {
-        let actual: i32 = sqlx::query_scalar(
-            "SELECT date_trunc('week',game_server_save_day($1::text::timestamptz)::timestamp)::date
-             - DATE '1970-01-01'",
-        ).bind(instant).fetch_one(&mut *database).await?;
+        use sqlx::Connection as _;
+        // Private historical inputs for the period function. The live World
+        // assertion above reads the epoch published by node boot.
+        let mut tx = database.begin().await?;
+        let historical_world = "01934f10-7c02-7001-805b-3b1122334499";
+        sqlx::query(
+            "INSERT INTO game_world_reset_epochs
+             (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,
+              frame_digest,calendar,calendar_revision,activated_at,reset_month)
+             VALUES($1::uuid,0,$2,'map-1',$2,$2,$2,
+                    'TIBIA_SERVER_SAVE_BERLIN_06',1,$3::text::timestamptz,'2026-11')",
+        ).bind(historical_world).bind([9_u8; 32].as_slice()).bind(instant)
+         .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_world_reset_active VALUES($1::uuid,0)")
+            .bind(historical_world).execute(&mut *tx).await?;
+        let actual: i64 = sqlx::query_scalar("SELECT game_task_board_period($1::uuid)")
+            .bind(historical_world).fetch_one(&mut *tx).await?;
+        tx.rollback().await?;
         if actual != expected {
             return Err(format!("P04 production calendar at {instant}: expected {expected}, got {actual}").into());
         }
@@ -645,7 +659,7 @@ fn verify_delivery_availability(before: &Reply, after: &Reply, item: u32) -> Tes
         .ok_or("P04 availability fixture requires a zero-count assigned item")?;
     assignment.current = 1;
     if *after != expected {
-        return Err(format!("P04 availability query did not expose the one stashed item {item}: {:?}", after.weekly.deliveries).into());
+        return Err(format!("P04 availability query did not expose the one available item {item}: {:?}", after.weekly.deliveries).into());
     }
     Ok(())
 }
@@ -721,7 +735,21 @@ async fn observe_positive_delivery(
     let world = load_world(bytes, &pin, WorldId::decode(&scope.world)?, ChannelId::decode(&scope.channel)?)?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| near_locker(world, at))
         .ok_or("P04 no route to an authored Stash locker")?;
-    walk(&mut client, world, &path).await?;
+    for direction in path {
+        let before = client.world_spatial().actor_position;
+        let expected = destination(world, tile(before)?, direction)
+            .ok_or("P04 planned Stash step has no landing")?;
+        // Pace the fixture walk before sending; each step gets one request.
+        client.service_liveness(Duration::from_secs(1)).await?;
+        let outcome = client.step(direction).await?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if outcome.disposition != StepDisposition::Moved || actual != expected {
+            return Err(format!(
+                "P04 Stash step direction={direction:?} from={before:?} expected={expected:?} actual={actual:?} outcome={outcome:?} server_sequence={}",
+                client.last_server_sequence(),
+            ).into());
+        }
+    }
 
     let session = client.join_snapshot().game_session_id;
     request_fixture_control_at(
@@ -747,6 +775,12 @@ async fn observe_positive_delivery(
         return Err("P04 availability fixture did not provision exactly one carried item".into());
     }
     let handle = entry.handle;
+    if stash_quantity(database, scope, item).await? != 0 {
+        return Err("P04 carried-only check found the item in Stash".into());
+    }
+    let (carried_board, carried_frame) = send_live(&mut client, 4, 0).await?;
+    verify_delivery_availability(board, &carried_board, item)?;
+    evidence(&format!("P04_DELIVERY_CARRIED item={item} carried=1 stash=0 current=1 sequence={}", carried_frame.server_sequence));
     let opened = stash_command(&mut client, stash::StashAction::Browse).await?;
     if opened.outcome != stash::StashOutcome::Opened || opened.page != 0
         || opened.has_more || !opened.rows.is_empty()
