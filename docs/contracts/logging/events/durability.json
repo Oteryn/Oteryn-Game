@@ -78,6 +78,14 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "holder_busy_timeout",
+      "level": "warn",
+      "span": false,
+      "fields": ["waiter", "owner"],
+      "codes": [],
+      "note": "Foreground checkout reached its deadline. The holder's semantic call site is best-effort and can be none."
+    },
+    {
       "event": "holder_stuck",
       "level": "warn",
       "span": false,

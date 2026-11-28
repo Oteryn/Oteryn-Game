@@ -4,6 +4,7 @@ use super::*;
 
 #[cfg(test)]
 tokio::task_local! {
+    pub(super) static FRESH_CHECKOUT_BARRIER: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
     pub(super) static FRESH_SPELL_ADMISSION_BARRIER:
         std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
 }
