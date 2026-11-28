@@ -43,6 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let house_access = self.house_door_use_access(map, command, target).await;
         let (outcome, opening) = {
             let mut runtime = self.runtime.lock().await;
             let Ok(states) = self.states.spell_states.try_lock() else {
@@ -73,6 +74,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: u16::try_from(position.y).ok()?,
                 floor: i8::try_from(position.floor).ok()?.checked_neg()?,
             };
+            if house_access.is_some_and(|(digest, allowed)| {
+                !allowed || digest != runtime.content_pin().server_artifact_digest()
+            }) {
+                let source = MapViewSource {
+                    overlay: &map.overlay,
+                    facts: &map.facts,
+                    content_generation: runtime.content_pin().client_artifact_digest(),
+                    reset_epoch: 0,
+                };
+                if let Ok(resolved) = resolve_map_target(&source, target, |_| None::<()>)
+                    && map_door::reachable(actor_tile, resolved.pos)
+                {
+                    return Some(UseOutcome {
+                        disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Locked,
+                        ..UseOutcome::rejected()
+                    });
+                }
+            }
             map_door::use_key_observed(
                 &map.overlay,
                 &map.facts,
@@ -128,17 +147,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|candidate| candidate.key.as_str().as_bytes() == placement)
     }
 
+    /// A House door uses the current durable ACL. Read it before taking the
+    /// Channel's mutation lock, then verify the same server pin under that lock.
+    async fn house_door_use_access(
+        &self,
+        map: &crate::map::boot::BundleMap,
+        command: UseCommand,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<([u8; 32], bool)> {
+        use crate::durability::house_scope_handoff::HouseId;
+        use oteryn_gameplay_housing::house_management::HouseManagementList;
+
+        let placement: &[u8; 40] = target.placement.as_slice().try_into().ok()?;
+        let key = u64::from_be_bytes(placement[32..].try_into().ok()?);
+        if !map.facts.doors().contains(key) {
+            return None;
+        }
+        let (tile, _) = crate::map::view::placement_of(key)?;
+        let id = map.facts.house_id(tile)?;
+        map.facts.house_door(tile, id)?;
+        let (digest, client_digest) = {
+            let runtime = self.runtime.lock().await;
+            let pin = runtime.content_pin();
+            (pin.server_artifact_digest(), pin.client_artifact_digest())
+        };
+        let house = super::super::house_query::source_house_key(id)
+            .and_then(|key| HouseId::new(self.world_id, key));
+        let fence = command
+            .item_fence
+            .filter(|fence| fence.game_session_id == command.game_session_id);
+        let (Some(house), Some(fence)) = (house, fence) else {
+            return Some((digest, false));
+        };
+        if placement[..32] != client_digest {
+            return Some((digest, false));
+        }
+        let list = HouseManagementList::Door {
+            x: tile.x,
+            y: tile.y,
+            floor: tile.floor,
+        };
+        let allowed = self
+            .root
+            .read_house_door_access(self.character, self.holder, fence, house, list, digest)
+            .await
+            .unwrap_or(false);
+        Some((digest, allowed))
+    }
+
     /// MAP-DOOR-1: one `USE_INTENT` on a door of a bundle World. Under the Channel-owner lock
     /// that `step` takes, so the actor and every other committed position cannot move between
     /// the occupancy read and the door's compare-and-swap.
     pub(in crate::gameplay_transport) async fn use_bundle_door(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: UseCommand,
         map: &crate::map::boot::BundleMap,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
         use oteryn_protocol_oteryn::world_object::UseDisposition;
+        let session = command.game_session_id;
         let key = target
             .placement
             .get(32..40)
@@ -158,6 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let house_access = self.house_door_use_access(map, command, target).await;
         let mut runtime = self.runtime.lock().await;
         // Read the canonical actor-local Character facts through their owner, after taking the
         // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
@@ -240,10 +309,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             content_generation: digest,
             reset_epoch: 0,
         };
+        let reachable = resolve_map_target(&source, target, |_| None::<()>)
+            .ok()
+            .filter(|resolved| map_door::reachable(actor_tile, resolved.pos));
+        if reachable.is_some()
+            && house_access.is_some_and(|(digest, allowed)| {
+                !allowed || digest != runtime.content_pin().server_artifact_digest()
+            })
+        {
+            return UseOutcome {
+                disposition: UseDisposition::Locked,
+                ..UseOutcome::rejected()
+            };
+        }
         if let Some(key) = key
             && let Some(requirement) = doors.opening_requirement(key)
-            && let Ok(resolved) = resolve_map_target(&source, target, |_| None::<()>)
-            && map_door::reachable(actor_tile, resolved.pos)
+            && reachable.is_some()
         {
             let outcome = |disposition| UseOutcome {
                 disposition,
@@ -522,9 +603,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
                 return outcome;
             }
-            return self
-                .use_bundle_door(actor, command.game_session_id, map, &target)
-                .await;
+            return self.use_bundle_door(actor, command, map, &target).await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
             return self.use_chest(actor, command, chest).await;

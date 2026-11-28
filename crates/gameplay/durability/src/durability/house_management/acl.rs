@@ -75,35 +75,63 @@ pub(super) async fn qualify_guild_selectors(
     request: &HouseManagementRequest,
     rules: &[String],
 ) -> Result<serde_json::Value> {
-    if rules.len() > 100 {
+    const MAX_LINES: usize = 100;
+    const MAX_CHARACTERS: usize = 1999;
+    if rules.len() > MAX_LINES
+        || rules.iter().map(|line| line.chars().count()).sum::<usize>()
+            + rules.len().saturating_sub(1)
+            > MAX_CHARACTERS
+    {
         return Err(HouseManagementError::Rejected);
     }
-    let mut guilds = Vec::with_capacity(rules.len());
-    let mut ranks = Vec::with_capacity(rules.len());
+
+    let mut selectors = Vec::with_capacity(rules.len());
     for line in rules {
-        let (rank, guild) = line
-            .trim()
-            .split_once('@')
-            .ok_or(HouseManagementError::Rejected)?;
-        let (rank, guild) = (rank.trim(), guild.trim());
-        if line.len() > 100 || line.contains('\0') || guild.is_empty() || guild.contains('@') {
+        if line.contains(['\0', '\n', '\r']) {
             return Err(HouseManagementError::Rejected);
         }
-        guilds.push(guild);
-        ranks.push((!rank.is_empty()).then_some(rank));
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let pattern = line.strip_prefix('!').unwrap_or(line).trim();
+        let deny = line.starts_with('!');
+        if pattern.is_empty() {
+            return Err(HouseManagementError::Rejected);
+        }
+        if let Some((rank, guild)) = pattern.split_once('@') {
+            let (rank, guild) = (rank.trim(), guild.trim());
+            if guild.is_empty() || guild.contains('@') {
+                return Err(HouseManagementError::Rejected);
+            }
+            selectors.push(serde_json::json!({
+                "guild": guild, "rank": (!(rank.is_empty() || rank == "*")).then_some(rank),
+                "deny": deny,
+            }));
+        } else {
+            selectors.push(serde_json::json!({ "name": pattern, "deny": deny }));
+        }
     }
+    let expected = selectors.len();
     let world = request.house.world_id();
     let qualified: serde_json::Value = sqlx::query_scalar(
-        "SELECT COALESCE(jsonb_agg(DISTINCT jsonb_build_object('guild', g.guild_id, 'rank', r.level, 'identity', r.house_acl_identity)), '[]'::jsonb)
-         FROM unnest($2::text[], $3::text[]) AS rule(guild, rank)
-         JOIN game_guilds g ON g.world_id=encode($1,'hex')::uuid
-           AND g.name_key=game_character_name_key(rule.guild) AND g.state IN(1,2)
-         LEFT JOIN game_guild_ranks r ON r.guild_id=g.guild_id AND r.name_key=game_character_name_key(rule.rank)
-         WHERE rule.rank IS NULL OR r.level IS NOT NULL",
+        "SELECT COALESCE(jsonb_agg(
+            CASE WHEN rule.selector ? 'name' THEN rule.selector ELSE
+                jsonb_build_object('guild', g.guild_id, 'rank', r.level,
+                    'identity', r.house_acl_identity, 'deny', rule.selector->'deny')
+            END ORDER BY rule.position), '[]'::jsonb)
+         FROM jsonb_array_elements($2::jsonb) WITH ORDINALITY AS rule(selector, position)
+         LEFT JOIN game_guilds g ON g.world_id=encode($1,'hex')::uuid
+           AND g.name_key=game_character_name_key(rule.selector->>'guild') AND g.state IN(1,2)
+         LEFT JOIN game_guild_ranks r ON r.guild_id=g.guild_id AND r.name_key=game_character_name_key(rule.selector->>'rank')
+         WHERE rule.selector ? 'name'
+            OR (g.guild_id IS NOT NULL AND (rule.selector->>'rank' IS NULL OR r.level IS NOT NULL))",
     )
-    .bind(world.as_bytes().as_slice()).bind(&guilds).bind(&ranks)
-    .fetch_one(&mut **tx).await?;
-    if qualified.as_array().map(Vec::len) != Some(rules.len()) {
+    .bind(world.as_bytes().as_slice())
+    .bind(serde_json::Value::Array(selectors))
+    .fetch_one(&mut **tx)
+    .await?;
+    if qualified.as_array().map(Vec::len) != Some(expected) {
         return Err(HouseManagementError::Rejected);
     }
     Ok(qualified)

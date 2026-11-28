@@ -198,10 +198,14 @@ fn list(body: &[u8], door: bool) -> Result<HouseAction> {
 }
 
 fn guild_selector(rules: &mut Vec<String>, raw: &[u8]) -> Result<()> {
-    if rules.len() >= 100 || raw.len() > 100 {
+    if rules.len() >= 100 {
         return Err(Error::LimitExceeded);
     }
-    rules.push(text(raw)?);
+    rules.push(
+        std::str::from_utf8(raw)
+            .map_err(|_| Error::Malformed)?
+            .to_owned(),
+    );
     Ok(())
 }
 

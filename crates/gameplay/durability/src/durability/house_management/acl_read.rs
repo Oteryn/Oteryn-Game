@@ -58,3 +58,49 @@ impl DurabilityRoot {
         })).await?
     }
 }
+
+impl DurabilityRoot {
+    pub async fn read_house_door_access(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        house: HouseId,
+        list: HouseManagementList,
+        content_digest: [u8; 32],
+    ) -> Result<bool> {
+        if house.world_id() != fence.runtime_scope.world_id()
+            || !matches!(list, HouseManagementList::Door { .. })
+            || content_digest == [0; 32]
+        {
+            return Err(HouseManagementError::Rejected);
+        }
+        let key = list.key().ok_or(HouseManagementError::Rejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| HouseManagementError::Rejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                if assert_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
+                    return Ok(Err(HouseManagementError::Rejected));
+                }
+                let allowed = sqlx::query_scalar(
+                    "SELECT game_house_door_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4,$5)",
+                )
+                .bind(house.world_id().as_bytes().as_slice())
+                .bind(house.house_key())
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(key)
+                .bind(content_digest.as_slice())
+                .fetch_one(&mut *tx)
+                .await?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(Ok(allowed))
+            }))
+            .await?
+    }
+}

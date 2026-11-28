@@ -70,6 +70,13 @@ pub(super) fn source_house_id(key: &str) -> Option<u32> {
         .map(|house| house.provenance.engine_house.house_id)
         .filter(|id| *id != 0)
 }
+pub(super) fn source_house_key(id: u32) -> Option<&'static str> {
+    let mut records = catalogue()?
+        .iter()
+        .filter(|house| house.provenance.engine_house.house_id == id);
+    let key = records.next()?.identity.key.as_str();
+    records.next().is_none().then_some(key)
+}
 pub(super) fn entrance(key: &str) -> Option<crate::foundation::LocalPosition> {
     let record = catalogue()?.iter().find(|r| r.identity.key == key)?;
     Some(crate::foundation::LocalPosition {
