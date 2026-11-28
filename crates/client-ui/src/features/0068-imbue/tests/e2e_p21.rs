@@ -102,11 +102,18 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
     let mut panel = ImbuePanel {
         success_selected,
         selected: true,
-        item: NonZeroU64::new(7),
         ..ImbuePanel::default()
     };
+    assert!(panel.item.is_none() && panel.window.is_none());
+    let item = if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+        value(&expected, "item_handle")?.parse()?
+    } else {
+        NonZeroU64::new(7).ok_or("local test item")?
+    };
+    panel.select_item(item);
     let command = request(&mut panel, Intent::Refresh).ok_or("refresh request")?;
     assert_eq!(command.0.action, imbuement::ImbuementAction::Query);
+    assert_eq!(command.0.item, item);
 
     // The window: exact slot count, clear cost and every offer the server listed.
     apply_result(

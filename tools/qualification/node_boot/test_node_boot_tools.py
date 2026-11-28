@@ -748,7 +748,7 @@ class CloudRunSummaryTests(unittest.TestCase):
         command = helper + textwrap.dedent(r'''
             cargo() {
                 [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE" ]] || return 1
-                if [[ "$REPLAY_RESULT" == pass ]]; then
+                if [[ "$REPLAY_RESULT" == pass || ( "$REPLAY_RESULT" == no-input && "$5" == oteryn-client-ui ) ]]; then
                     printf 'test %s ... ok\n' "$7"
                 else
                     printf 'running 0 tests\n'
@@ -766,6 +766,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (captured, "0", False, "pass", False),
             (captured, "0", "tampered", "pass", False),
             (captured, "0", True, "unmatched", False),
+            (captured, "0", True, "no-input", False),
             (captured.replace("window_sequence=3", "window_sequence=2"), "0", True, "pass", False),
         ]:
             with self.subTest(node_log=node_log, status=status, complete=complete, replay=replay), tempfile.TemporaryDirectory() as temp:

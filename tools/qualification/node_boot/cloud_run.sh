@@ -125,6 +125,7 @@ p21_capture_matches() {
 replay_imbuement_capture() {
   local log=$1 capture_dir=$2 replay_log=$3 status=$4
   local test=imbue::e2e_p21::e2e_p21_replays_imbuement_window_and_refusal
+  local input_test=play::tests::feature_0068_imbue::scope_materials::p21_live_shrine_selection_replays_exact_query
   local started=$SECONDS
   if grep -q '^SEAM_EVIDENCE e2e_all scenario=P21\.client status=FAIL ' "$log"; then
     return 1
@@ -132,7 +133,9 @@ replay_imbuement_capture() {
   if [[ "$status" == 0 ]] &&
     p21_capture_matches "$log" "$capture_dir" &&
     E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
-    grep -Fqx "test $test ... ok" "$replay_log"; then
+    grep -Fqx "test $test ... ok" "$replay_log" &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client --lib "$input_test" -- --ignored --exact >>"$replay_log" 2>&1 &&
+    grep -Fqx "test $input_test ... ok" "$replay_log"; then
     printf 'SEAM_EVIDENCE e2e_all scenario=P21.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
     return 0
   fi
