@@ -878,13 +878,18 @@ if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
   local_premium_dir="$WORK/portal/certs"
   cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
   secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
-  NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
-    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
-    "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
-    "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
-  NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=https://localhost:$WP5_PORT"
-    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
-    "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  # The single-purpose certificate cannot be assigned to both client roles.
+  # P10 owns this isolated batch and reads the producer's Premium snapshot.
+  if [[ "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 165:1 ]]; then
+    NODE_GAMEPLAY_ENV+=("OTERYN_PREMIUM_SNAPSHOT_URL=https://localhost:$WP5_PORT"
+      "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+      "OTERYN_PREMIUM_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  else
+    NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
+      "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
+      "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
+      "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  fi
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
