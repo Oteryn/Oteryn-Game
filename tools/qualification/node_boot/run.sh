@@ -707,9 +707,17 @@ psql_admin oteryn_node_boot <<SQL
 CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
+-- Provision the relay login as specified by migration 0122. Table grants are inherited.
+GRANT SET ON PARAMETER log_parameter_max_length, log_parameter_max_length_on_error,
+    log_statement, log_min_duration_statement TO nb_runtime;
 SQL
 secret_to() { # owner source destination
   install_owned "$1" -m 0600 "$2" "$3"
+}
+stage_chat_relay_key_ring() { # node secrets directory
+  # One immediately active, disposable key per World. Keep its bytes off the command line.
+  { printf '1 0 '; openssl rand -base64 32; } |
+    secret_to "$SERVICE_UID" /dev/stdin "$1/chat-relay.keys"
 }
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
@@ -722,6 +730,7 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
+stage_chat_relay_key_ring "$BASE/node/secrets"
 
 cat > "$WORK/ops.toml" <<TOML
 [operator]
@@ -852,7 +861,8 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" \
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" \
+      OTERYN_CHAT_RELAY_KEYS_FILE="${2%/*}/secrets/chat-relay.keys" "$BASE/bin/oteryn-game-server" \
       serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
@@ -1106,7 +1116,7 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
 # Give the journey runner the same parsed range used by the fixture and verifier.
-node_boot_row_selection() { # batch|w19a
+node_boot_row_selection() { # batch|w19a|required
   python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
 import os
 import re
@@ -1143,7 +1153,10 @@ else:
     groups = env_text(raw_groups, "").strip()
     if not groups or "rows" in (group.strip() for group in groups.split(",")):
         # Indices passed to e2e_row_selected in the Rust journeys.
-        for index, row in ((12, "W19a.full"), (216, "W19a.client")):
+        rows = [(12, "W19a.full"), (216, "W19a.client")]
+        if mode == "required":
+            rows.append((42, "S04c.full"))
+        for index, row in rows:
             if index >= start and index - start < length:
                 print(row)
 PY_ROW_SELECTION
@@ -1198,11 +1211,12 @@ stage() { # name prerequisite... -- function
       STATUS[$name]="FAIL(rows)"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
     fi
-    if [[ "$name" == seam_stages ]]; then
-      local row expected w19a
-      w19a="$(w19a_rows)"
-      for row in $w19a; do
-        case "$row" in W19a.full) expected=PASS ;; W19a.client) expected=CAPTURED ;; esac
+    if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]]; then
+      local row expected required_rows
+      required_rows="$(node_boot_row_selection required)"
+      for row in $required_rows; do
+        # S04c.full must open World successfully through the live CHAT command.
+        case "$row" in W19a.client) expected=CAPTURED ;; *) expected=PASS ;; esac
         if ! stage_rows "$WORK/stage-$name.log" "$expected" | grep -Fx "$row" >/dev/null; then
           STATUS[$name]="FAIL(rows)"
           echo "NODE_BOOT_STAGE_FAILED $name row=$row required_status=$expected"
@@ -1688,6 +1702,8 @@ pvp_world_ready() {
   install_owned root:root -d -m 0755 "$PVP_BASE" "$PVP_BASE/state" "$PVP_BASE/fence-parent" "$PVP_BASE/node"
   install_owned root:root -d -m 0700 "$PVP_BASE/ops"
   install_owned "$SERVICE_UID" -d -m 0700 "$PVP_BASE/fence-parent/fence" "$PVP_BASE/run"
+  install_owned "$SERVICE_UID" -d -m 0700 "$PVP_BASE/node/secrets"
+  stage_chat_relay_key_ring "$PVP_BASE/node/secrets"
   sed -e "s|^state_directory = .*|state_directory = \"$PVP_BASE/state\"|" \
     -e "s|^database = .*|database = \"$PVP_DATABASE\"|" \
     -e "s|^fence_directory = .*|fence_directory = \"$PVP_BASE/fence-parent/fence\"|" \

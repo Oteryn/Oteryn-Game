@@ -701,7 +701,7 @@ class KnownFailRowsTests(unittest.TestCase):
         known = SOURCE.with_name("known_fail_rows.txt").read_text()
         self.assertEqual(self.rows(log, "FAIL", known), ("W19a.client,W19a.full", ""))
 
-    def test_w19a_shards_require_the_expected_live_verdict(self):
+    def test_selected_live_rows_require_the_expected_verdict(self):
         helpers = "\n".join(
             re.search(rf"(?m)^{name}\(\).*$", TEXT).group(0)
             for name in ("stage_rows", "known_rows")
@@ -725,6 +725,8 @@ class KnownFailRowsTests(unittest.TestCase):
         )
         full = "e2e_all scenario=W19a.full status=PASS"
         client = "e2e_all scenario=W19a.client status=CAPTURED"
+        world_chat = "e2e_all scenario=S04c.full status=PASS"
+        all_rows = "\n".join((full, client, world_chat))
         cases = (
             ("12:1", full, "PASS"),
             ("12:1", client, "FAIL(rows)"),
@@ -734,11 +736,15 @@ class KnownFailRowsTests(unittest.TestCase):
             ("+12:+1", full, "PASS"),
             ("0:18446744073709551615", "", "FAIL(rows)"),
             ("0:18446744073709551615", full, "FAIL(rows)"),
-            ("0:18446744073709551615", full + "\n" + client, "PASS"),
+            ("0:18446744073709551615", all_rows, "PASS"),
             ("18446744073709551628:1", "", "PASS"),
             ("0:18446744073709551616", "", "PASS"),
-            ("all", full + "\n" + client, "PASS"),
-            ("all", full, "FAIL(rows)"),
+            ("all", all_rows, "PASS"),
+            ("all", "\n".join((full, world_chat)), "FAIL(rows)"),
+            ("all", full + "\n" + client, "FAIL(rows)"),
+            ("42:1", "", "FAIL(rows)"),
+            ("42:1", "e2e_all scenario=S04c.full status=FAIL", "FAIL(rows)"),
+            ("42:1", world_chat, "PASS"),
             ("13:1", "", "PASS"),
         )
         with tempfile.TemporaryDirectory() as work:
@@ -749,7 +755,7 @@ class KnownFailRowsTests(unittest.TestCase):
                             "bash",
                             "-c",
                             script,
-                            "w19a",
+                            "required-row-verdicts",
                             work,
                             Path(__file__).resolve().parents[3],
                             batch,
@@ -785,6 +791,7 @@ BASE=/x; MAP_REVISION=m; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_
 ACCOUNT_ID=a; SECOND_ACCOUNT_ID=b; FRESH_KEY_ID=f; FRESH_SEED_HEX=s
 RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
 PACKET_ACCOUNT_ID=p; SECOND_PACKET_ACCOUNT_ID=q; LIGHT_ACCOUNT_ID=l
+G17_ACCOUNT=g17; G01_ACCOUNT=g01
 EXTRA_WORLD_ACCOUNTS=(e); NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
 declare -A STATUS=()
 sleep() { :; }
