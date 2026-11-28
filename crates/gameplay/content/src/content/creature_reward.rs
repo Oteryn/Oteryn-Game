@@ -1683,10 +1683,29 @@ mod protected_loot_tests {
             (body, "definition-r1")
         );
         assert!(native.item_policy(body, "definition-r1").is_some());
+        let row = native
+            .reward_table()
+            .row(creature)
+            .map_err(|e| format!("{e:?}"))?;
         assert_eq!(
-            native.reward_table().row(creature).err(),
-            Some(NoSettlementReason::CorpseItemInadmissible)
+            row.corpse_item
+                .as_ref()
+                .map(|item| item.production_key.as_str()),
+            Some(body)
         );
+        let expected_table = creature.replace(":creature.", ":loot.creature.");
+        assert_eq!(
+            row.loot_table_ref
+                .as_ref()
+                .map(|table| table.production_key.as_str()),
+            Some(expected_table.as_str())
+        );
+        assert!(!row.loot_table.entries.is_empty());
+        let crocodile = creature == "oteryn:creature.crocodile";
+        assert_eq!(row.xp_amount.get(), if crocodile { 40 } else { 150 });
+        if crocodile {
+            assert!(row.race.is_some());
+        }
         assert!(native.reward_table().reward_boss_corpse(creature).is_none());
         Ok(())
     }
@@ -1709,9 +1728,11 @@ mod protected_loot_tests {
         }
         let source: Expected =
             serde_json::from_str(super::super::native_gameplay::FOURTH_QUARTER_CORPSE_SOURCE)?;
-        assert_eq!(source.admitted.len(), 297);
-        assert!(!source.admitted.contains_key("oteryn:creature.the_snapper"));
-        assert!(table.row("oteryn:creature.the_snapper").is_err());
+        assert_eq!(source.admitted.len(), 298);
+        assert_eq!(
+            source.admitted.get("oteryn:creature.the_snapper"),
+            Some(&6046)
+        );
         assert!(
             table
                 .reward_boss_corpse("oteryn:creature.the_snapper")
@@ -1720,10 +1741,6 @@ mod protected_loot_tests {
         let mut protected_loot_refusals = Vec::new();
         for (creature, item) in source.admitted {
             let expected = format!("oteryn:item.tibia.i{item}");
-            if creature == "oteryn:creature.the_snapper" {
-                assert_eq!(item, 6046);
-                continue;
-            }
             let outcome = table
                 .reward_boss_corpse(&creature)
                 .map_or_else(|| table.row(&creature), Ok);
@@ -2667,22 +2684,12 @@ mod crystal_corpse_tests {
         let expected: Vec<(String, u32)> = serde_json::from_str(include_str!(
             "../../../../../imports/crystalserver/ordinary-corpses/admissions.json"
         ))?;
-        assert_eq!(expected.len(), 298);
-        assert!(!expected.iter().any(|(name, _)| name == "crocodile"));
-        assert!(
-            native
-                .reward_table()
-                .row("oteryn:creature.crocodile")
-                .is_err()
-        );
+        assert_eq!(expected.len(), 299);
+        assert!(expected.contains(&("crocodile".into(), 6046)));
         let mut failures = Vec::new();
         for (name, item) in expected {
             let creature = format!("oteryn:creature.{name}");
             let body = format!("oteryn:item.tibia.i{item}");
-            if name == "crocodile" {
-                assert_eq!(item, 6046);
-                continue;
-            }
             let row = native.reward_table().row(&creature).or_else(|reason| {
                 native
                     .reward_table()

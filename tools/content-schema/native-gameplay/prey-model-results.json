@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "input_sha256": "c0b5e3813eed523d612cf87addcbe50f696380804757ca1fae8745652c49c6ad",
+  "input_sha256": "95b5b7454e45238b00bdaaa90aea9984c2cfb4daf833ae40a999f3265b128dde",
   "seed": 20261101,
   "prey_seconds": 7200,
   "presets": [
@@ -2032,7 +2032,6 @@
     "oteryn:creature.yeti"
   ],
   "unsettleable_creatures": [
-    "oteryn:creature.crocodile",
     "oteryn:creature.dragon_lord",
     "oteryn:creature.iks_yapunac",
     "oteryn:creature.insect_swarm",

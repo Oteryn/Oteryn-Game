@@ -646,7 +646,7 @@ pub(super) async fn exercise(
     owner.admit_quest_session(admitted).await;
     mint(owner, admitted, 16128, 2, 998_000).await?;
     let before = quantity(h, 16128).await?;
-    for (i, word) in ["bye", "hi", "relations", "yes", "2", "yes"]
+    for (i, word) in ["bye", "hi", "relations", "yes", "2 tokens", "yes"]
         .iter()
         .enumerate()
     {

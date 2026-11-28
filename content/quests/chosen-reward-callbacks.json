@@ -1527,7 +1527,7 @@
         "office report"
       ],
       "topic": 0,
-      "next_topic": 45,
+      "next_topic": 0,
       "storage": [
         {
           "track": "oteryn:quest-progress/chosen/wrath/magistrati",
@@ -1541,6 +1541,24 @@
           "minimum": 0,
           "maximum": 4,
           "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 23,
+          "maximum": 23,
+          "set": 24
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/nobles",
+          "minimum": -1,
+          "maximum": 6,
+          "set": 0
         }
       ],
       "take": [],
@@ -1549,18 +1567,11 @@
       "achievement": null,
       "requires_premium": true,
       "reply": [
-        "The officials are gone. Will you eliminate six imperial nobles?"
+        "Eliminate six imperial nobles and report your mission to me."
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
-      ],
-      "requires": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": 23,
-          "maximum": 23
-        }
       ]
     },
     {
@@ -1568,9 +1579,10 @@
       "quest": "oteryn:quest.wrath_of_the_emperor_quest",
       "npc": "oteryn:npc.zlak",
       "keywords": [
+        "mission",
         "yes"
       ],
-      "topic": 45,
+      "topic": 0,
       "next_topic": 0,
       "storage": [
         {
@@ -1644,24 +1656,6 @@
           "preserve": true
         },
         {
-          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
-          "minimum": 24,
-          "maximum": 24,
-          "set": 27
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission09",
-          "minimum": -1,
-          "maximum": 1,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/interdimensional_potion",
-          "minimum": -1,
-          "maximum": 1,
-          "set": 1
-        },
-        {
           "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission07",
           "minimum": 0,
           "maximum": 6,
@@ -1674,11 +1668,18 @@
       "achievement": null,
       "requires_premium": true,
       "reply": [
-        "Your noble hunt is recorded. Free the sleeping dragon from its dream. The dream-opening word is SOLOSARASATIQUARIUM."
+        "Word of your deeds is spreading. Your next mission will be a strike into the heart of the empire."
       ],
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 24,
+          "maximum": 24
+        }
       ]
     },
     {
@@ -3119,6 +3120,49 @@
           "effect": {
             "kind": "set_now"
           }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/wrath/uninvited-guests",
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "npc": "oteryn:npc.zlak",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+          "minimum": 24,
+          "maximum": 24,
+          "set": 25
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission08",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Take the old escape tunnel from the abandoned basement north of the ministry. Follow it to the palace lift and meet Zalamon underground."
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
+        "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 6,
+          "maximum": 6
         }
       ]
     }

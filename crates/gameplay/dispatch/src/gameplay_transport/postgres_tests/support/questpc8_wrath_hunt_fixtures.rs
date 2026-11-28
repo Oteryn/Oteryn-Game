@@ -296,7 +296,7 @@ pub(super) async fn exercise(
     .await?;
     talk(owner, admitted, npc, 8202, "hi").await?;
     talk(owner, admitted, npc, 8203, "mission").await?;
-    talk(owner, admitted, npc, 8204, "yes").await?;
+    assert_eq!(noble_counter(h).await?, Some(0));
     assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 0);
     refused(owner, admitted, npc, 8205, "imperial report").await?;
     super::questpc8_mystery_geometry_fixtures::arrive(
@@ -313,8 +313,17 @@ pub(super) async fn exercise(
         owner,
         admitted,
         "oteryn:creature.lizard_noble",
-        7,
+        1,
         8110,
+    )
+    .await?;
+    assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 1);
+    super::grizzly_npc_fixtures::questpc8_campaign::hunt(
+        owner,
+        admitted,
+        "oteryn:creature.lizard_noble",
+        6,
+        8111,
     )
     .await?;
     assert_eq!(progress(owner, admitted, authority, NOBLE).await?, 6);
@@ -329,12 +338,16 @@ pub(super) async fn exercise(
     )
     .await?;
     talk(owner, admitted, npc, 8210, "hi").await?;
-    talk(owner, admitted, npc, 8211, "imperial report").await?;
+    talk(owner, admitted, npc, 8211, "mission").await?;
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 6);
+    let questline = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
+    assert_eq!(progress(owner, admitted, authority, questline).await?, 24);
+    talk(owner, admitted, npc, 8212, "mission").await?;
     for (track, value) in [
-        ("questline", 27),
-        ("mission09", 1),
-        ("interdimensional_potion", 1),
+        ("questline", 25),
+        ("mission08", 1),
+        ("mission09", 0),
+        ("interdimensional_potion", 0),
     ] {
         assert_eq!(
             progress(
@@ -347,8 +360,8 @@ pub(super) async fn exercise(
             value
         );
     }
-    talk(owner, admitted, npc, 8211, "imperial report").await?;
-    refused(owner, admitted, npc, 8212, "imperial report").await?;
+    talk(owner, admitted, npc, 8212, "mission").await?;
+    refused(owner, admitted, npc, 8213, "imperial report").await?;
     let receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid AND transition_key='oteryn:quest-reward/chosen/wrath/imperial-report'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(receipts, 1);
     eprintln!("POSTGRES_WRATH_IMPERIAL_NATIVE_EXACT_FOUR_SIX_COLD_REPLAY_PASS");

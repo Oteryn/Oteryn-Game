@@ -188,3 +188,10 @@ def bind_creatures(root, creatures):
         if details.get("corpse_item") is not None:
             raise ValueError(f"Creature corpse binding already owned: {creature}")
         details["corpse_item"] = item_ref(evidence["item"])
+    # The Snapper is the solo Grizzly hunt. Global lists its ordinary loot
+    # (TibiaWiki BR, The_Snapper oldid 445277). Crystal's rewardBoss flag
+    # would instead divert that entire table to private reward chests.
+    snapper = profiles["oteryn:creature.the_snapper"]
+    if snapper["corpse_item"] != item_ref(6046):
+        raise ValueError("Unexpected Snapper corpse")
+    snapper["system_eligibility"]["reward_boss"] = False

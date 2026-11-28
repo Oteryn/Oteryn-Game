@@ -716,6 +716,71 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
         },
     )
     .map_err(|error| format!("{error:?}"))?;
+    use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
+    let catalogue = lowered.catalogue();
+    let npc = "oteryn:npc.lugri";
+    state.insert(
+        "oteryn:quest-progress/hunting-tasks/necromancers/phase".into(),
+        3,
+    );
+    state.insert(
+        "oteryn:quest-progress/hunting-tasks/minotaurs/phase".into(),
+        3,
+    );
+    let programme = NpcRuleCatalog::runtime()
+        .map_err(|e| e.to_string())?
+        .admitted_for_npc(npc, catalogue)
+        .map_err(|e| e.to_string())?
+        .ok_or("Lugri programme")?;
+    let request = NpcRuleInput {
+        npc,
+        trigger: NpcRuleTrigger::Say,
+        message: "task",
+        topic: 0,
+        player_name: None,
+        tracks: &state,
+        inventory: &Default::default(),
+        now_epoch_seconds: 1_700_000_000,
+        calendar_month: 11,
+        premium_current: true,
+        level: 60,
+        vocation: "oteryn:vocation.knight",
+        sex: 0,
+        outfits: &Default::default(),
+    };
+    let quote = programme
+        .plan_storage(&request)
+        .map_err(|e| e.to_string())?
+        .ok_or("repeat offer")?;
+    let accept = programme
+        .plan_storage(&NpcRuleInput {
+            message: "yes",
+            topic: quote.next_topic,
+            ..request
+        })
+        .map_err(|e| e.to_string())?
+        .ok_or("repeat acceptance")?;
+    state.extend(
+        accept
+            .track_changes
+            .into_iter()
+            .map(|change| (change.key, change.after)),
+    );
+    let death =
+        "oteryn:quest-transition/native-kills/hunting-tasks/necromancers-repeat/necromancer";
+    assert!(
+        crate::quest::native_kills::active_for(catalogue, &state)
+            .iter()
+            .any(|key| key == death)
+    );
+    let changes = catalogue
+        .evaluate(catalogue.transition(death).ok_or("repeat kill")?, &state, 0)
+        .map_err(|e| format!("{e:?}"))?;
+    state.extend(
+        changes
+            .into_iter()
+            .map(|change| (change.track, change.after)),
+    );
     let line = loaded
         .content
         .line(&Facts(state), index)
@@ -727,6 +792,27 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
         .ok_or("missing Apes")?;
     assert!(mission.text.contains("1/300"));
     assert!(mission.text.contains("kongra: 1"));
+    for (task, expected, done) in [
+        (
+            "necromancers",
+            "Hunted 1/1000. Report to Lugri after the hunt.",
+            false,
+        ),
+        ("minotaurs", "You reported this hunt to Budrik.", true),
+    ] {
+        let track = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+        let slot = quest
+            .missions
+            .iter()
+            .position(|mission| mission.track == track)
+            .ok_or("declared mission")?;
+        let projected = line
+            .missions
+            .iter()
+            .find(|mission| mission.index as usize == slot)
+            .ok_or("missing mission")?;
+        assert_eq!((projected.text.as_str(), projected.done), (expected, done));
+    }
     assert!(!mission.done);
     Ok(())
 }

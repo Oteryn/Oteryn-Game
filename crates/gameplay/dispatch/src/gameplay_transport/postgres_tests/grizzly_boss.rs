@@ -86,11 +86,25 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, activated) =
-            super::death_ml_loss_composed_fixtures::production_generation_with_pin(
-                deps.admitted.world_id,
-                "content-1",
-            )?;
+        // Exercise the fallback on a generation where the captured body is inadmissible.
+        // The campaign fixture independently exercises both creatures on production content.
+        let mut input = super::death_ml_loss_composed_fixtures::production_input_with_source(
+            "content-1", None,
+        )?;
+        let loot = input.loot_tables.as_mut().ok_or("native loot tables")?;
+        let mut document: serde_json::Value = serde_json::from_slice(&loot.bytes)?;
+        let body = document["items"].as_array_mut().ok_or("item facts")?.iter_mut()
+            .find(|row| row["item"]["key"] == "oteryn:item.tibia.i6046")
+            .ok_or("Crocodile body")?;
+        assert_eq!(body["materializable"], true);
+        body["materializable"] = false.into();
+        body["container_capacity"] = serde_json::Value::Null;
+        loot.bytes = serde_json::to_vec(&document)?;
+        use sha2::Digest;
+        loot.sha256 = format!("{:x}", sha2::Sha256::digest(&loot.bytes));
+        let (controller, activated) = crate::content::native_gameplay::test_support::try_activate_input(
+            deps.admitted.world_id, &input,
+        ).map_err(debug)?;
         let generation = controller.active().ok_or("generation")?;
         let native = generation.native_gameplay().ok_or("native content")?;
         let cells = world

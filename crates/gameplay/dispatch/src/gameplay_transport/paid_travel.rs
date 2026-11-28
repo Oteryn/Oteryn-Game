@@ -18,6 +18,7 @@ pub(super) struct Prompt {
     opened: u64,
     route: TravelRoute,
     fare: u64,
+    introduce_passage: bool,
     storm_roll: Option<bool>,
 }
 
@@ -326,6 +327,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !prompt.matches_confirmation(intent.npc_actor, &context, fence, received_at.get()) {
                 return refusal(intent, TravelRefusal::StaleQuote);
             }
+            if prompt.introduce_passage {
+                prompt.introduce_passage = false;
+                prompt.opened = received_at.get();
+                let line = format!(
+                    "Do you seek a passage to {} for {} gold?",
+                    prompt.route.keyword, prompt.fare
+                );
+                let Ok(mut prompts) = self.states.newhaven_travel.paid_prompts.lock() else {
+                    return ordinary;
+                };
+                prompts.insert(session, prompt);
+                return npc_command::NpcConversations::reply_with_state(
+                    intent,
+                    line,
+                    NpcConversationState::Confirming,
+                );
+            }
             if prompt.route.service == "oteryn:service.travel.jack_fate"
                 && prompt.route.route.key == "thais"
             {
@@ -401,9 +419,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if current.item_fence() != fence {
                 return ordinary;
             }
-            let fare = match self
+            let (fare, first_passage) = match self
                 .root
-                .quote_npc_travel(
+                .quote_npc_passage(
                     self.character,
                     self.holder,
                     current,
@@ -421,10 +439,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     };
                 }
             };
-            let line = format!(
-                "Do you seek a passage to {} for {fare} gold?",
-                route.keyword
-            );
+            let introduce_passage = first_passage && text == "vengoth";
+            let line = if introduce_passage {
+                "Vengoth is a dangerous island. Are you sure you want to go there?".into()
+            } else {
+                format!(
+                    "Do you seek a passage to {} for {fare} gold?",
+                    route.keyword
+                )
+            };
             let runtime = self.runtime.lock().await;
             if self
                 .states
@@ -447,6 +470,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     opened: self.owner_now().get(),
                     route,
                     fare,
+                    introduce_passage,
                     storm_roll: None,
                 },
             );
