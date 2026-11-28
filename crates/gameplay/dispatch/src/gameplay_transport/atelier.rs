@@ -546,6 +546,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::character_progression::CharacterProgressionError as Error;
         let ruleset = self.wheel_ruleset.as_ref().ok_or(Error::InvalidInput)?;
         let gate = self.premium_coordinator.ok_or(Error::InvalidInput)?;
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
         let fence = if matches!(
             &command,
             GemBuildCommand::Atelier(request)
@@ -558,7 +559,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         checkout_probe::release(checkout).await;
         fence?
         } else {
-            let budget = super::AdmissionRetryBudget::for_command(self.root);
             budget
                 .retry_holder(
                     async || self.current_quest_fence_durable(session).await,
