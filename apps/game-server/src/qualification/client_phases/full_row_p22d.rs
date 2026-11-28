@@ -128,16 +128,16 @@ async fn walk_to_rat(
     .ok_or_else(|| "step=hunt;observed=no-adjacent-rat".into())
 }
 
-async fn walk_path(
+async fn walk_path<T>(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: Vec<StepDirection>,
-    target: impl Fn(&DevClientSession) -> Option<oteryn_dev_client::WorldSpatialEntity>,
-) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
+    stop_when: impl Fn(&DevClientSession) -> Option<T>,
+) -> TestResult<Option<T>> {
     let mut path = VecDeque::from(path);
     let mut detours = std::collections::BTreeSet::new();
     while let Some(direction) = path.pop_front() {
-        if let Some(target) = target(client) {
+        if let Some(target) = stop_when(client) {
             return Ok(Some(target));
         }
         let before = tile(client.world_spatial().actor_position)?;
@@ -215,7 +215,7 @@ async fn walk_path(
             .await?;
         client.take_events();
     }
-    Ok(target(client))
+    Ok(stop_when(client))
 }
 
 async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
@@ -480,22 +480,30 @@ async fn leave_combat(client: &mut DevClientSession, world: &BundleWorld) -> Tes
         .map(|entry| entry.entity)
         .collect();
     let path = route(world, here, |at| {
-        at.floor == here.floor && u32::from(at.x) + 15 <= u32::from(here.x)
+        at.floor == here.floor && u32::from(at.x) + 25 <= u32::from(here.x)
     })
     .ok_or("step=leave-combat;observed=no-westward-retreat")?;
     evidence(&format!(
         "p22d retreat from={here:?} creatures={creatures:?} steps={}",
         path.len()
     ));
-    walk_path(client, world, path, |_| None).await?;
+    let retreated = walk_path(client, world, path, |client| {
+        let position = tile(client.world_spatial().actor_position).ok()?;
+        let view = client.world_entities()?;
+        (u32::from(position.x) + 15 <= u32::from(here.x)
+            && creatures.iter().all(|entity| view.get(entity).is_none()))
+        .then_some(position)
+    })
+    .await?;
     let view = client
         .world_entities()
         .ok_or("step=leave-combat;observed=no-entities")?;
-    expect(
-        creatures.iter().all(|entity| view.get(entity).is_none()),
-        "leave-combat",
-        creatures,
-    )?;
+    let remaining: Vec<_> = creatures
+        .iter()
+        .filter_map(|entity| view.get(entity))
+        .map(|entry| (entry.entity, entry.position))
+        .collect();
+    expect(retreated.is_some(), "leave-combat", remaining)?;
     // PvE combat can remain locked for up to 60 seconds after the last hit.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     verdict::Harness::global().bounded_wait(deadline, "p22d-combat-lock");
