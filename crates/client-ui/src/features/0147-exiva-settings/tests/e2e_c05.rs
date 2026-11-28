@@ -28,41 +28,60 @@ fn parse_expected(text: &str) -> Result<Expectation, Box<dyn std::error::Error>>
 }
 
 #[test]
+#[ignore = "requires C05 live captures and the admission session from the qualification row"]
 fn e2e_c05_replays_exiva_mode_change_and_player_list() -> Result<(), Box<dyn std::error::Error>> {
-    let (modes_payload, list_payload, (modes, id, name)) =
-        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            let path = std::path::Path::new(&path);
-            (
-                std::fs::read(path.join("c05-modes.bin"))?,
-                std::fs::read(path.join("c05-list.bin"))?,
-                parse_expected(&std::fs::read_to_string(path.join("c05-expected.txt"))?)?,
-            )
-        } else {
-            let modes_only = PlayerList {
-                modes: 21,
-                players: Vec::new(),
-            };
-            let with_player = PlayerList {
-                modes: 21,
-                players: vec![([7; 16], "Vaelor Quin".into())],
-            };
-            (
-                modes_only
-                    .encode()
-                    .ok_or("could not encode C05 modes fixture")?,
-                with_player
-                    .encode()
-                    .ok_or("could not encode C05 list fixture")?,
-                (21, [7; 16], "Vaelor Quin".to_owned()),
-            )
-        };
+    let path = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing C05 capture directory")?;
+    let expected_session = std::env::var("OTERYN_C05_REPLAY_SESSION")?;
+    let path = std::path::Path::new(&path);
+    let expected = std::fs::read_to_string(path.join("c05-expected.txt"))?;
+    let session = expected
+        .lines()
+        .find_map(|line| line.strip_prefix("session="));
+    if session != Some(expected_session.as_str()) {
+        return Err("C05 capture belongs to another session".into());
+    }
+    let sequences = expected
+        .lines()
+        .find_map(|line| line.strip_prefix("sequences="));
+    let expected_sequences = std::env::var("OTERYN_C05_REPLAY_SEQUENCES")?;
+    if sequences != Some(expected_sequences.as_str()) {
+        return Err("C05 capture sequences differ from the live List results".into());
+    }
+    assert_replay(
+        &std::fs::read(path.join("c05-modes.bin"))?,
+        &std::fs::read(path.join("c05-list.bin"))?,
+        parse_expected(&expected)?,
+    );
+    Ok(())
+}
 
+#[test]
+fn exiva_panel_applies_list_and_rejects_malformed_payloads() {
+    let modes = 21;
+    let players = vec![([7; 16], "Vaelor Quin".to_owned())];
+    let modes_payload = PlayerList {
+        modes,
+        players: Vec::new(),
+    }
+    .encode();
+    let list_payload = PlayerList { modes, players }.encode();
+    let (Some(modes_payload), Some(list_payload)) = (modes_payload, list_payload) else {
+        unreachable!("valid Exiva fixture");
+    };
+    assert_replay(
+        &modes_payload,
+        &list_payload,
+        (modes, [7; 16], "Vaelor Quin".to_owned()),
+    );
+}
+
+fn assert_replay(modes_payload: &[u8], list_payload: &[u8], (modes, id, name): Expectation) {
     let mut panel = ExivaPanel {
         selected: true,
         ..ExivaPanel::default()
     };
     // Step 1: the mode change arrives with an empty allow list.
-    assert!(panel.apply(&modes_payload));
+    assert!(panel.apply(modes_payload));
     assert_eq!(
         panel.list,
         Some(PlayerList {
@@ -73,7 +92,7 @@ fn e2e_c05_replays_exiva_mode_change_and_player_list() -> Result<(), Box<dyn std
     assert_eq!(panel_text(&panel), "Exiva allow list (0/100)\r\n");
 
     // Step 2: the named player is added; the panel shows exactly the server's name.
-    assert!(panel.apply(&list_payload));
+    assert!(panel.apply(list_payload));
     assert_eq!(
         panel.list,
         Some(PlayerList {
@@ -94,5 +113,4 @@ fn e2e_c05_replays_exiva_mode_change_and_player_list() -> Result<(), Box<dyn std
     assert_eq!(panel.error, Some("Exiva request refused; refresh the list"));
     assert!(!panel.apply(&[2, 0xe0, 0]));
     assert_eq!(panel.list, accepted);
-    Ok(())
 }
