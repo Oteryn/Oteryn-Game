@@ -4,6 +4,7 @@
 //! 3. Send native USE-with using an unsupported carried item -> the same oven; expect a rejected
 //!    NothingToUse reply and no inventory delta (the refusal path).
 //! 4. Logout, freshly admit the same character, and re-check the durable dough/bread quantities.
+use super::full_row_i11::{log_use_result, log_use_start};
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, decode_use_result,
@@ -93,6 +94,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-2_observed=encode-{error:?}"))?;
     client.take_events();
+    log_use_start(&mut client, "bake");
     let reply = client
         .session_mut()
         .world_context_use(&payload)
@@ -103,6 +105,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 error,
             )
         })?;
+    log_use_result("bake", reply.command_id, reply.server_sequence);
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -161,10 +164,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-3_observed=encode-{error:?}"))?;
     let after_bake = client.inventory().cloned();
+    log_use_start(&mut client, "oven-refusal");
     let refusal = client
         .session_mut()
         .world_context_use(&refusal_payload)
-        .await?;
+        .await
+        .map_err(|error| verdict::context(format!("step=oven-refusal phase=USE-result observed={error}"), error))?;
+    log_use_result("oven-refusal", refusal.command_id, refusal.server_sequence);
     let refusal_disposition = decode_use_result(&refusal.payload)
         .map_err(|error| format!("step-3_observed=reply-decode-{error:?}"))?;
     if refusal.status != CommandStatus::Accepted

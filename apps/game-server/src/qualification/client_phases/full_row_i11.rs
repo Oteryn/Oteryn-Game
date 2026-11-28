@@ -185,11 +185,13 @@ async fn mill_wheat(
         use_with_position: None,
     })
     .map_err(|error| format!("step=millstone encode={error:?}"))?;
+    log_use_start(client, "millstone");
     let reply = client
         .session_mut()
         .world_context_use(&payload)
         .await
         .map_err(|error| verdict::context(format!("step=millstone phase=USE-result observed={error}"), error))?;
+    log_use_result("millstone", reply.command_id, reply.server_sequence);
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step=millstone decode={error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -231,9 +233,16 @@ async fn mix_dough(
             .find(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
             .map(|item| item.handle)
     };
-    if carried_bucket(client, 1).is_some() {
-        return Err("step=dough-water observed=bucket-already-filled-before-USE".into());
-    }
+    let bucket_units = |client: &oteryn_dev_client::DevClientSession, subtype| -> TestResult<u64> {
+        Ok(client
+            .inventory()
+            .ok_or("step=dough-mix missing=inventory")?
+            .entries
+            .iter()
+            .filter(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
+            .map(|item| u64::from(item.count.get()))
+            .sum())
+    };
     let here = tile(client.world_spatial().actor_position)?;
     let (water, ordinal) =
         reach_station(client, world, bytes, here, &WATER_SOURCES, "dough-water").await?;
@@ -242,6 +251,13 @@ async fn mix_dough(
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let empty = carried_bucket(client, 0).ok_or("step=dough-water missing=empty-bucket")?;
+    let empty_before_fill = bucket_units(client, 0)?;
+    let water_before_fill = bucket_units(client, 1)?;
+    if empty_before_fill != 1 || water_before_fill != 0 {
+        return Err(format!(
+            "step=dough-water expected=one-empty-zero-filled empty={empty_before_fill} filled={water_before_fill}"
+        ).into());
+    }
     use_for_mixing(
         client,
         empty,
@@ -253,12 +269,15 @@ async fn mix_dough(
     )
     .await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while carried_bucket(client, 1).is_none() {
+    while bucket_units(client, 0)? != empty_before_fill - 1
+        || bucket_units(client, 1)? != water_before_fill + 1
+    {
         if tokio::time::Instant::now() >= deadline {
-            return Err("step=dough-water missing=filled-bucket-inventory-delta".into());
+            return Err("step=dough-water missing=empty-bucket-debit-and-filled-bucket-credit".into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
     }
+    evidence("I11_CHECK empty-bucket-to-water-bucket PASS");
     let water = carried_bucket(client, 1).ok_or("step=dough-mix missing=water-bucket")?;
     let source = client
         .inventory()
@@ -270,16 +289,6 @@ async fn mix_dough(
         })
         .ok_or("step=dough-mix missing=milled-flour")?
         .handle;
-    let bucket_units = |client: &oteryn_dev_client::DevClientSession, subtype| -> TestResult<u64> {
-        Ok(client
-            .inventory()
-            .ok_or("step=dough-mix missing=inventory")?
-            .entries
-            .iter()
-            .filter(|item| item.item_definition_ref == bucket && item.sub_type == subtype)
-            .map(|item| u64::from(item.count.get()))
-            .sum())
-    };
     let before_water = bucket_units(client, 1)?;
     let before_empty = bucket_units(client, 0)?;
     let before_flour = quantity(client, flour)?;
@@ -303,6 +312,21 @@ async fn mix_dough(
     Ok(())
 }
 
+pub(super) fn log_use_start(client: &mut oteryn_dev_client::DevClientSession, step: &str) {
+    let session = client.session_mut();
+    evidence(&format!(
+        "I11_USE step={step} phase=send command={} last_server_sequence={}",
+        session.next_command_id(),
+        session.last_server_sequence()
+    ));
+}
+
+pub(super) fn log_use_result(step: &str, command: u64, server_sequence: u64) {
+    evidence(&format!(
+        "I11_USE step={step} phase=result command={command} server_sequence={server_sequence}"
+    ));
+}
+
 async fn use_for_mixing(
     client: &mut oteryn_dev_client::DevClientSession,
     source: oteryn_protocol_oteryn::item_view::ItemHandle,
@@ -315,7 +339,10 @@ async fn use_for_mixing(
         use_with_map_item: Some(target),
         use_with_position: None,
     }).map_err(|error| format!("step={step} encode={error:?}"))?;
-    let reply = client.session_mut().world_context_use(&payload).await?;
+    log_use_start(client, step);
+    let reply = client.session_mut().world_context_use(&payload).await
+        .map_err(|error| verdict::context(format!("step={step} phase=USE-result observed={error}"), error))?;
+    log_use_result(step, reply.command_id, reply.server_sequence);
     let disposition = decode_use_result(&reply.payload).map_err(|error| format!("step={step} decode={error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("step={step} status={:?} disposition={disposition:?}", reply.status).into());
@@ -379,7 +406,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-2_observed=encode-{error:?}"))?;
     client.take_events();
-    let reply = client.session_mut().world_context_use(&payload).await?;
+    log_use_start(&mut client, "bake");
+    let reply = client.session_mut().world_context_use(&payload).await
+        .map_err(|error| verdict::context(format!("step=bake phase=USE-result observed={error}"), error))?;
+    log_use_result("bake", reply.command_id, reply.server_sequence);
     let disposition = decode_use_result(&reply.payload)
         .map_err(|error| format!("step-2_observed=reply-decode-{error:?}"))?;
 
@@ -425,10 +455,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     })
     .map_err(|error| format!("step-3_observed=encode-{error:?}"))?;
     let after_bake = client.inventory().cloned();
+    log_use_start(&mut client, "oven-refusal");
     let refusal = client
         .session_mut()
         .world_context_use(&refusal_payload)
-        .await?;
+        .await
+        .map_err(|error| verdict::context(format!("step=oven-refusal phase=USE-result observed={error}"), error))?;
+    log_use_result("oven-refusal", refusal.command_id, refusal.server_sequence);
     let refusal_disposition = decode_use_result(&refusal.payload)
         .map_err(|error| format!("step-3_observed=reply-decode-{error:?}"))?;
     if refusal.status != CommandStatus::Accepted
