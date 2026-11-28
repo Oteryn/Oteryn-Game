@@ -15,7 +15,9 @@ pub struct InboundCapture(Arc<Mutex<Vec<u8>>>);
 
 impl std::fmt::Debug for InboundCapture {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.debug_struct("InboundCapture").finish_non_exhaustive()
+        formatter
+            .debug_struct("InboundCapture")
+            .finish_non_exhaustive()
     }
 }
 

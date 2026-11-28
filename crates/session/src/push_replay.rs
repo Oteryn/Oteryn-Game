@@ -73,7 +73,8 @@ pub async fn replay_player_push(
         .ok_or("M04 replay omitted the captured push delta")?;
     let fields = world_spatial_entities::EntityFields::selected(session.selected_capabilities());
     let (delta, _) = world_spatial_entities::decode_world_spatial_entities_delta_with_fields(
-        &captured.payload, fields,
+        &captured.payload,
+        fields,
     )
     .map_err(|error| format!("M04 replay delta: {error:?}"))?;
     if !delta.update.iter().any(|entity| {
