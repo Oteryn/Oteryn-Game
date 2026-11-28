@@ -561,20 +561,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     fn recovered_npc_reply(
         &self,
         session: GameSessionId,
-    ) -> Option<oteryn_protocol_oteryn::npc_service::NpcConversation> {
-        let mut lines = self.states.npc_conversations.recovered_quest_lines(session);
-        if lines.is_empty() {
-            return None;
-        }
+    ) -> Option<(u64, oteryn_protocol_oteryn::npc_service::NpcConversation)> {
+        let (command, mut lines) = self
+            .states
+            .npc_conversations
+            .recovered_quest_lines(session)?;
         let name = self.states.chat.speaker_name(session)?;
         for line in &mut lines {
             *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
         }
-        Some(oteryn_protocol_oteryn::npc_service::NpcConversation { open: None, lines })
+        Some((
+            command,
+            oteryn_protocol_oteryn::npc_service::NpcConversation { open: None, lines },
+        ))
     }
 
-    fn recovered_npc_reply_delivered(&self, session: GameSessionId) {
-        self.states.npc_conversations.quest_lines_delivered(session);
+    fn recovered_npc_reply_delivered(&self, session: GameSessionId, command: u64) {
+        self.states
+            .npc_conversations
+            .quest_lines_delivered(session, command);
     }
 
     async fn npc_follow(

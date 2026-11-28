@@ -137,6 +137,21 @@ pub(super) async fn exercise(
         assert_eq!(quantity(h, SHIELD).await?, 0);
         assert_eq!(quantity(h, STEEL).await?, 2);
         assert_exchange_receipts(h).await?;
+        mint(owner, admitted, SHIELD, 1, 7103).await?;
+        crate::gameplay_transport::tcp_tls::FAIL_NPC_LINE.scope("Cling clang!", async {
+            with_wire(owner, admitted, cyclops, async |wire| {
+                wire.greet().await?;
+                wire.line("uth'lokr", STEEL_QUOTE).await?;
+                wire.disposition("yes", NpcIntentDisposition::Ok).await
+            }).await
+        }).await?;
+        let committed = snapshot(h).await?;
+        with_wire(owner, admitted, cyclops, async |wire| {
+            wire.recovered_reply("Cling clang!").await
+        }).await?;
+        assert!(owner.states.npc_conversations.recovered_quest_lines(admitted.game_session_id).is_none());
+        assert_eq!(snapshot(h).await?, committed);
+        assert_eq!(quantity(h, STEEL).await?, 3);
     }
     Ok(())
 }
