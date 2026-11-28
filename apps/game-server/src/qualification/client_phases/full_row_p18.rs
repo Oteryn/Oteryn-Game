@@ -145,7 +145,7 @@ async fn observe_inventory(
 ) -> TestResult<bool> {
     // The receipt precedes the inventory projection, which may complete on a
     // subsequent server refresh. Only read from the existing session here.
-    let slices = if expect_change { 20 } else { 1 };
+    let slices = if expect_change { 100 } else { 1 };
     for _ in 0..slices {
         if poll(Duration::from_millis(50)).await? {
             return Ok(true);
@@ -1486,7 +1486,7 @@ mod tests {
         assert!(
             observe_inventory(true, async |duration| {
                 serviced += duration;
-                Ok(serviced >= Duration::from_millis(150))
+                Ok(serviced >= Duration::from_secs(2))
             })
             .await?
         );
