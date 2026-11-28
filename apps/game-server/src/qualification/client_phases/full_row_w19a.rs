@@ -189,6 +189,14 @@ async fn quote(
             offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
         })
         .ok_or("step 2: live Messenger trade window has no red Christmas bundle")?;
+    // Global Tibia: https://tibia.fandom.com/wiki/Red_Christmas_Bundle
+    if offer.unit_price != 70 || offer.count != 1 {
+        return Err(format!(
+            "step 2: red Christmas bundle offer expected 70 gold for one bundle, observed price={} count={}",
+            offer.unit_price, offer.count
+        )
+        .into());
+    }
     let (window_actor, catalogue_revision) = window.open.ok_or("step 2: trade window closed")?;
     if window_actor != actor {
         return Err("step 2: trade window exposed a different NPC actor".into());
