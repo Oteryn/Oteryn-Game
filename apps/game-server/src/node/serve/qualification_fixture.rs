@@ -804,8 +804,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | Q_C17A_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | Q_C17A_ACCOUNT | PARTY_CASTER_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
@@ -816,12 +815,28 @@ async fn prepare_build(
                 }
                 return grant_premium(root, premium, *record.account_id.as_bytes(), deadline).await;
             }
+            ("c17a-client", Q_C17A_ACCOUNT) => {
+                if !config
+                    .premium_activation
+                    .as_ref()
+                    .is_some_and(|record| record.activation_id == "node-boot-fixture-premium")
+                {
+                    return Err("qualification Premium activation absent".into());
+                }
+                publish_fixture_entitlement(
+                    root,
+                    premium,
+                    *record.account_id.as_bytes(),
+                    deadline,
+                    false,
+                )
+                .await?;
+            }
             ("c11-unassigned", UNASSIGNED_ACCOUNT)
             | ("c10-sorcerer", C10_FULL_ACCOUNT | C10_CLIENT_ACCOUNT)
             | ("c11-knight", KNIGHT_ACCOUNT)
             | ("c12-monk", MONK_ACCOUNT)
             | ("c06-sorcerer", C06_CASTER_ACCOUNT)
-            | ("c17a-client", Q_C17A_ACCOUNT)
             | ("s13-party", PARTY_CASTER_ACCOUNT)
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
@@ -901,6 +916,25 @@ async fn grant_premium(
     account: [u8; 16],
     deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    publish_fixture_entitlement(root, coordinator, account, deadline, true).await?;
+    coordinator
+        .ok_or("qualification Premium coordinator absent")?
+        .premium_gate(account)
+        .await
+        .require()
+        .map_err(|_| "qualification Premium gate remained closed".into())
+}
+
+#[cfg(feature = "qualification-spawn")]
+async fn publish_fixture_entitlement(
+    root: &DurabilityRoot,
+    coordinator: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
+    account: [u8; 16],
+    deadline: tokio::time::Instant,
+    active: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     use crate::premium::{
         IngestOutcome, PRODUCER_PROFILE, PRODUCT_ID, PRODUCT_VERSION, SNAPSHOT_SCHEMA,
     };
@@ -929,12 +963,12 @@ async fn grant_premium(
         "account_id": account_text,
         "product_id": PRODUCT_ID,
         "product_version": PRODUCT_VERSION,
-        "entitlement_id": account_text,
-        "entitlement_state": "ACTIVE",
-        "lifecycle_revision": 1,
-        "authority_revision": now,
-        "effective_from": "2026-01-01T00:00:00Z",
-        "effective_until": "2030-01-01T00:00:00Z",
+        "entitlement_id": active.then_some(account_text),
+        "entitlement_state": if active { "ACTIVE" } else { "NONE" },
+        "lifecycle_revision": u8::from(active),
+        "authority_revision": if active { now } else { now - 1 },
+        "effective_from": active.then_some("2026-01-01T00:00:00Z"),
+        "effective_until": active.then_some("2030-01-01T00:00:00Z"),
         "authority_issued_at": timestamp(now)?,
         "authority_valid_until": timestamp(now + 3600)?,
         "refresh_after": timestamp(now + 2400)?,
@@ -951,11 +985,7 @@ async fn grant_premium(
         root.request_ready();
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
-    coordinator
-        .premium_gate(account)
-        .await
-        .require()
-        .map_err(|_| "qualification Premium gate remained closed".into())
+    Ok(())
 }
 
 // Stable, domain-separated occurrence IDs give retries an exact retained receipt.
