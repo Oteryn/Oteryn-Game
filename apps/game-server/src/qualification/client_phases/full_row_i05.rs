@@ -259,11 +259,11 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         let before = client.inventory().cloned().ok_or("refusal-inventory-missing")?;
         let unknown = items::ItemHandle::new(u64::MAX).ok_or("invalid-test-handle")?;
         let refused = timed_command(&mut client, timed::TimedAction::Inspect, unknown, 0).await?;
-        if refused != timed::TimedItemResult::refused(timed::TimedDisposition::Rejected)
+        if refused != timed::TimedItemResult::refused(timed::TimedDisposition::Stale)
             || client.inventory() != Some(&before) {
             return Err(format!("unknown-handle-not-rollback-safe:reply={refused:?}").into());
         }
-        row.passed(1, "timed-rejected+inventory-unchanged");
+        row.passed(1, "timed-stale+inventory-unchanged");
 
         earn_gold(&mut client, world, &metadata.spawns).await?;
         let carried = buy_energy_ring(&mut client, world, &metadata.npcs).await?;

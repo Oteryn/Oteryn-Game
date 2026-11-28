@@ -57,6 +57,8 @@ pub struct ChannelSessionStates {
     pub(super) kill_source_owner: super::public_kill_statistics::ActivityKillSourceOwner,
     pub input_gate: std::sync::Arc<input_gate::InputGate>,
     pub(super) inspection_permissions: super::inspection::Permissions,
+    /// Invalidates item views after a source-item deadline pass changes durable items.
+    pub(super) item_deadline_epoch: std::sync::atomic::AtomicU64,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub last_positions: last_position::LastPositions,

@@ -422,9 +422,8 @@ async fn live<A: FreshAdmissionAuthority>(
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
-    // VIS-3: only a session with capability 6 looks for entities that changed without its own
-    // step.
-    let visibility_refresh = visibility.is_some().then(|| {
+    // Follow changes made outside this connection to its entity or item views.
+    let visibility_refresh = (visibility.is_some() || item_view.is_some()).then(|| {
         let mut refresh = tokio::time::interval_at(
             tokio::time::Instant::now() + VISIBILITY_REFRESH,
             VISIBILITY_REFRESH,
