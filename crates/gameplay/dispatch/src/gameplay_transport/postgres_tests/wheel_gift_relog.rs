@@ -2,7 +2,7 @@ use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority, LogoutReply,
+    AdmittedSession, ControllerBinding, FirstEntryOutcome, LogoutReply,
     route_wheel_gift_status_for_test,
 };
 use crate::gameplay_transport::item_fence_of;
