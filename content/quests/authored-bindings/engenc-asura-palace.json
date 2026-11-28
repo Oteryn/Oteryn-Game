@@ -936,13 +936,6 @@
               "teleport": null,
               "storage": [
                 {
-                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
-                  "minimum": 1,
-                  "maximum": 1,
-                  "set": 1,
-                  "preserve": true
-                },
-                {
                   "track": "oteryn:quest-progress/engenc/asura/orchid/sapphire",
                   "minimum": 0,
                   "maximum": 0,
@@ -1003,13 +996,6 @@
               "passages": [],
               "teleport": null,
               "storage": [
-                {
-                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
-                  "minimum": 1,
-                  "maximum": 1,
-                  "set": 1,
-                  "preserve": true
-                },
                 {
                   "track": "oteryn:quest-progress/engenc/asura/orchid/ruby",
                   "minimum": 0,

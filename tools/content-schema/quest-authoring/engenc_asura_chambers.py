@@ -251,7 +251,6 @@ def attach_chambers(document, root):
             f"oteryn:quest-callback/engenc/asura/orchid/{gem}",
             position,
             [
-                gate(count, 1),
                 {"track": claimed, "minimum": 0, "maximum": 0, "set": 1},
             ],
         )

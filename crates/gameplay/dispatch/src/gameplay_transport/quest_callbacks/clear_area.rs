@@ -92,6 +92,7 @@ mod tests {
                 floor: -3,
             },
             additional_floors: Vec::new(),
+            floor_bounds: Vec::new(),
             creatures: vec!["oteryn:creature.damned_soul".into()],
         };
         assert!(clear(&runtime, &area, 8));
@@ -207,6 +208,7 @@ mod population_tests {
                 floor: -3,
             },
             additional_floors: Vec::new(),
+            floor_bounds: Vec::new(),
             creatures: vec!["oteryn:creature.damned_soul".into()],
         };
         for _ in 0..4_097 {

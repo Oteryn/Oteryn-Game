@@ -96,6 +96,9 @@ class ClassicQuestPlacements(unittest.TestCase):
                 ]
                 self.assertEqual(matching, [value])
 
+    def test_realm_house_level_door(self):
+        self.check([((32826, 31496, 7), 9863, "action", 1040)])
+
     def test_devil_helmet_startup_carriers_plate_and_gates(self):
         self.check(
             [

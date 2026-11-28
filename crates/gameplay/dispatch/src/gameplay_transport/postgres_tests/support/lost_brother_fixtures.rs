@@ -49,6 +49,14 @@ pub(super) async fn exercise(
         .await?;
         Ok::<_, sqlx::Error>(result)
     };
+    super::rottin_rewards_fixtures::seed_tracks(
+        h,
+        owner,
+        admitted,
+        &[("oteryn:quest-progress/engenc/asura/orchid/count", 1)],
+    )
+    .await?;
+    assert_eq!(palace_raider_grants(h).await?, 0);
     let before = reward().await?;
     assert!(
         !talk(owner, admitted, tarun, 16, "mission")
@@ -59,5 +67,15 @@ pub(super) async fn exercise(
     assert_eq!(reward().await?, (before.0 + 3000, before.1 + 1));
     talk(owner, admitted, tarun, 17, "mission").await?;
     assert_eq!(reward().await?, (before.0 + 3000, before.1 + 1));
+    assert_eq!(palace_raider_grants(h).await?, 1);
     Ok(())
+}
+
+pub(super) async fn palace_raider_grants(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests
+          WHERE achievement_key = 'oteryn:achievement/lost_palace_raider'",
+    )
+    .fetch_one(&h.pool)
+    .await?)
 }

@@ -42,7 +42,7 @@ class AsuraChambers(unittest.TestCase):
         for name, item, entrance in (("sapphire", 3029, 2472), ("ruby", 3030, 1993)):
             claim = stages[f"orchid-{name}"]["trigger"]["callback"]
             self.assertEqual(claim["selector"]["native"]["appearance"], entrance)
-            self.assertEqual(claim["storage"][0]["track"], counter["track"])
+            self.assertEqual(claim["storage"], [{"track": f"oteryn:quest-progress/engenc/asura/orchid/{name}", "minimum": 0, "maximum": 0, "set": 1}])
             self.assertEqual(
                 claim["effects"]["item_reward"],
                 {

@@ -18,7 +18,16 @@ fn realm_loader_binds_source_portals_and_retains_entry_key()
         .find(|c| c.selector.action == Some(55022))
         .ok_or("AID 55022")?;
     assert_eq!(entry.trigger, Trigger::StepIn);
-    assert_eq!(entry.minimum_level, Some(40));
+    assert_eq!(entry.minimum_level, None);
+    assert!(
+        entry
+            .storage
+            .iter()
+            .any(|state| state.track.ends_with("/draconia_book")
+                && state.minimum == 1
+                && state.maximum == 1
+                && state.preserve)
+    );
     assert_eq!(entry.present[0].item, "oteryn:item.tibia.i14682");
     assert!(entry.item_on_target.is_none());
     assert!(entry.return_on_failure);
@@ -97,13 +106,19 @@ fn realm_loader_binds_lever_to_independent_wall_and_switch_deadlines()
         .find(|c| c.selector.action == Some(55021))
         .ok_or("AID 55021")?;
     assert_eq!(lever.trigger, Trigger::Use);
-    assert_eq!(lever.present[0].item, "oteryn:item.tibia.i14682");
+    assert!(lever.present.is_empty());
+    assert!(
+        lever
+            .world_requirements
+            .iter()
+            .any(|r| r.hidden && r.appearance == 1772)
+    );
     assert_eq!(lever.lever, Some([2772, 2773]));
     assert!(
         lever.reversible,
         "active source lever must accept its return use"
     );
-    assert_eq!(lever.effects.passages_reset_after_ms, Some(60_000));
+    assert_eq!(lever.effects.passages_reset_after_ms, Some(300_000));
     assert_eq!(lever.effects.reset_after_ms, Some(300_000));
     assert_eq!(lever.passages[0].appearance, 2129);
     Ok(())
@@ -232,7 +247,7 @@ fn cave_explorer_loader_admits_donor_level_thresholds_and_completion_achievement
         );
         assert_eq!(
             callback.participants[0].state_ops[0].effect,
-            crate::quest::reward_callbacks::StateMutation::Add { value: -100 }
+            crate::quest::reward_callbacks::StateMutation::Add { value: 0 }
         );
         if suffix != "base" {
             assert_eq!(
@@ -273,5 +288,61 @@ fn cave_explorer_loader_can_settle_a_pre_upgrade_completed_trial() -> Result<(),
     ]);
     assert!(catalogue.evaluate(transition, &progress, 0).is_ok());
     assert_eq!(legacy.outfit.as_ref().ok_or("base outfit")?.addons, 0);
+    Ok(())
+}
+
+#[test]
+fn great_dragon_hoard_publishes_all_six_rewards_and_resets_the_hunt()
+-> Result<(), Box<dyn std::error::Error>> {
+    let state = load_embedded_quest_state("content-1").map_err(|error| format!("{error:?}"))?;
+    let callback = load_for(state.catalogue())?
+        .into_iter()
+        .find(|c| c.selector.action == Some(50808))
+        .ok_or("hoard")?;
+    let reward = callback.effects.item_reward.as_ref().ok_or("coins")?;
+    let rows: Vec<_> = std::iter::once(reward)
+        .chain(&callback.effects.alternative_rewards)
+        .map(|r| (r.item.as_str(), r.count))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            (3035, 5),
+            (3029, 1),
+            (3052, 1),
+            (3039, 1),
+            (237, 10),
+            (236, 8)
+        ]
+        .map(|(id, n)| (format!("oteryn:item.tibia.i{id}"), n))
+        .each_ref()
+        .map(|(key, n)| (key.as_str(), *n))
+    );
+    assert_eq!(
+        callback.effects.alternative_rewards[0]
+            .additional
+            .iter()
+            .map(|i| (i.item.as_str(), i.count))
+            .collect::<Vec<_>>(),
+        [
+            ("oteryn:item.tibia.i3032", 1),
+            ("oteryn:item.tibia.i3030", 1)
+        ]
+    );
+    let transition = state
+        .catalogue()
+        .transition(&callback.key)
+        .ok_or("hoard transition")?;
+    let kills = &callback.storage[0].track;
+    let claims = &callback.storage[1].track;
+    let mut tracks = std::collections::BTreeMap::from([(kills.clone(), 49), (claims.clone(), 9)]);
+    assert!(state.catalogue().evaluate(transition, &tracks, 0).is_err());
+    tracks.insert(kills.clone(), 50);
+    let changes = state
+        .catalogue()
+        .evaluate(transition, &tracks, 0)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(changes.iter().any(|c| &c.track == kills && c.after == 0));
+    assert!(changes.iter().any(|c| &c.track == claims && c.after == 10));
     Ok(())
 }

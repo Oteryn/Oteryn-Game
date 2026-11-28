@@ -2352,6 +2352,11 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                             let Some(key) = placement_key(position, ordinal) else {
                                 return false;
                             };
+                            if requirement.hidden {
+                                return map.facts.base_hidden(key)
+                                    && map.facts.quest_callback_base_appearance(position, ordinal, *id)
+                                        == Some(requirement.appearance);
+                            }
                             !map.facts.base_hidden(key)
                                 && map.facts.base_entry(position, ordinal, *id).is_some_and(
                                     |entry| {

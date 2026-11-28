@@ -447,6 +447,90 @@
         ]
       },
       "source": "data-global/startup/tables/teleport.lua:646"
+    },
+    {
+      "position": [
+        32826,
+        31496,
+        7
+      ],
+      "appearance": 9863,
+      "attributes": {
+        "action": 1040
+      },
+      "source": "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler"
+    },
+    {
+      "position": [
+        33010,
+        32638,
+        5
+      ],
+      "appearance": 13501,
+      "attributes": {
+        "action": 50808
+      },
+      "source": "data-global/startup/tables/item.lua:3395-3406"
+    },
+    {
+      "position": [
+        33039,
+        32652,
+        6
+      ],
+      "appearance": 13501,
+      "attributes": {
+        "action": 50808
+      },
+      "source": "data-global/startup/tables/item.lua:3395-3406"
+    },
+    {
+      "position": [
+        33010,
+        32687,
+        7
+      ],
+      "appearance": 13501,
+      "attributes": {
+        "action": 50808
+      },
+      "source": "data-global/startup/tables/item.lua:3395-3406"
+    },
+    {
+      "position": [
+        33037,
+        32662,
+        7
+      ],
+      "appearance": 13501,
+      "attributes": {
+        "action": 50808
+      },
+      "source": "data-global/startup/tables/item.lua:3395-3406"
+    },
+    {
+      "position": [
+        33078,
+        32657,
+        6
+      ],
+      "appearance": 13501,
+      "attributes": {
+        "action": 50808
+      },
+      "source": "data-global/startup/tables/item.lua:3395-3406"
+    },
+    {
+      "position": [
+        32994,
+        32625,
+        6
+      ],
+      "appearance": 13501,
+      "attributes": {
+        "action": 50808
+      },
+      "source": "data-global/startup/tables/item.lua:3395-3406"
     }
   ]
 }

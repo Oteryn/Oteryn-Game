@@ -656,9 +656,14 @@ async fn exercise_orchid(
     let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_target(owner, admitted, command, &target).await?,
-        UseDisposition::Rejected
+        UseDisposition::Committed
     );
-    assert_eq!(carried(h, 3029).await?, 0);
+    assert_eq!(carried(h, 3029).await?, 3);
+
+    super::rottin_rewards_fixtures::seed_tracks(
+        h, owner, admitted, &[("oteryn:quest-progress/quest/u10_80/the_lost_brother_quest", 3)],
+    ).await?;
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 0);
 
     let encounter = callback
         .effects
@@ -689,6 +694,8 @@ async fn exercise_orchid(
         stage(h, "oteryn:quest-progress/engenc/asura/orchid/count").await?,
         Some(1)
     );
+
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 1);
 
     let library_door = TilePos {
         x: 32962,
@@ -761,7 +768,7 @@ async fn exercise_orchid(
         let command = admitted.continuity.next_command_id;
         assert_eq!(
             use_target(owner, admitted, command, &target).await?,
-            UseDisposition::Committed
+            if item == 3029 { UseDisposition::Rejected } else { UseDisposition::Committed }
         );
         assert_eq!(carried(h, item).await?, 3);
         let command = admitted.continuity.next_command_id;

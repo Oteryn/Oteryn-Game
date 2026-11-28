@@ -50,6 +50,101 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3391",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/corpse.lua:35"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/great-dragon-hunt-hoard",
+      "quest": "oteryn:quest.adventurers_guild",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50808,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33015,
+            "y": 32775,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 21964
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "requires_world_admission": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/dragon_counter",
+          "minimum": 50,
+          "maximum": 2147483647,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "You hear further dragons approaching. You should kill some more before picking a treasure.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3035",
+          "count": 5
+        },
+        "item_reward_per_use": true,
+        "alternative_rewards": [
+          {
+            "item": "oteryn:item.tibia.i3029",
+            "count": 1,
+            "additional": [
+              {
+                "item": "oteryn:item.tibia.i3032",
+                "count": 1
+              },
+              {
+                "item": "oteryn:item.tibia.i3030",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "item": "oteryn:item.tibia.i3052",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i3039",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i237",
+            "count": 10
+          },
+          {
+            "item": "oteryn:item.tibia.i236",
+            "count": 8
+          }
+        ],
+        "achievement_at": {
+          "track": "oteryn:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement",
+          "minimum": 10,
+          "maximum": 10
+        }
+      },
+      "achievements": [
+        "oteryn:achievement/hoard_of_the_dragon"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_great_dragon_hunt_quest/actions_treasure.lua:1-48",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3395-3406",
+        "https://tibia.fandom.com/wiki/The_Great_Dragon_Hunt_Quest/Spoiler"
+      ]
     }
   ]
 }

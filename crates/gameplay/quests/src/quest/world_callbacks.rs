@@ -373,6 +373,9 @@ pub use ground_stack::GroundStackEntry as GroundStackItem;
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
+    /// Require this authored placement to have been removed in the shared map.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub hidden: bool,
     pub position: Position,
     /// Zero only for a mutable Ground stack; otherwise the legacy map appearance.
     #[serde(default, skip_serializing_if = "WorldRequirement::zero_appearance")]
@@ -389,6 +392,8 @@ impl<'de> Deserialize<'de> for WorldRequirement {
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
         struct Wire {
+            #[serde(default)]
+            hidden: bool,
             position: Position,
             #[serde(default)]
             appearance: u16,
@@ -399,6 +404,7 @@ impl<'de> Deserialize<'de> for WorldRequirement {
         }
         let wire = Wire::deserialize(deserializer)?;
         let requirement = Self {
+            hidden: wire.hidden,
             position: wire.position,
             appearance: wire.appearance,
             ground_stack: wire.ground_stack,
@@ -420,6 +426,7 @@ impl WorldRequirement {
     }
     pub fn valid(&self) -> bool {
         (-15..=0).contains(&self.position.floor)
+            && (!self.hidden || (self.appearance != 0 && self.ground_stack.is_none() && self.ground.is_none()))
             && match &self.ground {
                 Some(ground) => {
                     self.appearance == 0 && self.ground_stack.is_none() && ground.valid()
@@ -2594,6 +2601,7 @@ mod tests {
         }
         callback.actor_kind = ActorKind::Player;
         callback.world_requirements = vec![WorldRequirement {
+            hidden: false,
             ground: None,
             position: Position {
                 x: 1,

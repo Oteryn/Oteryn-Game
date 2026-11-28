@@ -738,6 +738,7 @@ pub mod native_doors;
 pub mod kill_objectives;
 pub mod carlos_trade;
 mod persist;
+mod lost_palace_raider;
 mod planegazer_finale;
 pub mod native_kills;
 pub(crate) mod native_observation;
