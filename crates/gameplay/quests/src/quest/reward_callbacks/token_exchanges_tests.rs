@@ -300,6 +300,18 @@ fn gnomally_confirms_the_quoted_quantity_and_recalculates_rank() -> Result<(), S
     };
     let mut topic = 0;
     for (message, expected) in [("relations", 121), ("yes", 122), ("2", 1002)] {
+        if topic == 122 {
+            assert!(
+                source
+                    .plan_item_exchange(&NpcRuleInput {
+                        message: "no",
+                        topic,
+                        ..input
+                    })
+                    .map_err(|e| e.to_string())?
+                    .is_none()
+            );
+        }
         let plan = source
             .plan_item_exchange(&NpcRuleInput {
                 message,

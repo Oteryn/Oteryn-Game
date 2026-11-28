@@ -100,7 +100,7 @@ pub(super) fn resolve(
             }
             0
         }
-        RenownAction::Cancel if input.topic == 122 || (1..=MAX_TOKENS).contains(&quoted) => 0,
+        RenownAction::Cancel if (1..=MAX_TOKENS).contains(&quoted) => 0,
         _ => return Ok(None),
     };
     effects.push(NpcRuleEffect::SetTopic { value: topic });

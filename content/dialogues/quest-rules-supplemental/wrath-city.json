@@ -130,32 +130,6 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
       ]
-    },
-    {
-      "key": "oteryn:quest-npc/wrath-city/gate-decline",
-      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
-      "npc": "oteryn:npc.gate_guardian",
-      "trigger": "say",
-      "keywords": [
-        "no"
-      ],
-      "keyword_mode": "exact",
-      "topics": [
-        1
-      ],
-      "guards": [],
-      "reply": [
-        "Then stay outside the city."
-      ],
-      "effects": [
-        {
-          "kind": "set_topic",
-          "value": 0
-        }
-      ],
-      "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gate_guardian.lua:56-69"
-      ]
     }
   ],
   "source_files": [

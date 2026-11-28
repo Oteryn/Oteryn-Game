@@ -881,9 +881,40 @@ fn regional_boss_handoffs_require_quota_and_consume_one_entry() -> Result<(), St
         assert_eq!(entry.storage[0].maximum, report.storage[0].set);
         assert_ne!(entry.storage[0].set, report.storage[0].set);
         assert!(entry.personal_room_entry().is_some());
+        assert_eq!(
+            entry
+                .effects
+                .encounter
+                .as_ref()
+                .and_then(|room| room.return_after_ms),
+            Some(600_000)
+        );
         if task.ends_with("djinns") {
-            assert_eq!(report.experience, Some(10_000));
-            let coins = report.give.as_ref().ok_or("djinn report coins")?;
+            assert!(report.experience.is_none() && report.give.is_none());
+            let reward = offered
+                .iter()
+                .find(|cb| {
+                    cb.key == format!("oteryn:quest-reward/hunting-tasks/{task}/boss-report")
+                })
+                .ok_or("post-visit report")?;
+            assert!(
+                reward
+                    .requires
+                    .iter()
+                    .any(|g| g.track == entry.storage[0].track
+                        && g.minimum == entry.storage[0].set
+                        && g.maximum == entry.storage[0].set)
+            );
+            let due = &reward.storage[0];
+            assert!(
+                report
+                    .storage
+                    .iter()
+                    .any(|s| s.track == due.track && s.set == 1)
+            );
+            assert_eq!((due.minimum, due.maximum, due.set), (1, 1, 0));
+            assert_eq!(reward.experience, Some(10_000));
+            let coins = reward.give.as_ref().ok_or("djinn report coins")?;
             assert_eq!((&*coins.item, coins.count), ("oteryn:item.tibia.i3035", 50));
         }
     }
@@ -945,12 +976,9 @@ fn regional_boss_handoffs_require_quota_and_consume_one_entry() -> Result<(), St
         ),
         (0, 2, true)
     );
-    let boss = &entry
-        .effects
-        .encounter
-        .as_ref()
-        .ok_or("pirate room")?
-        .monsters[0];
+    let room = entry.effects.encounter.as_ref().ok_or("pirate room")?;
+    assert_eq!(room.return_after_ms, Some(600_000));
+    let boss = &room.monsters[0];
     assert_eq!(boss.alternatives.len(), 3);
     let repeat = offered
         .iter()
@@ -1274,6 +1302,17 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
         .find(|c| c.key == "oteryn:quest-reward/wrath-city/zlak-handoff")
         .ok_or("handoff")?;
     assert!(handoff.matches_keyword("tell me about the mission"));
+    for track in [
+        "oteryn:quest-progress/chosen/wrath/magistrati",
+        "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/mission06",
+    ] {
+        assert!(
+            handoff
+                .storage
+                .iter()
+                .any(|s| s.track == track && s.minimum == -1 && s.set == 0 && s.at_least)
+        );
+    }
     let gates = crate::quest::npc_rules::NpcRuleCatalog::runtime()
         .and_then(|rules| rules.admitted_for_npc("oteryn:npc.gate_guardian", catalogue))
         .map_err(|error| error.to_string())?
@@ -1306,6 +1345,15 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
             })
             .map_err(|error| error.to_string())?;
         assert_eq!(offer.map(|plan| plan.next_topic), can_enter.then_some(1));
+        assert!(
+            gates
+                .plan_storage(&crate::quest::npc_rules::NpcRuleInput {
+                    message: "no",
+                    ..input
+                })
+                .map_err(|error| error.to_string())?
+                .is_none()
+        );
         for message in ["yes, I need a pass", "yes, about the mission"] {
             let combined = crate::quest::npc_rules::NpcRuleInput { message, ..input };
             assert!(

@@ -1196,7 +1196,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             let result = match observation {
                 Ok(observation) => {
-                    Box::pin(self.execute_quest_callback(
+                    let execution = Box::pin(self.execute_quest_callback(
                         &permit,
                         pending.expected,
                         pending.actor,
@@ -1213,8 +1213,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         None,
                         pending.selected_tool.as_ref(),
                         None,
-                    ))
-                    .await
+                    ));
+                    encounter::STEP_ORIGIN
+                        .scope(pending.origin.map(|origin| origin.position()), execution)
+                        .await
                 }
                 Err(disposition) => disposition,
             };
@@ -2018,6 +2020,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             runtime.read_actor_position(actor).unwrap_or(entered)
         };
+        let operation = encounter::STEP_ORIGIN.scope(Some(origin.position()), operation);
         match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
             Ok(snapshot) => snapshot,
             Err(_) if callback.is_read_only() => {

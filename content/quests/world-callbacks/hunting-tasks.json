@@ -35,12 +35,14 @@
       "offerings": [],
       "requires_world_admission": true,
       "return_on_failure": true,
+      "success_message": "You have ten minutes to kill and loot this boss before you are returned.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:333"
       ],
       "effects": {
         "encounter": {
           "minimum_level": 1,
+          "return_after_ms": 600000,
           "players": [
             {
               "from": {
@@ -115,12 +117,14 @@
       "offerings": [],
       "requires_world_admission": true,
       "return_on_failure": true,
+      "success_message": "You have ten minutes to kill and loot this boss before you are returned.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:344"
       ],
       "effects": {
         "encounter": {
           "minimum_level": 1,
+          "return_after_ms": 600000,
           "players": [
             {
               "from": {
@@ -202,12 +206,14 @@
       "offerings": [],
       "requires_world_admission": true,
       "return_on_failure": true,
+      "success_message": "You have ten minutes to kill and loot this boss before you are returned.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:355"
       ],
       "effects": {
         "encounter": {
           "minimum_level": 1,
+          "return_after_ms": 600000,
           "players": [
             {
               "from": {
@@ -288,12 +294,14 @@
       "offerings": [],
       "requires_world_admission": true,
       "return_on_failure": true,
+      "success_message": "You have ten minutes to kill and loot this boss before you are returned.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:366"
       ],
       "effects": {
         "encounter": {
           "minimum_level": 1,
+          "return_after_ms": 600000,
           "players": [
             {
               "from": {
@@ -368,12 +376,14 @@
       "offerings": [],
       "requires_world_admission": true,
       "return_on_failure": true,
+      "success_message": "You have ten minutes to kill and loot this boss before you are returned.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:377"
       ],
       "effects": {
         "encounter": {
           "minimum_level": 1,
+          "return_after_ms": 600000,
           "players": [
             {
               "from": {

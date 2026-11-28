@@ -53,7 +53,21 @@ pub(in crate::gameplay_transport) fn room_contains(
         && (i32::from(encounter.room_min.y)..=i32::from(encounter.room_max.y)).contains(&at.y)
 }
 
+tokio::task_local! {
+    pub(super) static STEP_ORIGIN: Option<MovementLocalPosition>;
+}
+
+struct RoomReturn {
+    due: u64,
+    exit: MovementLocalPosition,
+    scope: (
+        crate::foundation::RuntimeScopeRefV1,
+        crate::foundation::ScopeOwnershipGeneration,
+    ),
+}
+
 pub(super) struct EncounterVisit {
+    room_return: Option<RoomReturn>,
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
@@ -706,7 +720,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
-            visits.retain(|visit| visit.active(runtime));
+            visits.retain(|visit| visit.room_return.is_some() || visit.active(runtime));
             if visits.len() >= super::timed_encounter::MAX_TIMED_ENCOUNTERS
                 || visits.try_reserve(1).is_err()
             {
@@ -761,6 +775,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 players,
                 capture,
                 visit: visits.as_ref().map(|_| EncounterVisit {
+                    room_return: None,
                     room: encounter.clone(),
                     participants: party,
                     creatures: Vec::new(),
@@ -768,6 +783,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
             return UseDisposition::Committed;
         }
+        // Crystal returns the hunter to the tile they stepped from, including
+        // when the durable entry receipt is recovered on a later owner turn.
+        let room_return = if let Some(delay) = encounter.return_after_ms {
+            let Ok(Some(exit)) = STEP_ORIGIN.try_with(|position| *position) else {
+                return UseDisposition::Rejected;
+            };
+            Some(RoomReturn {
+                due: self
+                    .owner_now()
+                    .get()
+                    .saturating_add(u64::from(delay) * 1_000),
+                exit,
+                scope: runtime.encounter_owner_scope(),
+            })
+        } else {
+            None
+        };
         let Ok((
             snapshots,
             PreparedPhase {
@@ -791,7 +823,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(phases);
         if let Some(visits) = &mut visits {
+            if let Some(timer) = &room_return {
+                // A hunter can finish a repeat hunt and enter again before
+                // the old timer fires. Only the new visit owns the return.
+                visits.retain(|visit| {
+                    visit.room != *encounter
+                        || visit
+                            .room_return
+                            .as_ref()
+                            .is_none_or(|previous| previous.scope != timer.scope)
+                });
+            }
             visits.push(EncounterVisit {
+                room_return,
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
@@ -805,6 +849,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         self.project_encounter_movements(runtime, states, map, players, snapshots);
         UseDisposition::Committed
+    }
+
+    pub(super) fn expire_regional_visits(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        map: &BundleMap,
+    ) {
+        let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
+            return;
+        };
+        let now = self.owner_now().get();
+        visits.retain_mut(|visit| {
+            let Some(timer) = &visit.room_return else {
+                return true;
+            };
+            let scope = runtime.encounter_owner_scope();
+            if timer.scope != scope {
+                return timer.scope.0 != scope.0;
+            }
+            if now < timer.due {
+                return true;
+            }
+            visit.creatures.retain(|actor| {
+                runtime.contains_live_creature(*actor)
+                    && runtime.remove_encounter_actor(*actor).is_err()
+            });
+            let [(actor, session)] = visit.participants.as_slice() else {
+                return !visit.creatures.is_empty();
+            };
+            if let Ok(before) = runtime.read_actor_position(*actor)
+                && room_contains(&visit.room, before.position())
+                && runtime.bound_attacker_lease(*actor, *session).is_ok()
+            {
+                let doors = crate::map::floor::BundleDoors(&map.facts);
+                let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                    runtime,
+                    self.movement_cells(),
+                    *actor,
+                    *session,
+                    before,
+                    timer.exit,
+                    &doors,
+                ) else {
+                    return true;
+                };
+                let Ok(after) = runtime.commit_source_step(proof) else {
+                    return true;
+                };
+                self.project_encounter_movements(
+                    runtime,
+                    states,
+                    map,
+                    vec![(*actor, *session, before)],
+                    vec![after],
+                );
+            }
+            !visit.creatures.is_empty()
+        });
     }
 
     fn project_encounter_movements(

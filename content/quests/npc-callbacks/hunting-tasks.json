@@ -24,14 +24,16 @@
           "maximum": 500,
           "set": 500,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/bounty-due",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
         }
       ],
       "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i3035",
-        "count": 50,
-        "contents": []
-      },
+      "give": null,
       "outfit": null,
       "achievement": null,
       "reply": [
@@ -45,6 +47,54 @@
           "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
           "minimum": 3,
           "maximum": 3
+        }
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/blue-djinns/boss-report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.malor",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/bounty-due",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You faced Fahim the Wise. Here is your reward. Speak to me again if you want another task."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:155-188"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/efreet_faction/mission03",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/blue-djinns/phase",
+          "minimum": 0,
+          "maximum": 0
         }
       ],
       "exclude_keywords": [
@@ -172,14 +222,16 @@
           "maximum": 500,
           "set": 500,
           "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/bounty-due",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
         }
       ],
       "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i3035",
-        "count": 50,
-        "contents": []
-      },
+      "give": null,
       "outfit": null,
       "achievement": null,
       "reply": [
@@ -193,6 +245,54 @@
           "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
           "minimum": 3,
           "maximum": 3
+        }
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/hunting-tasks/green-djinns/boss-report",
+      "quest": "oteryn:quest.killing_in_the_name_of_quest",
+      "npc": "oteryn:npc.gabel",
+      "keywords": [
+        "task"
+      ],
+      "msg_contains": true,
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/bounty-due",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You faced Merikh the Slaughterer. Here is your reward. Speak to me again if you want another task."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:141-176"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/marid_faction/mission03",
+          "minimum": 3,
+          "maximum": 3
+        },
+        {
+          "track": "oteryn:quest-progress/hunting-tasks/green-djinns/phase",
+          "minimum": 0,
+          "maximum": 0
         }
       ],
       "exclude_keywords": [

@@ -336,6 +336,9 @@ pub struct Encounter {
     pub monsters: Vec<EncounterMonster>,
     pub room_min: Position,
     pub room_max: Position,
+    /// A personal step-in encounter returns its hunter to the approach tile.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub return_after_ms: Option<u32>,
     /// A value-free source switch schedules native monsters without moving a party.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<EncounterTiming>,
@@ -1056,7 +1059,11 @@ pub(super) fn valid(callback: &Callback) -> bool {
         let unique_monsters: BTreeSet<_> = encounter.monsters.iter().map(|p| p.position).collect();
         let source_party = encounter.phase.is_some();
         let delayed = encounter.phase == Some(EncounterPhase::CourtWarlock);
-        if (delayed && !super::court_warlock::exact(callback))
+        if encounter.return_after_ms.is_some_and(|delay| {
+            !(1..=3_600_000).contains(&delay)
+                || source_party
+                || callback.personal_room_entry().is_none()
+        }) || (delayed && !super::court_warlock::exact(callback))
             || (encounter.phase == Some(EncounterPhase::Arbaziloth) && !exact_arbaziloth)
             || (encounter.minimum_level == 0 && !source_party && !callback.starts_merchant_wave())
             || if let Some(timing) = encounter.timing {

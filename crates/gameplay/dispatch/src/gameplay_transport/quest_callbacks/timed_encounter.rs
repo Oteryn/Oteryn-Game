@@ -217,6 +217,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        {
+            let mut states = self.states.spell_states.lock().await;
+            self.expire_regional_visits(&mut runtime, &mut states, map);
+        }
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };
