@@ -64,7 +64,7 @@ const SAMPLES: usize = 3;
 const COMMAND_BUDGET: Duration = Duration::from_secs(8);
 const BASELINE_BUDGET: Duration = Duration::from_secs(75);
 // The authored Blue Valley round trip adds paced steps before the four cast phases.
-const JOURNEY_BUDGET: Duration = Duration::from_secs(720);
+const JOURNEY_BUDGET: Duration = Duration::from_secs(1200);
 const STEPS: [&str; 7] = [
     "acquire-50271",
     "baseline-cast",
@@ -455,12 +455,11 @@ impl Hunt {
         // attributed hit before advancing to the next action, including late batches.
         let mut hits = Vec::new();
         super::client_row_c12::collect_hits(&in_flight, own, victim, spell, &mut hits);
-        let mut timers = super::client_row_c12::validate_cast_timers(
-            client.session_mut(),
-            &in_flight,
-            spell,
-            8_000,
-        )?;
+        let mut timers = validate_full_timers(client.session_mut(), &in_flight, spell)?;
+        // Swift Jab has no personal deadline at this point. Its refusal proves the
+        // shared attack-group gate independently of Greater Tiger Clash's timer.
+        let builder = spell_by_words(client, "exori infir pug")?;
+        super::client_row_c12::require_cooldown(client.session_mut(), builder).await?;
         client.service_liveness(Duration::from_secs(2)).await?;
         super::client_row_c12::require_cooldown(client.session_mut(), spell).await?;
         let window = tokio::time::Instant::now() + Duration::from_secs(8);
@@ -469,12 +468,7 @@ impl Hunt {
                 .service_liveness(remaining.min(Duration::from_millis(250)))
                 .await?;
             let trailing = client.take_events();
-            timers |= super::client_row_c12::validate_cast_timers(
-                client.session_mut(),
-                &trailing,
-                spell,
-                8_000,
-            )?;
+            timers |= validate_full_timers(client.session_mut(), &trailing, spell)?;
             super::client_row_c12::collect_hits(&trailing, own, victim, spell, &mut hits);
         }
         if !timers {
@@ -532,7 +526,48 @@ pub(super) struct CommittedDamage {
     pub(super) committed: u64,
 }
 
-pub(super) fn committed_base_damage(
+pub(super) fn near_full_group_duration(remaining_ms: u64) -> bool {
+    // The projection clock is sampled after commit. Allow bounded publication latency.
+    (1_750..=2_000).contains(&remaining_ms)
+}
+
+fn validate_full_timers<S: oteryn_dev_client::native_session::SessionStream>(
+    session: &oteryn_dev_client::native_session::Session<S>,
+    events: &[SessionEvent],
+    spell: NonZeroU32,
+) -> TestResult<bool> {
+    if !super::client_row_c12::validate_cast_timers(session, events, spell, 8_000)? {
+        return Ok(false);
+    }
+    use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
+    let near_full = events.iter().any(|event| match event {
+        SessionEvent::ActorCooldowns(update) => update.value.entries.iter().any(|entry| {
+            entry.kind == ActorCooldownKind::Spell
+                && entry.id == spell.get()
+                && entry
+                    .expires_at_ms
+                    .checked_sub(update.value.server_now_ms)
+                    .and_then(|remaining| remaining.checked_sub(6_000))
+                    .is_some_and(near_full_group_duration)
+        }),
+        _ => false,
+    });
+    if !near_full {
+        return Err(
+            "C12 full cooldown projection arrived too short to establish the authored duration"
+                .into(),
+        );
+    }
+    Ok(true)
+}
+
+#[test]
+fn c12_rejects_both_deadlines_shortened_by_half_a_second() {
+    assert!(near_full_group_duration(2_000));
+    assert!(!near_full_group_duration(1_500));
+}
+
+fn committed_base_damage(
     path: &Path,
     start: u64,
     marker: &str,
@@ -1976,6 +2011,77 @@ fn client_cast_route(
 }
 
 // Relog with the weapon equipped before approaching the hostile spawn.
+async fn prove_authored_hunt(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    let home = tile(client.world_spatial().actor_position)?;
+    let authored = authored_client_cast_route(world, spawns, home)?;
+    let path = authored
+        .iter()
+        .map(|(direction, _)| *direction)
+        .collect::<Vec<_>>();
+    walk_exact_route(client, world, &path).await?;
+    if tile(client.world_spatial().actor_position)? != CLIENT_CAST_TILE {
+        return Err("C12 did not reach the authored cast tile".into());
+    }
+    super::client_row_c12::cast_at_authored_spawn(client.session_mut()).await?;
+    let cleared = client.session_mut().attack_target(None).await?;
+    require_mechanic_acceptance(cleared.status, "C12 authored target clear")?;
+    if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+        return Err(format!("C12 authored target clear refused: {cleared:?}").into());
+    }
+    wait_combat_target(&mut client, None).await?;
+    let rope = TilePos {
+        x: 32296,
+        y: 32334,
+        floor: -8,
+    };
+    let upstairs = TilePos {
+        x: 32296,
+        y: 32335,
+        floor: -7,
+    };
+    if !world
+        .base()
+        .tile(rope.x, rope.y, rope.floor)
+        .is_some_and(|tile| tile.appearance(0) == Some(386))
+    {
+        return Err("C12 original Tarantula cave rope spot is missing".into());
+    }
+    if destination(world, CLIENT_CAST_TILE, StepDirection::East) != Some(rope) {
+        return Err("C12 original Tarantula cave rope spot is unreachable".into());
+    }
+    walk_exact_route(client, world, &[StepDirection::East]).await?;
+    let reply = client
+        .chat(&oteryn_dev_client::ChatIntent::Say {
+            mode: oteryn_dev_client::ChatSpeechMode::Say,
+            text: "exani tera".into(),
+        })
+        .await?;
+    require_mechanic_acceptance(reply.status, "C12 Magic Rope")?;
+    if reply.disposition != oteryn_dev_client::ChatDisposition::Ok {
+        return Err(format!("C12 Magic Rope failed: {reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while tile(client.world_spatial().actor_position)? == rope {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C12 Magic Rope did not leave the authored cave".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+    let landing = tile(client.world_spatial().actor_position)?;
+    if landing != upstairs {
+        return Err(format!("C12 Magic Rope landed at {landing:?}, expected {upstairs:?}").into());
+    }
+    evidence("C12_AUTHORED_RETURN rope=32296,32334,-8 landing=32296,32335,-7");
+    let back = route(world, upstairs, |at| at == home)
+        .ok_or("C12 no surface return route from the authored rope exit")?;
+    walk_exact_route(client, world, &back).await?;
+    Ok(())
+}
+
 pub(super) async fn prepare_client_capture(
     clients: &SeamClients<'_>,
 ) -> TestResult<ClientCaptureSetup> {
@@ -2025,69 +2131,7 @@ pub(super) async fn prepare_client_capture(
     select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
     equip_right(&mut client, definition).await?;
 
-    let home = tile(client.world_spatial().actor_position)?;
-    let authored = authored_client_cast_route(world, &metadata.spawns, home)?;
-    let path = authored
-        .iter()
-        .map(|(direction, _)| *direction)
-        .collect::<Vec<_>>();
-    walk_exact_route(&mut client, world, &path).await?;
-    if tile(client.world_spatial().actor_position)? != CLIENT_CAST_TILE {
-        return Err("C12.client did not reach the authored cast tile".into());
-    }
-    super::client_row_c12::cast_at_authored_spawn(client.session_mut()).await?;
-    let cleared = client.session_mut().attack_target(None).await?;
-    require_mechanic_acceptance(cleared.status, "C12.client authored target clear")?;
-    if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
-        return Err(format!("C12.client authored target clear refused: {cleared:?}").into());
-    }
-    wait_combat_target(&mut client, None).await?;
-    let rope = TilePos {
-        x: 32296,
-        y: 32334,
-        floor: -8,
-    };
-    let upstairs = TilePos {
-        x: 32296,
-        y: 32335,
-        floor: -7,
-    };
-    if !world
-        .base()
-        .tile(rope.x, rope.y, rope.floor)
-        .is_some_and(|tile| tile.appearance(0) == Some(386))
-    {
-        return Err("C12 original Tarantula cave rope spot is missing".into());
-    }
-    if destination(world, CLIENT_CAST_TILE, StepDirection::East) != Some(rope) {
-        return Err("C12 original Tarantula cave rope spot is unreachable".into());
-    }
-    walk_exact_route(&mut client, world, &[StepDirection::East]).await?;
-    let reply = client
-        .chat(&oteryn_dev_client::ChatIntent::Say {
-            mode: oteryn_dev_client::ChatSpeechMode::Say,
-            text: "exani tera".into(),
-        })
-        .await?;
-    require_mechanic_acceptance(reply.status, "C12.client Magic Rope")?;
-    if reply.disposition != oteryn_dev_client::ChatDisposition::Ok {
-        return Err(format!("C12 Magic Rope failed: {reply:?}").into());
-    }
-    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
-    while tile(client.world_spatial().actor_position)? == rope {
-        if tokio::time::Instant::now() >= deadline {
-            return Err("C12 Magic Rope did not leave the authored cave".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
-    let landing = tile(client.world_spatial().actor_position)?;
-    if landing != upstairs {
-        return Err(format!("C12 Magic Rope landed at {landing:?}, expected {upstairs:?}").into());
-    }
-    evidence("C12_CLIENT_AUTHORED_RETURN rope=32296,32334,-8 landing=32296,32335,-7");
-    let back = route(world, upstairs, |at| at == home)
-        .ok_or("C12.client no surface return route from the authored rope exit")?;
-    walk_exact_route(&mut client, world, &back).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
     let route = client_cast_route(world, position)?;
@@ -2105,6 +2149,62 @@ pub(super) async fn prepare_client_capture(
         previous,
         position,
     })
+}
+
+fn use_holder_wait(log: &str, purpose_prefix: &str) -> bool {
+    log.lines().any(|line| {
+        line.split_ascii_whitespace()
+            .any(|field| field == "event=use_holder_wait")
+            && line.split_ascii_whitespace().any(|field| {
+                field
+                    .strip_prefix("purpose=")
+                    .is_some_and(|purpose| purpose.starts_with(purpose_prefix))
+            })
+    })
+}
+
+fn require_no_use_holder_wait(path: &Path, offset: u64, purpose_prefix: &str) -> TestResult {
+    use std::io::{Read, Seek};
+    let mut log = std::fs::File::open(path)?;
+    log.seek(std::io::SeekFrom::Start(offset))?;
+    let mut text = String::new();
+    log.read_to_string(&mut text)?;
+    if use_holder_wait(&text, purpose_prefix) {
+        return Err(format!("C12 {purpose_prefix} USE encountered Busy holder checkout").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_rejects_success_after_holder_contention() {
+    let log = "event=use_holder_wait purpose=stone_travel waited_ms=12 outcome=retry_finished";
+    assert!(use_holder_wait(log, "stone_"));
+    assert!(!use_holder_wait(log, "catalyst_"));
+    let log = "event=use_holder_wait purpose=catalyst_commit waited_ms=7 outcome=retry_finished";
+    assert!(use_holder_wait(log, "catalyst_"));
+    assert!(!use_holder_wait(
+        "event=use_complete purpose=catalyst_commit",
+        "catalyst_"
+    ));
+}
+
+fn require_global_five_harmony_scale() -> TestResult {
+    use oteryn_gameplay_spell_rules::harmony::{HarmonyMultiplier, MULTIPLIER_DENOMINATOR};
+    // Global Harmony lists +112% at five charges without a virtue or Ascetic.
+    let multiplier = HarmonyMultiplier::new(80, 5, false, false)
+        .ok_or("C12 five Harmony multiplier unavailable")?;
+    if multiplier.numerator() * 100 != MULTIPLIER_DENOMINATOR * 212 {
+        return Err(format!(
+            "BLOCKER-SERVER C12 unbuffed five Harmony scale: expected 212/100, server rule gives {}/{}",
+            multiplier.numerator(), MULTIPLIER_DENOMINATOR
+        ).into());
+    }
+    Ok(())
+}
+
+#[test]
+fn c12_global_five_harmony_scale_matches_server_rule() -> TestResult {
+    require_global_five_harmony_scale()
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -2148,7 +2248,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     character_prep::grant_item(&client, CRYSTAL_COIN, u32::try_from(coins)?).await?;
     client = fresh_c12_admission(client, clients).await?;
     verify_seeded_monk(&mut client).await?;
+    let use_log = std::path::PathBuf::from(required("NODE_BOOT_CAST_EVIDENCE_LOG")?);
+    let offset = std::fs::metadata(&use_log)?.len();
     enter_guild(&mut client, world, clients).await?;
+    require_no_use_holder_wait(&use_log, offset, "stone_")?;
     let purchase_balance =
         acquire_pema(&mut client, world, &metadata.npcs, definition, portals).await?;
     let acquired = carried_count(&client, definition);
@@ -2159,7 +2262,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .into());
     }
     leave_guild(&mut client, world, &metadata.npcs, clients).await?;
+    let offset = std::fs::metadata(&use_log)?.len();
     select_fists_damage_perks(&mut client, clients, definition).await?;
+    require_no_use_holder_wait(&use_log, offset, "catalyst_")?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns).await?;
     row.pass("acquire-50271", (acquired, purchase_balance));
 
     require_current_premium(client.session_mut()).await?;
@@ -2266,6 +2372,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     logout(&mut fresh, false).await?;
+    require_global_five_harmony_scale()?;
     row.pass("augment-attribution", (ITEM_ID, augment));
     Ok(())
 }
