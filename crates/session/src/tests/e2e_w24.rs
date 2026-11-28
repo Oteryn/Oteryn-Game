@@ -75,21 +75,15 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
         format!("{:?}", session.join_snapshot().game_session_id),
         session_id
     );
-    let mut sequence = session.last_server_sequence();
     let mut observed = Vec::new();
-    while sequence < *city_sequence {
-        let frame = read_frame(&mut session.stream).await?;
+    while session.last_server_sequence() < *city_sequence {
+        let frame = session.read_post_admission("W24 replay").await?;
         let envelope = decode_wire_envelope(&frame)?;
-        envelope.validate(Direction::ServerToClient, true)?;
-        assert_eq!(
-            envelope.connection_generation(),
-            session.connection_generation
-        );
-        let next = envelope.server_sequence();
-        if next != 0 {
-            assert_eq!(next, sequence + 1);
-            sequence = next;
-        }
+        assert!(matches!(
+            envelope.message_type(),
+            MessageType::CommandResult | MessageType::StateDelta
+        ));
+        let sequence = session.next_sequence(&envelope)?;
         if envelope.message_type() == MessageType::StateDelta
             && oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?.domain_id
                 == STATE_DOMAIN_AMBIENT_SOUND
