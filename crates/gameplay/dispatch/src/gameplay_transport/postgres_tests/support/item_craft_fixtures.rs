@@ -156,7 +156,6 @@ async fn exchange_selected_operands(
         let frame = oteryn_protocol_oteryn::encode_client_command(1, &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: 2, payload: &actual })?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
         loop {
             let raw = super::item_look_fixtures::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
@@ -164,6 +163,7 @@ async fn exchange_selected_operands(
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if result.command_id == command_id {
                     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(result.payload).map_err(debug)?;
+                    client.shutdown().await?;
                     return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
                 }
             }

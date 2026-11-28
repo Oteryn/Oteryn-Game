@@ -12,6 +12,8 @@ pub fn validate_resolved_world(
     callbacks: &[world_callbacks::Callback],
 ) -> Result<(), String> {
     let published = registry()?;
+    // Published transitions also require a structurally valid supplied registry.
+    // The catalogue composition and its embedded fallback are already validated.
     let composed = catalogue.authored_world_callbacks();
     if !composed.is_some_and(|registered| std::ptr::eq(registered, callbacks))
         && (callbacks.len() > MAX_RESOLVED_CALLBACKS
@@ -151,11 +153,29 @@ mod tests {
         let base = world_callbacks::load()?;
         let bindings = catalogue.authored_bindings().ok_or("authored bindings")?;
         let callbacks = world_callbacks::load_for(catalogue)?;
+        let door_routes: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../content/quests/world-callbacks/cwdoor-world-routes.json"
+        ))
+        .map_err(|error| error.to_string())?;
+        let door_routes = door_routes["callbacks"].as_array().ok_or("door routes")?;
+        assert!(!door_routes.is_empty());
+        for route in door_routes {
+            assert!(base.iter().any(|callback| route["key"] == callback.key));
+        }
         assert!(base.len() <= MAX_RESOLVED_CALLBACKS);
         assert!(bindings.world_callbacks().next().is_some());
         assert_eq!(
             callbacks.len(),
             base.len() + bindings.world_callbacks().count()
+        );
+        // The restored Twenty Miles routes remain part of the published set.
+        assert_eq!(
+            base.iter()
+                .filter(
+                    |callback| callback.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+                )
+                .count(),
+            44 + 30
         );
         let expected: BTreeSet<_> = base
             .iter()
@@ -173,6 +193,28 @@ mod tests {
         substituted[0] = callbacks[1].clone();
         assert_eq!(
             validate_resolved_world(catalogue, transition, false, &substituted),
+            Err("resolved World source bounds".into())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn embedded_fallback_rejects_a_duplicate_callback() -> Result<(), String> {
+        let source = super::super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let transition = source
+            .catalogue()
+            .transition("oteryn:quest-transition/kv/bear_chest3/chest")
+            .ok_or("bear claim transition")?;
+        let catalogue =
+            super::super::super::QuestStateCatalogue::new("resolved-fixture", vec![], vec![])
+                .map_err(|error| format!("{error:?}"))?;
+        let mut callbacks = world_callbacks::load_for(&catalogue)?;
+        validate_resolved_world(&catalogue, transition, false, &callbacks)?;
+
+        callbacks[0] = callbacks[1].clone();
+        assert_eq!(
+            validate_resolved_world(&catalogue, transition, false, &callbacks),
             Err("resolved World source bounds".into())
         );
         Ok(())

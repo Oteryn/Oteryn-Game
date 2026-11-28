@@ -36,6 +36,11 @@ pub(super) fn apply(position: TilePos, appearance: u16, house: u32, attrs: &mut 
     if house != 0 {
         return;
     }
+    // Crystal 201189f8 startup/tables/door_level.lua:76,105 (Koshei’s level-40 gate).
+    // The retained B3 tile has the closed gate at ordinal 1 without its action.
+    if (position.x, position.y, position.floor, appearance) == (33271, 32418, -12, 5120) {
+        attrs.action.get_or_insert(1040);
+    }
     for binding in &capture.bindings {
         if binding.item != appearance
             || binding.position[0] != position.x
@@ -68,6 +73,7 @@ mod tests {
             (32171, 32439, -7, 1930, 15005),
             (32172, 32439, -7, 1931, 15005),
             (32212, 32435, -10, 1648, 1050),
+            (33271, 32418, -12, 5120, 1040),
         ] {
             let pos = TilePos { x, y, floor };
             let mut attrs = Attrs::default();

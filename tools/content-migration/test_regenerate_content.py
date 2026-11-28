@@ -97,6 +97,7 @@ def stopped_merge(
         ["git", "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "theirs"],
         cwd=root,
         capture_output=True,
+        check=False,
     )
     assert merged.returncode != 0, "fixture merge must stop on conflicts"
     assert sorted(unmerged(root)) == sorted(conflicting), unmerged(root)
@@ -582,7 +583,9 @@ def test_crystal_spawn_source_receipts_bind_schema_valid_packets() -> None:
     spawn.validate_source_bundles(rc.ROOT)
     raw = (rc.ROOT / spawn.PATH).read_bytes()
     try:
-        spawn.verify_source_receipts(rc.ROOT, [(spawn.REVISION, spawn.BATCH, raw + b" ")])
+        spawn.verify_source_receipts(
+            rc.ROOT, [(spawn.REVISION, spawn.BATCH, raw + b" ")]
+        )
     except ValueError as error:
         assert spawn.BATCH in str(error)
     else:
@@ -606,14 +609,21 @@ def test_source_cohort_includes_installed_successors() -> None:
 
         def materialize():
             write(world, "definitions/reference.json", {"records": []})
-            write(world, "definitions/declarations.json", {"records": [], "authoring_profiles": []})
+            write(
+                world,
+                "definitions/declarations.json",
+                {"records": [], "authoring_profiles": []},
+            )
             write(world, "provenance/sources.json", {"sources": []})
             write(world, "provenance/imports.json", {"batches": batches})
             write(world, "project.json", {"project_revision": "fixture"})
 
         def measure():
             assert rc.source_cohort_extent(world)["imports"] == len(batches)
-            assert json.loads((world / "provenance/imports.json").read_bytes())["batches"] == batches
+            assert (
+                json.loads((world / "provenance/imports.json").read_bytes())["batches"]
+                == batches
+            )
             raise Measured
 
         with (
@@ -630,7 +640,9 @@ def test_source_cohort_includes_installed_successors() -> None:
             except Measured:
                 pass
             else:
-                raise AssertionError("measure the completed World before refreshing pins")
+                raise AssertionError(
+                    "measure the completed World before refreshing pins"
+                )
 
 
 def test_normal_generation_orders_native_callback_producers() -> None:
@@ -660,6 +672,37 @@ def test_normal_generation_orders_native_callback_producers() -> None:
         assert (
             commands.index(tree) < commands.index(producer) < commands.index(consumer)
         ), (producer, consumer)
+
+
+def test_raid_catalogue_follows_final_placements_before_seasonal_inventory() -> None:
+    commands: list[tuple[str, ...]] = []
+    assert full_generation_trace(commands, lambda *_: None) == 0
+    raid = ("python3", "tools/content-migration/raid_catalogue.py", "content")
+    collector = (
+        "python3",
+        "tools/content-schema/quest-authoring/questpc3_collectors.py",
+        "content",
+    )
+    traversal = ("python3", "tools/content-schema/world-authoring/crystal_traversal.py")
+    feroxa = ("python3", "tools/content-schema/world-object-authoring/feroxa_static.py")
+    seasonal = (
+        "python3",
+        "tools/content-migration/refresh_season_creature_inventory.py",
+    )
+    early_raid, final_raid = (
+        index for index, command in enumerate(commands) if command == raid
+    )
+    last_feroxa = max(
+        index for index, command in enumerate(commands) if command == feroxa
+    )
+    assert early_raid < commands.index(collector)
+    assert (
+        commands.index(traversal)
+        < commands.index(("world-metadata",))
+        < last_feroxa
+        < final_raid
+        < commands.index(seasonal)
+    )
 
 
 def full_generation_trace(
@@ -712,18 +755,38 @@ def full_generation_trace(
         argv = ["regenerate_content.py", "--no-stage"]
         if not checks:
             argv.append("--skip-checks")
-        with patch.object(rc, "ROOT", root), \
-                patch.object(sys, "argv", argv), \
-                patch.object(rc, "CHECKS", [check]), \
-                patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}), \
-                patch.object(rc, "run", side_effect=record), \
-                patch.object(rc, "unresolved_worktree_paths", return_value=[]) as unresolved, \
-                patch.object(rc, "refresh_quest_callback_proof"), \
-                patch.object(rc, "materialize_world", side_effect=lambda: record(("materialize-world",))), \
-                patch.object(rc, "refresh_source_cohort_extent", side_effect=lambda: record(("source-cohort",))), \
-                patch.object(rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))), \
-                patch.object(rc, "refresh_world_metadata", side_effect=lambda: events.append(("world-metadata",))), \
-                patch.object(subprocess, "run", side_effect=AssertionError("unexpected subprocess")):
+        with (
+            patch.object(rc, "ROOT", root),
+            patch.object(sys, "argv", argv),
+            patch.object(rc, "CHECKS", [check]),
+            patch.dict(os.environ, {"OTERYN_SPELL_SOURCE_ROOT": ""}),
+            patch.object(rc, "run", side_effect=record),
+            patch.object(
+                rc, "unresolved_worktree_paths", return_value=[]
+            ) as unresolved,
+            patch.object(rc, "refresh_quest_callback_proof"),
+            patch.object(
+                rc,
+                "materialize_world",
+                side_effect=lambda: record(("materialize-world",)),
+            ),
+            patch.object(
+                rc,
+                "refresh_source_cohort_extent",
+                side_effect=lambda: record(("source-cohort",)),
+            ),
+            patch.object(
+                rc, "repin_rust_inventory", side_effect=lambda: record(("repin-world",))
+            ),
+            patch.object(
+                rc,
+                "refresh_world_metadata",
+                side_effect=lambda: events.append(("world-metadata",)),
+            ),
+            patch.object(
+                subprocess, "run", side_effect=AssertionError("unexpected subprocess")
+            ),
+        ):
             result = rc.main()
             unresolved.assert_called_once_with()
         digest = hashlib.sha256((root / nomads_map).read_bytes()).hexdigest()
@@ -743,7 +806,9 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
     None
 ):
     ordered = [
-        ("materialize-world",), ("source-cohort",), ("repin-world",),
+        ("materialize-world",),
+        ("source-cohort",),
+        ("repin-world",),
         ("python3", "tools/content-migration/world_project_v2_to_tree.py"),
     ]
     events = []
@@ -763,11 +828,16 @@ def test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them(
         assert error.cmd == ["materialize-world"]
     else:
         raise AssertionError("canonical rewrite refusal must stop generation")
-    assert not any(command in refused for command in ordered[ordered.index(("source-cohort",)):]), refused
+    assert not any(
+        command in refused for command in ordered[ordered.index(("source-cohort",)) :]
+    ), refused
 
 
 def test_materializer_copies_only_a_complete_document_inventory() -> None:
-    documents = {"project.json": b"canonical project\n", "definitions/reference.json": b"canonical reference\n"}
+    documents = {
+        "project.json": b"canonical project\n",
+        "definitions/reference.json": b"canonical reference\n",
+    }
     for scenario in ("complete", "missing", "unexpected", "refused"):
         with tempfile.TemporaryDirectory() as temp:
             world = Path(temp) / "world"
@@ -780,7 +850,7 @@ def test_materializer_copies_only_a_complete_document_inventory() -> None:
                 if p.is_file()
             }
 
-            def generate(command):
+            def generate(command, scenario=scenario):
                 assert command[:8] == [
                     "cargo",
                     "run",
@@ -807,11 +877,13 @@ def test_materializer_copies_only_a_complete_document_inventory() -> None:
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(data)
 
-            with patch.object(rc, "WORLD", world), \
-                    patch.object(rc, "document_locators", return_value=list(documents)), \
-                    patch.object(rc, "bootstrap_item_index"), \
-                    patch.object(rc, "export_predecessor"), \
-                    patch.object(rc, "run", side_effect=generate):
+            with (
+                patch.object(rc, "WORLD", world),
+                patch.object(rc, "document_locators", return_value=list(documents)),
+                patch.object(rc, "bootstrap_item_index"),
+                patch.object(rc, "export_predecessor"),
+                patch.object(rc, "run", side_effect=generate),
+            ):
                 try:
                     rc.materialize_world()
                 except (SystemExit, subprocess.CalledProcessError):
@@ -1021,7 +1093,7 @@ def test_callback_or_w01_witness_refusal_stops_later_generation() -> None:
     for checks in (False, True):
         for refused in (callback, death):
 
-            def refuse(command, _events):
+            def refuse(command, _events, refused=refused):
                 if command == refused:
                     raise subprocess.CalledProcessError(23, list(command))
 
@@ -1104,7 +1176,7 @@ def test_rotten_death_witness_refusal_stops_every_later_consumer() -> None:
     for checks in (False, True):
         for index, refused in enumerate(chain[:3]):
 
-            def refuse(command, _events):
+            def refuse(command, _events, refused=refused):
                 if command == refused:
                     raise subprocess.CalledProcessError(1, list(command))
 
@@ -1148,29 +1220,49 @@ def test_downstream_quest_producers_follow_inputs_and_precede_consumers() -> Non
     assert full_generation_trace(events, consume, checks=True) == 0
     assert all(events.count(command) == 1 for command in commands)
     authored = [("python3", tool, "content") for tool in rc.AUTHORING_TOOLS]
-    last_authored = max(i for i, command in enumerate(events) if command in authored)
+    # Only the final placement-dependent raid refresh may follow the consumers.
+    raid = ("python3", "tools/content-migration/raid_catalogue.py", "content")
+    initial_raid, final_raid = (
+        index for index, event in enumerate(events) if event == raid
+    )
+    assert initial_raid < events.index(commands[0]) < final_raid
+    assert all(command in events for command in authored)
+    last_initial_authoring = max(
+        index
+        for index, event in enumerate(events)
+        if event in authored and index != final_raid
+    )
     assert (
-        last_authored
+        last_initial_authoring
         < events.index(commands[0])
         < events.index(commands[1])
         < events.index(native)
     )
     quest_prefix = "tools/content-schema/quest-authoring/"
     tree = next(
-        index for index, command in enumerate(events)
+        index
+        for index, command in enumerate(events)
         if command[:2] == ("python3", quest_prefix + "quest_tree_authoring.py")
     )
     callbacks = ("python3", quest_prefix + "qengine_rewards.py")
     completion = ("python3", quest_prefix + "quest_completion_import.py")
     matrix = ("python3", quest_prefix + "quest_completion_matrix.py")
-    callback_runs = [index for index, command in enumerate(events) if command == callbacks]
+    callback_runs = [
+        index for index, command in enumerate(events) if command == callbacks
+    ]
     rooms = ("python3", quest_prefix + "grizzly_rooms.py")
     metadata = events.index(("world-metadata",))
-    final_props_before_metadata = max(index for index in callback_runs if index < metadata)
+    final_props_before_metadata = max(
+        index for index in callback_runs if index < metadata
+    )
     assert tree < final_props_before_metadata < events.index(native)
     assert metadata < callback_runs[-1] < events.index(rooms)
     assert events.count(completion) == 1
-    assert tree < events.index(completion) < min(events.index(commands[1]), events.index(matrix))
+    assert (
+        tree
+        < events.index(completion)
+        < min(events.index(commands[1]), events.index(matrix))
+    )
     final_inputs = max(
         events.index(native), events.index(("world-metadata",)), events.index(variant)
     )
@@ -1202,7 +1294,7 @@ def test_downstream_quest_producer_refusal_stops_later_work() -> None:
     check = ("python3", "fixture/final_check.py", "--check")
     for index, refused in enumerate(commands):
 
-        def refuse(command, _events):
+        def refuse(command, _events, refused=refused):
             if command == refused:
                 raise subprocess.CalledProcessError(1, list(command))
 
@@ -1225,7 +1317,7 @@ def test_donor_feedback_guard_rejects_empty_duplicate_or_stale_inputs_before_cap
     index_path = "content/quests/definitions/index.json"
     for invalid in ("empty", "duplicate", "stale", "escape"):
 
-        def prepare(root):
+        def prepare(root, invalid=invalid):
             index = json.loads((root / index_path).read_bytes())
             descriptor = index["authoring_sources"][0]
             if invalid == "empty":
@@ -1259,7 +1351,7 @@ def test_donor_feedback_guard_rejects_changed_source_and_repin_even_with_skip_ch
     for checks in (False, True):
         for repin in (False, True):
 
-            def change_feedback(command, _events):
+            def change_feedback(command, _events, repin=repin):
                 if command != donor:
                     return
                 index = json.loads((rc.ROOT / index_path).read_bytes())
@@ -1316,7 +1408,7 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
     )
     for refused in (imbuement, bootstrap, tree, native, store):
 
-        def refuse(command, _events):
+        def refuse(command, _events, refused=refused):
             if command == refused:
                 raise subprocess.CalledProcessError(1, list(command))
 
@@ -1326,7 +1418,9 @@ def test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work() -> 
         except subprocess.CalledProcessError as error:
             assert error.cmd == list(refused)
         else:
-            raise AssertionError("a refused Item or Store producer must stop regeneration")
+            raise AssertionError(
+                "a refused Item or Store producer must stop regeneration"
+            )
         assert events.count(refused) == 1
         assert events[-1] == refused
         assert not any(step in events for step in ordered[ordered.index(refused) + 1 :])
@@ -1544,7 +1638,14 @@ def test_native_generation_refreshes_custody_census_before_first_pin() -> None:
         state = {"provider": initial, "census": initial}
         calls, pinned = [], []
 
-        def owner(command):
+        def owner(
+            command,
+            calls=calls,
+            state=state,
+            fresh=fresh,
+            refuse_census=refuse_census,
+            pinned=pinned,
+        ):
             calls.append(command)
             if command[1] == register and "--check" not in command:
                 state["provider"] = fresh
@@ -1597,6 +1698,7 @@ def main() -> None:
         test_native_generation_refreshes_custody_census_before_first_pin,
         test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
+        test_raid_catalogue_follows_final_placements_before_seasonal_inventory,
         test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them,
         test_materializer_copies_only_a_complete_document_inventory,
         test_npc_service_counts_follow_final_producers_even_when_checks_are_skipped,

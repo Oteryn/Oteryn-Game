@@ -31,8 +31,8 @@ CORPSE_CAPACITY_MAX = 48
 BUTTERFLY_CORPSES = {4991, 4992, 4993}
 BUTTERFLY_REMAINS = 4378
 GROUPS = ("physical", "stack", "container", "temporal", "classification")
-# The admitted Dwarf Letter bodies share one additional source root, Item 6007.
-MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 73, 8, 256
+# The Dwarf Letter bodies share root 6007, and Koshei adds root 7535.
+MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 74, 8, 256
 
 
 def item_id(reference):
@@ -196,6 +196,10 @@ def decay_closure(roots, xml):
             if root in BUTTERFLY_CORPSES and current == BUTTERFLY_REMAINS:
                 if "duration" in attributes or "decayto" in attributes:
                     raise ValueError("QUEST_CORPSE_BUTTERFLY_REMAINS")
+                break
+            # Crystal 201189f8 items.xml:20777–20802 ends Koshei's decay
+            # chain at untimed remains. The pinned Canary XML agrees.
+            if root == 7535 and current == 7540 and attributes == {"decayto": "0"}:
                 break
             if (
                 "duration" not in attributes

@@ -26,6 +26,7 @@ mod journal;
 
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
+use super::floor_catalogue::WALKABLE_TRAVERSAL_FIXTURES;
 use super::overlay::{AddedItem, EntryId, TilePos, pickup};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
@@ -394,6 +395,19 @@ impl BundleFacts {
         manifest: &Manifest,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<Self, FactsRefusal> {
+        let item = |key: &str| {
+            let mut definition = item(key)?;
+            if !definition.door
+                && let Some(solid) = palette_appearance(key)
+                    .and_then(super::door_registry::qualified_startup_door_solidity)
+            {
+                definition.door = true;
+                definition.solid = Some(solid);
+                definition.blocks_projectile = solid;
+                definition.pickupable = false;
+            }
+            Some(definition)
+        };
         let palette = manifest
             .palette
             .iter()
@@ -417,6 +431,7 @@ impl BundleFacts {
         // 3682, 12187, 12189: Bushwhacking entrance, laid net and captured merchant.
         // 4851, 4996: Ape City spent statue and jar (Crystal actions_mission9_snake_destroyer.lua).
         // 6473, 6474: the timed Rottin wall repairs.
+        // 167: open Koshei coffin (Crystal 201189f8 action_switch.lua:32).
         // 4851 and 4996: Banuta monument and broken amphora after Snake Destroyer strikes.
         // 7252: painted baby seal (Crystal actions_paint.lua:27), absent from the base palette.
         // 7845: the lava created by Crystal Brotherhood lever 3047.
@@ -424,11 +439,11 @@ impl BundleFacts {
         // 17678 and 17680: Rafzan's smashed trunk and sign, restored by timer.
         let mut movement_solidities = BTreeMap::new();
         let movement_definitions: BTreeMap<_, _> = [
-            188, 430, 435, 1025, 1841, 1949, 3145, 3146, 3682, 4851, 4996, 5022, 5858, 6473, 6474,
-            7181, 7252, 7845, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939, 10186,
-            10187, 12187, 12189, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055, 14064,
-            14074, 14076, 14077, 14163, 14164, 14255, 17678, 17680, 17939, 21804, 21805, 21812,
-            22059, 22074, 26077, 26087, 26100, 49362,
+            167, 188, 430, 435, 1025, 1841, 1949, 3145, 3146, 3682, 4851, 4996, 5022, 5858, 6473,
+            6474, 7181, 7252, 7845, 9125, 9126, 9929, 9933, 9934, 9935, 9936, 9937, 9938, 9939,
+            10186, 10187, 12187, 12189, 12369, 13842, 13843, 13976, 14018, 14020, 14053, 14055,
+            14064, 14074, 14076, 14077, 14163, 14164, 14255, 17678, 17680, 17939, 21804, 21805,
+            21812, 22059, 22074, 26077, 26087, 26100, 49362,
         ]
         .into_iter()
         .chain(6594..=6608)
@@ -1276,6 +1291,7 @@ fn palette_facts(
             entry.key != CURSED_CRYSTAL_STAIR
                 && !walkable_floor_change(&entry.key)
                 && !terrain_floor(entry)
+                && !WALKABLE_TRAVERSAL_FIXTURES.contains(&facts.appearance_id)
         });
         let appearance = u32::from(facts.appearance_id);
         let closed = super::door_registry::closed_of(appearance).unwrap_or(appearance);

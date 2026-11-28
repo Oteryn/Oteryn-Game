@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.iriana",
+      "keywords": [
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/top-of-the-city/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "read_only": true
+        }
+      ],
+      "reply": [
+        "Thank you for getting my chest back."
+      ]
+    }
+  ]
+}

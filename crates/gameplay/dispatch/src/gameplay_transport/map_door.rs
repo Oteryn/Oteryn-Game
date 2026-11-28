@@ -36,6 +36,8 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
 
 /// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.
 pub(super) const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
+/// The per-actor cooldown for a fresh World USE-WITH action.
+pub(super) const WORLD_USE_WITH_COOLDOWN: std::time::Duration = std::time::Duration::from_secs(1);
 /// `WORLDINT0-RL-08`: world interactions admitted per Channel per owner turn.
 const WORLD_ACTIONS_PER_TURN: u32 = 512;
 /// Crystal 201189f config.lua.dist:469 and game.cpp:11325-11396: 500 - 10 ms.
@@ -48,6 +50,7 @@ const WHEEL_EX_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_
 #[derive(Debug, Default)]
 pub struct WorldActionGate {
     started: Vec<(ExactActorRef, std::time::Duration)>,
+    use_with_started: Vec<(ExactActorRef, std::time::Duration)>,
     /// One shared ExAction clock for a session's fresh Wheel and Atelier mutations.
     /// Kept separate from the existing 200 ms world-action and jewelry clocks.
     wheel_mutations: Vec<(crate::foundation::GameSessionId, std::time::Duration)>,
@@ -124,6 +127,24 @@ impl WorldActionGate {
     /// elapsed wall time (FND-03 defines no fixed quantum).
     pub fn begin_turn(&mut self) {
         self.admitted = 0;
+    }
+
+    /// Admits a fresh World USE-WITH using its one-second actor clock and the shared turn cap.
+    pub(super) fn admit_use_with(
+        &mut self,
+        actor: ExactActorRef,
+        now: std::time::Duration,
+    ) -> bool {
+        self.use_with_started
+            .retain(|(_, at)| now.saturating_sub(*at) < WORLD_USE_WITH_COOLDOWN);
+        if self.use_with_started.iter().any(|(who, _)| *who == actor)
+            || self.admitted >= WORLD_ACTIONS_PER_TURN
+        {
+            return false;
+        }
+        self.admitted += 1;
+        self.use_with_started.push((actor, now));
+        true
     }
 
     /// Admits one `USE` of `actor` at owner-clock time `now`, or refuses it.
@@ -348,6 +369,7 @@ pub(super) fn use_key_observed(
     actor: TilePos,
     key_action: u16,
     target: &WorldObjectTarget,
+    admit: impl FnOnce() -> bool,
 ) -> (UseOutcome, Option<KeyDoorOpening>) {
     let source = MapViewSource {
         overlay,
@@ -355,16 +377,23 @@ pub(super) fn use_key_observed(
         content_generation,
         reset_epoch: 0,
     };
-    let resolved = match resolve_map_target(&source, target, |_| None::<()>) {
+    let resolved = resolve_map_target(&source, target, |_| None::<()>);
+    if resolved
+        .as_ref()
+        .is_ok_and(|target| !reachable(actor, target.pos))
+    {
+        return (outcome(UseDisposition::TooFar), None);
+    }
+    if !admit() {
+        return (outcome(UseDisposition::Exhausted), None);
+    }
+    let resolved = match resolved {
         Ok(resolved) => resolved,
         Err(MapTargetRefusal::StateRevisionMismatch) => {
             return (outcome(UseDisposition::StaleState), None);
         }
         Err(MapTargetRefusal::Use(disposition)) => return (outcome(disposition), None),
     };
-    if !reachable(actor, resolved.pos) {
-        return (outcome(UseDisposition::TooFar), None);
-    }
     let (used, opening) = facts.doors().use_key_observed(
         resolved.placement_key,
         target.expected_revision,
@@ -455,6 +484,7 @@ mod tests {
                 actor,
                 3520,
                 &target,
+                || true,
             );
             assert_eq!(outcome.disposition, expected);
             assert!(

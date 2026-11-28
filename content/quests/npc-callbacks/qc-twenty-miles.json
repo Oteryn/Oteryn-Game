@@ -1,0 +1,1340 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/qc/twenty_miles/replacements",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1000000000000,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-brandon-yes",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.mr_brandon",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you. I ask much, I know. You will meet horrible creatures that never saw the light of day, and they will come at you. But I hope you will make it back alive. Swim into the maelstrom behind me, and you will reach the bottom of the ocean."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-yes-start",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "yes",
+        "will"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good. Find the skulls of my 5 loyal seamen and lay them to rest on the altars of the Dark Powers. Use a skull on a nacre altar to set its soul free. Return to me when you have lain all 5 skulls to rest."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-skulls-laid",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21746",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You did indeed! I had not thought it possible. Take this cursed gold. Use it on the hoard of cursed gold you find in the south, far from here. Behind the hoard stands the treasure chest that holds Brandon's wedding ring."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/skulls",
+          "minimum": 5,
+          "maximum": 5
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-brandon-ring",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.mr_brandon",
+      "keywords": [
+        "wedding ring"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/access_west",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21745",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "My ring! It is indeed my ring! Thank you so much! At least something of my old life is now with me. You can use the vortex anytime to reach the southwestern Seacrest ground. If you could spare the time, tell me when you are interested in another mission."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-brandon-mission-slabs",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.mr_brandon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ahem. The cursed gold is not all I stole. Help me find the three nacre altar slabs: I hid one in a barrel in a sunken ship, but I lost the other two. Maybe the Guardian knows more."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-mission-slabs",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So Brandon sent you down again to do something for him? Before I tell you anything about where the sacred slabs might be, you will have to prove your good will. Return to me when you have found the first nacre slab."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-first-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21753",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So you really want to find the slabs it seems. I'll keep this one for now. Go look for the second one in the Secret Shrine in the southwestern Seacrest grounds."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-second-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 12
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21861",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "So you found it. Well done. I'll keep it here for now. Now go find the third missing slab! Brandon might know where the currents have taken it."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-brandon-yeo",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.mr_brandon",
+      "keywords": [
+        "yeo"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 12,
+          "maximum": 12,
+          "set": 13
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "We used to be friends before I changed. He's a hardened fisher man who lives at Rathleton harbour and loves clams and nacre."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-yeo-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.yeo",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 13,
+          "maximum": 13,
+          "set": 14
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21747",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21862",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Yes, that's it! Look at it! Isn't it a beauty? Thanks, friend. And here you go - the nacre slab."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-third-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 14,
+          "maximum": 14,
+          "set": 16
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21862",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i21753",
+        "count": 1,
+        "contents": [],
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i21861",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You found it! Ah, wonderful. It has suffered somewhat, but I believe if it's back in its proper place, the altar slabs will become as good as new.",
+        "Go down the stairs, to the altar room right underneath. Lay each of the three nacre slabs on an altar - blue on the left, yellow in the centre, red to the right. Then come back to receive your reward."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-second-slab-back",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 15,
+          "maximum": 15,
+          "set": 16
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21861",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "And here is the second slab, to lay on the middle altar."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-altars-mended",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 17
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Well done. The Dark Powers will be beseeched now, for a while at least. You can tell Brandon that. And as for you, you may enter the Sunken City as a reward. There is another quest that goes with it, if you feel up to it."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/slabs",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-quest-sea-ear",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "quest"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 17,
+          "maximum": 17,
+          "set": 18
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "I want you to retrieve the protective charm of the sunken city. You will need to ask Brandon first what he did with the Sea Ear."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-brandon-sea-ear",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.mr_brandon",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 19
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Yes, er. About that Sea Ear. I stuffed it into one of the seashells in the cave the maelstrom washed me into. I think I can change the maelstrom here so that it brings you there."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-sea-ear",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 20
+        }
+      ],
+      "take": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i21754",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Now that you have acquired the Sea Ear, we can begin. Go to the Sunken City and use the Sea Ear with the statues. They will tell you where to find the time compass."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-compass-place",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 20,
+          "maximum": 20,
+          "set": 21
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Ah, that is easy. The compass is hidden beneath the Eternity Altar, the most southern altar, at the end of the volcano ridge. Go and fetch it!"
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/song1",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/song2",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/song3",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/song4",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/song5",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "failure_reply": [
+        "Listen with the Sea Ear until you have all five parts of the song."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-guardian-compass",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "compass"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 23
+        },
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/access_birthing",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i21795",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "That's it! It truly is! The compass has returned to the Guardian! Now, the souls of the Sunken City are safe again! You have earned the right to enter the last Seacrest ground, the birthing grounds of the seacrests."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-skull",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost skull"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21770",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-cursed-gold",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost cursed gold"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21746",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21746",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-wedding-ring",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost wedding ring"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21745",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21745",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-blue-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost blue slab"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 9,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21753",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21753",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-blue-slab-after-report",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost blue slab"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 15,
+          "maximum": 16,
+          "set": 15,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21753",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/repaired1",
+          "minimum": -1,
+          "maximum": -1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21753",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-yellow-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost yellow slab"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 11,
+          "maximum": 11,
+          "set": 11,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21861",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21861",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-yellow-slab-after-report",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost yellow slab"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 16,
+          "maximum": 16,
+          "set": 16,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21861",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/repaired2",
+          "minimum": -1,
+          "maximum": -1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21861",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-red-slab",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost red slab"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 14,
+          "maximum": 16,
+          "set": 14,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21862",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/repaired3",
+          "minimum": -1,
+          "maximum": -1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21862",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-sea-ear",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost sea ear"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 19,
+          "maximum": 19,
+          "set": 19,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21754",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/ear_found",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21754",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-sea-ear-after-report",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost sea ear"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 20,
+          "maximum": 21,
+          "set": 20,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21754",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21754",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/qc-twenty-miles-recover-time-compass",
+      "quest": "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+      "npc": "oteryn:npc.guardian_of_the_deep_seas",
+      "keywords": [
+        "lost time compass"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/stage",
+          "minimum": 22,
+          "maximum": 22,
+          "set": 22,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i21795",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here is your replacement."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/59/definition:sha256:0dc6b3fc0d762b9ac37c365373da2e558c3c421fcf84f2146e4e9349c3e201b3",
+        "https://tibia.fandom.com/index.php?curid=69583&oldid=1149608"
+      ],
+      "failure_reply": [
+        "Check your belongings and where you last left the item. I can replace it once it has been lost."
+      ],
+      "per_occurrence_mint": true,
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i21795",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/qc/twenty_miles/replacements",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    }
+  ]
+}

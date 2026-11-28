@@ -245,6 +245,11 @@ where
         }
     }
     record_join_progress("snapshot_flushed", admitted.first_entry);
+    if sessions.npc_active {
+        recovered_npc_reply(stream, authority, admitted)
+            .await
+            .map_err(JoinFailure::Delivered)?;
+    }
     zones_nologout_transport::delivered(admitted);
     if let Some(trade) = payloads
         .iter()
@@ -282,6 +287,31 @@ where
     )
     .await
     .map_err(JoinFailure::Delivered)
+}
+
+/// A reconnect closes focus in the snapshot. Deliver the committed command's
+/// dialogue as a following delta, retaining it if the write is interrupted.
+pub(super) async fn recovered_npc_reply<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    admitted: &mut AdmittedSession,
+) -> Result<(), ServeEnd> {
+    while let Some((command, reply)) = authority.recovered_npc_reply(admitted.game_session_id) {
+        let (sequence, frame, revision) = npc_conversation_delta(
+            admitted.continuity.connection_generation,
+            admitted.continuity.server_sequence,
+            admitted.continuity.npc.conversation_revision,
+            &reply,
+        )
+        .ok_or(ServeEnd::Disconnected)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        admitted.continuity.server_sequence = sequence;
+        admitted.continuity.npc.conversation_revision = revision;
+        authority.recovered_npc_reply_delivered(admitted.game_session_id, command);
+    }
+    Ok(())
 }
 
 /// Logs the failed join phase with the code the client is sent.

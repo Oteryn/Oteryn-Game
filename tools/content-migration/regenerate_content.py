@@ -145,6 +145,11 @@ AUTHORING_TOOLS = (
 )
 
 CHECKS = (
+    ["python3", "tools/content-schema/world-object-authoring/activity_static.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/crystal_traversal.py", "--check"],
+    ["python3", "tools/content-schema/world-authoring/quest_door_bindings.py", "--apply", "--check"],
+    ["python3", "tools/content-migration/build_floor_catalogue.py", "--check"],
+    ["python3", "tools/content-migration/build_ladder_catalogue.py", "--check"],
     ["python3", "tools/content-migration/regional_npc_prices.py", "--check"],
     [
         "python3",
@@ -1180,6 +1185,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-authoring/quest_key_door_bindings.py"])
     run(["python3", "tools/content-schema/world-authoring/last_creep_arena.py"])
     run(["python3", "tools/content-schema/world-authoring/qh_jimmy_stub.py"])
+    run(["python3", "tools/content-schema/world-authoring/quest_door_bindings.py", "--apply"])
     run(["python3", "tools/content-schema/world-authoring/spirit_will_pickups.py"])
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
@@ -1252,6 +1258,9 @@ def main() -> int:
             "--refresh-native-pin",
         ]
     )
+    run(["python3", "tools/content-schema/world-authoring/crystal_traversal.py"])
+    run(["python3", "tools/content-migration/build_floor_catalogue.py"])
+    run(["python3", "tools/content-migration/build_ladder_catalogue.py"])
     refresh_world_metadata()
     # The palette refresh can change the placement index after the scenery pass.
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
@@ -1263,6 +1272,9 @@ def main() -> int:
     for census in ("equipment", "audit_sites", "room_sites"):
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
+    # The Stampede collector reads the earlier raid catalogue. Refresh it again
+    # from the final placement regions before the seasonal inventory checks its pins.
+    run(["python3", "tools/content-migration/raid_catalogue.py", "content"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     # Variant evidence pins the final Claim, Item and Achievement inventories.
     run(

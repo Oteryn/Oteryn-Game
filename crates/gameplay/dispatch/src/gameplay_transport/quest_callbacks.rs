@@ -15,6 +15,7 @@ mod court_warlock;
 pub(super) use court_warlock::PRE_SOURCE_BOSS_CHARGE;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
+mod definition_target;
 mod dreamer_carrot;
 mod effects;
 mod encounter;
@@ -65,6 +66,11 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::OnceLock;
 
+type CallbackGuards<'a> = (
+    tokio::sync::MutexGuard<'a, ChannelRuntimeV1>,
+    tokio::sync::MutexGuard<'a, ChannelSpellStates>,
+);
+
 #[derive(Clone)]
 struct Pending {
     actor: ExactActorRef,
@@ -81,6 +87,7 @@ struct Pending {
     ingress_settled: bool,
     participants: Vec<GameSessionId>,
     projection_target: Option<u64>,
+    tomb: Option<definition_target::PendingTomb>,
     flame_effect_sent: bool,
     /// The exact carried tool bound into the durable World context, if any.
     selected_tool: Option<([u8; 16], Vec<u8>)>,
@@ -120,6 +127,12 @@ pub(super) struct PendingCallbacks {
     pub(super) interrupt_source_boss_before_projection: std::sync::atomic::AtomicBool,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
     encounters: std::sync::Mutex<Vec<encounter::EncounterVisit>>,
+    ground_use_cleanup: std::sync::Mutex<Vec<definition_target::GroundUseTurn>>,
+    ground_uses: std::sync::Mutex<
+        std::collections::HashMap<GameSessionId, definition_target::PendingGroundUse>,
+    >,
+    #[cfg(any(test, feature = "test-support"))]
+    pub(super) interrupt_ground_use_after_commit: std::sync::atomic::AtomicBool,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     closing: std::sync::Mutex<std::collections::HashSet<GameSessionId>>,
     carrot_refusal:
@@ -133,7 +146,20 @@ pub(super) struct PendingCallbacks {
     #[cfg(test)]
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
     #[cfg(test)]
+    pub(super) phase_read_unavailable: std::sync::atomic::AtomicBool,
+    #[cfg(test)]
+    pub(super) before_commit:
+        std::sync::Mutex<Option<std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>>>,
+    #[cfg(test)]
+    pub(super) observed_corpse_expiry: std::sync::Mutex<Option<CorpseExpiryProbe>>,
+    #[cfg(test)]
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
+}
+
+#[cfg(test)]
+pub(super) struct CorpseExpiryProbe {
+    pub(super) observed: tokio::sync::oneshot::Sender<tokio::time::Instant>,
+    pub(super) resume: tokio::sync::oneshot::Receiver<()>,
 }
 
 pub(super) struct PaidCallbackClose<'a> {
@@ -150,6 +176,13 @@ impl Drop for PaidCallbackClose<'_> {
 }
 
 impl PendingCallbacks {
+    #[cfg(test)]
+    pub(super) fn discard_session_projection(&self, session: GameSessionId) -> bool {
+        self.records
+            .lock()
+            .is_ok_and(|mut records| records.remove(&session).is_some())
+    }
+
     pub(super) fn begin_paid_callback_close(
         &self,
         session: GameSessionId,
@@ -211,6 +244,19 @@ impl PendingCallbacks {
             .map(|pending| pending.next_due_us())
             .min()
     }
+}
+
+fn changes_carried_items(callback: &Callback) -> bool {
+    callback
+        .item_on_target
+        .as_ref()
+        .is_some_and(|tool| !tool.reusable || !tool.ingredients.is_empty())
+        || !callback.offerings.is_empty()
+        || callback.item_reward().is_some()
+        || callback
+            .monk_reward
+            .as_ref()
+            .is_some_and(|reward| reward.item_source_id.is_some())
 }
 
 fn callbacks() -> &'static [Callback] {
@@ -441,6 +487,10 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || !(32651..=32668).contains(&pos.x)
             || !(32178..=32190).contains(&pos.y))
     {
+        return false;
+    }
+    // Definition selectors are admitted through live Ground handles.
+    if callback.selector.target_definition.is_some() {
         return false;
     }
     // These source-bound World ingresses retain no startup UID/AID in B3.
@@ -720,6 +770,22 @@ pub(super) fn step_command(
         .map(|id| CommandRef::new(session, id))
 }
 
+impl PendingCallbacks {
+    pub(super) fn forget_ground_use(&self, session: GameSessionId) {
+        if let Ok(mut uses) = self.ground_uses.lock() {
+            uses.remove(&session);
+        }
+    }
+
+    pub(super) fn finish_cancelled_ground_uses(&self, runtime: &mut ChannelRuntimeV1) {
+        if let Ok(mut pending) = self.ground_use_cleanup.lock() {
+            for turn in pending.drain(..) {
+                turn.release(runtime);
+            }
+        }
+    }
+}
+
 /// Once a callback starts a bounded commit whose result drives publication,
 /// keep its reserved world state alive until that result is resolved.
 async fn finish_quest_use(
@@ -740,6 +806,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
         if !self.reconcile_scene_receipts_for_session(session).await
+            || !self.reconcile_ground_use_receipt(session).await
             || !self.reconcile_soul_war_reward_receipts(session).await
         {
             return false;
@@ -818,37 +885,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 });
             let flame = pending.flame.clone();
-            let outcome = if let Some(input) = pending.flame {
-                slot.commit_rotten_flame_use(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    input,
-                    std::sync::Arc::clone(catalogue),
-                    &permit,
-                )
-                .await
-            } else {
-                slot.commit_world_callback_with_items_selected(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    QuestTransitionRequest {
-                        transition_key: pending.callback,
-                        cause: pending.cause,
-                    },
-                    std::sync::Arc::clone(catalogue),
-                    &permit,
-                    context,
-                    self.active_generation
-                        .and_then(|generation| generation.native_gameplay()),
-                    admission,
-                    &self.premium_coordinator,
-                )
-                .await
-            };
+            let outcome =
+                if pending.callback == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY {
+                    let Some(callback) = self
+                        .callback_content()
+                        .iter()
+                        .find(|c| c.key == pending.callback)
+                    else {
+                        return false;
+                    };
+                    let Ok(receipt) = self
+                        .root
+                        .reconcile_tomb_entry(
+                            self.character,
+                            fence.character_id,
+                            command,
+                            callback,
+                            &context,
+                        )
+                        .await
+                    else {
+                        return false;
+                    };
+                    let Some(tomb) = &pending.tomb else {
+                        return false;
+                    };
+                    tomb.release(&mut *self.runtime.lock().await);
+                    match receipt {
+                        Some(receipt) => Ok(QuestTransitionOutcome::AlreadyCommitted(receipt)),
+                        None => Ok(QuestTransitionOutcome::Refused(
+                            oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch,
+                        )),
+                    }
+                } else if let Some(input) = pending.flame {
+                    slot.commit_rotten_flame_use(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        input,
+                        std::sync::Arc::clone(catalogue),
+                        &permit,
+                    )
+                    .await
+                } else {
+                    slot.commit_world_callback_with_items_selected(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        QuestTransitionRequest {
+                            transition_key: pending.callback,
+                            cause: pending.cause,
+                        },
+                        std::sync::Arc::clone(catalogue),
+                        &permit,
+                        context,
+                        self.active_generation
+                            .and_then(|generation| generation.native_gameplay()),
+                        admission,
+                        &self.premium_coordinator,
+                    )
+                    .await
+                };
             let disposition = match outcome {
 
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
@@ -908,6 +1007,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .quest_callbacks
                 .scene_item_receipts
                 .has_session(session)
+            || self
+                .states
+                .quest_callbacks
+                .ground_uses
+                .lock()
+                .map_or(true, |uses| uses.contains_key(&session))
         {
             return true;
         }
@@ -928,8 +1033,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
     }
 
-    /// A debit receipt belongs to the original World occurrence. Keep the
-    /// actor and its reservation available until that occurrence is projected.
+    fn callback_needs_end_path_settlement(&self, pending: &Pending) -> bool {
+        pending.tomb.is_some()
+            || self
+                .callback_content()
+                .iter()
+                .any(|callback| callback.key == pending.callback && may_debit(callback))
+    }
+
+    /// Both a paid occurrence and tomb entry need their original actors for settlement.
     pub(super) fn has_pending_paid_quest_callback(&self, session: GameSessionId) -> bool {
         self.states
             .quest_callbacks
@@ -938,10 +1050,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_or(true, |records| {
                 records.values().any(|pending| {
                     (pending.session == session || pending.participants.contains(&session))
-                        && self
-                            .callback_content()
-                            .iter()
-                            .any(|callback| callback.key == pending.callback && may_debit(callback))
+                        && self.callback_needs_end_path_settlement(pending)
                 })
             })
     }
@@ -956,15 +1065,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Called with the common node input gate quiesced. Enumerate the
-    /// initiators directly so an untracked actor cannot strand a party payment.
+    /// initiators directly, including those that no longer have a transport.
     pub(super) async fn drain_paid_quest_callbacks(&self) -> usize {
         let sessions = match self.states.quest_callbacks.records.lock() {
             Ok(records) => records
                 .values()
                 .filter_map(|pending| {
-                    self.callback_content()
-                        .iter()
-                        .any(|callback| callback.key == pending.callback && may_debit(callback))
+                    self.callback_needs_end_path_settlement(pending)
                         .then_some(pending.session)
                 })
                 .collect::<Vec<_>>(),
@@ -1160,6 +1267,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            if pending.tomb.is_some() && !self.prepare_tomb_quest_copy(fence).await {
+                return false;
+            }
             let observation = self
                 .observe_stateless_world_callback(
                     &permit,
@@ -1184,17 +1294,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let optional_pvp = self
                 .special_movement_policy(&permit, pending.actor, pending.session)
                 .await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
-            if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
+            let mut guards = Some(self.lock_callback_guards().await);
+            let Some((runtime, _)) = guards.as_mut() else {
+                return false;
+            };
+            // A cancelled replay of an already settled receipt may have parked a
+            // new turn. Release it under this owner before revalidating the roster.
+            if pending.ingress_settled
+                && let Some(tomb) = &pending.tomb
+            {
+                tomb.release(runtime);
+            }
+            let at_origin = runtime.read_actor_position(pending.actor) == Ok(pending.expected);
+            if pending.ingress_settled
+                && let Some(tomb) = &pending.tomb
+                && (!at_origin
+                    || map.facts.object_revision(pending.key) != pending.revision
+                    || tomb
+                        .actors
+                        .iter()
+                        .any(|actor| runtime.read_actor_position(*actor).is_err()))
+            {
+                // The receipt is settled. A later life, defender or sundial revision
+                // cannot inherit the interrupted visit.
+                drop(guards);
+                let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                    return false;
+                };
+                records.remove(&pending.session);
+                drop(records);
+                self.schedule_quest_refresh(pending.session);
+                continue;
+            }
+            if !at_origin {
                 return false;
             }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         &permit,
-                        &mut runtime,
-                        &mut states,
+                        &mut guards,
                         pending.actor,
                         pending.session,
                         map,
@@ -1214,6 +1353,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(disposition) => disposition,
             };
+            let Some((runtime, states)) = guards.as_mut() else {
+                return false;
+            };
             if result != UseDisposition::Committed {
                 if self.has_pending_quest_callback(pending.session) {
                     return false;
@@ -1221,8 +1363,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(origin) = pending.origin {
                     self.refuse_quest_step(
                         optional_pvp,
-                        &mut runtime,
-                        &mut states,
+                        runtime,
+                        states,
                         pending.actor,
                         pending.session,
                         map,
@@ -1274,6 +1416,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         )
         .await
+    }
+
+    async fn lock_callback_guards(&self) -> CallbackGuards<'_> {
+        super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states).await
     }
 
     pub(super) async fn use_quest_callback(
@@ -1371,6 +1517,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if let [left, right] = selected.as_slice()
+            && world_callbacks::phase::hoard_reentry_pair(left, right)
+        {
+            // A bare hoard USE only resumes a paid entry. The selected tool route
+            // can charge only while the fenced state still awaits payment.
+            selected.retain(|callback| callback.is_read_only() == selected_tool.is_none());
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());
@@ -1564,6 +1717,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(f) => Some(self.revision_sequencer.acquire(f.character_id).await),
                 None => None,
             };
+            if callback.key == oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY {
+                let Some(fence) = fence else { return UseDisposition::Rejected; };
+                if !self.prepare_tomb_quest_copy(fence).await {
+                    return UseDisposition::Rejected;
+                }
+            }
             let observation=match self.observe_stateless_world_callback(
                 &permit,fence,actor,command.game_session_id,map,callback,resolved.placement_key,target.expected_revision,None,
             ).await {Ok(observation)=>observation,Err(disposition)=>return disposition};
@@ -1627,11 +1786,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if !callback.reaches(Position { x: at.x, y: at.y, floor: at.floor }, Position { x: resolved.pos.x, y: resolved.pos.y, floor: resolved.pos.floor }) {
                 return UseDisposition::TooFar;
             }
+            if changes_carried_items(callback)
+                && !self.states.player_trades.physical_service(command.game_session_id)
+            {
+                return UseDisposition::Rejected;
+            }
             if !callback.is_read_only() && !self
                 .states
                 .world_gate
                 .lock()
-                .is_ok_and(|mut g| g.admit(actor, self.clock_origin.elapsed()))
+                .is_ok_and(|mut g| if selected_tool.is_some() {
+                    g.admit_use_with(actor, self.clock_origin.elapsed())
+                } else {
+                    g.admit(actor, self.clock_origin.elapsed())
+                })
             {
                 return UseDisposition::Exhausted;
             }
@@ -1653,8 +1821,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(items) => items,
                 Err(disposition) => return disposition,
             };
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
+            let mut guards = Some(self.lock_callback_guards().await);
             if scene_items.is_some() || VampireCoffinKind::for_callback(&callback.key).is_some() {
                 publication.store(true, std::sync::atomic::Ordering::Relaxed);
             }
@@ -1662,8 +1829,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let original_use = CommandRef::new(command.game_session_id, id);
             let result = Box::pin(self.execute_quest_callback(
                 &permit,
-                &mut runtime,
-                &mut states,
+                &mut guards,
                 actor,
                 command.game_session_id,
                 map,
@@ -1680,8 +1846,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scene_items.as_ref().map(|_| &mut scene_publication),
             ))
             .await;
-            drop(states);
-            drop(runtime);
+            drop(guards);
             drop(slot);
             if let (Some(items), Some(scene)) = (scene_items, scene_publication) {
                 return self.commit_scene_items(
@@ -1787,48 +1952,115 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
-        let mut selected = if selected.len() > 1
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+        let mut selected = selected;
+        if selected.len() > 1
             && selected.iter().enumerate().all(|(i, (left, _))| {
                 selected[..i]
                     .iter()
                     .all(|(right, _)| world_callbacks::phase::exclusive(left, right))
-            }) {
-            // Release all Channel guards before the current Character read. The
-            // existing native CAS and fenced Quest commit still recheck actor,
-            // object and phase after this preview; stale phases fail closed.
-            if selected.iter().any(|(_, key)| *key != selected[0].1) {
-                return entered;
+            })
+        {
+            // The gated action rechecks the selected phase under the Character fence.
+            let preview = async {
+                let key = selected[0].1;
+                if selected.iter().any(|(_, candidate)| *candidate != key) {
+                    return None;
+                }
+                let catalogue = self.quest_catalogue.as_deref()?;
+                let fence = self.current_quest_fence(session).await.ok()??;
+                #[cfg(test)]
+                if self
+                    .states
+                    .quest_callbacks
+                    .phase_read_unavailable
+                    .swap(false, std::sync::atomic::Ordering::AcqRel)
+                {
+                    return None;
+                }
+                let state = self
+                    .root
+                    .read_character_quest_state(self.character, fence.character_id)
+                    .await
+                    .ok()?;
+                let candidates = selected
+                    .iter()
+                    .map(|(callback, _)| *callback)
+                    .collect::<Vec<_>>();
+                let mut tracks = state.read_tracks(catalogue)?;
+                if let Some(pin) = state.states().get(&candidates[0].quest)
+                    && let Some(defaults) =
+                        oteryn_gameplay_quests::quest::npc_rules::legacy_defaults(
+                            catalogue,
+                            &candidates[0].quest,
+                            &pin.definition_hash,
+                        )
+                {
+                    for (track, value) in defaults {
+                        tracks.entry(track.clone()).or_insert(*value);
+                    }
+                }
+                use world_callbacks::phase;
+                if candidates.iter().any(|candidate| {
+                    phase::sea_ear_route(candidate).is_some()
+                        && candidate
+                            .storage
+                            .iter()
+                            .filter(|gate| gate.track != phase::SEA_EAR_TRACK)
+                            .all(|gate| {
+                                tracks.get(&gate.track).is_some_and(|value| {
+                                    (gate.minimum..=gate.maximum).contains(value)
+                                })
+                            })
+                }) {
+                    let inventory = self
+                        .root
+                        .read_item_use_inventory(self.character, self.holder, fence.item_fence())
+                        .await
+                        .ok()?;
+                    let carried = inventory
+                        .equipment
+                        .iter()
+                        .chain(
+                            inventory
+                                .backpack
+                                .iter()
+                                .flat_map(|bag| bag.entries.iter())
+                                .map(|entry| &entry.item),
+                        )
+                        .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
+                        .any(|item| item.definition.production_key == phase::SEA_EAR_ITEM);
+                    tracks.insert(phase::SEA_EAR_TRACK.into(), if carried { 1 } else { -1 });
+                }
+                let chosen = world_callbacks::select_storage_phase(&candidates, &tracks, catalogue)
+                    .ok()??;
+                Some((chosen, key))
+            };
+            match tokio::time::timeout_at(deadline, preview).await {
+                Ok(Some(pair)) => {
+                    selected.clear();
+                    selected.push(pair);
+                }
+                _ => {
+                    if selected
+                        .iter()
+                        .all(|(callback, _)| callback.return_on_failure)
+                    {
+                        return self
+                            .rollback_quest_step(
+                                actor,
+                                session,
+                                map,
+                                selected[0].0,
+                                entered,
+                                origin,
+                            )
+                            .await;
+                    }
+                    return entered;
+                }
             }
-            let Some(catalogue) = self.quest_catalogue.as_ref() else {
-                return entered;
-            };
-            let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-                return entered;
-            };
-            let Ok(state) = self
-                .root
-                .read_character_quest_state(self.character, fence.character_id)
-                .await
-            else {
-                return entered;
-            };
-            let candidates = selected
-                .iter()
-                .map(|(callback, _)| *callback)
-                .collect::<Vec<_>>();
-            let Ok(Some(chosen)) =
-                world_callbacks::select_storage_phase(&candidates, state.tracks(), catalogue)
-            else {
-                return entered;
-            };
-            selected
-                .iter()
-                .copied()
-                .filter(|(callback, _)| callback.key == chosen.key)
-                .collect::<Vec<_>>()
-        } else {
-            selected
-        };
+        }
         let had_callbacks = !selected.is_empty();
         self.select_step_phase(&mut selected, actor, session, entered, &cause);
         // Ambiguous content never chooses one action by incidental registration order.
@@ -1950,8 +2182,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-            let mut runtime = self.runtime.lock().await;
-            let mut states = self.states.spell_states.lock().await;
+            let mut guards = Some(self.lock_callback_guards().await);
+            let Some((runtime, _)) = guards.as_mut() else {
+                return entered;
+            };
             if runtime.read_actor_position(actor) != Ok(entered) {
                 return entered;
             }
@@ -1959,8 +2193,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
                         permit,
-                        &mut runtime,
-                        &mut states,
+                        &mut guards,
                         actor,
                         session,
                         map,
@@ -1980,6 +2213,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(disposition) => disposition,
             };
+            let Some((runtime, states)) = guards.as_mut() else {
+                return entered;
+            };
             let unresolved =
                 self.states
                     .quest_callbacks
@@ -1996,8 +2232,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if result != UseDisposition::Committed && !unresolved {
                 self.refuse_quest_step(
                     optional_pvp,
-                    &mut runtime,
-                    &mut states,
+                    runtime,
+                    states,
                     actor,
                     session,
                     map,
@@ -2008,28 +2244,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             runtime.read_actor_position(actor).unwrap_or(entered)
         };
-        match tokio::time::timeout(std::time::Duration::from_secs(10), operation).await {
+        match tokio::time::timeout_at(deadline, operation).await {
             Ok(snapshot) => snapshot,
             Err(_) if callback.is_read_only() => {
-                // This path cannot have a durable commit to reconcile. A cancelled
-                // read returns to the step origin rather than reserving a write.
-                let optional_pvp = self.special_movement_policy(permit, actor, session).await;
-                let mut runtime = self.runtime.lock().await;
-                let mut states = self.states.spell_states.lock().await;
-                if runtime.read_actor_position(actor) == Ok(entered) {
-                    self.refuse_quest_step(
-                        optional_pvp,
-                        &mut runtime,
-                        &mut states,
-                        actor,
-                        session,
-                        map,
-                        callback,
-                        entered,
-                        origin,
-                    );
-                }
-                runtime.read_actor_position(actor).unwrap_or(entered)
+                self.rollback_quest_step(actor, session, map, callback, entered, origin)
+                    .await
             }
             Err(_) => {
                 if let Ok(mut records) = self.states.quest_callbacks.records.lock() {
@@ -2048,6 +2267,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ingress_settled: false,
                         participants: Vec::new(),
                         projection_target: None,
+                        tomb: None,
                         flame_effect_sent: false,
                         selected_tool: None,
                     });
@@ -2056,6 +2276,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entered
             }
         }
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the exact actor, session, movement snapshots and failed callback"
+    )]
+    async fn rollback_quest_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        map: &BundleMap,
+        callback: &Callback,
+        entered: MovementPositionSnapshot,
+        origin: MovementPositionSnapshot,
+    ) -> MovementPositionSnapshot {
+        let (mut runtime, mut states) = self.lock_callback_guards().await;
+        if runtime.player_control_facts(actor, session).is_ok()
+            && runtime.read_actor_position(actor) == Ok(entered)
+        {
+            self.refuse_quest_step(
+                None,
+                &mut runtime,
+                &mut states,
+                actor,
+                session,
+                map,
+                callback,
+                entered,
+                origin,
+            );
+        }
+        runtime.read_actor_position(actor).unwrap_or(entered)
     }
 
     #[allow(

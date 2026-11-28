@@ -1023,6 +1023,33 @@ class QuestRewards(unittest.TestCase):
             )
         )
 
+    def test_prisoner_key_and_payment_have_one_published_owner(self):
+        npc = "oteryn:npc.a_prisoner"
+        quest = "oteryn:quest.mad_mage_room_quest"
+        state = "oteryn:quest-progress/l6/mad-mage/prisoner"
+        paths = (
+            "content/quests/npc-callbacks/l6-stories.json",
+            "content/quests/npc-callbacks/numbered-keys.json",
+        )
+        rows = []
+        for path in paths:
+            raw = self.outputs.get(path) or (q.ROOT / path).read_bytes()
+            rows.extend(json.loads(raw)["callbacks"])
+        exchanges = [row for row in rows if row.get("npc") == npc and row["quest"] == quest]
+        self.assertEqual(
+            [(row["topic"], row["key"]) for row in exchanges],
+            [
+                (2, "oteryn:quest-reward/l6-mad-mage-prisoner-apples"),
+                (5, "oteryn:quest-reward/l6-mad-mage-prisoner-key"),
+            ],
+        )
+        payment, key = exchanges
+        self.assertEqual(payment["counter"]["track"], state + "/payments")
+        self.assertEqual(key["storage"][0]["track"], state)
+        self.assertEqual(key["give"]["key_number"], 3666)
+        shared_offers = json.loads(self.outputs["content/quests/shared-reward-offers.json"])
+        self.assertFalse(any(row.get("npc") == npc for row in shared_offers["offers"]))
+
     def test_original_six_and_eight_l1_source_compositions_exist(self):
         merged = self.callbacks["callbacks"] + self.outfit_completions
         full_outfit = [c for c in merged if c["key"].endswith("-full-outfit")]
@@ -1033,6 +1060,13 @@ class QuestRewards(unittest.TestCase):
         )
         callbacks = [c for c in merged if c not in full_outfit]
         callbacks += self.l13_callbacks["callbacks"] + battle_mage["callbacks"]
+        numbered_keys = json.loads(
+            (q.ROOT / "tools/content-schema/quest-authoring/cwdoor-npc-keys.json").read_bytes()
+        )["callbacks"]
+        self.assertEqual(
+            json.loads(self.outputs["content/quests/npc-callbacks/numbered-keys.json"])["callbacks"],
+            numbered_keys,
+        )
         self.assertEqual(
             {
                 c["key"].split("/")[-1]

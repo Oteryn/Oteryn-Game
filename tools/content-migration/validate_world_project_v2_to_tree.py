@@ -46,6 +46,10 @@ def source_qualified_item_references(reference, root):
     from nrwicked_profiles import extend_records as arbaziloth_fire
 
     arbaziloth_fire(records, root)
+
+    from galthen_door_reference import extend_records as extend_galthen_door_references
+
+    extend_galthen_door_references(records)
     from writable_item_profiles import old_paper_definition
 
     records.append(old_paper_definition(root))
@@ -418,7 +422,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "660aae8184590009fd109c47daadd0e0c44b14a9c107f7ebe8706bbc001513be",
+        == "291554c9adc8719ee2dc5bbe26e1bd5ae8d59f6040556cbd59fd2e5b8ba043ea",
         "HIT_MAGIC_PACKET_DIGEST",
     )
     magic = {
@@ -450,7 +454,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "e2ec8bf29c4630108e827a5c0e991e8bb900fa62e52a352072b73df1a4bb5720",
+        == "7cfe16bcec0240d2fbaca9013e87ff2c17ab33354ea3e1c7c067840c2ea6b99d",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     packet = json.loads(raw)
@@ -536,7 +540,7 @@ def use_relation_targets():
     ).read_bytes()
     require(
         hashlib.sha256(raw).hexdigest()
-        == "e2ec8bf29c4630108e827a5c0e991e8bb900fa62e52a352072b73df1a4bb5720",
+        == "7cfe16bcec0240d2fbaca9013e87ff2c17ab33354ea3e1c7c067840c2ea6b99d",
         "USE_OBSERVATION_PACKET_DIGEST",
     )
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}

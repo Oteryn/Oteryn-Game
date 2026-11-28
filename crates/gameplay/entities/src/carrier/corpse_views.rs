@@ -25,10 +25,10 @@ pub struct VisibleRuntimeCorpse {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct CorpseItemBinding {
-    actor: ExactActorRef,
+    pub(super) actor: ExactActorRef,
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
-    item: RuntimeCorpseItem,
+    pub(super) item: RuntimeCorpseItem,
 }
 
 impl ChannelActorCarrier {

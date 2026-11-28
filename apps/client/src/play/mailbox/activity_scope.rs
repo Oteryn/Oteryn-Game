@@ -177,7 +177,7 @@ impl Mailbox {
         self.combat.clear();
         self.logout_refused = None;
         self.world_context.pending = false;
-        self.world_context.targeting = None;
+        self.world_context.clear_targeting();
         self.world_context.rune_targeting = false;
         self.item_movement = Default::default();
         self.inventory.apply(None);

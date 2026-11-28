@@ -102,10 +102,22 @@ impl FrameReader {
     }
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static FAIL_FRAME_WRITE: fn(&[u8]) -> bool;
+}
+
 pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     writer: &mut W,
     body: &[u8],
 ) -> io::Result<()> {
+    #[cfg(test)]
+    if FAIL_FRAME_WRITE
+        .try_with(|fail| fail(body))
+        .unwrap_or(false)
+    {
+        return Err(io::ErrorKind::BrokenPipe.into());
+    }
     let length = u32::try_from(body.len()).map_err(|_| {
         io::Error::new(
             io::ErrorKind::InvalidInput,

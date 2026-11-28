@@ -558,6 +558,30 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.open_npc_session(session).await
     }
 
+    fn recovered_npc_reply(
+        &self,
+        session: GameSessionId,
+    ) -> Option<(u64, oteryn_protocol_oteryn::npc_service::NpcConversation)> {
+        let (command, mut lines) = self
+            .states
+            .npc_conversations
+            .recovered_quest_lines(session)?;
+        let name = self.states.chat.speaker_name(session)?;
+        for line in &mut lines {
+            *line = oteryn_gameplay_npc::quest_greetings::render_player_name(line, &name);
+        }
+        Some((
+            command,
+            oteryn_protocol_oteryn::npc_service::NpcConversation { open: None, lines },
+        ))
+    }
+
+    fn recovered_npc_reply_delivered(&self, session: GameSessionId, command: u64) {
+        self.states
+            .npc_conversations
+            .quest_lines_delivered(session, command);
+    }
+
     async fn npc_follow(
         &self,
         _actor: ExactActorRef,
@@ -1204,6 +1228,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_koshei_corpse(actor, command, item).await {
+            return Some(outcome);
+        }
         self.use_ladder_handle(actor, command, item).await
     }
 
@@ -1379,13 +1406,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
                 Some(id)
             }
+            Some(item_view::ItemKey::Entity(identity)) if intent.use_with_map_item.is_some() => {
+                self.runtime
+                    .lock()
+                    .await
+                    .bound_corpse(identity)
+                    .map(|corpse| corpse.item.item_instance_id)
+            }
             _ => None,
         };
-        if let Some(outcome) = self
-            .use_carried_quest_item(actor, command, &intent, source, corpse)
-            .await?
-        {
-            return Ok(Some(outcome));
+        if corpse.is_some() || matches!(source, Some(item_view::ItemKey::Instance(_))) {
+            return self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await;
         }
         self.use_carried_quest_item_with_target(actor, command, &intent, source, target)
             .await
@@ -1417,6 +1450,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             return self
                 .use_house_event_item(actor, command, &intent, source)
+                .await;
+        }
+        if matches!(
+            intent.target,
+            oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+        ) {
+            return self
+                .use_event_item_impl(actor, command, intent, source, visible_target)
                 .await;
         }
         if let Some(outcome) = self
@@ -1608,9 +1649,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
-        let mut phase = "grizzly_resume";
+        let mut phase = "quest_dialogue_resume";
         let mut started = tokio::time::Instant::now();
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            if !Box::pin(self.prepare_quest_dialogue_resume(admitted.game_session_id)).await {
+                return false;
+            }
+            record_entry_decision("playable", 1, started.elapsed(), phase);
+            phase = "grizzly_resume";
+            started = tokio::time::Instant::now();
             if !self.prepare_grizzly_npc_resume(admitted).await {
                 return false;
             }

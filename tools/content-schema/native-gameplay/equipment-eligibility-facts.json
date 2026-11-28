@@ -232,6 +232,7 @@
     {"key": "oteryn:item.tibia.i22195", "pattern_id": 1, "slot": "AMULET", "item_line": 44600, "vocations": []},
     {"key": "oteryn:item.tibia.i22726", "pattern_id": 1, "slot": "SHIELD", "item_line": 45314, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i23734", "pattern_id": 1, "slot": "EXTRA", "item_line": 47279, "level": 0, "vocations": []},
+    {"key": "oteryn:item.tibia.i23738", "pattern_id": 1, "slot": "EXTRA", "item_line": 47292, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i24395", "pattern_id": 1, "slot": "CONTAINER", "item_line": 47616, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i25088", "pattern_id": 1, "slot": "HEAD", "item_line": 48314, "level": 0, "vocations": []},
     {"key": "oteryn:item.tibia.i25698", "pattern_id": 1, "slot": "RING", "item_line": 48924, "vocations": []},

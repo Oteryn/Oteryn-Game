@@ -1539,6 +1539,12 @@ pub trait FreshAdmissionAuthority {
         async {}
     }
 
+    fn recovered_npc_reply(&self, _session: GameSessionId) -> Option<(u64, NpcConversation)> {
+        None
+    }
+
+    fn recovered_npc_reply_delivered(&self, _session: GameSessionId, _command: u64) {}
+
     /// NPC-CMD-1a: the domain 7 payload when the conversation differs from the NPC `shown` to
     /// the client: one opened from chat, or ended by walking out of range.
     fn npc_follow(

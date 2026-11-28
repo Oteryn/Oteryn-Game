@@ -1,10 +1,13 @@
 //! Source parties are the players standing on the exact staging tiles, not a social-party id.
+use super::super::grizzly_kills::KosheiVisitClaim;
 use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
     EncounterDefenders, StagedQuestEncounter,
 };
+use oteryn_gameplay_quests::quest::koshei_amulet::TOMB_ENTRY;
+use std::sync::Arc;
 
 struct PreparedPhase {
     phase: Option<super::super::encounter_phases::ActivePhase>,
@@ -24,6 +27,32 @@ pub(super) struct StagedSourceBoss<'owner> {
     visit: Option<EncounterVisit>,
 }
 
+pub(super) fn koshei_defender(
+    runtime: &ChannelRuntimeV1,
+    encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
+    census: &[(
+        ExactActorRef,
+        MovementPositionSnapshot,
+        Option<GameSessionId>,
+    )],
+) -> Result<ExactActorRef, UseDisposition> {
+    let [monster] = encounter.monsters.as_slice() else {
+        return Err(UseDisposition::Rejected);
+    };
+    let mut defenders = census.iter().filter_map(|(actor, pos, session)| {
+        (session.is_none()
+            && room_contains(encounter, pos.position())
+            && runtime.matches_live_creature_identity(*actor, monster.creature.as_bytes())
+            && runtime.creature_spawn_cell(*actor) == Some(local(monster.position)))
+        .then_some(*actor)
+    });
+    let defender = defenders.next().ok_or(UseDisposition::Occupied)?;
+    if defenders.next().is_some() {
+        return Err(UseDisposition::Occupied);
+    }
+    Ok(defender)
+}
+
 pub(in crate::gameplay_transport) fn room_contains(
     encounter: &oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     at: MovementLocalPosition,
@@ -37,13 +66,41 @@ pub(super) struct EncounterVisit {
     room: oteryn_gameplay_quests::quest::world_callbacks::Encounter,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     creatures: Vec<ExactActorRef>,
+    native_claim: Option<Arc<KosheiVisitClaim>>,
 }
 
 impl EncounterVisit {
     fn active(&self, runtime: &ChannelRuntimeV1) -> bool {
-        self.creatures
-            .iter()
-            .any(|actor| runtime.contains_live_creature(*actor))
+        self.native_claim
+            .as_ref()
+            .is_none_or(|claim| claim.holds(runtime))
+            && self
+                .creatures
+                .iter()
+                .any(|actor| runtime.contains_live_creature(*actor))
+    }
+}
+
+impl PendingCallbacks {
+    /// Called after the fenced temple placement and the matching vitals refill.
+    /// A defender already killed keeps its existing settlement.
+    pub(in crate::gameplay_transport) fn retire_respawned_koshei_visit(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let visits = self
+            .encounters
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for visit in visits.iter() {
+            if let Some(claim) = &visit.native_claim
+                && visit.active(runtime)
+            {
+                claim.retire_respawned(runtime, actor, session);
+            }
+        }
     }
 }
 
@@ -511,6 +568,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseDisposition::Rejected;
         }
+        // The mainland spawn owns Koshei's lifecycle. An authored admission
+        // may bind the live native defender from that exact source cell.
+        let native_koshei = if callback.key == TOMB_ENTRY {
+            let defender = match koshei_defender(runtime, encounter, &census) {
+                Ok(defender) => defender,
+                Err(disposition) => return disposition,
+            };
+            if self
+                .states
+                .quest_callbacks
+                .encounters
+                .lock()
+                .map_or(true, |visits| {
+                    visits
+                        .iter()
+                        .any(|visit| visit.creatures.contains(&defender) && visit.active(runtime))
+                })
+            {
+                return UseDisposition::Occupied;
+            }
+            Some(defender)
+        } else {
+            None
+        };
         let mut monsters = Vec::new();
         for monster in &encounter.monsters {
             let at = local(monster.position);
@@ -527,9 +608,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     tile(monster.position),
                     false,
                 )
-                || census.iter().any(|(_, pos, _)| pos.position() == at)
+                || census
+                    .iter()
+                    .any(|(who, pos, _)| pos.position() == at && Some(*who) != native_koshei)
             {
                 return UseDisposition::Occupied;
+            }
+            if native_koshei.is_some() {
+                continue;
             }
             let Ok(policy) = runtime.companion_policy(&monster.creature) else {
                 return UseDisposition::Rejected;
@@ -537,7 +623,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             monsters.push((monster.creature.as_str(), policy.maximum_health, at));
         }
         if preflight {
-            let result = if encounter.phase.is_some() {
+            let result = if encounter.phase.is_some() || native_koshei.is_some() {
                 runtime.preflight_quest_encounter_with_phase(proofs, &monsters)
             } else {
                 runtime.preflight_quest_encounter_entry(proofs, &monsters)
@@ -578,14 +664,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        let native_claim = if native_koshei.is_some() {
+            let Some(claim) = KosheiVisitClaim::new(runtime, actor, session) else {
+                return UseDisposition::Rejected;
+            };
+            Some(Arc::new(claim))
+        } else {
+            None
+        };
         let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
-            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+            match capture.prepare_encounter(
+                runtime,
+                &callback.key,
+                hash,
+                &party,
+                native_claim.clone(),
+            ) {
                 Ok(prepared) => Some(prepared),
                 Err(_) => return UseDisposition::Rejected,
             }
         } else {
             None
         };
+        if native_koshei.is_some() && prepared.is_none() {
+            return UseDisposition::Rejected;
+        }
         let credits = if encounter.phase.is_some() {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
@@ -608,7 +711,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let mut visits = if encounter.phase.is_none() && !monsters.is_empty() {
+        let has_defenders = !monsters.is_empty() || native_koshei.is_some();
+        let mut visits = if encounter.phase.is_none() && has_defenders {
             let Ok(mut visits) = self.states.quest_callbacks.encounters.lock() else {
                 return UseDisposition::Rejected;
             };
@@ -624,6 +728,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let capture_required = prepared.is_some();
         let bind = |runtime: &mut ChannelRuntimeV1, actors: &[ExactActorRef]| {
+            let actors = native_koshei.as_ref().map_or(actors, std::slice::from_ref);
             let roster = if capture_required {
                 Some(oteryn_gameplay_entities::carrier::encounter_access::EncounterDefenders::from_admission(
                         party.iter().map(|(actor, _)| *actor).collect(), actors.to_vec(),
@@ -670,6 +775,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     room: encounter.clone(),
                     participants: party,
                     creatures: Vec::new(),
+                    native_claim: None,
                 }),
             });
             return UseDisposition::Committed;
@@ -701,10 +807,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 room: encounter.clone(),
                 participants: party,
                 creatures: actors.clone(),
+                native_claim,
             });
         }
         drop(visits);
-        if let Some(reservation) = reservation
+        // The ordinary spawn owner retains the ambient defender through both
+        // personal quest cleanup and retirement of the player's room visit.
+        if native_koshei.is_none()
+            && let Some(reservation) = reservation
             && let Err(disposition) = reservation.publish(runtime, actors)
         {
             return disposition;

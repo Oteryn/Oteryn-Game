@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, id};
 use super::m01b_explore_fixtures::koshei::{POINTS, TRACK, relocate, step};
 use super::quest_world_callbacks_fixtures::{input_item, wire};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
 use oteryn_gameplay_world::map::view::MapFacts;
@@ -12,6 +13,9 @@ use oteryn_protocol_oteryn::world_object::{
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) const NAME: &str = "koshei_the_deathless_full_journey";
+pub(super) const KICK: &str = "koshei_committed_gate_staff_retirement";
+pub(super) const LOSS: &str = "koshei_cancelled_gate_grace_expiry";
+pub(super) const SPATIAL: &str = "koshei_spatial_corpse_on_first_visit";
 const QUEST: &str = "oteryn:quest.koshei_the_deathless_quest";
 const ENTRY: &str = "oteryn:quest-callback/koshei/tomb-entry";
 const FORGE: &str = "oteryn:quest-progress/qnpcfx/koshei/amulet";
@@ -23,7 +27,9 @@ const SEALED: &str = "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/rewa
 const CREATURE: &str = "oteryn:creature.koshei_the_deathless";
 const CYCLOPS: &str = "oteryn:npc.a_sweaty_cyclops";
 
-pub(super) const SWITCH: Position = at(33281, 32447, -8);
+const SWITCH: Position = at(33281, 32447, -8);
+pub(super) const CRYPT_GATE: Position = at(33271, 32418, -12);
+pub(super) const STAGING: Position = at(33271, 32419, -12);
 const NPC: Position = at(32699, 31674, -3);
 const DOOR: Position = at(33269, 32446, -12);
 const LEGS: Position = at(33261, 32444, -12);
@@ -55,8 +61,14 @@ pub(super) fn world(
     };
     use oteryn_world_bundle_compiler::{bundle, compile, project, source};
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    let project =
+    let mut project =
         source::project_regions(&root, &[(127, 123), (129, 126), (129, 127), (130, 126)])?;
+    // The cropped route uses its safe pinned start for the normal temple respawn.
+    project.families.subareas = Default::default();
+    project
+        .families
+        .spawns
+        .retain(|source| source.points.iter().any(|point| point.creature == CREATURE));
     let (registry, palette) = source::registry(&root, &project)?;
     let identity: bundle::Identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -96,9 +108,9 @@ pub(super) fn world(
             map_revision: map_revision(&base),
             bundle: pins,
             start: TilePos {
-                x: SWITCH.x - 1,
-                y: SWITCH.y,
-                floor: SWITCH.floor,
+                x: STAGING.x,
+                y: STAGING.y,
+                floor: STAGING.floor,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
@@ -296,6 +308,7 @@ async fn commission(
 async fn seal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
+    spatial_corpse: bool,
 ) -> TestResult<[u8; 16]> {
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     let body = owner
@@ -314,13 +327,17 @@ async fn seal(
     let amulet = index
         .definition_ref("Item", "oteryn:item.tibia.i7532", "definition-r1")
         .ok_or("amulet definition ref")?;
-    let command = admitted.continuity.next_command_id;
-    let generation = admitted.continuity.connection_generation;
     let (mut server, client) = tokio::io::duplex(1 << 20);
     let current = *admitted;
     let (end, result) = tokio::join!(
         async move { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await },
-        seal_client(client, amulet, body.position, generation, command),
+        seal_client(
+            client,
+            amulet,
+            (body.position, body.identity),
+            current,
+            spatial_corpse,
+        ),
     );
     match end {
         ConnectionEnd::AdmittedThenDisconnected(next) => *admitted = next,
@@ -333,13 +350,15 @@ async fn seal(
 async fn seal_client(
     mut client: tokio::io::DuplexStream,
     amulet: std::num::NonZeroU32,
-    body: crate::foundation::MovementLocalPosition,
-    generation: u64,
-    command: u64,
+    (position, identity): (crate::foundation::MovementLocalPosition, [u8; 16]),
+    admitted: AdmittedSession,
+    spatial_corpse: bool,
 ) -> TestResult<UseDisposition> {
     use oteryn_protocol_oteryn::{self as wire, MessageType, item_view, world_map};
     use tokio::io::AsyncWriteExt;
-    let (mut source, mut target) = (None, None);
+    let command = admitted.continuity.next_command_id;
+    let capabilities = admitted.continuity.selected_capabilities.as_slice();
+    let (mut source, mut target, mut spatial_target) = (None, None, None);
     loop {
         let raw = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
         let frame = wire::decode_wire_envelope(&raw)?;
@@ -355,6 +374,30 @@ async fn seal_client(
                             .iter()
                             .find(|entry| entry.item_definition_ref == amulet)
                             .map(|entry| entry.handle);
+                    } else if domain.domain_id
+                        == wire::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+                    {
+                        use wire::world_spatial_entities::{
+                            EntityDetail, EntityFields,
+                            decode_world_spatial_entities_snapshot_with_fields,
+                        };
+                        let (snapshot, _) = decode_world_spatial_entities_snapshot_with_fields(
+                            domain.payload,
+                            EntityFields::selected(capabilities),
+                        )
+                        .map_err(debug)?;
+                        spatial_target = snapshot
+                            .entities
+                            .iter()
+                            .find(|entity| entity.entity.identity == identity)
+                            .and_then(|entity| match entity.detail {
+                                EntityDetail::Object { item_handle, .. }
+                                | EntityDetail::ObjectWithAppearance { item_handle, .. } => {
+                                    item_handle
+                                }
+                                _ => None,
+                            })
+                            .or(spatial_target);
                     } else if domain.domain_id == world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
                         let map =
                             world_map::decode_world_map_snapshot(domain.payload).map_err(debug)?;
@@ -363,7 +406,7 @@ async fn seal_client(
                             .iter()
                             .filter(|tile| {
                                 (tile.position.x, tile.position.y, tile.position.floor)
-                                    == (body.x, body.y, body.floor)
+                                    == (position.x, position.y, position.floor)
                             })
                             .flat_map(|tile| &tile.items)
                             .find_map(|item| match item.origin {
@@ -382,17 +425,22 @@ async fn seal_client(
             _ => continue,
         }
     }
+    let map_handle = target.ok_or("projected map corpse handle")?;
+    let spatial_handle = spatial_target.ok_or("projected spatial corpse handle")?;
+    assert_ne!(map_handle, spatial_handle);
     let payload = use_wire::encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(source.ok_or("projected amulet handle")?),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Item(
-            target.ok_or("projected fresh corpse handle")?,
-        )),
+        use_with_map_item: Some(MapUseTarget::Item(if spatial_corpse {
+            spatial_handle
+        } else {
+            map_handle
+        })),
         use_with_position: None,
     })
     .map_err(debug)?;
     let frame = wire::encode_client_command(
-        generation,
+        admitted.continuity.connection_generation,
         &wire::ClientCommandValue {
             command_id: command,
             command_type: use_wire::COMMAND_TYPE_USE_INTENT,
@@ -421,7 +469,10 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
+    world: &crate::map::boot::BundleWorld,
+    name: &str,
 ) -> TestResult {
+    let spatial_corpse = name == SPATIAL;
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
     use oteryn_protocol_oteryn::attack::ChaseMode;
@@ -554,6 +605,29 @@ pub(super) async fn exercise(
     assert_eq!(State::read(h).await?, expected);
 
     super::questpc7_native_deaths_fixtures::prepare_native_hunter(owner, admitted).await?;
+    let native_boss = {
+        let mut runtime = owner.runtime.lock().await;
+        let sources = world
+            .activation_spawns(|key| {
+                let policy = runtime.companion_policy(key).ok()?;
+                Some((
+                    u64::try_from(policy.maximum_health).ok()?,
+                    policy.blocked_by_nearby_players,
+                ))
+            })
+            .ok_or("source Koshei spawn policy")?;
+        assert_eq!(
+            runtime.begin_activation_spawn_sources(sources).map_err(debug)?,
+            1
+        );
+        let progress = runtime.realize_activation_spawn_window(0).map_err(debug)?;
+        assert_eq!((progress.realized, progress.remaining), (1, 0));
+        let points = runtime.spawn_point_creatures();
+        let [(_, _, Some(boss))] = points.as_slice() else {
+            return Err("one live Koshei from the shipped spawn table".into());
+        };
+        *boss
+    };
     let potion_fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -576,30 +650,139 @@ pub(super) async fn exercise(
         .await?;
     }
     move_to(owner, admitted, at(SWITCH.x - 1, SWITCH.y, SWITCH.floor)).await?;
-    let switch = target(owner, SWITCH, 1)?;
-    assert_eq!(
-        use_next(owner, admitted, &switch).await?,
-        UseDisposition::Committed
+    let sundial = target(owner, SWITCH, 1)?;
+    let refused = use_next(owner, admitted, &sundial).await?;
+    assert_ne!(
+        refused,
+        UseDisposition::Committed,
+        "the unsolved sundial cannot admit a boss encounter"
     );
+    assert_eq!(State::read(h).await?, expected);
+    move_to(owner, admitted, STAGING).await?;
+    let gate = target(owner, CRYPT_GATE, 1)?;
+    let pause = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let runtime = owner.runtime.clone();
+    let states = owner.states.clone();
+    let actor = admitted.runtime_actor.ok_or("Koshei player")?;
+    if name == KICK {
+        states.quest_callbacks.interrupt_after_commit.store(true, std::sync::atomic::Ordering::Release);
+        assert!(use_next(owner, admitted, &gate).await.is_err());
+        {
+            let runtime = owner.runtime.lock().await;
+            assert!(runtime.actor_spell_reserved(actor));
+            assert!(runtime.actor_spell_reserved(native_boss));
+        }
+        let transport = admitted.controller.ok_or("gate controller")?.transport;
+        assert_eq!(owner.release_terminal(*admitted, crate::gameplay_transport::TerminalRelease::StaffKick(transport)).await,
+            crate::gameplay_transport::connection::GraceExpiryResult::Released);
+        expected.mission[2] = 1;
+        assert_eq!(State::read(h).await?, expected);
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.read_actor_position(actor).is_err());
+        assert!(!runtime.actor_spell_reserved(native_boss));
+        return Ok(());
+    }
+    let interrupted = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    *states.quest_callbacks.before_commit.lock().map_err(|_| "commit pause")? =
+        Some(interrupted.clone());
+    tokio::select! {
+        result = use_next(owner, admitted, &gate) => return Err(format!("gate returned before interruption: {result:?}").into()),
+        () = interrupted.0.notified() => {}
+    }
+    if name == LOSS {
+        use crate::gameplay_transport::connection::{ControlLossResult, GraceExpiryResult};
+        assert_eq!(owner.lose_control_for_cause(*admitted, std::time::Duration::ZERO, None).await,
+            ControlLossResult::Recorded);
+        let maintain = async {
+            loop {
+                super::maintain_ready(&h.root).await?;
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+        };
+        tokio::select! {
+            released = tokio::time::timeout(std::time::Duration::from_secs(70), owner.expire_session_control_loss(*admitted)) =>
+                assert_eq!(released?, GraceExpiryResult::Released),
+            ready = maintain => return ready,
+        }
+        assert_eq!(State::read(h).await?, expected);
+        let runtime = owner.runtime.lock().await;
+        assert!(runtime.read_actor_position(actor).is_err());
+        assert!(!runtime.actor_spell_reserved(native_boss));
+        return Ok(());
+    }
+    assert_eq!(owner.drain_paid_quest_callbacks().await, 0);
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(!runtime.actor_spell_reserved(actor));
+        assert!(!runtime.actor_spell_reserved(native_boss));
+    }
+    states.command_ingress.recover_trade_continuity(admitted).ok_or("interrupted gate continuity")?;
+    *states
+        .quest_callbacks
+        .before_commit
+        .lock()
+        .map_err(|_| "commit pause")? = Some(pause.clone());
+    let used = super::quest_world_callbacks_fixtures::use_with_commit_probe(
+        use_next(owner, admitted, &gate),
+        &pause,
+        || {
+            let reserved = runtime
+                .try_lock()
+                .is_ok_and(|r| r.actor_spell_reserved(actor) && r.actor_spell_reserved(native_boss));
+            let states_free = states.spell_states.try_lock().is_ok();
+            assert!(
+                reserved && states_free,
+                "tomb admission must reserve both actors while the Channel remains available"
+            );
+        },
+    )
+    .await?;
+    assert_eq!(used, UseDisposition::Committed);
     expected.mission[2] = 1;
     assert_eq!(State::read(h).await?, expected);
     let boss = {
         let runtime = owner.runtime.lock().await;
-        runtime
-            .visible_entities()
-            .creatures
-            .into_iter()
-            .find(|creature| {
-                runtime
-                    .matches_live_creature_identity(creature.actor, CREATURE.as_bytes())
-                    && runtime.read_actor_position(creature.actor).is_ok_and(|snapshot| {
-                        let p = snapshot.position();
-                        (p.x, p.y, p.floor) == (33271, 32406, 12)
-                    })
-            })
-            .ok_or(CREATURE)?
+        let visible = runtime.visible_entities();
+        let mut matching = visible.creatures.into_iter().filter(|creature| {
+            runtime.matches_live_creature_identity(creature.actor, CREATURE.as_bytes())
+        });
+        let boss = matching.next().ok_or(CREATURE)?;
+        assert_eq!(boss.actor, native_boss, "entry must use the live native boss");
+        assert!(matching.next().is_none(), "entry must keep one live boss");
+        boss
     };
-    super::elvenbane_combat_fixtures::fight(
+    let callback = callback()?;
+    let encounter = callback
+        .effects
+        .encounter
+        .as_ref()
+        .ok_or("Koshei encounter")?;
+    let [member] = encounter.players.as_slice() else {
+        return Err("one Koshei staging position".into());
+    };
+    let session = admitted.game_session_id;
+    let stage = super::quest_world_callbacks_fixtures::local(member.from);
+    assert_eq!(owner.home_temple(session).await, Some(stage));
+    move_to(owner, admitted, member.from).await?;
+    let gate = target(owner, CRYPT_GATE, 1)?;
+    assert_eq!(
+        use_next(owner, admitted, &gate).await?,
+        UseDisposition::Occupied,
+        "a live visit still owns the native defender"
+    );
+    let entry_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(ENTRY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(entry_receipts, 1, "a live defender cannot be claimed again");
+    move_to(owner, admitted, member.to).await?;
+    if !spatial_corpse {
+        die_and_reenter(owner, admitted, h, member.to, native_boss).await?;
+    }
+    assert_eq!(State::read(h).await?, expected);
+    super::elvenbane_combat_fixtures::fight_until_lethal(
         owner,
         admitted,
         boss.actor,
@@ -608,10 +791,83 @@ pub(super) async fn exercise(
         ChaseMode::Chase,
     )
     .await?;
+    // Freeze the real reservation, then make its first settlement hit the database lock budget.
+    // Reads stay available to the mint owner while the receipt insert waits.
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("LOCK TABLE game_item_mint_receipts IN SHARE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    use crate::gameplay_transport::kill_reward::DrainOutcome;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Deferred
+    );
+    blocker.rollback().await?;
+    super::maintain_ready(owner.root).await?;
+    let occurred: i64 = sqlx::query_scalar(
+        "SELECT occurred_at FROM game_item_mint_reservations WHERE loot_table_production_key='oteryn:item.tibia.i7535' AND loot_purpose_key='CORPSE_MATERIALIZATION'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    tokio::time::sleep(std::time::Duration::from_secs(11)).await;
+    assert_eq!(
+        owner.drain_kill_rewards(session).await,
+        DrainOutcome::Drained
+    );
     expected.mission[3] = 1;
     assert_eq!(State::read(h).await?, expected);
 
-    let corpse = seal(owner, admitted).await?;
+    let corpse_item = owner
+        .runtime
+        .lock()
+        .await
+        .visible_corpses()
+        .into_iter()
+        .find(|corpse| corpse.item.production_key == "oteryn:item.tibia.i7535")
+        .ok_or("fresh remains")?
+        .item
+        .item_instance_id;
+    let rejected = owner
+        .use_koshei_corpse(
+            actor,
+            crate::gameplay_transport::connection::UseCommand {
+                game_session_id: session,
+                command_id: admitted.continuity.next_command_id,
+                item_fence: None,
+            },
+            crate::gameplay_transport::item_view::ItemKey::Instance(corpse_item),
+        )
+        .await;
+    assert_eq!(
+        rejected.map(|result| result.disposition),
+        Some(UseDisposition::Rejected)
+    );
+    let mint_clock: (i64, i64) = sqlx::query_as(
+        "SELECT occurred_at,materialized_at FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(corpse_item.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(mint_clock.0, occurred);
+    assert!(mint_clock.1 - occurred >= 10_000);
+    let corpse = seal(owner, admitted, spatial_corpse).await?;
+    // Hold the database future at its first I/O suspension. Both observations
+    // refer to the same stored expiry regardless of the delay entering the transaction.
+    {
+        let permit = owner.spell_lane_permit().await.ok_or("corpse lane")?;
+        let fence = admitted.item_fence.ok_or("corpse fence")?;
+        let query = || owner.root.koshei_corpse_deadline(&permit, fence, corpse);
+        let mut delayed = std::pin::pin!(query());
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(delayed.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        }).await;
+        tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+        let delayed = delayed.await.map_err(debug)?.ok_or("delayed expiry")?;
+        let again = query().await.map_err(debug)?.ok_or("current expiry")?;
+        assert!(delayed + std::time::Duration::from_millis(150) >= again,
+            "time before the freshness statement shortened the USE deadline");
+    }
     let sample: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_quest_corpse_samples WHERE \
          character_id=encode($1,'hex')::uuid AND corpse_item=encode($2,'hex')::uuid \
@@ -625,6 +881,53 @@ pub(super) async fn exercise(
         sample,
         "the seal receipt must identify the corpse minted by the encounter"
     );
+    {
+        let (sender, observed) = tokio::sync::oneshot::channel();
+        let (resume, paused) = tokio::sync::oneshot::channel();
+        *owner
+            .states
+            .quest_callbacks
+            .observed_corpse_expiry
+            .lock()
+            .map_err(|_| "expiry probe")? = Some(
+            crate::gameplay_transport::quest_callbacks::CorpseExpiryProbe {
+                observed: sender,
+                resume: paused,
+            },
+        );
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: session,
+            command_id: admitted.continuity.next_command_id,
+            item_fence: admitted.item_fence,
+        };
+        let mut using = std::pin::pin!(owner.use_koshei_corpse(
+            actor,
+            command,
+            crate::gameplay_transport::item_view::ItemKey::Instance(corpse)
+        ));
+        let expires = tokio::select! {
+            biased;
+            result = &mut using => return Err(format!("fresh USE resolved before the freshness observation: {result:?}").into()),
+            expires = observed => expires?,
+        };
+        let held = owner.states.spell_states.lock().await;
+        resume
+            .send(())
+            .map_err(|()| "corpse USE ended before contention")?;
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(using.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        })
+        .await;
+        let runtime = owner.runtime.try_lock()?;
+        drop(held);
+        tokio::time::sleep_until(expires).await;
+        drop(runtime);
+        assert_eq!(
+            using.await.map(|result| result.disposition),
+            Some(UseDisposition::Rejected)
+        );
+    }
     expected.mission[4] = 1;
     expected.items[4] = 0;
     assert_eq!(State::read(h).await?, expected);
@@ -713,5 +1016,83 @@ pub(super) async fn exercise(
             .is_some_and(|quest| quest.key != QUEST)
     }));
     assert_eq!(State::read(h).await?, expected);
+    Ok(())
+}
+
+async fn die_and_reenter(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    inside: Position,
+    native_boss: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("Koshei player")?;
+    let session = admitted.game_session_id;
+    let mut seed = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *seed)
+        .await?;
+    // Protect the quest amulet and combat supplies through the fixture's PvE loss.
+    sqlx::query(
+        "INSERT INTO game_character_blessings(character_id,blessing_key,provenance) \
+         SELECT encode($1,'hex')::uuid,blessing,'fixture' FROM unnest($2::text[]) AS blessing",
+    )
+    .bind(id(41).as_slice())
+    .bind(
+        &[
+            "oteryn:blessing.the_embrace_of_tibia",
+            "oteryn:blessing.the_fire_of_the_suns",
+            "oteryn:blessing.the_spark_of_the_phoenix",
+            "oteryn:blessing.the_spiritual_shielding",
+            "oteryn:blessing.the_wisdom_of_solitude",
+        ][..],
+    )
+    .execute(&mut *seed)
+    .await?;
+    seed.commit().await?;
+    let death = {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(inside)
+        );
+        let mut states = owner.states.spell_states.lock().await;
+        let now = SemanticTimeMicros::from_micros(owner.owner_now().get());
+        let hit = states
+            .apply_creature_damage_native(&runtime, actor, session, 100_000, now)
+            .ok_or("lethal PvE hit inside the Koshei room")?;
+        assert_eq!(hit.damage.health_after, 0);
+        states
+            .player_death(&runtime, actor, session)
+            .ok_or("Koshei player death")?
+    };
+    let (_, vitals) = Box::pin(owner.respawn_after_death(actor, session, death))
+        .await
+        .ok_or("durable death and home respawn")?;
+    assert_eq!(vitals.health, vitals.max_health);
+    {
+        let runtime = owner.runtime.lock().await;
+        assert_eq!(
+            runtime.read_actor_position(actor).map_err(debug)?.position(),
+            super::quest_world_callbacks_fixtures::local(STAGING)
+        );
+        assert!(
+            runtime.contains_live_creature(native_boss),
+            "the ambient boss survives the player's death"
+        );
+    }
+    let gate = target(owner, CRYPT_GATE, 1)?;
+    assert_eq!(
+        use_next(owner, admitted, &gate).await?,
+        UseDisposition::Committed,
+        "the new life can claim the same native defender through framed USE"
+    );
+    let entry_receipts: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
+    )
+    .bind(ENTRY)
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(entry_receipts, 2, "entry has one receipt per admitted life");
     Ok(())
 }

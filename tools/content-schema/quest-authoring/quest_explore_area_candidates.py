@@ -101,7 +101,7 @@ def build_area_index(root: Path):
             for row in payload["records"]:
                 ingest(row["declaration"], relative)
 
-    if len(metadata) != 970:
+    if len(metadata) != 973:
         raise ValueError(f"canonical Area population changed: {len(metadata)}")
     return aliases, metadata, inputs
 

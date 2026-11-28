@@ -415,3 +415,53 @@ fn preference_save_uses_its_own_staging_path() -> Result<(), Box<dyn std::error:
     assert_eq!(PreferenceStore::read_transfer(&path)?, ReferencePreferences::default());
     Ok(())
 }
+
+#[test]
+fn portable_shortcuts_keep_koshei_item_key_across_catalogues()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PreferenceStore, ReferencePreferences};
+    let root = crate::play::screenshot::TestDir::new()?;
+    let path = root.join("legacy.json");
+    let mut file = serde_json::to_value(ReferencePreferences::default())?;
+    file["item_hotkeys"]["bindings"][0] = 31455.into();
+    file["item_hotkeys"]["bindings"][2] = 34131.into();
+    file["item_hotkeys"]["bindings"][3] = 34132.into();
+    file["bar_actions"]["0"] = serde_json::json!({"kind":"Multi","actions":[
+        {"kind":"Use","definition":31455,"mode":"Use"},
+        {"kind":"Equip","definition":31455}
+    ]});
+    file["custom_hotkeys"]["CTRL+9"] =
+        serde_json::json!({"kind":"object","definition":31455,"sub_type":0,"target":"cursor"});
+    std::fs::write(&path, serde_json::to_vec(&file)?)?;
+    // e2750951 used 31455 for the amulet. 7a used it for i7526.
+    let invalidated = PreferenceStore::read_transfer(&path)?;
+    assert!(invalidated.item_hotkeys.bindings[0].is_none());
+    assert!(invalidated.item_hotkeys.bindings[2].is_none());
+    assert!(invalidated.item_hotkeys.bindings[3].is_none());
+    assert!(invalidated.bar_actions.0.is_empty());
+    assert!(!invalidated.custom_hotkeys.contains_key("CTRL+9"));
+    // Stable keys exported from either catalogue resolve to the currently shipped index.
+    let key = "oteryn:item.tibia.i7532";
+    file["item_hotkeys"]["bindings"][0] = key.into();
+    file["item_hotkeys"]["bindings"][1] = 1.into();
+    file["bar_actions"]["0"]["actions"][0]["definition"] = key.into();
+    file["bar_actions"]["0"]["actions"][1]["definition"] = key.into();
+    file["custom_hotkeys"]["CTRL+9"]["definition"] = key.into();
+    std::fs::write(&path, serde_json::to_vec(&file)?)?;
+    let loaded = PreferenceStore::read_transfer(&path)?;
+    assert_eq!(
+        loaded.item_hotkeys.bindings[1]
+            .ok_or("unambiguous F2 binding")?
+            .get(),
+        1
+    );
+    let portable = root.join("portable.json");
+    PreferenceStore::export_to(&loaded, &portable)?;
+    let doc: serde_json::Value = serde_json::from_slice(&std::fs::read(&portable)?)?;
+    assert_eq!(doc["item_hotkeys"]["bindings"][0], key);
+    assert_eq!(doc["bar_actions"]["0"]["actions"][0]["definition"], key);
+    assert_eq!(doc["bar_actions"]["0"]["actions"][1]["definition"], key);
+    assert_eq!(doc["custom_hotkeys"]["CTRL+9"]["definition"], key);
+    assert_eq!(PreferenceStore::read_transfer(&portable)?, loaded);
+    Ok(())
+}

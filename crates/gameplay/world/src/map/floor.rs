@@ -28,7 +28,7 @@
 //! World; [`TilePos`] keeps the native floor `-z`. Not modelled: the source height-3 climb rule,
 //! because the bundle carries no height facts.
 
-use super::floor_catalogue::{OBJECT, TERRAIN};
+use super::floor_catalogue::{ITEM, OBJECT, TERRAIN};
 mod door_displacement;
 mod house;
 pub use door_displacement::{prepare_quest_door_displacement, prepare_quest_door_opening};
@@ -95,16 +95,23 @@ pub fn palette_mask(family: Family, key: &str) -> u8 {
     let Some(appearance) = palette_appearance(key) else {
         return 0;
     };
+    // The timed Koshei coffin is a canonical Item state outside the static
+    // floor catalogue. Crystal 201189f8 items.xml:223–226 gives it floorchange=down.
+    if family == Family::Item && appearance == 167 {
+        return DOWN;
+    }
     let lookup = |table: &[(u16, u8)]| {
         table
             .binary_search_by_key(&appearance, |(id, _)| *id)
             .map_or(0, |found| table[found].1)
     };
     match family {
+        // Qualified map-only WorldObjects use the bundle's Terrain family.
+        Family::Terrain if key.starts_with("oteryn:world-object.") => lookup(OBJECT),
         Family::Terrain => lookup(TERRAIN),
         // The compiler can route an Item palette key to a Terrain catalogue record (resolve.rs),
         // so an Item entry also carries the Terrain floor facts. The two id sets are disjoint.
-        Family::Item => lookup(OBJECT) | lookup(TERRAIN),
+        Family::Item => lookup(ITEM) | lookup(OBJECT) | lookup(TERRAIN),
     }
 }
 

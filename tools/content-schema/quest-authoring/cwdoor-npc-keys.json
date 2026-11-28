@@ -1,0 +1,193 @@
+{
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/shirith-key-3033",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.shirith",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "Here it is."
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i2969",
+        "count": 1,
+        "contents": [],
+        "key_number": 3033
+      },
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shirith.lua:60-76:sha256:269fda17fbbd0db25bc06c0f10c97b2eead9306c88f9c94cf2d5c8fa8266a100"
+      ],
+      "fee": {
+        "gold": 50,
+        "include_bank": true
+      },
+      "repeatable": true,
+      "failure_reply": [
+        "You don't have enough money."
+      ],
+      "failure_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/skjaar-quiz-donation",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noble_armor/skjaar-test-paid",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "All right then. Here comes the first question. What was the name of Dago's favourite pet?"
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:62-70:sha256:b5174d99af285953f0a4fb5eab85b6a61fb1168d9d189915a13859c246c2dad2"
+      ],
+      "give": null,
+      "fee": {
+        "gold": 1000,
+        "include_bank": true
+      },
+      "counter": {
+        "track": "oteryn:quest-progress/noble_armor/skjaar-donations",
+        "maximum": 2147483647
+      },
+      "failure_reply": [
+        "You don't have enough money"
+      ],
+      "failure_topic": 0
+    },
+    {
+      "key": "oteryn:quest-reward/skjaar-key-3142",
+      "quest": "oteryn:quest.noble_armor_quest",
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/noble_armor/skjaar-test-paid",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Here you are"
+      ],
+      "take": [],
+      "outfit": null,
+      "achievement": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/skjaar.lua:79-84:sha256:b5174d99af285953f0a4fb5eab85b6a61fb1168d9d189915a13859c246c2dad2"
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i2970",
+        "count": 1,
+        "contents": [],
+        "key_number": 3142
+      },
+      "counter": {
+        "track": "oteryn:quest-progress/noble_armor/skjaar-keys-issued",
+        "maximum": 2147483647
+      }
+    }
+  ],
+  "offers": [
+    {
+      "npc": "oteryn:npc.shirith",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "Do you want to buy a key for 50 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "key"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 1,
+      "storage": [],
+      "reply": [
+        "I will give the key to the crypt only to the closest followers of my master. Would you like me to test you?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [],
+      "reply": [
+        "Before we start I must ask you for a small donation of 1000 gold coins. Are you willing to pay 1000 gold coins for the test?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "redips"
+      ],
+      "topic": 3,
+      "next_topic": 4,
+      "storage": [],
+      "reply": [
+        "Perhaps you knew him after all. Tell me - how many fingers did he have when he died?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "7"
+      ],
+      "topic": 4,
+      "next_topic": 5,
+      "storage": [],
+      "reply": [
+        "Also true. But can you also tell me the colour of the deamons in which master specialized?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.skjaar",
+      "keywords": [
+        "black"
+      ],
+      "topic": 5,
+      "next_topic": 6,
+      "storage": [],
+      "reply": [
+        "It seems you are worthy after all. Do you want the key to the crypt?"
+      ]
+    }
+  ]
+}

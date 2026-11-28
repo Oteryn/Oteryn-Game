@@ -361,7 +361,7 @@ pub(super) async fn use_quest_tool(
 ) -> TestResult<UseDisposition> {
     owner.clock_origin = owner
         .clock_origin
-        .checked_sub(std::time::Duration::from_millis(250))
+        .checked_sub(crate::gameplay_transport::map_door::WORLD_USE_WITH_COOLDOWN)
         .ok_or("world action clock")?;
     let actor = admitted.runtime_actor.ok_or("tool user")?;
     let map = owner.bundle_map().ok_or("map")?;

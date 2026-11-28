@@ -22,6 +22,7 @@ pub enum TravelRefusal {
     ArrivalPending,
     StaleQuote,
     InsufficientFunds,
+    TransferRestricted,
 }
 
 pub trait NpcTravelGate: Sync {
@@ -64,6 +65,18 @@ async fn quote(
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    if route.is_transfer_platform() {
+        // Game-owned checks run both when Sharon offers the platform and when the
+        // player accepts. Platform separately owns purchase, destination and cooldown.
+        let blocked: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND skull IN (1,2) AND skull_until>clock_timestamp())
+                 OR EXISTS(SELECT 1 FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid AND rank_level=1)
+                 OR EXISTS(SELECT 1 FROM game_coin_market_offers WHERE character_id=encode($1,'hex')::uuid AND state IN (0,1,2) AND remaining>0)",
+        ).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+        if blocked {
+            return Ok(Err(TravelRefusal::TransferRestricted));
+        }
     }
     if let Some(requirement) = &route.return_origin {
         let last =
@@ -137,10 +150,20 @@ async fn quote(
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    let mut base_fare = route.route.price;
     if let Some(requirement) = &route.ticket
         && !ticket::permitted(tx, fence.character_id, requirement).await?
     {
-        return Ok(Err(TravelRefusal::UnavailableRoute));
+        if (route.route.key != "travora"
+            && !(route.service == "oteryn:service.travel.captain_waverider" && route.route.key == "travora_treasure_hunt_island")
+            && !(route.service == "oteryn:service.travel.captain_tiberius" && route.return_origin.is_some()))
+            || base_fare != 0
+            || requirement.track != "oteryn:quest-progress/travora/ticket_purchased"
+            || requirement.valid_for_seconds != 86_400
+        {
+            return Ok(Err(TravelRefusal::UnavailableRoute));
+        }
+        base_fare = 1000;
     }
     let level: Option<i64> = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
@@ -172,11 +195,7 @@ async fn quote(
     } else {
         false
     };
-    Ok(Ok(route.route.price.saturating_sub(if discount {
-        10
-    } else {
-        0
-    })))
+    Ok(Ok(base_fare.saturating_sub(if discount { 10 } else { 0 })))
 }
 
 impl DurabilityRoot {
@@ -319,6 +338,15 @@ impl DurabilityRoot {
                 fee_fence.expected_character_revision =
                     credit_postman_passage(&mut tx, fence, request.command, passage, catalogue).await?;
             }
+            if route.ticket.is_some() && fare > route.route.price {
+                let Some(catalogue) = request.postman_catalogue.as_deref() else {
+                    return Ok(Ok(Err(TravelRefusal::UnavailableRoute)));
+                };
+                let Some(revision) = crate::durability::quest_state::travora::purchase(
+                    &mut tx, fence, request.command, &route.service, catalogue,
+                ).await? else { return Ok(Ok(Err(TravelRefusal::UnavailableRoute))); };
+                fee_fence.expected_character_revision = revision;
+            }
             if fare>0 {
                 match burn_fee_in_transaction(&mut tx,&fee_fence,&request.fee).await {
                     Ok(_) => (),
@@ -328,7 +356,7 @@ impl DurabilityRoot {
                 }
             }
             sqlx::query("INSERT INTO game_newhaven_travel_receipts(character_id,game_session_id,command_id,occurrence_id,route,request_binding,fee_transaction_id,fare_gold_units,base_fare_gold_units,postman_discount_applied) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),encode($4,'hex')::uuid,$5,$6,CASE WHEN $7 THEN encode($8,'hex')::uuid END,$9,$10,$11)")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(arrival.occurrence.as_bytes().as_slice()).bind(key).bind(binding).bind(fare>0).bind(request.fee.transaction_id.as_slice()).bind(i64::try_from(fare).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::try_from(route.route.price).map_err(|_| DurabilityError::InvalidStoredState)?).bind(fare<route.route.price).execute(&mut **tx).await?;
+                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(arrival.occurrence.as_bytes().as_slice()).bind(key).bind(binding).bind(fare>0).bind(request.fee.transaction_id.as_slice()).bind(i64::try_from(fare).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i64::try_from(route.route.price.max(fare)).map_err(|_| DurabilityError::InvalidStoredState)?).bind(fare<route.route.price).execute(&mut **tx).await?;
             sqlx::query("INSERT INTO game_character_pending_arrivals(character_id,occurrence_id,world_id,tile_x,tile_y,tile_floor) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(arrival.occurrence.as_bytes().as_slice()).bind(arrival.world_id.as_bytes().as_slice()).bind(arrival.destination.x).bind(arrival.destination.y).bind(arrival.destination.floor).execute(&mut **tx).await?;
             tx.commit(deadline).await?;

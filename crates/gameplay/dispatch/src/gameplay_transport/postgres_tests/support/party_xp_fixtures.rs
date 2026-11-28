@@ -16,6 +16,7 @@ use crate::gameplay_transport::{
 };
 
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
 
 use std::time::Duration;
 
@@ -134,6 +135,8 @@ pub(super) fn run_with_admin(case: Case, admin: String) -> TestResult {
         .name("party-xp-pg".into())
         .stack_size(64 << 20)
         .spawn(move || {
+            // Party, Cake, and Forge assertions use neutral scheduled rates.
+            let _event_clock = test_clock::set(Schedule::default(), 0);
             fixture::runtime()
                 .map_err(|e| e.to_string())?
                 .block_on(async move {

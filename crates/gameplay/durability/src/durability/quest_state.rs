@@ -394,8 +394,8 @@ impl QuestStateCopy {
         if self.projected_initials.contains(key) { None } else { self.tracks.get(key) }
     }
 
-    /// Global quest-door storage semantics: absent storage reads as `-1`; any
-    /// durable value for the source storage action id grants the door.
+    /// Source quest doors accept any durable value except `-1`. Authored doors
+    /// with a minimum require that much progress on their named track.
     #[must_use]
     pub fn meets_door_storage(&self, action: u16) -> bool {
         // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
@@ -404,12 +404,22 @@ impl QuestStateCopy {
                 .durable_track(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK)
                 == Some(&1);
         }
+        use oteryn_gameplay_quests::quest::top_of_the_city as city;
+        if action == city::JIMMY_DOOR_ACTION {
+            // Characters already sent to the cellar can still return to Jimmy.
+            return match self.durable_track(city::STAGE) {
+                Some(1) => self.durable_track(city::PURSUIT) == Some(&city::PURSUIT_COMPLETE),
+                Some(stage) => *stage >= 2,
+                None => false,
+            };
+        }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
         #[derive(serde::Deserialize)]
         struct Binding {
             action: u16,
             track: String,
+            minimum: Option<i64>,
         }
         #[derive(serde::Deserialize)]
         struct Bindings {
@@ -424,9 +434,15 @@ impl QuestStateCopy {
             .map(|document| document.bindings)
             .unwrap_or_default()
         });
-        bindings
-            .iter()
-            .find(|binding| binding.action == action)
+        let binding = bindings.iter().find(|binding| binding.action == action);
+        if let Some(binding) = binding
+            && let Some(minimum) = binding.minimum
+        {
+            return self
+                .durable_track(&binding.track)
+                .is_some_and(|value| *value >= minimum);
+        }
+        binding
             .and_then(|binding| self.durable_track(&binding.track))
             .or_else(|| {
                 self.durable_track(&format!("oteryn:quest-progress/storage/{action}"))
@@ -766,6 +782,7 @@ mod wrath_sleeping_dragon;
 
 mod owned_cosmetics;
 mod owned_items;
+pub(super) mod travora;
 mod world_access;
 mod writer;
 use storage::*;

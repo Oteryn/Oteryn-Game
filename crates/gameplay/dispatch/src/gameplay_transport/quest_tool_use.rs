@@ -23,6 +23,12 @@ impl Drop for CreatureTurn<'_> {
     }
 }
 
+pub(super) struct CarriedQuestUseRead<'a> {
+    pub command: CommandRef,
+    pub encoded: Vec<u8>,
+    pub inventory: &'a crate::durability::item_use::ItemUseInventory,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Ordinary carried quest tools borrow the same fenced quest/value owner as
     /// NPC exchanges. The selected instance and ingress remain in its input proof.
@@ -69,14 +75,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| ())?
         {
+            if matches && intent.use_with_map_item.is_some() {
+                self.refresh_quest_session(command.game_session_id, false)
+                    .await;
+            }
             return Ok(Some(outcome(if matches {
                 UseDisposition::Committed
             } else {
                 UseDisposition::Rejected
             })));
         }
-        let Some(ItemKey::Instance(source)) = source else {
-            return Ok(None);
+        let selected = match (&intent.target, source) {
+            (_, Some(ItemKey::Instance(item))) => Some(item),
+            (oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_), None)
+                if corpse.is_some() =>
+            {
+                None
+            }
+            _ => return Ok(None),
         };
         let Ok(inventory) = self
             .root
@@ -84,6 +100,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         else {
             return Ok(None);
+        };
+        if let Some(outcome) = self
+            .use_ground_definition_callback(
+                actor, command, intent, selected, corpse, &inventory, &encoded,
+            )
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        let Some(source) = selected else {
+            return self
+                .use_carried_quest_item_selected(
+                    actor,
+                    command,
+                    intent,
+                    None,
+                    corpse.map(ItemKey::Instance),
+                    false,
+                    Some(CarriedQuestUseRead {
+                        command: command_ref,
+                        encoded,
+                        inventory: &inventory,
+                    }),
+                )
+                .await;
         };
         let Some(item) = inventory
             .backpack
@@ -105,8 +146,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|c| c.carried_target.is_none() && !c.fresh_corpse)
             .filter(|c| c.corpse_target.is_some() == corpse.is_some())
             .collect::<Vec<_>>();
+        let use_selected = || {
+            self.use_carried_quest_item_selected(
+                actor,
+                command,
+                intent,
+                Some(ItemKey::Instance(source)),
+                corpse.map(ItemKey::Instance),
+                false,
+                Some(CarriedQuestUseRead {
+                    command: command_ref,
+                    encoded: encoded.clone(),
+                    inventory: &inventory,
+                }),
+            )
+        };
         if bound.is_empty() {
-            return Ok(None);
+            return if corpse.is_some() || intent.use_with.is_some() {
+                use_selected().await
+            } else {
+                Ok(None)
+            };
         }
         if (corpse.is_none() && intent.use_with_map_item.is_some())
             || (corpse.is_some()
@@ -171,22 +231,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .all(|op| op.advisory_holds(catalogue, tracks))
                     })
             });
-            let Some(callback) = selected.next() else {
-                // The same tool's fresh-corpse callback keeps its target owner.
-                if corpse.is_some()
-                    && callbacks.iter().any(|c| {
-                        c.fresh_corpse
-                            && c.carried_item.as_deref() == Some(&item.definition.production_key)
-                    })
-                {
-                    return Ok(None);
-                }
-                return Ok(Some(outcome(UseDisposition::Rejected)));
-            };
+            let callback = selected.next().cloned();
             if selected.next().is_some() {
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             }
-            callback.clone()
+            callback
+        };
+        let Some(callback) = callback else {
+            // The same tool's fresh-corpse callback keeps its target owner.
+            if corpse.is_some()
+                && callbacks.iter().any(|c| {
+                    c.fresh_corpse
+                        && c.carried_item.as_deref() == Some(&item.definition.production_key)
+                })
+            {
+                return use_selected().await;
+            }
+            return Ok(Some(outcome(UseDisposition::Rejected)));
         };
         let Some(permit) = self.spell_lane_permit().await else {
             return Ok(Some(outcome(UseDisposition::Rejected)));

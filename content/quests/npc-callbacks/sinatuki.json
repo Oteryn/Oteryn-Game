@@ -1,0 +1,509 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-perch-100",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "count": 100
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/jamjam",
+      "reply": [
+        "Kisavuta! <giggles>",
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "minimum": 100,
+          "maximum": 1000000
+        },
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 0,
+          "maximum": 98
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-perch-100-repeat",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "count": 100
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "reply": [
+        "Kisavuta! <giggles>",
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "minimum": 100,
+          "maximum": 1000000
+        },
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 0,
+          "maximum": 98
+        }
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-perch-99",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "count": 99
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/jamjam",
+      "reply": [
+        "Kisavuta! <giggles>",
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "minimum": 99,
+          "maximum": 99
+        },
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 0,
+          "maximum": 98
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-perch-99-repeat",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "count": 99
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "reply": [
+        "Kisavuta! <giggles>",
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7159",
+          "minimum": 99,
+          "maximum": 99
+        },
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 0,
+          "maximum": 98
+        }
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-trout-100",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "count": 100
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/jamjam",
+      "reply": [
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 100,
+          "maximum": 1000000
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-trout-100-repeat",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "count": 100
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "reply": [
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 100,
+          "maximum": 1000000
+        }
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-trout-99",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "count": 99
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": "oteryn:achievement/jamjam",
+      "reply": [
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 99,
+          "maximum": 99
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-sinatuki-trout-99-repeat",
+      "quest": "oteryn:quest.sinatuki_quest",
+      "npc": "oteryn:npc.sinatuki",
+      "keywords": [
+        "nupi"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qc/sinatuki/fish",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "count": 99
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i7290",
+        "count": 5,
+        "contents": []
+      },
+      "outfit": null,
+      "reply": [
+        "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>"
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?title=Sinatuki_Quest/Spoiler&oldid=1003500",
+        "https://tibia.fandom.com/index.php?title=Jamjam&oldid=844221",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/sinatuki.lua"
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "minimum": 3,
+          "maximum": 8
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "minimum": 5,
+          "maximum": 44
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7158",
+          "minimum": 99,
+          "maximum": 99
+        }
+      ],
+      "repeatable": true
+    }
+  ]
+}

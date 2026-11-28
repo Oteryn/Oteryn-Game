@@ -441,6 +441,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 "oteryn:item.tibia.i3002",
                 "oteryn:item.tibia.i3069",
                 "oteryn:item.tibia.i3070",
+                "oteryn:item.tibia.i3116",
                 "oteryn:item.tibia.i7416",
             ] {
                 let facts = loot
@@ -548,6 +549,8 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
                 assert_eq!(tooth.item.revision, "definition-r1");
                 assert!(tooth.materializable);
                 assert!(tooth.stackable);
+            } else if policy.definition_key == "oteryn:creature.koshei_the_deathless" {
+                assert_eq!(corpse.key, "oteryn:item.tibia.i7535");
             }
             if matches!(
                 policy.definition_key.as_str(),

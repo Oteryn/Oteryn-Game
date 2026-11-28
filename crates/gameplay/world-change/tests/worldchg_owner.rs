@@ -11,6 +11,36 @@ fn worldchg_contributions_are_checked_and_reset_is_a_new_epoch() {
 }
 
 #[test]
+fn lumberjack_is_selected_by_the_committed_reset_catalogue() -> Result<(), String> {
+    use oteryn_gameplay_world_change::{
+        daily,
+        rules::{Catalogue, Schedule},
+    };
+    let catalogue = Catalogue::embedded().map_err(|error| format!("{error:?}"))?;
+    let definition = catalogue
+        .definitions()
+        .iter()
+        .find(|row| row.key == "lumberjack")
+        .ok_or("Lumberjack selection must reach the reset catalogue")?;
+    assert_eq!(
+        definition.schedule,
+        Schedule::AtReset {
+            chance_permille: 90
+        }
+    );
+    let world = [42; 16];
+    let mut selected = 0;
+    for epoch in 1..=128 {
+        let day = daily::roll_calendar(&world, epoch, 6, 13);
+        let active = definition.selected(&world, epoch, 6, 13, &day);
+        assert_eq!(active, definition.selected(&world, epoch, 6, 13, &day));
+        selected += usize::from(active);
+    }
+    assert!((1..128).contains(&selected));
+    Ok(())
+}
+
+#[test]
 fn worldchg_seasonal_windows_include_start_exclude_end_and_wrap_year() {
     let summer = SeasonalWindow {
         start: (6, 1),

@@ -7,7 +7,10 @@ use oteryn_renderer::TileCoord;
 impl PlayLink {
     /// Whether an item is waiting for a use-with target.
     pub fn use_with_armed(&self) -> bool {
-        lock(&self.mailbox).world_context.targeting.is_some()
+        lock(&self.mailbox)
+            .world_context
+            .targeting_action()
+            .is_some()
     }
 
     pub fn inventory_use_rune(&self) -> bool {
@@ -42,18 +45,18 @@ impl PlayLink {
             );
             return false;
         };
-        if let Some(origin) = mailbox.world_context.targeting {
-            if origin == source || rune || mailbox.world_context.rune_targeting {
+        if let Some(action) = mailbox.world_context.targeting_action() {
+            if action == Action::UseOn(source) || rune || mailbox.world_context.rune_targeting {
                 mailbox.world_context.set_feedback(
                     tr!("Use with: choose another target").into(),
                     std::time::Instant::now(),
                 );
                 return false;
             }
-            mailbox.world_context.targeting = None;
+            mailbox.world_context.clear_targeting();
             let command = Command {
                 target: Target::Item(source),
-                action: Action::UseOn(origin),
+                action,
                 selection: None,
             };
             if commands
@@ -114,7 +117,7 @@ impl PlayView {
     pub fn use_with_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending
-            && (mailbox.use_with_pending || mailbox.world_context.targeting.is_some())
+            && (mailbox.use_with_pending || mailbox.world_context.targeting_action().is_some())
         {
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
@@ -122,7 +125,7 @@ impl PlayView {
             );
             return true;
         }
-        let Some(source) = mailbox.world_context.targeting else {
+        let Some(action) = mailbox.world_context.targeting_action() else {
             return false;
         };
         let position = oteryn_session::ActorPosition {
@@ -135,14 +138,14 @@ impl PlayView {
             self.world_context_target(tile),
             position,
         );
-        if target == Target::Item(source) {
+        if matches!(action, Action::UseOn(source) if target == Target::Item(source)) {
             mailbox.world_context.set_feedback(
                 tr!("Use with: choose another target").into(),
                 std::time::Instant::now(),
             );
             return true;
         }
-        mailbox.world_context.targeting = None;
+        mailbox.world_context.clear_targeting();
         let binding = match self.scene.target_at(tile).and_then(|target| target.item) {
             Some(crate::play::GroundItem::Map { header, .. }) => Some((
                 header.content_generation,
@@ -153,7 +156,7 @@ impl PlayView {
         };
         let command = Command {
             target,
-            action: Action::UseOn(source),
+            action,
             selection: Some(Selection { position, binding }),
         };
         if link

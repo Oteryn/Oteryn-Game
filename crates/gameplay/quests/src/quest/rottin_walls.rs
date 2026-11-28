@@ -32,6 +32,7 @@ pub(crate) fn callbacks() -> [Callback; 6] {
             quest: QUEST.into(),
             trigger: Trigger::Use,
             selector: Selector {
+                target_definition: None,
                 native: Some(NativeSelector { position, ordinal, appearance }),
                 position: Some(position),
                 action: Some(action),
@@ -218,7 +219,6 @@ mod tests {
         let loaded = super::super::loader::load_embedded_quest_state("rottin-wall-test")
             .map_err(|err| format!("{err:?}"))?;
         let catalogue = loaded.catalogue();
-        let registered = super::super::world_callbacks::load_for(catalogue)?;
         assert_eq!(
             catalogue
                 .track(super::super::classic_talk::ROTTIN_WALLCOUNT)
@@ -234,12 +234,10 @@ mod tests {
         let reset = catalogue
             .transition("oteryn:quest-transition/classic/rottin-wood/start-disrepair")
             .ok_or("wall counter reset")?;
+        let resolved = super::super::world_callbacks::load_for(catalogue)?;
         let validate = |transition| {
             super::super::admission_binding::validate_resolved_world(
-                catalogue,
-                transition,
-                false,
-                &registered,
+                catalogue, transition, false, &resolved,
             )
         };
         validate(reset)?;

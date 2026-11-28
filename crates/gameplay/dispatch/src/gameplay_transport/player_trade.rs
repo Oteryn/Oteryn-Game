@@ -489,6 +489,39 @@ impl TradeBook {
         let offered = items.into_iter().flatten().any(|item| record.reserves(item));
         book.close(&record, ResultCode::Stale).is_some() && !offered
     }
+    #[cfg(test)]
+    pub(super) fn fixture_open_offer(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+        item: [u8; 16],
+        now: u64,
+    ) -> Option<()> {
+        let peer = GameSessionId::decode(&[2, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16]).ok()?;
+        let id = CommandId::new(1).ok()?;
+        let command = CommandRef::new(session, id);
+        let mut book = self.0.lock().ok()?;
+        book.index.extend([(session, session), (peer, session)]);
+        book.records.insert(session, Record {
+            sessions: [session, peer],
+            binding: runtime.binding(),
+            digest: runtime.content_pin().server_artifact_digest(),
+            lifecycle: Trade::offered(command, now),
+            offers: [None, None],
+            items: [Some(item), None],
+            backpacks: [None, None],
+            projections: [None, None],
+            contents: Default::default(),
+            commands: [command, CommandRef::new(peer, id)],
+            pair: None,
+            id: None,
+            accepts: [None, None],
+            staged: None,
+            request: None,
+        });
+        Some(())
+    }
+
     /// Services that choose inventory inputs internally cannot spend an offered leaf.
     /// Refuse this attempt and close the dialog before resolving their inputs.
     pub(super) fn physical_service(&self, session: GameSessionId) -> bool {

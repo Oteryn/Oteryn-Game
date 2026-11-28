@@ -23,6 +23,30 @@ fn m06q_quest_door_resolves_the_named_durable_quest_track() {
     assert!(copy.meets_door_storage(10089));
 }
 
+#[test]
+fn jimmy_door_requires_the_earned_top_of_the_city_stage_and_pursuit() {
+    use oteryn_gameplay_quests::quest::top_of_the_city::{
+        JIMMY_DOOR_ACTION as ACTION, PURSUIT, PURSUIT_COMPLETE, STAGE,
+    };
+
+    let mut copy = QuestStateCopy::default();
+    copy.tracks.insert(format!("oteryn:quest-progress/storage/{ACTION}"), 1);
+    assert!(!copy.meets_door_storage(ACTION));
+    copy.tracks.insert(STAGE.into(), 0);
+    assert!(!copy.meets_door_storage(ACTION));
+    copy.tracks.insert(STAGE.into(), 1);
+    assert!(!copy.meets_door_storage(ACTION), "accepting the quest is insufficient");
+    copy.tracks.insert(PURSUIT.into(), PURSUIT_COMPLETE + 1);
+    assert!(!copy.meets_door_storage(ACTION), "the player lost the trail");
+    copy.tracks.insert(PURSUIT.into(), PURSUIT_COMPLETE);
+    assert!(copy.meets_door_storage(ACTION), "the player followed the trail");
+    copy.tracks.remove(PURSUIT);
+    for stage in 2..=5 {
+        copy.tracks.insert(STAGE.into(), stage);
+        assert!(copy.meets_door_storage(ACTION), "existing stage {stage}");
+    }
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [tag, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }

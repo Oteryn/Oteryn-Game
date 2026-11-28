@@ -10,8 +10,12 @@ pub(super) fn current<S: SessionStream>(
     command: &Command,
     raw_wire: bool,
 ) -> bool {
-    if let super::Action::UseOn(source) = command.action {
-        if !item_current(session, source) {
+    if matches!(
+        command.action,
+        super::Action::UseOn(_) | super::Action::UseDefinitionOn(_)
+    ) {
+        if matches!(command.action, super::Action::UseOn(source) if !item_current(session, source))
+        {
             return false;
         }
         if command.selection.is_none() {
@@ -19,6 +23,12 @@ pub(super) fn current<S: SessionStream>(
         }
     }
     let Some(selection) = &command.selection else {
+        if matches!(
+            (&command.target, command.action),
+            (Target::Definition(_), super::Action::Use)
+        ) {
+            return true;
+        }
         return matches!(
             (command.action, &command.target),
             (super::Action::Use | super::Action::Look | super::Action::Open, Target::Item(handle))
@@ -50,7 +60,10 @@ pub(super) fn current<S: SessionStream>(
         return session.world_entities().is_some_and(|entities| {
             entities.iter().any(|entity| {
                 (entity.entity.identity != *entities.own_identity()
-                    || matches!(command.action, super::Action::UseOn(_)))
+                    || matches!(
+                        command.action,
+                        super::Action::UseOn(_) | super::Action::UseDefinitionOn(_)
+                    ))
                     && entity.entity == reference
                     && entity.position == spatial_position
                     && matches!(

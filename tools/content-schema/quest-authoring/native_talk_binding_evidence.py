@@ -29,7 +29,7 @@ def callback_schema():
     return Draft202012Validator(schema)
 
 
-def verify_talk_binding(root, definition, stage_key, reference):
+def verify_talk_binding(root, definition, stage_key, reference, *, recipe_stage_key=None):
     """Verify an exact registered callback; a runtime flag grants no authority."""
     require(isinstance(reference, dict) and set(reference) in (
             {"kind", "document", "stage", "callback"},
@@ -70,7 +70,8 @@ def verify_talk_binding(root, definition, stage_key, reference):
     quests = [q for q in document.get("quests", []) if q.get("quest") == owner]
     require(len(quests) == 1 and quests[0].get("recipe_sha256") == digest,
             "TALK registry owner or recipe digest")
-    chosen_stages = [s for s in recipe.get("stages", []) if s.get("key") == stage_key]
+    recipe_stage_key = recipe_stage_key or stage_key
+    chosen_stages = [s for s in recipe.get("stages", []) if s.get("key") == recipe_stage_key]
     require(len(chosen_stages) == 1 and chosen_stages[0].get("kind") == "talk",
             "TALK stage is absent from the selected recipe")
     stages = [s for s in quests[0].get("stages", []) if s.get("key") == stage_key]
@@ -113,6 +114,8 @@ def planned_talk_bindings(root, stages, definitions):
     result = {}
     owners = set()
     seen = set()
+    recovery = None
+    recovery_quest = "oteryn:quest.authored.top_of_the_city_quest"
     for path in sorted((root / "content/quests/authored-bindings").glob("*.json")):
         require(path.is_file() and not path.is_symlink(), "Native binding registry file type")
         document = json.loads(path.read_text(encoding="utf-8"))
@@ -129,17 +132,26 @@ def planned_talk_bindings(root, stages, definitions):
                 seen.add(key)
                 planned = stages.get(key)
                 require(key[0] in definitions, "Registered TALK stage has no canonical quest owner")
+                callbacks = [trigger["callback"]["key"]] + [c["key"] for c in trigger.get("alternatives", [])]
+                reference = {"kind": "npc_dialogue", "document": path.relative_to(root).as_posix(),
+                             "stage": stage["key"]}
+                reference["callback" if len(callbacks) == 1 else "callbacks"] = callbacks[0] if len(callbacks) == 1 else callbacks
+                if key == (recovery_quest, "restart-pursuit"):
+                    recovery = reference
+                    continue
                 native_journey = NATIVE_JOURNEY_OWNERS.get(path.name) == key[0]
                 if native_journey and (planned is None or stage["completes"] is True):
                     continue
                 require(planned is not None, "Registered TALK stage has no canonical plan owner")
                 if planned["event_identity_associations"]["kind"] != "talk":
                     continue  # Completion/other trigger consumers retain their own policy.
-                callbacks = [trigger["callback"]["key"]] + [c["key"] for c in trigger.get("alternatives", [])]
-                reference = {"kind": "npc_dialogue", "document": path.relative_to(root).as_posix(),
-                             "stage": stage["key"]}
-                reference["callback" if len(callbacks) == 1 else "callbacks"] = callbacks[0] if len(callbacks) == 1 else callbacks
                 result[key] = reference
+    if recovery is not None:
+        require((recovery_quest, "s1") in result,
+                "Top of the City recovery has no canonical start dialogue")
+        verify_talk_binding(
+            root, definitions[recovery_quest], "restart-pursuit", recovery, recipe_stage_key="s1"
+        )
     return result
 
 

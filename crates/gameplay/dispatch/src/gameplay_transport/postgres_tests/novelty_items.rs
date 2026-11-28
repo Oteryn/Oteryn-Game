@@ -26,7 +26,14 @@ enum Case {
     VoodooWithoutTarget,
     VoodooFarTarget,
     Present,
+    DefinitionWatch(u32),
+    CarriedLanternClue { has_key: bool },
     GroundDice,
+    GroundLanternOff,
+    GroundLanternOn,
+    DefinitionLanternOff,
+    DefinitionLanternOn,
+    EquippedLantern,
     GroundRocket,
     GroundTrumpet,
     NestedCostume,
@@ -42,6 +49,13 @@ impl Case {
     fn key(self) -> &'static str {
         match self {
             Self::Costume | Self::NestedCostume | Self::GroundCostume => "oteryn:item.tibia.i653",
+            Self::GroundLanternOff | Self::DefinitionLanternOff => "oteryn:item.tibia.i23738",
+            Self::GroundLanternOn | Self::DefinitionLanternOn | Self::EquippedLantern => {
+                "oteryn:item.tibia.i23734"
+            }
+            Self::DefinitionWatch(2906) => "oteryn:item.tibia.i2906",
+            Self::DefinitionWatch(_) => "oteryn:item.tibia.i6091",
+            Self::CarriedLanternClue { .. } => "oteryn:item.tibia.i23734",
             Self::Dice | Self::DiceStreak | Self::GroundDice => "oteryn:item.tibia.i5792",
             Self::Trumpet | Self::GroundTrumpet | Self::NestedTrumpet => "oteryn:item.tibia.i6572",
             Self::Rocket | Self::GroundRocket | Self::PendingLifecycle => "oteryn:item.tibia.i6576",
@@ -59,6 +73,8 @@ impl Case {
         matches!(
             self,
             Self::GroundDice
+                | Self::GroundLanternOff
+                | Self::GroundLanternOn
                 | Self::GroundRocket
                 | Self::GroundTrumpet
                 | Self::GroundCostume
@@ -71,6 +87,11 @@ impl Case {
     fn feroxa(self) -> bool { matches!(self, Self::FeroxaTrap | Self::FeroxaTrapOutside) }
     fn origin(self) -> MovementLocalPosition {
         match self {
+            Self::CarriedLanternClue { .. } => MovementLocalPosition {
+                x: 32891,
+                y: 31619,
+                floor: 10,
+            },
             Self::FeroxaTrap => MovementLocalPosition { x: 33419, y: 31540, floor: 11 },
             Self::FeroxaTrapOutside => MovementLocalPosition { x: 33420, y: 31540, floor: 11 },
             _ => MovementLocalPosition { x: 6, y: 0, floor: 7 },
@@ -142,8 +163,37 @@ fn novelty_explosive_present_commits_consumption_and_donor_cues_once() -> TestRe
 }
 
 #[test]
+fn novelty_definition_watch_uses_world_clock() -> TestResult {
+    run_case(Case::DefinitionWatch(2906))?;
+    run_case(Case::DefinitionWatch(6091))
+}
+
+#[test]
+fn novelty_carried_lantern_clue_uses_current_key_custody() -> TestResult {
+    run_case(Case::CarriedLanternClue { has_key: false })?;
+    run_case(Case::CarriedLanternClue { has_key: true })
+}
+
+#[test]
 fn novelty_ground_dice_uses_map_handle_and_exact_source_position() -> TestResult {
     run_case(Case::GroundDice)
+}
+#[test]
+fn novelty_ground_lantern_turns_on() -> TestResult {
+    run_case(Case::GroundLanternOff)
+}
+#[test]
+fn novelty_ground_lantern_turns_off() -> TestResult {
+    run_case(Case::GroundLanternOn)
+}
+#[test]
+fn novelty_definition_toggles_equipped_lantern_in_place() -> TestResult {
+    run_case(Case::EquippedLantern)
+}
+#[test]
+fn novelty_definition_lantern_toggles() -> TestResult {
+    run_case(Case::DefinitionLanternOff)?;
+    run_case(Case::DefinitionLanternOn)
 }
 #[test]
 fn novelty_ground_rocket_consumes_without_health_loss() -> TestResult {

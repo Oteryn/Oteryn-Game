@@ -95,6 +95,17 @@ impl ItemReward {
 }
 
 mod reward_text;
+mod sinatuki;
+
+impl RewardCallback {
+    pub fn consumes_fish_stack(&self) -> bool {
+        self.key.starts_with("oteryn:quest-reward/sinatuki/stack-")
+    }
+}
+
+pub fn is_sinatuki_fish(key: &str) -> bool {
+    matches!(key, "oteryn:item.tibia.i7158" | "oteryn:item.tibia.i7159")
+}
 pub use reward_text::{RewardContentText, RewardText};
 
 #[cfg(test)]
@@ -369,6 +380,9 @@ pub struct RewardCallback {
     pub reply: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub failure_reply: Vec<String>,
+    /// Source-authored dialogue topic after a definitive refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub failure_topic: Option<u16>,
     pub sources: Vec<String>,
 }
 
@@ -499,10 +513,45 @@ impl RewardCallback {
             && !self.take.is_empty()
             && self.give.is_some()
     }
+    /// The lost-item turns reuse the normal reward writer with stricter custody.
+    pub fn recovery_item(&self) -> Option<&str> {
+        let suffix = self
+            .key
+            .strip_prefix("oteryn:quest-reward/qc-twenty-miles-recover-")?;
+        let item = match suffix {
+            "skull" => "oteryn:item.tibia.i21770",
+            "cursed-gold" => "oteryn:item.tibia.i21746",
+            "wedding-ring" => "oteryn:item.tibia.i21745",
+            "blue-slab" | "blue-slab-after-report" => "oteryn:item.tibia.i21753",
+            "yellow-slab" | "yellow-slab-after-report" => "oteryn:item.tibia.i21861",
+            "red-slab" => "oteryn:item.tibia.i21862",
+            "sea-ear" | "sea-ear-after-report" => "oteryn:item.tibia.i21754",
+            "time-compass" => "oteryn:item.tibia.i21795",
+            _ => return None,
+        };
+        (self.quest == "oteryn:quest.twenty_miles_beneath_the_sea_quest"
+            && self.npc == "oteryn:npc.guardian_of_the_deep_seas"
+            && self.per_occurrence_mint
+            && self.take.is_empty()
+            && self.give.as_ref().is_some_and(|reward| {
+                reward.item == item
+                    && reward.count == 1
+                    && reward.contents.is_empty()
+                    && reward.additional.is_empty()
+            })
+            && matches!(self.storage.as_slice(), [stage] if
+                stage.track == "oteryn:quest-progress/qc/twenty_miles/stage" && stage.preserve)
+            && matches!(self.state_ops.as_slice(), [StateOperation {
+                track, from: StateCondition::Any, effect: StateMutation::Add { value: 1 },
+            }] if track == "oteryn:quest-progress/qc/twenty_miles/replacements"))
+        .then_some(item)
+    }
+
     fn value_only_guarded(&self) -> bool {
         // Repeatable source trades spend exact admitted inputs and produce a
         // native backpack MINT in the same fenced transaction.
-        temporal_payment::guarded(self)
+        self.recovery_item().is_some()
+            || temporal_payment::guarded(self)
             || (self.per_occurrence_mint
                 && self.state_ops.iter().any(|operation| {
                     matches!(&operation.from, StateCondition::ElapsedAtLeast { seconds } if *seconds > 0)
@@ -608,8 +657,11 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m56-cursed-crystal-wax.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/nomads-land.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/numbered-keys.json"),
     include_str!("../../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-programmes.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
@@ -618,6 +670,8 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
     include_str!("../../../../../content/quests/npc-callbacks/rottin-wood.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/sinatuki.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/travora-tickets.json"),
     WARRIOR_COMPLETIONS,
     include_str!("../../../../../content/quests/native-reward-callbacks/nrwicked.json"),
     // Append Explorer Society so its corpse targets follow the retained live creature callbacks.
@@ -786,7 +840,9 @@ fn retain_offered_callbacks(callbacks: &mut Vec<RewardCallback>) {
         .iter()
         .any(|callback| callback.key == "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves");
     callbacks.retain(|callback| {
-        super::authored_bindings::personal_event_offered(callback)
+        // Historical Sinatuki exchanges still resolve for receipt recovery.
+        !sinatuki::historical(callback)
+            && super::authored_bindings::personal_event_offered(callback)
             && (!elane_sale
                 || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves-sale-free")
             && (!elane_addon || callback.key != "oteryn:quest-reward/l8-hunter-elane-gloves")
@@ -862,6 +918,18 @@ pub fn load() -> Result<Vec<RewardCallback>, String> {
 
 fn embedded_document() -> Result<Document, String> {
     let mut document = parse_documents(DOCUMENTS)?;
+    let first = sinatuki::feeding_rows(&document.callbacks)?;
+    let template = first.first().ok_or("empty Sinatuki feeding catalogue")?;
+    document.tracks.push(TrackDeclaration {
+        key: sinatuki::CONTRIBUTION.into(),
+        quest: template.quest.clone(),
+        initial: 0,
+        min: 0,
+        max: 99,
+        writable: true,
+        sources: template.sources.clone(),
+    });
+    document.callbacks.extend(first);
     document
         .callbacks
         .extend(super::world_change_journals::npc_callbacks()?);
@@ -1496,6 +1564,8 @@ fn validate_document_with_capacity(
             || c.inventory.iter().any(|rule| {
                 !slug(&rule.item, "oteryn:item.", b"._/:-", 256) || rule.minimum > rule.maximum
             })
+            || (c.failure_topic.is_some()
+                && (c.failure_reply.is_empty() || c.carried_item.is_some()))
             || c.failure_reply.len() > 8
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
@@ -1555,6 +1625,7 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
     let terms = terms.as_object_mut().ok_or("reward terms")?;
     terms.remove("reply");
     terms.remove("failure_reply");
+    terms.remove("failure_topic");
     terms.remove("sources");
     let bytes = serde_json::to_vec(terms).map_err(|e| e.to_string())?;
     Ok(Some(Sha256::digest(bytes).into()))
@@ -1774,7 +1845,7 @@ const BEFORE_FULL_OUTFIT_REWARDS: [(&str, [u8; 32]); 5] = [
 
 pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, String> {
     let document = embedded_document()?;
-    // These changes preserve every track default.
+    // Keep published quest snapshots readable after the dialogue and selector changes.
     for (quest, hash) in [
         (
             "oteryn:quest.citizen_outfits_quest_on_rook",
@@ -2087,6 +2158,41 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
         (
+            "oteryn:quest.authored.top_of_the_city_quest",
+            super::published_quest_pins::hash(
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+            ),
+            &[(super::top_of_the_city::ASSASSINS, 0)],
+        ),
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            super::published_quest_pins::hash(
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+            ),
+            &[],
+        ),
+        (
+            "oteryn:quest.sinatuki_quest",
+            super::published_quest_pins::hash(
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+            ),
+            &[(sinatuki::CONTRIBUTION, 0)],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            super::published_quest_pins::hash(
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+            ),
+            &[],
+        ),
+        (
+            "oteryn:quest.travora_ticket",
+            super::published_quest_pins::hash(
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+            ),
+            &[],
+        ),
+        (
             "oteryn:quest.brotherhood_outfits_quest",
             super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
             &[(
@@ -2192,6 +2298,131 @@ pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
                 0xee, 0x6c, 0x3e, 0x40, 0x6d, 0xa9, 0xbb, 0x80, 0x0d, 0x0f, 0x73, 0xcd, 0x6f, 0xe7,
                 0x1d, 0xa5, 0xfd, 0x80, 0x64, 0xf3, 0xf0, 0xe6, 0x6c, 0x3c, 0x61, 0x33, 0xde, 0x1e,
                 0x04, 0x5e, 0xd5, 0x29,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.friends_and_traders",
+            [
+                0x0a, 0x66, 0x58, 0x93, 0xaa, 0x6b, 0x60, 0x28, 0x83, 0xc7, 0x1b, 0xfe, 0xe7, 0x86,
+                0xa7, 0x1e, 0x86, 0xb2, 0xb9, 0xd3, 0xfd, 0xbf, 0xfe, 0xdf, 0x0c, 0xe6, 0x19, 0xf1,
+                0x71, 0x56, 0xd2, 0x23,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/default_start",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_blessed_stake_wait_time",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_mermaid_marina",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u7_8/friends_and_traders/the_sweaty_cyclops",
+                    0,
+                ),
+                ("oteryn:quest-progress/questpc7/friends/program", -1),
+                ("oteryn:quest-progress/questpc7/friends/steel-uses", 0),
+                ("oteryn:quest-progress/questpc7/friends/yarn-uses", 0),
+            ],
+        ),
+        // Keep the published pre-journey pin with its existing absent-track defaults.
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            [
+                0x1a, 0x1c, 0x54, 0x3d, 0xbe, 0x51, 0x1c, 0x3a, 0x56, 0x54, 0xd1, 0x38, 0x59, 0x56,
+                0x22, 0x4b, 0x73, 0x23, 0x24, 0x3a, 0xce, 0x53, 0xfa, 0x5e, 0xb1, 0x42, 0xe6, 0x76,
+                0x36, 0x1f, 0xc4, 0x20,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            [
+                0x51, 0xc4, 0x3b, 0x54, 0xb9, 0x68, 0x03, 0x6f, 0x6d, 0xef, 0x0b, 0xc1, 0xbb, 0xb5,
+                0x72, 0x0f, 0x3f, 0xcb, 0x0f, 0x72, 0xd5, 0xab, 0x1a, 0x1c, 0x6d, 0x50, 0x13, 0xd5,
+                0xec, 0x05, 0x8d, 0xa3,
+            ],
+            &[
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part1",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part2",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part3",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/chosen-source/koshei_the_deathless_quest/s1/visited/koshei_amulet_part4",
+                    0,
+                ),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet", 0),
+                ("oteryn:quest-progress/qnpcfx/koshei/amulet_started_at", 0),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs/claimed",
+                    0,
+                ),
+                (
+                    "oteryn:quest-progress/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum/claimed",
+                    0,
+                ),
+            ],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0x95, 0x57, 0x24, 0xdf, 0xc1, 0xc9, 0xb0, 0x39, 0x2d, 0x23, 0xea, 0xa2, 0x2a, 0x2b,
+                0x77, 0x1f, 0x73, 0x9e, 0x36, 0x7e, 0x9b, 0x7a, 0x07, 0xf2, 0xa7, 0xd7, 0x5e, 0x52,
+                0x4b, 0xfe, 0x3f, 0x3c,
+            ],
+            &[
+                ("oteryn:quest-progress/qc/twenty_miles/access_birthing", -1),
+                (
+                    "oteryn:quest-progress/qc/twenty_miles/access_sunken_city",
+                    -1,
+                ),
+                ("oteryn:quest-progress/qc/twenty_miles/access_west", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile1", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile2", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile3", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile4", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/pile5", -1),
+                ("oteryn:quest-progress/qc/twenty_miles/skulls", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/slabs", 0),
+                ("oteryn:quest-progress/qc/twenty_miles/stage", -1),
+            ],
+        ),
+        (
+            "oteryn:quest.friends_and_traders",
+            [
+                0xce, 0x00, 0xb5, 0xa5, 0xfe, 0x72, 0x64, 0x29, 0xda, 0x79, 0xfa, 0xb7, 0x00, 0x63,
+                0x02, 0x9f, 0x88, 0xc7, 0x34, 0x25, 0xee, 0x3c, 0xff, 0xef, 0x00, 0x50, 0x6e, 0xfb,
+                0xbc, 0x2c, 0xd5, 0x70,
+            ],
+            &[],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            [
+                0xe0, 0x2b, 0x51, 0xe2, 0x0a, 0x74, 0xc1, 0x8d, 0x4f, 0x7b, 0xb4, 0x70, 0x53, 0x31,
+                0xd1, 0x54, 0x5f, 0x01, 0x80, 0xf0, 0x70, 0x9b, 0x66, 0x9b, 0xcd, 0xc4, 0x74, 0xe2,
+                0x65, 0x60, 0xcb, 0x3c,
             ],
             &[],
         ),
@@ -2405,6 +2636,48 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reviewed_quest_saves_resume_after_content_corrections() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|err| format!("{err:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, hash, counter) in [
+            (
+                "oteryn:quest.authored.top_of_the_city_quest",
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+                Some(super::super::top_of_the_city::ASSASSINS),
+            ),
+            (
+                "oteryn:quest.sinatuki_quest",
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+                Some(sinatuki::CONTRIBUTION),
+            ),
+            (
+                "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+                None,
+            ),
+            (
+                "oteryn:quest.koshei_the_deathless_quest",
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+                None,
+            ),
+            (
+                "oteryn:quest.travora_ticket",
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+                None,
+            ),
+        ] {
+            let pin = super::super::published_quest_pins::hash(hash);
+            let defaults = super::super::npc_rules::legacy_defaults(catalogue, quest, &pin)
+                .ok_or_else(|| format!("missing predecessor for {quest}"))?;
+            if let Some(counter) = counter {
+                assert_eq!(defaults.get(counter), Some(&0), "{quest}");
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
         let callbacks = super::load()?;
@@ -3235,6 +3508,162 @@ mod tests {
 
     /// Regenerate with tools/content-schema/quest-authoring/refresh_reward_hash_baselines.py.
     #[test]
+    fn sinatuki_first_hand_in_debits_the_source_quantity_and_grants_crystals() -> Result<(), String>
+    {
+        let callbacks: Vec<_> = load()?.into_iter().filter(sinatuki::historical).collect();
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            for quantity in [99, 100, 101] {
+                let carried = BTreeMap::from([(item.to_owned(), quantity)]);
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == "oteryn:npc.sinatuki"
+                            && callback
+                                .storage
+                                .iter()
+                                .all(|r| (r.minimum..=r.maximum).contains(&-1))
+                            && callback.inventory.iter().all(|r| r.holds(&carried))
+                    })
+                    .collect();
+                assert_eq!(eligible.len(), 1, "{item} × {quantity}");
+                let callback = eligible[0];
+                assert!(callback.completes);
+                assert_eq!(callback.take[0].item, item);
+                assert_eq!(u64::from(callback.take[0].count), quantity.min(100));
+                let reward = callback.give.as_ref().ok_or("Sinatuki crystals")?;
+                assert_eq!(
+                    (reward.item.as_str(), reward.count),
+                    ("oteryn:item.tibia.i7290", 5)
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sinatuki_mixed_feeding_and_one_final_fish() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = super::offered_for(loaded.catalogue())?;
+        let callbacks: Vec<_> = callbacks
+            .iter()
+            .filter(|row| row.npc == "oteryn:npc.sinatuki")
+            .collect();
+        for trout in 0..=99 {
+            let mut held = BTreeMap::from([
+                ("oteryn:item.tibia.i7158".to_owned(), trout),
+                ("oteryn:item.tibia.i7159".to_owned(), 99 - trout),
+            ]);
+            let mut progress = BTreeMap::new();
+            let mut stage = -1;
+            while held.values().sum::<u64>() > 0 {
+                let stack = held.iter().find(|(_, count)| **count > 0).ok_or("stack")?;
+                let selected = BTreeMap::from([(stack.0.clone(), *stack.1)]);
+                let rows: Vec<_> = callbacks
+                    .iter()
+                    .filter(|row| {
+                        row.storage.iter().all(|gate| {
+                            let value = progress.get(&gate.track).copied().or_else(|| {
+                                loaded
+                                    .catalogue()
+                                    .track(&gate.track)
+                                    .map(|track| track.initial)
+                            });
+                            value.is_some_and(|v| (gate.minimum..=gate.maximum).contains(&v))
+                        }) && row.inventory.iter().all(|rule| rule.holds(&selected))
+                            && row
+                                .state_ops
+                                .iter()
+                                .all(|op| op.advisory_holds(loaded.catalogue(), &progress))
+                    })
+                    .collect();
+                let [first] = rows.as_slice() else {
+                    return Err(format!(
+                        "ambiguous feeding for {trout} trout: {}",
+                        rows.len()
+                    ));
+                };
+                assert!(!first.completes && first.achievement.is_none() && first.give.is_none());
+                let cost = &first.take[0];
+                assert_eq!(
+                    u64::from(cost.count),
+                    *stack.1,
+                    "each nupi feeds the selected stack"
+                );
+                *held.get_mut(&cost.item).ok_or("fish")? -= u64::from(cost.count);
+                let changes = loaded
+                    .catalogue()
+                    .evaluate(
+                        loaded.catalogue().transition(&first.key).ok_or("payment")?,
+                        &progress,
+                        1,
+                    )
+                    .map_err(|e| format!("{e:?}"))?;
+                for change in changes {
+                    progress.insert(change.track, change.after);
+                }
+                stage = first.storage[0].set;
+            }
+            assert_eq!(stage, 1);
+            assert_eq!(progress.get(sinatuki::CONTRIBUTION), Some(&99));
+        }
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            let held = BTreeMap::from([(item.to_owned(), 1)]);
+            let rows: Vec<_> = callbacks
+                .iter()
+                .filter(|row| {
+                    row.npc == "oteryn:npc.sinatuki"
+                        && row.storage[0].minimum == 1
+                        && row.inventory.iter().all(|rule| rule.holds(&held))
+                })
+                .collect();
+            let [last] = rows.as_slice() else {
+                return Err(format!("missing final feeding for {item}"));
+            };
+            assert_eq!(last.take[0].count, 1);
+            assert_eq!(last.give.as_ref().ok_or("missing shards")?.count, 5);
+            assert!(last.completes && last.achievement.is_some());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sinatuki_repeat_hand_ins_load_at_the_completed_stage() -> Result<(), String> {
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let callbacks = super::offered_for(lowered.catalogue())?;
+        let historical = load_for(lowered.catalogue())?;
+        for row in historical
+            .iter()
+            .filter(|row| row.npc == "oteryn:npc.sinatuki" && row.key.ends_with("-repeat"))
+        {
+            assert!(row.is_paid_exchange());
+            assert!(matches!(row.take.as_slice(), [cost] if matches!(cost.count, 99 | 100)));
+            assert!(row.give.as_ref().is_some_and(|reward| {
+                reward.item == "oteryn:item.tibia.i7290" && reward.count == 5
+            }));
+        }
+        for item in ["oteryn:item.tibia.i7158", "oteryn:item.tibia.i7159"] {
+            for quantity in [99, 100, 101] {
+                let carried = BTreeMap::from([(item.to_owned(), quantity)]);
+                let eligible: Vec<_> = callbacks
+                    .iter()
+                    .filter(|callback| {
+                        callback.npc == "oteryn:npc.sinatuki"
+                            && callback
+                                .storage
+                                .iter()
+                                .all(|state| (state.minimum..=state.maximum).contains(&2))
+                            && callback.inventory.iter().all(|rule| rule.holds(&carried))
+                    })
+                    .collect();
+                assert!(eligible.is_empty(), "{item} × {quantity} at stage 2");
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn published_ungated_quest_hash_baseline() -> Result<(), String> {
         let lowered = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|e| format!("{e:?}"))?;
@@ -3301,6 +3730,18 @@ mod tests {
             }
         }
         assert!(expected.insert(colours_peer::KEY.to_owned()));
+        for species in ["perch", "trout"] {
+            for fish in 1..=100 {
+                for phase in ["feed", "ready"] {
+                    if fish < 99 || phase == "ready" {
+                        assert!(expected.insert(format!(
+                            "oteryn:quest-reward/sinatuki/stack-{species}-{fish}-{phase}"
+                        )));
+                    }
+                }
+            }
+            assert!(expected.insert(format!("oteryn:quest-reward/sinatuki/final-{species}")));
+        }
         if let Some(full) = shards
             .iter()
             .flat_map(|shard| &shard.callbacks)

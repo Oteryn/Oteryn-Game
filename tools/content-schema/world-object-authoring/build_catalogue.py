@@ -394,7 +394,10 @@ def outputs(
         import activity_static
 
         static_files = activity_static.outputs()
-        for name in activity_static.SHARDS.values():
+        for name in (
+            *activity_static.SHARDS.values(),
+            *activity_static.TRAVERSAL_SHARDS.values(),
+        ):
             files[name] = static_files[name]
         files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]
         # The qualified restore target keeps its original base ordinal. Apply
@@ -427,6 +430,8 @@ def outputs(
             name = f"content/world/{directory}/index.json"
             index = json.loads(files[name])
             index["notes"] += activity_static.NOTE
+            if directory == "objects":
+                index["notes"] += activity_static.TRAVERSAL_NOTES["WorldObject"]
             files[name] = (
                 json.dumps(index, indent=2, ensure_ascii=False) + "\n"
             ).encode()
@@ -586,6 +591,7 @@ def qualified_shards():
             *activity_static.SHARDS.values(),
             alawar_static.SHARD,
             crystal_delta_ground.SHARD,
+            *activity_static.TRAVERSAL_SHARDS.values(),
             feroxa_static.SHARD,
             blood_vestibule_ground.SHARD,
             spawn_ground.SHARD,

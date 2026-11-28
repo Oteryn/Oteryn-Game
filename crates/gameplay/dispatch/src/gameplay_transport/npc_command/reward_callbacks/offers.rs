@@ -19,6 +19,8 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/l6-stories.json"),
     include_str!("../../../../../../../content/quests/npc-offers/m09-rookie.json"),
     include_str!("../../../../../../../content/quests/npc-offers/m16-targuna-marker.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/qc-programmes.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/qc-twenty-miles.json"),
     include_str!("../../../../../../../content/quests/npc-offers/nomads-land.json"),
     include_str!("../../../../../../../content/quests/npc-offers/qd-steal-from-thieves.json"),
     include_str!("../../../../../../../content/quests/npc-offers/qnpcfx-koshei.json"),
@@ -30,7 +32,9 @@ const SOURCES: &[&str] = &[
     include_str!("../../../../../../../content/quests/npc-offers/quest-contacts.json"),
     include_str!("../../../../../../../content/quests/npc-offers/tibia-tales.json"),
     include_str!("../../../../../../../content/quests/npc-offers/too-hot-to-handle.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/top-of-the-city.json"),
     include_str!("../../../../../../../content/quests/npc-offers/tower-defence.json"),
+    include_str!("../../../../../../../content/quests/npc-offers/travora-tickets.json"),
     include_str!("../../../../../../../content/quests/npc-offers/vampire-hunter.json"),
 ];
 

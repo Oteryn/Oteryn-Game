@@ -56,6 +56,7 @@ mod hero_of_bounac;
 pub(super) mod hireling_services;
 mod hive_shared;
 mod isle_of_evil;
+pub(super) mod jimmy;
 mod liquid_black;
 mod magic_effects;
 mod marriage;
@@ -70,7 +71,7 @@ pub(super) mod reward_callbacks;
 pub use reward_callbacks::validate_quest_reward_offers;
 mod reward_facts;
 mod seasonal;
-mod service_context;
+pub(super) mod service_context;
 mod session_transfer;
 mod stag_beaks;
 mod threatened_dreams;
@@ -138,6 +139,7 @@ pub struct PendingBank {
 /// an await and is taken after the runtime lock.
 #[derive(Default)]
 pub struct NpcConversations {
+    jimmy_assassins: Mutex<Vec<ExactActorRef>>,
     sessions: Mutex<HashMap<GameSessionId, SessionNpc>>,
     #[cfg(test)]
     fixture_callback_rows:
@@ -1041,6 +1043,27 @@ pub(super) async fn npc_bank_talk(
         reward_callbacks::needs_facts(admission, actor, command, &intent, &runtime);
     let context =
         conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent);
+    if context
+        .as_ref()
+        .is_some_and(|context| context.2 == "oteryn:npc.jimmy")
+        && admission
+            .states
+            .chat
+            .npc_talk()
+            .and_then(|book| book.get("oteryn:npc.jimmy"))
+            .is_some_and(|entry| entry.matches_greeting(&intent.text))
+        && let Some(remaining) = admission
+            .states
+            .quest_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| jimmy::remaining(sessions.get(&session)?.copy.as_ref()?.tracks()))
+    {
+        return match jimmy::greet(admission, &mut runtime, remaining) {
+            Ok(line) => NpcConversations::bank_reply(&intent, line.into()),
+            Err(disposition) => NpcTalkOutcome::only(disposition),
+        };
+    }
     let alternate_opening = context
         .as_ref()
         .zip(admission.quest_catalogue.as_deref())

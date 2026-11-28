@@ -4,13 +4,25 @@ pub use oteryn_session::ActorPosition;
 use oteryn_session::{ItemHandle, SessionError, world_context::SpellTargetPosition};
 
 pub fn use_with_payload(source: ItemHandle, target: &Target) -> Result<Vec<u8>, SessionError> {
+    shortcut_payload(world_object::UseTarget::Item(source), Some(target))
+}
+
+pub(crate) fn shortcut_payload(
+    source: world_object::UseTarget,
+    destination: Option<&Target>,
+) -> Result<Vec<u8>, SessionError> {
     let mut intent = world_object::UseIntent {
-        target: world_object::UseTarget::Item(source),
+        target: source,
         use_with: None,
         use_with_map_item: None,
         use_with_position: None,
     };
+    let Some(target) = destination else {
+        return world_object::encode_item_use_intent(&intent)
+            .map_err(|_| SessionError::SessionUnusable);
+    };
     match target {
+        Target::Definition(_) => return Err(SessionError::SessionUnusable),
         Target::Creature(entity) => intent.use_with = Some(*entity),
         Target::Item(item) => {
             intent.use_with_map_item = Some(world_object::MapUseTarget::Item(*item))
@@ -32,6 +44,23 @@ pub fn use_with_payload(source: ItemHandle, target: &Target) -> Result<Vec<u8>, 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn definition_shortcut_encodes_plain_use_and_selected_corpse() -> Result<(), SessionError> {
+        let reference = std::num::NonZeroU32::MIN;
+        let source = world_object::UseTarget::ItemByDefinition(reference);
+        for target in [None, Some(Target::Item(ItemHandle::MAX))] {
+            let payload = shortcut_payload(source.clone(), target.as_ref())?;
+            let decoded = world_object::decode_use_intent_target(&[4, 6, 11, 15, 18, 22], &payload)
+                .map_err(|_| SessionError::SessionUnusable)?;
+            assert_eq!(decoded.target, source);
+            assert_eq!(
+                decoded.use_with_map_item,
+                target.map(|_| world_object::MapUseTarget::Item(ItemHandle::MAX))
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn use_with_preserves_source_and_each_destination() -> Result<(), SessionError> {
         let source = ItemHandle::MAX;
@@ -56,6 +85,7 @@ mod tests {
                 .map_err(|_| SessionError::SessionUnusable)?;
             assert_eq!(intent.target, world_object::UseTarget::Item(source));
             match target {
+                Target::Definition(_) => return Err(SessionError::SessionUnusable),
                 Target::Item(item) => assert_eq!(
                     intent.use_with_map_item,
                     Some(world_object::MapUseTarget::Item(item))

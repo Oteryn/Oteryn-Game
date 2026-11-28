@@ -79,6 +79,7 @@ enum Case {
     Katana,
     Longsword,
     GriffinShield,
+    SkullOfRatha,
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
@@ -391,10 +392,23 @@ fn m35_koshei_dispatch_requires_legs_and_platinum_in_either_order() -> TestResul
     println!("M35_KOSHEI_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+pub(super) fn skull_of_ratha() -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("qc-skull-of-ratha-aggregate", || {
+        scenario(false, Case::SkullOfRatha)
+    })
+}
+
 fn scenario(reverse: bool, case: Case) -> TestResult {
+    let skull = matches!(case, Case::SkullOfRatha);
     let wine = matches!(case, Case::Wine);
     let access_key = matches!(case, Case::Key3520 | Case::Key3800);
     let (chest, appearance, quest, choices): (_, _, _, &[(u16, u16)]) = match case {
+        Case::SkullOfRatha => (
+            (32845, 31917, -6),
+            2472,
+            "oteryn:quest.skull_of_ratha_quest",
+            &[(32845, 6083), (32847, 6084), (32867, 6188)],
+        ),
         Case::Wine => (
             (32749, 32341, -14),
             2469,
@@ -576,6 +590,8 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         };
         let world = if fire_axe || !native_claims.is_empty() {
             super::qready1_reward_claims::retained_world(chest, native)?
+        } else if skull {
+            super::qc_pinned_world::world(native)?
         } else if matches!(case, Case::GriffinShield) {
             source_world_objects(
                 chest,
@@ -614,6 +630,21 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             bound.unbound.retain(|p| is_fire_axe_claim(&p.claim));
             bound.left_out.retain(|(key, _)| is_fire_axe_claim(key));
         }
+        if skull {
+            bound.served.retain(|claim| {
+                claim.placements.iter().any(|placement| {
+                    let Some((_, ordinal)) =
+                        crate::map::view::placement_of(placement.bundle_placement_key)
+                    else {
+                        return false;
+                    };
+                    world.base()
+                        .tile(placement.cell.x, placement.cell.y, placement.cell.floor)
+                        .and_then(|tile| tile.unique(ordinal))
+                        .is_some_and(|object| choices.iter().any(|&(_, uid)| object.unique == uid))
+                })
+            });
+        }
         if !native_claims.is_empty() {
             bound.served.retain(|claim| native_claims.contains(&claim.key.as_str()));
         }
@@ -647,7 +678,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             bound.served.len(),
             if matches!(case, Case::Behemoth) {
                 4
-            } else if matches!(case, Case::Longsword | Case::GriffinShield) {
+            } else if matches!(case, Case::Longsword | Case::GriffinShield | Case::SkullOfRatha) {
                 3
             } else if matches!(
                 case,
@@ -702,12 +733,17 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
         } else {
             adjacent(chest.0, chest.1, chest.2)?
         };
+        let frame_binding = if skull {
+            world.frame_binding_digest(deps.admitted.world_id)
+        } else {
+            activated.frame_binding().digest()
+        };
         deps.combat_room = Some(
             activated
                 .qualified_room()
                 .bundle_view(
                     cells.clone(),
-                    activated.frame_binding().digest(),
+                    frame_binding,
                     world.map_revision_digest(),
                     crate::content::NativeEntryStart {
                         x: at.x,
@@ -722,7 +758,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+            frame_binding,
             world.map_revision_digest(),
             (at.x, at.y, at.floor),
         );
@@ -796,7 +832,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             .bind(id(42).as_slice()).bind(id(43).as_slice())
             .bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice())
-            .bind(activated.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            .bind(frame_binding.as_slice()).execute(&h.pool).await?;
         let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
         h.root
             .initialize_admission_equipment(
@@ -860,7 +896,10 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 index
             };
             let x = choices[position_index].0;
-            let y = if matches!(case, Case::EmperorCookies) {
+            let basement = skull && position_index == 2;
+            let y = if basement {
+                31909
+            } else if matches!(case, Case::EmperorCookies) {
                 if position_index == 0 { 31905 } else { 31923 }
             } else if matches!(case, Case::EdronGoblin) {
                 chest.1 + u16::try_from(position_index)?
@@ -873,7 +912,9 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             } else {
                 chest.1
             };
-            let floor = if matches!(case, Case::EmperorCookies) && position_index == 1 {
+            let floor = if basement {
+                -8
+            } else if matches!(case, Case::EmperorCookies) && position_index == 1 {
                 -6
             } else if matches!(case, Case::FireAxeAll) && position_index == 1 {
                 -12
@@ -885,7 +926,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
             } else {
                 adjacent(x, y, floor)?
             };
-            if matches!(case, Case::FireAxeAll | Case::EmperorCookies | Case::EdronGoblin) {
+            if skull || matches!(case, Case::FireAxeAll | Case::EmperorCookies | Case::EdronGoblin) {
                 // Fixture admission at each literal source endpoint; travel is not
                 // under test. Keep the same SQL session fence and command stream.
                 let (runtime, actor) = runtime_at(destination)?;
@@ -922,13 +963,13 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 destination,
             )
             .await?;
-            let key = if fire_axe {
+            let key = if fire_axe || skull {
                 let key = bound
                     .served
                     .iter()
                     .flat_map(|claim| &claim.placements)
                     .find(|p| (p.cell.x, p.cell.y, p.cell.floor) == (x, y, floor))
-                    .ok_or("shipped Fire Axe placement")?
+                    .ok_or("shipped claim-set placement")?
                     .bundle_placement_key;
                 let (_, ordinal) =
                     crate::map::view::placement_of(key).ok_or("placement ordinal")?;
@@ -936,7 +977,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     .base()
                     .tile(x, y, floor)
                     .and_then(|tile| tile.unique(ordinal))
-                    .ok_or("shipped Fire Axe UID")?;
+                    .ok_or("shipped claim-set UID")?;
                 assert_eq!(unique.unique, choices[position_index].1);
                 key
             } else if !native_claims.is_empty() {
@@ -1046,7 +1087,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                     state.completed,
                     matches!(case, Case::Fanfare)
                         || matches!(case, Case::Behemoth) && index == 3
-                        || matches!(case, Case::Longsword | Case::GriffinShield) && index == 2
+                        || matches!(case, Case::Longsword | Case::GriffinShield | Case::SkullOfRatha) && index == 2
                         || matches!(
                             case,
                             Case::Koshei

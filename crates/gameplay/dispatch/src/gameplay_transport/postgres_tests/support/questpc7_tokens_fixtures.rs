@@ -351,13 +351,13 @@ pub(super) async fn earned_journey(
             .collect::<String>()
     );
     let content = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
-    let permit = owner.spell_lane_permit().await.ok_or("raid lane")?;
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
         .map_err(|()| "fence")?
         .ok_or("fence")?
         .item_fence();
+    let permit = owner.spell_lane_permit().await.ok_or("raid lane")?;
     let collected = h
         .root
         .collect_boss_rewards(
@@ -383,6 +383,7 @@ pub(super) async fn earned_journey(
         )
         .await?
         .ok_or("native token collection")?;
+    drop(permit);
     assert_eq!(
         (collected.status, collected.moved),
         (BossRewardCollectionStatus::Collected, 1)

@@ -10,6 +10,8 @@ type SaveResult = io::Result<Option<ReferencePreferences>>;
 #[cfg(bevy_shell)]
 #[path = "store/background.rs"]
 mod background;
+#[path = "store/item_keys.rs"]
+mod item_keys;
 #[path = "store/publication.rs"]
 mod publication;
 #[path = "store/rebase.rs"]
@@ -102,6 +104,7 @@ impl PreferenceStore {
         if legacy {
             document["custom_hotkeys"] = serde_json::json!({});
         }
+        item_keys::Operation::Load.apply(&mut document)?;
         let mut preferences: ReferencePreferences = serde_json::from_value(document)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         if legacy {
@@ -134,7 +137,9 @@ impl PreferenceStore {
 
     fn serialized(preferences: &ReferencePreferences) -> io::Result<Vec<u8>> {
         preferences.validate().map_err(io::Error::other)?;
-        let bytes = serde_json::to_vec_pretty(preferences).map_err(io::Error::other)?;
+        let mut document = serde_json::to_value(preferences).map_err(io::Error::other)?;
+        item_keys::Operation::Save.apply(&mut document)?;
+        let bytes = serde_json::to_vec_pretty(&document).map_err(io::Error::other)?;
         if bytes.len() > 1 << 20 {
             return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
         }

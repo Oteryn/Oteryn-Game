@@ -10,6 +10,13 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
                 if after == 0 { before } else { after }
             ),
         ),
+        Case::Lantern { source, .. } => (
+            format!("oteryn:item.tibia.i{source}"),
+            format!(
+                "oteryn:item.tibia.i{}",
+                if source == 23734 { 23738 } else { 23734 }
+            ),
+        ),
         Case::ResidentTick
         | Case::ResidentExpiryTick
         | Case::ResidentLetter
@@ -63,6 +70,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     let placed = matches!(
         case,
         Case::Placed
+            | Case::Lantern { placed: true, .. }
             | Case::Decoration(_, _)
             | Case::NativeNoop(_)
             | Case::StaticWindow
@@ -326,9 +334,11 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ContainerMove => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 510],
         Case::ContainerCapacity => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 446],
         Case::BedKit(_) => &[4, 6, 11, 15, 18, 49, 86],
-        Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::CarpetTile { .. } => {
-            &[4, 6, 11, 15, 18, 49, 86]
-        }
+        Case::Placed
+        | Case::Decoration(_, _)
+        | Case::Lantern { placed: true, .. }
+        | Case::StaticWindow
+        | Case::CarpetTile { .. } => &[4, 6, 11, 15, 18, 49, 86],
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
         Case::ResidentTick => &[
             3, 4, 6, 13, 15, 25, 49, 51, 86, 115, 165, 502, 508, 509, 511,
@@ -339,7 +349,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::ResidentEquip | Case::ResidentTimedEquip(_) => &[4, 6, 12, 15, 86],
         Case::ResidentMount | Case::ResidentAppearanceRevoked => &[6, 13, 25, 49, 86, 502],
         Case::ResidentQuest => &[6, 49, 86, 500],
-        Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
+        Case::Carried | Case::Foreign | Case::Lantern { .. } => &[4, 6, 15, 49, 86],
     };
     let offered = crate::gameplay_transport::appearance_change::offer::offered(
         owner.offered_capabilities(),
@@ -397,6 +407,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             | Case::ResidentAppearanceRevoked
             | Case::ResidentQuest
             | Case::Decoration(_, _)
+            | Case::Lantern { .. }
             | Case::NativeNoop(_)
             | Case::Container
             | Case::ContainerMove
@@ -520,13 +531,18 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
             .bind(id(42).as_slice()).bind(HOUSE).bind(position).execute(&mut *tx).await?;
     }
-    if placed || case == Case::Nested {
+    let equipped = matches!(case, Case::Lantern { equipped: true, .. });
+    if equipped || placed || case == Case::Nested {
         sqlx::query(
             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
         )
         .bind(id(71).as_slice())
         .execute(&mut *tx)
         .await?;
+    }
+    if equipped {
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,10,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(71).as_slice()).bind(id(42).as_slice()).bind(id(74).as_slice()).execute(&mut *tx).await?;
     }
     if placed {
         let position: Vec<u8> = POSITION.iter().flat_map(|v| v.to_be_bytes()).collect();
@@ -555,6 +571,46 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             .bind(id(72).as_slice()).bind(id(42).as_slice()).bind(HOUSE).bind(id(101).as_slice()).bind(id(75).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
+    if let Case::Lantern { definition, .. } = case {
+        let result = owner
+            .use_event_item(
+                admitted.runtime_actor.ok_or("House actor")?,
+                crate::gameplay_transport::connection::UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: 1,
+                    item_fence: admitted.item_fence,
+                },
+                UseIntent {
+                    target: if definition {
+                        UseTarget::ItemByDefinition(before_ref)
+                    } else {
+                        UseTarget::Item(std::num::NonZeroU64::MIN)
+                    },
+                    use_with: None,
+                    use_with_map_item: None,
+                    use_with_position: None,
+                },
+                (!definition).then_some(crate::gameplay_transport::item_view::ItemKey::Instance(
+                    id(71),
+                )),
+                false,
+            )
+            .await
+            .map_err(|()| "House lantern USE")?;
+        assert_eq!(
+            result.map(|result| result.disposition),
+            Some(UseDisposition::Committed),
+            "{case:?}"
+        );
+        assert_eq!(item(h).await?["definition_production_key"], after_key);
+        if equipped {
+            let slot: i16 = sqlx::query_scalar("SELECT slot FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+                .bind(id(71).as_slice()).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(slot, 10);
+        }
+        assert_eq!(receipts(h).await?, 1);
+        return Ok(());
+    }
     if case == Case::Foreign {
         // Observe the real current handle, then move its historical fixture to a
         // distinct Character before sending USE. A visible handle is no custody grant.

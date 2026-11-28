@@ -2463,7 +2463,7 @@ impl DurabilityRoot {
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.map(|id| id.to_vec()))
-                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + 1)
+                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + super::item_mint::KOSHEI_REMAINS_HEADROOM + 1)
                     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
                     // Decode before collecting: retaining every raw PgRow also retains its
                     // WP3 wire and column-offset reservations until the root budget is full.
@@ -2514,7 +2514,7 @@ impl DurabilityRoot {
                     // Keep the bounded Ground read fail-closed, including pending map pickups.
                     // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
                     // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX)
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + super::item_mint::KOSHEI_REMAINS_HEADROOM)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     if rows.len() > bound {
                         return Err(DurabilityError::InvalidStoredState);

@@ -222,6 +222,7 @@ impl ChannelSessionStates {
         self.appearance_commands.forget(session);
         self.chat.forget(session);
         self.command_ingress.forget(session);
+        self.quest_callbacks.forget_ground_use(session);
         self.gameplay_idle_presence.forget(session);
         self.player_trades.forget(session);
         self.inspection_permissions.forget(session);

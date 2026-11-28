@@ -101,7 +101,7 @@ fn retained_world_claims_grant_each_quest_item_once() -> TestResult {
                     9,
                     (32826, 31664),
                     1,
-                    23734,
+                    23738,
                 ),
                 (
                     "kv.painting_of_agirl_quest",

@@ -497,6 +497,9 @@ impl DurabilityRoot {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
+                    let bound = COMBAT01_CORPSES_PER_SCOPE
+                        + usize::try_from(super::super::item_mint::KOSHEI_REMAINS_HEADROOM)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let rows = sqlx::query(
                         "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref \
                            FROM game_item_ground_locations g \
@@ -513,12 +516,12 @@ impl DurabilityRoot {
                     .bind(scope.world_id().as_bytes().as_slice())
                     .bind(scope.channel_id().map(|id| id.as_bytes().to_vec()))
                     .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
-                    .bind(i64::try_from(COMBAT01_CORPSES_PER_SCOPE + 1).unwrap_or(i64::MAX))
+                    .bind(i64::try_from(bound + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
                     .bind(scope_kind(scope))
                     .bind(scope.instance_id().map(|id| id.to_vec()))
                     .fetch_all(&mut *tx)
                     .await?;
-                    if rows.len() > COMBAT01_CORPSES_PER_SCOPE {
+                    if rows.len() > bound {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let mut corpses = Vec::with_capacity(rows.len());

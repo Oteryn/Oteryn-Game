@@ -247,8 +247,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 &legacy
             };
-            let blocking = super::super::pvp_live::PvpBlocker {
+            let door_access = super::super::paced_movement::PlayerDoorAccess {
                 inner: blocking,
+                level: states
+                    .get(&runtime, actor, own_session)
+                    .map(|state| state.character_facts().level),
+                states: &self.states,
+                session: own_session,
+            };
+            let blocking = super::super::pvp_live::PvpBlocker {
+                inner: &door_access,
                 cells: self.movement_cells(),
                 blocked: super::super::pvp_live::pz_blocked(&states, actor, own_session, now),
             };

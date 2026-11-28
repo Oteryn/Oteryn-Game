@@ -4,7 +4,7 @@
 
 use std::sync::{Arc, OnceLock};
 mod encounters;
-pub(super) use encounters::PreparedEncounter;
+pub(super) use encounters::{KosheiVisitClaim, PreparedEncounter};
 mod guardians;
 pub(super) mod native_goals;
 

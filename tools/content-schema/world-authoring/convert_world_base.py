@@ -1245,6 +1245,10 @@ def build(
     m01c_key_doors.overlay_outputs(
         out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix())
     )
+    if hashlib.sha256(blobs[OTBM]).hexdigest() == metadata.SOURCE["files"][0]["sha256"]:
+        import crystal_traversal
+
+        crystal_traversal.placement_outputs(ROOT, out)
     if quest_access_bindings.CAPTURE not in blobs:
         import scoped_spawn_ground
 
@@ -1298,6 +1302,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
     authored = summary.get("source", {}).get("last_creep_native", {})
+    from crystal_traversal import donor_delta as crystal_traversal_delta
     from engclaim_placements import donor_delta as engclaim_delta
     from npcfix2_shared_sources import donor_delta as shared_source_delta
     from qh_jimmy_stub import donor_delta as jimmy_stub_delta
@@ -1312,6 +1317,7 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     return {
         "items": totals["items"]
         - authored_clock_items
+        - crystal_traversal_delta(summary)
         - engclaim_delta(summary)
         - shared_source_delta(summary)
         - count(fill, "items_added")

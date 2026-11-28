@@ -96,6 +96,7 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/native_map_items/elemental_energy.rs", "adopt"),
     ("crates/gameplay/durability/src/durability/player_death_items.rs", "write"),
     ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "apply_input_in_scope"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/definition_target.rs", "require"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_read.rs", "matches"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "matches"),
     ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "read_requirements"),

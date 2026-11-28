@@ -665,10 +665,15 @@ mod journey_predecessor_tests {
             .ok_or("old Koshei pin")?;
         let catalogue = active.catalogue();
         assert_ne!(catalogue.definition_hash(quest), Some(pin));
-        assert_eq!(
-            npc_rules::legacy_defaults(catalogue, quest, &pin),
-            Some(&BTreeMap::new())
+        let published = super::super::published_quest_pins::hash(
+            b"1a1c543dbe511c3a5654d1385956224b7323243ace53fa5eb142e676361fc420",
         );
+        for predecessor in [pin, published] {
+            assert_eq!(
+                npc_rules::legacy_defaults(catalogue, quest, &predecessor),
+                Some(&BTreeMap::new())
+            );
+        }
         let transition = catalogue
             .transition("oteryn:quest-callback/koshei/tomb-entry")
             .ok_or("tomb entry")?;

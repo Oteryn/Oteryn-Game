@@ -1033,6 +1033,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "missing custody identity {key}"
         );
     }
+    assert!(custody_keys.contains("oteryn:item.tibia.i23738"));
     // Main's QUESTPC4 floor/callback cohorts add 26 + 23 keys.
     // They join the same exact regenerated post-base census and are counted once.
     assert_eq!(profiles.records.len(), baseline + custody_keys.len());
@@ -1041,7 +1042,7 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
     // reject loss, invention or accidental overwrite of any prior owner rule.
     for (path, expected_count) in [
         ("house-decoration-profiles.json", 2126),
-        ("seasonal-item-profiles.json", 52),
+        ("seasonal-item-profiles.json", 55),
         ("qengine-reward-item-profiles.json", 290),
     ] {
         let source: serde_json::Value = serde_json::from_slice(&std::fs::read(

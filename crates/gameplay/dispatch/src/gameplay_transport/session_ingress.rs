@@ -271,15 +271,14 @@ impl SessionCommands {
         command: crate::foundation::CommandRef,
         disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
     ) -> Option<()> {
-        {
-            let commands = self.0.lock().ok()?;
-            let state = commands.get(&command.game_session_id())?.lock().ok()?;
-            if state.active {
-                return None;
-            }
+        let commands = self.0.lock().ok()?;
+        let mut state = commands.get(&command.game_session_id())?.lock().ok()?;
+        if state.active {
+            return None;
         }
-        let payload = oteryn_protocol_oteryn::world_object::encode_use_result(disposition).ok()?;
-        self.complete_reconciled(command, false, &payload)
+        let (rejected, payload) =
+            ProvenNativeReply::ItemUse(disposition).payload(state.pending_delivery?.selected)?;
+        state.complete_reconciled(command.command_id(), rejected, &payload)
     }
 
     /// A native USE without a gate message has a proven durable outcome. The

@@ -5911,10 +5911,14 @@
       "quest": "oteryn:quest.the_gravedigger_of_drefia_quest",
       "trigger": "use",
       "selector": {
-        "position": null,
-        "unique": null,
+        "position": {
+          "x": 32972,
+          "y": 32412,
+          "floor": -11
+        },
         "action": 4650,
-        "appearance": null
+        "appearance": 9110,
+        "unique": null
       },
       "lever": null,
       "reversible": false,
@@ -5925,7 +5929,8 @@
           "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission39",
           "minimum": 1,
           "maximum": 1,
-          "set": 1
+          "set": 1,
+          "preserve": true
         },
         {
           "track": "oteryn:quest-progress/quest/u10_10/the_gravedigger_of_drefia/mission40",
@@ -5939,8 +5944,11 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_palanca.lua:1-14"
-      ]
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_palanca.lua:1-14",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_gravedigger_of_drefia/actions_palanca.lua:3-15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:11-17"
+      ],
+      "success_message": "<sizzle> <fizz>"
     },
     {
       "key": "oteryn:quest-callback/gravedigger-tears",

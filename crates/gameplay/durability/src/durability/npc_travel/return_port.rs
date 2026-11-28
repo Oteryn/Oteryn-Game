@@ -1,7 +1,7 @@
 //! Fenced read of the last completed inbound passage, never movement/payment authority.
-use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::character_progression::assert_gameplay_fence;
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_content::content::npc_catalogue::travel::TravelReturnRequirement;
 
 impl DurabilityRoot {
@@ -14,6 +14,19 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         requirement: TravelReturnRequirement,
     ) -> Result<bool, CharacterProgressionError> {
+        let last = self
+            .npc_travel_last_port(authority, node, fence, &requirement)
+            .await?;
+        Ok(requirement.permits_latest_completed(last.as_deref()))
+    }
+
+    pub async fn npc_travel_last_port(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        requirement: &TravelReturnRequirement,
+    ) -> Result<Option<String>, CharacterProgressionError> {
         if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
             || !requirement.is_valid()
         {
@@ -23,6 +36,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let requirement = requirement.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
@@ -32,10 +46,10 @@ impl DurabilityRoot {
                     if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {
                         return Ok(Err(error));
                     }
-                    let last = latest(&mut tx, *fence.character_id.as_bytes(), &requirement).await?;
-                    let permitted = requirement.permits_latest_completed(last.as_deref());
+                    let last =
+                        latest(&mut tx, *fence.character_id.as_bytes(), &requirement).await?;
                     commit_semantic_read(tx, deadline).await?;
-                    Ok(Ok(permitted))
+                    Ok(Ok(last))
                 })
             })
             .await?

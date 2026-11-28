@@ -39,6 +39,7 @@ DECISION = "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-
 # These independently registered documents retain their existing greeting owner.
 # Zalamon's chosen opening is explicitly authored; M10, M13 and L6 (Lubo) retain source text.
 REWARD_GREETING_OWNERS = {
+    "oteryn:npc.a_prisoner": "content/dialogues/quests/l6-story-greetings.json",
     "oteryn:npc.zalamon": "content/dialogues/quests/chosen-reward-greetings.json",
     "oteryn:npc.henricus": "content/dialogues/quests/qnpcfx-m10-greetings.json",
     "oteryn:npc.lubo": "content/dialogues/quests/l6-story-greetings.json",
@@ -3799,6 +3800,10 @@ def build():
                 warrior_completions.append(finishing)
             else:
                 callbacks.append(finishing)
+    numbered_keys = json.loads(
+        (ROOT / "tools/content-schema/quest-authoring/cwdoor-npc-keys.json").read_bytes()
+    )
+    offers.extend(numbered_keys["offers"])
     callbacks.sort(key=lambda c: c["key"])
     free_glove_offers.sort(key=lambda offer: (offer["npc"], offer["topic"]))
     offers.sort(key=lambda c: (c["npc"], c["topic"], c["keywords"]))
@@ -3812,6 +3817,8 @@ def build():
         and row.get("outfit") is not None
     ]
     shared_callbacks = [row for row in callbacks if row not in outfit_completions]
+    numbered_key_document = {"schema": 1, "callbacks": numbered_keys["callbacks"]}
+    validate_callbacks(numbered_key_document)
     outfit_document = {"schema": 1, "callbacks": outfit_completions}
     validate_callbacks(outfit_document)
     validate_callbacks(
@@ -3867,6 +3874,7 @@ def build():
         ),
         "content/quests/npc-callbacks/battle-mage-completions.json": encoded(battle_mage_document),
         "content/quests/npc-callbacks/warrior-completions.json": encoded(warrior_document),
+        "content/quests/npc-callbacks/numbered-keys.json": encoded(numbered_key_document),
         "content/quests/npc-callbacks/fibula.json": encoded(
             {"schema": 1, "tracks": fibula_tracks, "callbacks": fibula_callbacks}
         ),
@@ -3967,6 +3975,7 @@ def build():
     generated.update(elane_gloves(inputs))
     greetings = reward_greetings(
         callbacks
+        + numbered_key_document["callbacks"]
         + battle_mage_completions
         + m39_callbacks
         + ready_callbacks

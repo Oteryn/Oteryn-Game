@@ -126,6 +126,10 @@ fn corrections() -> &'static [Correction] {
 }
 
 impl TravelRoute {
+    pub fn is_transfer_platform(&self) -> bool {
+        self.service == "oteryn:service.travel.sharon" && self.route.key == "departure_platform"
+    }
+
     /// The before and after Postman stages for the exact route settled by paid travel.
     pub fn postman_tour_passage(&self) -> Option<(i64, i64)> {
         match (self.service.as_str(), self.route.key.as_str()) {
@@ -608,7 +612,99 @@ mod tests {
             .filter(|row| !row.native_addition || row.key == nargor)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
-        assert_eq!(corrections.len() - corrected.len(), 60);
+        let travora_ports = [
+            ("captain_bluebear", "thais", 32_310, 32_210, 6),
+            ("captain_breezelda", "svargrond", 32_341, 31_108, 6),
+            ("captain_fearless", "venore", 32_954, 32_022, 6),
+            ("captain_greyhound", "carlin", 32_387, 31_820, 6),
+            ("captain_pelagia", "krailos", 33_493, 31_712, 6),
+            ("captain_seagull", "ab_dendriel", 32_734, 31_668, 6),
+            ("captain_seahorse", "edron", 33_175, 31_764, 6),
+            ("captain_sinbeard", "ankrahmun", 33_092, 32_883, 6),
+            (
+                "captain_waverider",
+                "liberty_bay_waverider",
+                32_349,
+                32_856,
+                7,
+            ),
+            (
+                "captain_waverider",
+                "treasure_hunt_island",
+                32_045,
+                32_931,
+                7,
+            ),
+            ("charles", "port_hope", 32_527, 32_784, 6),
+            ("jack_fate", "liberty_bay", 32_285, 32_892, 6),
+            ("karith", "yalahar", 32_816, 31_272, 6),
+            ("petros", "darashia", 33_289, 32_480, 6),
+        ];
+        let inbound_routes = travora_ports
+            .iter()
+            .map(|(captain, port, ..)| {
+                let destination = if *port == "treasure_hunt_island" {
+                    "travora_treasure_hunt_island"
+                } else {
+                    "travora"
+                };
+                format!("oteryn:service.travel.{captain}/{destination}")
+            })
+            .collect::<Vec<_>>();
+        let ticket = super::TravelTicketRequirement {
+            track: "oteryn:quest-progress/travora/ticket_purchased".into(),
+            valid_for_seconds: 86400,
+        };
+        for ((_, port, x, y, floor), inbound_key) in travora_ports.iter().zip(&inbound_routes) {
+            let inbound = corrections
+                .iter()
+                .find(|row| row.key == *inbound_key)
+                .ok_or("Travora inbound")?;
+            assert!(inbound.native_addition && !inbound.held && !inbound.premium);
+            assert_eq!(
+                (inbound.price, inbound.x, inbound.y, inbound.floor),
+                (0, 32_055, 32_368, 6)
+            );
+            assert_eq!(inbound.ticket.as_ref(), Some(&ticket));
+            assert!(inbound.return_origin.is_none());
+
+            let return_key = format!("oteryn:service.travel.captain_tiberius/{port}");
+            let outbound = corrections
+                .iter()
+                .find(|row| row.key == return_key)
+                .ok_or("Travora return")?;
+            assert!(outbound.native_addition && !outbound.held && !outbound.premium);
+            assert_eq!(
+                (outbound.price, outbound.x, outbound.y, outbound.floor),
+                (0, *x, *y, *floor)
+            );
+            assert_eq!(outbound.ticket.as_ref(), Some(&ticket));
+            assert_eq!(
+                outbound.return_origin.as_ref(),
+                Some(&super::TravelReturnRequirement {
+                    inbound_routes: inbound_routes.clone(),
+                    return_from: inbound_key.clone(),
+                }),
+            );
+        }
+        let platform = corrections
+            .iter()
+            .find(|row| row.key == "oteryn:service.travel.sharon/departure_platform")
+            .ok_or("Sharon platform")?;
+        assert_eq!(
+            (
+                platform.keyword.as_str(),
+                platform.price,
+                platform.x,
+                platform.y,
+                platform.floor
+            ),
+            ("check", 0, 32062, 32367, 5)
+        );
+        assert_eq!(
+            corrections.len() - corrected.len(),
+            61 + 2 * travora_ports.len()
+        );
         assert_eq!(sources.len(), 195);
         assert_eq!(evidence.len(), 195);
         for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {
@@ -960,7 +1056,15 @@ mod tests {
             .filter(|row| row.key.starts_with("oteryn:service.travel.karith/"))
         {
             assert!(!row.postman);
-            assert!(row.yalahar_town_gate.is_some());
+            if row.key == "oteryn:service.travel.karith/travora" {
+                assert!(row.yalahar_town_gate.is_none());
+                assert_eq!(
+                    row.ticket.as_ref().map(|ticket| ticket.valid_for_seconds),
+                    Some(86400)
+                );
+            } else {
+                assert!(row.yalahar_town_gate.is_some());
+            }
         }
         // These donor routes cannot be safely offered with the currently admitted owners.
         for key in ["captain_max/yalahar", "captain_bluebear/targuna"] {

@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.captain_breezelda",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_greyhound",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_seahorse",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_sinbeard",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.karith",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.petros",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_breezelda",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_greyhound",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_seahorse",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_sinbeard",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.karith",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.petros",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_bluebear",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_fearless",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_pelagia",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_seagull",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_waverider",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.charles",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.jack_fate",
+      "keywords": [
+        "ticket"
+      ],
+      "topic": 0,
+      "next_topic": 3810,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a 24-hour Travora ticket for 1000 gold?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.captain_bluebear",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_fearless",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_pelagia",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_seagull",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.captain_waverider",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.charles",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    },
+    {
+      "npc": "oteryn:npc.jack_fate",
+      "keywords": [
+        "no"
+      ],
+      "topic": 3810,
+      "next_topic": 0,
+      "storage": [],
+      "reply": []
+    }
+  ]
+}

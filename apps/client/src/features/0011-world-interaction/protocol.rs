@@ -18,6 +18,7 @@ impl Outbox {
         lock(&self.0).use_with_pending = matches!(
             command.action,
             oteryn_client_runtime::world_interaction::Action::UseOn(_)
+                | oteryn_client_runtime::world_interaction::Action::UseDefinitionOn(_)
         );
         if !matches!(
             command.action,

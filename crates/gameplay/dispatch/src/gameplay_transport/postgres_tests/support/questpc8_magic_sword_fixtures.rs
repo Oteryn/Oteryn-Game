@@ -1,15 +1,27 @@
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::{TestResult, quest_world_callbacks_fixtures as quest_world_callbacks};
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 use super::fixture::{Harness, debug, id};
 
 use super::questpc8_authored_programmes_fixtures::{object_target, step, use_target};
 
-use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
+use crate::gameplay_transport::{
+    ComposedFreshAdmission,
+    capabilities::SelectedCapabilities,
+    connection::{AdmittedSession, FreshAdmissionAuthority},
+};
 
 use crate::map::overlay::TilePos;
 
-use oteryn_protocol_oteryn::world_object::UseDisposition;
+use oteryn_protocol_oteryn::{
+    item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
+    world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
+    world_object::{
+        CAPABILITY_ITEM_USE_V1, CAPABILITY_WORLD_INTERACTION_V1, MapUseTarget, UseDisposition,
+        UseIntent, UseTarget, encode_item_use_intent,
+    },
+    world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES,
+};
 
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
@@ -18,8 +30,10 @@ mod fixture_world;
 
 pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
     let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, _) =
-        super::death_ml_loss_composed_fixtures::production_generation_with_pin(world_id, "content-1")?;
+    let (controller, _) = super::death_ml_loss_composed_fixtures::production_generation_with_pin(
+        world_id,
+        "content-1",
+    )?;
     let active = controller.active().ok_or("active content")?;
     fixture_world::world(active.native_gameplay().ok_or("native world items")?)
 }
@@ -34,6 +48,17 @@ pub(super) async fn exercise(
     h: &Harness,
 ) -> TestResult {
     owner.premium_coordinator = None;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        owner.offered_capabilities(),
+        &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_WORLD_INTERACTION_V1,
+            CAPABILITY_ITEM_USE_V1,
+            CAPABILITY_WORLD_MAP_VIEW_V1,
+        ],
+    )
+    .ok_or("numbered key capabilities")?;
     let native = owner
         .active_generation
         .and_then(|g| g.native_gameplay())
@@ -90,22 +115,21 @@ pub(super) async fn exercise(
     assert_eq!(
         position(owner, admitted).await?,
         before_door,
-        "the native unresolved locked barrier is solid before its scoped passage callback"
+        "the numbered lock blocks entry before it is opened"
     );
-    let door = object_target(
-        owner,
-        TilePos {
-            x: 32578,
-            y: 32197,
-            floor: -15,
-        },
-        1,
-    )?;
+    let door_position = TilePos {
+        x: 32578,
+        y: 32197,
+        floor: -15,
+    };
+    let door = object_target(owner, door_position, 1)?;
     assert_eq!(
         use_target(owner, admitted, command, &door).await?,
-        UseDisposition::Committed
+        UseDisposition::Locked,
+        "upper-chamber progress cannot substitute for the numbered key"
     );
     command += 1;
+    use_numbered_key(owner, admitted, h, &mut command, door_position).await?;
     walk(owner, admitted, &mut command, 32578, 32196).await?;
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -181,6 +205,100 @@ pub(super) async fn exercise(
     }
     let completed:bool=sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.authored.magic_sword_quest'").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     assert!(completed);
+    Ok(())
+}
+
+async fn use_numbered_key(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    command: &mut u64,
+    position: TilePos,
+) -> TestResult {
+    let reward = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-reward/l6-mad-mage-prisoner-key")
+        .and_then(|callback| callback.give)
+        .ok_or("Prisoner's key reward")?;
+    // Seed the published reward into the starter backpack. The door journey
+    // exercises the real carried-item lookup and native key transition.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let seeded = sqlx::query(
+        "WITH carried_key AS (
+             INSERT INTO game_item_instances(item_instance_id, world_id, definition_family,
+                 definition_production_key, definition_revision_ref, quantity, lifecycle,
+                 minted_transaction_id)
+             VALUES (game_character_uuid_v7(), encode($1,'hex')::uuid, 'Item', $2,
+                 'definition-r1', $3, 1, game_character_uuid_v7())
+             RETURNING item_instance_id, world_id, minted_transaction_id
+         ), numbered AS (
+             INSERT INTO game_item_keys(item_instance_id, key_number, minted_transaction_id)
+             SELECT item_instance_id, $4, minted_transaction_id FROM carried_key
+         )
+         INSERT INTO game_item_container_entries(character_id, world_id, parent_item_instance_id,
+             item_instance_id, placement_ordinal, placed_transaction_id)
+         SELECT pack.character_id, pack.world_id, pack.item_instance_id, k.item_instance_id,
+             1, k.minted_transaction_id
+         FROM game_item_container_slots pack JOIN carried_key k USING (world_id)
+         WHERE pack.character_id=encode($5,'hex')::uuid",
+    )
+    .bind(id(42).as_slice())
+    .bind(&reward.item)
+    .bind(i64::from(reward.count))
+    .bind(i32::from(reward.key_number.ok_or("Prisoner's key number")?))
+    .bind(id(41).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(seeded.rows_affected(), 1);
+    tx.commit().await?;
+
+    let reference = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .and_then(|native| native.item_index())
+        .and_then(|index| index.definition_ref("Item", &reward.item, "definition-r1"))
+        .ok_or("native key definition")?;
+    for (revision, blocked) in [(0, false), (1, true), (2, false)] {
+        let door = object_target(owner, position, 1)?;
+        assert_eq!(door.expected_revision, revision);
+        if revision == 2 {
+            let refusal = use_target(owner, admitted, *command, &door).await?;
+            *command += 1;
+            assert_eq!(
+                progress(h, "passage").await?,
+                -1,
+                "a relocked door cannot write quest progress"
+            );
+            assert_eq!(refusal, UseDisposition::Locked);
+        }
+        let payload = encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(std::num::NonZeroU64::MIN),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Object(door)),
+            use_with_position: None,
+        })
+        .map_err(debug)?;
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_secs(2))
+            .ok_or("clock")?;
+        let (next, disposition, _) = super::item_craft_fixtures::exchange(
+            owner,
+            *admitted,
+            *command,
+            &payload,
+            Some(reference),
+        )
+        .await?;
+        *admitted = next;
+        *command += 1;
+        assert_eq!(disposition, UseDisposition::Committed);
+        let facts = &owner.bundle_map().ok_or("numbered door map")?.facts;
+        assert_eq!(facts.doors().blocks(position), blocked);
+    }
     Ok(())
 }
 

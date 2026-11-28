@@ -52,22 +52,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
-        if intent.use_with_map_item.is_some() {
-            let corpse = match item_target {
-                Some(ItemKey::Instance(id)) => Some(id),
-                _ => None,
-            };
-            if let Some(result) = self
-                .use_carried_quest_item(actor, command, &intent, source, corpse)
-                .await?
-            {
-                return Ok(Some(result));
-            }
-        }
-        if intent.use_with_map_item.is_some()
-            && let Some(result) = self
-                .use_carried_quest_item_with_target(actor, command, &intent, source, item_target)
-                .await?
+        // Object targets did not take the handle route. Preserve their
+        // receipt-first replay even when the selected tool was consumed.
+        if matches!(
+            intent.use_with_map_item,
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(
+                _
+            ))
+        ) && let Some(result) = self
+            .use_carried_quest_item(actor, command, &intent, source, None)
+            .await?
         {
             return Ok(Some(result));
         }

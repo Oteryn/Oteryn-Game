@@ -5,6 +5,22 @@
 //! registry is the one place that answers it; it is to be superseded by that data. Recognition
 //! goes through [`open_of`] and [`key_door_of`], so replacing the source touches nothing else.
 
+/// Source-qualified forms missing native Door profiles. Crystal 201189f8
+/// data/libs/tables/doors.lua supplies the pairs/triples. Its appearance flags
+/// and the pinned Global 15.30 client agree on solidity and immobility. The
+/// Channel DoorBook uses its existing closed-door projectile convention.
+pub(super) fn qualified_startup_door_solidity(appearance: u16) -> Option<bool> {
+    match appearance {
+        1678 | 1680 | 1687 | 1696 | 5106 | 5115 | 5120 | 5124 | 5129 | 5291 | 5293 | 6194
+        | 6251 | 6262 | 7033 | 7034 | 7711 | 7714 | 8365 | 9565 | 9863 | 11237 | 36547 => {
+            Some(true)
+        }
+        1679 | 1681 | 1688 | 1697 | 5121 | 5130 | 5292 | 5294 | 6263 | 7035 | 8366 | 9566
+        | 9864 | 11238 | 36548 => Some(false),
+        _ => None,
+    }
+}
+
 /// Plain door pairs in closed-id order. Crystal 201189f8 data/libs/tables/doors.lua:85-191
 /// supplies the irregular and shared poses.
 const DOOR_PAIRS: &[(u32, u32)] = &[

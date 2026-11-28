@@ -192,6 +192,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 serialized_item_stacks(reward, claim_items, stack_problem)
             poison_daggers.verify_canonical(source['identity']['key'], placement['position'], reward)
             global_corrections.correct_canonical(source['identity']['key'], placement['position'], reward)
+            global_corrections.correct_written_text(source['identity']['key'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])
                 if problem:
@@ -206,7 +207,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
             if (source['identity']['key'] == 'canary:reward-claim/quest/key/id3667'
                     and placement['position'] == {'x': 32576, 'y': 32216, 'z': 15}):
                 # Crystal 201189f chest.lua:492-498 and the retained tile use corpse 4240.
-                if appearance != 3204:
+                if appearance != 3204 or ('crystalserver', 5016) not in uids:
                     raise ValueError('KEY_3667_SOURCE_APPEARANCE_DRIFT')
                 appearance = 4240
             p = {'appearance_tibia_id': appearance,

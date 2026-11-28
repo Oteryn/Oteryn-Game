@@ -162,6 +162,7 @@ crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/rotten_are
 crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qn1_environment_field.rs | map_initializer_seal::Sealed | MapFixture
 crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/support/qn1_elemental_world_pin/handoff.rs | map_initializer_seal::Sealed | EmptyMap
 crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs | map_initializer_seal::Sealed | FieldFixture
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/definition_target.rs | source_reservation_seal::Sealed | GroundUseProof
 crates/gameplay/dispatch/src/gameplay_transport/soul_war_callbacks/player_source.rs | source_proof_seal::Sealed | PlayerSourceSnapshot
 crates/gameplay/durability/src/durability/creature_source_items/source_step/creature.rs | source_reservation_seal::Sealed | SourceCreatureGroundStep
 crates/gameplay/durability/src/durability/creature_source_items/spite_global.rs | source_reservation_seal::Sealed | PreparedSpiteGlobalWrite

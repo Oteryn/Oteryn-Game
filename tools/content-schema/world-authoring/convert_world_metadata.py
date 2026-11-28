@@ -406,8 +406,6 @@ def build(
     tp_records, object_families = teleports(
         candidates + scripted, present, item_keys(root), rejected, catalogue_keys(root)
     )
-    out = {}
-    out.update(shard_files("Transition.Teleport", tp_records, source_of(scripts)))
     summary = {
         "families": {"Transition.Teleport": len(tp_records)},
         "map": {
@@ -426,6 +424,12 @@ def build(
         "source": source_of(scripts),
         "teleport_object_families": object_families,
     }
+    if hashlib.sha256(otbm).hexdigest() == SOURCE["files"][0]["sha256"]:
+        import crystal_traversal
+
+        tp_records = crystal_traversal.patch_transitions(tp_records)
+        crystal_traversal.transition_capture(summary, tp_records)
+    out = shard_files("Transition.Teleport", tp_records, source_of(scripts))
     out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
     return out
 

@@ -6,7 +6,8 @@ use super::{
     connection::{AdmittedSession, UseCommand, UseOutcome},
 };
 use crate::durability::consume_transform::{ConsumeTransformRequest, HouseActionContext};
-use crate::foundation::{CommandId, CommandRef, ExactActorRef};
+use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
+use oteryn_gameplay_items::novelty_items::{self, GHOSTSILVER_LANTERN_UNLIT, NoveltyEffects};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
 #[path = "house_item_use/presentation.rs"]
@@ -26,8 +27,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ..UseOutcome::rejected()
             })
         };
-        if !matches!(intent.target, UseTarget::Item(_))
-            || intent.use_with.is_some()
+        if !matches!(
+            intent.target,
+            UseTarget::Item(_) | UseTarget::ItemByDefinition(_)
+        ) || intent.use_with.is_some()
             || matches!(
                 intent.use_with_map_item.as_ref(),
                 Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_))
@@ -36,12 +39,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(None);
         }
-        if intent.use_with_map_item.is_none()
+        if matches!(intent.target, UseTarget::Item(_))
+            && intent.use_with_map_item.is_none()
             && let Some(source) = source
             && let Some(outcome) = self.use_rotten_essence_item(actor, command, source).await
         {
             return Ok(Some(outcome));
         }
+        let lantern = if let UseTarget::ItemByDefinition(reference) = intent.target {
+            if intent.use_with_map_item.is_some() {
+                return Ok(None);
+            }
+            let runtime = self.runtime.lock().await;
+            let Some((key, revision)) =
+                super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                    .and_then(|index| index.definition_at(reference))
+            else {
+                return Ok(None);
+            };
+            if !novelty_items::is_ghostsilver_lantern(key) {
+                return Ok(None);
+            }
+            Some(crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            })
+        } else {
+            None
+        };
         let Some(fence) = command.item_fence else {
             return Ok(refuse(UseDisposition::Rejected));
         };
@@ -67,7 +93,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return Ok(refuse(UseDisposition::StaleState)),
             }
         };
-        let request = ConsumeTransformRequest {
+        let mut request = ConsumeTransformRequest {
             command: CommandRef::new(
                 command.game_session_id,
                 CommandId::new(command.command_id).map_err(|_| ())?,
@@ -81,19 +107,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
                 .map_err(|_| ())?,
         };
-        if let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
-            intent.use_with_map_item.as_ref()
-        {
-            // A successful bed use consumed its source kit and changed both bed
-            // revisions. Probe history before resolving either current handle.
-            if let Some(replay) = self
+        let bed_target = match intent.use_with_map_item.as_ref() {
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) => {
+                Some(target)
+            }
+            _ => None,
+        };
+        // Probe the original intent before resolving the current hotkey source or bed.
+        if (lantern.is_some() || bed_target.is_some())
+            && let Some(replay) = self
                 .root
                 .replay_house_item_action(self.holder, &context, &request)
                 .await
                 .map_err(|_| ())?
-            {
-                return Ok(refuse(replay.disposition));
-            }
+        {
+            return Ok(refuse(replay.disposition));
+        }
+        if let Some(lantern) = lantern {
+            let inventory = self
+                .root
+                .read_house_carried_inventory(
+                    self.character,
+                    self.holder,
+                    fence,
+                    *self.channel_id.as_bytes(),
+                )
+                .await
+                .map_err(|_| ())?;
+            let states = self.states.spell_states.lock().await;
+            let reserved = states
+                .item_uses
+                .reserved_sources(actor, command.game_session_id);
+            request.source = match inventory.first_novelty_source(&lantern, reserved) {
+                Ok(id) => id,
+                Err(oteryn_gameplay_items::hotkey_search::HotkeyRefusal::BoundExceeded) => {
+                    return Ok(refuse(UseDisposition::Rejected));
+                }
+                Err(_) => return Ok(refuse(UseDisposition::NothingToUse)),
+            };
+        }
+        if let Some(target) = bed_target {
             if !self
                 .root
                 .house_source_is_bed_kit(self.holder, &context, request.source)
@@ -167,6 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             context = context.with_decoration_base_items(base_items);
         }
         let publication_house = context.house().clone();
+        let [x, y, floor] = context.position();
         let result = self
             .root
             .consume_transform_in_house(self.holder, context, request, native)
@@ -191,6 +245,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             )
             .await;
+        }
+        if result.fresh && result.effects["source_item_id"] == GHOSTSILVER_LANTERN_UNLIT {
+            let effects: NoveltyEffects = serde_json::from_value(result.effects).map_err(|_| ())?;
+            let position = MovementLocalPosition {
+                x,
+                y,
+                floor: i16::try_from(floor).map_err(|_| ())?,
+            };
+            let clue = self.lantern_feedback(fence, position, true).await;
+            let (runtime, mut states) =
+                super::lock_runtime_and_spell_states(&self.runtime, &self.states.spell_states)
+                    .await;
+            if HouseActionContext::from_native_owner(
+                &runtime,
+                actor,
+                command.game_session_id,
+                fence,
+            )
+            .is_ok_and(|current| current.house() == &publication_house)
+            {
+                states.publish_novelty_visuals(&runtime, actor, position, &effects);
+                if let Some(clue) = clue {
+                    self.states
+                        .chat
+                        .push_quest_feedback(command.game_session_id, clue);
+                }
+            }
         }
         // A current House source that disappeared or changed custody has a
         // definite refusal. Do not fall through to Channel-only item handlers.

@@ -66,7 +66,7 @@ impl PlayView {
         }
         {
             let mailbox = crate::play::mailbox::lock(&link.mailbox);
-            if mailbox.world_context.targeting.is_some()
+            if mailbox.world_context.targeting_action().is_some()
                 || mailbox.use_with_pending
                 || mailbox.hireling_picking
                 || !mailbox.discovery.loot.selected

@@ -34,6 +34,8 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-programmes.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qc-twenty-miles.json"),
     include_str!("../../../../content/quests/npc-callbacks/ape-city.json"),
     include_str!("../../../../content/quests/npc-callbacks/beginning.json"),
     include_str!("../../../../content/quests/npc-callbacks/battle-mage-completions.json"),
@@ -45,6 +47,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/rookgaard-exchanges.json"),
     include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/nomads-land.json"),
+    include_str!("../../../../content/quests/npc-callbacks/numbered-keys.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../content/quests/npc-callbacks/outfit-completions.json"),
     include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
@@ -60,6 +63,7 @@ const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/npc-callbacks/newhaven-gustavo.json"),
     include_str!("../../../../content/quests/npc-callbacks/quest-contacts.json"),
     include_str!("../../../../content/quests/npc-callbacks/tibia-tales.json"),
+    include_str!("../../../../content/quests/npc-callbacks/travora-tickets.json"),
 ];
 #[cfg(test)]
 mod m09_rookie_tests;
@@ -525,7 +529,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1|valentina-focus-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -665,6 +669,7 @@ impl NpcTalkBook {
                     })
             };
             let mut merged_regional_keywords = false;
+            let valentina = reference.key == "oteryn:npc.valentina";
             let literal_shop_focus = matches!(
                 reference.key.as_str(),
                 "oteryn:npc.alexander"
@@ -929,6 +934,28 @@ impl NpcTalkBook {
                     messages.farewell,
                     passage,
                     messages.keywords,
+                )
+            } else if valentina {
+                // Crystal 201189f8 valentina.lua:80-85. Prices still come from the
+                // ordinary trade Service in the native catalogue.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                let ([greet], [farewell]) =
+                    (dialogue.greet.as_slice(), dialogue.farewell.as_slice())
+                else {
+                    continue;
+                };
+                (
+                    greet.clone(),
+                    farewell.clone(),
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| keyword.key == "job" && literal_keyword(keyword))
+                        .cloned()
+                        .collect(),
                 )
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
@@ -1201,7 +1228,7 @@ impl NpcTalkBook {
                         Some(line)
                     } else if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
-                    } else if reference.key == MORDECAI {
+                    } else if reference.key == MORDECAI || valentina {
                         npc.bank_dialogue
                             .as_ref()
                             .and_then(|dialogue| dialogue.walkaway.first().cloned())
@@ -2078,6 +2105,46 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn seasonal_merchants_admit_the_donor_shop_and_focus() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|error| format!("{error:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        let valentina = "oteryn:npc.valentina";
+        let entry = book
+            .get(valentina)
+            .ok_or("Valentina's source shop must open focus")?;
+        assert_eq!(
+            entry.greeting_reply,
+            "Welcome to Valentine's Store. Let's {trade} something?"
+        );
+        assert_eq!(entry.farewell_reply, "Please come back from time to time.");
+        assert_eq!(
+            entry.source_walkaway.as_deref(),
+            Some(entry.farewell_reply.as_str())
+        );
+        assert_eq!(entry.offers().len(), 8);
+        assert!(
+            entry
+                .offers()
+                .iter()
+                .any(|offer| offer.item.key == "oteryn:item.tibia.i21953"
+                    && offer.unit_price == 1000)
+        );
+        let stan = "oteryn:npc.stan";
+        let entry = book.get(stan).ok_or("Stan's source shop must open focus")?;
+        assert_eq!(entry.offers().len(), 3);
+        assert!(entry.offers().iter().any(|offer| offer.item.key == "oteryn:item.tibia.i654" && offer.unit_price == 1000));
         Ok(())
     }
 
