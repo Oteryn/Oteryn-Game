@@ -29,6 +29,10 @@ const REQUIRED: &[&str] = &[
     "special-food",
 ];
 
+// Tibia Fandom, Health Potion: npcprice = 50. The row buys two from a regular seller.
+const HEALTH_POTION_PRICE: u64 = 50;
+const POTION_PURCHASE_QUANTITY: u32 = 2;
+
 struct Row {
     passed: BTreeSet<&'static str>,
     started: std::time::Instant,
@@ -162,7 +166,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let missing = provisioning::item_reference(&index, 268)?;
     let mut client = connect_world(clients, 0xb4).await?;
     let purchase_meat = acquire(&mut client, world, 3577, 2).await?;
-    let purchase_potion = acquire(&mut client, world, 266, 2).await?;
+    full_e2ef7::earn_gold(
+        &mut client,
+        world,
+        HEALTH_POTION_PRICE * u64::from(POTION_PURCHASE_QUANTITY),
+    ).await?;
+    let potion_before = quantity(&client, potion)?;
+    let purchase_potion = acquire(&mut client, world, 266, POTION_PURCHASE_QUANTITY).await?;
+    if quantity(&client, potion)? != potion_before + u64::from(POTION_PURCHASE_QUANTITY) {
+        return Err("buy item=266 did not credit exactly two health potions".into());
+    }
     row.pass("npc-purchase", format!("meat_sequence={purchase_meat} potion_sequence={purchase_potion}"));
     let (food_reply, _) = use_one(&mut client, meat).await?;
     if food_reply != UseDisposition::Committed { return Err(format!("food USE reply={food_reply:?}").into()); }
