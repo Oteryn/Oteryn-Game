@@ -96,20 +96,30 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     let (controller, activated) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let room = activated.qualified_room();
+    let bundle = super::qc_pinned_world::world_near(
+        controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native content")?,
+        &[(33289, 32480), (32057, 32368)],
+    )?;
+    let cells = bundle
+        .movement_cells(room.movement_cells())
+        .map_err(debug)?;
     let channel_pin = ChannelContentPin::from_activation(
         world,
         activated.activation_sequence(),
         activated.identity().server_artifact_digest(),
         activated.identity().client_artifact_digest(),
-        room.frame_binding().digest(),
-        room.map_revision_digest(),
+        bundle.frame_binding_digest(world),
+        bundle.map_revision_digest(),
         (33289, 32480, 6),
     );
     let deps = Dependencies::with_content_and_capacity(
         channel_pin,
         room.clone(),
         crate::spell::cast::v1_spell_book().map_err(debug)?,
-        3,
+        5,
     )?;
     deps.runtime
         .lock()
@@ -118,6 +128,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .map_err(debug)?;
     let mut owner = deps.owner(h, &authority);
     owner.active_generation = controller.active();
+    owner.movement_cells = (&cells).into();
     owner.quest_catalogue = Some(Arc::new(quest_state.catalogue().clone()));
     let session = deps.admitted.game_session_id;
     let fence = owner
@@ -138,10 +149,38 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .await?;
     super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 2000, 80).await?;
     owner.refresh_quest_session(session, true).await;
-    let [captain, petros] = super::classic_quests_fixtures::install(
+    use oteryn_gameplay_quests::quest::world_callbacks::Position;
+    let [captain, petros, tiberius, sharon] = super::classic_quests_fixtures::install_positions(
         &owner,
         &deps.admitted,
-        [greyhound, "oteryn:npc.petros"],
+        [
+            greyhound,
+            "oteryn:npc.petros",
+            "oteryn:npc.captain_tiberius",
+            "oteryn:npc.sharon",
+        ],
+        [
+            Position {
+                x: 33289,
+                y: 32481,
+                floor: -6,
+            },
+            Position {
+                x: 33290,
+                y: 32481,
+                floor: -6,
+            },
+            Position {
+                x: 32056,
+                y: 32368,
+                floor: -6,
+            },
+            Position {
+                x: 32055,
+                y: 32368,
+                floor: -6,
+            },
+        ],
     )
     .await?;
     let now: i64 =
@@ -290,12 +329,6 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             expected
         );
     }
-    let [tiberius] = super::classic_quests_fixtures::install(
-        &owner,
-        &deps.admitted,
-        ["oteryn:npc.captain_tiberius"],
-    )
-    .await?;
     talk(&mut owner, &deps.admitted, tiberius, 48102, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, tiberius, 48103, "passage").await?;
     assert!(
@@ -303,10 +336,16 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .iter()
             .any(|line| line.to_ascii_lowercase().contains("darashia"))
     );
-    talk(&mut owner, &deps.admitted, tiberius, 48104, "bye").await?;
-    let [petros] =
-        super::classic_quests_fixtures::install(&owner, &deps.admitted, ["oteryn:npc.petros"])
-            .await?;
+    talk(&mut owner, &deps.admitted, tiberius, 48104, "yes").await?;
+    let returned = deps
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(deps.actor)
+        .map_err(debug)?
+        .position();
+    assert_eq!((returned.x, returned.y, returned.floor), (33289, 32480, 6));
+    sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
     talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
     assert!(offer.iter().any(|line| line.contains("1000")));
@@ -322,9 +361,6 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     assert_eq!((balance, paid), (0, 1000));
     assert!(renewed >= stamp);
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
-    let [sharon] =
-        super::classic_quests_fixtures::install(&owner, &deps.admitted, ["oteryn:npc.sharon"])
-            .await?;
     talk(&mut owner, &deps.admitted, sharon, 48108, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, sharon, 48109, "check").await?;
     assert!(
