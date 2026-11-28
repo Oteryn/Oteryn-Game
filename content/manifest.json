@@ -933,10 +933,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "4a74a398e674e354e5cff0af79b75f096b39633ba0c446a43284f9789a633151",
+          "sha256": "f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "87eeda3d1dac4b82e55eefaa9b62f5d5732cd198d90a61f04ffa32d5ac67b330"
+            "sha256": "486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"
           }
         },
         {

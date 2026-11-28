@@ -65,6 +65,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         "C17A_SEEDED_BUILD level={level} vocation={vocation:?} vitals={vitals:?}"
     ));
     let book = native_spell_book()?;
+    let haste_spell = book.spoken("utani hur").ok_or("C17a Haste absent")?.spell;
+    if haste_spell.premium {
+        return Err("C17a Global Haste must be available to free accounts".into());
+    }
     let strong_spell = book
         .spoken("utani gran hur")
         .ok_or("C17a Strong Haste absent")?
@@ -94,6 +98,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         client.service_liveness(Duration::from_millis(100)).await?;
     }
+    if !strong_spell.premium {
+        return Err("C17a Global Strong Haste must require Premium".into());
+    }
     full_e2ef5::prepare_spell_access(&mut client, strong_spell).await?;
     let (before, _) = query_conditions(&mut client).await?;
     if before
@@ -105,8 +112,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let (haste, haste_payload) = cast_and_query(&mut client, "utani hur", 390, 30_000).await?;
     let haste_sequence = client.last_server_sequence();
-    wait_support_cooldown(&mut client).await?;
-    let (before_strong, _) = query_conditions(&mut client).await?;
+    let before_strong = wait_support_cooldown(&mut client).await?;
     if haste_remaining(&before_strong)? <= 22_000 {
         return Err("C17a pre-Strong Haste condition does not distinguish replacement".into());
     }
@@ -264,13 +270,23 @@ fn haste_remaining(status: &ConditionStatus) -> TestResult<i64> {
     Ok(condition.remaining_ms)
 }
 
-async fn wait_support_cooldown(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    let until = tokio::time::Instant::now() + Duration::from_secs(3);
-    while tokio::time::Instant::now() < until {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        client.take_events();
+async fn wait_support_cooldown(
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult<ConditionStatus> {
+    // The Haste condition and support cooldown start on the same server cast.
+    // Use the server's countdown to prove two seconds elapsed. Local time only
+    // bounds the observation, and never opens the cast gate.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        let (status, _) = query_conditions(client).await?;
+        if haste_remaining(&status)? <= 28_000 {
+            return Ok(status);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("C17a support cooldown did not elapse on the server".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
     }
-    Ok(())
 }
 
 fn visible(status: &ConditionStatus) -> TestResult<String> {

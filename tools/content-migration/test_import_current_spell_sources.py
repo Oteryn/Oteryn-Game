@@ -66,11 +66,6 @@ class CurrentSourceImportTests(unittest.TestCase):
         for profile in native_profiles:
             qualified = by_name[(profile['name'], profile['carrier'])]
             expected_spell = copy.deepcopy(profile['spell'])
-            if expected_spell['identity']['key'] == 'candidate:spell/haste':
-                # Earlier import retains the historical header. Final registration
-                # applies the owner-selected Crystal Premium requirement.
-                self.assertTrue(expected_spell['requirements']['premium'])
-                expected_spell['requirements']['premium'] = False
             if expected_spell['identity']['key'] == 'candidate:spell/rune/destroy_field_rune':
                 # PKG1R2: the raw donor still has range 5; the owner-approved
                 # Global profile removes that cap at final registration only.

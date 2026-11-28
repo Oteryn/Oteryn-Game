@@ -72,16 +72,7 @@ def build_selection(catalog, catalog_digest, sources):
             "catalog_sha256": catalog_digest, "selections": rows}
 
 
-def apply_haste_premium(spell):
-    # Owner 2026-11-26 selected Crystal 201189f8 for C17a.
-    # data/scripts/spells/support/haste.lua registers Haste as Premium.
-    if spell["identity"]["key"] == "candidate:spell/haste":
-        spell["requirements"]["premium"] = True
-
-
 def apply_owner_decisions(catalog):
-    for entry in catalog["bundles"]:
-        apply_haste_premium(entry["bundle"]["spell"])
     # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
     # Keep donor provenance, with the accepted viewport/LOS rule in compiler input.
     entry = next(entry for entry in catalog["bundles"]
@@ -147,20 +138,6 @@ def build(root):
     if len(bundles) != 246 or len(removed) != 6:
         raise ValueError("incomplete coverage")
     return apply_owner_decisions({"schema": SCHEMA, "revision": REVISION, "bundles": bundles, "removed": removed})
-
-
-def refresh_owner_decisions(catalog_path, selection_path):
-    catalog = apply_owner_decisions(json.loads(catalog_path.read_bytes()))
-    data = canonical_bytes(catalog)
-    selection = json.loads(selection_path.read_bytes())
-    selection["catalog_sha256"] = hashlib.sha256(data).hexdigest()
-    catalog_path.write_bytes(data)
-    selection_path.write_bytes(canonical_bytes(selection))
-
-
-def canonical_bytes(value):
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True,
-                       separators=(",", ":")) + "\n").encode()
 
 
 if __name__ == "__main__":

@@ -13,7 +13,6 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 import native_catalog
-from build_executable_catalog import apply_haste_premium
 from validate_spell import validate, walk
 
 REVISION = 'spell-p2-r20'
@@ -213,7 +212,6 @@ def assemble(profiles):
         check_revisions(profile['spell'], profile_id(profile) + '/spell')
         check_revisions(profile['dependencies'], profile_id(profile) + '/dependencies')
         identity = profile_id(profile)
-        apply_haste_premium(profile['spell'])
         if identity == 'rune-destroy_field_rune':
             # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
             # The current map viewport and LOS replace the donor's five-tile limit.
