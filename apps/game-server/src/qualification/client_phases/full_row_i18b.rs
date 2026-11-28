@@ -39,31 +39,6 @@ fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestR
     Ok(*quantities(client)?.get(&reference.get()).unwrap_or(&0))
 }
 
-async fn wait_quantity(
-    client: &mut DevClientSession,
-    reference: std::num::NonZeroU32,
-    expected: u64,
-) -> TestResult<u64> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event
-                && quantity(client, reference)? == expected
-            {
-                return Ok(delta.server_sequence);
-            }
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "inventory delta timeout definition={reference} expected={expected} observed={}",
-                quantity(client, reference)?
-            )
-            .into());
-        }
-        client.service_liveness(Duration::from_millis(20)).await?;
-    }
-}
-
 async fn logout(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -88,29 +63,105 @@ fn view_revision(client: &mut DevClientSession) -> TestResult<u64> {
         .revision)
 }
 
+type ViewsDelta = oteryn_dev_client::native_session::AppliedDelta<tree::ContainerViews>;
+
+#[derive(Default)]
+struct TransferEvidence {
+    views: Option<ViewsDelta>,
+    inventory: bool,
+}
+
+impl TransferEvidence {
+    fn observe(
+        &mut self,
+        event: SessionEvent,
+        before: u64,
+        after_sequence: u64,
+        expected: Option<(NonZeroU32, u64)>,
+    ) -> TestResult {
+        match event {
+            SessionEvent::GatedSnapshotReplaced(replacement)
+                if matches!(
+                    replacement.value.domain_id,
+                    tree::STATE_DOMAIN_CONTAINER_VIEWS
+                        | oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                ) =>
+            {
+                return Err("replacement snapshot cannot prove I18b delta".into());
+            }
+            SessionEvent::ContainerViews(delta) => {
+                if delta.base_revision != before
+                    || delta.new_revision <= before
+                    || delta.server_sequence <= after_sequence
+                    || self.views.is_some()
+                {
+                    return Err(format!("unexpected I18b container views delta {delta:?}").into());
+                }
+                self.views = Some(delta);
+            }
+            SessionEvent::Inventory(delta) if delta.server_sequence > after_sequence => {
+                if let Some((rope, count)) = expected {
+                    let observed: u64 = delta
+                        .value
+                        .entries
+                        .iter()
+                        .filter(|entry| entry.item_definition_ref == rope)
+                        .map(|entry| u64::from(entry.count.get()))
+                        .sum();
+                    if observed != count {
+                        return Err(format!(
+                            "I18b inventory delta expected {count} rope, observed {observed}"
+                        )
+                        .into());
+                    }
+                    self.inventory = true;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
 async fn fresh_views(
     client: &mut DevClientSession,
     before: u64,
-) -> TestResult<tree::ContainerViews> {
+    after_sequence: u64,
+    expected: Option<(NonZeroU32, u64)>,
+) -> TestResult<ViewsDelta> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while view_revision(client)? <= before {
+    let mut observed = TransferEvidence::default();
+    loop {
+        for event in client.take_events() {
+            observed.observe(event, before, after_sequence, expected)?;
+        }
+        if (expected.is_none() || observed.inventory)
+            && let Some(delta) = observed.views.take()
+        {
+            if view_revision(client)? != delta.new_revision
+                || client.session_mut().container_views() != Some(&delta.value)
+                || expected.is_some_and(|(rope, count)| quantity(client, rope).ok() != Some(count))
+            {
+                return Err("I18b cached state diverged from the observed deltas".into());
+            }
+            return Ok(delta);
+        }
         if tokio::time::Instant::now() >= deadline {
-            return Err("fresh container views delta absent".into());
+            return Err("required I18b container views or inventory delta absent".into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
-        client.take_events();
     }
-    client
-        .session_mut()
-        .container_views()
-        .cloned()
-        .ok_or_else(|| "container views absent".into())
+}
+
+fn action_boundary(client: &mut DevClientSession) -> TestResult<(u64, u64)> {
+    client.take_events();
+    Ok((view_revision(client)?, client.last_server_sequence()))
 }
 
 async fn browse_open(
     client: &mut DevClientSession,
     at: WorldTilePosition,
-) -> TestResult<tree::ContainerView> {
+) -> TestResult<(tree::ContainerView, ViewsDelta)> {
     if client
         .session_mut()
         .container_views()
@@ -121,7 +172,7 @@ async fn browse_open(
     {
         return Err("step=browse-prestate observed=own-tile-view-already-open".into());
     }
-    let before = view_revision(client)?;
+    let (before, sequence) = action_boundary(client)?;
     let payload =
         browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
             .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
@@ -138,12 +189,15 @@ async fn browse_open(
     if reply.status != CommandStatus::Accepted || outcome != tree::ContainerViewOutcome::Opened {
         return Err(format!("step=browse-open observed={:?}/{outcome:?}", reply.status).into());
     }
-    fresh_views(client, before)
-        .await?
+    let delta = fresh_views(client, before, sequence, None).await?;
+    let view = delta
+        .value
         .views
-        .into_iter()
+        .iter()
         .find(|view| view.browse.is_some_and(|page| page.position == at))
-        .ok_or_else(|| "step=browse-open observed=own-tile-view-absent".into())
+        .cloned()
+        .ok_or("step=browse-open observed=own-tile-view-absent")?;
+    Ok((view, delta))
 }
 
 fn rope_on_tile(
@@ -216,10 +270,9 @@ async fn drop_rope(
     field: &tree::ContainerView,
     at: WorldTilePosition,
     rope: NonZeroU32,
-) -> TestResult<ItemEntry> {
-    let before = view_revision(client)?;
+) -> TestResult<(ItemEntry, ViewsDelta)> {
+    let (before, sequence) = action_boundary(client)?;
     let entry = carried_rope(client, rope)?;
-    client.take_events();
     move_rope(
         client,
         entry,
@@ -227,14 +280,15 @@ async fn drop_rope(
         ItemMoveOutcome::Moved,
     )
     .await?;
-    wait_quantity(client, rope, 0).await?;
-    let views = fresh_views(client, before).await?;
-    let view = views
+    let delta = fresh_views(client, before, sequence, Some((rope, 0))).await?;
+    let view = delta
+        .value
         .views
         .iter()
         .find(|view| view.view_id == field.view_id)
         .ok_or("browse view disappeared after ground drop")?;
-    rope_on_tile(view, at, rope, 1)?.ok_or_else(|| "dropped rope absent".into())
+    let item = rope_on_tile(view, at, rope, 1)?.ok_or("dropped rope absent")?;
+    Ok((item, delta))
 }
 
 async fn pick_up_rope(
@@ -243,12 +297,11 @@ async fn pick_up_rope(
     at: WorldTilePosition,
     rope: NonZeroU32,
     entry: ItemEntry,
-) -> TestResult {
+) -> TestResult<ViewsDelta> {
     if quantity(client, rope)? != 0 {
         return Err("step=pickup-prestate observed=rope-already-carried".into());
     }
-    let before = view_revision(client)?;
-    client.take_events();
+    let (before, sequence) = action_boundary(client)?;
     move_rope(
         client,
         entry,
@@ -256,21 +309,22 @@ async fn pick_up_rope(
         ItemMoveOutcome::Moved,
     )
     .await?;
-    wait_quantity(client, rope, 1).await?;
-    let views = fresh_views(client, before).await?;
-    let view = views
+    let delta = fresh_views(client, before, sequence, Some((rope, 1))).await?;
+    let view = delta
+        .value
         .views
         .iter()
         .find(|view| view.view_id == field.view_id)
         .ok_or("browse view disappeared after pickup")?;
     rope_on_tile(view, at, rope, 0)?;
-    Ok(())
+    Ok(delta)
 }
 
 // Store the untouched server domain payload. Session metadata stays outside the wire bytes.
 fn capture_view(
     client: &mut DevClientSession,
     phase: &str,
+    delta: &ViewsDelta,
     view_id: u8,
     rope: NonZeroU32,
 ) -> TestResult {
@@ -285,7 +339,7 @@ fn capture_view(
         .and_then(|name| name.to_str())
         .ok_or("capture run name")?;
     let id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let sequence = client.last_server_sequence();
+    let sequence = delta.server_sequence;
     let selected = client.selected_capabilities();
     let house = u8::from(selected.contains(&tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2));
     let appearances = u8::from(
@@ -295,14 +349,17 @@ fn capture_view(
         .session_mut()
         .gated_snapshot(tree::STATE_DOMAIN_CONTAINER_VIEWS)
         .ok_or("capture container views absent")?;
+    if snapshot.revision != delta.new_revision {
+        return Err("capture payload revision diverged from I18b delta".into());
+    }
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(root.join(format!("i18b-{phase}.bin")))?;
     writeln!(
         file,
-        "{run} {id} {sequence} {} {view_id} {rope} {house} {appearances}",
-        snapshot.revision
+        "{run} {id} {sequence} {} {} {view_id} {rope} {house} {appearances}",
+        delta.base_revision, delta.new_revision
     )?;
     file.write_all(&snapshot.payload)?;
     Ok(())
@@ -319,8 +376,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         floor: position.floor,
     };
 
-    let field = browse_open(&mut client, at).await?;
+    let (field, opened) = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
+    capture_view(&mut client, "before-drop", &opened, field.view_id, rope)?;
     // Global: https://tibia.fandom.com/wiki/Browse_Field (drag out only).
     // The physical tile remains the deposit target.
     let entry = carried_rope(&client, rope)?;
@@ -339,13 +397,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("step=locked-browse-refusal observed=state-changed".into());
     }
-    capture_view(&mut client, "before-drop", field.view_id, rope)?;
-    let dropped = drop_rope(&mut client, &field, at, rope).await?;
-    capture_view(&mut client, "after-drop", field.view_id, rope)?;
-    pick_up_rope(&mut client, &field, at, rope, dropped).await?;
-    capture_view(&mut client, "after-pickup", field.view_id, rope)?;
+    let (dropped, drop_delta) = drop_rope(&mut client, &field, at, rope).await?;
+    capture_view(&mut client, "after-drop", &drop_delta, field.view_id, rope)?;
+    let pickup_delta = pick_up_rope(&mut client, &field, at, rope, dropped).await?;
+    capture_view(
+        &mut client,
+        "after-pickup",
+        &pickup_delta,
+        field.view_id,
+        rope,
+    )?;
 
-    let before = view_revision(&mut client)?;
+    let (before, sequence) = action_boundary(&mut client)?;
     let outcome = client
         .session_mut()
         .container_view(tree::ContainerViewIntent::Close {
@@ -353,15 +416,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         })
         .await?;
     if outcome != Some(tree::ContainerViewOutcome::Closed)
-        || fresh_views(&mut client, before)
+        || fresh_views(&mut client, before, sequence, None)
             .await?
+            .value
             .views
             .iter()
             .any(|view| view.view_id == field.view_id)
     {
         return Err(format!("step=browse-close observed={outcome:?}").into());
     }
-    let field = browse_open(&mut client, at).await?;
+    let (field, _) = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
     drop_rope(&mut client, &field, at, rope).await?;
     logout(&mut client).await?;
@@ -372,7 +436,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if ground_session == initial_session || quantity(&client, rope)? != 0 {
         return Err("step=ground-relog observed=unexpected-session-or-carried-rope".into());
     }
-    let field = browse_open(&mut client, at).await?;
+    let (field, _) = browse_open(&mut client, at).await?;
     let persisted = rope_on_tile(&field, at, rope, 1)?.ok_or("ground rope lost after relog")?;
     pick_up_rope(&mut client, &field, at, rope, persisted).await?;
 
@@ -386,8 +450,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("step=fresh-admission observed=unexpected-session-or-rope-count".into());
     }
-    let field = browse_open(&mut client, at).await?;
+    let (field, _) = browse_open(&mut client, at).await?;
     rope_on_tile(&field, at, rope, 0)?;
     logout(&mut client).await?;
     Ok("starter-rope;ground-drop=2;browse-pickup=2;virtual-destination-refused;ground-relog=backpack-0,tile-1;pickup-relog=backpack-1,tile-0".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_dev_client::native_session::{AppliedDelta, GatedSnapshot};
+
+    #[test]
+    fn i18b_replacement_with_matching_typed_projection_is_rejected() -> TestResult {
+        let typed = SessionEvent::ContainerViews(AppliedDelta {
+            server_sequence: 21,
+            base_revision: 4,
+            new_revision: 5,
+            value: tree::ContainerViews::default(),
+        });
+        let replacement = SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+            server_sequence: 21,
+            base_revision: 4,
+            new_revision: 5,
+            value: GatedSnapshot {
+                domain_id: tree::STATE_DOMAIN_CONTAINER_VIEWS,
+                snapshot_type: 1,
+                revision: 5,
+                payload: Vec::new(),
+            },
+        });
+        let mut real = TransferEvidence::default();
+        real.observe(typed.clone(), 4, 20, None)?;
+        assert_eq!(real.views.ok_or("real delta missing")?.server_sequence, 21);
+        let mut replaced = TransferEvidence::default();
+        let result = [replacement, typed]
+            .into_iter()
+            .try_for_each(|event| replaced.observe(event, 4, 20, None));
+        assert!(result.is_err());
+        assert!(replaced.views.is_none());
+        Ok(())
+    }
 }

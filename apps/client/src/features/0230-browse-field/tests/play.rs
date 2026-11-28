@@ -257,10 +257,154 @@ impl crate::play::Outbox {
     }
 }
 
+type ReplayError = Box<dyn std::error::Error>;
+
+#[derive(Clone, Copy)]
+enum ReplayFault {
+    None,
+    MissingUpdate,
+    MissingPickup,
+}
+
+struct BrowseReplayPeer {
+    events: tokio::sync::mpsc::UnboundedReceiver<oteryn_session::SessionEvent>,
+    moves: tokio::sync::mpsc::UnboundedSender<oteryn_client_runtime::inventory::MoveRequest>,
+    pending: Vec<oteryn_session::SessionEvent>,
+    fault: ReplayFault,
+}
+
+impl crate::play::Stepper for BrowseReplayPeer {
+    fn server_mechanic_selected(&self, capability: u32) -> bool {
+        capability == 230
+    }
+
+    fn drain(&mut self) -> Vec<oteryn_session::SessionEvent> {
+        std::mem::take(&mut self.pending)
+    }
+
+    async fn serve(
+        &mut self,
+        duration: std::time::Duration,
+    ) -> Result<(), oteryn_session::SessionError> {
+        match tokio::time::timeout(duration, self.events.recv()).await {
+            Ok(Some(event)) if !matches!(self.fault, ReplayFault::MissingUpdate) => {
+                self.pending.push(event)
+            }
+            Ok(None) => return Err(oteryn_session::SessionError::SessionUnusable),
+            _ => {}
+        }
+        Ok(())
+    }
+
+    async fn move_item(
+        &mut self,
+        request: oteryn_client_runtime::inventory::MoveRequest,
+    ) -> Result<Option<oteryn_client_runtime::inventory::MoveResponse>, oteryn_session::SessionError>
+    {
+        if matches!(self.fault, ReplayFault::MissingPickup) {
+            return Ok(None);
+        }
+        self.moves
+            .send(request)
+            .map_err(|_| oteryn_session::SessionError::SessionUnusable)?;
+        Ok(None)
+    }
+
+    async fn combat(
+        &mut self,
+        _: crate::combat_input::CombatCommand,
+    ) -> Result<crate::combat_input::CombatReport, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn step(
+        &mut self,
+        _: oteryn_session::StepDirection,
+    ) -> Result<oteryn_session::StepOutcome, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+
+    async fn logout(
+        &mut self,
+    ) -> Result<Option<oteryn_session::LogoutResult>, oteryn_session::SessionError> {
+        Err(oteryn_session::SessionError::SessionUnusable)
+    }
+}
+
+async fn delivered_browse_panel(
+    link: &crate::play::PlayLink,
+    expected: &oteryn_session::container_tree::ContainerViews,
+    timeout: std::time::Duration,
+) -> Result<oteryn_client_ui::browse_field::BrowseFieldPanel, ReplayError> {
+    tokio::time::timeout(timeout, async {
+        loop {
+            let panel = link.browse_field_panel();
+            if panel.selected && &panel.views == expected {
+                return panel;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .map_err(|_| "I18b captured delta missing from the production mailbox".into())
+}
+
+async fn dispatched_browse_pickup(
+    moves: &mut tokio::sync::mpsc::UnboundedReceiver<oteryn_client_runtime::inventory::MoveRequest>,
+    timeout: std::time::Duration,
+) -> Result<oteryn_client_runtime::inventory::MoveRequest, ReplayError> {
+    tokio::time::timeout(timeout, moves.recv())
+        .await
+        .map_err(|_| "I18b pickup missing from production session dispatch")?
+        .ok_or_else(|| "I18b pickup missing from production session dispatch".into())
+}
+
 #[test]
 #[ignore = "requires fresh I18b.full capture from a live qualification run"]
-fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
-    use oteryn_session::ItemMoveDestination;
+fn i18b_live_browse_field_replay() -> Result<(), ReplayError> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(replay_live_browse_field(
+            ReplayFault::None,
+            std::time::Duration::from_secs(2),
+        ))
+}
+
+#[test]
+#[ignore = "requires a live I18b capture to test replay rejection"]
+fn i18b_replay_rejects_missing_delivery_and_dispatch() -> Result<(), ReplayError> {
+    use std::time::Duration;
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            for (fault, message) in [
+                (
+                    ReplayFault::MissingUpdate,
+                    "I18b captured delta missing from the production mailbox",
+                ),
+                (
+                    ReplayFault::MissingPickup,
+                    "I18b pickup missing from production session dispatch",
+                ),
+            ] {
+                let result = replay_live_browse_field(fault, Duration::from_secs(2)).await;
+                assert_eq!(
+                    result.err().map(|error| error.to_string()).as_deref(),
+                    Some(message)
+                );
+            }
+            Ok(())
+        })
+}
+
+async fn replay_live_browse_field(
+    fault: ReplayFault,
+    timeout: std::time::Duration,
+) -> Result<(), ReplayError> {
+    use oteryn_session::{AppliedDelta, ItemMoveDestination, SessionEvent, container_tree};
 
     let root = std::path::PathBuf::from(
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("capture directory required")?,
@@ -269,8 +413,19 @@ fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
         .file_name()
         .and_then(|name| name.to_str())
         .ok_or("capture run name")?;
-    let (link, _, outbox) = play_channel();
-    outbox.browse_field_initialize(true);
+    let (link, commands, outbox) = play_channel();
+    let (events, incoming) = tokio::sync::mpsc::unbounded_channel();
+    let (sent, mut moves) = tokio::sync::mpsc::unbounded_channel();
+    let runner = tokio::spawn(crate::play::run_session(
+        BrowseReplayPeer {
+            events: incoming,
+            moves: sent,
+            pending: Vec::new(),
+            fault,
+        },
+        commands,
+        outbox,
+    ));
     let mut prior = None;
     let mut tile = None;
     for (phase, expected) in [("before-drop", 0), ("after-drop", 1), ("after-pickup", 0)] {
@@ -286,6 +441,7 @@ fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
             captured_run,
             session,
             sequence,
+            base,
             revision,
             view,
             rope,
@@ -297,10 +453,12 @@ fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
         };
         assert_eq!(captured_run, run);
         let sequence = sequence.parse::<u64>()?;
+        let base = base.parse::<u64>()?;
         let revision = revision.parse::<u64>()?;
         let view = view.parse::<u8>()?;
         let rope = rope.parse::<u32>()?;
         assert!(matches!(house, "0" | "1") && matches!(appearances, "0" | "1"));
+        assert!(revision > base && sequence > 0 && !session.is_empty());
         let identity = (
             session.to_owned(),
             view,
@@ -310,19 +468,29 @@ fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
         );
         if let Some((old_identity, old_sequence, old_revision)) = &prior {
             assert_eq!(&identity, old_identity);
-            assert!(sequence > *old_sequence && revision > *old_revision);
-        } else {
-            assert!(!session.is_empty() && sequence > 0 && revision > 0);
-            outbox.container_initialize_with_house_capacity(None, identity.3);
+            assert!(sequence > *old_sequence);
+            assert_eq!(base, *old_revision);
         }
-        outbox.browse_field_views(&bytes[end + 1..], identity.4);
-        let mut panel = link.browse_field_panel();
-        assert!(panel.feedback.is_none());
+        let value = container_tree::decode_container_views_with_appearances(
+            &bytes[end + 1..],
+            true,
+            identity.3,
+            identity.4,
+        )
+        .map_err(|error| format!("captured container delta: {error:?}"))?;
+        events.send(SessionEvent::ContainerViews(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: base,
+            new_revision: revision,
+            value: value.clone(),
+        }))?;
+        let mut panel = delivered_browse_panel(&link, &value, timeout).await?;
+        assert_eq!(panel.view_id, view);
         let field = panel
             .views
             .views
             .iter()
-            .find(|field| field.view_id == view && field.browse.is_some())
+            .find(|field| field.view_id == view)
             .ok_or("captured browse view missing from the client panel")?;
         let position = field.browse.ok_or("captured tile absent")?.position;
         if let Some(previous) = tile.replace(position) {
@@ -341,15 +509,26 @@ fn i18b_live_browse_field_replay() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(count, expected);
         if let Some(row) = row {
             let handle = field.entries[row].handle;
-            panel.view_id = view;
-            let command = native::item_command(&mut panel, 105, &row.to_string(), "");
-            assert!(
-                matches!(command, Some(crate::combat_input::PlayCommand::BrowseFieldMove(intent))
-                if intent.source == handle && intent.destination == ItemMoveDestination::MainBackpack)
+            let Some(crate::combat_input::PlayCommand::BrowseFieldMove(intent)) =
+                native::item_command(&mut panel, 105, &row.to_string(), "")
+            else {
+                return Err("native pickup action did not produce a move".into());
+            };
+            link.browse_field_move(intent.source, intent.destination);
+            assert_eq!(
+                dispatched_browse_pickup(&mut moves, timeout).await?,
+                oteryn_client_runtime::inventory::MoveRequest {
+                    source: handle,
+                    destination: ItemMoveDestination::MainBackpack,
+                    count: None,
+                }
             );
         }
         prior = Some((identity, sequence, revision));
     }
+    assert!(moves.try_recv().is_err());
+    runner.abort();
+    assert!(runner.await.is_err_and(|error| error.is_cancelled()));
     println!("I18B_CLIENT_REPLAY PASS run={run} phases=3");
     Ok(())
 }
