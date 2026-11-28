@@ -1086,9 +1086,16 @@ pub(super) async fn journeys(
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    if e2e_row_selected(73) || e2e_row_selected(109) {
+        let logout = client.session_mut().logout().await?;
+        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("first town entry logout refused: {logout:?}; attempts=1").into());
+        }
+    } else {
+        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     {

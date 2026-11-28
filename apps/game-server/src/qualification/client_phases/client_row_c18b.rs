@@ -1,23 +1,16 @@
-//! C18b client replay capture: a real position cast produces the result consumed by
-//! `crates/session/src/session_exchange.rs::Session::exchange_cast` and the actor-vitals delta
-//! consumed by `crates/session/src/domain_dispatch.rs::Session::apply_delta`.
+//! C18b client verification of a live Death Echo position cast.
 
 use super::*;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, SpellTargetPosition};
 
-const SPELLS: [&str; 5] = [
-    "exevo mort ora",
-    "exevo tempo mas san",
-    "exori dir san",
-    "exori dir moe",
-    "exori mas amp pug",
-];
+const SPELL: &str = "exevo mort ora";
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(capture(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(capture(clients))).await;
     match result {
         Ok(Ok(())) => evidence(
-            "SEAM_EVIDENCE e2e_all scenario=C18b.client status=PASS evidence=real-position-cast-payloads",
+            "SEAM_EVIDENCE e2e_all scenario=C18b.client status=FAIL evidence=live-cast-verified-strict-replay-missing",
         ),
         Ok(Err(error)) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=C18b.client status=FAIL evidence={error}"
@@ -38,7 +31,17 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let book = spell_book()?;
-    let mut client = connect_character(clients, 0x18, 1).await?;
+    let client = connect_character(clients, 0x18, 1).await?;
+    let mut client =
+        provisioning::provision_profile(client, clients, 1, 120, "sorcerer-120").await?;
+    let spell = book
+        .spoken(SPELL)
+        .ok_or("C18b.client Death Echo absent")?
+        .spell;
+    let level = full_e2ef5::prepare_spell_access(&mut client, spell).await?;
+    if level != 120 {
+        return Err(format!("C18b.client expected level 120, got {level}").into());
+    }
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
@@ -54,72 +57,57 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         floor: here.floor,
     });
 
-    for words in SPELLS {
-        let spell = book
-            .spoken(words)
-            .ok_or("C18b.client crosshair spell absent")?
-            .spell;
-        ready(
-            &mut client,
-            spell
-                .groups
-                .iter()
-                .map(|group| group.cooldown_micros)
-                .max()
-                .unwrap_or(0)
-                .max(spell.cooldown_micros),
-        )
-        .await?;
-        let index = spell_index(&book, words)?;
-        let before = *client.actor_vitals().ok_or("C18b.client vitals absent")?;
-        let outcome = client.cast_spell(index, target, false).await?;
-        if outcome.disposition != SpellCastDisposition::Cast {
-            continue;
-        }
-        let delta = outcome
-            .actor_vitals_delta
-            .ok_or("C18b.client cast omitted actor-vitals delta")?;
-        if delta.value.mana >= before.mana || client.actor_vitals() != Some(&delta.value) {
-            return Err(format!(
-                "C18b.client cast did not debit mana in the applied vitals: {before:?} -> {:?}",
-                delta.value
-            )
-            .into());
-        }
-        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-            let path = Path::new(&path);
-            write_capture(
-                path.join("c18b-result.bin"),
-                &oteryn_protocol_oteryn::actor_spell::encode_spell_cast_result(
-                    outcome.disposition,
-                ),
-            );
-            let payload = oteryn_protocol_oteryn::actor_spell::encode_actor_vitals(&delta.value)
-                .map_err(|error| format!("C18b.client vitals encode: {error:?}"))?;
-            write_capture(path.join("c18b-vitals.bin"), &payload);
-            write_capture(
-                path.join("c18b-expected.txt"),
-                format!(
-                    "{} {} {} {}\n{} {} {} {} {} {} {} {}\n",
-                    index,
-                    here.x.saturating_add(1),
-                    here.y,
-                    here.floor,
-                    outcome.disposition as u32,
-                    delta.value.health,
-                    delta.value.max_health,
-                    delta.value.mana,
-                    delta.value.max_mana,
-                    delta.value.soul,
-                    delta.value.harmony,
-                    u8::from(delta.value.serene)
-                )
-                .as_bytes(),
-            );
-        }
-        return Ok(());
+    let crate::spell::ManaCost::Fixed(mana) = spell.mana else {
+        return Err("C18b.client Death Echo must have a fixed mana cost".into());
+    };
+    if mana != 150
+        || spell.soul != 0
+        || !matches!(&spell.carrier, crate::spell::Carrier::Instant { .. })
+    {
+        return Err("C18b.client expected Global Death Echo (150 mana, no soul or rune)".into());
     }
-    Err("C18b.client no crosshair spell was cast by the real player".into())
+    let index = spell_index(&book, SPELL)?;
+    let before = *client.actor_vitals().ok_or("C18b.client vitals absent")?;
+    let expected_mana = before
+        .mana
+        .checked_sub(mana)
+        .ok_or("C18b.client insufficient fixture mana")?;
+    let cooldowns = client
+        .session_mut()
+        .actor_cooldown_snapshot()
+        .ok_or("C18b.client cooldown snapshot absent")?;
+    if cooldowns
+        .entries
+        .iter()
+        .any(|entry| entry.expires_at_ms > cooldowns.server_now_ms)
+    {
+        return Err("C18b.client fresh fixture has an active cooldown".into());
+    }
+    let outcome = client.cast_spell(index, target, false).await?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != SpellCastDisposition::Cast
+    {
+        return Err(format!("C18b.client first Death Echo refused: {outcome:?}").into());
+    }
+    let delta = outcome
+        .actor_vitals_delta
+        .ok_or("C18b.client cast omitted actor-vitals delta")?;
+    if delta.server_sequence <= outcome.result_server_sequence
+        || delta.value.mana != expected_mana
+        || delta.value.soul != before.soul
+        || client.actor_vitals() != Some(&delta.value)
+    {
+        return Err(format!(
+            "C18b.client cast did not debit mana in the applied vitals: {before:?} -> {:?}",
+            delta.value
+        )
+        .into());
+    }
+    evidence(&format!(
+        "C18B_CHECK scenario=C18b.client scope=live-cast result_sequence={} mana_before={} mana_after={}",
+        outcome.result_server_sequence, before.mana, delta.value.mana,
+    ));
+    Ok(())
 }
 
 fn spell_book() -> TestResult<crate::spell::SpellBook> {
@@ -137,10 +125,7 @@ fn spell_book() -> TestResult<crate::spell::SpellBook> {
     Ok(catalog.into_spell_book_with_selections(&selections)?)
 }
 
-fn spell_index(
-    book: &crate::spell::SpellBook,
-    words: &str,
-) -> TestResult<std::num::NonZeroU32> {
+fn spell_index(book: &crate::spell::SpellBook, words: &str) -> TestResult<std::num::NonZeroU32> {
     let key = &book
         .spoken(words)
         .ok_or("C18b.client spell words absent")?
@@ -154,24 +139,4 @@ fn spell_index(
         })
         .find(|index| book.indexed(*index).is_some_and(|spell| &spell.key == key))
         .ok_or_else(|| "C18b.client spell index absent".into())
-}
-
-async fn ready(client: &mut oteryn_dev_client::DevClientSession, micros: u64) -> TestResult {
-    let deadline = tokio::time::Instant::now()
-        + Duration::from_micros(micros.saturating_add(200_000));
-    while tokio::time::Instant::now() < deadline {
-        client.service_liveness(Duration::from_millis(25)).await?;
-        client.take_events();
-    }
-    Ok(())
-}
-
-fn write_capture(path: std::path::PathBuf, bytes: &[u8]) {
-    if let Err(error) = std::fs::write(&path, bytes) {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C18b.client status=CAPTURE-WRITE-ERROR evidence={}:{}",
-            path.display(),
-            error
-        ));
-    }
 }

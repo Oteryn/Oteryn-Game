@@ -27,11 +27,13 @@ pub(in crate::qualification) async fn provision_profile(
     profile: &str,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
-    let vocation = if profile == "explorer" {
-        "knight"
-    } else {
-        profile
+    let vocation = match profile {
+        "explorer" => "knight",
+        "sorcerer-120" => "sorcerer",
+        "monk-120" => "monk",
+        _ => profile,
     };
+    let crosshair = matches!(profile, "sorcerer-120" | "monk-120");
     let (max_health, max_mana, _) = oteryn_gameplay_characters::vitals::maxima(
         vocation,
         expected_level,
@@ -60,10 +62,17 @@ pub(in crate::qualification) async fn provision_profile(
     if !status.success() {
         return Err("node-boot fenced build provisioning failed".into());
     }
-    let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+    if crosshair {
+        let logout = client.session_mut().logout().await?;
+        if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("crosshair fixture setup logout refused: {logout:?}").into());
+        }
+    } else {
+        let (result, logout, attempts, busy_timed_out) =
+            client_world::logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
     }
     drop(client);
     let mut client = connect_character(clients, 0x70, index).await?;
