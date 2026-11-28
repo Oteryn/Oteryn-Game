@@ -1085,7 +1085,11 @@ fn prepare_payment(
         Some(stamp)
     };
     let mut paid = prepare_paid(draw)?;
-    let output = lower(
+    #[allow(
+        unused_mut,
+        reason = "qualification records the committed damage evidence"
+    )]
+    let mut output = lower(
         runtime,
         states,
         room,
@@ -1110,6 +1114,47 @@ fn prepare_payment(
         now,
         draw,
     )?;
+    #[cfg(feature = "qualification-cast-evidence")]
+    if let Some(owner) = &mut output.magnitude {
+        use crate::spell::magnitude_owner::HarmonyDamageEvidence;
+        let mut damage = output.batch.effects.iter().filter(|effect| {
+            matches!(
+                effect.change,
+                OwnerCombatChange::Damage { .. } | OwnerCombatChange::DamageWithHealing { .. }
+            )
+        });
+        if let Some((low, high)) = paid.resolution.pre_harmony_bounds
+            && let [ResolvedEffect::Damage { magnitude, .. }] = paid.resolution.effects.as_slice()
+            && let Some(effect) = damage.next()
+            && damage.next().is_none()
+            && let Some(monk) = before.monk.as_ref()
+        {
+            // A single instant effect has no Runic Mastery, variant or chain draws.
+            // Reuse the first live decision with the original bounds and keep the
+            // actual scaled-bounds roll for comparison through integer rounding.
+            let stream = GameplayDecisionRoot::from_bytes(content.source_digest());
+            let decision = DecisionOccurrenceId::from_bytes(native_cast_occurrence_bytes(
+                output.batch.caster,
+                command.game_session_id(),
+                command.command_id().get(),
+            ));
+            let multiplier = caster.harmony_multiplier;
+            if let Some(value) = native_cast_draw(&stream, decision, 0)
+                && crate::spell::uniform_draw(value, multiplier.apply(low), multiplier.apply(high))
+                    == *magnitude
+            {
+                owner.harmony_damage_evidence = Some(HarmonyDamageEvidence {
+                    spell: spell.key.clone(),
+                    target: effect.target,
+                    sub_ordinal: effect.sub_ordinal,
+                    pre_harmony_roll: crate::spell::uniform_draw(value, low, high),
+                    rolled_damage: *magnitude,
+                    charges: monk.harmony(),
+                    multiplier_numerator: multiplier.numerator(),
+                });
+            }
+        }
+    }
     if let Some(owner) = &output.magnitude {
         owner
             .apply_wheel_cast_state(&mut paid.next)

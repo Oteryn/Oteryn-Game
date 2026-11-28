@@ -694,6 +694,48 @@ fn only_a_spender_scales_its_damage_bounds_by_the_harmony_multiplier() {
     );
 }
 
+#[cfg(feature = "qualification-cast-evidence")]
+#[test]
+fn qualification_retains_unscaled_spender_bounds_without_an_extra_draw() {
+    let book = book();
+    let mut spell = book
+        .spoken("exori frigo")
+        .expect("exori frigo")
+        .spell
+        .clone();
+    let multiplier = harmony::HarmonyMultiplier::new(100, 3, false, false).expect("charges");
+    let caster = CasterState {
+        harmony_multiplier: multiplier,
+        ..caster(Vocation::MasterSorcerer, 100, 50, 100)
+    };
+    let decision = 12_345;
+    for (role, expected_bounds, expected_roll) in [
+        (HarmonyRole::Builder, None, 115),
+        (HarmonyRole::Spender, Some((98, 143)), 141),
+    ] {
+        spell.harmony_role = Some(role);
+        let mut draws = 0;
+        let resolution = resolve_cast(
+            &spell,
+            &caster,
+            &Cooldowns::default(),
+            at(0),
+            false,
+            &mut |low, high| {
+                draws += 1;
+                uniform_draw(decision, low, high)
+            },
+        )
+        .expect("cast");
+        assert_eq!(draws, 1);
+        assert_eq!(resolution.pre_harmony_bounds, expected_bounds);
+        assert!(matches!(
+            resolution.effects.as_slice(),
+            [ResolvedEffect::Damage { magnitude, .. }] if *magnitude == expected_roll
+        ));
+    }
+}
+
 #[path = "cast_property_tests.rs"]
 mod property_tests;
 

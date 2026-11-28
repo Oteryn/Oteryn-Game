@@ -111,6 +111,9 @@ pub struct CastResolution {
     /// The target of a cast by [`resolve_targeted_cast`]; its plan applies to this creature only.
     pub target: Option<CheckedTarget>,
     pub cooldowns: Cooldowns,
+    /// Unscaled bounds for a single, immediate instant spender damage roll.
+    #[cfg(feature = "qualification-cast-evidence")]
+    pub pre_harmony_bounds: Option<(i64, i64)>,
 }
 
 /// The world facts a cast reads beyond the caster.
@@ -635,6 +638,21 @@ fn resolve_with_wheel(
         Some(HarmonyRole::Spender) => caster.harmony_multiplier,
         Some(HarmonyRole::Builder) | None => HarmonyMultiplier::ONE,
     };
+    #[cfg(feature = "qualification-cast-evidence")]
+    let pre_harmony_bounds = match (&spell.carrier, &spell.execution, spell.harmony_role) {
+        (Carrier::Instant { .. }, Execution::Effects(effects), Some(HarmonyRole::Spender))
+            if spell.chain.is_none() =>
+        {
+            match effects.as_slice() {
+                [effect @ SpellEffect::Damage { formula, .. }] => wheel
+                    .effect_inputs(effect, &inputs)
+                    .and_then(|inputs| formula.bounds(&inputs))
+                    .ok(),
+                _ => None,
+            }
+        }
+        _ => None,
+    };
     let selected_variant = if let Execution::AbilityVariants(variants) = &spell.execution {
         let maximum = variants
             .len()
@@ -752,6 +770,8 @@ fn resolve_with_wheel(
             Facts::None | Facts::Chain(..) | Facts::Party(_) => None,
         },
         cooldowns: after,
+        #[cfg(feature = "qualification-cast-evidence")]
+        pre_harmony_bounds,
     })
 }
 
