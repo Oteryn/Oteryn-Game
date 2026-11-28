@@ -307,20 +307,35 @@ pub(super) async fn prepare_caster(
         .await?;
     let overview = premium_overview::Overview::decode(&reply.payload)
         .ok_or("S13c fixture Premium overview malformed")?;
+    const DAY_US: i64 = 24 * 60 * 60 * 1_000_000;
+    let issued_at_us = i64::try_from(overview.authority_revision)?
+        .checked_mul(1_000_000)
+        .ok_or("S13c fixture Premium issue timestamp overflow")?;
+    let expected_expiry = issued_at_us
+        .checked_add(30 * DAY_US)
+        .ok_or("S13c fixture Premium expiry overflow")?;
+    let remaining_days = overview
+        .expires_at_us
+        .and_then(|expiry| expiry.checked_sub(overview.observed_at_us))
+        .filter(|remaining| *remaining > 0)
+        .map(|remaining| 1 + (remaining - 1) / DAY_US);
     evidence(&format!(
-        "S13C_FIXTURE premium_status={:?} premium_state={:?} authority_revision={} observed_at_us={} valid_for_us={} sequence={}",
+        "S13C_FIXTURE premium_status={:?} premium_state={:?} authority_revision={} observed_at_us={} expires_at_us={:?} remaining_days={remaining_days:?} valid_for_us={} sequence={}",
         reply.status,
         overview.state,
         overview.authority_revision,
         overview.observed_at_us,
+        overview.expires_at_us,
         overview.valid_for_us,
         reply.server_sequence,
     ));
     if reply.status != CommandStatus::Accepted
         || overview.state != premium_overview::State::Active
+        || overview.expires_at_us != Some(expected_expiry)
+        || remaining_days != Some(30)
         || overview.valid_for_us == 0
     {
-        return Err("step=fixture caster did not serve current Premium".into());
+        return Err("step=fixture caster did not serve usable 30-day Premium".into());
     }
     Ok(caster)
 }
