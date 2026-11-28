@@ -60,9 +60,13 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         } else {
             payload
         };
+        let refresh = kind == wire::COMMAND_TYPE_ATELIER_V2_QUERY;
         let reply = match reshape {
             Some(request) => self.reshape(admitted, request).await,
-            None => self.atelier_v1_wire(admitted, v1_kind, v1_payload).await,
+            None => {
+                self.atelier_v1_wire(admitted, v1_kind, v1_payload, refresh)
+                    .await
+            }
         };
         let reply = match reply {
             AtelierWireReply::Payload(bytes) => bytes,
@@ -72,9 +76,8 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             return AtelierWireReply::Unavailable;
         };
         // Quotes ride on query replies only (contract); a Replace Vessel reply carries none.
-        let quotes = kind == wire::COMMAND_TYPE_ATELIER_V2_QUERY;
         match self
-            .atelier_v2_reply(admitted, reply, replace_refused, quotes)
+            .atelier_v2_reply(admitted, reply, replace_refused, refresh)
             .await
         {
             Some(bytes) => AtelierWireReply::Payload(bytes),
@@ -182,6 +185,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             v1::COMMAND_TYPE_ATELIER_MUTATE,
             request,
             refused,
+            false,
         )
         .await
     }
