@@ -1,5 +1,15 @@
 //! Explicit mechanics-only fixture; never a production native-pool grant.
 use super::*;
+use std::sync::atomic::Ordering;
+
+pub(in super::super) fn mechanics_test_opponent(drome: &Drome, index: usize) -> Option<String> {
+    let legacy_fixture = drome.mechanics_test_context.load(Ordering::Acquire)
+        && !drome.mechanics_test_native_pool.load(Ordering::Acquire);
+    legacy_fixture.then(|| {
+        let pool = &crate::durability::arena_match::donor::OPPONENTS[0][..5];
+        format!("oteryn:creature.{}", pool[index % pool.len()])
+    })
+}
 pub(super) fn context(
     _owner: &ComposedFreshAdmission<'_, '_, '_>,
     _runtime: &ChannelRuntimeV1,

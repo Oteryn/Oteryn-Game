@@ -71,11 +71,7 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::InvalidCreatureHealth);
         }
-        let maximum = (base.maximum_health as f64 * 1.039_f64.powi(level as i32)).round();
-        if !maximum.is_finite() || maximum < 1.0 || maximum >= i64::MAX as f64 {
-            return Err(CarrierError::DamageOverflow);
-        }
-        let maximum = maximum as i64;
+        let maximum = scaled_tibiadrome_health(base.maximum_health, level)?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
@@ -123,12 +119,65 @@ impl ChannelRuntimeV1 {
             return Ok(Some(raw));
         }
         let scaled =
-            (raw as f64 * 1.039_f64.powi(wave as i32) * f64::from(100 + aura) / 100.0).round();
+            (raw as f64 * tibiadrome_wave_factor(wave) * f64::from(100 + aura) / 100.0).round();
         if !scaled.is_finite() || scaled >= u64::MAX as f64 {
             return Err(CarrierError::DamageOverflow);
         }
         Ok(Some(scaled as u64))
     }
+}
+
+fn tibiadrome_wave_factor(wave: u32) -> f64 {
+    1.039_f64.powi(wave as i32)
+}
+
+fn scaled_tibiadrome_health(base: i64, wave: u32) -> Result<i64, CarrierError> {
+    let maximum = (base as f64 * tibiadrome_wave_factor(wave)).round();
+    if !maximum.is_finite() || maximum < 1.0 || maximum >= i64::MAX as f64 {
+        return Err(CarrierError::DamageOverflow);
+    }
+    Ok(maximum as i64)
+}
+
+#[test]
+fn w17_drome_draws_with_replacement_and_scales_base_health() -> Result<(), CarrierError> {
+    use super::tibiadrome_modifiers::{DromeCreatureRole as Role, drome_wave_opponent};
+    let pool = [
+        (Role::Domestikion, 1100),
+        (Role::Hoodinion, 1173),
+        (Role::Mearidion, 1246),
+        (Role::Murmillion, 1613),
+        (Role::Scissorion, 1393),
+    ];
+    let draw = |run, wave| {
+        (0..17)
+            .map(|slot| drome_wave_opponent(run, wave, slot))
+            .collect::<Vec<_>>()
+    };
+    let wave = draw([17; 16], 10);
+    assert_eq!(wave, draw([17; 16], 10));
+    assert_ne!(wave, draw([17; 16], 11));
+    assert_ne!(wave, draw([18; 16], 10));
+    let expected_opening = [
+        Some(Role::Hoodinion),
+        Some(Role::Domestikion),
+        Some(Role::Scissorion),
+        Some(Role::Hoodinion),
+        Some(Role::Murmillion),
+        Some(Role::Hoodinion),
+    ];
+    assert_eq!(
+        wave.get(..expected_opening.len()),
+        Some(expected_opening.as_slice())
+    );
+    assert!(wave.iter().all(Option::is_some));
+    for (role, expected) in pool {
+        assert!(wave.contains(&Some(role)));
+        let base = role.base_health() as i64;
+        assert_eq!(scaled_tibiadrome_health(base, 0)?, base);
+        assert_eq!(scaled_tibiadrome_health(base, 10)?, expected);
+    }
+    Ok(())
 }
 
 impl ChannelRuntimeV1 {

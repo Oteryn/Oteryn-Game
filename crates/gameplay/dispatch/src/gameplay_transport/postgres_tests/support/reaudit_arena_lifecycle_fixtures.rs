@@ -4,6 +4,8 @@ use super::arena_match_fixtures::fixture;
 
 use super::fixture::{Harness, debug, id};
 
+#[path = "reaudit_arena_lifecycle/native_wave.rs"]
+mod native_wave;
 #[path = "reaudit_arena_lifecycle/source.rs"]
 mod source_map;
 
@@ -19,6 +21,7 @@ pub(super) enum Physical {
     ThreeWaveCommandCatchup,
     SharedLowerWave,
     SomersaultFx,
+    NativeWave,
 }
 
 pub(super) fn physical() -> TestResult {
@@ -158,6 +161,17 @@ pub(super) fn physical_context(
         };
         if source_hall {
             fixture::runtime_at(&mut deps, active, &pin, &world, source_map::ENTRY)?;
+        } else if matches!(case, Physical::NativeWave) {
+            let (x, y, floor) = crate::durability::arena_match::donor::KICK;
+            fixture::runtime_at_generation_with_policies(
+                &mut deps,
+                active,
+                &pin,
+                &world,
+                crate::foundation::MovementLocalPosition { x, y, floor },
+                1,
+                Some(native_wave::fixture_policies(native.policies())?),
+            )?;
         } else {
             fixture::runtime(&mut deps, active, &pin, &world)?;
         }
@@ -344,6 +358,10 @@ pub(super) fn physical_context(
             .tibiadrome
             .mechanics_test_hazards
             .store(large_hazards, std::sync::atomic::Ordering::Release);
+        owner.states.tibiadrome.mechanics_test_native_pool.store(
+            matches!(case, Physical::NativeWave),
+            std::sync::atomic::Ordering::Release,
+        );
         let refusal_before = if !mechanics_test_context {
             let physical = {
                 let runtime = deps.runtime.lock().await;
@@ -515,6 +533,10 @@ pub(super) fn physical_context(
                 .collect()
         };
         assert_eq!(targets.len(), 4);
+        if matches!(case, Physical::NativeWave) {
+            let runtime = deps.runtime.lock().await;
+            return native_wave::assert_wave(&runtime, &targets, starting_wave);
+        }
         if matches!(case, Physical::SomersaultFx) {
             // The existing admitted physical fixture has a sealed ModifierOwner.
             // This exercises its real draw and pending-effect consumer, not a raw
