@@ -164,7 +164,64 @@ async fn kill(
     for direction in path {
         let before = tile(c.world_spatial().actor_position)?;
         let expected = destination(w, before, direction).ok_or("boss route landing missing")?;
+        let occupies_landing = |entity: &oteryn_dev_client::WorldSpatialEntity| {
+            matches!(
+                entity.kind,
+                oteryn_dev_client::EntityKind::Player
+                    | oteryn_dev_client::EntityKind::Creature
+                    | oteryn_dev_client::EntityKind::Npc
+            ) && tile(entity.position).is_ok_and(|position| position == expected)
+        };
         let outcome = c.step(direction).await?;
+        let outcome = if outcome.disposition == StepDisposition::Blocked
+            && tile(c.world_spatial().actor_position)? == before
+        {
+            let entities = c
+                .world_entities()
+                .ok_or("P02 blocked movement entity view missing")?;
+            let occupant = entities.iter().find(|entity| occupies_landing(entity)).map(|entity| entity.entity)
+                .ok_or_else(|| format!(
+                    "BLOCKER-SERVER P02 movement blocked without a visible occupant: from={before:?} landing={expected:?} frame={outcome:?}"
+                ))?;
+            evidence(&format!(
+                "P02_BOSS_ROUTE occupied={expected:?} occupant={occupant:?} frame={outcome:?}"
+            ));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+            verdict::Harness::global().bounded_wait(deadline, "p02-occupant-clearing-route");
+            loop {
+                let entities = c.world_entities().ok_or("P02 route entity view missing")?;
+                if entities.get(&occupant).is_none_or(|entity| {
+                    tile(entity.position).is_ok_and(|position| position != expected)
+                }) && !entities.iter().any(occupies_landing)
+                {
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!(
+                        "P02 route occupant {occupant:?} did not clear {expected:?}"
+                    )
+                    .into());
+                }
+                c.service_liveness(Duration::from_millis(50)).await?;
+                c.take_events();
+            }
+            if tile(c.world_spatial().actor_position)? != before {
+                return Err("P02 actor moved while waiting for the occupied tile".into());
+            }
+            evidence(&format!(
+                "P02_BOSS_ROUTE cleared={expected:?} occupant={occupant:?}"
+            ));
+            let resumed = c.step(direction).await?;
+            if resumed.disposition == StepDisposition::Blocked
+                && c.world_entities()
+                    .is_some_and(|entities| !entities.iter().any(occupies_landing))
+            {
+                return Err(format!("BLOCKER-SERVER P02 movement blocked after occupant cleared: from={before:?} landing={expected:?} frame={resumed:?}").into());
+            }
+            resumed
+        } else {
+            outcome
+        };
         let actual = tile(c.world_spatial().actor_position)?;
         if outcome.disposition != StepDisposition::Moved
             || outcome.world_spatial_delta.is_none()
@@ -446,6 +503,33 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step slot-refusal: reply={refused:?}").into());
     }
     row.pass("slot-refusal", &refused);
+    let deadline = tokio::time::Instant::now()
+        + Duration::from_millis(u64::from(
+            oteryn_protocol_oteryn::logout::MAX_LOGOUT_RETRY_AFTER_MS,
+        ));
+    verdict::Harness::global().bounded_wait(deadline, "p02-server-combat-lock");
+    loop {
+        let combat = c
+            .session_mut()
+            .combat_state()
+            .ok_or("P02 combat state missing before logout")?;
+        if combat.target.is_some() {
+            return Err(format!(
+                "P02 logout still has an exact combat target: {:?}",
+                combat.target
+            )
+            .into());
+        }
+        if !combat.in_fight {
+            evidence("P02_LOGOUT server_combat_state=clear");
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("P02 combat lock did not clear within the protocol bound".into());
+        }
+        c.service_liveness(Duration::from_millis(50)).await?;
+        c.take_events();
+    }
     let session = c.join_snapshot().game_session_id;
     let logout = c.session_mut().logout().await?.result;
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
