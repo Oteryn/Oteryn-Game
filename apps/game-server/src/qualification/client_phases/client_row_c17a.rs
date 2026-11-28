@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::chat::{ChatDisposition, ChatIntent, ChatSpeechMode};
 use oteryn_protocol_oteryn::condition_status::{
     CAPABILITY_CONDITION_STATUS_V1, COMMAND_TYPE_CONDITION_STATUS_QUERY, ConditionStatus,
 };
+use oteryn_protocol_oteryn::premium_overview::State as PremiumState;
 use std::io::Write;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -96,6 +97,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let base = oteryn_gameplay_characters::speed::player_base_speed(level)
         .ok_or("C17a invalid base speed")?;
     check_step(&mut client, outward, neighbor, base, 100, ground).await?;
+    require_premium_state(&mut client, "before_free_cast", PremiumState::None).await?;
     let strong_index = client
         .session_mut()
         .spell_catalog()?
@@ -103,7 +105,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             catalog
                 .entries
                 .into_iter()
-                .find(|entry| entry.words == "utani gran hur")
+                .find(|entry| entry.words == "utani gran hur" && !entry.available)
         })
         .and_then(|entry| std::num::NonZeroU32::new(entry.cast_index))
         .ok_or("C17a Strong Haste index absent on free admission")?;
@@ -117,7 +119,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let _ = cast_and_query(&mut client, "utani hur", 390, 30_000).await?;
     check_step(&mut client, inward, start, base, 130, ground).await?;
     character_prep::grant_premium(&client).await?;
-    require_current_premium(&mut client, "after_free_cast").await?;
+    require_premium_state(&mut client, "after_free_cast", PremiumState::Active).await?;
     wait_support_cooldown(&mut client).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
     loop {
@@ -174,6 +176,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if client.join_snapshot().game_session_id == cast_session {
         return Err("C17a durability check reused the casting session".into());
     }
+    require_premium_state(&mut client, "after_relog", PremiumState::Active).await?;
     let (retained, _) = query_conditions(&mut client).await?;
     if haste_remaining(&retained)? > strong_remaining
         || client.actor_vitals().map(|vitals| vitals.mana) != Some(230)
@@ -181,6 +184,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("C17a fresh admission did not retain Strong Haste and its mana debit".into());
     }
     check_step(&mut client, inward, start, base, 170, ground).await?;
+    let expiry_watchdog = tokio::time::Instant::now() + Duration::from_secs(22);
+    loop {
+        let (status, _) = query_conditions(&mut client).await?;
+        if status
+            .conditions
+            .iter()
+            .all(|condition| condition.icon != 13)
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= expiry_watchdog {
+            return Err("C17a Strong Haste did not expire after relog".into());
+        }
+        client.service_liveness(Duration::from_millis(100)).await?;
+    }
+    check_step(&mut client, outward, neighbor, base, 100, ground).await?;
     logout(&mut client).await?;
 
     let path = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C17a capture directory missing")?;
@@ -290,9 +309,10 @@ async fn assert_refusal(
     Ok(())
 }
 
-async fn require_current_premium(
+async fn require_premium_state(
     client: &mut oteryn_dev_client::DevClientSession,
     phase: &str,
+    expected: PremiumState,
 ) -> TestResult {
     use oteryn_protocol_oteryn::{character_info, premium_overview};
     let reply = client
@@ -316,8 +336,13 @@ async fn require_current_premium(
         "C17A_PREMIUM phase={phase} state={:?} valid_for_us={} authority_revision={}",
         overview.state, overview.valid_for_us, overview.authority_revision
     ));
-    if overview.state != premium_overview::State::Active || overview.valid_for_us == 0 {
-        return Err(format!("C17a Premium is not current phase={phase}").into());
+    if overview.state != expected
+        || (overview.valid_for_us > 0) != (expected == PremiumState::Active)
+    {
+        return Err(format!(
+            "C17a entitlement mismatch phase={phase} expected={expected:?} observed={overview:?}"
+        )
+        .into());
     }
     Ok(())
 }
