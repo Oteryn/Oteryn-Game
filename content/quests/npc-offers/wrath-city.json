@@ -31,7 +31,8 @@
       ],
       "reply": [
         "Can you gather weapons and fish for the resistance?"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "npc": "oteryn:npc.zalamon",
@@ -76,7 +77,8 @@
       ],
       "reply": [
         "Already finished? Did you get zze zzuppliezz I requezzted from you?"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "npc": "oteryn:npc.zalamon",
@@ -120,7 +122,8 @@
       ],
       "reply": [
         "I zzee, zzere izz fish, weaponzz and... more fish? And zze prizzonerzz have been zzupplied azz well, very good! Will you give zze itemzz to me?"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "npc": "oteryn:npc.zalamon",
@@ -150,7 +153,12 @@
       ],
       "reply": [
         "Can you gather weapons and fish for the resistance?"
-      ]
+      ],
+      "requires_premium": true,
+      "elapsed_at_least": {
+        "track": "oteryn:quest-progress/wrath-city/last-report",
+        "seconds": 86400
+      }
     },
     {
       "npc": "oteryn:npc.chartan",
@@ -182,7 +190,8 @@
       ],
       "reply": [
         "Can you gather weapons and fish for the resistance?"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "npc": "oteryn:npc.chartan",
@@ -227,7 +236,8 @@
       ],
       "reply": [
         "Already finished? Did you get zze zzuppliezz I requezzted from you?"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "npc": "oteryn:npc.chartan",
@@ -271,7 +281,8 @@
       ],
       "reply": [
         "I zzee, zzere izz fish, weaponzz and... more fish? And zze prizzonerzz have been zzupplied azz well, very good! Will you give zze itemzz to me?"
-      ]
+      ],
+      "requires_premium": true
     },
     {
       "npc": "oteryn:npc.chartan",
@@ -301,7 +312,12 @@
       ],
       "reply": [
         "Can you gather weapons and fish for the resistance?"
-      ]
+      ],
+      "requires_premium": true,
+      "elapsed_at_least": {
+        "track": "oteryn:quest-progress/wrath-city/last-report",
+        "seconds": 86400
+      }
     },
     {
       "npc": "oteryn:npc.zlak",

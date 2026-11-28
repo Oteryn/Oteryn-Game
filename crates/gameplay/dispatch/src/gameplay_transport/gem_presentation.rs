@@ -91,7 +91,7 @@ pub(super) async fn execute(
             .map(|g| g.id.to_be_bytes())
             .collect(),
         request: r,
-        catalogue: format!("{}@{}", data.revision(), data.source_candidate_sha256()),
+        catalogue: format!("{}@{}", data.revision(), data.gems_sha256()),
         vocation: vocation.into(),
         modifiers,
     }

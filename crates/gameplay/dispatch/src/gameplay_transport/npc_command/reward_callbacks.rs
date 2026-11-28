@@ -57,7 +57,16 @@ pub(super) struct Offer {
     #[serde(default, alias = "premium")]
     requires_premium: Option<bool>,
     #[serde(default)]
+    elapsed_at_least: Option<ElapsedRequirement>,
+    #[serde(default)]
     failure_reply: Vec<String>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ElapsedRequirement {
+    track: String,
+    seconds: u32,
 }
 
 #[derive(Clone, Copy, Deserialize, PartialEq, Eq)]
@@ -583,6 +592,39 @@ fn regional_hunt_dialogue_earlier_offers_admit_mixed_keywords() -> Result<(), St
         }
     }
     assert!(missed.is_empty(), "earlier offers missed: {missed:?}");
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn supplies_offers_require_premium_and_wait_for_the_daily_reset() -> Result<(), String> {
+    let loaded =
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("supplies-offers")
+            .map_err(|error| format!("{error:?}"))?;
+    let offers = offers::embedded().ok_or("embedded offers")?;
+    let now = crate::gameplay_transport::unix_seconds().ok_or("clock")?;
+    let last_report = "oteryn:quest-progress/wrath-city/last-report";
+    for npc in ["oteryn:npc.zalamon", "oteryn:npc.chartan"] {
+        for topic in [41, 42, 43, 44] {
+            let offer = offers
+                .offers
+                .iter()
+                .find(|offer| offer.npc == npc && offer.next_topic == topic)
+                .ok_or_else(|| format!("missing supplies topic {topic} for {npc}"))?;
+            assert_eq!(offer.requires_premium, Some(true));
+            if topic == 44 {
+                let mut tracks = offer
+                    .requires
+                    .iter()
+                    .map(|r| (r.track.clone(), r.minimum))
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                tracks.insert(last_report.into(), now);
+                assert!(!offer.admits(npc, 0, "supplies", loaded.catalogue(), &tracks));
+                tracks.insert(last_report.into(), now - 86_400);
+                assert!(offer.admits(npc, 0, "supplies", loaded.catalogue(), &tracks));
+            }
+        }
+    }
     Ok(())
 }
 

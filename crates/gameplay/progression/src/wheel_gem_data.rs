@@ -55,6 +55,7 @@ struct Manifest {
 pub struct WheelGemData {
     wheel: DataFile,
     gems: DataFile,
+    gems_sha256: String,
 }
 
 fn reject<T>(reason: &'static str) -> Result<T, WheelGemDataError> {
@@ -74,7 +75,7 @@ impl WheelGemData {
     }
 
     fn from_files(wheel: &str, gems: &str, manifest: &str) -> Result<Self, WheelGemDataError> {
-        let manifest: Manifest = serde_json::from_str(manifest)
+        let mut manifest: Manifest = serde_json::from_str(manifest)
             .map_err(|_| WheelGemDataError("malformed import manifest"))?;
         if manifest.schema != "OTERYN_WHEEL_GEM_DATA_MANIFEST/v1"
             || manifest.runtime_admitted
@@ -145,7 +146,14 @@ impl WheelGemData {
         {
             return reject("incomplete imported data");
         }
-        Ok(Self { wheel, gems })
+        Ok(Self {
+            wheel,
+            gems,
+            gems_sha256: manifest
+                .files
+                .remove("gems.json")
+                .ok_or(WheelGemDataError("missing gem file digest"))?,
+        })
     }
 
     pub fn revision(&self) -> &str {
@@ -153,6 +161,9 @@ impl WheelGemData {
     }
     pub fn source_candidate_sha256(&self) -> &str {
         &self.wheel.source_candidate_sha256
+    }
+    pub fn gems_sha256(&self) -> &str {
+        &self.gems_sha256
     }
     pub const fn wheel(&self) -> &Value {
         &self.wheel.data
@@ -207,6 +218,7 @@ mod tests {
         );
         assert!(!data.revision().is_empty());
         assert_eq!(data.source_candidate_sha256().len(), 64);
+        assert_eq!(data.gems_sha256(), sha256_hex(GEMS));
         assert_eq!(
             data.wheel_ruleset().expect("Wheel ruleset").revision(),
             data.revision()

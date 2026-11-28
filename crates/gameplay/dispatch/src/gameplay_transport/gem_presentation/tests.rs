@@ -20,7 +20,7 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
                 nonce: 1,
                 revision: u64::MAX,
             },
-            catalogue: format!("{}@{}", data.revision(), data.source_candidate_sha256()),
+            catalogue: format!("{}@{}", data.revision(), data.gems_sha256()),
             vocation: vocation.into(),
             modifiers: rows.clone(),
         };

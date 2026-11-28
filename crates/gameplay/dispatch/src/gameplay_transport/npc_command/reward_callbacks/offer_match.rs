@@ -32,6 +32,14 @@ impl Offer {
                     .or_else(|| catalogue.track(&s.track).map(|track| track.initial))
                     .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
             })
+            && self.elapsed_at_least.as_ref().is_none_or(|gate| {
+                let Some(track) = catalogue.track(&gate.track) else {
+                    return false;
+                };
+                let last = tracks.get(&gate.track).copied().unwrap_or(track.initial);
+                crate::gameplay_transport::unix_seconds()
+                    .is_some_and(|now| now.saturating_sub(last) >= i64::from(gate.seconds))
+            })
             && self.requires.iter().all(|r| r.holds(catalogue, tracks))
     }
 }

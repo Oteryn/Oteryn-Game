@@ -649,13 +649,15 @@ def test_normal_generation_orders_native_callback_producers() -> None:
             ("build_srx3_rotten_blood_witness.py", "build_srx3_rotten_death_events.py"),
         )
     ]
-    required = [tree, *(command for pair in pairs for command in pair)]
+    placements = ("python3", "tools/content-schema/npc-authoring/convert_placements.py")
+    required = [tree, placements, *(command for pair in pairs for command in pair)]
     nonunique = {
         command[1]: commands.count(command)
         for command in required
         if commands.count(command) != 1
     }
     assert not nonunique, nonunique
+    assert commands.index(tree) < commands.index(placements)
     for producer, consumer in pairs:
         assert (
             commands.index(tree) < commands.index(producer) < commands.index(consumer)

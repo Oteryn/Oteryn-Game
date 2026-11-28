@@ -1133,7 +1133,6 @@ def main() -> int:
             ]
         )
     run(["python3", "tools/content-schema/quest-authoring/last_creep_native.py"])
-    run(["python3", "tools/content-schema/npc-authoring/convert_placements.py"])
     run(
         [
             "python3",
