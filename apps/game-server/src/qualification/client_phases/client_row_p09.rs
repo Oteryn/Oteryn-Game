@@ -65,7 +65,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if after.status != CommandStatus::Accepted || after.payload != query.payload {
         return Err("unopened claim changed the server wall".into());
     }
-    unchanged_rewards(before, reward_state(clients).await?)?;
+    unchanged_rewards(&before, &reward_state(clients).await?)?;
     if tile(client.world_spatial().actor_position)? != refusal_position {
         return Err("actor moved between refusal and shrine use".into());
     }
@@ -82,6 +82,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         claim_enabled: true,
     };
     if opened.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        || ready.server_sequence <= after.server_sequence
         || ready.status != CommandStatus::Accepted
         || decode_reply(DailyRewardCommand::Query, &ready.payload)?
             != DailyRewardReply::Wall(expected_ready)
@@ -97,8 +98,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if client.join_snapshot().game_session_id == session {
         return Err("daily relog reused the original session".into());
     }
+    require_shrine_reach(tile(client.world_spatial().actor_position)?, shrine)?;
     let persisted = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
-    unchanged_rewards(before, reward_state(clients).await?)?;
+    unchanged_rewards(&before, &reward_state(clients).await?)?;
     if persisted.status != CommandStatus::Accepted || persisted.payload != query.payload {
         return Err("daily wall differed after relog".into());
     }
@@ -115,21 +117,63 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let dir = CaptureDirectory(String::from_utf8(output.stdout)?.trim_end().into());
     let binding = format!(
-        "{session:?}:{}:{}\n",
-        query.server_sequence, claim.server_sequence
+        "{session:?}:{}:{}:{}\n",
+        query.server_sequence, claim.server_sequence, ready.server_sequence
     );
     std::fs::write(dir.0.join("binding"), &binding)?;
     std::fs::write(dir.0.join("p09-wall.bin"), &query.payload)?;
     std::fs::write(dir.0.join("p09-claim.bin"), &claim.payload)?;
+    std::fs::write(dir.0.join("p09-ready.bin"), &ready.payload)?;
     if std::fs::read_to_string(dir.0.join("binding"))? != binding {
         return Err("daily capture belongs to a different session or sequence".into());
     }
     let wall = std::fs::read(dir.0.join("p09-wall.bin"))?;
     let refusal = std::fs::read(dir.0.join("p09-claim.bin"))?;
-    if wall != query.payload || refusal != claim.payload {
+    if wall != query.payload
+        || refusal != claim.payload
+        || std::fs::read(dir.0.join("p09-ready.bin"))? != ready.payload
+    {
         return Err("daily capture does not match the bound live replies".into());
     }
     let expected = replay(query.status, &wall, claim.status, &refusal)?;
+    let capture_path = dir.0.clone();
+    let replay_output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("timeout")
+            .args([
+                "60",
+                "cargo",
+                "+1.100.0",
+                "test",
+                "--locked",
+                "-p",
+                "oteryn-client",
+                "--features",
+                "bevy-shell",
+                "--lib",
+                "bevy_shell::game_ui::reward_wall::tests::p09_live_reward_wall_replay",
+                "--",
+                "--ignored",
+                "--exact",
+            ])
+            .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
+            .env("P09_LIVE_CAPTURE_DIR", capture_path)
+            .output()
+    })
+    .await??;
+    let stdout = String::from_utf8_lossy(&replay_output.stdout);
+    if !replay_output.status.success()
+        || !stdout.lines().any(|line| {
+            line.starts_with("test ") && line.ends_with("::p09_live_reward_wall_replay ... ok")
+        })
+        || !stdout.contains("test result: ok. 1 passed; 0 failed;")
+    {
+        return Err(format!(
+            "playable Reward Wall replay failed: {stdout} {}",
+            String::from_utf8_lossy(&replay_output.stderr)
+        )
+        .into());
+    }
+    evidence("P09_CHECK playable Reward Wall PASS");
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         use std::io::Write;
         let root = Path::new(&root);
@@ -154,7 +198,7 @@ fn require_shrine_reach(actor: TilePos, shrine: TilePos) -> TestResult {
     Ok(())
 }
 
-type RewardState = (i64, i64, i16, bool);
+type RewardState = (i64, i64, i16, bool, Option<String>, Option<String>);
 
 async fn reward_state(clients: &SeamClients<'_>) -> TestResult<RewardState> {
     use sqlx::Connection;
@@ -164,7 +208,12 @@ async fn reward_state(clients: &SeamClients<'_>) -> TestResult<RewardState> {
           coalesce((SELECT balance FROM game_character_cosmetic_tokens WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid),0),
           coalesce((SELECT balance FROM game_character_bounty_reroll_tokens WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid),0),
           coalesce((SELECT balance FROM game_account_prey_wildcards WHERE account_id=$3::text::uuid AND world_id=encode($2,'hex')::uuid),0::smallint),
-          EXISTS(SELECT 1 FROM game_character_daily_reward_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid)",
+          EXISTS(SELECT 1 FROM game_character_daily_reward_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid),
+          (SELECT to_jsonb(j)::text FROM game_account_daily_reward_jokers j
+             WHERE account_id=$3::text::uuid AND world_id=encode($2,'hex')::uuid),
+          (SELECT to_jsonb(e)::text FROM game_account_daily_reward_joker_entries e
+             WHERE account_id=$3::text::uuid AND world_id=encode($2,'hex')::uuid
+             ORDER BY entry_id DESC LIMIT 1)",
     )
     .bind(clients.characters[1].as_slice())
     .bind(clients.world.as_slice())
@@ -173,7 +222,7 @@ async fn reward_state(clients: &SeamClients<'_>) -> TestResult<RewardState> {
     .await?)
 }
 
-fn unchanged_rewards(before: RewardState, after: RewardState) -> TestResult {
+fn unchanged_rewards(before: &RewardState, after: &RewardState) -> TestResult {
     if before != after {
         return Err(format!("unopened claim changed rewards: {before:?} -> {after:?}").into());
     }
@@ -346,16 +395,18 @@ fn p09_replay_rejects_incorrect_fresh_wall_values() -> TestResult {
 fn p09_rejects_missing_rendered_refusal_and_unintended_grants() {
     assert!(rendered_refusal("Status: not available").is_err());
     assert!(rendered_refusal("Open the daily reward shrine within reach, then refresh").is_ok());
-    let before = (0, 0, 0, false);
+    let before = (0, 0, 0, false, None, None);
     for after in [
-        (2, 0, 0, false),
-        (0, 1, 0, false),
-        (0, 0, 1, false),
-        (0, 0, 0, true),
+        (2, 0, 0, false, None, None),
+        (0, 1, 0, false, None, None),
+        (0, 0, 1, false, None, None),
+        (0, 0, 0, true, None, None),
+        (0, 0, 0, false, Some("materialized joker".into()), None),
+        (0, 0, 0, false, None, Some("grant ledger entry".into())),
     ] {
-        assert!(unchanged_rewards(before, after).is_err());
+        assert!(unchanged_rewards(&before, &after).is_err());
     }
-    assert!(unchanged_rewards(before, before).is_ok());
+    assert!(unchanged_rewards(&before, &before).is_ok());
 }
 
 #[test]

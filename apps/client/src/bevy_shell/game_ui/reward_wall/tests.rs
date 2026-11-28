@@ -420,3 +420,101 @@ fn reward_store_send_refusal_keeps_the_wall_open() -> TestResult {
     assert!(!owner.play.as_ref().ok_or("play")?.link.store_panel().open);
     Ok(())
 }
+
+#[test]
+#[ignore = "requires the live P09 capture directory"]
+fn p09_live_reward_wall_replay() -> TestResult {
+    use bevy::ui::InteractionDisabled;
+    use oteryn_client_ui::daily_reward::{
+        CommandStatus, DailyRewardCommand, DailyRewardResponse, apply_result, decode_reply,
+    };
+
+    let directory = std::path::PathBuf::from(
+        std::env::var_os("P09_LIVE_CAPTURE_DIR").ok_or("missing live P09 capture directory")?,
+    );
+    let (mut app, mut commands, outbox) = fixture()?;
+    let mut panel = DailyRewardPanel {
+        selected: true,
+        open: true,
+        details_attempted: true,
+        ..Default::default()
+    };
+    outbox.bevy_reward_wall(panel.clone());
+    app.update();
+    click(&mut app, Kind::Refresh)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::DailyReward(DailyRewardCommand::Query)
+    ));
+    assert!(commands.try_recv().is_err());
+
+    let wall = decode_reply(
+        DailyRewardCommand::Query,
+        &std::fs::read(directory.join("p09-wall.bin"))?,
+    )?;
+    assert!(apply_result(
+        &mut panel,
+        &DailyRewardResponse {
+            status: CommandStatus::Accepted,
+            reply: Some(wall)
+        }
+    ));
+    outbox.bevy_reward_wall(panel.clone());
+    app.update();
+    assert!(
+        texts(&mut app)
+            .lines()
+            .any(|line| line == "Streak: 0    Jokers: 1    Day 1 of 7")
+    );
+    let mut controls = app
+        .world_mut()
+        .query::<(&Control, Option<&InteractionDisabled>)>();
+    assert_eq!(
+        controls
+            .iter(app.world())
+            .filter(|(control, disabled)| control.kind == Kind::Collect && disabled.is_some())
+            .count(),
+        1
+    );
+    click(&mut app, Kind::Collect)?;
+    assert!(commands.try_recv().is_err());
+
+    let refusal = decode_reply(
+        DailyRewardCommand::Claim,
+        &std::fs::read(directory.join("p09-claim.bin"))?,
+    )?;
+    assert!(!apply_result(
+        &mut panel,
+        &DailyRewardResponse {
+            status: CommandStatus::Rejected,
+            reply: Some(refusal)
+        }
+    ));
+    outbox.bevy_reward_wall(panel.clone());
+    app.update();
+    assert!(
+        texts(&mut app)
+            .lines()
+            .any(|line| line == "Open the daily reward shrine within reach, then refresh")
+    );
+    let ready = decode_reply(
+        DailyRewardCommand::Query,
+        &std::fs::read(directory.join("p09-ready.bin"))?,
+    )?;
+    assert!(apply_result(
+        &mut panel,
+        &DailyRewardResponse {
+            status: CommandStatus::Accepted,
+            reply: Some(ready),
+        }
+    ));
+    outbox.bevy_reward_wall(panel);
+    app.update();
+    click(&mut app, Kind::Collect)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::DailyReward(DailyRewardCommand::Claim)
+    ));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
