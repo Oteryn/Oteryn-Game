@@ -1,20 +1,16 @@
-//! G22 store browse and offer popularity (capability 154, command 6118).
-//! 1. Admit the node-boot character and browse the featured category (no payment is made).
-//!    The server answers only from the Platform store catalogue and balance projection; the
-//!    pinned node-boot Platform exposes no store catalogue API, so the browse is refused and the
-//!    row fails naming that precondition.
-//! 2. When it answers, every sort order must list the same offers.
-//! 3. Offer popularity is only populated by purchase receipts, which need a Platform payment
-//!    sandbox; the row never makes a real payment and fails naming that precondition.
+//! G22: compare complete Store catalogue views, then spend disposable Platform
+//! coins on an exercise sword and verify its delivery receipt and popularity increment.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
-use oteryn_protocol_oteryn::store::browse as wire;
+use oteryn_protocol_oteryn::store::{self, browse as wire};
+use std::collections::BTreeSet;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => ("PASS", "store-browse-and-popularity-validated".to_owned()),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -56,7 +52,6 @@ async fn send(
     Ok((reply.status, reply.payload))
 }
 
-
 async fn finish(client: &mut DevClientSession) -> TestResult {
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -66,26 +61,20 @@ async fn finish(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-const CAPABILITY: u32 = 154;
+const SANDBOX_OFFER: &str = "store:exercise-sword";
 
-fn same_offers(left: &[String], right: &[String]) -> bool {
-    let (mut left, mut right) = (left.to_vec(), right.to_vec());
-    left.sort();
-    right.sort();
-    left == right
-}
-
-async fn browse(client: &mut DevClientSession, sort: u8) -> TestResult<wire::Page> {
+async fn browse(client: &mut DevClientSession, sort: u8, cursor: String) -> TestResult<wire::Page> {
     let query = wire::Query {
         category: "featured".to_owned(),
         search: String::new(),
         sort,
-        cursor: String::new(),
+        cursor,
     };
     let payload = query
         .encode()
         .map_err(|error| format!("step=browse observed=encode-{error:?}"))?;
-    let (status, reply) = send(client, CAPABILITY, wire::COMMAND_TYPE, &payload).await?;
+    let (status, reply) =
+        send(client, store::CAPABILITY_STORE_V1, wire::COMMAND_TYPE, &payload).await?;
     if status != CommandStatus::Accepted {
         return Err(format!(
             "step=browse observed=status:{status:?} needed=platform-store-catalogue-api-and-balance"
@@ -97,32 +86,135 @@ async fn browse(client: &mut DevClientSession, sort: u8) -> TestResult<wire::Pag
     Ok(page)
 }
 
-async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
-    let base = browse(client, 0).await?;
-    if base.products.is_empty() || base.categories.is_empty() {
-        return Err(format!(
-            "step=browse observed=products:{}-categories:{} needed=store-catalogue-offers",
-            base.products.len(),
-            base.categories.len()
-        )
-        .into());
+fn same_offers<T: PartialEq>(left: &[T], right: &[T], key: impl Fn(&T) -> &str) -> bool {
+    let mut left: Vec<_> = left.iter().collect();
+    let mut right: Vec<_> = right.iter().collect();
+    left.sort_by(|a, b| key(a).cmp(key(b)));
+    right.sort_by(|a, b| key(a).cmp(key(b)));
+    left == right
+}
+
+async fn catalogue(
+    client: &mut DevClientSession,
+    sort: u8,
+    first: wire::Page,
+) -> TestResult<Vec<wire::Product>> {
+    let mut page = first;
+    let mut offers = Vec::new();
+    let mut keys = BTreeSet::new();
+    loop {
+        if page.products.is_empty() || page.categories.is_empty() {
+            return Err(format!("step=browse observed=empty-page-for-sort-{sort}").into());
+        }
+        for product in page.products {
+            if !keys.insert(product.offer.offer_key.clone()) {
+                return Err(format!("step=browse observed=duplicate-offer-for-sort-{sort}").into());
+            }
+            offers.push(product);
+        }
+        if page.next.is_empty() {
+            return Ok(offers);
+        }
+        page = browse(client, sort, page.next).await?;
     }
-    let revisions: Vec<String> = base.products.iter().map(|p| p.revision.clone()).collect();
+}
+
+async fn popularity(connection: &mut sqlx::PgConnection, offer_key: &str) -> TestResult<i64> {
+    let purchases = sqlx::query_scalar(
+        "SELECT purchases FROM game_store_offer_popularity WHERE offer_key = $1",
+    )
+    .bind(offer_key)
+    .fetch_optional(connection)
+    .await?;
+    Ok(purchases.unwrap_or(0))
+}
+
+async fn body(client: &mut DevClientSession, clients: &SeamClients<'_>) -> TestResult {
+    let first = browse(client, 0, String::new()).await?;
+    let total = first.total;
+    let offers = catalogue(client, 0, first).await?;
     for sort in 1..=4 {
-        let page = browse(client, sort).await?;
-        let other: Vec<String> = page.products.iter().map(|p| p.revision.clone()).collect();
-        if !same_offers(&revisions, &other) {
+        let first = browse(client, sort, String::new()).await?;
+        let sorted = catalogue(client, sort, first).await?;
+        if !same_offers(&offers, &sorted, |product| &product.offer.offer_key) {
             return Err(format!("step=sort observed=offer-set-differs-for-sort-{sort}").into());
         }
     }
+
+    let product = offers
+        .iter()
+        .find(|product| product.offer.offer_key == SANDBOX_OFFER)
+        .ok_or("step=purchase observed=sandbox-offer-absent")?;
+    let price = product.offer.price;
+    let expected_balance = total.checked_sub(price).ok_or(
+        "step=purchase observed=insufficient-coins needed=funded-disposable-platform-wallet",
+    )?;
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    let rows: i64 = sqlx::query_scalar("SELECT count(*)::bigint FROM game_store_offer_popularity")
-        .fetch_one(&mut connection)
-        .await?;
-    Err(format!(
-        "step=popularity observed=rows:{rows} needed=platform-payment-sandbox-purchase-receipts"
+    let before = popularity(&mut connection, SANDBOX_OFFER).await?;
+    let request = store::StorePurchaseRequest {
+        purchase_request_id: crate::node::operator_files::uuid_v7()?,
+        offer_key: product.offer.offer_key.clone(),
+        catalog_revision: product.revision.clone(),
+        price,
+        currency: product.offer.currency.clone(),
+    };
+    let payload = store::encode_purchase_request(&request)
+        .map_err(|error| format!("step=purchase observed=encode-{error:?}"))?;
+    let (status, reply) = send(
+        client,
+        store::CAPABILITY_STORE_V1,
+        store::COMMAND_TYPE_STORE_PURCHASE,
+        &payload,
     )
-    .into())
+    .await?;
+    if status != CommandStatus::Accepted {
+        return Err(format!("step=purchase observed=status:{status:?}").into());
+    }
+    let reply = store::decode_purchase_result(&reply)
+        .map_err(|error| format!("step=purchase observed=decode-{error:?}"))?;
+    let (store::StorePurchaseCode::Accepted, Some(order), Some(operation)) =
+        (reply.code, reply.order_id, reply.operation_id)
+    else {
+        return Err(format!(
+            "step=purchase observed=code:{:?} needed=sandbox-purchase",
+            reply.code
+        )
+        .into());
+    };
+
+    let delivered: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_store_purchase_history h
+            JOIN store_delivery_receipts r ON r.purchase_request_id = h.purchase_request_id
+                AND r.account_id = h.account_id AND r.character_id = h.character_id
+            WHERE h.purchase_request_id = encode($1, 'hex')::uuid
+                AND h.order_id = encode($2, 'hex')::uuid
+                AND r.operation_id = encode($3, 'hex')::uuid
+                AND h.offer_key = $4 AND r.item_instance_id IS NOT NULL
+        )",
+    )
+    .bind(request.purchase_request_id.as_slice())
+    .bind(order.as_slice())
+    .bind(operation.as_slice())
+    .bind(SANDBOX_OFFER)
+    .fetch_one(&mut connection)
+    .await?;
+    let after = popularity(&mut connection, SANDBOX_OFFER).await?;
+    if !delivered || before.checked_add(1) != Some(after) {
+        return Err(format!(
+            "step=popularity observed=delivery:{delivered}-before:{before}-after:{after}"
+        )
+        .into());
+    }
+    let after_purchase = browse(client, 0, String::new()).await?;
+    if after_purchase.total != expected_balance {
+        return Err(format!(
+            "step=balance observed={} expected={expected_balance}",
+            after_purchase.total
+        )
+        .into());
+    }
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -151,7 +243,7 @@ mod tests {
     fn offer_sets_compare_without_order() {
         let a = vec!["x".to_owned(), "y".to_owned()];
         let b = vec!["y".to_owned(), "x".to_owned()];
-        assert!(same_offers(&a, &b));
-        assert!(!same_offers(&a, &["x".to_owned()]));
+        assert!(same_offers(&a, &b, String::as_str));
+        assert!(!same_offers(&a, &["x".to_owned()], String::as_str));
     }
 }

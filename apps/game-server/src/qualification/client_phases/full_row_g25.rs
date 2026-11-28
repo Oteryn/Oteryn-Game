@@ -1,16 +1,13 @@
-//! G25: coin transfer quotes and coin market (cmd 6127/6128, caps 154/63).
-//! Admits the character, asks for the durable operation detail (action 3), a 25-coin gift review
-//! addressed to the other provisioned character (action 1) and the coin market listing (market
-//! action 1), then re-reads the detail. A pinned Platform with a coin API must answer the review
-//! `ok` with a quote; the node boot pins no Store API, so the server's exact `unavailable` refusal
-//! is asserted with unchanged state and the row ends FAIL `needed:platform-coin-api-in-node-boot`.
+//! G25: review a 25-coin gift, then read the Platform wallet and the coin market
+//! listing from an authored depot. The review must leave the wallet and operation unchanged.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use sqlx::Connection;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", token(&detail)),
         Ok(Err(error)) => ("FAIL", token(&error.to_string())),
@@ -71,46 +68,69 @@ fn result_of(value: &serde_json::Value) -> String {
     value["result"].as_str().unwrap_or("none").to_owned()
 }
 
-fn operation() -> [u8; 16] {
-    let mut id = [0_u8; 16];
-    id[0] = 1;
-    id[6] = 0x70;
-    id[8] = 0x80;
-    id[15] = 1;
-    id
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let peer = character_name(clients, 0).await?;
+    let world = full_e2ef7::qualification_world(clients)?;
     let mut client = connect_world(clients, 0xd5).await?;
-    for capability in [coin_transfer::CAPABILITY, coin_market::CAPABILITY] {
+    let outcome = verdict::observe(body(&mut client, world, &peer)).await;
+    let closed = verdict::observe(logout(&mut client)).await;
+    let detail = outcome?;
+    closed?;
+    Ok(detail)
+}
+
+async fn body(client: &mut DevClientSession, world: &BundleWorld, peer: &str) -> TestResult<String> {
+    for capability in [
+        coin_transfer::CAPABILITY,
+        coin_market::CAPABILITY,
+        oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
+    ] {
         if !client.selected_capabilities().contains(&capability) {
             return Err(format!("step=admit observed=capability-{capability}-not-selected").into());
         }
     }
-    let detail = |op| {
-        coin_transfer::encode(&coin_transfer::Request {
-            action: 3,
-            operation: op,
-            ..Default::default()
-        })
-    };
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = route(world, from, |at| near_locker(world, at))
+        .ok_or("step=market observed=no-reachable-authored-depot-locker")?;
+    walk(client, world, &path).await?;
+
+    let amount = 25;
+    let detail = coin_transfer::encode(&coin_transfer::Request {
+        action: 3,
+        operation: crate::node::operator_files::uuid_v7()?,
+        ..Default::default()
+    })
+    .map_err(|error| format!("step=encode-detail observed={error:?}"))?;
+    let wallet = coin_market::encode(&coin_market::Request {
+        action: 9,
+        ..Default::default()
+    })
+    .map_err(|error| format!("step=encode-balance observed={error:?}"))?;
+    let balance_before =
+        json_call(client, coin_market::CAPABILITY, coin_market::COMMAND, &wallet).await?;
+    if balance_before["result"] != "ok" {
+        return Err(format!(
+            "step=balance observed={} needed=platform-coin-api-at-depot",
+            result_of(&balance_before)
+        )
+        .into());
+    }
     let detail_before = json_call(
-        &mut client,
+        client,
         coin_transfer::CAPABILITY,
         coin_transfer::COMMAND,
-        &detail(operation()).map_err(|error| format!("step=encode observed={error:?}"))?,
+        &detail,
     )
     .await?;
     let review = coin_transfer::encode(&coin_transfer::Request {
         action: 1,
-        recipient: peer.clone(),
-        amount: 25,
+        recipient: peer.to_owned(),
+        amount,
         ..Default::default()
     })
     .map_err(|error| format!("step=encode observed={error:?}"))?;
     let reviewed = json_call(
-        &mut client,
+        client,
         coin_transfer::CAPABILITY,
         coin_transfer::COMMAND,
         &review,
@@ -119,38 +139,40 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let list = coin_market::encode(&coin_market::Request::default())
         .map_err(|error| format!("step=encode observed={error:?}"))?;
     let market = json_call(
-        &mut client,
+        client,
         coin_market::CAPABILITY,
         coin_market::COMMAND,
         &list,
     )
     .await?;
     let detail_after = json_call(
-        &mut client,
+        client,
         coin_transfer::CAPABILITY,
         coin_transfer::COMMAND,
-        &detail(operation()).map_err(|error| format!("step=encode observed={error:?}"))?,
+        &detail,
     )
     .await?;
-    let unchanged = detail_before == detail_after;
-    logout(&mut client).await?;
+    let balance_after =
+        json_call(client, coin_market::CAPABILITY, coin_market::COMMAND, &wallet).await?;
     let (transfer, listed) = (result_of(&reviewed), result_of(&market));
-    if transfer == "unavailable" || listed == "unavailable" {
-        return Err(format!("step=quote observed=transfer:{transfer};market:{listed};state_unchanged={unchanged};needed:platform-coin-api-in-node-boot").into());
+    if listed != "ok" || !market["offers"].is_array() {
+        return Err(format!("step=market observed=market:{listed} needed=ok-listing").into());
     }
-    if listed == "depot_required" {
-        return Err(format!("step=market observed=market:{listed};transfer:{transfer};needed:depot-access-for-coin-market").into());
-    }
-    if listed != "ok" {
+    let quote_present = reviewed["quote"]
+        .as_str()
+        .is_some_and(|quote| !quote.is_empty());
+    let recipient_matches =
+        reviewed["recipient"] == peer && reviewed["amount"] == amount.to_string();
+    let unchanged = detail_before["result"] == "not_found"
+        && detail_before == detail_after
+        && balance_before == balance_after
+        && reviewed["transferable"] == balance_before["transferable"]
+        && reviewed["non_transferable"] == balance_before["non_transferable"];
+    if transfer != "ok" || !quote_present || !recipient_matches || !unchanged {
         return Err(format!(
-            "step=market observed=market:{listed};transfer:{transfer};needed=ok-listing"
+            "step=quote observed=transfer:{transfer};quote_present={quote_present};recipient_matches={recipient_matches};state_unchanged={unchanged};needed=accepted-funded-platform-quote"
         )
         .into());
     }
-    if transfer != "ok" || reviewed["quote"].is_null() || !unchanged {
-        return Err(format!("step=quote observed=transfer:{transfer};market:{listed};quote_present={};state_unchanged={unchanged};needed=ok-with-quote", !reviewed["quote"].is_null()).into());
-    }
-    Ok(format!(
-        "transfer-review-ok-with-quote;market:{listed};state_unchanged"
-    ))
+    Ok("transfer-review-ok-with-quote;market:ok;wallet-and-operation-unchanged".into())
 }
