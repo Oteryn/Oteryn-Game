@@ -265,7 +265,7 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         let stacks_u64 = u64::from(stacks);
         let expected_dust = stacks_u64 + u64::from(occurrence[15]) % (2 * stacks_u64 + 1);
         let expected_slivers = slivers_for_kill(stacks, occurrence[14]);
-        if corpse_slivers != expected_slivers {
+        if !corpse_slivers_match(stacks, occurrence[14], corpse_slivers) {
             return Err(format!("P19 {classification} corpse slivers={corpse_slivers}, expected={expected_slivers}, occurrence={occurrence:?}").into());
         }
         let expected_items = corpse_item_ids(clients, durable_corpse, source.len()).await?;
@@ -450,11 +450,44 @@ fn valid_reward_transition(
         && after.slivers.checked_sub(killed.slivers) == Some(expected_slivers)
 }
 
+// Crystal 201189f8, configmanager.cpp:315–316 and monster.cpp:2528–2537.
+const CRYSTAL_FIENDISH_SLIVER_MIN: u64 = 3;
+const CRYSTAL_FIENDISH_SLIVER_MAX: u64 = 7;
+
 fn slivers_for_kill(stacks: u8, roll: u8) -> u64 {
-    // Global documents difficulty scaling without a numeric Rat yield.
-    // Crystal 201189f8 configmanager.cpp:315–316 and monster.cpp:2532–2535
-    // use a uniform 3–7 draw. The Oteryn kill occurrence supplies the roll.
-    if stacks == 15 { 3 + u64::from(roll % 5) } else { 0 }
+    if stacks == 15 {
+        let span = CRYSTAL_FIENDISH_SLIVER_MAX - CRYSTAL_FIENDISH_SLIVER_MIN + 1;
+        CRYSTAL_FIENDISH_SLIVER_MIN + u64::from(roll) % span
+    } else {
+        0
+    }
+}
+
+fn corpse_slivers_match(stacks: u8, roll: u8, actual: u64) -> bool {
+    // Parity gap: Global scales Fiendish Slivers with difficulty, but publishes
+    // no numeric yields by tier. Use the approved pinned Crystal bounds here.
+    // https://tibia.fandom.com/wiki/Fiendish_and_Influenced_Creatures#History
+    if stacks == 15 {
+        (CRYSTAL_FIENDISH_SLIVER_MIN..=CRYSTAL_FIENDISH_SLIVER_MAX).contains(&actual)
+            && actual == slivers_for_kill(stacks, roll)
+    } else {
+        actual == 0
+    }
+}
+
+#[test]
+fn forge_corpse_sliver_oracle_rejects_wrong_counts_and_non_fiendish_drops() {
+    for (roll, expected) in [(0, 3), (1, 4), (2, 5), (3, 6), (4, 7), (255, 3)] {
+        for count in 0..=8 {
+            assert_eq!(corpse_slivers_match(15, roll, count), count == expected);
+        }
+    }
+    for stacks in 0..=5 {
+        assert!(corpse_slivers_match(stacks, 2, 0));
+        for count in 1..=8 {
+            assert!(!corpse_slivers_match(stacks, 2, count));
+        }
+    }
 }
 
 async fn rat_kill_occurrence(clients: &SeamClients<'_>, corpse: [u8; 16]) -> TestResult<[u8; 16]> {
