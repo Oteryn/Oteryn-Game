@@ -30,6 +30,14 @@ fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> Te
 }
 
 #[test]
+fn accepted_auto_attack_damages_and_mints_corpse_when_bounty_read_is_blocked() -> TestResult {
+    scenario_thread::run(
+        "kill-reward-blocked-bounty",
+        super::kill_reward_e2e_fixtures::scenario_with_blocked_bounty_read,
+    )
+}
+
+#[test]
 fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge()
 -> TestResult {
     scenario_thread::run("charm-wire-combat", || {

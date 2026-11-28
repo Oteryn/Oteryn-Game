@@ -698,7 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "e414fa9257ca4470a71567a3e0f1feda5f793620a3fd9e777e7b13bad2ad87c5",
+    "content/world/placements/index.json": "5ac32ba59c70e16d19004904127309edf94ce3272bfe729088ab16f4e11eb646",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "203006f5b15052cb12493a3b1e52047f3859b2e5bb186a58295f4868ea1da1bf",
@@ -763,7 +763,7 @@
     "content/world/terrain/terrain-08794-08845.json": "09ecab191e410f8631b9ccbe3ee5e3b6f4aadf2b2f723743659559a7dc0d85e5",
     "content/world/terrain/terrain-08846-08885.json": "c9efa0d2c1e277891e12b6c85887a58f7300421ca1cd42f7fdb9b8499df43467",
     "content/world/terrain/terrain-08886-08887.json": "1741e4d4b71b6ea1032e9b176afe64c9f0441f73dad934fa395eddaf2aca4c31",
-    "content/world/terrain/terrain-09000-09492.json": "5d2f94a00404e05b58e196306940744fbc2aa30af5a0973383c99e0411df84a0",
+    "content/world/terrain/terrain-09000-09476.json": "5d2f94a00404e05b58e196306940744fbc2aa30af5a0973383c99e0411df84a0",
     "imports/crystalserver/spawn-reconciliation/slice-2.json": "597ec988d0df562aafe26d6d2e1a6e3315ac62f2ef0f993ee17eb9bc794999c3",
     "tools/content-schema/native-gameplay/grizzly-debris-item-profiles.json": "eba5dc88620ca0d911e58dd0ff40c5c90e6cce3078e2211d44ff8a74d86b311d"
   }

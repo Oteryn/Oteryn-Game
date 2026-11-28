@@ -8,7 +8,7 @@ use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ProjectV2RangedWeapon, ReferenceItemField, ReferenceWeaponType};
 use crate::domain::equipment_policy_abi::{EquipmentBaseVocation, EquipmentPolicyLookup};
 use crate::durability::character_build::DurableBuildState;
-use crate::durability::character_equipment::{EquipmentSnapshot, EquippedItem};
+use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot, EquippedItem};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -76,7 +76,6 @@ pub enum OwnedFactsError {
     UnavailableWheel,
     UnavailableEquipment,
     UnknownItemPolicy,
-    UnknownCombatMode,
 }
 impl OwnedCastFacts {
     pub fn current_black_skull(&self, now: u64) -> Option<&CurrentProjection<bool>> {
@@ -198,6 +197,17 @@ impl OwnedCastFacts {
             .as_ref()
             .filter(|p| p.current(&self.binding, now))
             .map(|p| p.value)
+    }
+    pub fn elemental_stance_for_cast(
+        &self,
+        now: u64,
+    ) -> Result<super::native_combat::ElementalStance, OwnedFactsError> {
+        match &self.access.elemental_stance {
+            Some(projection) if projection.current(&self.binding, now) => Ok(projection.value),
+            Some(_) => Err(OwnedFactsError::StaleBinding),
+            // Crystal 201189f8 energy_beam.lua:46–53 uses the base element until a stance is set.
+            None => Ok(super::native_combat::ElementalStance::None),
+        }
     }
     pub fn has_current_wheel(&self, now: u64) -> bool {
         self.access
@@ -346,8 +356,20 @@ impl OwnedCastFacts {
         harmony: HarmonyMultiplier,
         now: u64,
     ) -> Result<CasterState, OwnedFactsError> {
-        self.caster_projection(state, spell, content, harmony, now, true)
+        self.caster_projection(state, spell, content, harmony, now, (true, true))
     }
+    /// Leave absent equipment to the ordered cast admission rules.
+    pub fn caster_for_admission(
+        &self,
+        state: &PlayerSpellState,
+        spell: &SpellDefinition,
+        content: &NativeGameplayState,
+        harmony: HarmonyMultiplier,
+        now: u64,
+    ) -> Result<CasterState, OwnedFactsError> {
+        self.caster_projection(state, spell, content, harmony, now, (true, false))
+    }
+
     /// An already accepted chain callback reads current numerical owners without
     /// re-running the initial premium/learning admission. It cannot pay a cast.
     pub fn numerical_caster(
@@ -358,7 +380,7 @@ impl OwnedCastFacts {
         harmony: HarmonyMultiplier,
         now: u64,
     ) -> Result<CasterState, OwnedFactsError> {
-        self.caster_projection(state, spell, content, harmony, now, false)
+        self.caster_projection(state, spell, content, harmony, now, (false, true))
     }
     fn caster_projection(
         &self,
@@ -367,7 +389,7 @@ impl OwnedCastFacts {
         content: &NativeGameplayState,
         harmony: HarmonyMultiplier,
         now: u64,
-        require_cast_access: bool,
+        (require_cast_access, require_equipment): (bool, bool),
     ) -> Result<CasterState, OwnedFactsError> {
         let facts = state.character_facts();
         let vitals = state.vitals();
@@ -429,8 +451,10 @@ impl OwnedCastFacts {
         let mut shield = None;
         // Source-defined first shield is left hand then right. The snapshot is the actual owner.
         for slot in [6_u8, 5] {
-            if !needs_attack && !spell.needs_shield {
-                break;
+            let reads_weapon = needs_attack && slot == 5;
+            let reads_shield = spell.needs_shield && shield.is_none();
+            if !reads_weapon && !reads_shield {
+                continue;
             }
             if let Some(item) = self.equipment.items.iter().find(|i| i.slot == slot) {
                 let policy = content
@@ -451,7 +475,7 @@ impl OwnedCastFacts {
                     return Err(OwnedFactsError::UnavailableEquipment);
                 };
                 if kind == ReferenceWeaponType::Shield {
-                    if shield.is_none() {
+                    if reads_shield {
                         let ReferenceItemField::Known(defense) = weapon.defense else {
                             return Err(OwnedFactsError::UnavailableEquipment);
                         };
@@ -460,7 +484,7 @@ impl OwnedCastFacts {
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
                         );
                     }
-                } else if slot == 5 {
+                } else if reads_weapon {
                     let skill = match kind {
                         ReferenceWeaponType::Fist => Some(0),
                         ReferenceWeaponType::Club => Some(1),
@@ -503,7 +527,7 @@ impl OwnedCastFacts {
                             if needs_attack {
                                 self.equipment
                                     .combat_mode
-                                    .ok_or(OwnedFactsError::UnknownCombatMode)?
+                                    .unwrap_or(CombatMode::Attack)
                                     .attack_factor()
                             } else {
                                 0.0
@@ -514,10 +538,12 @@ impl OwnedCastFacts {
                 }
             }
         }
-        if spell.needs_weapon && attack.is_none() {
-            return Err(OwnedFactsError::UnavailableEquipment);
-        }
-        if spell.needs_shield && shield.is_none() {
+        // Initial casts admit equipment in source order with the other cast rules.
+        // An already accepted callback has no admission phase to check required inputs.
+        if require_equipment
+            && ((spell.needs_weapon && attack.is_none())
+                || (spell.needs_shield && shield.is_none()))
+        {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
         // Crystal COMBAT_FORMULA_SKILL initializes these inputs before looking up the weapon.

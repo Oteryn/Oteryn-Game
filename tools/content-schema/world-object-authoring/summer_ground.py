@@ -19,7 +19,7 @@ APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5
 MARKER_NOTE = " Additionally one decision-21 appearance-only Summer ground; total 8613 Terrain records."
 
 
-def ground_records(identifiers, root=ROOT):
+def ground_records(identifiers, root=ROOT, *, allow_blocking=False):
     """Build map-only ground records against the admitted client appearance bank."""
     manifest = json.loads(
         (root / "imports/official/client-assets/15.30/manifest.json").read_bytes()
@@ -56,16 +56,16 @@ def ground_records(identifiers, root=ROOT):
     if not set(identifiers) <= {row[0] for row in members["entries"]}:
         raise ValueError("ground has no official appearance membership")
     return [
-        ground_record(i, appearances[i], digest, artifact, membership, members)
+        ground_record(i, appearances[i], digest, artifact, membership, members, allow_blocking=allow_blocking)
         for i in sorted(identifiers)
     ]
 
 
-def ground_record(identifier, appearance, digest, artifact, membership, members):
+def ground_record(identifier, appearance, digest, artifact, membership, members, *, allow_blocking=False):
     if (
         "bank" not in appearance.flags
         or not appearance.speed
-        or "unpass" in appearance.flags
+        or ("unpass" in appearance.flags and not allow_blocking)
     ):
         raise ValueError(f"appearance {identifier} is not walkable ground")
     key = f"oteryn:terrain.tibia.i{identifier}"

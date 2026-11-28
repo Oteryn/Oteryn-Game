@@ -265,6 +265,8 @@ pub struct PreparedMagnitudeOwner {
     selected_item_augments:
         Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
     caster: PlayerSpellState,
+    #[cfg(feature = "qualification-cast-evidence")]
+    base_damage_evidence: Vec<(ExactActorRef, i64, i64)>,
     selected_spell: Option<String>,
     selected_focus_group: bool,
     now_ms: u64,
@@ -703,11 +705,18 @@ impl PreparedMagnitudeOwner {
         );
         Ok(())
     }
+    #[cfg(feature = "qualification-cast-evidence")]
+    pub fn base_damage_evidence(&self) -> &[(ExactActorRef, i64, i64)] {
+        &self.base_damage_evidence
+    }
+
     /// Select only the named instant spell from the original fenced Item observations.
     /// Selection leaves those observations intact for commit-time revalidation.
     pub fn select_item_spell(&mut self, spell: &super::SpellDefinition) -> Result<(), Error> {
         use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
         self.selected_item_augments.clear();
+        #[cfg(feature = "qualification-cast-evidence")]
+        self.base_damage_evidence.clear();
         self.finished_player_damage.clear();
         self.selected_spell = Some(spell.name.clone());
         self.selected_focus_group = spell
@@ -1089,6 +1098,8 @@ impl PreparedMagnitudeOwner {
             selected_item_augments: Vec::new(),
             resolved_attributes: resolved,
             caster: caster.clone(),
+            #[cfg(feature = "qualification-cast-evidence")]
+            base_damage_evidence: Vec::new(),
             selected_spell: None,
             selected_focus_group: false,
             now_ms,
@@ -1532,7 +1543,7 @@ impl PreparedMagnitudeOwner {
         } else {
             None
         };
-        let apply_raw_bonuses = |mut value: i64, element| -> Result<i64, Error> {
+        let apply_raw_bonuses = |mut value: i64, element| -> Result<(i64, i64), Error> {
             // Item base bonuses precede critical, target mitigation and Wheel flat stages.
             for augment in &self.selected_item_augments {
                 use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
@@ -1546,6 +1557,7 @@ impl PreparedMagnitudeOwner {
                         .ok_or(Error::InvalidMagnitude)?;
                 }
             }
+            let augmented = value;
             if let Some(bonus) = critical_bonus {
                 value = signed_truncate(value as f64 * (1.0 + f64::from(bonus) / 10000.0))?;
             }
@@ -1554,9 +1566,20 @@ impl PreparedMagnitudeOwner {
                     .checked_add(signed_round(value as f64 * 0.6)?)
                     .ok_or(Error::InvalidMagnitude)?;
             }
-            Ok(value)
+            Ok((value, augmented))
         };
-        let mut value = apply_raw_bonuses(raw, element)?;
+        let (mut value, _augmented) = apply_raw_bonuses(raw, element)?;
+        #[cfg(feature = "qualification-cast-evidence")]
+        if element != Element::Healing
+            && self
+                .selected_spell
+                .as_deref()
+                .is_some_and(|spell| spell.eq_ignore_ascii_case("greater tiger clash"))
+            && self.base_damage_evidence.len() < MAX_EFFECTS
+        {
+            self.base_damage_evidence
+                .push((binding.actor, raw, _augmented));
+        }
         let party = self
             .caster
             .virtue_party_bonuses(self.now_ms.saturating_mul(1_000));
@@ -1605,7 +1628,9 @@ impl PreparedMagnitudeOwner {
             return Ok((value.max(0), 0, None));
         }
         let mut secondary = secondary
-            .map(|(element, raw)| apply_raw_bonuses(raw, element).map(|value| (element, value)))
+            .map(|(element, raw)| {
+                apply_raw_bonuses(raw, element).map(|(value, _)| (element, value))
+            })
             .transpose()?;
         let offence = self.caster.equipped_offence();
         if let Some(damage) = self.intrinsic_weapon
@@ -2302,6 +2327,8 @@ mod tests {
                     attributes,
                     selected_item_augments: vec![],
                     caster: player(),
+                    #[cfg(feature = "qualification-cast-evidence")]
+                    base_damage_evidence: Vec::new(),
                     selected_spell: None,
                     selected_focus_group: false,
                     now_ms: 1,

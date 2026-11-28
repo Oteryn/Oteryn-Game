@@ -125,6 +125,7 @@ pub enum BootError {
     Readiness(&'static str),
     ClockSkew,
     Serve,
+    GameplayServe(crate::gameplay_transport::GameplayServeError),
     ContentActivation(&'static str),
     /// MAP-CUTOVER-1a: the configured world bundle failed a boot check.
     WorldBundle(crate::map::boot::BootRefusal),
@@ -169,7 +170,7 @@ impl BootError {
             Self::Bind(_) => BootErrorKind::BindFailed,
             Self::Readiness(_) => BootErrorKind::ReadinessFailed,
             Self::ClockSkew => BootErrorKind::ClockSkew,
-            Self::Serve => BootErrorKind::ServeConfigRejected,
+            Self::Serve | Self::GameplayServe(_) => BootErrorKind::ServeConfigRejected,
             Self::ContentActivation(_) => BootErrorKind::ContentActivationRefused,
             Self::WorldBundle(_) => BootErrorKind::WorldBundleRefused,
         }
@@ -193,7 +194,7 @@ impl BootError {
             Self::AssignmentWait => 15,
             Self::Bind(_) => 16,
             Self::Readiness(_) | Self::ClockSkew => 17,
-            Self::Serve => 18,
+            Self::Serve | Self::GameplayServe(_) => 18,
             Self::ContentActivation(_) => 19,
             Self::WorldBundle(_) => 20,
         }
@@ -212,6 +213,7 @@ impl std::fmt::Display for BootError {
             Self::Readiness(stage) => write!(formatter, "readiness failed at {stage}"),
             Self::ClockSkew => formatter.write_str("clock skew beyond the uncertainty bound"),
             Self::Serve => formatter.write_str("gameplay listener configuration rejected"),
+            Self::GameplayServe(error) => write!(formatter, "gameplay serving failed: {error}"),
             Self::ContentActivation(stage) => {
                 write!(
                     formatter,
@@ -2780,6 +2782,13 @@ impl Readiness<'_> {
         ready: bool,
         budget: Option<tokio::time::Instant>,
     ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
+        // The serving loops keep running during withdrawal. Reserve foreground
+        // preference across both the guard read and its fenced publication.
+        let _foreground = if ready {
+            None
+        } else {
+            self.root.foreground_demand().ok()
+        };
         for _ in 0..2 {
             let publication = self.prepare(ready, budget).await?;
             let mut attempt = 0;
@@ -2841,6 +2850,7 @@ fn readiness_publication_retryable(error: &AssignmentError) -> bool {
 }
 
 /// The closed control-socket result (D2).
+#[cfg_attr(feature = "qualification-spawn", allow(clippy::too_many_arguments))]
 async fn bootstrap_one(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -2849,6 +2859,7 @@ async fn bootstrap_one(
     intents: &ProducerDescriptor,
     capacity: &TransientCapacity,
     operation_id: [u8; 16],
+    #[cfg(feature = "qualification-spawn")] fixture: bool,
 ) -> &'static str {
     let budget = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
     // A committed result is answered without any external read.
@@ -2886,6 +2897,12 @@ async fn bootstrap_one(
         }
     };
     let account = uuid_text(intent.account_id().as_bytes());
+    #[cfg(feature = "qualification-spawn")]
+    let intent = if fixture && account == qualification_fixture::UNASSIGNED_ACCOUNT {
+        intent.into_qualification_unassigned()
+    } else {
+        intent
+    };
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
     // The refresh failure renders as fixed step/cause tokens only.
@@ -2922,26 +2939,32 @@ async fn bootstrap_one(
 /// that background passes also take, so a busy holder fails the step at once, before any SQL
 /// runs; the bootstrap commit is idempotent by its operation id. Any other outcome is final.
 ///
-/// With a `root`, a retry starts as soon as the busy holder is returned, not before
-/// [`HOLDER_RETRY_FLOOR`] and not after the backoff (NODEBOOT-1): a step sleeping its
-/// backoff lost the holder to the background passes that poll it on their own cadence.
+/// With a `root`, prefer this foreground step over scheduled passes and keep its
+/// place in the holder queue from its first refused checkout through the retries.
+/// Other transient failures retry within the ordinary backoff and deadline.
 async fn retry_busy<T, E>(
     root: Option<&DurabilityRoot>,
     budget: tokio::time::Instant,
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
+    let _foreground = root.and_then(|root| root.foreground_demand().ok());
+    let mut waiter = None;
     let mut attempt = 0;
     loop {
         let outcome = step().await;
         match &outcome {
             Err(error) if busy(error) && tokio::time::Instant::now() < budget => match root {
                 Some(root) => {
+                    let _ = waiter.get_or_insert_with(|| root.holder_waiter());
                     let now = tokio::time::Instant::now();
                     let delay = retry_delay(attempt, Some(budget.saturating_duration_since(now)));
                     attempt = attempt.saturating_add(1);
-                    root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
-                        .await;
+                    let earliest = now + HOLDER_RETRY_FLOOR;
+                    let latest = now + delay;
+                    if !root.wait_holder_turn(earliest, latest).await {
+                        root.wait_holder_retry(earliest, latest).await;
+                    }
                 }
                 None => backoff_within(&mut attempt, Some(budget)).await,
             },
@@ -3059,6 +3082,9 @@ async fn control_loop(
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
+    #[cfg(feature = "qualification-spawn")] premium: Option<
+        &crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    >,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -3088,7 +3114,14 @@ async fn control_loop(
                 ),
                 Some(request) if request.starts_with(b"qualify ") => (
                     Box::pin(qualification_fixture::prepare(
-                        root, authority, proof, config, native, &request,
+                        root,
+                        authority,
+                        proof,
+                        config,
+                        native,
+                        #[cfg(feature = "qualification-spawn")]
+                        premium,
+                        &request,
                     ))
                     .await
                     .to_owned(),
@@ -3116,7 +3149,15 @@ async fn control_loop(
                     };
                     (
                         bootstrap_one(
-                            root, authority, proof, evidence, intents, &capacity, operation,
+                            root,
+                            authority,
+                            proof,
+                            evidence,
+                            intents,
+                            &capacity,
+                            operation,
+                            #[cfg(feature = "qualification-spawn")]
+                            config.qualification_fixture,
                         )
                         .await
                         .to_owned(),
@@ -4368,6 +4409,70 @@ source_authority = "OTERYN_GAME_JOURNAL"
     }
 
     #[test]
+    fn readiness_withdrawal_precedes_scheduled_holder_work()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness as fixture;
+
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || -> Result<(), String> {
+                fixture::runtime()
+                    .map_err(fixture::debug)?
+                    .block_on(async {
+                        let harness =
+                            fixture::Harness::create(admin, "withdrawal_holder", false).await?;
+                        let result: fixture::TestResult = async {
+                            let mut config =
+                                NodeConfig::parse(super::super::config::tests::NODE.as_bytes())?;
+                            config.readiness.source_authority = "game-runtime-publisher".into();
+                            let readiness = Readiness {
+                                root: &harness.root,
+                                proof: &harness.node,
+                                scope: fixture::scope()?,
+                                generation: 1,
+                                config: &config,
+                            };
+                            harness.root.await_ready().await?;
+                            let occupied = harness.root.try_issue_semantic_pass()?;
+                            let deadline = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
+                            let mut withdrawal =
+                                std::pin::pin!(readiness.publish(false, Some(deadline)));
+                            std::future::poll_fn(|context| {
+                                assert!(withdrawal.as_mut().poll(context).is_pending());
+                                Poll::Ready(())
+                            })
+                            .await;
+                            occupied.run(|_, _| Box::pin(async { Ok(()) })).await?;
+                            assert!(harness.root.is_ready(), "the occupied holder returned");
+                            let background = DurabilityRoot::with_background_holder(async {
+                                harness.root.try_issue_semantic_pass().map(drop)
+                            })
+                            .await;
+                            assert!(matches!(background, Err(DurabilityError::RootUnavailable)));
+                            withdrawal.await.map_err(fixture::debug)?;
+                            let ready: bool = sqlx::query_scalar(
+                                "SELECT ready FROM game_durability_admission_runtime_guards",
+                            )
+                            .fetch_one(&harness.pool)
+                            .await?;
+                            assert!(!ready);
+                            Ok(())
+                        }
+                        .await;
+                        harness.cleanup().await?;
+                        result
+                    })
+                    .map_err(fixture::debug)
+            })?
+            .join()
+            .map_err(|_| "readiness withdrawal test thread failed")??;
+        Ok(())
+    }
+
+    #[test]
     fn readiness_publication_returns_a_definite_database_rejection()
     -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{
@@ -4953,6 +5058,52 @@ assignment_epoch = 1
     }
 
     #[test]
+    fn bootstrap_durability_step_has_foreground_holder_preference()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness as fixture;
+
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || -> Result<(), String> {
+                fixture::runtime()
+                    .map_err(|error| error.to_string())?
+                    .block_on(async {
+                        let harness =
+                            fixture::Harness::create(admin, "bootstrap_holder", false).await?;
+                        let root = &harness.root;
+                        root.await_ready().await?;
+                        assert!(root.background_holder_ready());
+
+                        let budget =
+                            tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+                        let result = retry_busy(Some(root), budget, holder_busy, async || {
+                            let background = DurabilityRoot::with_background_holder(async {
+                                root.try_issue_semantic_pass().map(drop)
+                            })
+                            .await;
+                            Ok((background, root.is_ready()))
+                        })
+                        .await
+                        .map_err(fixture::debug);
+                        let background_resumed = root.background_holder_ready();
+                        harness.cleanup().await?;
+                        let (background, foreground) = result?;
+                        assert!(matches!(background, Err(DurabilityError::RootUnavailable)));
+                        assert!(foreground);
+                        assert!(background_resumed);
+                        Ok::<(), Box<dyn std::error::Error>>(())
+                    })
+                    .map_err(|error| error.to_string())
+            })?
+            .join()
+            .map_err(|_| "bootstrap holder preference test thread failed")??;
+        Ok(())
+    }
+
+    #[test]
     fn boot_step_lines_name_the_step_and_only_the_error_class() {
         use crate::durability::{DurabilityError, SqlxFailureClass};
         assert_eq!(
@@ -5309,18 +5460,26 @@ assignment_epoch = 1
         let index = gameplay
             .and_then(|state| state.item_index())
             .expect("index");
-        let booted = boot_bundle_items(checked(), world, channel, gameplay).expect("booted");
-        // The active profile does not classify 1629 as a Door (`item_type`), so no door is
-        // placed whatever its appearance id, and a preprod node refuses to serve this bundle
-        // rather than open a doorway in name only.
-        assert_eq!(booted.facts().doors().len(), 0);
+        let mut expected_doors = 0;
+        oteryn_world_bundle::bundle::visit(&bytes, |manifest, sector| {
+            expected_doors += sector
+                .tiles
+                .iter()
+                .flat_map(|tile| &tile.items)
+                .filter(|item| {
+                    let entry = &manifest.palette[item.palette as usize];
+                    item.depth == 0
+                        && entry.family == oteryn_world_bundle::bundle::Family::Item
+                        && crate::map::boot::native_item_definition(gameplay, &entry.key)
+                            .is_some_and(|definition| definition.door)
+                })
+                .count();
+            Ok(())
+        })
+        .expect("count top-level doors in the active generation");
+        let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
+        assert_eq!(booted.facts().doors().len(), expected_doors);
         assert_eq!(booted.facts().doors().sealed(), 0);
-        assert!(matches!(
-            boot_bundle_world(checked(), world, channel, gameplay),
-            Err(BootError::WorldBundle(
-                crate::map::boot::BootRefusal::NoDoors
-            ))
-        ));
         for (key, x, compact) in [(boxed, 6, boxed_id), (coin, 7, coin_id)] {
             use crate::map::view::MapFacts;
             let reference = index

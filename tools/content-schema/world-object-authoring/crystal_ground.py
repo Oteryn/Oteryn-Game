@@ -6,13 +6,13 @@ import json
 import sys
 from pathlib import Path
 
-from summer_ground import APPEARANCES_SHA256, ROOT, ground_record, read_appearances
+from summer_ground import APPEARANCES_SHA256, ROOT, ground_records, read_appearances
 
 sys.path.insert(0, str(ROOT / "tools/content-schema/native-gameplay"))
 from build_crystal_item_collision import load_source
 from build_source_world import fields, policies
 
-SHARD = ROOT / "content/world/terrain/terrain-09000-09492.json"
+SHARD = ROOT / "content/world/terrain/terrain-09000-09476.json"
 PLACEMENTS = ROOT / "content/world/placements/index.json"
 
 
@@ -44,7 +44,7 @@ def regenerate(source, check):
         if shard != SHARD
         for record in json.loads(shard.read_bytes())["records"]
     }
-    records = []
+    retained = []
     for row in index["palette"]:
         identifier = row["source_item_id"]
         if identifier in scoped:
@@ -61,10 +61,11 @@ def regenerate(source, check):
             or source_item["block_solid"] != ("unpass" in appearance.flags)
         ):
             continue
-        record = ground_record(ROOT, artifact, appearance, identifier)
-        row.update(key=record["identity"]["key"], provisional=False)
-        if record["identity"]["key"] not in existing:
-            records.append(record)
+        key = f"oteryn:terrain.tibia.i{identifier}"
+        row.update(key=key, provisional=False)
+        if key not in existing:
+            retained.append(identifier)
+    records = ground_records(retained, allow_blocking=True)
     if len(records) != 477 or not any(r["provenance"]["source_item_id"] == 53066 for r in records):
         raise ValueError(f"Crystal ground catalogue coverage changed: {len(records)}")
     for path, document in (
