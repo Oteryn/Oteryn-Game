@@ -180,7 +180,10 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
         .session_mut()
         .read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window = wire::decode_npc_trade_window(&delta.payload)
+    let details_selected = client
+        .selected_capabilities()
+        .contains(&oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1);
+    let window = wire::decode_npc_trade_window_for(&delta.payload, details_selected)
         .map_err(|error| format!("trade window decode: {error:?}"))?;
     let (offer_index, offer) = window
         .offers
