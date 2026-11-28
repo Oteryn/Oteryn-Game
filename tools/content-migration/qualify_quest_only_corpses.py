@@ -1,4 +1,4 @@
-"""Reclassify captured Grizzly bodies without changing the source decay witnesses."""
+"""Qualify captured Grizzly bodies without changing the source decay witnesses."""
 
 import json
 from pathlib import Path
@@ -17,12 +17,12 @@ def main():
     scope_file = ORDINARY / "scope.json"
     scope = json.loads(scope_file.read_bytes())
     crocodile = ["crocodile", 6046]
-    if crocodile in rows:
-        rows.remove(crocodile)
-    elif scope["excluded"].get("crocodile") != REASON:
-        raise ValueError("Missing captured Crocodile admission")
-    scope["excluded"]["crocodile"] = REASON
-    scope["excluded"] = dict(sorted(scope["excluded"].items()))
+    if crocodile not in rows:
+        if scope["excluded"].get("crocodile") != REASON:
+            raise ValueError("Missing captured Crocodile admission")
+        rows.append(crocodile)
+        rows.sort()
+    scope["excluded"].pop("crocodile", None)
     admissions.write_text(
         "[\n"
         + ",\n".join(json.dumps(row, separators=(",", ":")) for row in rows)
@@ -37,9 +37,10 @@ def main():
         raise ValueError("The Snapper source body changed")
     admitted = packet["admitted"]
     deferred = packet["deferred_admission"]
-    if admitted.pop(key, None) != 6046 and deferred.get(key) != REASON:
+    if admitted.get(key) != 6046 and deferred.get(key) != REASON:
         raise ValueError("Missing captured Snapper admission")
-    deferred[key] = REASON
+    admitted[key] = 6046
+    deferred.pop(key, None)
     # Keep the packet's compact physical observations in their captured encoding.
     for field in ("admitted", "deferred_admission"):
         start = raw.index("{", raw.index(f'  "{field}":'))

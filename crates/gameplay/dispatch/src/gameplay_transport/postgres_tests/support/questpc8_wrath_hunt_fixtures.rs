@@ -340,6 +340,8 @@ pub(super) async fn exercise(
     talk(owner, admitted, npc, 8210, "hi").await?;
     talk(owner, admitted, npc, 8211, "mission").await?;
     assert_eq!(progress(owner, admitted, authority, STAGE).await?, 6);
+    let questline = "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline";
+    assert_eq!(progress(owner, admitted, authority, questline).await?, 24);
     talk(owner, admitted, npc, 8212, "mission").await?;
     for (track, value) in [
         ("questline", 25),

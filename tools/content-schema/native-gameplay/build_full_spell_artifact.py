@@ -860,11 +860,6 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 facts[key].pop('ordinary_corpse_only', None)
             if not facts[key].get('ordinary_corpse_only'):
                 qualified_corpses.add(key)
-            if key == 'oteryn:item.tibia.i6046':
-                # Both crocodile and the Snapper use this body. Keep their
-                # established Grizzly quest-only settlement while retaining
-                # the physical profile and qualification of their loot yields.
-                facts[key].update(materializable=False, container_capacity=None)
     # These exact quest yields already have admitted native pickup and carried
     # profiles. Keep source tables and rates as authored.
     quest_yields = quest_yields | {f'oteryn:item.tibia.i{i}' for i in (
