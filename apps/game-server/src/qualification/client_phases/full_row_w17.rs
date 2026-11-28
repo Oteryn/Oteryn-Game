@@ -220,11 +220,23 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if count(&client, platinum)? != 10 || count(&client, trophy)? != 0 {
         return Err("W17 entry inputs or empty trophy pre-state differ".into());
     }
-    client.session_mut().equip_item_definition(sword).await?;
-    if !client.inventory().is_some_and(|inventory| inventory.equipment.iter()
-        .any(|slot| slot.item.item_definition_ref == sword))
-    {
-        return Err("W17 magic sword did not enter equipment".into());
+    let equipped = |client: &DevClientSession| client.inventory().is_some_and(|inventory| {
+        inventory.equipment.iter().any(|slot| slot.item.item_definition_ref == sword)
+    });
+    if count(&client, sword)? != 1 || equipped(&client) {
+        return Err("W17 magic sword was not carried unequipped before the move".into());
+    }
+    let gear = client.session_mut().equip_item_definition(sword).await?;
+    if gear.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+        return Err(format!("W17 magic sword equip refused: {gear:?}").into());
+    }
+    let gear_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !equipped(&client) {
+        if tokio::time::Instant::now() >= gear_deadline {
+            return Err("W17 magic sword equip sent no confirming inventory frame".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
     }
     use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
     let modes = FightModes { fight_mode: FightMode::Offensive, chase: ChaseMode::Chase, secure: true };
