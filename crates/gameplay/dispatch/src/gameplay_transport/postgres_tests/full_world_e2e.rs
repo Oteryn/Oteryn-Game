@@ -10,6 +10,76 @@ fn full_world_chain_survives_relogin_and_replays_move_no_value_on_postgres() -> 
     super::kill_reward_e2e_fixtures::scenario_thread::run("full-world-e2e", scenario)
 }
 
+#[test]
+fn c01_right_hand_club_damages_rat_with_starter_spellbook_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e_fixtures::scenario_thread::run("c01-club-spellbook", || {
+        world_scenario!(
+            "c01_club_spellbook",
+            |h, _request, seal, authority, world_id, native, world, cells, room, pin,
+             deps, actor, session, owner, fence, admitted| {
+                use crate::gameplay_transport::attack::{SwingWeapon, swing_weapon};
+                use oteryn_gameplay_combat_rules::resolution::MeleeSkill;
+
+                // Fixture custody only. The equipment read and swing use the production owners.
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                for (slot, key, instance) in [
+                    (5_i16, "oteryn:item.tibia.i3270", id(112)),
+                    (6_i16, "oteryn:item.tibia.i3059", id(113)),
+                ] {
+                    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+                        .bind(instance.as_slice()).bind(world_id.as_bytes().as_slice()).bind(key)
+                        .execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
+                        .bind(id(41).as_slice()).bind(world_id.as_bytes().as_slice()).bind(slot)
+                        .bind(instance.as_slice()).execute(&mut *tx).await?;
+                }
+                tx.commit().await?;
+                let equipped = crate::gameplay_transport::equipment_move::read_current_equipment(&owner, session)
+                    .await.ok_or("current equipment")?;
+                assert_eq!(
+                    swing_weapon(native, &equipped.items),
+                    Some(SwingWeapon::Melee { skill: MeleeSkill::Club, attack: 7, elemental: None }),
+                    "the starter spellbook must let the right-hand club resolve",
+                );
+
+                step_west(&mut owner, actor, session).await?;
+                assert_eq!(step_west(&mut owner, actor, session).await?, TRADE_CELL);
+                let (rat, before) = {
+                    let mut runtime = deps.runtime.lock().await;
+                    runtime.realize_native_qualification_spawn(pin.clone(), "oteryn:creature.rat", RAT_CELL)
+                        .map_err(debug)?;
+                    let rat = runtime.visible_entities().creatures.first().copied().ok_or("rat")?;
+                    let before = runtime.live_creature_health(rat.actor).ok_or("live rat")?;
+                    let disposition = owner.states.attack.lock().await.set_target(
+                        &runtime, Some(&room), actor, session, owner.owner_now(),
+                        Some(EntityRef { identity: rat.actor.placement_identity(), generation: rat.generation }), 1,
+                    );
+                    assert_eq!(disposition, AttackIntentDisposition::Ok);
+                    (rat.actor, before)
+                };
+                for _ in 0..8 {
+                    owner.refresh_attack_weapon(actor, session).await;
+                    owner.drain_auto_attacks().await;
+                    let health = deps.runtime.lock().await.companion_snapshot_including_dead(rat)
+                        .map_err(debug)?.health;
+                    if u64::try_from(health)? < before {
+                        return Ok(());
+                    }
+                    owner.clock_origin -= Duration::from_secs(3);
+                }
+                Err("the equipped club dealt no damage through the swing owner".into())
+            }
+        )
+    })
+}
+
 fn scenario() -> TestResult {
     world_scenario!(
         "full_world_e2e",
