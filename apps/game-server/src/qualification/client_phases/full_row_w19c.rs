@@ -15,10 +15,13 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const TRUMPET: u32 = 6572;
 const PLAYED_TRUMPET: u32 = 6573;
+const TRUMPET_PRICE: u64 = 80;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
+            .await;
     let (status, detail) = match result {
         Ok(Ok(note)) => ("PASS", compact(&note)),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
@@ -89,21 +92,27 @@ async fn wait_quantity(
     }
 }
 
-async fn acquire(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    id: u32,
-    amount: u32,
-) -> TestResult<u64> {
+fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
+    let index = provisioning::item_index()?;
+    let inventory = quantities(client)?;
+    let mut gold = 0;
+    for (id, value) in [(3031, 1), (3035, 100), (3043, 10_000)] {
+        let reference = provisioning::item_reference(&index, id)?;
+        gold += inventory.get(&reference.get()).copied().unwrap_or_default() * value;
+    }
+    Ok(gold)
+}
+
+async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<(u64, u64)> {
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::npc_service as wire;
     let index = provisioning::item_index()?;
-    let reference = provisioning::item_reference(&index, id)?;
+    let reference = provisioning::item_reference(&index, TRUMPET)?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
         root.join("content/services/trade/trade-00000-00323.json"),
     )?)?;
-    let key = format!("oteryn:item.tibia.i{id}");
+    let key = format!("oteryn:item.tibia.i{TRUMPET}");
     let sellers: BTreeSet<_> = trades["records"]
         .as_array()
         .ok_or("trade records absent")?
@@ -123,22 +132,23 @@ async fn acquire(
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let here = tile(client.world_spatial().actor_position)?;
-    let (npc, path) = metadata
+    let npc = metadata
         .npcs
         .npcs
         .iter()
-        .filter(|npc| sellers.contains(&npc.key))
-        .filter_map(|npc| {
-            route(world, here, |at| {
-                npc.placements
-                    .iter()
-                    .any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)
-            })
-            .map(|path| (npc, path))
-        })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
-    walk(client, world, &path).await?;
+        .find(|npc| npc.key == "oteryn:npc.stan" && sellers.contains(&npc.key))
+        .ok_or("Stan is missing from the live qualification bundle")?;
+    let approach = TilePos { x: 32947, ..START };
+    if here != START || destination(world, here, StepDirection::West) != Some(approach) {
+        return Err("Stan's exact westbound approach is absent from the loaded map".into());
+    }
+    let step = client.session_mut().step(StepDirection::West).await?;
+    if step.disposition != StepDisposition::Moved
+        || step.world_spatial_delta.is_none()
+        || tile(client.world_spatial().actor_position)? != approach
+    {
+        return Err(format!("step=stan-approach expected={approach:?} observed={step:?}").into());
+    }
     let actor = client
         .world_entities()
         .and_then(|entities| {
@@ -180,7 +190,18 @@ async fn acquire(
             offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
         })
         .ok_or("live seller omitted requested offer")?;
+    if u64::from(offer.unit_price) != TRUMPET_PRICE || offer.count != 1 {
+        return Err(format!(
+            "Stan trumpet offer price={} count={} expected={TRUMPET_PRICE}:1",
+            offer.unit_price, offer.count
+        )
+        .into());
+    }
     let before = quantity(client, reference)?;
+    let gold_before = carried_gold(client)?;
+    let expected_gold = gold_before
+        .checked_sub(TRUMPET_PRICE)
+        .ok_or("insufficient carried gold for the trumpet fixture")?;
     client.take_events();
     let reply = runtime::buy(
         client.session_mut(),
@@ -189,20 +210,28 @@ async fn acquire(
             catalogue_revision: window.open.ok_or("trade window closed")?.1,
             offer_index: u32::try_from(offer_index)?,
             side: offer.side,
-            quantity: amount,
+            quantity: 1,
             expected_unit_price: offer.unit_price,
         },
     )
     .await?;
     if reply != wire::NpcIntentDisposition::Ok {
         return Err(format!(
-            "buy item={id} reply={reply:?} price={} quantity={amount}",
+            "buy item={TRUMPET} reply={reply:?} price={} quantity=1",
             offer.unit_price
         )
         .into());
     }
-    let expected = before + u64::from(offer.count) * u64::from(amount);
-    wait_quantity(client, reference, expected).await
+    let expected = before + 1;
+    let sequence = wait_quantity(client, reference, expected).await?;
+    let gold_after = carried_gold(client)?;
+    if gold_after != expected_gold {
+        return Err(format!(
+            "step=purchase gold_before={gold_before} gold_after={gold_after} expected={expected_gold}"
+        )
+        .into());
+    }
+    Ok((sequence, expected_gold))
 }
 
 async fn use_one(
@@ -229,12 +258,59 @@ async fn use_one(
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("logout refused".into());
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("logout refused: {:?}", reply.result).into());
     }
     Ok(())
+}
+
+const START: TilePos = TilePos {
+    x: 32948,
+    y: 32110,
+    floor: 6,
+};
+
+async fn prepare_buyer(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    let mut client = connect_character(clients, 0xe6, 0).await?;
+    if carried_gold(&client)? < TRUMPET_PRICE {
+        character_prep::grant_item(&client, 3035, 1).await?;
+    }
+    logout(&mut client).await?;
+    drop(client);
+    wait_character_released(clients, 0).await?;
+    // Move only the released, dedicated fixture's saved position. Keep the
+    // server-authored map, artifact and lease lineage from the real logout.
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_last_positions
+         SET tile_x=$3, tile_y=$4, tile_floor=$5, write_sequence=write_sequence+1
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid
+           AND tile_x=$6 AND tile_y=$7 AND tile_floor=$8
+           AND NOT EXISTS (
+             SELECT 1 FROM game_durability_reconnect_sessions
+             WHERE character_id=game_character_last_positions.character_id AND session_state<>3
+           )",
+    )
+    .bind(clients.characters[0].as_slice())
+    .bind(clients.world.as_slice())
+    .bind(i32::from(START.x))
+    .bind(i32::from(START.y))
+    .bind(-i16::from(START.floor))
+    .bind(i32::from(TOWN.x))
+    .bind(i32::from(TOWN.y))
+    .bind(-i16::from(TOWN.floor))
+    .execute(&mut connection)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err("W19c fixture has no persisted position from preparation logout".into());
+    }
+    evidence("row=W19c.full fixture=q_w19c staging=(32948,32110,-6) funding=carried-gold");
+    let client = connect_character(clients, 0xe6, 0).await?;
+    if tile(client.world_spatial().actor_position)? != START {
+        return Err("W19c fixture did not admit at the verified Venore staging tile".into());
+    }
+    Ok(client)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -249,10 +325,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let index = provisioning::item_index()?;
     let trumpet = provisioning::item_reference(&index, TRUMPET)?;
     let played = provisioning::item_reference(&index, PLAYED_TRUMPET)?;
-    let mut client = connect_world(clients, 0xe6).await?;
+    let buyer = character_prep::dedicated_character(clients, "NODE_BOOT_W19C_ACCOUNT").await?;
+    let clients = &buyer.clients(clients);
+    let mut client = prepare_buyer(clients).await?;
     let trumpet_base = quantity(&client, trumpet)?;
     let played_base = quantity(&client, played)?;
-    let bought = acquire(&mut client, world, TRUMPET, 1).await?;
+    let (bought, expected_gold) = acquire(&mut client, world).await?;
     let (reply, _) = use_one(&mut client, trumpet).await?;
     if reply != UseDisposition::Committed {
         return Err(format!("step=use observed=reply-{reply:?}").into());
@@ -264,9 +342,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let durable = quantities(&client)?;
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    let mut client = connect_world(clients, 0xe6).await?;
+    let mut client = connect_character(clients, 0xe6, 0).await?;
     if client.join_snapshot().game_session_id == session
         || quantities(&client)? != durable
+        || carried_gold(&client)? != expected_gold
         || quantity(&client, trumpet)? != trumpet_base + 1
         || quantity(&client, played)? != played_base
     {
