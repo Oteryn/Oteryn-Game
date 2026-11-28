@@ -94,8 +94,15 @@ async fn settle(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
+    let session = client.join_snapshot().game_session_id;
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        evidence(&format!(
+            "S04B_LOGOUT session={} status={:?} result={:?}",
+            uuid_text(session.as_bytes()),
+            reply.status,
+            reply.result
+        ));
         return Err(format!("logout:status={:?}:result={:?}", reply.status, reply.result).into());
     }
     Ok(())
@@ -218,15 +225,32 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             return Err("names:two-admissions-have-same-character-name".into());
         }
 
-        accepted(
-            &mut a,
-            ChatIntent::Private {
+        let sender_session = a.join_snapshot().game_session_id;
+        let recipient_session = b.join_snapshot().game_session_id;
+        let reply = mp::observations::while_servicing_liveness(
+            a.chat(&ChatIntent::Private {
                 recipient_name: b_name.clone(),
                 text: "e2ef19-a-pm".into(),
+            }),
+            async || {
+                b.service_liveness(Duration::from_millis(50)).await?;
+                Ok(())
             },
-            "private-a-to-b",
         )
-        .await?;
+        .await??;
+        evidence(&format!(
+            "S04B_PRIVATE step=private-a-to-b sender={a_name:?} sender_session={} recipient={b_name:?} recipient_id={} recipient_session={} world={} path=world_relay command_id={} server_sequence={} disposition={:?}",
+            uuid_text(sender_session.as_bytes()),
+            uuid_text(&peer_clients.characters[0]),
+            uuid_text(recipient_session.as_bytes()),
+            uuid_text(&clients.world),
+            reply.command_id,
+            reply.result_server_sequence,
+            reply.disposition,
+        ));
+        if reply.disposition != ChatDisposition::Ok {
+            return Err(format!("private-a-to-b:disposition={:?}", reply.disposition).into());
+        }
         settle(&mut b).await?;
         if !take_private(&mut b, &a_name, "e2ef19-a-pm") {
             return Err("private-a-to-b:accepted-but-recipient-line-missing".into());

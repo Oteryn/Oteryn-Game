@@ -110,14 +110,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     accepted(&mut b, PrivateChannelIntent::Join { channel_id }).await?;
 
     let text = "s04b-channel-line";
-    accepted(
-        &mut a,
-        PrivateChannelIntent::Say {
-            channel_id,
-            text: text.into(),
+    mp::observations::while_servicing_liveness(
+        accepted(
+            &mut a,
+            PrivateChannelIntent::Say {
+                channel_id,
+                text: text.into(),
+            },
+        ),
+        async || {
+            b.service_liveness(Duration::from_millis(50)).await?;
+            Ok(())
         },
     )
-    .await?;
+    .await??;
     b.service_liveness(Duration::from_millis(250)).await?;
     let line = b
         .take_events()
@@ -125,7 +131,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .find_map(|event| match event {
             SessionEvent::ChatLine(delta) => match &delta.value {
                 ChatLine::PrivateChannel(line)
-                    if line.channel_id == channel_id && line.text == text =>
+                    if line.channel_id == channel_id
+                        && line.speaker_name == a_name
+                        && line.text == text =>
                 {
                     Some(delta.value)
                 }
