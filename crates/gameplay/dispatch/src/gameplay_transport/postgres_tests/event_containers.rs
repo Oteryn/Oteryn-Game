@@ -15,7 +15,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
+    CAPABILITY_RUNE_USE_V1, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
 
 #[test]
@@ -216,15 +216,24 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
+        let christmas_direct_use = bag_key == "oteryn:item.tibia.i6506" && !nested;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
             if nested {
                 &[4, 6, 11, 12, 14, 15, 18]
+            } else if christmas_direct_use {
+                &[4, 6, 11, 15, 18, CAPABILITY_RUNE_USE_V1]
             } else {
                 &[4, 6, 11, 15, 18]
             },
         )
         .ok_or("reward bag offer selectable")?;
+        if christmas_direct_use {
+            assert!(
+                admitted.continuity.selected_capabilities.contains(CAPABILITY_RUNE_USE_V1),
+                "W19a direct backpack USE must exercise the legacy rune bridge"
+            );
+        }
 
         let bag_definition = crate::gameplay_transport::item_look::typed_definition(
             index,
@@ -233,7 +242,7 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
         .ok_or("source definition")?;
         // Keep the real session's command floor at one. Select a valid fixture
         // item UUID for the source branch instead of skipping unexecuted commands.
-        let command_id = if nested { 2 } else { 1 };
+        let command_id = if nested || christmas_direct_use { 2 } else { 1 };
         // Crystal CreateItem normalizes the source prize 3549 to base soft boots 6529.
         let source = if bag_key == "oteryn:item.tibia.i12045" {
             (1_u32..=4096)
@@ -413,7 +422,24 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             .await?;
         tx.commit().await?;
 
-        if bag_key == "oteryn:item.tibia.i6506" {
+        if christmas_direct_use {
+            let before = ground::durable_state(&harness).await?;
+            let at = owner.observe(deps.actor).await.ok_or("actor position")?.actor_position;
+            let targeted = encode_item_use_intent(&UseIntent {
+                use_with_position: Some(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                }),
+                ..intent.clone()
+            })
+            .map_err(debug)?;
+            let (next, refused, _) =
+                exchange(&owner, admitted, command_id - 1, &targeted, reference(bag_key)).await?;
+            assert_eq!(refused, UseDisposition::NothingToUse);
+            assert_eq!(ground::durable_state(&harness).await?, before);
+            admitted = next;
+
             // A fixture has no node driver to replenish retired ready holders.
             // Without maintenance this unknown USE outcome disconnects the wire.
             let mut holders = Vec::new();
@@ -452,7 +478,11 @@ fn scenario(bag_key: &str, source_quantity: u32, output_count: usize, nested: bo
             &payload,
         )
         .map_err(debug)?;
-        assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(
+            result,
+            UseDisposition::Committed,
+            "plain backpack USE must reach the reward owner"
+        );
         assert_eq!(craft_count().await?, 1);
         let retired: (i64, i16, i64) = sqlx::query_as(
             "SELECT quantity,lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid",

@@ -134,6 +134,8 @@ pub(super) struct PendingCallbacks {
     pub(super) interrupt_after_commit: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(super) shared_switch_occurred_test: std::sync::Mutex<Option<i64>>,
+    #[cfg(test)]
+    pub(super) use_fence_read_busy: std::sync::atomic::AtomicBool,
 }
 
 pub(super) struct PaidCallbackClose<'a> {
@@ -1555,7 +1557,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
             };
             let fence = if character_fence_required(callback) {
-                self.current_quest_fence(command.game_session_id).await.ok().flatten()
+                // A busy holder can leave a valid fence unread. Retry before
+                // reserving or starting any write.
+                let retry = super::AdmissionRetryBudget::for_command(self.root);
+                retry
+                    .retry_command_guard(async || {
+                        #[cfg(test)]
+                        if self.states.quest_callbacks.use_fence_read_busy.swap(
+                            false,
+                            std::sync::atomic::Ordering::Relaxed,
+                        ) {
+                            return Err(crate::durability::DurabilityError::RootUnavailable);
+                        }
+                        self.current_quest_fence_durable(command.game_session_id).await
+                    })
+                    .await
+                    .ok()
+                    .flatten()
             } else { None };
             if fence.is_some_and(|f| command.item_fence != Some(f.item_fence())) {
                 return UseDisposition::Rejected;

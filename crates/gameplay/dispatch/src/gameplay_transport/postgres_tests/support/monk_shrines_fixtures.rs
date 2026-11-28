@@ -234,6 +234,13 @@ pub(super) async fn exercise(
                     expected_revision: world.facts().object_revision(key),
                 })
                 .map_err(debug)?;
+            let first_eligible_guidance = index == 0 && case == 1 && !full_backpack && !capacity;
+            if first_eligible_guidance {
+                owner.states.quest_callbacks.use_fence_read_busy.store(
+                    true,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+            }
             let result = wire(
                 owner,
                 admitted,
@@ -247,6 +254,14 @@ pub(super) async fn exercise(
             )
             .await
             .map_err(|error| format!("{name} level {level}: {error}"))?;
+            if first_eligible_guidance {
+                assert!(
+                    !owner.states.quest_callbacks.use_fence_read_busy.load(
+                        std::sync::atomic::Ordering::Relaxed,
+                    ),
+                    "the real Guidance USE must reach the busy fence read"
+                );
+            }
             assert_eq!(
                 oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?,
                 if (full_backpack || capacity) && case == 2 {

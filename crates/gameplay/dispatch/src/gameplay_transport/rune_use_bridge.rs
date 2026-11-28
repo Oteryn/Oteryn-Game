@@ -382,16 +382,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
             }) else {
                 if plain_use {
-                    let item = ItemKey::Instance(instance);
-                    if crate::domain::currency::Coin::from_production_key(
-                        &entry.item.definition.production_key,
+                    // The rune offer extends USE. A plain non-rune use still
+                    // reaches the ordinary fenced item owners.
+                    let outcome = tokio::time::timeout(
+                        std::time::Duration::from_secs(10),
+                        self.use_item_completion(actor, command, ItemKey::Instance(instance)),
                     )
-                    .is_some()
-                        && let Some(outcome) = self.use_coin(actor, command, item, false).await
-                    {
-                        return outcome;
+                    .await
+                    .ok()
+                    .flatten()?;
+                    if self.item_use_pending(actor, command.game_session_id).await {
+                        return None;
                     }
-                    return Some(self.use_backpack_item(actor, command, item).await);
+                    return Some(outcome);
                 }
                 return Some(outcome(UseDisposition::NothingToUse));
             };
