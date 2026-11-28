@@ -50,6 +50,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cause,
                 origin: None,
                 context: None,
+                paid_arrivals: Vec::new(),
                 flame: None,
                 ingress_settled: false,
                 participants: Vec::new(),

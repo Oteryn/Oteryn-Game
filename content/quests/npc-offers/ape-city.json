@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 33,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Bring me whisper moss you have taken yourself from the Dworc lair. If you have it with you, may I take it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hairycles",
+      "keywords": [
+        "outfit",
+        "shamanic",
+        "shamanic powers"
+      ],
+      "topic": 0,
+      "next_topic": 18,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/questline",
+          "minimum": 18,
+          "maximum": 18,
+          "set": 18,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_6/the_ape_city/shaman_outfit",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "You have earned the powers of a shaman. Are you ready?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.padreia",
+      "keywords": [
+        "cough syrup"
+      ],
+      "topic": 0,
+      "next_topic": 31,
+      "storage": [],
+      "reply": [
+        "Would you like to buy a bottle of cough syrup for 50 gold?"
+      ]
+    }
+  ]
+}

@@ -18,7 +18,7 @@ use oteryn_gameplay_encounters::bosses::reward_chest::{
 };
 use oteryn_gameplay_foundation::scheduled_events::{NEUTRAL_RATE, rates_at};
 use oteryn_gameplay_items::loot_plan::{
-    LootPlan, LootPlanError, LootTableDefinition, plan_boss_loot_with_bonus,
+    LootPlan, LootPlanEntry, LootPlanError, LootTableDefinition, plan_boss_loot_with_bonus,
 };
 
 #[cfg(test)]
@@ -62,60 +62,125 @@ pub(in crate::gameplay_transport) fn personal_death_id(
     )
 }
 
-/// Aggregate identical selected Items before making physical stacks, like the donor's
-/// result[itemId] reward accumulator. There is no reroll and no discarded remainder.
+type RewardQuantity = (TypedDefinitionRef, u64);
+
+struct RewardTotal {
+    item: RewardQuantity,
+    children: Vec<RewardQuantity>,
+}
+
+fn reward_quantity(entry: LootPlanEntry) -> Result<RewardQuantity, PlanError> {
+    if entry.needs_subtype_state() {
+        return Err(PlanError::Loot(LootPlanError::UnsupportedItemSubtype));
+    }
+    if entry.quantity == 0 {
+        return Err(PlanError::ContentUnavailable);
+    }
+    Ok((
+        TypedDefinitionRef {
+            family: entry.item.family,
+            production_key: entry.item.production_key,
+            revision_ref: entry.item.revision_ref,
+        },
+        u64::from(entry.quantity),
+    ))
+}
+
+/// Retain the first-seen stack order. A populated container is a distinct
+/// reward, and a child's stack only aggregates with siblings of that container.
 fn materialize_plan(
     plan: LootPlan,
     facts: &impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
 ) -> Result<Vec<BossRewardItem>, PlanError> {
-    let mut totals: Vec<(TypedDefinitionRef, u64)> = Vec::new();
-    for entry in plan.entries {
-        if entry.needs_subtype_state() {
-            return Err(PlanError::Loot(LootPlanError::UnsupportedItemSubtype));
-        }
-        if entry.parent.is_some() || entry.quantity == 0 {
+    let mut totals = Vec::<RewardTotal>::new();
+    let mut entries = plan.entries.into_iter().enumerate().peekable();
+    while let Some((index, entry)) = entries.next() {
+        if entry.parent.is_some() {
             return Err(PlanError::ContentUnavailable);
         }
-        let definition = TypedDefinitionRef {
-            family: entry.item.family,
-            production_key: entry.item.production_key,
-            revision_ref: entry.item.revision_ref,
-        };
-        if let Some((_, count)) = totals.iter_mut().find(|(key, _)| *key == definition) {
-            *count = count
-                .checked_add(u64::from(entry.quantity))
+        let item = reward_quantity(entry)?;
+        let mut children = Vec::<RewardQuantity>::new();
+        while entries
+            .peek()
+            .is_some_and(|(_, entry)| entry.parent.is_some())
+        {
+            let (_, child) = entries.next().ok_or(PlanError::ContentUnavailable)?;
+            if child.parent != Some(index) {
+                return Err(PlanError::ContentUnavailable);
+            }
+            let (definition, quantity) = reward_quantity(child)?;
+            if let Some((_, count)) = children.iter_mut().find(|(key, _)| *key == definition) {
+                *count = count.checked_add(quantity).ok_or(PlanError::Overflow)?;
+            } else {
+                children.push((definition, quantity));
+            }
+        }
+        if children.is_empty()
+            && let Some(total) = totals
+                .iter_mut()
+                .find(|total| total.children.is_empty() && total.item.0 == item.0)
+        {
+            total.item.1 = total
+                .item
+                .1
+                .checked_add(item.1)
                 .ok_or(PlanError::Overflow)?;
         } else {
-            totals.push((definition, u64::from(entry.quantity)));
+            totals.push(RewardTotal { item, children });
         }
     }
     let mut items = Vec::new();
-    for (definition, mut quantity) in totals {
-        let item = facts(&definition).ok_or(PlanError::ContentUnavailable)?;
-        if item.definition != definition {
-            return Err(PlanError::ContentUnavailable);
+    for total in totals {
+        let start = items.len();
+        let capacity = append_reward_stacks(&mut items, total.item, None, facts)?;
+        if total.children.is_empty() {
+            continue;
         }
-        // Use the same D82 admissibility as collection and its op4 audit. A content
-        // maximum above 100 must fail before we freeze an uncollectable entitlement.
-        let (maximum, _) = oteryn_gameplay_items::stacking::stack_maximum(item.stack)
-            .map_err(|_| PlanError::ContentUnavailable)?;
-        if item.container_capacity.is_some() && maximum != 1 {
-            return Err(PlanError::ContentUnavailable);
+        let capacity = capacity
+            .filter(|_| items.len() == start + 1)
+            .ok_or(PlanError::ContentUnavailable)?
+            .min(crate::durability::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX);
+        let parent = u16::try_from(start + 1).map_err(|_| PlanError::TooManyItems)?;
+        for child in total.children {
+            append_reward_stacks(&mut items, child, Some(parent), facts)?;
         }
-        let stacks = quantity.div_ceil(u64::from(maximum));
-        if stacks > BOSS_REWARD_ITEMS_MAX.saturating_sub(items.len()) as u64 {
+        if items.len() - start - 1 > capacity as usize {
             return Err(PlanError::TooManyItems);
-        }
-        while quantity > 0 {
-            let count = quantity.min(u64::from(maximum)) as u32;
-            items.push(BossRewardItem {
-                definition: definition.clone(),
-                quantity: count,
-            });
-            quantity -= u64::from(count);
         }
     }
     Ok(items)
+}
+
+fn append_reward_stacks(
+    items: &mut Vec<BossRewardItem>,
+    (definition, mut quantity): RewardQuantity,
+    parent_ordinal: Option<u16>,
+    facts: &impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
+) -> Result<Option<u32>, PlanError> {
+    let item = facts(&definition).ok_or(PlanError::ContentUnavailable)?;
+    if item.definition != definition {
+        return Err(PlanError::ContentUnavailable);
+    }
+    // Use the same D82 admissibility as collection and its op4 audit.
+    let (maximum, _) = oteryn_gameplay_items::stacking::stack_maximum(item.stack)
+        .map_err(|_| PlanError::ContentUnavailable)?;
+    if item.container_capacity.is_some() && maximum != 1 {
+        return Err(PlanError::ContentUnavailable);
+    }
+    let stacks = quantity.div_ceil(u64::from(maximum));
+    if stacks > BOSS_REWARD_ITEMS_MAX.saturating_sub(items.len()) as u64 {
+        return Err(PlanError::TooManyItems);
+    }
+    while quantity > 0 {
+        let count = quantity.min(u64::from(maximum)) as u32;
+        items.push(BossRewardItem {
+            definition: definition.clone(),
+            quantity: count,
+            parent_ordinal,
+        });
+        quantity -= u64::from(count);
+    }
+    Ok(item.container_capacity)
 }
 
 #[cfg(test)]

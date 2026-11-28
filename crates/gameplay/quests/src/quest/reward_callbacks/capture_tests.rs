@@ -4,7 +4,7 @@ use super::*;
 fn capture_policy_binds_live_occurrences_and_preserves_legacy_hashes() -> Result<(), String> {
     let live = load()?
         .into_iter()
-        .find(|c| c.creature_target.is_some() && !c.fresh_corpse)
+        .find(|c| c.key == "oteryn:quest-reward/goblin-merchant/rotworm-sample")
         .ok_or("live callback")?;
     let original = gated_binding(&live)?;
     let mut row = serde_json::to_value(&live).map_err(|e| e.to_string())?;

@@ -9,7 +9,9 @@ use crate::content::item_ref::ItemDefinitionIndex;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::map::overlay::TilePos;
-use oteryn_gameplay_durability::durability::mail::{MailPostOutcome, MailPostRefusal};
+use oteryn_gameplay_durability::durability::mail::{
+    MailPostOutcome, MailPostRefusal, MailPostTarget,
+};
 use oteryn_protocol_oteryn::mail::{MailIntent, MailOutcome, decode_intent};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 
@@ -77,22 +79,30 @@ pub(super) async fn execute(
     else {
         return Some(MailOutcome::Rejected);
     };
-    if !mailbox_in_reach(owner, actor, admitted.game_session_id, placement_key).await {
+    let Some(in_reach) = mailbox_reach(owner, actor, admitted.game_session_id, placement_key).await
+    else {
         return Some(MailOutcome::Rejected);
-    }
-    owner
+    };
+    let target = if in_reach {
+        MailPostTarget::Reachable(placement_key)
+    } else {
+        MailPostTarget::ReplayOnly(placement_key)
+    };
+    match owner
         .root
-        .post_admitted_mail(
+        .post_admitted_mail_with_target(
             owner.character,
             owner.holder,
             fence,
             command_id,
             item,
-            placement_key,
+            target,
         )
         .await
-        .ok()
-        .map(wire_post_outcome)
+    {
+        Ok(outcome) => Some(wire_post_outcome(outcome)),
+        Err(_) => None,
+    }
 }
 
 /// Canary 52550d5e `data/items/items.xml` `type="mailbox"`: 3501 (L10952), 3508 (L10991),
@@ -142,37 +152,31 @@ pub(super) async fn post_moved(
 /// its floor: the reach every other map destination of an item move has (`loop_move` in_reach).
 /// Canary posts on any move into a mailbox (`mailbox.cpp:18`), so its throw range of 15 and line
 /// of sight (`game.cpp:2221`) would also admit a farther mailbox; Oteryn keeps its move reach.
-async fn mailbox_in_reach(
+async fn mailbox_reach(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
     placement_key: u64,
-) -> bool {
-    let Some((pos, ordinal)) = crate::map::view::placement_of(placement_key) else {
-        return false;
-    };
+) -> Option<bool> {
+    let (pos, ordinal) = crate::map::view::placement_of(placement_key)?;
     let mut runtime = owner.runtime.lock().await;
     if runtime.player_control_facts(actor, session).is_err()
         || owner.states.spell_states.lock().await.is_dead(actor)
-        || super::item_ref_admission::pinned_index(&runtime, owner.active_generation).is_none()
     {
-        return false;
+        return None;
     }
-    let Some(at) = super::bundle_map_position::bundle_map_position(
+    let index = super::item_ref_admission::pinned_index(&runtime, owner.active_generation)?;
+    let at = super::bundle_map_position::bundle_map_position(
         &mut runtime,
         owner.movement_cells(),
         actor,
-    ) else {
-        return false;
-    };
-    let Some(index) = super::item_ref_admission::pinned_index(&runtime, owner.active_generation)
-    else {
-        return false;
-    };
-    i64::from(at.at.floor) == i64::from(pos.floor)
-        && (i64::from(at.at.x) - i64::from(pos.x)).abs() <= 1
-        && (i64::from(at.at.y) - i64::from(pos.y)).abs() <= 1
-        && mailbox_ordinals(at.map, index, pos).contains(&ordinal)
+    )?;
+    Some(
+        i64::from(at.at.floor) == i64::from(pos.floor)
+            && (i64::from(at.at.x) - i64::from(pos.x)).abs() <= 1
+            && (i64::from(at.at.y) - i64::from(pos.y)).abs() <= 1
+            && mailbox_ordinals(at.map, index, pos).contains(&ordinal),
+    )
 }
 
 /// The placement key of the mailbox a move onto `pos` posts into: the topmost unhidden one,
@@ -250,7 +254,9 @@ fn wire_post_outcome(outcome: MailPostOutcome) -> MailOutcome {
             MailPostRefusal::NotMailable => MailOutcome::NotMailable,
             MailPostRefusal::RecipientInboxFull => MailOutcome::RecipientInboxFull,
             MailPostRefusal::Exhausted => MailOutcome::Exhausted,
-            MailPostRefusal::ReplayConflict => MailOutcome::Rejected,
+            MailPostRefusal::MailboxOutOfReach | MailPostRefusal::ReplayConflict => {
+                MailOutcome::Rejected
+            }
         },
     }
 }

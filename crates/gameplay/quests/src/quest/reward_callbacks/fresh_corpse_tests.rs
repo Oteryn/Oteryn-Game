@@ -4,7 +4,7 @@ use super::*;
 fn fresh_corpse_mode_is_explicit_bounded_and_reward_bound() -> Result<(), String> {
     let live = load()?
         .into_iter()
-        .find(|c| c.creature_target.is_some())
+        .find(|c| c.key == "oteryn:quest-reward/goblin-merchant/rotworm-sample")
         .ok_or("live creature fixture")?;
     let original = gated_binding(&live)?;
     let mut row = serde_json::to_value(&live).map_err(|e| e.to_string())?;

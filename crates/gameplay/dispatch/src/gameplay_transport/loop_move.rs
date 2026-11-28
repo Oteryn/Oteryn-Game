@@ -19,7 +19,7 @@ pub(super) mod elemental_arrival;
 mod floor_assembly;
 mod house_container;
 #[path = "loop_map_pickup.rs"]
-mod map_pickup;
+pub(super) mod map_pickup;
 mod map_sources;
 mod seed_drop;
 
@@ -428,7 +428,9 @@ impl LoopGroundOverlay {
                 blocks_projectile: entry
                     .field_collision
                     .map_or(native_projectile, |(_, projectile)| projectile),
-                pickupable,
+                pickupable: pickupable
+                    && item.definition.production_key
+                        != crate::durability::map_item_mint::MAP_DISPENSER_KEY,
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
@@ -594,9 +596,20 @@ impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
 
 #[derive(Debug, Default)]
 struct CacheState {
+    synchronize_sculpture: bool,
     epoch: u64,
     current: Option<Arc<LoopGroundOverlay>>,
+    cask_collision: Option<CaskCollisionPin>,
     pending_origins: std::collections::BTreeMap<u64, CommandRef>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct CaskCollisionPin {
+    scope: crate::foundation::RuntimeScopeRefV1,
+    generation: u64,
+    bundle: [u8; 32],
+    reset_epoch: u64,
+    cache_epoch: u64,
 }
 
 /// The Channel's loop Ground overlay, read once after each change. A leaf lock, never held
@@ -616,13 +629,34 @@ impl Drop for GroundChange<'_> {
     }
 }
 
+/// A failed or cancelled write may still commit Ground custody.
+pub(super) struct SculptureGroundChange<'a>(&'a LoopGroundCache);
+
+impl Drop for SculptureGroundChange<'_> {
+    fn drop(&mut self) {
+        if let Ok(mut state) = self.0.state.lock() {
+            state.synchronize_sculpture = true;
+            state.epoch = state.epoch.wrapping_add(1);
+            state.current = None;
+        }
+    }
+}
+
 impl LoopGroundCache {
+    pub(super) fn sculpture_change(&self) -> SculptureGroundChange<'_> {
+        SculptureGroundChange(self)
+    }
+
     /// A drop or pickup may have changed the Ground: the next read rebuilds.
     pub fn invalidate(&self) {
         if let Ok(mut state) = self.state.lock() {
             state.epoch = state.epoch.wrapping_add(1);
             state.current = None;
         }
+    }
+
+    pub(super) fn epoch(&self) -> Option<u64> {
+        self.state.lock().ok().map(|state| state.epoch)
     }
 
     /// An unresolved map MINT origin is still part of the scene census even
@@ -674,11 +708,17 @@ impl LoopGroundCache {
         }
     }
 
-    fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>) {
+    fn cached(&self) -> (u64, Option<Arc<LoopGroundOverlay>>, bool) {
         self.state
             .lock()
-            .map(|state| (state.epoch, state.current.clone()))
-            .unwrap_or((0, None))
+            .map(|state| {
+                (
+                    state.epoch,
+                    state.current.clone(),
+                    state.synchronize_sculpture,
+                )
+            })
+            .unwrap_or((0, None, false))
     }
 
     fn store(&self, epoch: u64, built: &Arc<LoopGroundOverlay>) {
@@ -686,31 +726,106 @@ impl LoopGroundCache {
             && state.epoch == epoch
         {
             state.current = Some(built.clone());
+            state.synchronize_sculpture = false;
         }
     }
 }
 /// A view may overlap the same connection's inventory refresh on the bounded
 /// durability holder. Retry only that temporary resource refusal, within one
 /// deadline; stored-state and authority errors still close the view.
-pub(super) async fn projection_read<T, E>(
-    root: &super::DurabilityRoot,
-    read: impl AsyncFnMut() -> Result<T, E>,
-    busy: impl Fn(&E) -> bool,
-) -> Option<T> {
-    let budget =
-        super::AdmissionRetryBudget::for_holder_window(root, std::time::Duration::from_secs(10));
-    projection_read_with_budget(&budget, read, busy).await
+async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<T, E>>,
+{
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        loop {
+            match read().await {
+                Ok(value) => return Some(value),
+                Err(error) if busy(&error) => {
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await
+                }
+                Err(_) => return None,
+            }
+        }
+    })
+    .await
+    .ok()
+    .flatten()
 }
 
-async fn projection_read_with_budget<T, E>(
-    budget: &super::AdmissionRetryBudget<'_>,
-    read: impl AsyncFnMut() -> Result<T, E>,
-    busy: impl Fn(&E) -> bool,
-) -> Option<T> {
-    tokio::time::timeout_at(budget.deadline, budget.retry_holder(read, busy))
-        .await
-        .ok()?
-        .ok()
+/// Movement shares the runtime's static collision index with Ground USE-WITH.
+pub(super) async fn reconcile_cask_collision(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+) -> Option<()> {
+    let Some(map) = admission.bundle_map() else {
+        return Some(());
+    };
+    let base = map.overlay.base();
+    let (scope, generation) = {
+        let runtime = admission.runtime.lock().await;
+        (
+            runtime.binding().runtime_scope(),
+            runtime.binding().scope_generation().get(),
+        )
+    };
+    let crate::foundation::RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = scope
+    else {
+        return Some(());
+    };
+    let cache = &admission.states.loop_ground;
+    let pin = {
+        let state = cache.state.lock().ok()?;
+        let pin = CaskCollisionPin {
+            scope,
+            generation,
+            bundle: base.digest(),
+            reset_epoch: admission.reset_epoch,
+            cache_epoch: state.epoch,
+        };
+        if state.cask_collision.as_ref() == Some(&pin) {
+            return Some(());
+        }
+        pin
+    };
+    let retired = projection_read(
+        || {
+            admission.root.read_retired_map_cask_placements(
+                world_id,
+                channel_id,
+                pin.bundle,
+                pin.reset_epoch,
+                base.entry_count(),
+            )
+        },
+        |error| {
+            matches!(
+                error,
+                crate::durability::map_item_mint::MapItemMintError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable
+                )
+            )
+        },
+    )
+    .await?;
+    let runtime = admission.runtime.lock().await;
+    if runtime.owner_fence().is_err()
+        || runtime.binding().runtime_scope() != scope
+        || runtime.binding().scope_generation().get() != generation
+    {
+        return None;
+    }
+    for key in retired {
+        map_sources::hide_retired_cask(map, key)?;
+    }
+    let mut state = cache.state.lock().ok()?;
+    if state.epoch == pin.cache_epoch {
+        state.cask_collision = Some(pin);
+    }
+    Some(())
 }
 
 /// The Channel's loop Ground overlay over the bundle `base`; `None` without a pinned index or
@@ -731,7 +846,7 @@ pub async fn loop_ground(
             ),
         )
     };
-    let (epoch, cached) = admission.states.loop_ground.cached();
+    let (epoch, cached, synchronize_sculpture) = admission.states.loop_ground.cached();
     if let Some(cached) = cached.filter(|cached| {
         cached.field_pin == field_pin
             && cached.overlay.runtime_scope() == scope
@@ -741,9 +856,17 @@ pub async fn loop_ground(
     }
     let index = index?;
     let items = projection_read(
-        admission.root,
-        async || admission.root.read_item_loop_ground_for_scope(scope).await,
-        super::root_holder_busy,
+        || async {
+            if synchronize_sculpture {
+                admission
+                    .root
+                    .read_item_loop_ground_after_sculpture(scope)
+                    .await
+            } else {
+                admission.root.read_item_loop_ground_for_scope(scope).await
+            }
+        },
+        |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
     )
     .await?;
     let taken = if let crate::foundation::RuntimeScopeRefV1::Channel {
@@ -752,18 +875,14 @@ pub async fn loop_ground(
     } = scope
     {
         projection_read(
-            admission.root,
-            async || {
-                admission
-                    .root
-                    .read_map_item_mint_placements(
-                        world_id,
-                        channel_id,
-                        base.digest(),
-                        admission.reset_epoch,
-                        base.entry_count(),
-                    )
-                    .await
+            || {
+                admission.root.read_map_item_mint_placement_states(
+                    world_id,
+                    channel_id,
+                    base.digest(),
+                    admission.reset_epoch,
+                    base.entry_count(),
+                )
             },
             |error| {
                 matches!(
@@ -794,12 +913,33 @@ pub async fn loop_ground(
                 .bundle_map()
                 .is_some_and(|map| map.facts.captured_map_item(key).is_some())
     };
-    if taken.iter().any(|key| !valid_source(*key)) {
+    if taken.iter().any(|(key, _)| !valid_source(*key)) {
         return None;
     }
-    built.taken_sources.extend(taken.iter().copied());
+    if taken.iter().any(|(_, retired_cask)| *retired_cask) {
+        let runtime = admission.runtime.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime.binding().runtime_scope() != scope
+            || runtime.binding().scope_generation().get() != field_pin.2
+        {
+            return None;
+        }
+        let map = admission.bundle_map()?;
+        if map.overlay.base().digest() != base.digest() {
+            return None;
+        }
+        for &(key, retired_cask) in &taken {
+            if retired_cask {
+                map_sources::hide_retired_cask(map, key)?;
+            }
+        }
+    }
+    built
+        .taken_sources
+        .extend(taken.iter().map(|(key, _)| *key));
     let roots: Vec<_> = taken
         .into_iter()
+        .map(|(key, _)| key)
         .filter(|key| map_sources::is_top_level(base, *key))
         .collect();
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &roots).ok()?;
@@ -1306,7 +1446,7 @@ fn drop_cell(
 
 /// Finite source-script relocation may span a small authored room. Both cells
 /// must exist on the same floor; ordinary item drops still use drop_cell.
-fn source_drop_cell(
+pub(super) fn source_drop_cell(
     base: &WorldBase,
     from: (i32, i32, i16),
     to: WorldTilePosition,
@@ -1314,6 +1454,14 @@ fn source_drop_cell(
     if from.2 != to.floor || from.0.abs_diff(to.x) > 32 || from.1.abs_diff(to.y) > 32 {
         return Err(LoopMoveResult::TooFar);
     }
+    checked_source_drop_cell(base, from, to)
+}
+
+fn checked_source_drop_cell(
+    base: &WorldBase,
+    from: (i32, i32, i16),
+    to: WorldTilePosition,
+) -> Result<Vec<u8>, LoopMoveResult> {
     let source = (
         u16::try_from(from.0),
         u16::try_from(from.1),
@@ -1334,6 +1482,36 @@ fn source_drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum SourceItemOrigin {
+    Door(TilePos),
+    Rope(TilePos),
+}
+
+impl SourceItemOrigin {
+    fn tile(self) -> TilePos {
+        match self {
+            Self::Door(tile) | Self::Rope(tile) => tile,
+        }
+    }
+
+    fn drop_cell(self, base: &WorldBase, to: WorldTilePosition) -> Result<Vec<u8>, LoopMoveResult> {
+        let from = self.tile();
+        let cell = (i32::from(from.x), i32::from(from.y), i16::from(from.floor));
+        match self {
+            Self::Door(_) => source_drop_cell(base, cell, to),
+            Self::Rope(_) => {
+                let dx = cell.0.abs_diff(to.x);
+                let dy = cell.1.abs_diff(to.y);
+                if to.floor != cell.2 + 1 || dx > 1 || dy > 1 || (dx == 0 && dy == 0) {
+                    return Err(LoopMoveResult::TooFar);
+                }
+                checked_source_drop_cell(base, cell, to)
+            }
+        }
+    }
+}
+
 /// A qualified source script uses the existing item-loop receipt/custody writer.
 /// Its caller holds the lane and proves the authored source/destination pair;
 /// voluntary moves retain their ordinary one-cell reach check.
@@ -1347,9 +1525,10 @@ pub(super) async fn relocate_source_item(
     actor: ExactActorRef,
     command: UseCommand,
     item: ItemKey,
-    from: TilePos,
+    origin: SourceItemOrigin,
     to: TilePos,
 ) -> LoopMoveResult {
+    let from = origin.tile();
     let destination = oteryn_protocol_oteryn::item_view::WorldTilePosition {
         x: i32::from(to.x),
         y: i32::from(to.y),
@@ -1367,7 +1546,7 @@ pub(super) async fn relocate_source_item(
                 slot: None,
             },
             permit,
-            Some(from),
+            Some(origin),
         )
         .await;
     }
@@ -1398,13 +1577,9 @@ pub(super) async fn relocate_source_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = source_drop_cell(
-            map.overlay.base(),
-            (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
-            destination,
-        )
-        .ok() else {
-            return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
+        let ground = match origin.drop_cell(map.overlay.base(), destination) {
+            Ok(cell) => cell,
+            Err(refusal) => return refusal,
         };
         (
             native,
@@ -1516,7 +1691,7 @@ async fn observe_container_with_house_capacity_inner(
         return super::browse_field::observe(admission, actor, fence, target).await;
     }
     if matches!(target, ItemKey::MapBase { .. }) {
-        return map_sources::observe(admission, actor, fence, target, house_capacity_v2).await;
+        return map_sources::observe(admission, actor, fence, target).await;
     }
     let ItemKey::Instance(container) = target else {
         return None;
@@ -1860,49 +2035,37 @@ mod tests {
     #[test]
     fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>
     {
-        use crate::durability::DurabilityError;
-
-        let mut session_bytes = [1; 16];
-        session_bytes[6] = 0x70;
-        session_bytes[8] = 0x80;
-        let session = crate::foundation::GameSessionId::decode(&session_bytes)
-            .map_err(|error| format!("{error:?}"))?;
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
-            .start_paused(true)
             .build()?
             .block_on(async {
-                let budget = super::super::AdmissionRetryBudget::new(&session);
                 let attempts = std::cell::Cell::new(0);
-                let result = projection_read_with_budget(
-                    &budget,
-                    async || {
-                        attempts.set(attempts.get() + 1);
-                        if attempts.get() < 3 {
-                            Err(DurabilityError::RootUnavailable)
-                        } else {
-                            Ok(42)
-                        }
+                let result = projection_read(
+                    || {
+                        let attempt = attempts.get() + 1;
+                        attempts.set(attempt);
+                        std::future::ready(if attempt < 3 { Err(true) } else { Ok(42) })
                     },
-                    super::super::root_holder_busy,
+                    |temporary| *temporary,
                 )
                 .await;
                 assert_eq!(result, Some(42));
                 assert_eq!(attempts.get(), 3);
-
-                let budget = super::super::AdmissionRetryBudget::new(&session);
-                attempts.set(0);
-                let result = projection_read_with_budget(
-                    &budget,
-                    async || {
+                let attempts = std::cell::Cell::new(0);
+                let result = projection_read(
+                    || {
                         attempts.set(attempts.get() + 1);
-                        Err::<u8, _>(DurabilityError::CommitRejected)
+                        std::future::ready(Err::<u8, _>(false))
                     },
-                    super::super::root_holder_busy,
+                    |temporary| *temporary,
                 )
                 .await;
                 assert_eq!(result, None);
-                assert_eq!(attempts.get(), 1);
+                assert_eq!(
+                    attempts.get(),
+                    1,
+                    "an authority or stored-state refusal is never retried as resource contention"
+                );
             });
         Ok(())
     }

@@ -1,4 +1,5 @@
 //! E12 gourmet USE: closed source classification and native one-unit consumption.
+use crate::durability::db::commit_semantic_read;
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::*;
 use oteryn_gameplay_domain::domain::hireling::food::{
@@ -172,7 +173,7 @@ impl DurabilityRoot {
             sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let result=receipt(&mut tx,&fence,command,wire).await;
-            commit_semantic_transaction(tx,deadline).await?;
+            commit_semantic_read(tx,deadline).await?;
             Ok(result)
         })).await?
     }
@@ -263,7 +264,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let saved = snapshot(&mut tx, character_id.as_bytes(), false).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(saved))
                 })
             })

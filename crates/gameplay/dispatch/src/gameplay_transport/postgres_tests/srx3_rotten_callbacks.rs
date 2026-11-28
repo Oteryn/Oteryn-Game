@@ -783,6 +783,25 @@ fn srx3_soul_war_actual_plain_child_corpse_materialization_postgres() -> TestRes
 }
 
 #[test]
+fn loot_slice_clomp_and_skeleton_corpse_lifetimes_postgres() -> TestResult {
+    run_rotten_native_lethal_cases_with_timer(
+        &[
+            (65011, "oteryn:creature.clomp", 475, 1),
+            (65012, "oteryn:creature.corrupted_skeleton", 34, 1),
+        ],
+        Some(Some(670_000)),
+    )
+}
+
+#[test]
+fn loot_slice_glitterscale_ground_and_lifetime_postgres() -> TestResult {
+    run_rotten_native_lethal_cases_with_timer(
+        &[(65013, "oteryn:creature.glitterscale", 700, 1)],
+        Some(Some(500_000)),
+    )
+}
+
+#[test]
 fn srx3_plain_corpse_retirement_uses_actual_source_lifetime_postgres() -> TestResult {
     run_rotten_native_lethal_cases_with_timer(
         &[(65004, "oteryn:creature.weeping_soul", 0, 1)],
@@ -1164,11 +1183,42 @@ fn run_rotten_native_lethal_case_checks(
                     exercise_remorse_step(&h, &mut owner, &admitted, &scene, 0, 0).await?;
                 }
                 if let Some(expected_lifetime) = check_timer {
-                    let duration = sqlx::query_scalar::<_, Option<i64>>("SELECT game_corpse_retirement_deadline(item_instance_id)-materialized_at FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION'").fetch_one(&h.pool).await?;
+                    let scope = owner.runtime.lock().await.binding().runtime_scope();
+                    let schedule = owner.root.read_scoped_corpse_decay_schedule(&authority, scope).await?;
+                    assert_eq!(schedule.corpses.len(), 1, "actual source {key} corpse");
+                    let corpse = &schedule.corpses[0];
                     assert_eq!(
-                        duration, expected_lifetime,
-                        "actual source {key} corpse lifetime; no invented60s fallback"
+                        corpse.decay_at_unix_ms.map(|deadline| deadline - corpse.materialized_at_unix_ms),
+                        expected_lifetime,
+                        "actual source {key} corpse lifetime"
                     );
+                    if matches!(key, "oteryn:creature.clomp" | "oteryn:creature.corrupted_skeleton") {
+                        let deadlines: Vec<i64> = sqlx::query_scalar(
+                            "SELECT expires_at_unix_ms - $2 FROM game_spell_field_temporal_schedules
+                             WHERE item_instance_id=encode($1,'hex')::uuid AND source_ordinal=0 ORDER BY source_stage"
+                        )
+                        .bind(corpse.corpse_item_instance_id.as_slice())
+                        .bind(corpse.materialized_at_unix_ms)
+                        .fetch_all(&h.pool)
+                        .await?;
+                        assert_eq!(deadlines, [10_000, 310_000, 610_000]);
+                    }
+                    if key == "oteryn:creature.glitterscale" {
+                        let ground = owner.root.read_item_loop_ground_for_scope(scope).await?;
+                        assert!(ground.iter().any(|item| {
+                            item.item.item_instance_id == corpse.corpse_item_instance_id
+                                && item.source_plain_corpse
+                        }), "the Ground owner must track the original Glitterscale body");
+                        let map = owner.bundle_map().ok_or("current source native map")?;
+                        let overlay = crate::gameplay_transport::loop_move::loop_ground(
+                            &owner,
+                            map.overlay.base(),
+                            native.item_index().map(|index| index.as_ref()),
+                        )
+                        .await
+                        .ok_or("actual Glitterscale Ground overlay")?;
+                        assert!(overlay.ground_entry(&corpse.corpse_item_instance_id).is_some());
+                    }
                 }
             }
             drop(owner);

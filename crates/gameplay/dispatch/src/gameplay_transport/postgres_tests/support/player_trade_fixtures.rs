@@ -67,23 +67,22 @@ pub(super) fn run_scenario_with_read_priority(
     Ok(())
 }
 
-async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) -> TestResult {
-    let mut tx = h.pool.begin().await?;
+pub(super) async fn seed_trade_backpack(
+    pool: &sqlx::PgPool,
+    character: [u8; 16],
+    bag: u8,
+    leaf: u8,
+    key: &str,
+    quantity: i64,
+) -> TestResult {
+    let mut tx = pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(character.as_slice()).execute(&mut *tx).await?;
     for (item, definition, quantity) in [
         (bag, "oteryn:item.tibia.i2854", 1),
-        (
-            leaf,
-            key,
-            if key == "oteryn:item.tibia.i2854" {
-                1
-            } else {
-                3
-            },
-        ),
+        (leaf, key, quantity),
     ] {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
             .bind(id(item).as_slice()).bind(id(WORLD).as_slice()).bind(definition).bind(quantity).bind(id(120).as_slice()).execute(&mut *tx).await?;
@@ -119,8 +118,8 @@ async fn scenario(
         );
     }
 
-    seed(
-        h,
+    seed_trade_backpack(
+        &h.pool,
         *currents[0].commit().character_id().as_bytes(),
         90,
         91,
@@ -129,10 +128,11 @@ async fn scenario(
         } else {
             "oteryn:item.tibia.i3607"
         },
+        if contents { 1 } else { 3 },
     )
     .await?;
-    seed(
-        h,
+    seed_trade_backpack(
+        &h.pool,
         *currents[1].commit().character_id().as_bytes(),
         92,
         93,
@@ -141,6 +141,7 @@ async fn scenario(
         } else {
             "oteryn:item.tibia.i3604"
         },
+        if contents { 1 } else { 3 },
     )
     .await?;
 

@@ -339,6 +339,13 @@ impl DurabilityRoot {
                 .bind(&a).bind(&effect.actor).bind(&b).bind(&effect.partner).bind(effect.consent).bind(effect.reply).bind(actor).execute(&mut **tx).await?;
             if let Some(items)=items {super::item_craft::marriage::apply(&mut tx,fence.item_fence(),&request,items,occurred).await?;}
             if effect.operation==2 {super::character_appearance::grant_marriage_outfits(&mut tx,&participants,request.occurrence).await?;}
+            // TibiaWiki Commitment Phobic credits the spouse who files the divorce.
+            if matches!(request.action, MarriageAction::Divorce) {
+                super::account_achievement::add_progress(
+                    &mut tx, fence.character_id, "oteryn:achievement/commitment_phobic",
+                    3, "oteryn:npc-divorce", &request.occurrence,
+                ).await?;
+            }
             write_relation(&mut tx,&effect.actor).await?;
             if let Some(partner)=&effect.partner {write_relation(&mut tx,partner).await?;}
             sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=$1").bind(actor).execute(&mut **tx).await?;

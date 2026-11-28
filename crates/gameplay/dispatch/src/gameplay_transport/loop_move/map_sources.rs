@@ -155,3 +155,17 @@ pub(super) fn is_top_level(base: &WorldBase, key: u64) -> bool {
         tile.depths().iter().filter(|depth| **depth == 0).count() > usize::from(ordinal)
     })
 }
+
+/// A retired map cask also stops contributing its authored static collision.
+pub(super) fn hide_retired_cask(map: &crate::map::boot::BundleMap, key: u64) -> Option<()> {
+    let (pos, _) = view::placement_of(key)?;
+    let original = map.facts.base_only();
+    let tile = view::compose_tile(&map.overlay, &original, pos).ok()??;
+    let entry = tile
+        .entries
+        .iter()
+        .find(|entry| entry.source.key() == view::MapEntryKey::Base(key))?;
+    map.facts
+        .install_gathering_state(key, 1, entry.facts, None)
+        .then_some(())
+}

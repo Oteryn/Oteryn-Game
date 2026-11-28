@@ -148,6 +148,39 @@ fn raid_definition_capacity_and_deadline_boundaries() -> Result<(), Box<dyn std:
 }
 
 #[test]
+fn sams_old_backpack_raid_selects_the_loot_bearing_orc() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::raid::CatalogueSchedule;
+    let catalogue = RaidCatalogue::embedded()?;
+    let raid = catalogue
+        .get(&ProductionKey::new("raid:venore.orcsambackpack")?)
+        .ok_or("Sam's Old Backpack raid")?;
+    assert!(matches!(
+        raid.schedule,
+        CatalogueSchedule::LegacyXml {
+            interval_s: 86400,
+            margin_ms: 43200000,
+            repeat: false,
+            ..
+        }
+    ));
+    let selected = raid.select([7; 32], [9; 16])?;
+    assert_eq!(selected.definition.waves.len(), 1);
+    let wave = &selected.definition.waves[0];
+    assert_eq!(wave.delay_ms, 1000);
+    assert_eq!(wave.entries.len(), 1);
+    let entry = &wave.entries[0];
+    assert_eq!(entry.creature.as_str(), "oteryn:creature.orc_sambackpack");
+    assert_eq!(entry.count, 1);
+    let area = selected.areas.get(&entry.area_anchor).ok_or("raid area")?;
+    assert_eq!(
+        (area.from.x, area.from.y, area.from.floor),
+        (32964, 31735, 7)
+    );
+    assert_eq!((area.to.x, area.to.y, area.to.floor), (32981, 31756, 7));
+    Ok(())
+}
+
+#[test]
 fn qn5_feroxa_requires_moon_and_has_source_boss_death_or_twenty_hour_end()
 -> Result<(), Box<dyn std::error::Error>> {
     let catalogue = RaidCatalogue::embedded()?;

@@ -2,7 +2,7 @@
 //! are required; the embedded reference validates provenance and never activates a profile.
 #![allow(
     dead_code,
-    reason = "spell import candidate; awaits its production owner caller"
+    reason = "some source profile projections still await their production callers"
 )]
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -110,64 +110,43 @@ impl CompiledWheelProfile {
         if next.iter().map(|v| u32::from(*v)).sum::<u32>() > u32::from(budget) {
             return Err("Wheel allocation budget");
         }
-        let mut output = current;
-        let mut pending: Vec<usize> = (0..36).collect();
-        pending.sort_by_key(|i| (self.profile.slots[*i].capacity, *i));
-        for _ in 0..7 {
-            let mut retries = Vec::new();
-            for i in pending {
+        if self
+            .profile
+            .slots
+            .iter()
+            .zip(next)
+            .any(|(slot, points)| points > 0 && u32::from(budget) < slot.minimum_available_points)
+            || !assignment_follows_source_order(&current, &next, u32::from(budget), |i| {
                 let slot = &self.profile.slots[i];
-                if next[i] > 0
-                    && (u32::from(budget) < slot.minimum_available_points
-                        || (!slot.full_neighbours.is_empty()
-                            && !slot.full_neighbours.iter().any(|p| {
-                                let parent = usize::from(*p) - 1;
-                                output[parent] == self.profile.slots[parent].capacity
-                            })))
-                {
-                    retries.push(i);
-                    continue;
-                }
-                let prior = output[i];
-                output[i] = 0;
-                let used = output.iter().map(|v| u32::from(*v)).sum::<u32>();
-                if used + u32::from(next[i]) > u32::from(budget) {
-                    output[i] = prior;
-                    retries.push(i);
-                    continue;
-                }
-                output[i] = next[i];
-            }
-            if retries.is_empty() {
-                // Prove a full-parent path from a root in the completed allocation.
-                // Old allocations and disconnected cycles cannot supply that path.
-                let mut connected = [false; 36];
-                for _ in 0..36 {
-                    for (i, slot) in self.profile.slots.iter().enumerate() {
-                        if output[i] > 0
-                            && (slot.full_neighbours.is_empty()
-                                || slot.full_neighbours.iter().any(|p| {
-                                    let parent = usize::from(*p) - 1;
-                                    connected[parent]
-                                        && output[parent] == self.profile.slots[parent].capacity
-                                }))
-                        {
-                            connected[i] = true;
-                        }
-                    }
-                }
-                if output
-                    .iter()
-                    .enumerate()
-                    .any(|(i, points)| *points > 0 && !connected[i])
-                {
-                    return Err("Wheel disconnected/full-parent gate");
-                }
-                return Ok(output);
-            }
-            pending = retries;
+                (slot.capacity, slot.full_neighbours.as_slice())
+            })
+        {
+            return Err("Wheel disconnected/full-parent gate");
         }
-        Err("Wheel disconnected/full-parent gate")
+        // Prove a full-parent path from a root in the completed allocation.
+        // Old allocations and disconnected cycles cannot supply that path.
+        let mut connected = [false; 36];
+        for _ in 0..36 {
+            for (i, slot) in self.profile.slots.iter().enumerate() {
+                if next[i] > 0
+                    && (slot.full_neighbours.is_empty()
+                        || slot.full_neighbours.iter().any(|p| {
+                            let parent = usize::from(*p) - 1;
+                            connected[parent] && next[parent] == self.profile.slots[parent].capacity
+                        }))
+                {
+                    connected[i] = true;
+                }
+            }
+        }
+        if next
+            .iter()
+            .enumerate()
+            .any(|(i, points)| *points > 0 && !connected[i])
+        {
+            return Err("Wheel disconnected/full-parent gate");
+        }
+        Ok(next)
     }
     pub fn stages(
         &self,
@@ -261,6 +240,53 @@ impl CompiledWheelProfile {
         Ok(out)
     }
 }
+
+/// Checks a validated allocation's transition in Crystal's capacity priority order, with one
+/// initial pass and six retries (201189f8, player_wheel.cpp:1684–1694 and 1736–1760).
+/// The caller checks the final allocation and unlock thresholds. Each slot rule supplies its
+/// capacity and validated, one-based full neighbours. The working allocation stays local.
+pub fn assignment_follows_source_order<'a>(
+    current: &[u16; 36],
+    next: &[u16; 36],
+    available: u32,
+    slot_rule: impl Fn(usize) -> (u16, &'a [u8]),
+) -> bool {
+    let mut output = *current;
+    let mut used = current.iter().map(|points| u32::from(*points)).sum::<u32>();
+    let mut pending: Vec<_> = (0..36).collect();
+    pending.sort_unstable_by_key(|&i| (slot_rule(i).0, i));
+
+    for _ in 0..7 {
+        pending.retain(|&i| {
+            let (_, neighbours) = slot_rule(i);
+            if next[i] > 0
+                && !neighbours.is_empty()
+                && !neighbours.iter().any(|p| {
+                    let parent = usize::from(*p) - 1;
+                    output[parent] == slot_rule(parent).0
+                })
+            {
+                return true;
+            }
+            let replaced = used - u32::from(output[i]) + u32::from(next[i]);
+            if replaced > available {
+                // Crystal clears the previous points before checking unused points.
+                // A retry therefore starts with this slot empty.
+                used -= u32::from(output[i]);
+                output[i] = 0;
+                return true;
+            }
+            used = replaced;
+            output[i] = next[i];
+            false
+        });
+        if pending.is_empty() {
+            return true;
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]

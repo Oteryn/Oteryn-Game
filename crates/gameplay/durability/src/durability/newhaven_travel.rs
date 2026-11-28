@@ -124,7 +124,9 @@ pub(super) async fn complete_in_transaction(
     {
         // Crystal counts after teleport, not after payment. Only the existing paid
         // donor-route receipt has a request binding; tutorial departures do not.
-        use oteryn_gameplay_progression::achievement_granters::{SHIPS_KOBOLD, TRAVEL_SOURCE_KIND};
+        use oteryn_gameplay_progression::achievement_granters::{
+            HIGH_FLYER, SHIPS_KOBOLD, STEAMPUNKED, TRAVEL_SOURCE_KIND,
+        };
         super::account_achievement::add_progress(
             tx,
             character,
@@ -134,6 +136,28 @@ pub(super) async fn complete_in_transaction(
             &occurrence.as_bytes(),
         )
         .await?;
+        let route: &str = row.try_get("route")?;
+        let travel = if oteryn_gameplay_content::content::npc_catalogue::travel::is_carpet_route(route) {
+            // TibiaWiki page 62852, revision 844207: actual magic carpet arrivals.
+            Some(HIGH_FLYER)
+        } else if route.split_once('/').is_some_and(|(service, _)| {
+            matches!(
+                service.strip_prefix("oteryn:service.travel."),
+                Some("brodrosch" | "gurbasch" | "junkar" | "junkar_mines" |
+                     "junkar_robsons" | "junkar_thais" | "thorgrin")
+            )
+        }) {
+            // TibiaWiki page 62789, revision 844371 and Steamship's operator list.
+            Some(STEAMPUNKED)
+        } else {
+            None
+        };
+        if let Some(travel) = travel {
+            super::account_achievement::add_progress(
+                tx, character, travel.key, travel.total, TRAVEL_SOURCE_KIND,
+                &occurrence.as_bytes(),
+            ).await?;
+        }
     }
     // Native Departed/false/false represents the donor resets to -1 of
     // newhavenCitizen/Hunting/NewLootTheCorruptor (storages.lua:3125-3127, 48031..48033).

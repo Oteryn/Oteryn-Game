@@ -41,6 +41,18 @@
     {
       "key": "demon_wars",
       "kind": "demon_wars",
+      "personal_kill_rewards": [
+        {
+          "lane": 2,
+          "achievement": "oteryn:achievement/askarak_nemesis",
+          "goal": 100
+        },
+        {
+          "lane": 3,
+          "achievement": "oteryn:achievement/shaburak_nemesis",
+          "goal": 100
+        }
+      ],
       "sources": [
         {
           "creature": "oteryn:creature.askarak_demon",
@@ -68,7 +80,7 @@
         },
         {
           "creature": "oteryn:creature.askarak_prince",
-          "lane": 0,
+          "lane": 2,
           "area": [
             33218,
             33307,
@@ -104,7 +116,7 @@
         },
         {
           "creature": "oteryn:creature.shaburak_prince",
-          "lane": 1,
+          "lane": 3,
           "area": [
             33218,
             33307,

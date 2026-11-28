@@ -1,12 +1,13 @@
 //! Durable non-rollback state for the authenticated native-admission source.
 
+use crate::durability::db::commit_semantic_read;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{
     NodeIncarnationProof, NodeRegistrationFact, prove_current_incarnation,
 };
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::{Postgres, Row, Transaction};
-use std::time::Instant;
+use tokio::time::Instant;
 
 type Result<T> = std::result::Result<T, DurabilityError>;
 
@@ -472,7 +473,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let row = sqlx::query("SELECT r.bootstrap_namespace,r.bootstrap_provenance,r.source_authority,r.initialized_at,r.descriptor_revision::text,r.descriptor_facts,h.installed_at FROM game_durability_native_source_registration r JOIN game_durability_native_source_descriptor_history h USING (registration_id,descriptor_revision) WHERE r.registration_id=1")
                 .fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             let Some(row) = row else { return Ok(None) };
             let invalid = |_| DurabilityError::InvalidStoredState;
             Ok(Some((
@@ -624,7 +625,7 @@ impl DurabilityRoot {
             if publications.len() > 2 || aggregate > 2 * PENDING_CHECKPOINT_BYTES || publications.iter().any(|publication| publication.operation_binding.is_empty() || publication.operation_binding.len() > PENDING_CHECKPOINT_BYTES) {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(publications)
         })).await
     }

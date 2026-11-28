@@ -3,30 +3,6 @@
   "tracks": [
     {
       "writable": true,
-      "key": "oteryn:quest-progress/chosen/venore-daily/last-report",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "initial": 0,
-      "min": 0,
-      "max": 9223372036854775807,
-      "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
-      ]
-    },
-    {
-      "writable": true,
-      "key": "oteryn:quest-progress/chosen/venore-daily/stage",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "initial": -1,
-      "min": -1,
-      "max": 13,
-      "sources": [
-        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
-      ]
-    },
-    {
-      "writable": true,
       "key": "oteryn:quest-progress/chosen/venore-daily/kills",
       "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
       "initial": -1,
@@ -153,6 +129,435 @@
       "sources": [
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
         "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/hunter-outfits/verse-1",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/hunter-outfits/verse-2",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/hunter-outfits/verse-3",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/hunter-outfits/verse-4",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/maintenance/last-report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-1",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-2",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-3",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-4",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-5",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-6",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-7",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-8",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/machine-9",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/pathfinder/last-report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/scott",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/frank",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/venore-daily/sabotage/last-report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/watering/stage",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/watering/last-report",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/watering/filled-at",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/last-report",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 9223372036854775807,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-01",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-02",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-03",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-04",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-05",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-06",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-07",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-08",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-09",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-10",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-11",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "writable": true,
+      "key": "oteryn:quest-progress/chosen/repenters/mushrooms/site-12",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
       ]
     }
   ],
@@ -377,6 +782,47 @@
         "include_bank": true
       },
       "requires_premium": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/trader/replace-cheese",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "npc": "oteryn:npc.miraia",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 72,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i169",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here it is."
+      ],
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/miraia.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: canonicalquests-00200-00299 record45 recipe.adaptations[0] removes weekday availability, cheese decay, vase fragility and the exact price dialogue; retain six delivery objects and Rashid recognition once.",
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/miraia.lua#L121-L169"
+      ],
+      "fee": {
+        "gold": 100,
+        "include_bank": true
+      },
+      "requires_premium": true,
+      "repeatable": true
     },
     {
       "key": "oteryn:quest-reward/chosen/trader/cheese",
@@ -741,265 +1187,6 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gail.lua:79-80"
       ],
       "requires_premium": true
-    },
-    {
-      "key": "oteryn:quest-reward/chosen/venore-daily/accept",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "npc": "oteryn:npc.norman_the_foreman",
-      "keywords": [
-        "construction jobs"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
-          "minimum": -1,
-          "maximum": 0,
-          "set": 0
-        }
-      ],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i3003",
-          "count": 1
-        },
-        {
-          "item": "oteryn:item.tibia.i3457",
-          "count": 1
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i17513",
-        "count": 1,
-        "contents": [],
-        "backpack_outputs": [
-          {
-            "item": "oteryn:item.tibia.i17617",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i17514",
-            "count": 1
-          }
-        ]
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Take these supplies. Oil the saw, treadmill and crane at each site, north to south. Then deliver the grind stone to Scott and the kit to Frank."
-      ],
-      "sources": [
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: chosen sequential daily construction circuit; supplies use pinned source Item facts."
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/chosen/venore-daily/scott",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "npc": "oteryn:npc.scott_the_scout",
-      "keywords": [
-        "grind stone"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 10,
-          "maximum": 10,
-          "set": 11
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i17617",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Thank you for the grind stone. Deliver the pathfinder kit to Frank."
-      ],
-      "sources": [
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/chosen/venore-daily/frank",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "npc": "oteryn:npc.frank_the_plank",
-      "keywords": [
-        "pathfinder kit"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 11,
-          "maximum": 11,
-          "set": 12
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i17514",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Thank you. Defeat five little corym charlatans beneath the southern construction site, then report to Norman."
-      ],
-      "sources": [
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/chosen/venore-daily/report",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "npc": "oteryn:npc.norman_the_foreman",
-      "keywords": [
-        "construction report"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 12,
-          "maximum": 12,
-          "set": 13
-        },
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 5,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i3035",
-        "count": 10,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "All three jobs and the daily bonus:1000experience and1000gold. Return after20hours."
-      ],
-      "sources": [
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
-      ],
-      "completes": true,
-      "experience": 1000,
-      "state_ops": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/last-report",
-          "from": {
-            "kind": "any"
-          },
-          "effect": {
-            "kind": "set_now"
-          }
-        }
-      ],
-      "per_occurrence_mint": true
-    },
-    {
-      "key": "oteryn:quest-reward/chosen/venore-daily/restart",
-      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
-      "npc": "oteryn:npc.norman_the_foreman",
-      "keywords": [
-        "construction jobs"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
-          "minimum": 13,
-          "maximum": 13,
-          "set": 1
-        },
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i17513",
-        "count": 1,
-        "contents": [],
-        "backpack_outputs": [
-          {
-            "item": "oteryn:item.tibia.i17617",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i17514",
-            "count": 1
-          }
-        ]
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Here are fresh supplies for your next construction circuit."
-      ],
-      "sources": [
-        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
-        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
-        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
-      ],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i3003",
-          "count": 1
-        },
-        {
-          "item": "oteryn:item.tibia.i3457",
-          "count": 1
-        }
-      ],
-      "state_ops": [
-        {
-          "track": "oteryn:quest-progress/chosen/venore-daily/last-report",
-          "from": {
-            "kind": "elapsed_at_least",
-            "seconds": 72000
-          },
-          "effect": {
-            "kind": "add",
-            "value": 0
-          }
-        }
-      ],
-      "per_occurrence_mint": true
     },
     {
       "key": "oteryn:quest-reward/chosen/wrath/dream-report",
@@ -1387,6 +1574,1447 @@
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/zlak.lua",
         "https://tibia.fandom.com/index.php?curid=46608&oldid=1103771",
         "OTERYN_AUTHORED_APPROXIMATION: selected recipe s6 preserves four magistrati and six nobles in one stage; present principal native deaths in a bounded source imperial quarter. The recipe omits potion minigames; successful report readies the existing source dream without minting a potion or any reward."
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/hunter_outfits/hunter/addon_glove",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You earned the right to wear the sniper gloves."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/elane.lua:197-208"
+      ],
+      "requires_premium": true,
+      "outfits": [
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 2,
+          "sex": "male"
+        },
+        {
+          "outfit": "oteryn:outfit.hunter",
+          "addons": 1,
+          "sex": "female"
+        }
+      ],
+      "addon_only": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5875",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 20,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "repeatable": true,
+      "reply": [
+        "Alright! Here is your money, thank you very much."
+      ],
+      "failure_reply": [
+        "Maybe another time."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:172-194:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/verse-1",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6087",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned the first verse of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ],
+      "carried_item": "oteryn:item.tibia.i6087"
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/verse-2",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6088",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned the second verse of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ],
+      "carried_item": "oteryn:item.tibia.i6088"
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/verse-3",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6089",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned the third verse of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ],
+      "carried_item": "oteryn:item.tibia.i6089"
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/hunter-outfits/verse-4",
+      "quest": "oteryn:quest.hunter_outfits_quest",
+      "npc": "oteryn:npc.elane",
+      "keywords": [
+        "hymn"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/hunter-outfits/verse-4",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i6090",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You learned the fourth verse of the hymn."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hunter_outfits_quest/action_music_sheet.lua:1-29"
+      ],
+      "carried_item": "oteryn:item.tibia.i6090"
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/maintenance/accept",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 121,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-2",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-3",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-4",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-5",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-6",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-7",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-8",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-9",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the oil on all nine machines, then come back to me."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/maintenance/restart",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 121,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 2,
+          "maximum": 3,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-1",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-2",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-3",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-4",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-5",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-6",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-7",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-8",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-9",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use the oil on all nine machines, then come back to me."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/last-report",
+          "effect": {
+            "kind": "add",
+            "value": 0
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          }
+        }
+      ],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/maintenance/report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "maintenance"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-1",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-2",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-4",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-5",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-6",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-7",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-8",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/machine-9",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3031",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good work. Here are your wages."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "experience": 250,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/last-report",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/pathfinder/accept",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 122,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/scott",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/frank",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17514",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17617",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take the grind stone to Scott and the kit to Frank."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/pathfinder/restart",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 122,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 2,
+          "maximum": 3,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/scott",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/frank",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17514",
+        "count": 1,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i17617",
+            "count": 1
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take the grind stone to Scott and the kit to Frank."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/last-report",
+          "effect": {
+            "kind": "add",
+            "value": 0
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/pathfinder/report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "pathfinder"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/scott",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/frank",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3031",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good work. Here are your wages."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "experience": 250,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/last-report",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/sabotage/accept",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 123,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Defeat five Little Corym Charlatans in the southern hideout."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/sabotage/restart",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 123,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": 2,
+          "maximum": 3,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Defeat five Little Corym Charlatans in the southern hideout."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/last-report",
+          "effect": {
+            "kind": "add",
+            "value": 0
+          },
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/sabotage/report",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "sabotage"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3031",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Good work. Here are your wages."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "experience": 250,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/last-report",
+          "effect": {
+            "kind": "set_now"
+          },
+          "from": {
+            "kind": "any"
+          }
+        }
+      ],
+      "per_occurrence_mint": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/scott",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.scott_the_scout",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 125,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/scott",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17617",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thanks for bringing my supplies."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/frank",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.frank_the_plank",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 126,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/frank",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17514",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thanks for bringing my supplies."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/venore-daily/bonus",
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "npc": "oteryn:npc.norman_the_foreman",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 124,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 2,
+        "contents": [],
+        "backpack_outputs": [
+          {
+            "item": "oteryn:item.tibia.i3031",
+            "count": 50
+          }
+        ]
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You finished all three jobs in time. Here is your bonus."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089"
+      ],
+      "experience": 250,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/maintenance/last-report",
+          "effect": {
+            "kind": "add",
+            "value": 0
+          },
+          "from": {
+            "kind": "elapsed_less_than",
+            "seconds": 72000
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/pathfinder/last-report",
+          "effect": {
+            "kind": "add",
+            "value": 0
+          },
+          "from": {
+            "kind": "elapsed_less_than",
+            "seconds": 72000
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/sabotage/last-report",
+          "effect": {
+            "kind": "add",
+            "value": 0
+          },
+          "from": {
+            "kind": "elapsed_less_than",
+            "seconds": 72000
+          }
+        }
+      ],
+      "per_occurrence_mint": true,
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/repenters/watering/accept",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "watering"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i18991",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this vial to the spring in the cave south-west of here. Bring back the water before it escapes the vial."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/repenters/watering/restart",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "watering"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i18991",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Take this vial to the spring in the cave south-west of here. Bring back the water before it escapes the vial."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ],
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/repenters/mushrooms/accept",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "mushroom",
+        "mushrooms"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-01",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-02",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-03",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-04",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-05",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-06",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-07",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-08",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-09",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-10",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-11",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-12",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this trained fire bug on five different diseased mushrooms in our old crystal mine."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/repenters/mushrooms/restart",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "mushroom",
+        "mushrooms"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": -1,
+          "maximum": 5,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-01",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-02",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-03",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-04",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-05",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-06",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-07",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-08",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-09",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-10",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-11",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/site-12",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i19124",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Use this trained fire bug on five different diseased mushrooms in our old crystal mine."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ],
+      "per_occurrence_mint": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/last-report",
+          "from": {
+            "kind": "elapsed_at_least",
+            "seconds": 72000
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/repenters/watering/report",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "watering"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i18992",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for bringing water to the gardens."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ],
+      "experience": 2000,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/filled-at",
+          "from": {
+            "kind": "elapsed_less_than",
+            "seconds": 900
+          },
+          "effect": {
+            "kind": "add",
+            "value": 0
+          }
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/watering/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/chosen/repenters/mushrooms/report",
+      "quest": "oteryn:quest.authored.the_repenters_quest",
+      "npc": "oteryn:npc.ashari",
+      "keywords": [
+        "mushroom",
+        "mushrooms"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/sterilised",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for stopping the infection in the mine."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=64475&oldid=1133999"
+      ],
+      "experience": 2100,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/chosen/repenters/mushrooms/last-report",
+          "from": {
+            "kind": "any"
+          },
+          "effect": {
+            "kind": "set_now"
+          }
+        }
       ]
     }
   ]

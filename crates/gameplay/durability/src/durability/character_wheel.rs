@@ -29,6 +29,7 @@
 //! catalogue ([`WheelRuleset::from_catalogue`]); its revision and its 36 capacities must be the
 //! ones migration 0070 (or a later W-R migration) registered, or the allocation fails closed.
 
+use crate::durability::db::commit_semantic_read;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -44,6 +45,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_content::content::spell_wheel_profile::assignment_follows_source_order;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -514,6 +516,23 @@ impl DurabilityRoot {
                     ) {
                         return refuse(refusal);
                     }
+                    // Mixed saves must also be reachable through the ordered refunds and
+                    // spends. The live validator above owns ring thresholds and removal.
+                    let mut changes = slots.points().iter().zip(before.points());
+                    if changes.clone().any(|(after, before)| after > before)
+                        && changes.any(|(after, before)| after < before)
+                        && !assignment_follows_source_order(
+                            before.points(),
+                            slots.points(),
+                            available,
+                            |i| {
+                                let slot = &ruleset.slots()[i];
+                                (slot.capacity, slot.unlock_from.as_slice())
+                            },
+                        )
+                    {
+                        return refuse(WheelRefusal::NotAdjacent);
+                    }
                     // An allocation keeps its pinned revision; a first row takes the active one.
                     let pinned = stored.as_ref().map_or_else(
                         || ruleset.revision().to_owned(),
@@ -651,7 +670,7 @@ impl DurabilityRoot {
                         .as_ref()
                         .map(decode_receipt)
                         .transpose()?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(record))
                 })
             })
@@ -678,7 +697,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let stored = read_wheel_state(&mut tx, character_id, false).await?;
                     let allocation = allocation_from_stored(&mut tx, stored, &ruleset).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(allocation))
                 })
             })
