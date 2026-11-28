@@ -43,7 +43,16 @@ class S10TravelBankTests(unittest.TestCase):
             global_fare = GLOBAL_FARES.get(source["npc"], {}).get(slug)
             with self.subTest(route=key, source=source["source"]):
                 route = routes.get(key)
-                if source["hold"] == "quest gate":
+                if (source["npc"], slug) == ("chemar", "farmine"):
+                    self.assertEqual(route["aliases"], ["zao"])
+                    self.assertEqual(route["quest_tracks"], [{
+                        "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+                        "minimum": 2,
+                        "maximum": 2,
+                    }])
+                if (source["npc"], slug) == ("petros", "yalahar"):
+                    self.assertEqual(route["yalahar_town_gate"], "darashia")
+                if source["hold"] == "quest gate" and source["npc"] not in {"chemar", "petros"}:
                     for keyword in [source["keyword"], *source.get("aliases", [])]:
                         alias = f"{service}/{canonical_keyword(keyword)}"
                         self.assertTrue(
@@ -70,11 +79,11 @@ class S10TravelBankTests(unittest.TestCase):
                         source["keyword"],
                         source["destination"],
                         source["price"] if global_fare is None else global_fare,
-                        source["premium"],
+                        (slug != "marapur" if source["npc"] == "chemar" else source["premium"]),
                         source["min_level"],
                         source["postman"],
                         source["carpet"],
-                        bool(source["hold"]),
+                        (slug == "marapur" if source["npc"] in {"chemar", "petros"} else bool(source["hold"])),
                     ),
                 )
 

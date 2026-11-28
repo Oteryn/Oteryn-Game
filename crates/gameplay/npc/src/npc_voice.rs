@@ -389,6 +389,8 @@ mod tests {
                 "gunther",
                 &["They have to believe me!", "What a mess.", "Oh my!"],
             ),
+            ("larry", &["Krahhh!", "Keelhaul! Keelhaul!", "Gold! Gems!"]),
+            ("squeekquek", &["Squeak!", "Yip yip.", "Hm? Who's there?"]),
             (
                 "maria",
                 &["Hello, hello! Put your feet up and relax in the Hard Rock Tavern."],

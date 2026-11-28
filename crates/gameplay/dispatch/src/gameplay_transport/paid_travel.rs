@@ -41,6 +41,12 @@ fn refusal(intent: &NpcTalkIntent, cause: TravelRefusal) -> npc_command::NpcTalk
         TravelRefusal::PremiumRequired => {
             "I'm sorry, but you need a premium account in order to travel."
         }
+        TravelRefusal::ScarabCheese { carpet: true } => {
+            "Ugh... What is that stench? Cough! Cough! Not scarab cheese! Get out of here!"
+        }
+        TravelRefusal::ScarabCheese { carpet: false } => {
+            "That cheese of yours stinks! Please leave!"
+        }
         TravelRefusal::CombatBlocked => {
             "First get rid of those blood stains! You are not going to ruin my vehicle!"
         }

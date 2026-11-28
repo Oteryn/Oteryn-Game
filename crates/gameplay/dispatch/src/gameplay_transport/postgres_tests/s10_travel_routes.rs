@@ -31,16 +31,17 @@ fn s10_banker_service_reachable() -> TestResult {
 }
 
 #[test]
-fn s10_declared_routes_stay_held_without_charging() -> TestResult {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+fn s10_cheese_blocks_chemar_and_petros_without_charging() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
+    drop(admin);
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| {
             scenario(
-                "s10_declared_routes_stay_held_without_charging",
+                "s10_cheese_blocks_chemar_and_petros_without_charging",
                 &["chemar", "petros"],
             )
             .map_err(|error| error.to_string())
@@ -48,7 +49,7 @@ fn s10_declared_routes_stay_held_without_charging() -> TestResult {
         .join()
         .map_err(|_| "S10 travel PostgreSQL thread panicked")??;
     eprintln!(
-        "s10npc-marker: s10_declared_routes_stay_held_without_charging duration={:?}",
+        "s10npc-marker: s10_cheese_blocks_chemar_and_petros_without_charging duration={:?}",
         started.elapsed()
     );
     Ok(())
@@ -83,8 +84,33 @@ fn scenario(test: &'static str, npcs: &'static [&'static str]) -> TestResult {
             crate::spell::cast::v1_spell_book().map_err(debug)?,
             1 + npcs.len(),
         )?;
+        use crate::gameplay_transport::spell_premium_coordinator::{
+            SpellPremiumCoordinator, purchase_fixture,
+        };
+        let premium = if npcs == ["adrian"] {
+            None
+        } else {
+            let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+            h.root
+                .latch_premium_activation(
+                    &activation.activation_id,
+                    activation.switch_over_us,
+                    activation.switch_over_us + 60_000_000,
+                )
+                .await
+                .map_err(debug)?;
+            Some(SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            ))
+        };
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
+        if let Some(premium) = premium.as_ref() {
+            owner.premium_coordinator = Some(premium);
+        }
         deps.initialize(&owner).await;
         let catalogue = NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -156,8 +182,14 @@ fn scenario(test: &'static str, npcs: &'static [&'static str]) -> TestResult {
             use super::npc_paid_travel_fixtures::talk;
             use oteryn_protocol_oteryn::npc_service::NpcConversationState;
 
-            super::item_look_fixtures::seed_main_backpack(&h, &[("oteryn:item.tibia.i3035", 2)])
-                .await?;
+            super::item_look_fixtures::seed_main_backpack(
+                &h,
+                &[
+                    ("oteryn:item.tibia.i3035", 2),
+                    ("oteryn:item.tibia.i169", 1),
+                ],
+            )
+            .await?;
             let before = deps
                 .runtime
                 .lock()
@@ -165,13 +197,26 @@ fn scenario(test: &'static str, npcs: &'static [&'static str]) -> TestResult {
                 .read_actor_position(deps.actor)
                 .map_err(debug)?
                 .position();
-            for (stem, keyword, command) in [("chemar", "edron", 1), ("petros", "venore", 5)] {
+            for (stem, keyword, command, refusal) in [
+                (
+                    "chemar",
+                    "edron",
+                    1,
+                    "Ugh... What is that stench? Cough! Cough! Not scarab cheese! Get out of here!",
+                ),
+                (
+                    "petros",
+                    "venore",
+                    5,
+                    "That cheese of yours stinks! Please leave!",
+                ),
+            ] {
                 owner.clock_origin -= std::time::Duration::from_secs(1);
                 let npc = npc_ref(stem)?;
                 talk(&owner, &deps, npc, command, "hi").await?;
                 let route = talk(&owner, &deps, npc, command + 1, keyword).await?;
-                let reply = route.conversation.ok_or("held route reply")?;
-                assert_eq!(reply.lines, ["I'm sorry but I don't sail there."]);
+                let reply = route.conversation.ok_or("Scarab Cheese refusal")?;
+                assert_eq!(reply.lines, [refusal]);
                 assert_eq!(reply.open, Some((npc, NpcConversationState::Open)));
                 let outcome = talk(&owner, &deps, npc, command + 2, "yes").await?;
                 assert!(!outcome.inventory_changed);
@@ -189,6 +234,100 @@ fn scenario(test: &'static str, npcs: &'static [&'static str]) -> TestResult {
                 "SELECT (SELECT count(*) FROM game_newhaven_travel_receipts) + (SELECT count(*) FROM game_item_fee_burns WHERE cause_kind=8)",
             ).fetch_one(&h.pool).await?;
             assert_eq!(receipts, 0);
+            // Move the test cheese out of carried custody, then exercise both
+            // route-specific progress checks through the same dialogue owner.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let changed = sqlx::query(
+                "DELETE FROM game_item_container_entries
+                 WHERE item_instance_id=encode($1,'hex')::uuid",
+            )
+            .bind(id(72).as_slice())
+            .execute(&mut *tx)
+            .await?;
+            assert_eq!(changed.rows_affected(), 1);
+            tx.commit().await?;
+
+            let chem = npc_ref("chemar")?;
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            talk(&owner, &deps, chem, 20, "hi").await?;
+            for (command, keyword, fare) in [
+                (21, "edron", 40),
+                (22, "hills", 60),
+                (23, "issavi", 100),
+                (24, "kazor", 80),
+                (25, "svargrond", 60),
+            ] {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                let quote = talk(&owner, &deps, chem, command, keyword).await?;
+                let reply = quote.conversation.ok_or("carpet quote")?;
+                assert_eq!(reply.open, Some((chem, NpcConversationState::Confirming)));
+                assert!(
+                    reply
+                        .lines
+                        .iter()
+                        .any(|line| line.ends_with(&format!("for {fare} gold?")))
+                );
+            }
+
+            for (index, stem, keyword, track, quest, value, fare) in [
+                (
+                    0,
+                    "chemar",
+                    "zao",
+                    "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission10_1",
+                    "oteryn:quest.the_new_frontier_quest",
+                    2_i64,
+                    60,
+                ),
+                (
+                    1,
+                    "petros",
+                    "yalahar",
+                    "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/darashia",
+                    "oteryn:quest.in_service_of_yalahar_quest",
+                    1_i64,
+                    210,
+                ),
+            ] {
+                owner.clock_origin -= std::time::Duration::from_secs(1);
+                let npc = npc_ref(stem)?;
+                let command = 30 + 5 * index;
+                talk(&owner, &deps, npc, command, "hi").await?;
+                let denied = talk(&owner, &deps, npc, command + 1, keyword).await?;
+                assert_eq!(
+                    denied.conversation.ok_or("quest refusal")?.open,
+                    Some((npc, NpcConversationState::Open))
+                );
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query(
+                    "INSERT INTO game_character_quest_tracks
+                        (character_id, track_key, quest_key, value, committed_character_revision)
+                     VALUES (encode($1,'hex')::uuid, $2, $3, $4, 2)",
+                )
+                .bind(id(41).as_slice())
+                .bind(track)
+                .bind(quest)
+                .bind(value)
+                .execute(&mut *tx)
+                .await?;
+                tx.commit().await?;
+                let quote = talk(&owner, &deps, npc, command + 2, keyword).await?;
+                let reply = quote.conversation.ok_or("quest route quote")?;
+                assert_eq!(reply.open, Some((npc, NpcConversationState::Confirming)));
+                assert!(
+                    reply
+                        .lines
+                        .iter()
+                        .any(|line| line.ends_with(&format!("for {fare} gold?")))
+                );
+                talk(&owner, &deps, npc, command + 3, "bye").await?;
+            }
         }
         drop(owner);
         drop(authority);

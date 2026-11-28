@@ -2,7 +2,7 @@
   "schema": "OTERYN_S10_NONQUEST/v1",
   "classification": "OTS_HYPOTHESIS_ONLY",
   "wiki": "wiki-pending",
-  "decision": "Use the confirmed Fandom archive line for Maria. Retain inherited ambient profiles where Global values are still unverified, excluding explicitly unconfirmed Dragon Ancestor Spirit placeholders. Preserve reviewed stationary Omrabas and Flickering Soul behavior. Banks reuse accepted BANK0 operations and existing dialogue; guild banking and quest bonuses are excluded.",
+  "decision": "Use the confirmed Fandom archive line for Maria. Retain inherited ambient profiles where Global values are still unverified, excluding explicitly unconfirmed Dragon Ancestor Spirit placeholders. Preserve reviewed stationary Omrabas behavior. Resolve Ambassador Manop and Flickering Soul movement from Crystal where Global gives no numeric movement settings. Banks reuse accepted BANK0 operations and existing dialogue; guild banking and quest bonuses are excluded.",
   "voices": [
     {
       "key": "oteryn:npc.valindara",
@@ -305,6 +305,86 @@
         "archive_revision": "2022-03-07T18:58:13Z",
         "field": "sounds"
       }
+    },
+    {
+      "key": "oteryn:npc.larry",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Krahhh!\",\"yell\":false},{\"text\":\"Keelhaul! Keelhaul!\",\"yell\":false},{\"text\":\"Gold! Gems!\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "classification": "Crystal (Global silent)",
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/larry.lua",
+        "line": 21,
+        "sha256": "85b635dd1e7eda9f6d99e716635155db9980af1b4c1d4e69092301f3808fdcfc",
+        "mode_default": "data/scripts/lib/register_npc_type.lua:128-130; src/lua/functions/creatures/npc/npc_type_functions.cpp:350-359"
+      },
+      "global_voice_evidence": {
+        "url": "https://tibia.fandom.com/wiki/Larry",
+        "archive_revision": "2022-01-26T14:31:13Z",
+        "field": "sounds"
+      }
+    },
+    {
+      "key": "oteryn:npc.squeekquek",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Squeak!\",\"yell\":false},{\"text\":\"Yip yip.\",\"yell\":false},{\"text\":\"Hm? Who's there?\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "classification": "Crystal (Global silent)",
+        "repository": "zimbadev/crystalserver",
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/npc/squeekquek.lua",
+        "line": 27,
+        "sha256": "c0203675752ded464ca948bf5d7b1da942e13f2a123689b05815558f4294f90e",
+        "mode_default": "data/scripts/lib/register_npc_type.lua:128-130; src/lua/functions/creatures/npc/npc_type_functions.cpp:350-359"
+      },
+      "global_voice_evidence": {
+        "url": "https://tibia.fandom.com/wiki/Squeekquek",
+        "archive_revision": "2021-06-04T10:38:41Z",
+        "field": "sounds"
+      }
     }
   ],
   "bankers": [
@@ -580,6 +660,20 @@
     }
   ],
   "walkers": [
+    {
+      "key": "oteryn:npc.ambassador_manop",
+      "interval_ms": 0,
+      "radius_tiles": 2,
+      "fields": [],
+      "evidence": "Crystal (Global silent) 201189f8:data-global/npc/ambassador_manop.lua:9-10"
+    },
+    {
+      "key": "oteryn:npc.flickering_soul",
+      "interval_ms": 2000,
+      "radius_tiles": 2,
+      "fields": [],
+      "evidence": "Crystal (Global silent) 201189f8:data-global/npc/flickering_soul.lua:10-11"
+    },
     {
       "key": "oteryn:npc.wyrdins_apprentice",
       "interval_ms": 2000,

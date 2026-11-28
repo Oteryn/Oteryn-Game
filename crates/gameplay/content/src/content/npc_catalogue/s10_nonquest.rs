@@ -144,8 +144,8 @@ pub(super) fn install(draft: &mut ProjectV2Draft) -> Result<(), &'static str> {
         let ProjectV2AuthoringProfileData::Behavior(profile) = &mut profile.data else {
             return Err("S10 profile is not Behavior");
         };
-        profile.movement.can_walk = true;
-        profile.movement.wander = Some(ProjectV2Wander {
+        profile.movement.can_walk = row.interval_ms != 0 && row.radius_tiles != 0;
+        profile.movement.wander = profile.movement.can_walk.then_some(ProjectV2Wander {
             interval_ms: row.interval_ms,
             radius_tiles: row.radius_tiles,
         });

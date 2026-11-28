@@ -17,6 +17,7 @@ mod ticket;
 pub enum TravelRefusal {
     UnavailableRoute,
     PremiumRequired,
+    ScarabCheese { carpet: bool },
     CombatBlocked,
     Exhausted,
     ArrivalPending,
@@ -64,6 +65,26 @@ async fn quote(
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
     {
         return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
+    // The quote and settlement both run under the fenced Character root lock.
+    // Crystal (Global silent for carpets and exact item id): chemar.lua:62-64,
+    // petros.lua:53-55. Reuse the bounded carried projection, including nested bags.
+    if matches!(route.service.as_str(), "oteryn:service.travel.chemar" | "oteryn:service.travel.petros") {
+        let has_cheese: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1
+                FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) carried
+                JOIN game_item_instances item ON item.item_instance_id = carried.item
+                WHERE item.definition_family = 'Item'
+                  AND item.definition_production_key = 'oteryn:item.tibia.i169'
+                  AND item.lifecycle = 1)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .fetch_one(&mut ***tx)
+        .await?;
+        if has_cheese {
+            return Ok(Err(TravelRefusal::ScarabCheese { carpet: route.carpet }));
+        }
     }
     if let Some(requirement) = &route.return_origin {
         let last =

@@ -855,7 +855,7 @@ mod tests {
             ("captain_gulliver", "issavi", false),
             ("captain_gulliver", "krailos", true),
             ("captain_gulliver", "thais", false),
-            ("petros", "issavi", true),
+            ("petros", "issavi", false),
         ] {
             let key = format!("oteryn:npc.{npc}");
             let entry = model
@@ -882,7 +882,7 @@ mod tests {
                 ),
                 (
                     donor["donor_cost"].as_u64().ok_or("donor fare")?,
-                    donor["donor_premium"].as_bool().ok_or("donor premium")?,
+                    npc != "petros" && donor["donor_premium"].as_bool().ok_or("donor premium")?,
                     held,
                     true
                 ),
