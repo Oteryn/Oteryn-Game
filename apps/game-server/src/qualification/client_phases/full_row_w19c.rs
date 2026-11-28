@@ -268,7 +268,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 const START: TilePos = TilePos {
     x: 32948,
     y: 32110,
-    floor: 6,
+    floor: -6,
 };
 
 async fn prepare_buyer(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
@@ -365,6 +365,19 @@ mod tests {
     fn compact_is_one_token() {
         assert_eq!(compact("a  b"), "a-b");
         assert_eq!(compact(" "), "unknown");
+    }
+
+    #[test]
+    fn venore_staging_uses_the_same_cell_as_the_legacy_floor() -> TestResult {
+        assert_eq!(
+            tile(ActorPosition {
+                x: 32948,
+                y: 32110,
+                floor: 6,
+            })?,
+            START
+        );
+        Ok(())
     }
 
     #[test]
