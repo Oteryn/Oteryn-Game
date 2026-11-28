@@ -124,6 +124,25 @@ fn field_runes_postgres_player_contact_ticks_and_incidental_skull() -> TestResul
 }
 
 #[test]
+fn field_runes_postgres_idle_fire_expires_at_final_tick() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            run(async move |_| {
+                field_scenario(admin, 3188, 1, 2118, true, false, false, Scenario::FireExpiry)
+                    .await
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "Fire expiry PostgreSQL thread panicked")??;
+    Ok(())
+}
+
+#[test]
 fn field_runes_postgres_player_contact_recovers_committed_damage() -> TestResult {
     large_stack(|| {
         run(async |admin| {
@@ -371,6 +390,7 @@ enum Scenario {
     PeriodicRollback,
     PeriodicCommit,
     PeriodicPermissionChange,
+    FireExpiry,
     Creature,
     ElementPlayer,
     ElementCreature,
@@ -991,6 +1011,11 @@ async fn field_scenario_inner(
         BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .map_err(debug)?;
+    let fire_clock = (scenario == Scenario::FireExpiry).then(|| {
+        let clock = super::srx3_native_source_cast_fixtures::NativeOwnerClock::new(&owner);
+        clock.set(owner.owner_now().get().div_ceil(1_000) * 1_000 + 1);
+        clock
+    });
     let formula = native.training_formula().ok_or("training formula")?;
     let druid = convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
     harness
@@ -1809,6 +1834,7 @@ async fn field_scenario_inner(
     .map_err(|error| {
         format!("FIELD-RUNES transport rune={rune} scenario={scenario:?}: {error}")
     })??;
+    drop(fire_clock);
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
     if destroy_scenario(scenario) {
         drop(owner);
@@ -1999,13 +2025,13 @@ async fn field_scenario_inner(
             // Eleven seconds from application, not eleven seconds plus all the
             // SQL/map work above. Poison's third pulse is due at twelve seconds;
             // CI load must not silently turn this two-pulse assertion into three.
-            let periodic_now = {
+            let started_at = {
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
                 let state = states
                     .get(&runtime, target, target_session)
                     .ok_or("player state")?;
-                let started_at = state
+                state
                     .owned_conditions()
                     .instances()
                     .iter()
@@ -2016,14 +2042,13 @@ async fn field_scenario_inner(
                             .as_deref()
                             .is_some_and(|source| source.starts_with("player:field:"))
                     })
-                    .map_or(owner.owner_now().get(), |condition| condition.started_at());
-                // Periodic evaluation truncates to milliseconds; round the
-                // application instant up so energy's eleven-second tick is due.
-                let started_at = started_at.div_ceil(1_000) * 1_000;
-                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(started_at)
-                    .checked_add(11_000_000)
-                    .map_err(debug)?
+                    .map_or(owner.owner_now().get(), |condition| condition.started_at())
             };
+            let periodic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                started_at.div_ceil(1_000) * 1_000,
+            )
+            .checked_add(11_000_000)
+            .map_err(debug)?;
             let mut interrupted = if matches!(
                 scenario,
                 Scenario::PeriodicRollback
@@ -2137,6 +2162,9 @@ async fn field_scenario_inner(
                 },
                 "only legal entry and residual ticks have distinct durable occurrences"
             );
+            if scenario == Scenario::FireExpiry {
+                assert_idle_fire_expiry(&owner, target, target_session, started_at).await?;
+            }
         }
     }
     if equipped(scenario) {
@@ -2798,6 +2826,65 @@ async fn wait_field_client(
             client.write_all(&ack).await?;
         }
     }
+}
+
+async fn assert_idle_fire_expiry(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    started_at: u64,
+) -> TestResult {
+    use crate::domain::condition::{ConflictKey, DotElement};
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+
+    // Tibia Fandom, Fire Field Rune: 10 damage over 7 turns, every 9 seconds.
+    // The earlier eleven-second owner turn already dispatched the first pulse.
+    const FIRE_INTERVAL_US: u64 = 9_000_000;
+    const FIRE_PULSES: u64 = 7;
+    assert_eq!(
+        started_at % 1_000,
+        1,
+        "the field must start between milliseconds"
+    );
+    for ordinal in 2..FIRE_PULSES {
+        let at = started_at + ordinal * FIRE_INTERVAL_US + 1_000;
+        assert!(
+            owner
+                .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(at))
+                .await
+                .is_some()
+        );
+    }
+
+    let deadline = started_at + FIRE_PULSES * FIRE_INTERVAL_US;
+    let fire = ConflictKey::Element(DotElement::Fire);
+    owner
+        .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(deadline - 1))
+        .await;
+    let before = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session).ok_or("burning player")?;
+        assert!(
+            state.owned_conditions().get(fire).is_some(),
+            "Fire must last until its final pulse"
+        );
+        (state.revision(), state.vitals().health)
+    };
+    let (_, vitals) = owner
+        .tick_spell_periodic_at(actor, session, SemanticTimeMicros::from_micros(deadline))
+        .await
+        .filter(|(revision, _)| *revision > before.0)
+        .ok_or("the final Fire pulse must publish a new vitals revision at its exact deadline")?;
+    assert_eq!(vitals.health, before.1 - field_player_hit(2118, 7));
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let state = states.get(&runtime, actor, session).ok_or("player after expiry")?;
+    assert!(
+        state.owned_conditions().get(fire).is_none(),
+        "the final receipt removes Fire"
+    );
+    Ok(())
 }
 
 async fn player_health(
