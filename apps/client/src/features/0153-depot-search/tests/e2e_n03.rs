@@ -223,16 +223,41 @@ fn replay(captured: &Captured) -> Result<(), Error> {
     activate(&link, &inputs, 5);
     assert_eq!(sent(&mut receiver)?, Request::Open { after: 0 });
     let mut previous = None;
-    for page in &captured.pages {
+    for (index, page) in captured.pages.iter().enumerate() {
         if let Some(after) = previous {
             activate(&link, &inputs, 6);
             assert_eq!(sent(&mut receiver)?, Request::Open { after });
         }
+        let expected = depot_search::decode_reply(&page.response.payload)
+            .map_err(|error| format!("invalid captured holdings page: {error:?}"))?;
+        let terminal = index + 1 == captured.pages.len();
+        let mut cursor = previous.unwrap_or(0);
+        for row in &expected.results {
+            if row.client_id <= cursor {
+                return Err(format!("holdings page {index} overlaps or is out of order").into());
+            }
+            cursor = row.client_id;
+        }
+        if expected.outcome
+            != if terminal {
+                Outcome::Listed
+            } else {
+                Outcome::More
+            }
+            || expected.retrieved != 0
+            || (!terminal && expected.results.is_empty())
+        {
+            return Err(format!("invalid continuation on holdings page {index}").into());
+        }
         outbox.depot_search_result(&page.response);
         let panel = link.depot_search_panel();
         assert!(!panel.pending);
-        let reply = panel.reply.as_ref().ok_or("a captured page left no reply")?;
-        previous = reply.results.last().map(|r| r.client_id);
+        let reply = panel
+            .reply
+            .as_ref()
+            .ok_or("a captured page left no reply")?;
+        assert_eq!(reply, &expected, "panel did not show captured page {index}");
+        previous = Some(cursor);
     }
 
     let panel = link.depot_search_panel();
@@ -262,13 +287,19 @@ fn replay(captured: &Captured) -> Result<(), Error> {
     activate(&link, &inputs, 7);
     assert_eq!(
         sent(&mut receiver)?,
-        Request::Retrieve { client_id: captured.item, all: false }
+        Request::Retrieve {
+            client_id: captured.item,
+            all: false
+        }
     );
     outbox.depot_search_result(&captured.retrieve.response);
     let panel = link.depot_search_panel();
     assert!(!panel.pending);
     let reply = panel.reply.clone().ok_or("no retrieve reply")?;
-    assert_eq!((reply.outcome, reply.retrieved), (Outcome::Retrieved, captured.retrieved));
+    assert_eq!(
+        (reply.outcome, reply.retrieved),
+        (Outcome::Retrieved, captured.retrieved)
+    );
     Ok(())
 }
 
@@ -366,6 +397,31 @@ fn e2e_n03_replays_captured_envelopes() -> Result<(), Error> {
     assert_eq!(captured.session, FIXTURE_SESSION);
     assert_eq!(captured.retrieve.response.server_sequence, 0x904);
     replay(&captured)
+}
+
+#[test]
+fn e2e_n03_checks_each_page_and_rejects_overlapping_cursor() -> Result<(), Error> {
+    let mut captured = fixture()?;
+    let middle = |start| {
+        encode(&Reply {
+            outcome: Outcome::More,
+            retrieved: 0,
+            results: (start..start + 64)
+                .map(|id| row(id, 1, vec![TierCount { tier: 0, count: 1 }]))
+                .collect(),
+        })
+    };
+    captured.pages.insert(
+        1,
+        Envelope {
+            session: captured.session.clone(),
+            response: response(0x42, CommandStatus::Accepted, middle(164)?),
+        },
+    );
+    replay(&captured)?;
+    captured.pages[1].response.payload = middle(163)?;
+    assert!(replay(&captured).is_err());
+    Ok(())
 }
 
 #[test]

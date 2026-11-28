@@ -167,6 +167,17 @@ def replay_cause(row, package, test, names, captures, server, log):
         return "replay-failed"
     if len(server) != 1 or server[0] not in {("e2e_all", "PASS"), ("e2e_capture", "CAPTURED")}:
         return "server-failed"
+    if row == "N03":
+        live_sessions = re.findall(
+            r"^SEAM_EVIDENCE e2e_capture scenario=N03\.client status=CAPTURED "
+            r"[^\n]*?\bevidence=session=([a-f0-9-]+)(?=\s|$)",
+            log.read_text(errors="replace"), re.MULTILINE,
+        )
+        replay_sessions = re.findall(
+            r"^N03_NATIVE_REPLAY session=([a-f0-9-]+)$", result.stdout, re.MULTILINE,
+        )
+        if len(live_sessions) != 1 or replay_sessions != live_sessions:
+            return "replay-failed"
     return None
 
 

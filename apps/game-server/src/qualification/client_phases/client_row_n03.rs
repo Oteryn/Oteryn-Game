@@ -185,6 +185,51 @@ fn verify_holdings(reply: &wire::Reply, expected: u32) -> TestResult {
     Ok(())
 }
 
+fn verify_listed(reply: &wire::Reply) -> TestResult<&wire::SearchResult> {
+    if let [row] = reply.results.as_slice()
+        && reply.outcome == wire::Outcome::Listed
+        && reply.retrieved == 0
+        && (row.client_id, row.depot, row.stash, row.inbox) == (ITEM_ID, DEPOSIT_UNITS, 0, 0)
+        && row.tiers
+            == [wire::TierCount {
+                tier: 0,
+                count: DEPOSIT_UNITS,
+            }]
+    {
+        return Ok(row);
+    }
+    Err(format!("N03 unexpected complete holdings list: {reply:?}").into())
+}
+
+#[test]
+fn n03_list_rejects_extra_rows_and_continuation() -> TestResult {
+    let row = wire::SearchResult {
+        client_id: ITEM_ID,
+        depot: DEPOSIT_UNITS,
+        stash: 0,
+        inbox: 0,
+        tiers: vec![wire::TierCount {
+            tier: 0,
+            count: DEPOSIT_UNITS,
+        }],
+    };
+    let mut reply = wire::Reply {
+        outcome: wire::Outcome::Listed,
+        retrieved: 0,
+        results: vec![row.clone()],
+    };
+    verify_listed(&reply)?;
+    reply.results.push(wire::SearchResult {
+        client_id: ITEM_ID + 1,
+        ..row
+    });
+    assert!(verify_listed(&reply).is_err());
+    reply.results.pop();
+    reply.outcome = wire::Outcome::More;
+    assert!(verify_listed(&reply).is_err());
+    Ok(())
+}
+
 async fn assert_holdings(client: &mut DevClientSession, expected: u32) -> TestResult {
     let (reply, _) = search_command(client, wire::Request::Search { client_id: ITEM_ID }).await?;
     verify_holdings(&reply, expected)
@@ -372,7 +417,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     evidence(&format!(
         "FIXTURE row=N03.client account=q_n03 item={ITEM_ID} count={DEPOSIT_UNITS}"
     ));
-    character_prep::reload(&mut client, clients).await?;
+    let fixture_session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(clients, 0xae, 1).await?;
+    if client.join_snapshot().game_session_id == fixture_session {
+        return Err("N03 fixture relog reused the original session".into());
+    }
     if carried_count(&client, definition)? != u64::from(DEPOSIT_UNITS) {
         return Err("N03 fixture did not grant exactly two carried units".into());
     }
@@ -455,41 +506,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ));
 
     let client_id = ITEM_ID;
-    // Preserve the full client pagination, even when the item appears before the last page.
-    let mut pages = Vec::new();
-    let mut after = 0;
-    let mut row = None;
-    let listed = loop {
-        let (page, page_envelope) =
-            search_command(&mut client, wire::Request::Open { after }).await?;
-        if let Some(found) = page.results.iter().find(|row| row.client_id == client_id)
-            && row.replace(found.clone()).is_some()
-        {
-            return Err("N03 item repeated across holdings pages".into());
-        }
-        pages.push(page_envelope);
-        if page.outcome == wire::Outcome::Listed {
-            break page;
-        }
-        if page.outcome != wire::Outcome::More || pages.len() >= 64 {
-            return Err(
-                format!("N03 holdings pagination did not finish: {:?}", page.outcome).into(),
-            );
-        }
-        let next = page.results.last().ok_or("empty More page")?.client_id;
-        if next <= after {
-            return Err("N03 holdings cursor did not advance".into());
-        }
-        after = next;
-    };
-    let row = row.ok_or_else(|| format!("deposited item {client_id} not in the holdings list"))?;
-    if (row.depot, row.stash, row.inbox) != (DEPOSIT_UNITS, 0, 0)
-        || row.tiers != [wire::TierCount { tier: 0, count: DEPOSIT_UNITS }]
-    {
-        return Err(
-            format!("N03 expected {DEPOSIT_UNITS} depot units after deposit: {row:?}").into(),
-        );
-    }
+    // Exactly one definition was deposited into this otherwise empty account.
+    let (listed, list_envelope) =
+        search_command(&mut client, wire::Request::Open { after: 0 }).await?;
+    let row = verify_listed(&listed)?;
     let (retrieved, retrieved_envelope) = search_command(
         &mut client,
         wire::Request::Retrieve {
@@ -511,13 +531,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let capture_id = uuid_text(original_session.as_bytes());
     let expected = format!(
         "session={capture_id}\nitem={client_id}\npages={}\nlisted={:?}\nrow={}|{}|{}|{tiers}\nretrieve={:?}|{}\n",
-        pages.len(),
-        listed.outcome,
-        row.depot,
-        row.stash,
-        row.inbox,
-        retrieved.outcome,
-        retrieved.retrieved
+        1, listed.outcome, row.depot, row.stash, row.inbox, retrieved.outcome, retrieved.retrieved
     );
     wait_carried(&mut client, definition, 1).await?;
     assert_holdings(&mut client, 1).await?;
@@ -544,16 +558,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         "N03_DURABILITY carried_before=2 carried_after_deposit=0 depot_after_deposit=2 carried_after_retrieve=1 relog_carried=1 relog_depot=1 fresh_session=true retrieved_uuid={first} retained_uuid={second}"
     ));
 
-    for (index, envelope) in pages.iter().enumerate() {
-        capture(capture_root, &format!("n03-list-{index}.json"), envelope)?;
-    }
+    capture(capture_root, "n03-list-0.json", &list_envelope)?;
     capture(capture_root, "n03-retrieve.json", &retrieved_envelope)?;
     capture(capture_root, "n03-expected.txt", expected.as_bytes())?;
     Ok(format!(
         "session={capture_id} item={client_id} pages={} depot={} retrieved={}",
-        pages.len(),
-        row.depot,
-        retrieved.retrieved
+        1, row.depot, retrieved.retrieved
     ))
 }
 

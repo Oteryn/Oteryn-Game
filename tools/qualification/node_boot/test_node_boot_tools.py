@@ -949,6 +949,38 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_n03_replay_requires_current_live_session(self):
+        replay = load('client_replay')
+        current = '01a22240-eeb2-7a81-8ed9-0bb5f1c4fb8f'
+        stale = '01a22239-2f36-7eda-953e-e39167e253da'
+        test = 'e2e_n03_depot_list_retrieve_one_and_refusals'
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            log = root / 'node.log'
+            log.write_text(
+                'SEAM_EVIDENCE e2e_capture scenario=N03.client status=CAPTURED '
+                f'seconds=1.0 evidence=session={current} item=3276\n'
+            )
+            names = {'n03-expected.txt', 'n03-retrieve.json'}
+            for name in names:
+                (root / name).write_text('fixture')
+            for markers, expected in (
+                ([current], None),
+                ([stale], 'replay-failed'),
+                ([], 'replay-failed'),
+                ([current, current], 'replay-failed'),
+            ):
+                with self.subTest(markers=markers):
+                    stdout = (f'test tests::{test} ... ok\n'
+                              'test result: ok. 1 passed; 0 failed; 0 ignored\n'
+                              + ''.join(f'N03_NATIVE_REPLAY session={s}\n' for s in markers))
+                    result = subprocess.CompletedProcess([], 0, stdout)
+                    with patch.object(replay.subprocess, 'run', return_value=result):
+                        self.assertEqual(replay.replay_cause(
+                            'N03', 'oteryn-client', test, names, root,
+                            replay.read_verdicts(log)['N03.client'], log,
+                        ), expected)
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'
