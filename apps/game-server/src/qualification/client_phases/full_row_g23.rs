@@ -75,7 +75,9 @@ fn consistent(eligible: bool, reason: &str, nodes: usize, catalogue: &str, vocat
     nodes > 0 && !catalogue.is_empty() && !vocation.is_empty() && (eligible || !reason.is_empty())
 }
 
-async fn presentations(client: &mut DevClientSession) -> TestResult<(wheel::Reply, gem::Reply)> {
+async fn presentations(
+    client: &mut DevClientSession,
+) -> TestResult<(wheel::Reply, gem::Reply, atelier::AtelierReply)> {
     let query = allocation::WheelAllocationRequest {
         action: 0,
         occurrence: [0; 16],
@@ -179,7 +181,54 @@ async fn presentations(client: &mut DevClientSession) -> TestResult<(wheel::Repl
         )
         .into());
     }
-    Ok((wheel, gem))
+    Ok((wheel, gem, state))
+}
+
+async fn lock_starter_gem(
+    client: &mut DevClientSession,
+    mut expected: atelier::AtelierReply,
+) -> TestResult<atelier::AtelierReply> {
+    let starter = expected
+        .gems
+        .iter_mut()
+        .min_by_key(|gem| gem.id)
+        .ok_or("step=atelier-lock no starter gem")?;
+    if starter.locked {
+        return Err("step=atelier-lock starter gem already locked".into());
+    }
+    let request = atelier::SetLockRequest {
+        occurrence: v7(0x88, 0x23),
+        expected_revision: expected.revision,
+        gem: starter.id,
+        locked: true,
+    };
+    starter.locked = true;
+    expected.revision = expected
+        .revision
+        .checked_add(1)
+        .ok_or("atelier revision overflow")?;
+    let (status, bytes) = send(
+        client,
+        CAPABILITY,
+        atelier::COMMAND_TYPE_ATELIER_SET_LOCK,
+        &atelier::encode_set_lock(&request)
+            .map_err(|error| format!("atelier lock encode: {error:?}"))?,
+    )
+    .await?;
+    let actual = atelier::decode_reply(&bytes)
+        .map_err(|error| format!("step=atelier-lock status={status:?} decode={error:?}"))?;
+    if status != CommandStatus::Accepted
+        || actual.refused
+        || actual.revision != expected.revision
+        || actual.gems != expected.gems
+    {
+        return Err(format!(
+            "step=atelier-lock status={status:?} revision={}",
+            actual.revision
+        )
+        .into());
+    }
+    Ok(expected)
 }
 
 async fn strict_step(
@@ -292,6 +341,39 @@ async fn promotion_line(
     Ok(conversation.lines)
 }
 
+fn verify_promotion_payment(before: u64, after: u64) -> TestResult {
+    if before.checked_sub(after) != Some(20_000) {
+        return Err(format!(
+            "step=promotion-payment expected-debit=20000 before={before} after={after}"
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn promotion_balance(client: &mut DevClientSession) -> TestResult<u64> {
+    let balance = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
+        .await?
+        .ok_or("step=promotion-payment live balance absent")?;
+    balance
+        .bank_gold
+        .checked_add(balance.carried_gold)
+        .ok_or_else(|| "step=promotion-payment balance overflow".into())
+}
+
+async fn promotion_receipt(clients: &SeamClients<'_>) -> TestResult<Option<String>> {
+    use sqlx::Connection as _;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let receipt = sqlx::query_scalar(
+        "SELECT purchase_occurrence_id::text FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_optional(&mut db)
+    .await?;
+    db.close().await?;
+    Ok(receipt)
+}
+
 async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     // From the street, pass the gate into the west passage and climb to the King.
     let ground = |x, y| TilePos { x, y, floor: -7 };
@@ -348,6 +430,7 @@ async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
     if greeting.is_empty() {
         return Err("step=promotion-greeting observed=empty-conversation".into());
     }
+    let balance_before = promotion_balance(client).await?;
     let quote = promotion_line(client, king, "promotion").await?;
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("step=promotion-quote observed={quote:?}").into());
@@ -357,7 +440,7 @@ async fn promote(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
     if confirmation != ["You are now promoted."] {
         return Err(format!("step=promotion-confirmation observed={confirmation:?}").into());
     }
-    Ok(())
+    verify_promotion_payment(balance_before, promotion_balance(client).await?)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -372,7 +455,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     character_prep::grant_item(&client, 3043, 2).await?;
-    character_prep::grant_premium(&client).await?;
     finish(&mut client).await?;
     drop(client);
 
@@ -382,7 +464,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("fixture relog reused session".into());
     }
     let world = full_e2ef7::qualification_world(clients)?;
+    if promotion_receipt(clients).await?.is_some() {
+        return Err("step=promotion character already promoted before purchase".into());
+    }
+    character_prep::grant_premium(&client).await?;
+    evidence("G23_FIXTURE premium=granted phase=promotion-session");
     promote(&mut client, world).await?;
+    let purchase = promotion_receipt(clients)
+        .await?
+        .ok_or("step=promotion confirmation without persisted promotion")?;
+    let paid_balance = promotion_balance(&mut client).await?;
     finish(&mut client).await?;
     drop(client);
 
@@ -391,9 +482,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if promoted_session == initial_session {
         return Err("promotion relog reused session".into());
     }
-    let before = verdict::observe(presentations(&mut client)).await;
+    if promotion_receipt(clients).await?.as_ref() != Some(&purchase)
+        || promotion_balance(&mut client).await? != paid_balance
+    {
+        return Err("step=promotion-relog purchase or paid balance changed".into());
+    }
+    let before = verdict::observe(async {
+        let (wheel, gem, atelier) = presentations(&mut client).await?;
+        let locked = lock_starter_gem(&mut client, atelier).await?;
+        Ok::<_, Box<dyn std::error::Error>>((wheel, gem, locked))
+    })
+    .await;
     let close = verdict::observe(finish(&mut client)).await;
-    let before = before?;
+    let (mut wheel_before, mut gem_before, expected) = before?;
     close?;
     drop(client);
 
@@ -401,7 +502,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let fresh_session = client.join_snapshot().game_session_id;
     let after = verdict::observe(presentations(&mut client)).await;
     let close = verdict::observe(finish(&mut client)).await;
-    if after? != before || fresh_session == initial_session {
+    let (wheel_after, gem_after, actual) = after?;
+    wheel_before.request.atelier_revision = expected.revision;
+    gem_before.request.revision = expected.revision;
+    if actual != expected
+        || wheel_after != wheel_before
+        || gem_after != gem_before
+        || fresh_session == initial_session
+    {
         return Err("step=relog observed=presentation-or-session-mismatch".into());
     }
     close?;
@@ -412,6 +520,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn promotion_requires_the_exact_debit() {
+        assert!(verify_promotion_payment(20_050, 50).is_ok());
+        assert!(verify_promotion_payment(20_050, 20_050).is_err());
+        assert!(verify_promotion_payment(20_050, 49).is_err());
+        assert!(verify_promotion_payment(20_050, 51).is_err());
+        assert!(verify_promotion_payment(10, 20_010).is_err());
+    }
 
     #[test]
     fn compact_is_one_bounded_token() {
