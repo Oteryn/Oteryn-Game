@@ -34,7 +34,7 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
                     let result = read_metadata(&mut tx, world, item).await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

@@ -1,4 +1,4 @@
-use super::delivery::{CapacityLine, capacity_prefix};
+use super::delivery::{self, CapacityLine, TreeFootprint};
 use super::*;
 
 fn line(weight: u32, quantity: u32) -> CapacityLine {
@@ -8,6 +8,24 @@ fn line(weight: u32, quantity: u32) -> CapacityLine {
         weight: Some(weight),
         container: false,
     }
+}
+
+fn capacity_prefix(
+    lines: &[CapacityLine],
+    slots: usize,
+    carried: u64,
+    capacity: u64,
+) -> Result<usize, BossRewardCollectionStatus> {
+    delivery::capacity_prefix(
+        lines.iter().map(|line| TreeFootprint {
+            weight: line.carried_weight(),
+            items: 1,
+        }),
+        slots,
+        usize::MAX,
+        carried,
+        capacity,
+    )
 }
 
 #[test]

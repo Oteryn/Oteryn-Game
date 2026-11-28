@@ -4,6 +4,8 @@
 //! (`store_purchase_requests`) and the delivery receipt of each operation.
 #[path = "store/cosmetic_tokens.rs"]
 mod cosmetic_tokens;
+#[path = "store/claim.rs"]
+mod claim;
 #[path = "store/coin_history.rs"]
 mod coin_history;
 use super::connection::AdmittedSession;
@@ -28,8 +30,13 @@ mod catalogue;
 mod browse;
 #[path = "store/prey_retry.rs"]
 mod prey_retry;
+#[path = "store/receipt_outbox.rs"]
+pub(super) mod receipt_outbox;
+pub use receipt_outbox::{run_retained_store_reconciliation, run_store_receipt_outbox};
 #[path = "store/hireling.rs"]
 mod hireling;
+#[path = "store/inbox.rs"]
+mod inbox;
 use catalogue::{RuntimeCatalogue, currency_text};
 
 /// The node's Platform Store client; `None` refuses every purchase as disabled.
@@ -108,17 +115,104 @@ async fn purchase_with_mode(
 }
 
 
-static CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| {
-    RuntimeCatalogue::from_json(include_bytes!(
-        "../../../../../rulesets/economy/store/catalogue.json"
-    ))
- });
+const ITEM_CATALOGUE_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/catalogue.json");
+const HIRELING_CATALOGUE_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/hirelings.json");
+const COSMETIC_CATALOGUE_JSON: &[u8] = crate::content::store_cosmetics::DOCUMENT;
+const PLATFORM_CATALOGUE_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/platform-catalogue.json");
 
-static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| {
-    RuntimeCatalogue::from_json(include_bytes!("../../../../../rulesets/economy/store/hirelings.json"))
+const PLATFORM_PREDECESSORS_JSON: &[u8] =
+    include_bytes!("../../../../../rulesets/economy/store/platform-predecessors.json");
+
+fn platform_revision(bytes: &[u8]) -> String {
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+static PLATFORM_REVISION: LazyLock<String> =
+    LazyLock::new(|| platform_revision(PLATFORM_CATALOGUE_JSON));
+
+static PLATFORM_PREDECESSORS: LazyLock<Vec<(String, serde_json::Value)>> = LazyLock::new(|| {
+    serde_json::from_slice::<Vec<String>>(PLATFORM_PREDECESSORS_JSON)
+        .into_iter()
+        .flatten()
+        .filter_map(|snapshot| {
+            let document = serde_json::from_str(&snapshot).ok()?;
+            Some((platform_revision(snapshot.as_bytes()), document))
+        })
+        .collect()
 });
 
-static COSMETIC_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> = LazyLock::new(|| RuntimeCatalogue::from_json(crate::content::store_cosmetics::DOCUMENT));
+static PLATFORM_OFFERS: LazyLock<Option<serde_json::Value>> =
+    LazyLock::new(|| serde_json::from_slice(PLATFORM_CATALOGUE_JSON).ok());
+
+pub(super) fn platform_unit_kind(revision: &str, offer_key: &str) -> Option<&'static str> {
+    let document = if revision == PLATFORM_REVISION.as_str() {
+        PLATFORM_OFFERS.as_ref()?
+    } else if let Some((_, document)) = PLATFORM_PREDECESSORS
+        .iter()
+        .find(|(old, _)| old == revision)
+    {
+        document
+    } else {
+        // Pre-Platform runtime catalogue revisions used ITEM for all grants,
+        // including native outfit and mount unlocks.
+        return Some("ITEM");
+    };
+    let offers = document.get("offers")?.as_array()?;
+    let offer = offers
+        .iter()
+        .find(|offer| offer["offer_key"] == offer_key)?;
+    let [unit] = offer["units"].as_array()?.as_slice() else {
+        return None;
+    };
+    unit["unit_kind"]
+        .as_str()
+        .filter(|kind| matches!(*kind, "ITEM" | "COSMETIC"))
+}
+
+fn load_active_catalogue(bytes: &[u8]) -> Option<RuntimeCatalogue> {
+    RuntimeCatalogue::from_json_with_revision(bytes, Some(&PLATFORM_REVISION))
+}
+
+static CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
+    LazyLock::new(|| load_active_catalogue(ITEM_CATALOGUE_JSON));
+static HIRELING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
+    LazyLock::new(|| load_active_catalogue(HIRELING_CATALOGUE_JSON));
+static COSMETIC_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
+    LazyLock::new(|| load_active_catalogue(COSMETIC_CATALOGUE_JSON));
+
+static PREDECESSOR_CATALOGUES: LazyLock<Vec<Option<RuntimeCatalogue>>> = LazyLock::new(|| {
+    [
+        RuntimeCatalogue::from_json(include_bytes!(
+            "../../../../../rulesets/economy/store/predecessors/catalogue.json"
+        )),
+        RuntimeCatalogue::from_json(include_bytes!(
+            "../../../../../rulesets/economy/store/predecessors/cosmetics.json"
+        )),
+        RuntimeCatalogue::from_json(include_bytes!(
+            "../../../../../rulesets/economy/store/predecessors/charged-catalogue.json"
+        )),
+        RuntimeCatalogue::from_json(COSMETIC_CATALOGUE_JSON),
+        RuntimeCatalogue::from_json(HIRELING_CATALOGUE_JSON),
+    ]
+    .into_iter()
+    .chain(
+        PLATFORM_PREDECESSORS
+            .iter()
+            .map(|(revision, document)| RuntimeCatalogue::from_platform(document, revision)),
+    )
+    .collect()
+});
+
+#[cfg(test)]
+pub(super) fn active_catalogue_revision() -> &'static str {
+    &PLATFORM_REVISION
+}
 
 static BLESSING_CATALOGUE: LazyLock<Option<RuntimeCatalogue>> =
     LazyLock::new(RuntimeCatalogue::from_blessings);
@@ -206,6 +300,9 @@ pub(super) async fn execute(
             let Some(page) = browse::execute(owner, admitted, &query, recent).await else {
                 return REJECTED;
             };
+            if !recent && query.cursor.is_empty() && let Some(active) = CATALOGUE.as_ref() {
+                let _ = resume_removed_item(owner, admitted, active, command_id).await;
+            }
             page.encode()
         }
         wire::browse::COMMAND_TYPE_BANNERS => {
@@ -233,6 +330,31 @@ pub(super) async fn execute(
             let valid = crate::domain::character_name::CharacterName::parse(name).is_ok();
             Ok(vec![u8::from(valid)])
         }
+        wire::COMMAND_TYPE_STORE_INBOX_CLAIM => {
+            let query = if payload == wire::STORE_INBOX_QUERY {
+                Some((None, false))
+            } else {
+                wire::decode_inbox_query(payload).map(|after| (after, true))
+            };
+            if let Some((after, paged)) = query {
+                let Some(page) = Box::pin(inbox::project(owner, admitted, after)).await else {
+                    return REJECTED;
+                };
+                if paged {
+                    wire::encode_inbox_page(&page)
+                } else {
+                    wire::encode_inbox_entries(&page.entries)
+                }
+            } else {
+                let Ok(request) = wire::decode_inbox_claim_request(payload) else {
+                    return REJECTED;
+                };
+                let Some(receipt) = claim::execute(owner, admitted, command_id, request).await else {
+                    return REJECTED;
+                };
+                wire::encode_claim_receipt(&receipt)
+            }
+        }
         wire::COMMAND_TYPE_STORE_CATALOGUE_PAGE => {
             let Ok(request) = wire::decode_catalogue_request(payload) else {
                 return REJECTED;
@@ -244,6 +366,9 @@ pub(super) async fn execute(
                 BLESSING_CATALOGUE.as_ref()
             } else if wire::cosmetic_tokens::eligible(&request.category) {COSMETIC_CATALOGUE.as_ref()} else {CATALOGUE.as_ref()};
             let Some(catalogue)=catalogue else {return REJECTED};
+            if let Some(active) = CATALOGUE.as_ref() {
+                let _ = resume_removed_item(owner, admitted, active, command_id).await;
+            }
             let Some(page) = catalogue_page(owner, admitted, catalogue, &request).await else {
                 return REJECTED;
             };
@@ -435,7 +560,7 @@ fn purchase_answer(answer: Result<PurchaseResult, ProtocolError>) -> Option<Purc
 async fn purchase(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
-    catalogue: &RuntimeCatalogue,
+    catalogue: &'static RuntimeCatalogue,
     command_id: u64,
     request: wire::StorePurchaseRequest,
     customization: Option<wire::StoreHirelingCustomization>,
@@ -451,10 +576,125 @@ async fn purchase(
     ).await
 }
 
+/// A removed offer cannot be selected again. Opening the Store can finish its
+/// exact retained purchase using the buyer's current fenced Inbox authority.
+async fn resume_removed_item(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    active: &'static RuntimeCatalogue,
+    command_id: u64,
+) -> Option<()> {
+    let account = crate::domain::AccountId::from_bytes(admitted.controller?.account_id).ok()?;
+    let character = admitted.item_fence?.character_id;
+    // The digest excludes the request ID. Only an ID returned by the journal is sent.
+    let probe_id = rules::PurchaseRequestId::from_bytes(*account.as_bytes()).ok()?;
+    let removed: Vec<_> = PREDECESSOR_CATALOGUES.iter().flatten().flat_map(|old| {
+        old.entries().filter_map(move |offer| {
+            if !matches!(offer.delivery, rules::DeliveryKind::Item { .. })
+                || active.rules.offer(&offer.key).is_some()
+            {
+                return None;
+            }
+            let quote = rules::build_quote(&old.rules, &offer.key, &rules::CharacterStoreView::default()).ok()?;
+            let binding = rules::PurchaseStoreOffer::from_quote(probe_id, account, character, quote);
+            let digest = PurchaseRequest {
+                purchase_request_id: *probe_id.as_bytes(),
+                account_id: *account.as_bytes(),
+                character_id: *character.as_bytes(),
+                binding: binding.binding_digest().into(),
+            }.binding_digest();
+            Some((binding, digest))
+        })
+    }).collect();
+    if removed.is_empty() {
+        return Some(());
+    }
+    let candidates = owner.root.pending_store_item_purchases(
+        *account.as_bytes(), *character.as_bytes(), *admitted.world_id.as_bytes(),
+        removed.iter().map(|(_, digest)| digest.to_vec()).collect(),
+        true,
+    ).await.ok()?;
+    for pending in candidates {
+        if let Some((binding, _)) = removed.iter().find(|(_, digest)| pending.binding_digest == *digest) {
+            purchase(owner, admitted, active, command_id, wire::StorePurchaseRequest {
+                purchase_request_id: pending.purchase_id,
+                offer_key: binding.offer_key.clone(),
+                catalog_revision: binding.catalog_revision.clone(),
+                price: binding.price,
+                currency: currency_text(binding.currency).into(),
+            }, None).await?;
+            break;
+        }
+    }
+    Some(())
+}
+
+/// A new confirmation can resume an unfinished purchase for its buyer. Verify the
+/// exact original quote and price before repeating a potentially unanswered debit.
+fn retained_binding(
+    active: &'static RuntimeCatalogue,
+    confirmed: &rules::PurchaseStoreOffer,
+    pending: &crate::durability::store::PendingStorePurchase,
+) -> Option<(&'static RuntimeCatalogue, rules::PurchaseStoreOffer)> {
+    let purchase_request_id = rules::PurchaseRequestId::from_bytes(pending.purchase_id).ok()?;
+    let character_id = crate::domain::CharacterId::from_bytes(pending.character_id).ok()?;
+    std::iter::once(active).chain(PREDECESSOR_CATALOGUES.iter().flatten()).find_map(|catalogue| {
+        let (binding, digest) = matching_quote_binding(catalogue, confirmed, purchase_request_id, character_id)?;
+        (pending.binding_digest == digest).then_some((catalogue, binding))
+    })
+}
+
+fn matching_quote_binding(
+    catalogue: &RuntimeCatalogue,
+    confirmed: &rules::PurchaseStoreOffer,
+    purchase_request_id: rules::PurchaseRequestId,
+    character_id: crate::domain::CharacterId,
+) -> Option<(rules::PurchaseStoreOffer, [u8; 32])> {
+    let quote = rules::build_quote(&catalogue.rules, &confirmed.offer_key, &rules::CharacterStoreView::default()).ok()?;
+    if quote.price != confirmed.price || quote.currency != confirmed.currency {
+        return None;
+    }
+    let binding = rules::PurchaseStoreOffer::from_quote(
+        purchase_request_id, confirmed.account_id, character_id, quote,
+    );
+    let digest = PurchaseRequest {
+        purchase_request_id: *purchase_request_id.as_bytes(),
+        account_id: *confirmed.account_id.as_bytes(),
+        character_id: *character_id.as_bytes(),
+        binding: binding.binding_digest().into(),
+    }.binding_digest();
+    Some((binding, digest))
+}
+
+/// Legacy accepted journals have no history row to supply the offer. Match the
+/// retained quote against the original buyer before deciding who can deliver it.
+async fn pending_paid_item(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    catalogue: &'static RuntimeCatalogue,
+    confirmed: &rules::PurchaseStoreOffer,
+    world: [u8; 16],
+) -> Result<Option<crate::durability::store::PendingStorePurchase>, crate::durability::store::StoreDurabilityError> {
+    let account = *confirmed.account_id.as_bytes();
+    if let Some(paid) = owner.root.pending_paid_store_item(account, confirmed.offer_key.clone(), world).await? {
+        return Ok(Some(paid));
+    }
+    let mut after = None;
+    loop {
+        let page = owner.root.pending_legacy_paid_store_items(account, world, after).await?;
+        let Some(last) = page.last() else {
+            return Ok(None);
+        };
+        after = Some(last.purchase_id);
+        if let Some(paid) = page.into_iter().find(|pending| retained_binding(catalogue, confirmed, pending).is_some()) {
+            return Ok(Some(paid));
+        }
+    }
+}
+
 async fn purchase_retained_or_new(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
-    catalogue: &RuntimeCatalogue,
+    catalogue: &'static RuntimeCatalogue,
     command_id: u64,
     request: &wire::StorePurchaseRequest,
     customization: Option<wire::StoreHirelingCustomization>,
@@ -472,6 +712,18 @@ async fn purchase_retained_or_new(
     {
         return Some(result);
     }
+    let stale_quote = catalogue.rules.revision() != request.catalog_revision;
+    let removed_offer = stale_quote && catalogue.rules.offer(&request.offer_key).is_none();
+    let retained = if stale_quote {
+        PREDECESSOR_CATALOGUES.iter().flatten().find(|old| {
+            old.rules.revision() == request.catalog_revision && old.rules.offer(&request.offer_key).is_some()
+        })
+    } else {
+        Some(catalogue)
+    };
+    let Some(catalogue) = retained else {
+        return Some(refusal(wire::StorePurchaseCode::StaleQuote));
+    };
     let cosmetic = crate::content::store_cosmetics::offer(&request.offer_key);
     if let Some(offer) = cosmetic {
         let native = owner.active_generation?.native_gameplay()?.cosmetics()?;
@@ -503,19 +755,85 @@ async fn purchase_retained_or_new(
         Err(code) => return Some(refusal(code)),
     };
     let id = rules::PurchaseRequestId::from_bytes(request.purchase_request_id).ok()?;
-    let character_id = *fence.character_id.as_bytes();
-    let binding = rules::PurchaseStoreOffer::from_quote(
+    let confirmed = rules::PurchaseStoreOffer::from_quote(
         id,
         crate::domain::AccountId::from_bytes(account).ok()?,
         fence.character_id,
         quote,
     );
+    let ordinary_item = matches!(
+        &catalogue.rules.offer(&request.offer_key)?.delivery, rules::DeliveryKind::Item { .. }
+    );
+    let mut retained_request = false;
+    let (catalogue, binding, pending) = if cosmetic.is_some() || ordinary_item || stale_quote {
+        retained_request = owner.root.has_store_purchase_request(
+            request.purchase_request_id, account, *fence.character_id.as_bytes(),
+        ).await.ok()?;
+
+        let retry = PurchaseRequest {
+            purchase_request_id: request.purchase_request_id, account_id: account,
+            character_id: *fence.character_id.as_bytes(), binding: confirmed.binding_digest().into(),
+        };
+        let pending = owner.root.read_store_purchase_retry(retry.clone()).await.ok()?;
+        let pending = if pending.is_none() && !retained_request {
+            if ordinary_item {
+                let world = *admitted.world_id.as_bytes();
+                let paid = pending_paid_item(owner, catalogue, &confirmed, world).await.ok()?;
+                if paid.is_some() {
+                    paid
+                } else {
+                    let legacy = if removed_offer {
+                        vec![retry.binding_digest().to_vec()]
+                    } else if stale_quote {
+                        Vec::new()
+                    } else {
+                        std::iter::once(catalogue).chain(PREDECESSOR_CATALOGUES.iter().flatten())
+                            .filter_map(|old| matching_quote_binding(old, &confirmed, id, fence.character_id))
+                            .map(|(_, digest)| digest.to_vec())
+                            .collect()
+                    };
+                    owner.root.pending_store_item_purchases(account, *fence.character_id.as_bytes(), world, legacy, false)
+                        .await.ok()?.into_iter()
+                        .find(|candidate| retained_binding(catalogue, &confirmed, candidate).is_some())
+                }
+            } else if cosmetic.is_some() {
+                owner.root.pending_store_cosmetic_purchase(account, *fence.character_id.as_bytes(), request.offer_key.clone()).await.ok()?
+            } else {
+                None
+            }
+        } else {
+            pending
+        };
+        if let Some(pending) = pending {
+            if pending.character_id != *fence.character_id.as_bytes()
+                || (ordinary_item && pending.world_id != *admitted.world_id.as_bytes())
+            {
+                return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+            }
+            let Some((catalogue, binding)) = retained_binding(catalogue, &confirmed, &pending) else {
+                return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+            };
+            owner.root.record_store_purchase_retry(retry, pending.purchase_id, pending.world_id).await.ok()?;
+            (catalogue, binding, Some(pending))
+        } else {
+            (catalogue, confirmed, None)
+        }
+    } else {
+        (catalogue, confirmed, None)
+    };
+    if stale_quote && !retained_request && pending.is_none() {
+        return Some(refusal(wire::StorePurchaseCode::StaleQuote));
+    }
+    let purchase_world = pending.as_ref().map_or(*admitted.world_id.as_bytes(), |pending| pending.world_id);
+    let character_id = *binding.character_id.as_bytes();
+    let unit_kind = platform_unit_kind(catalogue.rules.revision(), &binding.offer_key)?;
     let journal = PurchaseRequest {
-        purchase_request_id: request.purchase_request_id,
+        purchase_request_id: *binding.purchase_request_id.as_bytes(),
         account_id: account,
         character_id,
         binding: hireling::request_binding(binding.binding_digest(),hireling_action.as_ref())?,
     };
+    let delivery = &catalogue.rules.offer(&binding.offer_key)?.delivery;
     let prey_expansion = matches!(
         &catalogue.rules.offer(&binding.offer_key)?.delivery,
         rules::DeliveryKind::Unlock { unlock_key } if unlock_key == catalogue::PREY_EXPANSION_UNLOCK
@@ -534,13 +852,38 @@ async fn purchase_retained_or_new(
             return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
         };
         state
+    } else if let rules::DeliveryKind::Item { item_key, .. } = delivery {
+        if let Some(answer) = owner.root.read_store_purchase_answer(journal.clone()).await.ok()? {
+            PurchaseRequestState::Answered(answer)
+        } else {
+            let current = gameplay_fence(owner, admitted).await?;
+            if !matches!(current.runtime_scope, crate::foundation::RuntimeScopeRefV1::Channel { .. }) {
+                return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+            }
+            let native = owner.active_generation?.native_gameplay()?;
+            let weights = super::item_ref_admission::NativeInboxItemWeights(native, owner.premium_coordinator);
+            let definition = TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: item_key.clone(),
+                revision_ref: catalogue.item_revision(&binding.offer_key)?.into(),
+            };
+            let Some(state) = owner.root.reserve_store_item_purchase(
+                owner.character, owner.holder, current, journal.clone(), definition, &weights,
+            ).await.ok()? else {
+                return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
+            };
+            state
+        }
     } else {owner.root.record_purchase_request(journal.clone()).await.ok()?};
     let saved = match request_state {
         PurchaseRequestState::Answered(saved) => saved,
         PurchaseRequestState::Sent => {
             let reserved = if cosmetic.is_some() {
                 let fence = gameplay_fence(owner, admitted).await?;
-                owner.root.reserve_store_cosmetic(owner.character, owner.holder, fence, journal.clone(), request.offer_key.clone()).await.ok()?
+                let content = owner.active_generation?.native_gameplay()?.cosmetics()?.clone();
+                pending.is_some() || owner.root.reserve_store_cosmetic(
+                    owner.character, owner.holder, fence, journal.clone(), request.offer_key.clone(), content,
+                ).await.ok()?
             } else if prey_expansion {
                 let fence = gameplay_fence(owner, admitted).await?;
                 owner.root.reserve_prey_expansion_purchase(
@@ -553,19 +896,17 @@ async fn purchase_retained_or_new(
                 ).await.ok()?
             } else { true };
             let answer = if reserved {
-                // Every admitted runtime offer uses Platform ITEM grants, including
-                // native permanent unlocks and Hireling service effects.
                 purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
-                    purchase_request_id: uuid_text(&request.purchase_request_id),
+                    purchase_request_id: uuid_text(&journal.purchase_request_id),
                     account_id: uuid_text(&account),
                     character_id: uuid_text(&character_id),
                     offer_key: binding.offer_key.clone(),
                     catalog_revision: binding.catalog_revision.clone(),
                     unit_price: binding.price.to_string(),
-                    world_id: uuid_text(admitted.world_id.as_bytes()),
+                    world_id: uuid_text(&purchase_world),
                     quantity: 1,
                     currency: platform_currency.into(),
-                }, "ITEM").await)?
+                }, unit_kind).await)?
             } else {
                 PurchaseResult::OfferUnavailable
             };
@@ -608,7 +949,7 @@ async fn purchase_retained_or_new(
     let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     if hireling_purchase.is_some() && answer.operation_ids.len()!=1 {return None}
     for operation in &answer.operation_ids {
-        deliver(owner, &platform, admitted, catalogue, &binding, command, operation,hireling_purchase.as_ref()).await?;
+        deliver(owner, &platform, admitted, catalogue, &binding, command, operation, hireling_purchase.as_ref(), purchase_world).await?;
     }
     Some(wire::StorePurchaseResult {
         code,
@@ -629,12 +970,15 @@ async fn deliver(
     command: CommandRef,
     operation: &str,
     purchase: Option<&HirelingStorePurchase>,
+    world_id: [u8; 16],
 ) -> Option<()> {
     let operation_id = uuid_bytes(operation)?;
+    if owner.root.has_store_restore_conflict(operation_id).await.ok()? {
+        return None;
+    }
     let intent = platform.lock().await.read_intent(crate::native_admission_source::store::OperationKind::Deliver, operation).await.ok()?;
     let account = *binding.account_id.as_bytes();
     let character_id = *binding.character_id.as_bytes();
-    let world_id = *admitted.world_id.as_bytes();
     if intent.quantity != Some(1)
         || intent.account_id != uuid_text(&account)
         || intent.offer_key.as_deref() != Some(binding.offer_key.as_str())
@@ -698,7 +1042,7 @@ async fn deliver(
             if !crate::content::store_cosmetics::compatible(native, offer) { return None; }
             let fence = gameplay_fence(owner, admitted).await?;
             owner.root.grant_store_cosmetic(owner.character, owner.holder, fence, operation_id,
-                DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }, binding.offer_key.clone()).await.ok()?
+                DeliveryIdentity { account_id: account, character_id, world_id, fulfilment_unit_id: intent.entitlement_id.clone() }, *binding.purchase_request_id.as_bytes(), binding.offer_key.clone()).await.ok()?
         };
         return publish(owner, platform, operation_id, &intent, &receipt).await;
     }
@@ -724,6 +1068,7 @@ async fn deliver(
         world_id,
         fulfilment_unit_id: intent.entitlement_id.clone(),
         item_instance_id: item_instance_id(&operation_id),
+        purchase_request_id: Some(*binding.purchase_request_id.as_bytes()),
         command,
         mint: RewardClaimInboxMintRequest {
             claim: TypedDefinitionRef {
@@ -751,9 +1096,16 @@ async fn deliver(
 }
 
 async fn publish(owner:&ComposedFreshAdmission<'_, '_, '_>,platform:&StorePlatform,operation_id:[u8;16],intent:&crate::native_admission_source::store::DeliveryIntent,receipt:&crate::durability::store::DeliveryReceipt)->Option<()> {
-    let bytes = platform.lock().await.delivery_receipt(intent, &receipt.recovery_generation, &receipt.decided_at).ok()?;
     // Publication is best effort here: the outbox keeps the receipt until Platform accepts it.
-    if platform.lock().await.publish_receipt(&bytes).await.is_ok() {
+    let acknowledged = {
+        let mut client = platform.lock().await;
+        if let Ok(bytes) = client.delivery_receipt(intent, &receipt.recovery_generation, &receipt.decided_at) {
+            client.publish_receipt(&bytes).await.is_ok()
+        } else {
+            false
+        }
+    };
+    if acknowledged {
         let _ = owner.root.mark_store_receipt_acknowledged(operation_id).await;
     }
     Some(())

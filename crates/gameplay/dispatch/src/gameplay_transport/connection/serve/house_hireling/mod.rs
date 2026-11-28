@@ -9,6 +9,7 @@ pub(super) mod step;
 pub(super) use reply::result;
 
 pub(super) struct State {
+    pub(super) cooldowns: Option<super::cooldowns::CooldownFeed>,
     spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     actor: ExactActorRef,
     enabled: bool,
@@ -39,7 +40,7 @@ impl State {
         admitted: &mut AdmittedSession,
         command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     ) -> Option<Dispatch> {
-        use oteryn_protocol_oteryn::{hireling, stash, store, world_object};
+        use oteryn_protocol_oteryn::{hireling, stash, world_object};
         if !admitted
             .continuity
             .selected_capabilities
@@ -54,14 +55,7 @@ impl State {
         ) {
             return Some(routing::server_modal::route(authority, admitted, command).await);
         }
-        if matches!(
-            command.command_type,
-            store::COMMAND_TYPE_STORE_CATALOGUE_PAGE
-                | store::COMMAND_TYPE_STORE_HISTORY_PAGE
-                | store::COMMAND_TYPE_STORE_PURCHASE_HISTORY_PAGE
-                | store::COMMAND_TYPE_STORE_PURCHASE
-                | store::COMMAND_TYPE_STORE_INBOX_CLAIM
-        ) {
+        if routing::store::handles_command(command.command_type) {
             self.stash_rows = None;
             return Some(routing::store::route(authority, admitted, command).await);
         }
@@ -556,6 +550,13 @@ impl State {
         } else {
             authority.observe_house_vitals(self.actor, *admitted).await
         };
+        let frames = super::cooldowns::frames(
+            authority,
+            self.cooldowns.as_ref(),
+            &mut admitted.continuity,
+            None,
+        )?;
+        super::cooldowns::write_batch(stream, &frames, None).await?;
         if let Some((_, vitals)) = &current
             && self
                 .capacity_vitals_max

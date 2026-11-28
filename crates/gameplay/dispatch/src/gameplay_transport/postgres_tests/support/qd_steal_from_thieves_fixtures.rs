@@ -4,11 +4,12 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 
-use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
 const STATE: &str = "oteryn:quest-progress/qd/steal_from_thieves/state";
+const RECOVERED: &str = "oteryn:quest-progress/qd/steal_from_thieves/bag-recovered";
 
 const START: &str = "oteryn:quest-reward/qd-steal-from-thieves-start";
 
@@ -29,12 +30,15 @@ pub(super) async fn exercise(
     let start = callbacks.iter().find(|c| c.key == START).ok_or("start")?;
     let finish = callbacks.iter().find(|c| c.key == RETURN).ok_or("return")?;
     let [npc] = super::classic_quests_fixtures::install(owner, admitted, [start.npc.as_str()]).await?;
-    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 6, 25])?;
+    let plain = admitted.continuity.selected_capabilities;
+    super::qd_world_fixtures::select_talk_capabilities(owner, admitted, &[3, 6])?;
     let talk = super::qengine_rewards_fixtures::wire_conversation;
-    // The return route is closed before Ahmet hands out the mission.
-    let (result, _, _) = talk(owner, admitted, npc, finish, false, vec!["hi", "quest", "yes"]).await?;
-    assert_eq!(result, NpcIntentDisposition::Rejected);
+    // A bare confirmation before the offer is ordinary dialogue and cannot grant the reward.
+    let (result, _, _) = talk(owner, admitted, npc, finish, false, vec!["hi", "yes"]).await?;
+    assert_eq!(result, NpcIntentDisposition::Ok);
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, STATE).await?, 0);
+    assert_eq!(count(h, "oteryn:item.tibia.i3725").await?, 0);
+    assert_eq!(count(h, "oteryn:item.tibia.i3031").await?, 0);
     let (result, _, _) = talk(owner, admitted, npc, start, false, vec!["hi", "mission", "yes"]).await?;
     assert_eq!(result, NpcIntentDisposition::Ok);
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, STATE).await?, 1);
@@ -42,23 +46,21 @@ pub(super) async fn exercise(
     let (result, _, _) = talk(owner, admitted, npc, finish, false, vec!["hi", "quest", "yes"]).await?;
     assert_eq!(result, NpcIntentDisposition::Rejected);
     assert_eq!(count(h, "oteryn:item.tibia.i3725").await?, 0);
-    let fence = owner
-        .current_quest_fence(admitted.game_session_id)
-        .await
-        .map_err(debug)?
-        .ok_or("fence")?;
-    super::quest_world_callbacks_fixtures::input_item(
-        owner,
-        fence.item_fence(),
-        &Offering {
-            position: Position { x: 33293, y: 31677, floor: -15 },
-            item: "oteryn:item.tibia.i235".into(),
-            count: 1,
-        },
-        52000,
-        true,
-    )
-    .await?;
+    let chest = super::qd_world_fixtures::OASIS_BOX;
+    assert_eq!(
+        super::qd_world_fixtures::use_at(owner, admitted, chest, plain).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(count(h, "oteryn:item.tibia.i235").await?, 1);
+    assert_eq!(
+        super::classic_quests_fixtures::progress(owner, admitted, authority, RECOVERED).await?,
+        1
+    );
+    assert_ne!(
+        super::qd_world_fixtures::use_at(owner, admitted, chest, plain).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(count(h, "oteryn:item.tibia.i235").await?, 1);
     let (result, _, _) = talk(owner, admitted, npc, finish, false, vec!["hi", "quest", "yes"]).await?;
     assert_eq!(result, NpcIntentDisposition::Ok);
     assert_eq!(super::classic_quests_fixtures::progress(owner, admitted, authority, STATE).await?, 2);

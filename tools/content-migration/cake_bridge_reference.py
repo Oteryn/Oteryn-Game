@@ -15,6 +15,27 @@ PACKET = 'tools/content-schema/native-gameplay/cake-bridge-identity.json'
 def extend_records(records, root):
     packet = json.loads((root / PACKET).read_bytes())
     expected = definition(KEY)
+    # Crystal 201189f8 items.xml:81432-81441 omits 48227. The protobuf
+    # appearance and src/items/items.cpp:171-181,219-251 define ground and
+    # physical flags. The defaults come from src/items/items.hpp:276-300.
+    expected['semantics'].update({
+        'charges': {'state': 'NOT_APPLICABLE'},
+        'classification': {'state': 'KNOWN', 'value': {
+            'item_type': {'state': 'NOT_APPLICABLE'},
+            'capabilities': {'state': 'UNKNOWN'},
+        }},
+        'container': {'state': 'NOT_APPLICABLE'},
+        'physical': {'state': 'KNOWN', 'value': {
+            'movable': {'state': 'KNOWN', 'value': False},
+            'pickupable': {'state': 'KNOWN', 'value': False},
+            'weight': {'state': 'KNOWN', 'value': 0},
+        }},
+        'stack': {'state': 'KNOWN', 'value': {
+            'stackable': {'state': 'KNOWN', 'value': False},
+            'stack_max': {'state': 'NOT_APPLICABLE'},
+        }},
+        'temporal': {'state': 'NOT_APPLICABLE'},
+    })
     binding = {'source_key': 'oteryn:source.crystalserver',
                'source_revision': evidence()['source_revision'],
                'identity_namespace': 'ots/item_server_id', 'external_id': '48227',

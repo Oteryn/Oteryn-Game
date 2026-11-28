@@ -11,7 +11,16 @@
         "position": null,
         "unique": 1052,
         "action": null,
-        "appearance": null
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32982,
+            "y": 31431,
+            "floor": -1
+          },
+          "ordinal": 2,
+          "appearance": 7807
+        }
       },
       "lever": null,
       "reversible": false,
@@ -36,7 +45,8 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:1-13"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:1-13",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3860-3863"
       ],
       "success_message": "A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting."
     },

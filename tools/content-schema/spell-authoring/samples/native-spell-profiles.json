@@ -48,6 +48,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -94,9 +97,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -199,6 +199,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -245,9 +248,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -350,6 +350,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -396,9 +399,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -501,6 +501,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -547,9 +550,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -652,6 +652,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "avatar_state",
@@ -698,9 +701,6 @@
               "effect_asset_binding": "appearance:effect/avatar_appear"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -1832,6 +1832,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 75,
         "execution": {
           "native_behavior": {
@@ -1848,11 +1851,11 @@
               "target_resolution": "area_creatures_at_each_occurrence",
               "area": [
                 [
-                  0,
                   1,
                   1,
                   1,
-                  0
+                  1,
+                  1
                 ],
                 [
                   1,
@@ -1876,11 +1879,11 @@
                   1
                 ],
                 [
-                  0,
                   1,
                   1,
                   1,
-                  0
+                  1,
+                  1
                 ]
               ],
               "damage_element": "death",
@@ -1889,118 +1892,54 @@
                 "kind": "player_expression",
                 "inputs": "level_magic",
                 "minimum": {
-                  "op": "mul",
+                  "op": "add",
                   "args": [
                     {
-                      "op": "add",
+                      "fn": "level_base_damage_healing",
                       "args": [
                         {
-                          "fn": "level_base_damage_healing",
-                          "args": [
-                            {
-                              "var": "level"
-                            }
-                          ]
-                        },
-                        {
-                          "op": "add",
-                          "args": [
-                            {
-                              "op": "mul",
-                              "args": [
-                                {
-                                  "op": "div",
-                                  "args": [
-                                    {
-                                      "var": "base_power"
-                                    },
-                                    {
-                                      "const": "25"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "var": "magic_level"
-                                }
-                              ]
-                            },
-                            {
-                              "op": "div",
-                              "args": [
-                                {
-                                  "var": "base_power"
-                                },
-                                {
-                                  "const": "4"
-                                }
-                              ]
-                            }
-                          ]
+                          "var": "level"
                         }
                       ]
                     },
                     {
-                      "const": "0.9"
+                      "op": "mul",
+                      "args": [
+                        {
+                          "var": "magic_level"
+                        },
+                        {
+                          "const": "2.4"
+                        }
+                      ]
                     }
                   ]
                 },
                 "maximum": {
-                  "op": "mul",
+                  "op": "add",
                   "args": [
                     {
-                      "op": "add",
+                      "fn": "level_base_damage_healing",
                       "args": [
                         {
-                          "fn": "level_base_damage_healing",
-                          "args": [
-                            {
-                              "var": "level"
-                            }
-                          ]
-                        },
-                        {
-                          "op": "add",
-                          "args": [
-                            {
-                              "op": "mul",
-                              "args": [
-                                {
-                                  "op": "div",
-                                  "args": [
-                                    {
-                                      "var": "base_power"
-                                    },
-                                    {
-                                      "const": "25"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "var": "magic_level"
-                                }
-                              ]
-                            },
-                            {
-                              "op": "div",
-                              "args": [
-                                {
-                                  "var": "base_power"
-                                },
-                                {
-                                  "const": "4"
-                                }
-                              ]
-                            }
-                          ]
+                          "var": "level"
                         }
                       ]
                     },
                     {
-                      "const": "1.1"
+                      "op": "mul",
+                      "args": [
+                        {
+                          "var": "magic_level"
+                        },
+                        {
+                          "const": "3.6"
+                        }
+                      ]
                     }
                   ]
                 },
-                "selection_rule": "S5/S21"
+                "selection_rule": "C18b"
               },
               "immediate_strike": true,
               "delay_multiplier": "0.5",
@@ -2023,9 +1962,6 @@
               "schedule_after_successful_immediate_strike": true
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2043,11 +1979,11 @@
             "target_resolution": "area_creatures_at_each_occurrence",
             "area": [
               [
-                0,
                 1,
                 1,
                 1,
-                0
+                1,
+                1
               ],
               [
                 1,
@@ -2071,11 +2007,11 @@
                 1
               ],
               [
-                0,
                 1,
                 1,
                 1,
-                0
+                1,
+                1
               ]
             ],
             "damage_element": "death",
@@ -2084,118 +2020,54 @@
               "kind": "player_expression",
               "inputs": "level_magic",
               "minimum": {
-                "op": "mul",
+                "op": "add",
                 "args": [
                   {
-                    "op": "add",
+                    "fn": "level_base_damage_healing",
                     "args": [
                       {
-                        "fn": "level_base_damage_healing",
-                        "args": [
-                          {
-                            "var": "level"
-                          }
-                        ]
-                      },
-                      {
-                        "op": "add",
-                        "args": [
-                          {
-                            "op": "mul",
-                            "args": [
-                              {
-                                "op": "div",
-                                "args": [
-                                  {
-                                    "var": "base_power"
-                                  },
-                                  {
-                                    "const": "25"
-                                  }
-                                ]
-                              },
-                              {
-                                "var": "magic_level"
-                              }
-                            ]
-                          },
-                          {
-                            "op": "div",
-                            "args": [
-                              {
-                                "var": "base_power"
-                              },
-                              {
-                                "const": "4"
-                              }
-                            ]
-                          }
-                        ]
+                        "var": "level"
                       }
                     ]
                   },
                   {
-                    "const": "0.9"
+                    "op": "mul",
+                    "args": [
+                      {
+                        "var": "magic_level"
+                      },
+                      {
+                        "const": "2.4"
+                      }
+                    ]
                   }
                 ]
               },
               "maximum": {
-                "op": "mul",
+                "op": "add",
                 "args": [
                   {
-                    "op": "add",
+                    "fn": "level_base_damage_healing",
                     "args": [
                       {
-                        "fn": "level_base_damage_healing",
-                        "args": [
-                          {
-                            "var": "level"
-                          }
-                        ]
-                      },
-                      {
-                        "op": "add",
-                        "args": [
-                          {
-                            "op": "mul",
-                            "args": [
-                              {
-                                "op": "div",
-                                "args": [
-                                  {
-                                    "var": "base_power"
-                                  },
-                                  {
-                                    "const": "25"
-                                  }
-                                ]
-                              },
-                              {
-                                "var": "magic_level"
-                              }
-                            ]
-                          },
-                          {
-                            "op": "div",
-                            "args": [
-                              {
-                                "var": "base_power"
-                              },
-                              {
-                                "const": "4"
-                              }
-                            ]
-                          }
-                        ]
+                        "var": "level"
                       }
                     ]
                   },
                   {
-                    "const": "1.1"
+                    "op": "mul",
+                    "args": [
+                      {
+                        "var": "magic_level"
+                      },
+                      {
+                        "const": "3.6"
+                      }
+                    ]
                   }
                 ]
               },
-              "selection_rule": "S5/S21"
+              "selection_rule": "C18b"
             },
             "immediate_strike": true,
             "delay_multiplier": "0.5",
@@ -2445,6 +2317,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "owned_field_buff",
@@ -2485,9 +2360,6 @@
               "expiry_requires_caster_online": false
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2586,6 +2458,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 190,
         "execution": {
           "native_behavior": {
@@ -2694,7 +2569,7 @@
                 "selection_rule": "S5/S21"
               },
               "immediate_strike": false,
-              "value_timing": "raw_at_cast_modifiers_at_expiry",
+              "value_timing": "at_expiry",
               "suppress_charms": false,
               "ignore_caster_floor": false,
               "identity_gate": "player_id_source_baseline",
@@ -2704,18 +2579,17 @@
               "cooldown_ms_by_stage": [
                 26000,
                 20000,
-                14000
+                16000
               ],
               "base_damage_bonus_percent_by_stage": [
-                0,
-                16,
-                32
-              ],
-              "snapshot_inputs": [
-                "magic_level",
-                "flat_damage"
+                30,
+                60,
+                100
               ],
               "expiry_inputs": [
+                "level",
+                "magic_level",
+                "wheel_stage",
                 "critical_chance",
                 "extra_critical_damage",
                 "divine_empowerment",
@@ -2727,9 +2601,6 @@
               "placement_gate": "existing_tile_and_no_pz_from_outside_pz"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -2839,7 +2710,7 @@
               "selection_rule": "S5/S21"
             },
             "immediate_strike": false,
-            "value_timing": "raw_at_cast_modifiers_at_expiry",
+            "value_timing": "at_expiry",
             "suppress_charms": false,
             "ignore_caster_floor": false,
             "identity_gate": "player_id_source_baseline",
@@ -2849,18 +2720,17 @@
             "cooldown_ms_by_stage": [
               26000,
               20000,
-              14000
+              16000
             ],
             "base_damage_bonus_percent_by_stage": [
-              0,
-              16,
-              32
-            ],
-            "snapshot_inputs": [
-              "magic_level",
-              "flat_damage"
+              30,
+              60,
+              100
             ],
             "expiry_inputs": [
+              "level",
+              "magic_level",
+              "wheel_stage",
               "critical_chance",
               "extra_critical_damage",
               "divine_empowerment",
@@ -5279,6 +5149,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": true,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 60,
         "execution": {
           "native_behavior": {
@@ -5597,9 +5470,6 @@
               }
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -5980,6 +5850,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "execution": {
           "native_behavior": {
             "key": "locate_message",
@@ -6043,9 +5916,6 @@
               "no_target_message": "At the moment there is no fiend with special loot roaming this world."
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {
@@ -15406,6 +15276,9 @@
         },
         "pz_locks_caster": false,
         "needs_weapon": false,
+        "presentation": {
+          "cast_cue": "canary.sound:spell_or_rune"
+        },
         "base_power": 42,
         "execution": {
           "native_behavior": {
@@ -15681,9 +15554,6 @@
               "source_schedule_order": "before_immediate_combat_result"
             }
           }
-        },
-        "presentation": {
-          "cast_cue": "canary.sound:spell_or_rune"
         }
       },
       "execution": {

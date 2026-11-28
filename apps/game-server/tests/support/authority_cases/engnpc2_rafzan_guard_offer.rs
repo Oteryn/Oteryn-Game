@@ -42,16 +42,42 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     assert_eq!(offer.npc, "oteryn:npc.rafzan");
     assert_eq!(grant.npc, offer.npc);
     assert!(offer.give.is_none());
+    let [capture_guard] = offer.requires.as_slice() else {
+        return Err("the offer must yield to a completed capture task".into());
+    };
+    let [cooldown] = grant.state_ops.as_slice() else {
+        return Err("the grant must check the capture cooldown".into());
+    };
+    let shipped = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(f::debug)?;
+    let captures = shipped
+        .catalogue()
+        .track(&capture_guard.track)
+        .ok_or("registered capture track")?
+        .clone();
     let catalogue = Arc::new(
         QuestStateCatalogue::new(
             "content-1",
-            vec![QuestTrack {
-                key: grant.storage[0].track.clone(),
-                quest: grant.quest.clone(),
-                initial: 0,
-                min: 0,
-                max: 2,
-            }],
+            vec![
+                QuestTrack {
+                    key: grant.storage[0].track.clone(),
+                    quest: grant.quest.clone(),
+                    initial: 0,
+                    min: 0,
+                    max: 2,
+                },
+                captures,
+                shipped
+                    .catalogue()
+                    .track(&cooldown.track)
+                    .ok_or("registered capture cooldown track")?
+                    .clone(),
+                shipped
+                    .catalogue()
+                    .track("oteryn:quest-progress/questpc7/goblin/programme")
+                    .ok_or("registered programme track")?
+                    .clone(),
+            ],
             [offer, grant]
                 .into_iter()
                 .map(reward_callbacks::primary_transition)

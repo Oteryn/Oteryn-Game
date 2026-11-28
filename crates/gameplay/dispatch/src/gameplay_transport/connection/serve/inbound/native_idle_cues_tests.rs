@@ -35,6 +35,15 @@ impl FreshAdmissionAuthority for NativeCueAuthority {
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         Err(AdmissionRefusal::Rejected)
     }
+    async fn observe_join_vitals(
+        &self,
+        _: ExactActorRef,
+        admitted: AdmittedSession,
+        _: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        let receipt = crate::gameplay_transport::spell_cooldowns::TestReceipt::default();
+        (None, Some(receipt.feed(admitted)))
+    }
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         if actor != self.scene.actor || self.scene.runtime.read_actor_position(actor).is_err() {
             return None;
@@ -236,6 +245,15 @@ impl FreshAdmissionAuthority for CueEncodingOwner {
     }
     async fn native_map_cue_uses_native_floor(&self) -> Option<bool> {
         Some(true)
+    }
+    async fn observe_join_vitals(
+        &self,
+        _: ExactActorRef,
+        admitted: AdmittedSession,
+        _: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        let receipt = crate::gameplay_transport::spell_cooldowns::TestReceipt::default();
+        (None, Some(receipt.feed(admitted)))
     }
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         (actor == self.actor).then(|| {

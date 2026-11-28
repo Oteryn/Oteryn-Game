@@ -31,6 +31,7 @@ const PEARL: &str = "oteryn:item.tibia.i3026";
 const CLAIM: &str = "oteryn:reward-claim.quest.u7_3.serpentine_tower.white_pearl";
 const START: TilePos = cell(33147, 32864, -7);
 const CHEST: TilePos = cell(33150, 32862, -7);
+const LEVER: TilePos = cell(33152, 32866, -8);
 
 const fn cell(x: u16, y: u16, floor: i8) -> TilePos {
     TilePos { x, y, floor }
@@ -298,7 +299,7 @@ async fn play(h: &Harness) -> TestResult {
     use_object(
         &mut owner,
         &mut admitted,
-        cell(33152, 32866, -8),
+        LEVER,
         1,
         UseDisposition::Committed,
     )
@@ -307,6 +308,15 @@ async fn play(h: &Harness) -> TestResult {
         assert!(hidden_placement(&owner, wall, 1)?);
     }
     progress(&owner, &admitted, h, 3).await?;
+
+    for open in [false, true] {
+        use_object(&mut owner, &mut admitted, LEVER, 1, UseDisposition::Committed).await?;
+        for wall in walls {
+            assert_eq!(hidden_placement(&owner, wall, 1)?, open);
+        }
+        progress(&owner, &admitted, h, 3).await?;
+    }
+
     walk(
         &mut owner,
         &mut admitted,

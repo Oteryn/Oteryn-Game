@@ -91,7 +91,7 @@ def profile(i,node,obj,physical,bindings,field):
  weapon=a.get('weapontype');script=node.find("attribute[@key='script']") if node is not None else None
  scripts={c.get('key','').lower():c.get('value','') for c in script} if script is not None else {}
  source_weapon=scripts.get('weapontype',weapon)
- wt={'sword':'SWORD','club':'CLUB','axe':'AXE','fist':'FIST','shield':'SHIELD','distance':'DISTANCE','missile':'DISTANCE','ammo':'AMMUNITION','ammunition':'AMMUNITION','wand':'WAND'}
+ wt={'sword':'SWORD','club':'CLUB','axe':'AXE','fist':'FIST','shield':'SHIELD','spellbook':'SPELLBOOK','distance':'DISTANCE','missile':'DISTANCE','ammo':'AMMUNITION','ammunition':'AMMUNITION','wand':'WAND'}
  if source_weapon in wt:
   sem['weapon']=K({'weapon_type':K(wt[source_weapon]),'attack':K(int(a.get('attack','0'))),'defense':K(int(a.get('defense','0'))),'extra_defense':K(int(a.get('extradef','0'))),
     'range':K(int(a.get('range','1'))),'hit_chance':K({'numerator':int(a['hitchance']),'denominator':1}) if 'hitchance' in a else copy.deepcopy(NA),

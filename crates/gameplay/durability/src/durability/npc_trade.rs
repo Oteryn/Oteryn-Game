@@ -2,10 +2,8 @@
 //! `reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md`; boundary gate
 //! `NPC_SINGLE_TRADE_COMMIT_V1`).
 //!
-//! One trade is one item-only transaction of one physical PostgreSQL transaction, without a
-//! CharacterRevision advance (§5.2): it reads nothing of the Character root but its lock in the
-//! complete Character item fence, and writes its cause record, its lines, the item changes and one
-//! audit event.
+//! One trade writes its cause record, lines, item changes and audit event in one PostgreSQL
+//! transaction. Carlos's first tutorial sale also writes its fenced quest successor.
 //! - BUY (§5.3): the price `unit_price x quantity` is paid by the deterministic coin fee plan of
 //!   GOLD-FEE-1a over the direct entries of the equipped main backpack (the BURN lines realize
 //!   `FeeBurnCause::NpcTrade` under the trade's own record). The existing V2 owner may pay
@@ -29,6 +27,7 @@
 //! and exact full native charge defaults. Subtype joins the immutable binding and audit;
 //! every sale selects matching state. Nondefault timed items and contents remain refused.
 
+use crate::durability::db::commit_semantic_read;
 use oteryn_gameplay_economy::npc_trade as rules;
 mod grizzly;
 mod obsidian_knife;
@@ -48,7 +47,7 @@ use super::character_authority::{
 };
 use super::character_progression::numeric_u64;
 use super::db::{
-    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    begin_semantic_transaction, begin_type2_transaction,
     lock_admission_relations,
 };
 use super::item_mint::{TypedDefinitionRef, uuid_text};
@@ -282,14 +281,10 @@ impl std::fmt::Display for NpcTradeError {
     }
 }
 
-const ALBINIUS: &str = "oteryn:npc.albinius";
-const BLANK_IMBUEMENT_SCROLL: &str = "oteryn:item.tibia.i51442";
-const HEAVY_OLD_TOME: &str = "oteryn:item.tibia.i23986";
-const FORGOTTEN_KNOWLEDGE: &str = "oteryn:quest.forgotten_knowledge_quest";
+use oteryn_gameplay_content::content::npc_catalogue::quest_shops::{
+    ALBINIUS, BLANK_IMBUEMENT_SCROLL, FORGOTTEN_KNOWLEDGE, HEAVY_OLD_TOME,
+};
 
-/// The one catalogue offer whose access is owned jointly by the NPC and quest owners. Keeping
-/// this recognition beside the durable commit prevents a forged catalogue request from opting
-/// out of the gate and makes retries observe either the complete purchase or no purchase.
 fn is_albinius_blank_scroll(request: &NpcTradeRequest) -> bool {
     request.cause.npc_key == ALBINIUS
         && request.cause.side == NpcTradeSide::Buy
@@ -805,7 +800,7 @@ impl DurabilityRoot {
                     .fetch_optional(&mut *tx)
                     .await?
                     else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     if uuid_text(&row.try_get::<String, _>("occurrence_id")?)? != occurrence {
@@ -830,7 +825,7 @@ impl DurabilityRoot {
                         unit_price: numeric_u64(&row, "unit_price")?,
                         sell_all: row.try_get("sell_all")?,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(receipt)))
                 })
             })
@@ -1123,13 +1118,15 @@ impl DurabilityRoot {
                     let backpack_id = uuid_text(
                         &backpack.try_get::<String, _>("item_instance_id")?,
                     )?;
-                    if is_albinius_blank_scroll(&request)
-                        && !albinius_blank_scroll_gate(
-                            &mut tx,
-                            fence.character_id,
-                            &backpack_id,
-                        )
-                        .await?
+                    if request.cause.npc_key == ALBINIUS
+                        && request.item.definition.production_key == BLANK_IMBUEMENT_SCROLL
+                        && (!is_albinius_blank_scroll(&request)
+                            || !albinius_blank_scroll_gate(
+                                &mut tx,
+                                fence.character_id,
+                                &backpack_id,
+                            )
+                            .await?)
                     {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
@@ -1307,6 +1304,9 @@ impl DurabilityRoot {
                         (house_key.as_deref(), &shop),
                     )
                     .await?;
+                    if super::quest_state::carlos_trade::is_food_sale(&request) {
+                        super::quest_state::carlos_trade::advance(&mut tx, fence.character_id, &request).await?;
+                    }
                     if let Some(source)=&hireling
                         && let Err(error)=source.apply_materialized(&mut tx,world_id,&request,plan.item_instance_id).await {return Ok(Err(error));}
                     grant_missing(

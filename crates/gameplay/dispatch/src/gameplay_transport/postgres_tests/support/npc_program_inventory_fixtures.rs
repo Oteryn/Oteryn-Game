@@ -299,13 +299,11 @@ pub(super) async fn exercise(
     );
     assert_ne!(topic(owner, admitted), Some(20));
     assert_eq!(progress(owner, admitted, authority, DEMERON).await?, 1);
-    // These exact Source identities have no current native physical profile.
-    // Prove that boundary without minting substitutes or claiming live completion.
-    for (item, count, occurrence) in [
-        ("oteryn:item.tibia.i52635", 29, 5301),
-        ("oteryn:item.tibia.i52758", 20, 5302),
-        ("oteryn:item.tibia.i52743", 10, 5303),
-    ] {
+    // Crystal 201189f8 items.xml names the night harpy meal, but the active
+    // generation has no native profile for it. Keep the refusal proof on a real source Item.
+    {
+        let item = "oteryn:item.tibia.i52788";
+        let occurrence = 5301;
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await
@@ -333,7 +331,7 @@ pub(super) async fn exercise(
             Err(oteryn_gameplay_items::pickup::PickupContentError::DefinitionNotFound),
         );
         let item_rows_before = item_storage_snapshot(h).await?;
-        let error = carry(owner, admitted, item, count, occurrence)
+        let error = carry(owner, admitted, item, 1, occurrence)
             .await
             .err()
             .ok_or("closed source input unexpectedly admitted")?;
@@ -371,16 +369,35 @@ pub(super) async fn exercise(
             "unadmitted input cannot advance quest authority"
         );
     }
-    let missing = talk(owner, admitted, demeron, 53116, "spares").await?;
+    // Demeron's 60 parts weigh 1,200 oz. Earn the carrying capacity through
+    // normal progression so the live pickup and inventory checks stay in force.
+    super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 50).await?;
+    for (item, count, occurrence) in [
+        ("oteryn:item.tibia.i52635", 29, 5302),
+        ("oteryn:item.tibia.i52758", 20, 5303),
+        ("oteryn:item.tibia.i52743", 10, 5304),
+    ] {
+        carry(owner, admitted, item, count, occurrence).await?;
+    }
+    let partial = talk(owner, admitted, demeron, 53116, "spares").await?;
     assert!(
-        !missing
+        !partial
             .iter()
             .any(|line| line.contains("Are those salvaged parts"))
     );
     assert_ne!(topic(owner, admitted), Some(20));
     assert_eq!(progress(owner, admitted, authority, DEMERON).await?, 1);
+    carry(owner, admitted, "oteryn:item.tibia.i52635", 1, 5307).await?;
+    let complete = talk(owner, admitted, demeron, 53117, "spares").await?;
+    assert!(
+        complete
+            .iter()
+            .any(|line| line.contains("Are those salvaged parts"))
+    );
+    assert_eq!(topic(owner, admitted), Some(20));
+    assert_eq!(progress(owner, admitted, authority, DEMERON).await?, 1);
     eprintln!(
-        "NPC_INVENTORY_COVERAGE unsupported_source_profiles=52635,52758,52743 demeron_live_partial_complete=false pure_selection_separate=true harlan_supported_live=true"
+        "NPC_INVENTORY_COVERAGE unsupported_source_profile=52788 demeron_live_partial_complete=true harlan_supported_live=true"
     );
 
     talk(owner, admitted, harlan, 53120, "hi").await?;
