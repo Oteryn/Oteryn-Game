@@ -511,7 +511,7 @@ pub fn tick(
     now_ms: u64,
     facts: TickFacts,
 ) -> Result<Vec<ConditionTick<String>>, SpellCastDisposition> {
-    tick_inner(state, now_ms, facts, true)
+    tick_inner(state, now_us(now_ms)?, facts, true)
 }
 /// Run just this regeneration's ticks and expiry, leaving the other actor clocks alone.
 pub fn tick_spell_regeneration(
@@ -561,11 +561,10 @@ fn apply_spell_regeneration_pulse(state: &mut PlayerSpellState, health_gain: u32
 
 fn tick_inner(
     state: &mut PlayerSpellState,
-    now_ms: u64,
+    now: u64,
     facts: TickFacts,
     damage: bool,
 ) -> Result<Vec<ConditionTick<String>>, SpellCastDisposition> {
-    let now = now_us(now_ms)?;
     if !state.conditions.accepts_time(now)
         || state.health > state.facts.max_health
         || state.mana > state.facts.max_mana
@@ -575,11 +574,9 @@ fn tick_inner(
     let mut staged = state.clone();
     super::food_regeneration::step_due(&mut staged, now, facts.in_protection_zone);
     let mut combat = Vec::new();
-    let ticks = if damage {
-        staged.conditions.take_due(now, facts)
-    } else {
-        staged.conditions.take_due_non_damage(now, facts)
-    };
+    let ticks = staged
+        .conditions
+        .take_due_in_player_pass(now, facts, damage);
     for tick in ticks {
         match tick.kind {
             TickKind::SpellRegeneration {
@@ -1805,7 +1802,7 @@ fn stage_cycle(
         next.tick(now).map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let combat_ticks = if let Some(facts) = facts {
-        tick_inner(&mut next, now.get() / 1000, facts, damage)?
+        tick_inner(&mut next, now.get(), facts, damage)?
     } else {
         next.conditions
             .expire_non_ticking_checked(now.get())
