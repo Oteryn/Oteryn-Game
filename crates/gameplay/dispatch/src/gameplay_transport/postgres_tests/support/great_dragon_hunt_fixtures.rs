@@ -147,6 +147,12 @@ pub(super) async fn exercise(
     assert_eq!(
         super::questpc8_authored_programmes_fixtures::use_target(owner, &mut session, 5, &target)
             .await?,
+        UseDisposition::StaleState
+    );
+    let current = super::questpc8_authored_programmes_fixtures::object_target(owner, hoard, 1)?;
+    assert_eq!(
+        super::questpc8_authored_programmes_fixtures::use_target(owner, &mut session, 6, &current)
+            .await?,
         UseDisposition::Rejected
     );
     Ok(())
