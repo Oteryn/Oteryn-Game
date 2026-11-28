@@ -138,7 +138,7 @@ pub(super) async fn exercise(
         assert_eq!(quantity(h, STEEL).await?, 2);
         assert_exchange_receipts(h).await?;
         mint(owner, admitted, SHIELD, 1, 7103).await?;
-        crate::gameplay_transport::tcp_tls::FAIL_NPC_LINE.scope("Cling clang!", async {
+        crate::gameplay_transport::tcp_tls::FAIL_FRAME_WRITE.scope(is_steel_reply, async {
             with_wire(owner, admitted, cyclops, async |wire| {
                 wire.greet().await?;
                 wire.line("uth'lokr", STEEL_QUOTE).await?;
@@ -154,6 +154,16 @@ pub(super) async fn exercise(
         assert_eq!(quantity(h, STEEL).await?, 3);
     }
     Ok(())
+}
+
+fn is_steel_reply(frame: &[u8]) -> bool {
+    let Ok(frame) = decode_wire_envelope(frame) else { return false };
+    if frame.message_type() != MessageType::StateDelta {
+        return false;
+    }
+    let Ok(delta) = decode_state_delta(frame.payload()) else { return false };
+    delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION
+        && decode_npc_conversation(delta.payload).is_ok_and(|reply| reply.lines == ["Cling clang!"])
 }
 
 async fn exercise_conversation(

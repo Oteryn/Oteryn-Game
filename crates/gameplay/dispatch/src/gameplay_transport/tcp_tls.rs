@@ -104,7 +104,7 @@ impl FrameReader {
 
 #[cfg(test)]
 tokio::task_local! {
-    pub(in crate::gameplay_transport) static FAIL_NPC_LINE: &'static str;
+    pub(in crate::gameplay_transport) static FAIL_FRAME_WRITE: fn(&[u8]) -> bool;
 }
 
 pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
@@ -112,15 +112,7 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     body: &[u8],
 ) -> io::Result<()> {
     #[cfg(test)]
-    if let Ok(line) = FAIL_NPC_LINE.try_with(|line| *line)
-        && let Ok(frame) = crate::foundation::decode_wire_envelope(body)
-        && frame.message_type() == crate::foundation::MessageType::StateDelta
-        && let Ok(delta) = oteryn_protocol_oteryn::decode_state_delta(frame.payload())
-        && delta.domain_id == oteryn_protocol_oteryn::npc_service::STATE_DOMAIN_NPC_CONVERSATION
-        && let Ok(reply) =
-            oteryn_protocol_oteryn::npc_service::decode_npc_conversation(delta.payload)
-        && reply.lines.iter().any(|text| text == line)
-    {
+    if FAIL_FRAME_WRITE.try_with(|fail| fail(body)).unwrap_or(false) {
         return Err(io::ErrorKind::BrokenPipe.into());
     }
     let length = u32::try_from(body.len()).map_err(|_| {
