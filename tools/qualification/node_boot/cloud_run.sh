@@ -117,10 +117,13 @@ replay_promotion_capture() {
   if grep -q '^SEAM_EVIDENCE e2e_all scenario=P20\.client status=FAIL ' "$log"; then
     return 1
   fi
-  if grep -q '^SEAM_EVIDENCE e2e_capture scenario=P20\.client status=CAPTURED ' "$log" &&
+  local manifest
+  if [[ -s "$capture_dir/p20-expected.txt" ]] &&
+    manifest=$(tr '\n ' ';_' <"$capture_dir/p20-expected.txt") &&
+    grep -Fqx "SEAM_EVIDENCE e2e_capture scenario=P20.client status=CAPTURED evidence=$manifest" "$log" &&
     [[ -s "$capture_dir/p20-greeting.bin" && -s "$capture_dir/p20-quote.bin" &&
       -s "$capture_dir/p20-confirm.bin" && -s "$capture_dir/p20-expected.txt" ]] &&
-    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact --ignored >"$replay_log" 2>&1 &&
     grep -Fqx "test $test ... ok" "$replay_log"; then
     printf 'SEAM_EVIDENCE e2e_all scenario=P20.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
     return 0

@@ -29,33 +29,15 @@ fn identity(text: &str) -> Result<[u8; 16], Error> {
     Ok(out)
 }
 
-fn conversation(npc: EntityRef, lines: &[&str]) -> Result<Vec<u8>, Error> {
-    npc_service::encode_npc_conversation(&npc_service::NpcConversation {
-        open: Some((npc, npc_service::NpcConversationState::Open)),
-        lines: lines.iter().map(|line| (*line).into()).collect(),
-    })
-    .map_err(|e| format!("{e:?}").into())
-}
-
 fn load() -> Result<Replay, Error> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        return Ok(Replay {
-            greeting: std::fs::read(root.join("p20-greeting.bin"))?,
-            quote: std::fs::read(root.join("p20-quote.bin"))?,
-            confirm: std::fs::read(root.join("p20-confirm.bin"))?,
-            expected: std::fs::read_to_string(root.join("p20-expected.txt"))?,
-        });
-    }
-    let npc = EntityRef {
-        identity: [9; 16],
-        generation: 4,
-    };
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("P20 replay requires a live capture directory")?;
+    let root = std::path::Path::new(&root);
     Ok(Replay {
-        greeting: conversation(npc, &["Greetings, brave adventurer."])?,
-        quote: conversation(npc, &["Do you want to be promoted for 20000 gold coins?"])?,
-        confirm: conversation(npc, &["You need to be premium to be promoted."])?,
-        expected: "npc_identity=09090909090909090909090909090909\nnpc_generation=4\ngreeting=Greetings, brave adventurer.\nquote=Do you want to be promoted for 20000 gold coins?\nconfirm=You need to be premium to be promoted.\n".into(),
+        greeting: std::fs::read(root.join("p20-greeting.bin"))?,
+        quote: std::fs::read(root.join("p20-quote.bin"))?,
+        confirm: std::fs::read(root.join("p20-confirm.bin"))?,
+        expected: std::fs::read_to_string(root.join("p20-expected.txt"))?,
     })
 }
 
@@ -64,8 +46,14 @@ fn decode(bytes: &[u8]) -> Result<npc_service::NpcConversation, Error> {
 }
 
 #[test]
+#[ignore = "requires fresh node-boot captures"]
 fn p20_dialogue_replay() -> Result<(), Error> {
     let replay = load()?;
+    assert_ne!(identity(value(&replay.expected, "session")?)?, [0; 16]);
+    let greeting_sequence: u64 = value(&replay.expected, "greeting_sequence")?.parse()?;
+    let quote_sequence: u64 = value(&replay.expected, "quote_sequence")?.parse()?;
+    let confirm_sequence: u64 = value(&replay.expected, "confirm_sequence")?.parse()?;
+    assert!(greeting_sequence < quote_sequence && quote_sequence < confirm_sequence);
     let npc = EntityRef {
         identity: identity(value(&replay.expected, "npc_identity")?)?,
         generation: value(&replay.expected, "npc_generation")?.parse()?,

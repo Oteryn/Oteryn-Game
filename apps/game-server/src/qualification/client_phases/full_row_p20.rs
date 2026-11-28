@@ -70,7 +70,7 @@ async fn progress(client: &mut DevClientSession) -> TestResult<(u64, u32)> {
 }
 
 // Promotion is durable separately from the base vocation and its Premium display.
-async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
+pub(super) async fn vocation(client: &mut DevClientSession) -> TestResult<String> {
     use oteryn_protocol_oteryn::item_look as wire;
     let entities = client.world_entities().ok_or("P20 own actor view absent")?;
     let own = entities

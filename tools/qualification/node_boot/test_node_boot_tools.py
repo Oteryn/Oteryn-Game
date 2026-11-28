@@ -772,12 +772,13 @@ class CloudRunSummaryTests(unittest.TestCase):
     def test_promotion_replay_requires_live_files_and_an_executed_test(self):
         cloud = (HERE / "cloud_run.sh").read_text()
         helper = cloud[cloud.index("replay_promotion_capture()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
-        capture = "SEAM_EVIDENCE e2e_capture scenario=P20.client status=CAPTURED evidence=live\n"
+        capture = "SEAM_EVIDENCE e2e_capture scenario=P20.client status=CAPTURED evidence=capture\n"
         failure = "SEAM_EVIDENCE e2e_all scenario=P20.client status=FAIL evidence=wire-error\n"
         command = helper + textwrap.dedent(r'''
             cargo() {
               [[ "$E2E_ALL_CAPTURE_DIR" == "$CAPTURE_DIR" ]] || return 1
               [[ "$7" == npc_dialogue::e2e_p20::p20_dialogue_replay ]] || return 1
+              [[ "${*:8}" == "-- --exact --ignored" ]] || return 1
               if [[ "$MODE" == pass ]]; then
                 printf 'test %s ... ok\n' "$7"
               else
@@ -791,6 +792,7 @@ class CloudRunSummaryTests(unittest.TestCase):
             (capture, True, "pass", True),
             (capture, False, "pass", False),
             (capture, True, "unmatched", False),
+            (capture.replace("evidence=capture", "evidence=stale"), True, "pass", False),
             ("", True, "pass", False),
             (capture + failure, True, "pass", False),
         ]:

@@ -58,6 +58,15 @@ pub(super) async fn talk(
     npc: EntityRef,
     text: &str,
 ) -> TestResult<(Vec<u8>, Vec<String>)> {
+    let (payload, lines, _) = capture_talk(client, npc, text).await?;
+    Ok((payload, lines))
+}
+
+async fn capture_talk(
+    client: &mut DevClientSession,
+    npc: EntityRef,
+    text: &str,
+) -> TestResult<(Vec<u8>, Vec<String>, u64)> {
     tokio::time::sleep(Duration::from_millis(260)).await;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
         npc_actor: npc,
@@ -87,7 +96,7 @@ pub(super) async fn talk(
         }
         let conversation = wire::decode_npc_conversation(&delta.payload)
             .map_err(|error| format!("{text} conversation decode: {error:?}"))?;
-        if conversation.open.map(|(actor, _)| actor) != Some(npc) {
+        if conversation.open != Some((npc, wire::NpcConversationState::Open)) {
             return Err(format!("{text} delta belonged to another NPC").into());
         }
         if conversation
@@ -97,7 +106,7 @@ pub(super) async fn talk(
         {
             return Err("conversation line contains a reserved separator".into());
         }
-        return Ok((delta.payload, conversation.lines));
+        return Ok((delta.payload, conversation.lines, delta.server_sequence));
     }
 }
 
@@ -266,20 +275,35 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )?;
     let mut client = connect_character(clients, 0x52, 0).await?;
     let npc = approach_king(&mut client, world, &metadata.npcs).await?;
-    let (greeting_bytes, greeting) = talk(&mut client, npc, "hi").await?;
+    let (greeting_bytes, greeting, greeting_sequence) = capture_talk(&mut client, npc, "hi").await?;
     if greeting.is_empty() {
         return Err("hi produced an empty conversation".into());
     }
-    let (quote_bytes, quote) = talk(&mut client, npc, "promotion").await?;
+    let (quote_bytes, quote, quote_sequence) = capture_talk(&mut client, npc, "promotion").await?;
     if quote != ["Do you want to be promoted for 20000 gold coins?"] {
         return Err(format!("promotion quote observed={quote:?}").into());
     }
-    let (confirm_bytes, confirm) = talk(&mut client, npc, "yes").await?;
+    use oteryn_dev_client::client_runtime::npc_shop::balances;
+    let funds = balances(client.session_mut()).await?.ok_or("P20 funds absent")?;
+    let vocation = super::full_row_p20::vocation(&mut client).await?;
+    let session = client.join_snapshot().game_session_id;
+    let position = client.world_spatial().actor_position;
+    let (confirm_bytes, confirm, confirm_sequence) = capture_talk(&mut client, npc, "yes").await?;
     if confirm != ["You need current Premium for this service."] {
         return Err(format!("promotion confirmation observed={confirm:?}").into());
     }
+    if balances(client.session_mut()).await?.as_ref() != Some(&funds)
+        || super::full_row_p20::vocation(&mut client).await? != vocation
+        || client.world_spatial().actor_position != position
+    {
+        return Err("P20 Premium refusal changed funds, vocation, or position".into());
+    }
+    if !(greeting_sequence < quote_sequence && quote_sequence < confirm_sequence) {
+        return Err("P20 conversation sequences did not advance".into());
+    }
     let expected = format!(
-        "npc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nconfirm={}\n",
+        "session={}\ngreeting_sequence={greeting_sequence}\nquote_sequence={quote_sequence}\nconfirm_sequence={confirm_sequence}\nnpc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nconfirm={}\n",
+        hex(session.as_bytes()),
         hex(&npc.identity),
         npc.generation,
         greeting.join("|"),
@@ -289,6 +313,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("P20 client logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let mut fresh = connect_character(clients, 0x53, 0).await?;
+    if fresh.join_snapshot().game_session_id == session
+        || fresh.world_spatial().actor_position != position
+        || balances(fresh.session_mut()).await?.as_ref() != Some(&funds)
+        || super::full_row_p20::vocation(&mut fresh).await? != vocation
+    {
+        return Err("P20 relog did not retain refused character state at the saved position".into());
+    }
+    let logout = fresh.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("P20 relog logout refused: {logout:?}").into());
     }
     for (name, bytes) in [
         ("p20-greeting.bin", greeting_bytes.as_slice()),
