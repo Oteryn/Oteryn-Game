@@ -18,6 +18,20 @@ fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
     Ok(())
 }
 
+async fn read_taints(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<wire::Taints> {
+    let query = wire::query_taints("").ok_or("taint query encoder")?;
+    let reply = client
+        .session_mut()
+        .gated_command(query.capability, query.kind, &query.payload)
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("taint readback status={:?}", reply.status).into());
+    }
+    wire::decode(&reply.payload)
+        .and_then(|snapshot| snapshot.taints)
+        .ok_or_else(|| "taint readback missing".into())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("W11 capture directory missing")?;
     let root = Path::new(&root);
@@ -47,6 +61,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("starter lever status={:?} reply={reply:?}", lever.status).into());
     }
+    if read_taints(&mut client).await? != taint {
+        return Err("typed lever refusal changed taints".into());
+    }
     let malformed = client
         .session_mut()
         .gated_command(
@@ -58,19 +75,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if malformed.status != CommandStatus::Rejected || !malformed.payload.is_empty() {
         return Err(format!("malformed lever was not refused: {malformed:?}").into());
     }
-    capture(root, "w11-taints.bin", &taints.payload)?;
-    capture(root, "w11-lever.bin", &lever.payload)?;
-    let expected = format!(
-        "now={}\nsoul_war={}\nrotten_blood={}\nrotten_blood_flags={}\nrotten_blood_final={}\nlever_status={:?}\nactivity=refused:Level\n",
-        snapshot.now,
+    if read_taints(&mut client).await? != taint {
+        return Err("malformed lever refusal changed taints".into());
+    }
+    let original = client.join_snapshot().game_session_id;
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W11 client logout refused: {outcome:?}").into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0xb5).await?;
+    if fresh.join_snapshot().game_session_id == original || read_taints(&mut fresh).await? != taint
+    {
+        return Err("W11 refusal taints did not survive fresh admission".into());
+    }
+    let outcome = fresh.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("W11 client cleanup logout refused: {outcome:?}").into());
+    }
+
+    let session = uuid_text(original.as_bytes());
+    let frames = [taints, lever, malformed].map(|frame| {
+        (
+            frame.command_id,
+            frame.server_sequence,
+            format!("{:?}", frame.status),
+            frame.payload,
+        )
+    });
+    let expected = (
         taint.soul_war,
         taint.rotten_blood,
         taint.rotten_blood_flags,
         taint.rotten_blood_final,
-        lever.status
     );
-    capture(root, "w11-expected.txt", expected.as_bytes())?;
-    Ok(expected.replace('\n', ";"))
+    capture(
+        root,
+        "w11-live.json",
+        &serde_json::to_vec(&(&session, frames, expected))?,
+    )?;
+    Ok(format!("session={session}"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
