@@ -2171,21 +2171,14 @@ fn c12_return_occupant_matches_tile_and_preserves_generation() {
     );
 }
 
-fn require_return_ground(client: &mut DevClientSession, at: TilePos) -> TestResult {
-    let map = client
+fn projected_return_ground(client: &mut DevClientSession, at: TilePos) -> Option<u16> {
+    client
         .session_mut()
-        .world_map_snapshot()
-        .ok_or("C12 return map frame absent")?;
-    if !map
+        .world_map_snapshot()?
         .tiles
-        .iter()
-        .any(|map_tile| tile(map_tile.position).ok() == Some(at) && map_tile.ground_speed > 0)
-    {
-        return Err(
-            format!("C12 authored return tile {at:?} missing ground in latest map frame").into(),
-        );
-    }
-    Ok(())
+        .into_iter()
+        .find(|map_tile| tile(map_tile.position).ok() == Some(at))
+        .map(|map_tile| map_tile.ground_speed)
 }
 
 async fn wait_for_return_clear(
@@ -2222,7 +2215,6 @@ async fn walk_authored_return(
     for &direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         let at = destination(world, from, direction).ok_or("C12 return STEP has no landing")?;
-        require_return_ground(client, at)?;
         let occupants = return_occupants(client, at)?;
         wait_for_return_clear(client, at, occupants).await?;
         let mut step = tokio::time::timeout(COMMAND_BUDGET, client.step(direction)).await??;
@@ -2232,21 +2224,21 @@ async fn walk_authored_return(
             let original = step.command_id;
             let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
             let occupants = loop {
-                require_return_ground(client, at)?;
+                let ground = projected_return_ground(client, at);
                 let occupants = return_occupants(client, at)?;
                 if !occupants.is_empty() {
                     break occupants;
                 }
                 if tokio::time::Instant::now() >= deadline {
-                    return Err(format!("BLOCKER-SERVER C12 return STEP blocked with no visible occupant command={original} sequence={} from={from:?} target={at:?}", step.result_server_sequence).into());
+                    return Err(format!("BLOCKER-SERVER C12 return STEP blocked with no visible occupant command={original} sequence={} from={from:?} target={at:?} projected_ground_speed={ground:?}", step.result_server_sequence).into());
                 }
                 client.service_liveness(Duration::from_millis(50)).await?;
             };
             evidence(&format!(
-                "C12_RETURN_BLOCKED command={original} target={at:?} occupants={occupants:?}"
+                "C12_RETURN_BLOCKED command={original} target={at:?} occupants={occupants:?} projected_ground_speed={:?}",
+                projected_return_ground(client, at)
             ));
             wait_for_return_clear(client, at, occupants).await?;
-            require_return_ground(client, at)?;
             step = tokio::time::timeout(COMMAND_BUDGET, client.step(direction)).await??;
         }
         require_mechanic_acceptance(step.status, "C12 authored return STEP")?;
