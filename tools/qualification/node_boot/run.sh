@@ -1173,6 +1173,10 @@ stage() { # name prerequisite... -- function
   stop_runtime_diagnostics
   pg_observability_dump "$name" "$rc"
   set -e
+  if [[ "$name" == seam_stages && "$NODE_BOOT_WORLD" == 1 && -n "${NODE_BOOT_ROW_LOG_DIR:-}" ]]; then
+    mkdir -p -- "$NODE_BOOT_ROW_LOG_DIR"
+    cp -- "$node_log" "$NODE_BOOT_ROW_LOG_DIR/node.log"
+  fi
   evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=$rc"
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
