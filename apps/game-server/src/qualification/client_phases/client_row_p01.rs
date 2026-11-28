@@ -126,7 +126,6 @@ pub(super) async fn walk_rat_route(
         let landing =
             destination(world, before, direction).ok_or("P01 route step has no landing")?;
         let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-        let mut empty_block = None;
         loop {
             let occupants: Vec<_> = route_occupants(client)
                 .filter(|(at, _)| *at == landing)
@@ -198,19 +197,7 @@ pub(super) async fn walk_rat_route(
                     if tile(client.world_spatial().actor_position)? != before {
                         return Err("P01 position changed after a blocked STEP".into());
                     }
-                    if occupants.is_empty() {
-                        if let Some(first) = empty_block {
-                            return Err(format!(
-                                "BLOCKER-SERVER repeated empty-tile STEP from={before:?} to={landing:?} first_sequence={first} second_sequence={}",
-                                step.result_server_sequence
-                            ).into());
-                        }
-                        empty_block = Some(step.result_server_sequence);
-                    }
-                    if tokio::time::Instant::now() >= deadline {
-                        return Err(format!("P01 STEP recovery deadline at {landing:?}").into());
-                    }
-                    client.take_events().iter().for_each(&mut observe);
+                    return Err(format!("P01 first STEP blocked command_id={} sequence={}", step.command_id, step.result_server_sequence).into());
                 }
                 _ => return Err(format!(
                     "P01 STEP from={before:?} expected={landing:?} observed={observed:?}: {step:?}"
@@ -238,7 +225,7 @@ async fn verify_rat_kill(
         full_row_p01::HuntEvidence::Principal(clients),
     )
     .await?;
-    if kill.race != race || kill.raw_xp != 5 || kill.gained_xp != 5 {
+    if kill.race != race || kill.raw_xp != 5 || kill.gained_xp != 5 || kill.fire_damage {
         return Err(format!("P01.client Rat XP or credit mismatch: {kill:?}").into());
     }
     Ok(())
@@ -250,11 +237,6 @@ async fn logout_from_protected_ground(
     spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     let mut reserved = BTreeSet::new();
-    reserved.insert(TilePos {
-        x: 32444,
-        y: 32178,
-        floor: -7,
-    });
     // Occupants outside the current view can still be on their authored spawn cells.
     reserved.extend(spawns.sources.iter().flat_map(|source| {
         source.points.iter().map(|point| TilePos {
@@ -270,12 +252,6 @@ async fn logout_from_protected_ground(
                 .tile(at.x, at.y, at.floor)
                 .is_some_and(|tile| tile.protection_zone())
     };
-    // The prior live run identified this Wolf landing outside its authored cell.
-    reserved.insert(TilePos {
-        x: 32495,
-        y: 32174,
-        floor: -7,
-    });
     let from = tile(client.world_spatial().actor_position)?;
     let occupied = occupied_rat_route_tiles(client);
     let path = route_avoiding(world, from, protected, |at| !occupied.contains(&at) && !reserved.contains(&at))

@@ -295,12 +295,6 @@ pub(super) async fn authored_target(
     use oteryn_dev_client::EntityKind;
     let from = tile(client.world_spatial().actor_position)?;
     let mut reserved = BTreeSet::new();
-    // This landing was reported occupied by the previous live approach.
-    reserved.insert(TilePos {
-        x: 32444,
-        y: 32178,
-        floor: -7,
-    });
     let mut points = std::collections::BTreeSet::new();
     for source in &spawns.sources {
         for point in &source.points {
@@ -433,9 +427,8 @@ async fn prepare_unarmed(client: &mut DevClientSession) -> TestResult {
 }
 
 pub(super) enum HuntEvidence<'a, 'b> {
-    Wire,
     Principal(&'a SeamClients<'b>),
-    Contacts(&'a mut CombatContacts),
+    Contacts(&'a SeamClients<'b>, &'a mut CombatContacts),
 }
 
 pub(super) async fn hunt_exact_creature(
@@ -473,12 +466,13 @@ pub(super) async fn hunt_exact_creature(
     let mut last_position = target.position;
     let mut kills = Vec::new();
     let mut fire_damage = false;
+    let mut hunt_lock = false;
     let mut enflame_log_count = 0;
     let mut experience = Vec::new();
     let (corpse, raw_xp, gained_xp) = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
-            if let HuntEvidence::Contacts(contacts) = &mut observations {
+            if let HuntEvidence::Contacts(_, contacts) = &mut observations {
                 contacts.observe(&event);
             }
             let facts = match event {
@@ -508,6 +502,10 @@ pub(super) async fn hunt_exact_creature(
                     }
                     continue;
                 }
+                SessionEvent::ActorCombatState(frame) => {
+                    hunt_lock |= frame.value.in_fight;
+                    continue;
+                }
                 SessionEvent::AnalyserFacts(delta) => {
                     if matches!(observations, HuntEvidence::Principal(_)) {
                         return Err("P01.client received an un-attributed analyser batch".into());
@@ -516,7 +514,12 @@ pub(super) async fn hunt_exact_creature(
                 }
                 SessionEvent::AnalyserAttributedFacts(delta) => {
                     for entry in &delta.value {
-                        let Some(source) = &entry.charm else { continue };
+                        let Some(source) = &entry.charm else {
+                            if matches!(entry.fact, AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Fire, .. })) {
+                                return Err("unattributed fire damage during the P01 hunt".into());
+                            }
+                            continue;
+                        };
                         if source.charm_key != "oteryn:charm.enflame"
                             || source.target != target.entity
                         {
@@ -557,7 +560,7 @@ pub(super) async fn hunt_exact_creature(
                     AnalyserFact::Impact(AnalyserImpact::Damage {
                         element: DamageElement::Fire,
                         ..
-                    }) if key == "oteryn:creature.rat" => fire_damage = true,
+                    }) if !fire_damage => return Err("unexpected fire damage during the P01 hunt".into()),
                     AnalyserFact::Experience { raw, gained } => experience.push((raw, gained)),
                     _ => {}
                 }
@@ -618,6 +621,11 @@ pub(super) async fn hunt_exact_creature(
             return Err(format!("step=hunt-credit race={race} missing target corpse, kill credit or XP; kills={kills:?} experience={experience:?}").into());
         }
     };
+    if !hunt_lock {
+        return Err("selected hunt never published a combat-lock frame".into());
+    }
+    evidence("P01_CHECK hunt-combat-lock PASS observed-in-fight");
+    let fresh_seen = tokio::time::Instant::now();
     if key == "oteryn:creature.troll" {
         if (enflame_log_count == 1) != fire_damage {
             return Err("Enflame Server Log did not match an attributed impact".into());
@@ -629,7 +637,10 @@ pub(super) async fn hunt_exact_creature(
         }
     }
     client.session_mut().attack_target(None).await?;
-    if let HuntEvidence::Principal(clients) = observations {
+    {
+        let clients = match observations {
+            HuntEvidence::Principal(clients) | HuntEvidence::Contacts(clients, _) => clients,
+        };
         let principal = clients.characters[1];
         let death = committed_hunt_death(
             client,
@@ -653,7 +664,14 @@ pub(super) async fn hunt_exact_creature(
         ));
     }
     let corpse = if let Some(stage) = stage {
-        client_hunt::wait_for_corpse_stage(client, corpse, stage).await?
+        let matured = client_hunt::wait_for_corpse_stage(client, corpse, stage).await?;
+        let elapsed = fresh_seen.elapsed();
+        // The authored fresh Rat stage lasts 10 s. Wire observation has bounded scheduling jitter.
+        if !(Duration::from_secs(8)..=Duration::from_secs(15)).contains(&elapsed) {
+            return Err(format!("Rat corpse stage outside the ten-second observation window: {elapsed:?}").into());
+        }
+        evidence(&format!("P01_CHECK rat-decay-timing PASS elapsed_ms={}", elapsed.as_millis()));
+        matured
     } else {
         corpse
     };
@@ -689,8 +707,24 @@ pub(super) async fn hunt_exact_creature(
         .ok_or("corpse view")?
         .entries
         .clone();
-    if matches!(observations, HuntEvidence::Principal(_)) && key == "oteryn:creature.rat" && entries.is_empty() {
-        return Err("Rat corpse is empty; strict loot transfer cannot be proved".into());
+    if entries.is_empty() {
+        return Err("Selected corpse is empty; strict loot transfer cannot be proved".into());
+    }
+    let items = provisioning::item_index()?;
+    let authored_loot: &[(u32, u32)] = if key == "oteryn:creature.rat" {
+        &[(3607, 1), (3031, 4)]
+    } else {
+        &[(3054, 1), (9689, 1), (23986, 1), (3412, 1), (3336, 1), (3003, 1),
+          (3552, 1), (3355, 1), (3277, 1), (3577, 1), (3268, 1), (3031, 12)]
+    };
+    let mut allowed = BTreeMap::new();
+    for &(id, count) in authored_loot {
+        allowed.insert(provisioning::item_reference(&items, id)?, count);
+    }
+    for entry in &entries {
+        if allowed.remove(&entry.item_definition_ref).is_none_or(|max| entry.count.get() > max) {
+            return Err(format!("unexpected corpse loot for {key}: {entry:?}").into());
+        }
     }
     if let Some(item) = entries.first() {
         let before = client
@@ -899,6 +933,15 @@ pub(super) async fn prepare_hunter(
     Ok(client)
 }
 
+async fn refusal_wallet(client: &DevClientSession, clients: &SeamClients<'_>) -> TestResult<([u64; 3], u64)> {
+    let carried = client_row_e02::backpack_coins(client, client_row_e02::coin_refs()?)?;
+    let bank = full_row_e06::bank_balance(clients, 1).await?;
+    if bank == 0 && carried == [0; 3] {
+        return Err("P01.full requires positive gold to detect a refusal debit".into());
+    }
+    Ok((carried, bank))
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -942,7 +985,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     prepare_unarmed(&mut client).await?;
     let (_, target) =
-        authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat", None).await?;
+        authored_target(&mut client, world, &metadata.spawns, rat.key(), "Rat", Some(TilePos { x: 32491, y: 32169, floor: -7 })).await?;
     let first_kill = hunt_exact_creature(
         &mut client,
         target,
@@ -950,7 +993,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         race,
         rat_stage.fresh_ref,
         Some(rat_stage),
-        HuntEvidence::Wire,
+        HuntEvidence::Principal(clients),
     )
     .await?;
     let current = query(&mut client, "p01-full-mastery.json", &mut frames).await?;
@@ -1000,6 +1043,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         })
         .ok_or("query has no locked charm with a stage cost")?;
 
+    let locked_wallet = refusal_wallet(&client, clients).await?;
     row.at("locked-assignment-refusal");
     let refused = client_row_p01::send(
         &mut client,
@@ -1014,6 +1058,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         || refused.bestiary != current.bestiary
     {
         return Err(format!("locked ASSIGN reply/delta mismatch: {refused:?}").into());
+    }
+    let readback = query(&mut client, "p01-full-locked-readback.json", &mut frames).await?;
+    let mut expected_readback = current.clone();
+    expected_readback.outcome = CharmProgressionOutcome::Query;
+    if readback != expected_readback || refusal_wallet(&client, clients).await? != locked_wallet {
+        return Err("locked refusal changed independent state or wallet".into());
     }
     evidence("P01_CHECK locked-assignment-refusal PASS disposition=CharmLocked");
 
@@ -1060,6 +1110,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut expected_incomplete = expected_unlocked.clone();
     expected_incomplete.outcome =
         CharmProgressionOutcome::Assign(CharmAssignDisposition::RaceStageTooLow);
+    let incomplete_wallet = refusal_wallet(&client, clients).await?;
     let incomplete_reply = client_row_p01::send(
         &mut client,
         CharmProgressionAction::Assign {
@@ -1072,6 +1123,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .await?;
     if incomplete_reply != expected_incomplete {
         return Err(format!("incomplete ASSIGN reply/delta mismatch: {incomplete_reply:?}").into());
+    }
+    let readback = query(&mut client, "p01-full-incomplete-readback.json", &mut frames).await?;
+    let mut expected_readback = unlocked.clone();
+    expected_readback.outcome = CharmProgressionOutcome::Query;
+    if readback != expected_readback || refusal_wallet(&client, clients).await? != incomplete_wallet {
+        return Err("incomplete refusal changed independent state or wallet".into());
     }
     evidence(
         "P01_CHECK assign-incomplete-refusal PASS disposition=RaceStageTooLow state=unchanged",
@@ -1136,7 +1193,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         &metadata.spawns,
         troll_key,
         "Troll",
-        None,
+        Some(TilePos { x: 32469, y: 32235, floor: -8 }),
     )
     .await?;
     let target_identity = troll
@@ -1166,7 +1223,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         race,
         troll_corpse,
         None,
-        HuntEvidence::Contacts(&mut contacts),
+        HuntEvidence::Contacts(clients, &mut contacts),
     )
     .await?;
     if kill.race != race || kill.raw_xp != 20 {

@@ -135,7 +135,8 @@ def replay_targets():
         "oteryn-client", "e2e_p01_full_replays_native_charm_journey",
         {"p01-full-initial.json", "p01-full-mastery.json", "p01-full-locked.json",
          "p01-full-unlocked.json", "p01-full-incomplete.json", "p01-full-assigned.json",
-         "p01-full-after-hook.json", "p01-full-durable.json", "p01-full-expected.txt"},
+         "p01-full-after-hook.json", "p01-full-durable.json", "p01-full-expected.txt",
+         "p01-full-locked-readback.json", "p01-full-incomplete-readback.json"},
     )]
     return targets
 
@@ -150,10 +151,11 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    flags = ["--ignored"] if test == "e2e_p01_full_replays_native_charm_journey" else []
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
+             "--lib", test, "--", "--nocapture", *flags],
             cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:

@@ -411,13 +411,12 @@ fn e2e_p01_replays_query_refusal_and_kill_delta() -> Result<(), Box<dyn std::err
 }
 
 #[test]
+#[ignore = "requires fresh P01.full live captures"]
 fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
     use wire::CharmProgressionOutcome::{Assign, Query, Unlock};
     use wire::charm::{CharmAssignDisposition, CharmUnlockDisposition};
 
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("P01.full requires fresh captures")?;
     let path = std::path::PathBuf::from(directory);
     let manifest = std::fs::read_to_string(path.join("p01-full-expected.txt"))?;
     let field = |key: &str| -> Result<&str, Error> {
@@ -436,6 +435,7 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
     let troll = index("troll")?;
     let incomplete = index("incomplete")?;
     let charm = index("charm")?;
+    assert_eq!(charm.get(), 9, "canonical Enflame wire index");
     let mut previous = (0, 0);
     let mut panel = Panel::default();
     let mut expected = None;
@@ -448,6 +448,7 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
             rat,
             Assign(CharmAssignDisposition::CharmLocked),
         ),
+        ("locked-readback", Intent::Query, rat, Query),
         (
             "unlocked",
             Intent::Unlock,
@@ -460,6 +461,7 @@ fn e2e_p01_full_replays_native_charm_journey() -> Result<(), Error> {
             incomplete,
             Assign(CharmAssignDisposition::RaceStageTooLow),
         ),
+        ("incomplete-readback", Intent::Query, incomplete, Query),
         (
             "assigned",
             Intent::Assign,
