@@ -278,6 +278,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
+    boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
     oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
