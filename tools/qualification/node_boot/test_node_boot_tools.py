@@ -50,6 +50,17 @@ def bash(script, env=None, cwd=None):
 KNOBS = section('# Local parallel stacks', 'GAME_SOURCE=')
 
 
+class C16dProvisionTests(unittest.TestCase):
+    def test_c16d_fixture_reaches_control_socket(self):
+        from unittest.mock import patch
+
+        provision = load("provision")
+        session = "01890f4c-3b2a-7c01-8d11-9a321b7c0004"
+        with patch.object(provision, "_request", return_value=b"qualified\n") as send:
+            provision.provision("fixture.sock", session, "c16d-sorcerer")
+        send.assert_called_once_with("fixture.sock", f"qualify {session} c16d-sorcerer\n", 64)
+
+
 class KnobTests(unittest.TestCase):
     def preflight_bin(self, temporary):
         bin_dir = Path(temporary, 'bin')
@@ -301,7 +312,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 32)
+        self.assertEqual(len(accounts), 33)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 

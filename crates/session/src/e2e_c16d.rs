@@ -1,7 +1,7 @@
 //! C16d client replay.
 //!
 //! c16d-entities.bin is the exact retained domain-1 payload.
-//! c16d-expected.txt is the own actor's decimal appearance reference followed by a newline.
+//! c16d-expected.txt names the independently authored item definition as item:<reference>.
 //! c16d-capabilities.bin is the snapshot prefix of OTR1, ending after the last snapshot.
 //! After ASCII OTR1 come the u64 server sequence, two counted u32 lists (selected
 //! capabilities and appearance item references), and a u32 snapshot count. Each snapshot
@@ -31,8 +31,14 @@ fn e2e_c16d_item_appearance_snapshot_replay() -> Result<(), BoxError> {
             let path = std::path::Path::new(&path);
             let [payload, expected, metadata] =
                 C16D_FILES.map(|name| std::fs::read(path.join(name)));
-            let (input, expected) = decode_capture(&payload?, &expected?, &metadata?)?;
-            assert_replay(input, expected).await?;
+            let expected = expected?;
+            let item = std::str::from_utf8(&expected)?
+                .trim()
+                .strip_prefix("item:")
+                .ok_or("C16d live replay requires an independent item expectation")?
+                .parse()?;
+            let input = decode_transcript(&payload?, &metadata?)?;
+            assert_replay(input, ExpectedAppearance::Item(item)).await?;
         } else {
             let expected = 2_854;
             let mut actor = own(at(0, 0));
@@ -50,7 +56,7 @@ fn e2e_c16d_item_appearance_snapshot_replay() -> Result<(), BoxError> {
                     refs: vec![],
                     snapshots: vec![world],
                 },
-                expected,
+                ExpectedAppearance::Reference(expected),
             )
             .await?;
         }
@@ -112,7 +118,15 @@ fn e2e_c16d_capture_round_trip_with_negotiated_entity_fields() -> Result<(), Box
         let (input, reference) = decode_capture(&payload, &reference, &metadata)?;
         assert_eq!(input.selected, selected);
         assert_eq!(input.snapshots, snapshots);
-        assert_replay(input, reference).await
+        let wrong = assert_replay(input.clone(), ExpectedAppearance::Item(2854)).await;
+        assert_eq!(
+            wrong
+                .err()
+                .ok_or("C16d wrong look passed replay")?
+                .to_string(),
+            "C16d replayed own look differs from expected item 2854"
+        );
+        assert_replay(input, ExpectedAppearance::Reference(reference)).await
     })?
 }
 
@@ -144,16 +158,31 @@ fn world_fixture(
 fn decode_capture(
     payload: &[u8],
     expected: &[u8],
-    mut metadata: &[u8],
+    metadata: &[u8],
 ) -> Result<(SnapshotTranscript, u32), BoxError> {
+    Ok((
+        decode_transcript(payload, metadata)?,
+        std::str::from_utf8(expected)?.trim().parse()?,
+    ))
+}
+
+fn decode_transcript(payload: &[u8], mut metadata: &[u8]) -> Result<SnapshotTranscript, BoxError> {
     let input = SnapshotTranscript::decode(payload, &mut metadata, WORLD)?;
     if !metadata.is_empty() {
         return Err("unexpected C16d transcript records".into());
     }
-    Ok((input, std::str::from_utf8(expected)?.trim().parse()?))
+    Ok(input)
 }
 
-async fn assert_replay(input: SnapshotTranscript, expected: u32) -> Result<(), BoxError> {
+enum ExpectedAppearance {
+    Reference(u32),
+    Item(u32),
+}
+
+async fn assert_replay(
+    input: SnapshotTranscript,
+    expected: ExpectedAppearance,
+) -> Result<(), BoxError> {
     let SnapshotTranscript {
         sequence,
         selected,
@@ -182,11 +211,24 @@ async fn assert_replay(input: SnapshotTranscript, expected: u32) -> Result<(), B
         .iter()
         .find(|entity| &entity.entity.identity == own.own_identity())
         .ok_or("C16d own actor absent")?;
-    assert!(matches!(
-        actor.detail,
-        EntityDetail::Actor { appearance_ref, .. } | EntityDetail::ActorWithIcons { appearance_ref, .. }
-            if appearance_ref == expected
-    ));
+    match expected {
+        ExpectedAppearance::Reference(expected) => assert!(matches!(
+            actor.detail,
+            EntityDetail::Actor { appearance_ref, .. } | EntityDetail::ActorWithIcons { appearance_ref, .. }
+                if appearance_ref == expected
+        )),
+        ExpectedAppearance::Item(definition_ref) => {
+            let expected = appearance::Look::Item { definition_ref };
+            if !session.visible_appearances().iter().any(|visible| {
+                visible.entity.entity == actor.entity && visible.look.as_ref() == Some(&expected)
+            }) {
+                return Err(format!(
+                    "C16d replayed own look differs from expected item {definition_ref}"
+                )
+                .into());
+            }
+        }
+    }
 
     let invalid = &mut snapshots[world].payload;
     invalid.truncate(invalid.len().saturating_sub(1));

@@ -4370,7 +4370,7 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
                 Duration::from_secs(400),
                 "C16d 400s journey deadline; required actions unproven",
                 async {
-                    let result = tile_items(&mut row, &mut client, clients).await;
+                    let result = tile_items(&mut row, &mut client, clients, None).await;
                     completed = true;
                     result
                 },
@@ -4509,15 +4509,216 @@ async fn tile_item_refusal(
         || client.actor_vitals().copied() != Some(vitals)
         || own_reference(client)? != appearance
     {
-        return Err("C16d creature-target refusal changed inventory/vitals/appearance".into());
+        return Err(format!(
+            "C16d creature-target refusal changed state: inventory_unchanged={} vitals_before={vitals:?} vitals_after={:?} appearance_before={appearance} appearance_after={} refusal_sequence={sequence}",
+            client.inventory() == Some(&inventory),
+            client.actor_vitals(),
+            own_reference(client)?,
+        ).into());
     }
     Ok(sequence)
+}
+
+const C16D_CLIENT_TARGET: u32 = 3003;
+
+type C16dCapture = [(&'static str, Vec<u8>); 3];
+
+pub(super) async fn tile_item_client_capture(clients: &SeamClients<'_>) -> TestResult<C16dCapture> {
+    let own = character_prep::dedicated_character(clients, "NODE_BOOT_C16D_ACCOUNT").await?;
+    let scope = own.clients(clients);
+    character_prep::declare_seeded(
+        "C16d.client",
+        "sorcerer-level-300,blank-runes,runes-3178-and-3197,movable-target-3003",
+        "rune effects and retained appearance",
+    );
+    let mut client = admit_row(&scope, 0xe0, 0).await?;
+    request_fixture_control(
+        uuid_text(client.join_snapshot().game_session_id.as_bytes()),
+        "--profile",
+        "c16d-sorcerer".to_owned(),
+    )
+    .await?;
+    let index = provisioning::item_index()?;
+    let mut inventory = [0; 3];
+    for (id, expected_quantity) in [3178, 3197, C16D_CLIENT_TARGET].into_iter().zip(&mut inventory) {
+        let reference = provisioning::item_reference(&index, id)?;
+        *expected_quantity = rune_quantity(&client, reference)?.checked_add(2).ok_or("C16d fixture quantity overflow")?;
+        character_prep::grant_item(&client, id, 2).await?;
+    }
+    character_prep::grant_item(&client, 3147, 8).await?;
+    character_prep::grant_item(&client, 23373, 20).await?;
+    let initial = (client.inventory().cloned(), client.actor_vitals().copied(), client.world_spatial().actor_position);
+    let outcome = client.session_mut().logout().await?;
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    match outcome.result {
+        Some(LogoutResult::Accepted) => {}
+        Some(LogoutResult::Busy) => {
+            evidence(&format!("C16d.client fixture logout attempt=1 frame={outcome:?}"));
+            client.service_liveness(Duration::from_millis(250)).await?;
+            let observed = (client.inventory().cloned(), client.actor_vitals().copied(), client.world_spatial().actor_position);
+            if initial != observed {
+                return Err("C16d fixture logout Busy changed observed player state".into());
+            }
+            strict_tile_logout(&mut client).await?;
+        }
+        _ => return Err(format!("C16d fixture first logout refused: {outcome:?}").into()),
+    }
+    client = admit_row(&scope, 0xe4, 0).await?;
+    let stats = general_stats_payload(&mut client).await?;
+    if level_from_stats(&stats, general_stats::selected(&client))? != 300 {
+        return Err("C16d expected level 300 from fresh admission".into());
+    }
+    let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+        "sorcerer",
+        300,
+        oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+        oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+    ).ok_or("C16d level-300 sorcerer source vitals absent")?;
+    if client.actor_vitals().is_none_or(|vitals| {
+        vitals.max_health != health || vitals.max_mana != mana
+    }) {
+        return Err(format!("C16d incorrect seeded vitals: {:?}", client.actor_vitals()).into());
+    }
+    let book = native_spell_book()?;
+    let words = "adevo mas grav vis";
+    let training = book.spoken(words).ok_or("C16d Energy Wall conjure missing")?.spell;
+    let blank = provisioning::item_reference(&index, 3147)?;
+    let product = provisioning::item_reference(&index, 3166)?;
+    let blanks = rune_quantity(&client, blank)?.checked_sub(8).ok_or("C16d training needs eight carried blank runes")?;
+    let products = rune_quantity(&client, product)?.checked_add(32).ok_or("C16d training item overflow")?;
+    for _ in 0..8 {
+        spell_ready(&mut client, training).await?;
+        player_spell(&mut client, book, words, oteryn_protocol_oteryn::actor_spell::SpellTarget::None, false).await?;
+    }
+    strict_tile_rejoin(&mut client, &scope, 0xe5, &[(blank, blanks), (product, products)]).await?;
+    let stats = general_stats_payload(&mut client).await?;
+    level_from_stats(&stats, general_stats::selected(&client))?;
+    let magic_level = u16::from_le_bytes(stats[13..15].try_into()?);
+    if magic_level != 4 {
+        return Err(format!("C16d fresh admission magic_level={magic_level} expected=4").into());
+    }
+    evidence("C16d.client training paid_mana=8000 fresh_magic_level=4");
+    refill_tile_caster(&mut client, provisioning::item_reference(&index, 23373)?).await?;
+    let mut row = Row::new("C16d.client", TILE_ITEM_ACTIONS);
+    let mut capture = None;
+    tile_items(&mut row, &mut client, &scope, Some((inventory, &mut capture))).await?;
+    if !row.0.complete() {
+        return Err("C16d required rune action evidence incomplete".into());
+    }
+    strict_tile_logout(&mut client).await?;
+    capture.ok_or_else(|| "C16d verified relog capture absent".into())
+}
+
+async fn refill_tile_caster(client: &mut DevClientSession, potion: std::num::NonZeroU32) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    for _ in 0..20 {
+        let before = client.actor_vitals().copied().ok_or("C16d refill vitals absent")?;
+        if before.mana == before.max_mana {
+            return Ok(());
+        }
+        let use_result = client.use_item(rune_handle(client, potion)?).await?;
+        if use_result.status != CommandStatus::Accepted || use_result.disposition != UseDisposition::Committed {
+            return Err(format!("C16d first mana-potion use refused: {use_result:?}").into());
+        }
+        let until = tokio::time::Instant::now() + Duration::from_secs(1);
+        while tokio::time::Instant::now() < until {
+            client.service_liveness(Duration::from_millis(25)).await?;
+        }
+        let minimum = before.mana.saturating_add(425).min(before.max_mana);
+        if client.actor_vitals().is_none_or(|after| after.mana < minimum) {
+            return Err(format!("C16d potion failed to restore at least the authored minimum: before={before:?} after={:?}", client.actor_vitals()).into());
+        }
+    }
+    if client.actor_vitals().is_none_or(|vitals| vitals.mana != vitals.max_mana) {
+        return Err("C16d twenty potions did not restore full mana".into());
+    }
+    Ok(())
+}
+
+async fn strict_tile_logout(client: &mut DevClientSession) -> TestResult {
+    let outcome = client.session_mut().logout().await?;
+    if outcome.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C16d first logout refused: {outcome:?}").into());
+    }
+    Ok(())
+}
+
+async fn strict_tile_rejoin(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    tag: u8,
+    quantities: &[(std::num::NonZeroU32, u64)],
+) -> TestResult {
+    let previous = client.join_snapshot().game_session_id;
+    let position = client.world_spatial().actor_position;
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("C16d pre-logout vitals absent")?;
+    strict_tile_logout(client).await?;
+    *client = admit_row(clients, tag, 0).await?;
+    if previous == client.join_snapshot().game_session_id
+        || client.world_spatial().actor_position != position
+        || client
+            .actor_vitals()
+            .is_none_or(|vitals| vitals.mana != before.mana || vitals.soul != before.soul)
+    {
+        return Err("C16d relog did not retain position and paid vitals in a new session".into());
+    }
+    for &(reference, quantity) in quantities {
+        if rune_quantity(client, reference)? != quantity {
+            return Err(format!(
+                "C16d relog inventory differs: definition={reference} expected={quantity}"
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+async fn strict_tile_appearance_frame(
+    client: &mut DevClientSession,
+    look: &Look,
+    after: u64,
+    deadline: tokio::time::Instant,
+) -> TestResult<(u64, u64)> {
+    use oteryn_dev_client::native_session::AppearanceUpdate;
+    let own = *client
+        .world_entities()
+        .ok_or("C16d own actor absent")?
+        .own_identity();
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::Appearance(delta) = event
+                && delta.server_sequence > after
+                && let AppearanceUpdate::Mappings(mappings) = delta.value
+                && let Some(binding) = mappings
+                    .upserts
+                    .iter()
+                    .find(|binding| binding.entity.identity == own)
+            {
+                if &binding.look != look {
+                    return Err(format!(
+                        "C16d incorrect own appearance frame: expected {look:?}, observed {:?}",
+                        binding.look
+                    )
+                    .into());
+                }
+                return Ok((delta.server_sequence, binding.owner_time_us));
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C16d own appearance frame missing for {look:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
 }
 
 async fn tile_items(
     row: &mut Row,
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
+    mut capture: Option<([u64; 3], &mut Option<C16dCapture>)>,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let book = native_spell_book()?;
@@ -4525,19 +4726,50 @@ async fn tile_items(
     let disintegrate = book.rune(3197).ok_or("C16d Disintegrate rune absent")?;
     let duration = tile_item_duration(chameleon)?;
     let baseline = own_binding(client)?.look;
-    let (chameleon_ref, sequence) = seed_item_pair(client, clients, 3178).await?;
-    row.pass("seed-chameleon", sequence);
-    let (disintegrate_ref, sequence) = seed_item_pair(client, clients, 3197).await?;
-    row.pass("seed-disintegrate", sequence);
-    // Use a carried, player-dropped target so natural map-item decay cannot explain removal.
-    let (target_ref, sequence) = seed_item_pair(client, clients, 2854).await?;
-    row.pass("seed-movable-target", sequence);
-    let prepared = [
-        (chameleon_ref, rune_quantity(client, chameleon_ref)?),
-        (disintegrate_ref, rune_quantity(client, disintegrate_ref)?),
-        (target_ref, rune_quantity(client, target_ref)?),
-    ];
-    tile_item_rejoin(client, clients, 0xe4, &prepared).await?;
+    let strict = capture.is_some();
+    let (chameleon_ref, disintegrate_ref, target_ref) = if let Some((inventory, _)) = capture.as_ref() {
+        if duration != Duration::from_secs(200) {
+            return Err("C16d Chameleon must have a 200 second lifetime".into());
+        }
+        let index = provisioning::item_index()?;
+        let references = [3178, 3197, C16D_CLIENT_TARGET].map(|id| provisioning::item_reference(&index, id));
+        let [chameleon_ref, disintegrate_ref, target_ref] = references;
+        let references = (chameleon_ref?, disintegrate_ref?, target_ref?);
+        for ((action, reference), expected_quantity) in [
+            ("seed-chameleon", references.0),
+            ("seed-disintegrate", references.1),
+            ("seed-movable-target", references.2),
+        ].into_iter().zip(inventory) {
+            let observed = rune_quantity(client, reference)?;
+            if observed != *expected_quantity {
+                return Err(format!("C16d fixture inventory differs: definition={reference} expected={expected_quantity} observed={observed}").into());
+            }
+            row.pass(action, client.last_server_sequence());
+        }
+        if baseline
+            == (Look::Item {
+                definition_ref: references.2.get(),
+            })
+        {
+            return Err("C16d already has the chosen item look before casting".into());
+        }
+        references
+    } else {
+        let (chameleon_ref, sequence) = seed_item_pair(client, clients, 3178).await?;
+        row.pass("seed-chameleon", sequence);
+        let (disintegrate_ref, sequence) = seed_item_pair(client, clients, 3197).await?;
+        row.pass("seed-disintegrate", sequence);
+        // Use a carried, player-dropped target so natural map-item decay cannot explain removal.
+        let (target_ref, sequence) = seed_item_pair(client, clients, 2854).await?;
+        row.pass("seed-movable-target", sequence);
+        let prepared = [
+            (chameleon_ref, rune_quantity(client, chameleon_ref)?),
+            (disintegrate_ref, rune_quantity(client, disintegrate_ref)?),
+            (target_ref, rune_quantity(client, target_ref)?),
+        ];
+        tile_item_rejoin(client, clients, 0xe4, &prepared).await?;
+        (chameleon_ref, disintegrate_ref, target_ref)
+    };
     let here = client.world_spatial().actor_position;
     let map = client
         .session_mut()
@@ -4571,9 +4803,23 @@ async fn tile_items(
                 .find(|entry| entry.item_definition_ref == target_ref && entry.count.get() == 1)
         })
         .map(|entry| entry.handle)
-        .ok_or("C16d seeded single backpack handle absent")?;
+        .ok_or("C16d seeded single target handle absent")?;
     client.take_events();
     let after = client.last_server_sequence();
+    if strict {
+        use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+        let floor = at.floor.checked_abs().filter(|floor| *floor <= 15).ok_or("C16d invalid ground floor")?;
+        let moved = client.session_mut().move_item_counted(MoveRequest {
+            source: handle,
+            destination: oteryn_dev_client::ItemMoveDestination::Ground(
+                oteryn_protocol_oteryn::item_view::WorldTilePosition { x: at.x, y: at.y, floor },
+            ),
+            count: None,
+        }).await?;
+        if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
+            return Err(format!("C16d first target drop refused: {moved:?}").into());
+        }
+    } else {
     let moved = client
         .move_item(&oteryn_dev_client::ItemMoveIntent {
             source: handle,
@@ -4587,7 +4833,8 @@ async fn tile_items(
         })
         .await?;
     if moved.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved {
-        return Err(format!("C16d ordinary backpack drop refused: {moved:?}").into());
+        return Err(format!("C16d ordinary target drop refused: {moved:?}").into());
+    }
     }
     let (sequence, placed) = tile_item_frame(client, at, target_ref, true, after).await?;
     level(client).await?;
@@ -4596,7 +4843,7 @@ async fn tile_items(
         || !placed.starts_with(&underlying)
         || placed.last() != Some(&(MapDefinition::Item(target_ref), 1, 0))
     {
-        return Err("C16d drop lacks exact carried debit and single backpack map addition".into());
+        return Err("C16d drop lacks exact carried debit and single target map addition".into());
     }
     row.pass("player-drop-target", sequence);
     row.pass(
@@ -4616,32 +4863,44 @@ async fn tile_items(
     let started = tokio::time::Instant::now();
     let (cast_sequence, chameleon_left) =
         cast_rune(client, chameleon, chameleon_ref, None, Some(at)).await?;
+    let expected = Look::Item {
+        definition_ref: target_ref.get(),
+    };
     let mut appearance_sequence = 0;
     let mut messages = Vec::new();
     let until = tokio::time::Instant::now() + Duration::from_secs(5);
-    while appearance_sequence <= cast_sequence || own_reference(client)? == original_reference {
-        pump(client, &mut appearance_sequence, &mut messages).await?;
-        if tokio::time::Instant::now() >= until {
-            return Err("C16d Chameleon cast lacks changed own-actor appearance frame".into());
+    let effect_time = if strict {
+        let (sequence, owner_time) =
+            strict_tile_appearance_frame(client, &expected, cast_sequence, until).await?;
+        appearance_sequence = sequence;
+        Some(owner_time)
+    } else {
+        while appearance_sequence <= cast_sequence || own_reference(client)? == original_reference {
+            pump(client, &mut appearance_sequence, &mut messages).await?;
+            if tokio::time::Instant::now() >= until {
+                return Err("C16d Chameleon cast lacks changed own-actor appearance frame".into());
+            }
         }
-    }
+        None
+    };
     paid_rune(client, chameleon_ref, chameleon_left, before, chameleon).await?;
     let mut quantities = [
         (chameleon_ref, chameleon_left),
         (disintegrate_ref, rune_quantity(client, disintegrate_ref)?),
         (target_ref, target_count - 1),
     ];
-    tile_item_rejoin(client, clients, 0xe1, &quantities).await?;
-    let expected = Look::Item {
-        definition_ref: target_ref.get(),
-    };
+    if strict {
+        strict_tile_rejoin(client, clients, 0xe1, &quantities).await?;
+    } else {
+        tile_item_rejoin(client, clients, 0xe1, &quantities).await?;
+    }
     let binding = own_binding(client)?;
     if binding.look != expected
         || binding.condition_revision == 0
         || admission_tile_contents(client, at)? != placed
     {
         return Err(
-            "C16d fresh admission lost exact backpack appearance/condition or changed its target"
+            "C16d fresh admission lost exact target appearance/condition or changed its target"
                 .into(),
         );
     }
@@ -4674,7 +4933,11 @@ async fn tile_items(
     paid_rune(client, disintegrate_ref, remaining, before, disintegrate).await?;
     let empty_sequence = sequence;
     quantities[1].1 = remaining;
-    tile_item_rejoin(client, clients, 0xe2, &quantities).await?;
+    if strict {
+        strict_tile_rejoin(client, clients, 0xe2, &quantities).await?;
+    } else {
+        tile_item_rejoin(client, clients, 0xe2, &quantities).await?;
+    }
     if admission_tile_contents(client, at)? != underlying || own_binding(client)?.look != expected {
         return Err(
             "C16d removal not durable or active item illusion lost after its source was destroyed"
@@ -4683,22 +4946,51 @@ async fn tile_items(
     }
     row.pass("empty-tile-success", empty_sequence);
     row.pass("removal-fresh-admission", client.last_server_sequence());
-    let active_reference = own_reference(client)?;
-    appearance_sequence = 0;
-    while own_reference(client)? == active_reference || appearance_sequence == 0 {
-        if tokio::time::Instant::now() >= started + duration + Duration::from_secs(10) {
-            return Err("C16d Chameleon did not expire on real server clock".into());
+    if let Some((_, storage)) = capture.take() {
+        let mut files = client
+            .session_mut()
+            .c16d_capture_files()
+            .ok_or("C16d live relog capture unavailable")?;
+        files[1].1 = format!("item:{}\n", target_ref.get()).into_bytes();
+        *storage = Some(files);
+    }
+    let expiry_deadline = started + duration + Duration::from_secs(10);
+    let expiry_sequence = if let Some(effect_time) = effect_time {
+        verdict::Harness::global().bounded_wait(expiry_deadline, "chameleon-expiry");
+        let after = client.last_server_sequence();
+        let (sequence, expired_at) =
+            strict_tile_appearance_frame(client, &baseline, after, expiry_deadline).await?;
+        let elapsed = expired_at
+            .checked_sub(effect_time)
+            .ok_or("C16d expiry clock regressed")?;
+        if !(200_000_000..=210_000_000).contains(&elapsed) {
+            return Err(
+                format!("C16d server-timed Chameleon lifetime invalid: {elapsed}us").into(),
+            );
         }
-        pump(client, &mut appearance_sequence, &mut messages).await?;
+        sequence
+    } else {
+        let active_reference = own_reference(client)?;
+        appearance_sequence = 0;
+        while own_reference(client)? == active_reference || appearance_sequence == 0 {
+            if tokio::time::Instant::now() >= expiry_deadline {
+                return Err("C16d Chameleon did not expire on real server clock".into());
+            }
+            pump(client, &mut appearance_sequence, &mut messages).await?;
+        }
+        if tokio::time::Instant::now() + Duration::from_secs(1) < started + duration {
+            return Err("C16d item illusion expired before its authored lifetime".into());
+        }
+        appearance_sequence
+    };
+    if strict {
+        strict_tile_rejoin(client, clients, 0xe3, &quantities).await?;
+    } else {
+        tile_item_rejoin(client, clients, 0xe3, &quantities).await?;
     }
-    if tokio::time::Instant::now() + Duration::from_secs(1) < started + duration {
-        return Err("C16d item illusion expired before its authored lifetime".into());
-    }
-    let expiry_sequence = appearance_sequence;
-    tile_item_rejoin(client, clients, 0xe3, &quantities).await?;
     if own_binding(client)?.look != baseline || admission_tile_contents(client, at)? != underlying {
         return Err(
-            "C16d expired item illusion or destroyed backpack returned on fresh admission".into(),
+            "C16d expired item illusion or destroyed target returned on fresh admission".into(),
         );
     }
     row.pass("chameleon-natural-expiry", expiry_sequence);

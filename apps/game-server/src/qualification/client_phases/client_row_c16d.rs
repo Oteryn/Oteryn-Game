@@ -8,7 +8,7 @@ const REPLAY_TEST: &str = "tests::e2e_c16d::e2e_c16d_item_appearance_snapshot_re
 pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) {
     match verdict::observe(capture_and_replay(clients)).await {
         Ok(()) => evidence(
-            "e2e_all scenario=C16d.client status=PASS evidence=live-entity-snapshot-replay",
+            "e2e_all scenario=C16d.client status=PASS evidence=live-rune-effects-relog-and-client-replay",
         ),
         Err(error) => evidence(&format!(
             "e2e_all scenario=C16d.client status=FAIL evidence={error}"
@@ -18,16 +18,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, _world: &BundleWorld) 
 
 async fn capture_and_replay(clients: &SeamClients<'_>) -> TestResult {
     let directory = CaptureDirectory::open()?;
-    let mut client = connect_world(clients, 0xd6).await?;
-    let files = client
-        .session_mut()
-        .c16d_capture_files()
-        .ok_or("C16d live capture unavailable")?;
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("C16d logout refused: {:?}", logout.result).into());
-    }
-    drop(client);
+    let files = full_e2ef5::tile_item_client_capture(clients).await?;
     for (name, bytes) in files {
         std::fs::File::create_new(directory.path().join(name))?.write_all(&bytes)?;
     }

@@ -117,6 +117,7 @@ impl ReplayInput {
     }
 }
 
+#[derive(Clone)]
 pub(super) struct SnapshotTranscript {
     pub(super) sequence: u64,
     pub(super) selected: Vec<u32>,
