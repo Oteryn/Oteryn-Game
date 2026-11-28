@@ -2,7 +2,7 @@
   "schema": "OTERYN_S10_NONQUEST/v1",
   "classification": "OTS_HYPOTHESIS_ONLY",
   "wiki": "wiki-pending",
-  "decision": "Use pinned Crystal static ambient lines, excluding explicitly unconfirmed Dragon Ancestor Spirit placeholders. Preserve reviewed stationary Omrabas and Flickering Soul behavior. Banks reuse accepted BANK0 operations and existing dialogue; guild banking and quest bonuses are excluded.",
+  "decision": "Use the confirmed Fandom archive line for Maria. Retain inherited ambient profiles where Global values are still unverified, excluding explicitly unconfirmed Dragon Ancestor Spirit placeholders. Preserve reviewed stationary Omrabas and Flickering Soul behavior. Banks reuse accepted BANK0 operations and existing dialogue; guild banking and quest bonuses are excluded.",
   "voices": [
     {
       "key": "oteryn:npc.valindara",
@@ -289,7 +289,7 @@
           "field_path": "oteryn:source.npc.voice_lines",
           "value": {
             "type": "Text",
-            "value": "[{\"text\":\"Any time's a good time to buy some furniture!\",\"yell\":false}]"
+            "value": "[{\"text\":\"Hello, hello! Put your feet up and relax in the Hard Rock Tavern.\",\"yell\":false}]"
           }
         }
       ],
@@ -299,6 +299,11 @@
         "path": "data-crystal/npc/maria.lua",
         "line": 26,
         "sha256": "7395db9bd94c82cef23874532fd633a006bcd007fb7e9ad0eb446a2bdc46ad4b"
+      },
+      "global_voice_evidence": {
+        "url": "https://tibia.fandom.com/wiki/Maria",
+        "archive_revision": "2022-03-07T18:58:13Z",
+        "field": "sounds"
       }
     }
   ],

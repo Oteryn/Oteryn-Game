@@ -370,24 +370,74 @@ mod tests {
             .expect("service model");
         let profiles = profiles_from_catalogue(&catalogue, &model, qualify_text)
             .expect("source-bound profiles");
-        // Crystal 201189f8 data-global/npc/<stem>.lua, npcConfig.voices;
-        // Maria is in data-crystal/npc/maria.lua. These are ambient lines only.
-        for (stem, first_line) in [
-            ("valindara", "I'm eager for a bath in the lake."),
-            ("tooth_fairy", "I have to ... No, I don't dare ..."),
-            ("tired_tree", "*yawn*"),
-            (
-                "rosemarie",
-                "Flowers are one of the most beautiful gifts that Crunor blessed us with.",
-            ),
-            ("gunther", "They have to believe me!"),
-            ("grumpy_stone", "That's annoying!"),
-            ("enpa_deia_pema", "Peace is the true path."),
+        // Global Sound Lists for this verified subset of the catalogue.
+        for (stem, lines) in [
             (
                 "allen",
-                "Hey, need some furniture for your house? Come to the Plank and Treasurechest Market!",
+                &[
+                    "Hey, need some furniture for your house? Come to the Plank and Treasurechest Market!",
+                ][..],
             ),
-            ("maria", "Any time's a good time to buy some furniture!"),
+            (
+                "chemar",
+                &[
+                    "Ask me if you need letters or parcels. I'll deliver them via airmail, of course!",
+                    "Feel the wind in your hair during one of my carpet rides!",
+                ],
+            ),
+            (
+                "gunther",
+                &["They have to believe me!", "What a mess.", "Oh my!"],
+            ),
+            (
+                "maria",
+                &["Hello, hello! Put your feet up and relax in the Hard Rock Tavern."],
+            ),
+            (
+                "rosemarie",
+                &[
+                    "Flowers are one of the most beautiful gifts that Crunor blessed us with.",
+                    "Celebrate life and nature!",
+                ],
+            ),
+            (
+                "tired_tree",
+                &["*yawn*", "I just want to sleep.", "Sooo tired."],
+            ),
+            (
+                "tooth_fairy",
+                &[
+                    "I have to ... No, I don't dare ...",
+                    "This is a very strange part of the world.",
+                    "The children are waiting for their presents.",
+                ],
+            ),
+            (
+                "valindara",
+                &[
+                    "I'm eager for a bath in the lake.",
+                    "I'm interested in shiny precious things, if you have some.",
+                    "No, you can't have this cloak.",
+                ],
+            ),
+        ] {
+            let key = format!("oteryn:npc.{stem}");
+            let profile = profiles.get(&key).expect(&key);
+            assert_eq!(profile.interval_ms, 15_000, "{key}");
+            assert_eq!(profile.chance_ppm, 500_000, "{key}");
+            assert!(
+                profile
+                    .lines
+                    .iter()
+                    .map(|line| line.text.as_str())
+                    .eq(lines.iter().copied()),
+                "{key}"
+            );
+        }
+        // Preserve the inherited profiles where the archive lacks voice text.
+        for (stem, first_line) in [
+            ("grumpy_stone", "That's annoying!"),
+            ("enpa_deia_pema", "Peace is the true path."),
         ] {
             let key = format!("oteryn:npc.{stem}");
             let profile = profiles.get(&key).expect(&key);
