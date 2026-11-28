@@ -56,10 +56,14 @@ const S02_KNIGHT_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b1";
 const S02_SORCERER_ACCOUNT: &str = "01934f10-7c00-7000-8000-0000000000b2";
 
 #[cfg(feature = "qualification-spawn")]
+const S03_ACCOUNT: &str = "01934f10-7c00-7000-8000-000000000020";
+
+#[cfg(feature = "qualification-spawn")]
 fn spell_build(profile: &str) -> Option<(&'static str, u32)> {
     match profile {
         "s02-knight" => Some(("knight", 8)),
         "s02-sorcerer" => Some(("sorcerer", 8)),
+        "s03-sorcerer" => Some(("sorcerer", 8)),
         "s08-knight" => Some(("knight", 8)),
         "s08-sorcerer" => Some(("sorcerer", 8)),
         "s13-party" => Some(("sorcerer", 32)),
@@ -780,6 +784,7 @@ async fn prepare_build(
             | "w20b-light"
             | "s02-knight"
             | "s02-sorcerer"
+            | "s03-sorcerer"
             | "s08-knight"
             | "s08-sorcerer"
     ) {
@@ -801,7 +806,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | PARTY_CASTER_ACCOUNT | S03_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
@@ -820,6 +825,7 @@ async fn prepare_build(
             | ("w20b-light", LIGHT_ACCOUNT)
             | ("s02-knight", S02_KNIGHT_ACCOUNT)
             | ("s02-sorcerer", S02_SORCERER_ACCOUNT)
+            | ("s03-sorcerer", S03_ACCOUNT)
             | ("s08-knight", PVP_KNIGHT_ACCOUNT)
             | ("s08-sorcerer", PVP_SORCERER_ACCOUNT) => {}
             _ => return Err("preparation profile does not match dedicated account".into()),
