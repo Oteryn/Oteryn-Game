@@ -42,6 +42,7 @@ pub(super) async fn reject_stale_advisory_loss(
             },
             owner.quest_catalogue.clone().ok_or("catalogue")?,
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                selected_fish: None,
                 creature_use: None,
                 native,
                 weights: &weights,

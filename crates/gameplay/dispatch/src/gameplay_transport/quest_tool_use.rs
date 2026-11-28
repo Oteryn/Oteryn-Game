@@ -348,6 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 std::sync::Arc::clone(catalogue),
                 QuestRewardAdmission {
+                    selected_fish: None,
                     native,
                     weights: &weights,
                     fee_payment: None,

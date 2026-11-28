@@ -67,6 +67,7 @@ pub(super) async fn sample(
             },
             catalogue.clone(),
             QuestRewardAdmission {
+                selected_fish: None,
                 native,
                 weights: &weights,
                 fee_payment: None,
@@ -154,6 +155,7 @@ pub(super) async fn sample(
                     },
                     catalogue,
                     QuestRewardAdmission {
+                        selected_fish: None,
                         native,
                         weights: &weights,
                         fee_payment: None,
@@ -286,6 +288,7 @@ pub(super) async fn explorer_sample(
                 },
                 catalogue,
                 QuestRewardAdmission {
+                    selected_fish: None,
                     native, weights: &weights, fee_payment: None, actor_conditions: None,
                     carried_use: Some(carried), creature_use: Some(&proof), peer_use: None,
                 },

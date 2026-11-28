@@ -87,6 +87,7 @@ pub struct QuestCarriedUse {
 /// The runtime supplies its admitted generation and the normal wheel-aware capacity lookup.
 #[derive(Clone, Copy)]
 pub struct QuestRewardAdmission<'a> {
+    pub selected_fish: Option<[u8; 16]>,
     pub native: &'a NativeGameplayState,
     pub weights: &'a dyn super::super::item_transfer::ItemWeightLookup,
     pub fee_payment: Option<&'a QuestRewardFeePayment>,
@@ -156,8 +157,7 @@ pub(crate) async fn apply(
             u.recipe_target
                 .is_some_and(|target| target == u.source || target == [0; 16])
         })
-        || (callback.carried_item.is_some() || callback.consumes_fish_stack())
-            != admission.carried_use.is_some()
+        || callback.carried_item.is_some() != admission.carried_use.is_some()
         || admission.carried_use.is_some_and(|use_| {
             use_.source == [0; 16] || use_.intent.is_empty() || use_.intent.len() > 4096
         })
@@ -485,6 +485,7 @@ pub(crate) async fn apply(
         request,
         callback,
         admission.carried_use,
+        admission.selected_fish,
     )
     .await?
     {

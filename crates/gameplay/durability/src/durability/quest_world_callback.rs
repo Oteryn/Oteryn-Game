@@ -373,6 +373,7 @@ pub(super) async fn consume_reward_inputs(
     request: &super::quest_state::QuestTransitionRequest,
     callback: &oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback,
     carried_use: Option<&super::reward_claim_mint::QuestCarriedUse>,
+    selected_fish: Option<[u8; 16]>,
 ) -> Result<bool, DurabilityError> {
     match request.cause {
         super::quest_state::QuestCause::Command(_) if callback.world_claim.is_none() => {}
@@ -387,10 +388,10 @@ pub(super) async fn consume_reward_inputs(
         .collect();
     keys.extend(callback.inventory.iter().map(|rule| rule.item.as_str()));
     let fish_id = if callback.consumes_fish_stack() {
-        let Some(selected) = carried_use else {
+        let Some(selected) = selected_fish else {
             return Ok(false);
         };
-        Some(sqlx::types::Uuid::from_bytes(selected.source))
+        Some(sqlx::types::Uuid::from_bytes(selected))
     } else {
         None
     };
@@ -404,8 +405,7 @@ pub(super) async fn consume_reward_inputs(
                   AND p.expires_at_unix_ms>floor(extract(epoch FROM statement_timestamp())*1000)::bigint))
         ORDER BY i.item_instance_id LIMIT 501 FOR UPDATE OF i")
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(&keys).bind(fish_id).fetch_all(&mut **tx).await?;
-    let tool_use = carried_use.filter(|_| fish_id.is_none());
-    if let Some(use_) = tool_use {
+    if let Some(use_) = carried_use {
         let selected = sqlx::types::Uuid::from_bytes(use_.source).to_string();
         if !rows.iter().any(|row| {
             row.try_get::<&str, _>("item").ok() == Some(selected.as_str())
@@ -477,7 +477,7 @@ pub(super) async fn consume_reward_inputs(
     let mut inputs = Vec::new();
     for row in rows {
         let key: String = row.try_get("definition_production_key")?;
-        if let Some(use_) = tool_use {
+        if let Some(use_) = carried_use {
             let selected = if callback.carried_item.as_deref() == Some(key.as_str()) {
                 Some(use_.source)
             } else if callback.carried_target.as_deref() == Some(key.as_str()) {

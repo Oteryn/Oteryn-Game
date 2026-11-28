@@ -278,12 +278,13 @@ fn scenario(name: &str, case: Case) -> TestResult {
             assert_eq!(quest_state(&h).await?, (None, false, 0));
         }
         let first_stack = if resume { 98 } else { 49 };
-        add_item(&h, 202, fish, first_stack, 8).await?;
+        add_item(&h, 208, fish, first_stack, 8).await?;
         if !resume {
             add_item(&h, 206, PERCH, 50, 6).await?;
         }
         talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;
         assert_eq!(carried(&h, fish).await?, 0);
+        if !resume { assert_eq!(carried(&h, PERCH).await?, 50); }
         assert_eq!(quest_state(&h).await?, (Some(0), false, 0));
         if !resume {
             talk(&mut owner, &mut admitted, npc, "nupi", Some(&[HAND_IN])).await?;

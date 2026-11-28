@@ -259,6 +259,7 @@ fn cursor_position_item_uses_real_play_queue_without_second_click()
     ));
     view.cast(NonZeroU32::MIN);
     view.tick(&link).map_err(|_| "tick")?;
+    assert!(view.use_with_click(oteryn_renderer::TileCoord::new(101, 200), &link));
     assert!(
         matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command) if command.target == Target::Position(position))
     );

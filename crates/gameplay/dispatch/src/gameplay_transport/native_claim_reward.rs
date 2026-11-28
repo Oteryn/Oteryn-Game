@@ -256,6 +256,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 context,
                 Some(native),
                 Some(QuestRewardAdmission {
+                    selected_fish: None,
                     native,
                     weights: &weights,
                     fee_payment: None,

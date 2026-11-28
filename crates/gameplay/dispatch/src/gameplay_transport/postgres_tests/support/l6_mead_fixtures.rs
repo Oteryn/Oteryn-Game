@@ -343,6 +343,7 @@ pub(super) async fn exercise(
     );
     let weights = NativeItemWeights(native).with_wheel(owner.premium_coordinator);
     let admission = crate::durability::reward_claim_mint::QuestRewardAdmission {
+        selected_fish: None,
         actor_conditions: None,
         carried_use: None,
         creature_use: None,
@@ -384,6 +385,7 @@ pub(super) async fn exercise(
             context.clone(),
             Some(native),
             Some(crate::durability::reward_claim_mint::QuestRewardAdmission {
+                selected_fish: None,
                 actor_conditions: None,
                 carried_use: None,
                 creature_use: None,

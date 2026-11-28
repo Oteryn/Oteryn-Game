@@ -316,6 +316,7 @@ async fn complete_parent_fixture(
         cause: QuestCause::Command(reward_fixture::command(31100)?),
     };
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights,
         fee_payment: None,

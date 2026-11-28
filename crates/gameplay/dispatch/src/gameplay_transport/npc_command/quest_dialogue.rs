@@ -483,19 +483,6 @@ pub(super) async fn apply(
     {
         return rejected();
     }
-    let carried_use = if let Some(source) = step.selected_fish {
-        let Ok(intent) = oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(&intent)
-        else {
-            return rejected();
-        };
-        Some(crate::durability::reward_claim_mint::QuestCarriedUse {
-            source,
-            recipe_target: None,
-            intent,
-        })
-    } else {
-        None
-    };
     let request = QuestTransitionRequest {
         transition_key: transition,
         cause: QuestCause::Command(CommandRef::new(command.game_session_id, id)),
@@ -555,11 +542,12 @@ pub(super) async fn apply(
             request,
             std::sync::Arc::clone(catalogue),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                selected_fish: step.selected_fish,
                 native,
                 weights: &weights,
                 fee_payment: fee_payment.as_ref(),
                 actor_conditions: actor_conditions.as_ref(),
-                carried_use: carried_use.as_ref(),
+                carried_use: None,
                 creature_use: None,
                 peer_use: None,
             },

@@ -244,6 +244,7 @@ pub(super) async fn exercise(
             },
             owner.quest_catalogue.clone().ok_or("catalogue")?,
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                selected_fish: None,
                 native,
                 weights: &weights,
                 fee_payment: None,

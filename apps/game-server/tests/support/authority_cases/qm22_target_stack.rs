@@ -135,6 +135,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 request,
                 catalogue,
                 QuestRewardAdmission {
+                    selected_fish: None,
                     native,
                     weights: &weights,
                     fee_payment: None,
