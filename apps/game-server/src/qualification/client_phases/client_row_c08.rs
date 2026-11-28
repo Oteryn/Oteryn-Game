@@ -1,46 +1,23 @@
-//! C08 client replay capture: let a real poison spider poison the character, dispel it with the
-//! served `exana pox` spell, and capture the ACTOR_VITALS values applied by
-//! `crates/session/src/domain_dispatch.rs` through `Session::apply_state_delta` and exposed by
-//! `Session::actor_vitals` in `session_access.rs`. The session owns domain 3 and does not retain
-//! raw delta bytes, so each capture is the applied vitals value encoded by the production codec.
+//! Qualify poison and its cure using a live journey and the original inbound Server frames.
 use super::full_row_c08::{
     poison_status, poison_tick_fact, travel_to_poison_spider, wait_for_c08_logout, walk_c08,
 };
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
+use oteryn_dev_client::{CLIENT_SUPPORTED_CAPABILITIES, DevClientSession, SessionEvent};
+use oteryn_dev_client::native_session::{Admission, test_support::{capture_inbound, replay_vitals}};
+use oteryn_protocol_oteryn::{CharacterId, GameSessionId};
 use oteryn_protocol_oteryn::actor_spell::{
-    ActorVitals, SpellCastDisposition, SpellTarget, encode_actor_vitals,
+    ActorVitals, SpellCastDisposition, SpellTarget,
 };
 use oteryn_protocol_oteryn::actor_spell_catalog as catalogue;
 use oteryn_protocol_oteryn::analyser::{AnalyserFact, AttributedFact};
 
-fn capture(name: &str, bytes: &[u8]) -> TestResult {
-    let stage_capture = std::env::var_os("E2E_C08_CAPTURE_DIR");
-    let suite_capture = std::env::var_os("E2E_ALL_CAPTURE_DIR");
-    if stage_capture.is_none() && suite_capture.is_none() {
-        return Err("C08 capture directory absent".into());
-    }
-    for root in [stage_capture, suite_capture].into_iter().flatten() {
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(Path::new(&root).join(name))?;
-        std::io::Write::write_all(&mut file, bytes)?;
-    }
-    Ok(())
-}
-
-fn line(vitals: &ActorVitals) -> String {
-    format!(
-        "{} {} {} {} {} {} {}\n",
-        vitals.health,
-        vitals.max_health,
-        vitals.mana,
-        vitals.max_mana,
-        vitals.soul,
-        vitals.harmony,
-        u8::from(vitals.serene)
-    )
+struct Replay {
+    account: character_prep::DedicatedCharacter,
+    saved_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    session: GameSessionId,
+    checkpoints: [(u64, ActorVitals); 4],
+    observed: String,
 }
 
 /// The next health decrease must match the attributed hit or condition tick.
@@ -49,21 +26,21 @@ async fn next_damage(
     above: u32,
     seconds: u64,
     expected: impl Fn(&AttributedFact) -> bool,
-) -> TestResult<ActorVitals> {
+) -> TestResult<(u64, ActorVitals)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
-    let mut observed: Option<ActorVitals> = None;
+    let mut observed: Option<(u64, ActorVitals)> = None;
     let mut attributed_damage = 0u32;
     loop {
         client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
             match event {
                 SessionEvent::ActorVitals(delta) if delta.value.health < above => {
-                    if observed.is_some_and(|vitals| vitals.health != delta.value.health) {
+                    if observed.is_some_and(|(_, vitals)| vitals.health != delta.value.health) {
                         return Err(
                             "multiple health decreases before C08 damage attribution".into()
                         );
                     }
-                    observed = Some(delta.value);
+                    observed = Some((delta.server_sequence, delta.value));
                 }
                 SessionEvent::AnalyserAttributedFacts(delta) => {
                     for fact in delta.value.iter().filter(|fact| expected(fact)) {
@@ -77,7 +54,7 @@ async fn next_damage(
                 _ => {}
             }
         }
-        if let Some(vitals) = observed {
+        if let Some((sequence, vitals)) = observed {
             let health_loss = above - vitals.health;
             if attributed_damage > health_loss {
                 return Err(format!(
@@ -87,7 +64,7 @@ async fn next_damage(
                 .into());
             }
             if attributed_damage == health_loss {
-                return Ok(vitals);
+                return Ok((sequence, vitals));
             }
         }
         if tokio::time::Instant::now() >= deadline {
@@ -96,7 +73,7 @@ async fn next_damage(
     }
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(clients: &SeamClients<'_>) -> TestResult<Replay> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -106,17 +83,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let (_account, mut client) =
+    let (account, mut client) =
         character_prep::connect_c08(clients, 0x30, "Poison Replay Caster").await?;
+    let starting_position = client.world_spatial().actor_position;
     let spider = travel_to_poison_spider(&mut client, world, &metadata.spawns).await?;
     let before = *client.actor_vitals().ok_or("C08 initial vitals absent")?;
+    let before_sequence = client.last_server_sequence();
     client.session_mut().attack_target(None).await?;
     client.take_events();
-    let direct = next_damage(&mut client, before.health, 30, |fact| {
+    let (direct_sequence, direct) = next_damage(&mut client, before.health, 30, |fact| {
         fact.attacker == Some(spider)
     })
     .await?;
-    let delayed = next_damage(&mut client, direct.health, 15, poison_tick_fact).await?;
+    let (delayed_sequence, delayed) = next_damage(&mut client, direct.health, 15, poison_tick_fact).await?;
     if !poison_status(&mut client).await? {
         return Err("C08 Poison Spider damage did not leave an active poison condition".into());
     }
@@ -157,20 +136,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("C08 poison remained active after Cure Poison".into());
     }
 
-    let mut expected = String::new();
-    for (name, vitals) in [
-        ("before", &before),
-        ("direct", &direct),
-        ("delayed", &delayed),
-        ("dispelled", &dispelled),
-    ] {
-        match encode_actor_vitals(vitals) {
-            Ok(payload) => capture(&format!("c08-{name}.bin"), &payload)?,
-            Err(error) => return Err(format!("C08 {name} encode: {error:?}").into()),
-        }
-        expected.push_str(&line(vitals));
-    }
-    capture("c08-expected.txt", expected.as_bytes())?;
+    let dispel_sequence = cast.actor_vitals_delta.ok_or("C08 cure vitals delta absent")?.server_sequence;
+    let session = client.join_snapshot().game_session_id;
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
         is_logout_rest_tile(world, at)
     })
@@ -178,23 +145,78 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     walk_c08(&mut client, world, &safe).await?;
 
     wait_for_c08_logout(&mut client, Some(spider)).await?;
+    let saved_position = client.world_spatial().actor_position;
+    if saved_position == starting_position || poison_status(&mut client).await? {
+        return Err("C08 pre-logout position or cured state did not discriminate".into());
+    }
     let reply = client.session_mut().logout().await?;
     if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("C08 cleanup logout refused: {reply:?}").into());
     }
-    Ok(format!(
-        "health={}>{}>{} mana={}>{}",
-        before.health, direct.health, delayed.health, mana_before, dispelled.mana
-    ))
+    Ok(Replay {
+        account,
+        saved_position,
+        session,
+        checkpoints: [
+            (before_sequence, before),
+            (direct_sequence, direct),
+            (delayed_sequence, delayed),
+            (dispel_sequence, dispelled),
+        ],
+        observed: format!(
+            "health={}>{}>{} mana={}>{}",
+            before.health, direct.health, delayed.health, mana_before, dispelled.mana
+        ),
+    })
+}
+
+async fn qualify(clients: &SeamClients<'_>) -> TestResult<String> {
+    let directory = std::env::var_os("E2E_C08_CAPTURE_DIR").ok_or("C08 capture directory absent")?;
+    let (result, frames) = capture_inbound(journey(clients)).await;
+    let replay = result?;
+    let path = Path::new(&directory).join("c08-inbound.bin");
+    let mut file = std::fs::OpenOptions::new().write(true).create_new(true).open(&path)?;
+    std::io::Write::write_all(&mut file, &frames)?;
+    drop(file);
+    let dedicated = replay.account.clients(clients);
+    replay_vitals(
+        &std::fs::read(path)?,
+        Admission {
+            appearance_items: None,
+            schema_revision: 1,
+            character_id: CharacterId::decode(&dedicated.characters[0])?,
+            admission_material: &[1],
+            client_build_id: "c08-offline-replay",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+            deadline: Duration::from_secs(5),
+        },
+        replay.session,
+        &replay.checkpoints,
+    )
+    .await
+    .map_err(|error| format!("C08 original-frame replay: {error}"))?;
+    let mut fresh = connect_character(&dedicated, 0x31, 0).await?;
+    if fresh.join_snapshot().game_session_id == replay.session
+        || fresh.world_spatial().actor_position != replay.saved_position
+        || poison_status(&mut fresh).await?
+    {
+        return Err("C08 relog did not preserve the cured state and exact retreat position".into());
+    }
+    wait_for_c08_logout(&mut fresh, None).await?;
+    let reply = fresh.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("C08 relog cleanup refused: {reply:?}").into());
+    }
+    Ok(format!("{} relog=verified replay=original-server-frames", replay.observed))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     character_prep::declare_seeded("C08.client", "level-10-sorcerer", "Cure Poison eligibility");
-    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
-        .await
-    {
+    let started = std::time::Instant::now();
+    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(qualify(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=C08.client status=CAPTURED evidence={observed}"
+            "e2e_all scenario=C08.client status=PASS seconds={:.3} evidence={observed}",
+            started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=C08.client status=FAIL evidence={}",

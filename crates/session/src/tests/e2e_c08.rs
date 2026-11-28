@@ -3,30 +3,6 @@
 //! `session_access.rs` exposes the client-visible HP/mana a poison DoT and `exana pox` change.
 use super::*;
 
-fn parse_expected(text: &str) -> Result<Vec<ActorVitals>, BoxError> {
-    text.lines()
-        .map(|line| {
-            let values = line
-                .split_whitespace()
-                .map(str::parse::<u32>)
-                .collect::<Result<Vec<_>, _>>()?;
-            let [health, max_health, mana, max_mana, soul, harmony, serene] = values.as_slice()
-            else {
-                return Err("invalid C08 expected vitals".into());
-            };
-            Ok(ActorVitals {
-                health: *health,
-                max_health: *max_health,
-                mana: *mana,
-                max_mana: *max_mana,
-                soul: *soul,
-                harmony: *harmony,
-                serene: *serene != 0,
-            })
-        })
-        .collect()
-}
-
 async fn send_join_with_vitals(stream: &mut DuplexStream, payload: &[u8]) -> Result<(), BoxError> {
     read_frame(&mut *stream).await?;
     write_frame(
@@ -76,18 +52,7 @@ async fn send_join_with_vitals(stream: &mut DuplexStream, payload: &[u8]) -> Res
 }
 
 /// Four vitals frames in server order: join, direct poison hit, delayed poison tick, dispel.
-fn frames() -> Result<(Vec<Vec<u8>>, Vec<ActorVitals>), BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        let mut payloads = Vec::new();
-        for name in ["before", "direct", "delayed", "dispelled"] {
-            payloads.push(std::fs::read(path.join(format!("c08-{name}.bin")))?);
-        }
-        return Ok((
-            payloads,
-            parse_expected(&std::fs::read_to_string(path.join("c08-expected.txt"))?)?,
-        ));
-    }
+fn fixture_frames() -> Result<(Vec<Vec<u8>>, Vec<ActorVitals>), BoxError> {
     let before = ActorVitals {
         health: 150,
         max_health: 150,
@@ -122,7 +87,7 @@ fn frames() -> Result<(Vec<Vec<u8>>, Vec<ActorVitals>), BoxError> {
 
 #[test]
 fn e2e_c08_poison_damage_and_dispel_replay() -> Result<(), BoxError> {
-    let (payloads, expected) = frames()?;
+    let (payloads, expected) = fixture_frames()?;
     let [join, direct, delayed, dispelled] = payloads.as_slice() else {
         return Err("C08 needs four vitals frames".into());
     };
@@ -189,6 +154,74 @@ fn e2e_c08_poison_damage_and_dispel_replay() -> Result<(), BoxError> {
                 .is_err()
         );
         assert_eq!(session.actor_vitals(), Some(&retained));
+        Ok::<_, BoxError>(())
+    })?
+}
+
+#[cfg(feature = "test-support")]
+#[test]
+fn c08_original_frames_require_matching_session_sequence_and_revisions() -> Result<(), BoxError> {
+    use crate::test_support::{capture_inbound, replay_vitals};
+
+    let (payloads, expected) = fixture_frames()?;
+    block_on(async {
+        let (client, mut peer) = tokio::io::duplex(64 * 1024);
+        let sender = tokio::spawn(async move {
+            send_join_with_vitals(&mut peer, &payloads[0]).await?;
+            for (index, payload) in payloads.iter().skip(1).enumerate() {
+                let index = u64::try_from(index)?;
+                write_frame(
+                    &mut peer,
+                    &encode_state_delta(
+                        1,
+                        41 + index,
+                        actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+                        3 + index,
+                        4 + index,
+                        actor_spell::DELTA_TYPE_ACTOR_VITALS_V1,
+                        payload,
+                    )?,
+                )
+                .await?;
+            }
+            Ok::<_, BoxError>(peer)
+        });
+        let (result, bytes) = capture_inbound(async {
+            let mut session = Session::admit(client, admission()?).await?;
+            let _peer = sender.await??;
+            session.service_liveness(Duration::from_millis(20)).await?;
+            Ok::<_, BoxError>(())
+        })
+        .await;
+        result?;
+        let session_id = GameSessionId::decode(&uuid_v7(1))?;
+        let checkpoints = [(41, expected[1]), (42, expected[2]), (43, expected[3])];
+        replay_vitals(&bytes, admission()?, session_id, &checkpoints).await?;
+        assert!(
+            replay_vitals(
+                &bytes,
+                admission()?,
+                GameSessionId::decode(&uuid_v7(2))?,
+                &checkpoints
+            )
+            .await
+            .is_err()
+        );
+        assert!(
+            replay_vitals(
+                &bytes[..bytes.len() - 1],
+                admission()?,
+                session_id,
+                &checkpoints
+            )
+            .await
+            .is_err()
+        );
+        assert!(
+            replay_vitals(&bytes, admission()?, session_id, &[(41, expected[0])])
+                .await
+                .is_err()
+        );
         Ok::<_, BoxError>(())
     })?
 }

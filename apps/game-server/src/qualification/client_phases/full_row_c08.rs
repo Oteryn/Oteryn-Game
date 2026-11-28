@@ -316,6 +316,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass((cast.disposition, mana, mana_after));
     row.pass(initial_refusal.result);
+    evidence(&format!(
+        "C08_RETREAT_PRESTEP session={:?} cast_server_sequence={} vitals_server_sequence={:?} last_server_sequence={}",
+        client.join_snapshot().game_session_id,
+        cast.result_server_sequence,
+        cast.actor_vitals_delta.as_ref().map(|delta| delta.server_sequence),
+        client.last_server_sequence()
+    ));
 
     let safe = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world

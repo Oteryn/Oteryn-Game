@@ -16,9 +16,13 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+#[cfg(feature = "test-support")]
+mod test_support_capture;
+
 /// Real wire codecs for downstream transport fixtures; no session mutation helpers.
 #[cfg(feature = "test-support")]
 pub mod test_support {
+    pub use super::test_support_capture::{capture_inbound, replay_vitals};
     pub use oteryn_protocol_oteryn as wire;
 }
 

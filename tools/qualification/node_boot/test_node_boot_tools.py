@@ -292,36 +292,34 @@ WORK=.
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 
     def test_c08_replay_refuses_missing_duplicate_or_failed_live_verdicts(self):
-        gate = section("    if grep -q '^SEAM_EVIDENCE e2e_all scenario=C08", '    # ACTOR_VITALS samples alone')
+        gate = section("    if grep -q '^SEAM_EVIDENCE e2e_all scenario=C08", '  fi')
         script = 'set -eu\nc08_started=$SECONDS\ncheck() {\n' + gate + '}\ncheck\n'
+        passed = 'SEAM_EVIDENCE e2e_all scenario=C08.client status=PASS seconds=5 evidence=replay=original-server-frames\n'
         captured = 'SEAM_EVIDENCE e2e_capture scenario=C08.client status=CAPTURED evidence=live\n'
         failed = 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL seconds=1 cause=assertion\n'
         with tempfile.TemporaryDirectory() as work:
-            for log, eligible in [
-                ('', False),
-                (captured, True),
-                (captured + captured, False),
-                (captured.replace('C08.client', 'C08xclient'), False),
-                (failed, False),
-                (captured + failed, False),
+            for log, wire, eligible in [
+                ('', True, False),
+                (passed, False, False),
+                (passed, True, True),
+                (captured, True, False),
+                (passed + passed, True, False),
+                (passed.replace('C08.client', 'C08xclient'), True, False),
+                (failed, True, False),
+                (passed + failed, True, False),
             ]:
-                with self.subTest(log=log):
+                with self.subTest(log=log, wire=wire):
                     Path(work, 'live.log').write_text(log)
+                    frame = Path(work, 'c08-inbound.bin')
+                    frame.unlink(missing_ok=True)
+                    if wire:
+                        frame.write_bytes(b'test transcript')
                     result = bash(script, {'c08_capture': work})
                     self.assertEqual(result.returncode, 0 if eligible else 1, result.stderr)
                     if not eligible and failed not in log:
-                        self.assertIn('cause=live-capture-incomplete', result.stdout)
+                        self.assertIn('cause=live-replay-incomplete', result.stdout)
                     else:
                         self.assertEqual(result.stdout, '')
-
-    def test_c08_replay_requires_original_server_frames(self):
-        gate = section('    # ACTOR_VITALS samples alone', '  fi')
-        script = 'set -eu\nc08_started=$SECONDS\ncheck() {\n' + gate + '}\ncheck\n'
-        with tempfile.TemporaryDirectory() as work:
-            Path(work, 'c08-before.bin').write_bytes(b'encoded vitals')
-            result = bash(script, {'c08_capture': work})
-            self.assertEqual(result.returncode, 1, result.stderr)
-            self.assertIn('cause=BLOCKED-CLIENT evidence=missing-original-server-frames', result.stdout)
 
     def test_c08_replay_uses_a_fresh_directory_for_each_selected_world_batch(self):
         setup = section('  local c08_capture=', '  local staged_manifest=')

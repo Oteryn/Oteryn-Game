@@ -1654,13 +1654,11 @@ PY_C08_SELECTED
     if grep -q '^SEAM_EVIDENCE e2e_all scenario=C08\.client status=FAIL ' "$c08_capture/live.log"; then
       return 1
     fi
-    if [[ "$(grep -c '^SEAM_EVIDENCE e2e_capture scenario=C08\.client status=CAPTURED ' "$c08_capture/live.log")" != 1 ]]; then
-      printf 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL seconds=%s cause=live-capture-incomplete\n' "$((SECONDS - c08_started))"
+    if [[ ! -s "$c08_capture/c08-inbound.bin" ||
+          "$(grep -c '^SEAM_EVIDENCE e2e_all scenario=C08\.client status=PASS .*replay=original-server-frames$' "$c08_capture/live.log")" != 1 ]]; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL seconds=%s cause=live-replay-incomplete\n' "$((SECONDS - c08_started))"
       return 1
     fi
-    # ACTOR_VITALS samples alone cannot prove the original wire envelopes.
-    printf 'SEAM_EVIDENCE e2e_all scenario=C08.client status=FAIL seconds=%s cause=BLOCKED-CLIENT evidence=missing-original-server-frames\n' "$((SECONDS - c08_started))"
-    return 1
   fi
 }
 
