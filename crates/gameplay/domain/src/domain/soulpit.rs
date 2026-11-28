@@ -24,7 +24,7 @@ use super::forge_creature::ForgeCreature;
 use super::map_position::TilePos;
 
 // data-global/lib/others/soulpit.lua:31-84,132-140.
-pub const REQUIRED_LEVEL: u32 = 8;
+pub const SOULSEAL_REQUIRED_LEVEL: u32 = 8;
 pub const MAX_PARTICIPANTS: usize = 5;
 pub const WAVE_COUNT: u8 = 4;
 pub const MONSTERS_PER_WAVE: usize = 7;
@@ -85,13 +85,6 @@ impl std::fmt::Display for SoulpitError {
 
 impl std::error::Error for SoulpitError {}
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct EntryParticipant {
-    pub slot: u8,
-    pub level: u32,
-    pub game_master: bool,
-}
-
 /// Native floors use `-source_z` (ADR-0021); staging order is donor playerPositions order.
 pub fn entry_slot(position: TilePos) -> Option<u8> {
     if position.x == 32375 && position.floor == -8 && (31158..=31162).contains(&position.y) {
@@ -122,7 +115,7 @@ pub fn is_arena_position(position: TilePos) -> bool {
 /// adds adjacency (actions.hpp:137; actions.cpp:269-280,601,688-690), so only slot zero starts it.
 pub fn validate_entry(
     actor_slot: u8,
-    participants: &[EntryParticipant],
+    participant_slots: &[u8],
     arena_occupied: bool,
     soul_core_count: u32,
 ) -> Result<(), SoulpitError> {
@@ -132,19 +125,15 @@ pub fn validate_entry(
     if soul_core_count == 0 {
         return Err(SoulpitError::NotEnoughItems);
     }
-    if participants.is_empty() || participants.len() > MAX_PARTICIPANTS {
+    if participant_slots.is_empty() || participant_slots.len() > MAX_PARTICIPANTS {
         return Err(SoulpitError::InvalidParticipants);
     }
     let mut slots = 0_u8;
-    for participant in participants {
-        if usize::from(participant.slot) >= MAX_PARTICIPANTS || slots & (1 << participant.slot) != 0
-        {
+    for &slot in participant_slots {
+        if usize::from(slot) >= MAX_PARTICIPANTS || slots & (1 << slot) != 0 {
             return Err(SoulpitError::InvalidParticipants);
         }
-        slots |= 1 << participant.slot;
-        if !participant.game_master && participant.level < REQUIRED_LEVEL {
-            return Err(SoulpitError::LevelTooLow);
-        }
+        slots |= 1 << slot;
     }
     if actor_slot != 0 || slots & 1 == 0 {
         return Err(SoulpitError::NotOnEntryTile);

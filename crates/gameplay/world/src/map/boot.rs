@@ -2118,6 +2118,42 @@ pub mod tests {
     }
 
     #[test]
+    fn faceless_bane_return_carpet_is_walkable_in_bundle() -> Result<(), Box<dyn Error>> {
+        // The captured return tile stacks a floor decoration on walkable ground.
+        let carpet = "oteryn:item.tibia.i17396";
+        let (bytes, load) = bundle_with_items("item:box", carpet);
+        let world_id = WorldId::decode(&id(1))?;
+        let world = boot(
+            &bytes,
+            &pins(load, 2),
+            world_id,
+            ChannelId::decode(&id(2))?,
+            |key| {
+                if key == carpet {
+                    return Some(ItemDefinition {
+                        reference: std::num::NonZeroU32::new(2)?,
+                        solid: None,
+                        blocks_projectile: true,
+                        pickupable: false,
+                        door: false,
+                    });
+                }
+                items(key)
+            },
+        )?;
+        let room = crate::content::qualify_native_entry_room(world_id)?;
+        let cells = world.movement_cells(room.movement_cells())?;
+        assert_eq!(
+            cells
+                .index()
+                .lookup(cells.scope(), LogicalCell { x: 7, y: 0, z: 7 }),
+            Ok(CollisionClass::Walkable),
+            "the walkable Ornate Carpet must not block the Faceless Bane return cell"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn map_floor_boot_collects_the_catalogue_floor_changes() -> Result<(), Box<dyn Error>> {
         let (bytes, load) = floor_bundle();
         let world = boot(

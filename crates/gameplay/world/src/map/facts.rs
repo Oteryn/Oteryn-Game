@@ -1092,6 +1092,10 @@ fn bound_without_action(attrs: &Attrs) -> bool {
 /// record is walkable or has no collision fact (Terrain).
 const SOLID_FLOOR_CHANGE: &[u16] = &[17230, 24806, 24810, 24812, 28655];
 
+// The Faceless Bane return anchor has this walkable floor decoration over its ground
+// and no native Item solidity profile. Tibia Fandom archive: /wiki/Ornate_Carpet.
+const FACELESS_BANE_RETURN_CARPET: &str = "oteryn:item.tibia.i17396";
+
 /// Whether the catalogue says the entry `key` names changes floors and can be walked onto: the
 /// compiler routes stairs and holes to Item entries that production definitions leave without a
 /// solidity fact, and a solid floor-change object (`SOLID_FLOOR_CHANGE`) is not one of them.
@@ -1241,6 +1245,7 @@ fn palette_facts(
         solid = definition.solid.unwrap_or_else(|| {
             // Crystal 201189f8 gives these Library staging bookstands unmove without unpass.
             !walkable_floor_change(&entry.key)
+                && entry.key != FACELESS_BANE_RETURN_CARPET
                 && !terrain_allows_item_passage(entry)
                 && !nonsolid_transition_layer(entry)
                 && !matches!(
