@@ -75,6 +75,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("pick refine returned {:?}/{disposition:?}", reply.status).into());
     }
+    evidence(&format!(
+        "I12_REFINE_COMMITTED session={} command_id={} result_server_sequence={}",
+        uuid_text(session.as_bytes()),
+        reply.command_id,
+        reply.server_sequence,
+    ));
     client.service_liveness(Duration::from_millis(250)).await?;
     let delta = client
         .take_events()

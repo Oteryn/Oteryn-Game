@@ -389,6 +389,9 @@ impl<S: SessionStream> Session<S> {
                 MessageType::StateDelta => {
                     let server_sequence = self.next_sequence(&envelope)?;
                     let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    if matches!(&event, SessionEvent::Inventory(_)) {
+                        self.replay.inventory_frame = Some(frame);
+                    }
                     self.queue_event(event)?;
                 }
                 actual => {

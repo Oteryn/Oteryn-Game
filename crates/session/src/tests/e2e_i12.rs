@@ -62,3 +62,39 @@ fn pick_refining_replays_real_inventory_payload() -> Result<(), BoxError> {
     );
     Ok(())
 }
+
+#[test]
+fn idle_inventory_delta_retains_original_envelope() -> Result<(), BoxError> {
+    block_on(async {
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let frame = encode_state_delta(
+            1,
+            41,
+            item_view::STATE_DOMAIN_CHARACTER_INVENTORY,
+            3,
+            4,
+            item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
+            &inventory_domain(3, &CharacterInventory::default())?.3,
+        )?;
+        let sent = frame.clone();
+        let peer = tokio::spawn(async move {
+            join_peer_with(
+                &mut server,
+                CLIENT_SUPPORTED_CAPABILITIES,
+                &[4, 6],
+                &[],
+                item_snapshot(vec![])?,
+                &[inventory_domain(3, &CharacterInventory::default())?],
+            )
+            .await?;
+            write_frame(&mut server, &sent).await?;
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            Ok::<(), BoxError>(())
+        });
+        let mut session = Session::admit(client, item_admission()?).await?;
+        session.service_liveness(Duration::from_millis(30)).await?;
+        assert_eq!(session.take_inventory_frame(), Some(frame));
+        peer.await??;
+        Ok::<(), BoxError>(())
+    })?
+}
