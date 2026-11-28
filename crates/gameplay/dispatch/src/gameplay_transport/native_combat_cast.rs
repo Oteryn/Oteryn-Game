@@ -1722,6 +1722,25 @@ pub(in crate::gameplay_transport) async fn read_tile(
     objects: &LocalObjectRuntime,
     position: TilePosition,
 ) -> Result<TileFlags, SpellCastDisposition> {
+    read_projectile_tile(tx, authority, room, runtime, objects, position)
+        .await
+        .map_err(|_| SpellCastDisposition::Rejected)?
+        .map(|(flags, _)| flags)
+        .ok_or(SpellCastDisposition::Rejected)
+}
+
+/// A missing geometry fact is a local obstruction for a splash, while an
+/// invalid authority, scope, or SQL read must still abort the shot.
+pub(in crate::gameplay_transport) async fn read_projectile_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<Option<(TileFlags, bool)>, SpellCastDisposition> {
+    use crate::spell::world_execution::WorldRelocationError;
+
     let cells = room.movement_cells();
     let logical = crate::content::LogicalCell {
         x: position.x,
@@ -1730,20 +1749,22 @@ pub(in crate::gameplay_transport) async fn read_tile(
     };
     match cells.spell_tiles().lookup(cells.scope(), logical) {
         Err(SpellTileLookupError::Absent) => {
-            return Ok(TileFlags {
-                projectile: false,
-                solid: false,
-                floor_change: false,
-                protection: false,
-                present: false,
-            });
+            return Ok(Some((
+                TileFlags {
+                    projectile: false,
+                    solid: false,
+                    floor_change: false,
+                    protection: false,
+                    present: false,
+                },
+                false,
+            )));
         }
         Err(SpellTileLookupError::ScopeMismatch) => return reject(),
-        // Mutable source placements require same-transaction initialization receipts;
-        // the source index alone intentionally leaves these cells unknown.
+        // Mutable source placements require same-transaction initialization receipts.
         Err(SpellTileLookupError::Unknown) | Ok(_) => {}
     }
-    let static_tile = crate::spell::world_execution::qualified_combat_tile_in_transaction(
+    let static_tile = match crate::spell::world_execution::qualified_combat_tile_in_transaction(
         tx,
         authority,
         room,
@@ -1752,20 +1773,30 @@ pub(in crate::gameplay_transport) async fn read_tile(
         cell(position),
     )
     .await
-    .map_err(|_| SpellCastDisposition::Rejected)?;
+    {
+        Ok(tile) => tile,
+        Err(
+            WorldRelocationError::MissingTileMetadata
+            | WorldRelocationError::MissingDynamicProjectileFlags,
+        ) => return Ok(None),
+        Err(_) => return reject(),
+    };
     let target = SpellGroundTarget::for_native_tile_read(room, runtime, cell(position))
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let actual = read_spell_tile_in_transaction(tx, authority, &target)
         .await
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    Ok(TileFlags {
-        projectile: static_tile.block_projectile()
-            || actual.items.iter().any(|i| i.blocks_projectile),
-        solid: static_tile.block_solid() || actual.items.iter().any(|i| i.blocks_movement),
-        floor_change: static_tile.floor_change(),
-        protection: static_tile.protection_zone(),
-        present: static_tile.ground_present(),
-    })
+    Ok(Some((
+        TileFlags {
+            projectile: static_tile.block_projectile()
+                || actual.items.iter().any(|i| i.blocks_projectile),
+            solid: static_tile.block_solid() || actual.items.iter().any(|i| i.blocks_movement),
+            floor_change: static_tile.floor_change(),
+            protection: static_tile.protection_zone(),
+            present: static_tile.ground_present(),
+        },
+        static_tile.qualified_tile().flags().immovable_block_solid,
+    )))
 }
 
 /// Canary 99902524 map.cpp 845–949: endpoint-exclusive u16 Wu accumulator.

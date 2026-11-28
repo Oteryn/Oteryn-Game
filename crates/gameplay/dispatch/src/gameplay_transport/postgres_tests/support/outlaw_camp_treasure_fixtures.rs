@@ -20,7 +20,7 @@ const CALLBACK: &str = "oteryn:quest-callback/authored-outlaw-camp-s3-treasure";
 const QUEST: &str = "oteryn:quest.the_outlaw_camp_quest";
 const STAGE: &str = "oteryn:quest-progress/authored/outlaw-camp/stage";
 const TRACK: &str = "oteryn:quest-progress/quest/u6_4/outlaw_camp_quest";
-const KEY: &str = "oteryn:item.tibia.i2970";
+pub(super) const TREASURE_KEY: &str = "oteryn:item.tibia.i2972";
 
 pub(super) fn world(
     native: &crate::content::native_gameplay::NativeGameplayState,
@@ -73,7 +73,6 @@ pub(super) async fn exercise(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    let key_id = id(71);
     let character = id(41);
     let catalogue = owner.quest_catalogue.as_ref().ok_or("Outlaw Camp catalogue")?;
     let pin = catalogue.definition_hash(QUEST).ok_or("Outlaw Camp definition pin")?;
@@ -85,40 +84,8 @@ pub(super) async fn exercise(
          FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     ).bind(character.as_slice()).bind(QUEST).bind(catalogue.content_revision()).bind(pin.as_slice())
         .execute(&mut *tx).await?.rows_affected(), 1);
-    let inserted = sqlx::query(
-        "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
-         definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
-         SELECT encode($1,'hex')::uuid,world_id,'Item',$2,'definition-r1',1,1,game_character_uuid_v7()
-         FROM game_item_container_slots WHERE character_id=encode($3,'hex')::uuid",
-    )
-    .bind(key_id.as_slice())
-    .bind(KEY)
-    .bind(character.as_slice())
-    .execute(&mut *tx)
-    .await?;
-    assert_eq!(inserted.rows_affected(), 1);
-    sqlx::query(
-        "INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,
-         item_instance_id,placement_ordinal,placed_transaction_id)
-         SELECT s.character_id,s.world_id,s.item_instance_id,encode($1,'hex')::uuid,
-                coalesce((SELECT max(e.placement_ordinal) FROM game_item_container_entries e
-                          WHERE e.parent_item_instance_id=s.item_instance_id),0)+1,
-                game_character_uuid_v7()
-         FROM game_item_container_slots s WHERE s.character_id=encode($2,'hex')::uuid",
-    )
-    .bind(key_id.as_slice())
-    .bind(character.as_slice())
-    .execute(&mut *tx)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id)
-        SELECT item_instance_id,3303,game_character_uuid_v7() FROM game_item_instances
-        WHERE item_instance_id=encode($1,'hex')::uuid",
-    )
-    .bind(key_id.as_slice())
-    .execute(&mut *tx)
-    .await?;
     tx.commit().await?;
+    seed_treasure_key(h).await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
 
     let map = owner.bundle_map().ok_or("treasure room")?;
@@ -137,7 +104,7 @@ pub(super) async fn exercise(
         .as_ref()
         .and_then(|generation| generation.native_gameplay())
         .and_then(|native| native.item_index())
-        .and_then(|index| index.definition_ref("Item", KEY, "definition-r1"))
+        .and_then(|index| index.definition_ref("Item", TREASURE_KEY, "definition-r1"))
         .ok_or("native key definition")?;
     let use_key = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(NonZeroU64::MIN),
@@ -198,5 +165,49 @@ pub(super) async fn exercise(
         atomic, 1,
         "one atomic bag mint, completion and donor storage update"
     );
+    Ok(())
+}
+
+pub(super) async fn seed_treasure_key(h: &Harness) -> TestResult {
+    let key_id = id(71);
+    let character = id(41);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let inserted = sqlx::query(
+        "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
+         definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+         SELECT encode($1,'hex')::uuid,world_id,'Item',$2,'definition-r1',1,1,game_character_uuid_v7()
+         FROM game_item_container_slots WHERE character_id=encode($3,'hex')::uuid",
+    )
+    .bind(key_id.as_slice())
+    .bind(TREASURE_KEY)
+    .bind(character.as_slice())
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(inserted.rows_affected(), 1);
+    sqlx::query(
+        "INSERT INTO game_item_container_entries(character_id,world_id,parent_item_instance_id,
+         item_instance_id,placement_ordinal,placed_transaction_id)
+         SELECT s.character_id,s.world_id,s.item_instance_id,encode($1,'hex')::uuid,
+                coalesce((SELECT max(e.placement_ordinal) FROM game_item_container_entries e
+                          WHERE e.parent_item_instance_id=s.item_instance_id),0)+1,
+                game_character_uuid_v7()
+         FROM game_item_container_slots s WHERE s.character_id=encode($2,'hex')::uuid",
+    )
+    .bind(key_id.as_slice())
+    .bind(character.as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_item_keys(item_instance_id,key_number,minted_transaction_id)
+        SELECT item_instance_id,3304,game_character_uuid_v7() FROM game_item_instances
+        WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(key_id.as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
     Ok(())
 }

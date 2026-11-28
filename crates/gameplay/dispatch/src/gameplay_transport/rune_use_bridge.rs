@@ -344,11 +344,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_character_backpack(self.character, fence.character_id)
                 .await
                 .ok()??;
-            let Some(entry) = backpack
+            let entry = backpack
                 .entries
                 .iter()
-                .find(|e| e.item.item_instance_id == instance)
-            else {
+                .find(|e| e.item.item_instance_id == instance);
+            let plain_use = intent.use_with.is_none()
+                && intent.use_with_map_item.is_none()
+                && intent.use_with_position.is_none();
+            // The original instance can still be named by the connection when its coin stack
+            // has already been consumed. Check the receipt before refusing the absent entry.
+            if plain_use
+                && entry.is_none()
+                && let Some(outcome) = self
+                    .use_coin(actor, command, ItemKey::Instance(instance), true)
+                    .await
+            {
+                return outcome;
+            }
+            let Some(entry) = entry else {
                 return Some(outcome(UseDisposition::StaleState));
             };
             let policy = native.item_policy(
@@ -368,11 +381,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                     )
             }) else {
-                if intent.use_with.is_none() && intent.use_with_position.is_none() {
-                    return Some(
-                        self.use_backpack_item(actor, command, ItemKey::Instance(instance))
-                            .await,
-                    );
+                if plain_use {
+                    let item = ItemKey::Instance(instance);
+                    if crate::domain::currency::Coin::from_production_key(
+                        &entry.item.definition.production_key,
+                    )
+                    .is_some()
+                        && let Some(outcome) = self.use_coin(actor, command, item, false).await
+                    {
+                        return outcome;
+                    }
+                    return Some(self.use_backpack_item(actor, command, item).await);
                 }
                 return Some(outcome(UseDisposition::NothingToUse));
             };

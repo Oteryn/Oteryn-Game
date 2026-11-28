@@ -518,6 +518,7 @@
     "oteryn:npc.menacing_mummy",
     "oteryn:npc.meraya",
     "oteryn:npc.messenger_of_heaven",
+    "oteryn:npc.messenger_of_santa",
     "oteryn:npc.miles_the_guard",
     "oteryn:npc.milos",
     "oteryn:npc.minzy",
@@ -9887,6 +9888,24 @@
           7
         ]
       ]
+    },
+    "oteryn:npc.messenger_of_santa": {
+      "pageid": 28529,
+      "cells": [
+        [32307, 31837, 8],
+        [32357, 32210, 7],
+        [32642, 31892, 9],
+        [32655, 31665, 8],
+        [32915, 32070, 9]
+      ],
+      "adjacent_cells": [
+        [32308, 31837, 8],
+        [32356, 32210, 7],
+        [32641, 31892, 9],
+        [32654, 31665, 8],
+        [32916, 32070, 9]
+      ],
+      "direction": "SOUTH"
     },
     "oteryn:npc.oblivis": {
       "pageid": 65807,

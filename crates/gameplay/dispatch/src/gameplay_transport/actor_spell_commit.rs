@@ -91,6 +91,72 @@ impl crate::foundation::runtime_actor_spell_types::PlayerBatchProof for PlayerBa
 }
 
 impl PlayerBatchPreflight {
+    /// Attach a condition to the already staged survivor, retaining it with the
+    /// damage successor if the PvP transaction needs reconciliation.
+    pub(in crate::gameplay_transport) fn stage_pvp_hit_condition(
+        &mut self,
+        digest: [u8; 32],
+        target: ExactActorRef,
+        definition: &crate::foundation::ConditionDefinition,
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+    ) {
+        use crate::foundation::{ApplicationFacts, ConditionSourceKind};
+        use oteryn_gameplay_foundation::foundation::condition::ConditionLineage;
+        use oteryn_simulation_determinism::GameplayDecisionRoot;
+
+        let Some(now) = self.batch.now_us else {
+            return;
+        };
+        if !self.health_receipts.iter().any(|effect| {
+            effect.target == target
+                && effect
+                    .health
+                    .is_some_and(|hit| hit.health_after > 0 && hit.health_after < hit.health_before)
+        }) {
+            return;
+        }
+        let Some(replacement) = self.replacements.iter_mut().find(|r| r.actor == target) else {
+            return;
+        };
+        let expected = replacement.next.owned_conditions().clone();
+        let mut next = expected.clone();
+        let facts = ApplicationFacts {
+            now: now.get(),
+            base_speed: 0,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &GameplayDecisionRoot::from_bytes(digest),
+            occurrence,
+        };
+        let lineage = ConditionLineage {
+            source_character: *self.batch.attacker.as_bytes(),
+            source_session: *self.batch.command.game_session_id().as_bytes(),
+            source_lease_generation: self.batch.current_lease_generation,
+            source_actor_placement: self.batch.caster.placement_identity(),
+            source_scope_generation: self.batch.caster.scope_generation().get(),
+            source_content_digest: digest,
+            source_catalog_digest: digest,
+            source_creation_command: self.batch.command.command_id().get(),
+        };
+        if next
+            .apply_with_lineage(
+                definition,
+                Some(crate::spell::combat_execution::actor_atom(
+                    self.batch.caster,
+                )),
+                ConditionSourceKind::Player,
+                &[],
+                &facts,
+                &lineage,
+            )
+            .is_ok()
+        {
+            let _ = replacement.next.apply_batch_conditions(&expected, &next);
+        }
+    }
+
     /// Stage teleport pacification beside the existing paid/victim successors. Installation
     /// remains atomic with the sealed relocation, including unknown-COMMIT reconciliation.
     pub(super) fn stage_stairhop(

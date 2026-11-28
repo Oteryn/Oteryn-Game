@@ -1105,6 +1105,53 @@ fn srx3_actual_w11_bosses_have_source_ground_corpses_and_complete_reward_rows() 
 
 #[cfg(test)]
 #[test]
+fn market_crown_polisher_resolves_to_active_inventory_profile() -> Result<(), String> {
+    use crate::content::ReferenceItemField as F;
+    use crate::content::native_gameplay::{NativeItemDestination, NativeItemStackClass};
+
+    let world = test_source(1)
+        .map_err(|error| format!("source world: {error:?}"))?
+        .world_id;
+    let (controller, _) = activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native gameplay")?;
+    let key = "oteryn:item.tibia.i10009";
+    let revision = "definition-r1";
+    assert!(native.marketable_definition(key, revision));
+    let record = native
+        .item_policy(key, revision)
+        .ok_or("missing active inventory profile for flask of crown polisher")?
+        .record();
+    assert!(record.admission.materializable);
+    assert_eq!(
+        record.admission.stack_class,
+        NativeItemStackClass::NonStackable
+    );
+    assert_eq!(
+        record.admission.legal_destinations,
+        [
+            NativeItemDestination::CharacterInventory,
+            NativeItemDestination::Ground
+        ]
+    );
+    assert!(
+        matches!(&record.semantics.presentation, F::Known(presentation)
+        if matches!(&presentation.name, F::Known(name) if name == "flask of crown polisher"))
+    );
+    assert!(matches!(&record.semantics.physical, F::Known(physical)
+        if physical.weight == F::Known(110)
+            && physical.movable == F::Known(true)
+            && physical.pickupable == F::Known(true)));
+    assert!(
+        matches!(&record.semantics.stack, F::Known(stack) if stack.stackable == F::Known(false))
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
 fn srx3_actual_rotten_reward_yields_have_source_inventory_profiles() -> Result<(), String> {
     use crate::content::ReferenceItemField as F;
     use crate::content::native_gameplay::NativeItemDestination;

@@ -1230,6 +1230,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    fn destroy_map_bars(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: ItemKey,
+        target: house_destroy::wooden_bars::Target,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<UseOutcome>> + Send + '_>> {
+        Box::pin(self.destroy_map_bars_impl(actor, command, source, target))
+    }
+
     async fn observe_house_destroy(
         &self,
         actor: ExactActorRef,
@@ -1267,7 +1277,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             {
                 Ok(Some(outcome)) => return Some(outcome),
                 Ok(None) => {}
-                Err(()) => return None,
+                Err(_) => return None,
             }
         }
         if let Some(outcome) = self
@@ -1316,7 +1326,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_coin(actor, command, item).await {
+        if let Some(outcome) = self.use_coin(actor, command, item, false).await {
             return outcome;
         }
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {

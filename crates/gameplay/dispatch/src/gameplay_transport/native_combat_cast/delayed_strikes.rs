@@ -42,6 +42,7 @@ pub(super) fn facts(
     tiles: &BTreeMap<TilePosition, TileFlags>,
     explicit_target: Option<u64>,
     saved: Option<&SavedStrike>,
+    requires_walkable_landing: bool,
 ) -> Result<NativeDelayedFacts, SpellCastDisposition> {
     // Planner identities are data, never authority. Full exact actor, session, UUIDs and
     // lease fences remain in CastBinding and the sealed SQL due evidence.
@@ -132,7 +133,9 @@ pub(super) fn facts(
         current: Some(current),
         cast_position: origin,
         cast_position_exists: at.present,
-        cast_position_legal: at.present,
+        // Crystal 201189f divine_grenade.lua:49-56 validates the endpoint itself.
+        cast_position_legal: at.present
+            && (!requires_walkable_landing || (!at.solid && !at.projectile)),
         caster_in_protection_zone: caster_tile.protection,
         cast_position_in_protection_zone: at.protection,
         immediate_succeeded: true,
@@ -152,7 +155,6 @@ pub(super) fn facts(
         field_tiles: Vec::new(),
         field_items: Vec::new(),
         created_field_instances: BTreeSet::new(),
-        captured_raw_bounds: saved.and_then(|s| s.scheduled.captured_raw_bounds),
     })
 }
 
@@ -282,8 +284,6 @@ pub(super) fn requests(
         canonical_hex,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    // Preserve the source raw formula snapshot. Crystal computes current Wheel
-    // flat/gem/Focus bonuses in the new due Combat, never inside planted bounds.
     let scheduled = scheduled.clone();
     Ok(vec![ScheduleRequest {
         occurrence: SpellTimerOccurrence {
