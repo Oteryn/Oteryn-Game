@@ -144,6 +144,28 @@ pub fn qualification_mana_history(
     max_mana: u32,
     logout: (u64, u32, u32),
 ) -> bool {
+    mana_history(charged, history, max_mana, logout, None)
+}
+
+/// Verify the same food schedule across the exact Light Magic Missile debit.
+pub fn qualification_mana_history_with_conjure(
+    charged: (u64, u32, u32),
+    history: &[(u64, u32, u32, u64)],
+    max_mana: u32,
+    logout: (u64, u32, u32),
+    conjure_debit: u64,
+) -> bool {
+    mana_history(charged, history, max_mana, logout, Some(conjure_debit))
+}
+
+fn mana_history(
+    charged: (u64, u32, u32),
+    history: &[(u64, u32, u32, u64)],
+    max_mana: u32,
+    logout: (u64, u32, u32),
+    conjure_debit: Option<u64>,
+) -> bool {
+    let mut saw_conjure = false;
     let mut last = charged;
     let mut last_observation_ms = 0;
     let mut earliest_credit_ms: Option<u64> = None;
@@ -153,12 +175,19 @@ pub fn qualification_mana_history(
     // The row drains events after each 200 ms liveness poll while waiting out combat.
     const OBSERVATION_WINDOW_MS: u64 = 200;
     for &(sequence, mana, soul, elapsed_ms) in history {
-        if sequence <= last.0
-            || sequence >= logout.0
-            || elapsed_ms < last_observation_ms
-            || soul != last.2
-            || (mana != last.1 && mana != last.1.saturating_add(2).min(max_mana))
-        {
+        if sequence <= last.0 || sequence >= logout.0 || elapsed_ms < last_observation_ms {
+            return false;
+        }
+        if conjure_debit == Some(sequence) {
+            if last.1.checked_sub(120) != Some(mana) || last.2.checked_sub(1) != Some(soul) {
+                return false;
+            }
+            saw_conjure = true;
+            last_observation_ms = elapsed_ms;
+            last = (sequence, mana, soul);
+            continue;
+        }
+        if soul != last.2 || (mana != last.1 && mana != last.1.saturating_add(2).min(max_mana)) {
             return false;
         }
         if mana != last.1 {
@@ -175,7 +204,8 @@ pub fn qualification_mana_history(
         last_observation_ms = elapsed_ms;
         last = (sequence, mana, soul);
     }
-    (earliest_credit_ms.is_none() || observed_full_interval)
+    (conjure_debit.is_none() || saw_conjure)
+        && (earliest_credit_ms.is_none() || observed_full_interval)
         && (last.1, last.2) == (logout.1, logout.2)
 }
 

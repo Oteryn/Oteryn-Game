@@ -300,6 +300,8 @@ struct Proof {
     scenario: String,
     wrapper: String,
     regeneration: Vec<(u64, u32, u32, u64)>,
+    logout_history: Vec<(u64, u32, u32, u64)>,
+    conjure_debit_sequence: u64,
     capture_device: u64,
     capture_inode: u64,
     spell: u32,
@@ -377,7 +379,8 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
             && proof.pre_cast_sequence < vitals.server_sequence
             && cast.server_sequence != vitals.server_sequence
             && vitals.server_sequence < proof.conjure_sequence
-            && proof.conjure_sequence < proof.logout_sequence)
+            && proof.conjure_sequence < proof.conjure_debit_sequence
+            && proof.conjure_debit_sequence <= proof.logout_sequence)
         || damage.command_id != proof.command_id
         || damage.status != cast.status
         || damage.server_sequence != proof.damage_sequence
@@ -422,11 +425,7 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         (charged.mana, charged.soul),
         (proof.mana_after, proof.soul_after)
     );
-    if proof.mana_before_conjure.checked_sub(120) != Some(proof.mana_logout)
-        || proof.soul_before_conjure.checked_sub(1) != Some(proof.soul_logout)
-        || proof.mana_logout >= charged.max_mana
-        || proof.soul_logout >= 100
-    {
+    if proof.mana_logout >= charged.max_mana || proof.soul_logout >= 100 {
         return Err("C18a full logout vitals cannot catch a reset".into());
     }
     if !crate::qualification_mana_history(
@@ -440,6 +439,26 @@ fn replay_capture(root: &std::path::Path) -> Result<(), Error> {
         ),
     ) {
         return Err("C18a replay found unexplained mana or soul before logout".into());
+    }
+    if !proof.logout_history.starts_with(&proof.regeneration)
+        || proof
+            .logout_history
+            .get(proof.regeneration.len())
+            .map(|row| row.0)
+            != Some(proof.conjure_debit_sequence)
+        || !crate::qualification_mana_history_with_conjure(
+            (vitals.server_sequence, charged.mana, charged.soul),
+            &proof.logout_history,
+            charged.max_mana,
+            (
+                proof.logout_sequence.saturating_add(1),
+                proof.mana_logout,
+                proof.soul_logout,
+            ),
+            proof.conjure_debit_sequence,
+        )
+    {
+        return Err("C18a replay found unexplained mana or soul after conjure".into());
     }
     let intent = std::fs::read(root.join("c18a-intent.bin"))?;
     verify_aimed_intent(&intent, proof.spell)?;
@@ -889,6 +908,26 @@ fn rejects_an_unexplained_cast_refund() {
         30,
         logout
     ));
+}
+
+#[test]
+fn logout_vitals_require_the_exact_conjure_and_verified_food_credit() {
+    use crate::qualification_mana_history_with_conjure as verify;
+    let initial = (10, 292, 100);
+    let history = [
+        (12, 294, 100, 3_000),
+        (14, 296, 100, 6_000),
+        (16, 176, 99, 8_000),
+        (18, 178, 99, 9_000),
+    ];
+    assert!(verify(initial, &history, 300, (20, 178, 99), 16));
+    assert!(!verify(initial, &history, 300, (20, 180, 99), 16));
+    let mut wrong_debit = history;
+    wrong_debit[2].2 = 100;
+    assert!(!verify(initial, &wrong_debit, 300, (20, 178, 99), 16));
+    let mut early_credit = history;
+    early_credit[3].3 = 8_500;
+    assert!(!verify(initial, &early_credit, 300, (20, 178, 99), 16));
 }
 
 fn cast_exchange_revision(

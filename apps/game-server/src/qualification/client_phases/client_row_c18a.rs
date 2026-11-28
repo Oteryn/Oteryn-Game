@@ -658,7 +658,7 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     if fed_since.elapsed() >= MEAT_SATIETY {
         return Err("C18a food regeneration window expired before conjure".into());
     }
-    let regeneration = observation.regeneration;
+    let regeneration = std::mem::take(&mut observation.regeneration);
     let before_conjure = *client
         .actor_vitals()
         .ok_or("C18a pre-conjure vitals absent")?;
@@ -698,6 +698,8 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     {
         return Err(format!("C18a conjure did not charge 120 mana and one soul: {paid_disposition:?}: {conjure_debit:?}", paid_disposition=paid.disposition).into());
     }
+    let debit = (conjure_debit.server_sequence, conjure_debit.value.mana, conjure_debit.value.soul,
+        cast_started.elapsed().as_millis() as u64);
     let inventory_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
     while item_count(&client, blank)? != blank_after
         || item_count(&client, missile)? != missile_after
@@ -715,10 +717,17 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
         .actor_vitals()
         .ok_or("C18a missing final logout vitals")?;
     let logout_sequence = client.last_server_sequence();
-    if (logout_vitals.mana, logout_vitals.soul)
-        != (conjure_debit.value.mana, conjure_debit.value.soul)
+    collect_events(&mut client, Some(&mut observation), None)?;
+    let mut logout_history = regeneration.clone();
+    logout_history.push(debit);
+    logout_history.extend(observation.regeneration.into_iter().filter(|row| row.0 > debit.0));
+    if fed_since.elapsed() >= MEAT_SATIETY
+        || !oteryn_dev_client::qualification_mana_history_with_conjure(
+            (vitals_sequence, after.mana, after.soul), &logout_history, after.max_mana,
+            (logout_sequence.saturating_add(1), logout_vitals.mana, logout_vitals.soul), debit.0,
+        )
     {
-        return Err("C18a logout state differs from the authoritative conjure debit".into());
+        return Err(format!("C18a unexplained logout vitals: debit={debit:?} saved={logout_vitals:?} history={logout_history:?}").into());
     }
 
     drop(client);
@@ -848,6 +857,8 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             "capabilities": capabilities,
     });
     proof["cast_send_offset"] = serde_json::json!(cast_send_offset);
+    proof["logout_history"] = serde_json::json!(logout_history);
+    proof["conjure_debit_sequence"] = serde_json::json!(debit.0);
     std::fs::write(root.join("c18a-proof.json"), serde_json::to_vec(&proof)?)?;
     let capture_name = root
         .file_name()
