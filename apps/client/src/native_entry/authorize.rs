@@ -22,7 +22,9 @@ pub(super) async fn access_token(
             .collect::<String>(),
     )
     .map_err(retry_login)?;
-    let redirect = LoopbackRedirect::bind().await.map_err(retry_login)?;
+    let redirect = LoopbackRedirect::bind_port(config.callback_port)
+        .await
+        .map_err(retry_login)?;
     let redirect_uri = redirect.redirect_uri();
     let url = if services {
         client.account_services_authorization_url(&redirect_uri, state.as_str(), pkce.challenge())

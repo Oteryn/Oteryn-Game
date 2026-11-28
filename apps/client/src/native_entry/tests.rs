@@ -255,10 +255,52 @@ fn configuration_is_read_only_when_the_platform_is_set() -> TestResult {
         partial.err(),
         Some(NativeLoginSettingError("OTERYN_GATEWAY_URL"))
     );
-    let config =
-        NativeLoginConfig::from_env(|name| Some(format!("{name}-value")))?.ok_or("configured")?;
+    let config = NativeLoginConfig::from_env(|name| {
+        (name != "OTERYN_DEV_OAUTH_CALLBACK_PORT").then(|| format!("{name}-value"))
+    })?
+    .ok_or("configured")?;
     assert_eq!(config.character_id, "OTERYN_CHARACTER_ID-value");
     assert!(!format!("{config:?}").contains("OTERYN_OAUTH_CLIENT_ID"));
+    Ok(())
+}
+
+#[test]
+fn registered_oauth_callback_port_is_opt_in_and_loopback_only() -> TestResult {
+    let config = |platform: &str, port: Option<&str>| {
+        NativeLoginConfig::from_env(|name| match name {
+            "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => Some(platform.to_owned()),
+            "OTERYN_OAUTH_CLIENT_ID" => Some("qualification".into()),
+            "OTERYN_DEV_OAUTH_CALLBACK_PORT" => port.map(str::to_owned),
+            _ => None,
+        })
+    };
+    let loopback = "http://127.0.0.1:28280";
+    assert_eq!(
+        config(loopback, None)?.ok_or("configured")?.callback_port,
+        0
+    );
+    assert_eq!(
+        config(loopback, Some("28299"))?
+            .ok_or("configured")?
+            .callback_port,
+        28299
+    );
+    assert_eq!(
+        config(loopback, Some(""))?
+            .ok_or("configured")?
+            .callback_port,
+        0
+    );
+    for (origin, port) in [
+        (loopback, "0"),
+        (loopback, "65536"),
+        ("https://example.invalid", "28299"),
+    ] {
+        assert_eq!(
+            config(origin, Some(port)).err(),
+            Some(NativeLoginSettingError("OTERYN_DEV_OAUTH_CALLBACK_PORT"))
+        );
+    }
     Ok(())
 }
 

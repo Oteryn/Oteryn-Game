@@ -148,6 +148,7 @@ pub struct NativeLoginConfig {
     /// Local preference owner selected by the host, including an explicit isolated path.
     pub preference_path: Option<PathBuf>,
     pub callback_timeout: Duration,
+    pub(crate) callback_port: u16,
     /// Backoff unit of every retry; one second in production.
     pub retry_unit: Duration,
     pub open_browser: BrowserOpener,
@@ -178,7 +179,8 @@ impl Debug for NativeLoginConfig {
 impl NativeLoginConfig {
     /// Reads `OTERYN_PLATFORM_URL`, `OTERYN_GATEWAY_URL`, `OTERYN_OAUTH_CLIENT_ID`,
     /// `OTERYN_WORLD`, `OTERYN_CHARACTER_ID` and `OTERYN_DEV_ROOT`. The root is required
-    /// for gameplay TLS after a grant. Native login is off
+    /// for gameplay TLS after a grant. `OTERYN_DEV_OAUTH_CALLBACK_PORT`
+    /// optionally selects the registered port for a local test Platform. Native login is off
     /// (`Ok(None)`) while `OTERYN_PLATFORM_URL` is unset.
     pub fn from_env(
         lookup: impl Fn(&str) -> Option<String>,
@@ -193,6 +195,22 @@ impl NativeLoginConfig {
         };
         let gateway_url = setting("OTERYN_GATEWAY_URL")?;
         let oauth_client_id = setting("OTERYN_OAUTH_CLIENT_ID")?;
+        const CALLBACK_PORT: &str = "OTERYN_DEV_OAUTH_CALLBACK_PORT";
+        let callback_port = match lookup(CALLBACK_PORT).filter(|value| !value.is_empty()) {
+            None => 0,
+            Some(value) => {
+                let origin = url::Url::parse(&platform_url)
+                    .map_err(|_| NativeLoginSettingError(CALLBACK_PORT))?;
+                if !matches!(origin.host_str(), Some("127.0.0.1" | "localhost" | "[::1]")) {
+                    return Err(NativeLoginSettingError(CALLBACK_PORT));
+                }
+                value
+                    .parse::<u16>()
+                    .ok()
+                    .filter(|port| *port >= 1024)
+                    .ok_or(NativeLoginSettingError(CALLBACK_PORT))?
+            }
+        };
         let device_sessions = Arc::new(crate::device_login::DeviceLogin::configured(
             &platform_url,
             &oauth_client_id,
@@ -211,6 +229,7 @@ impl NativeLoginConfig {
             client_build: CLIENT_BUILD.to_owned(),
             preference_path: crate::play::PreferenceStore::path(),
             callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
+            callback_port,
             retry_unit: Duration::from_secs(1),
             open_browser: system_browser.opener.clone(),
             system_browser,
@@ -519,8 +538,10 @@ mod browser_command_tests {
     #[test]
     fn close_discards_a_callback_in_flight_and_refuses_later_calls()
     -> Result<(), Box<dyn std::error::Error>> {
-        let mut config =
-            NativeLoginConfig::from_env(|_| Some("test".into()))?.ok_or("missing native config")?;
+        let mut config = NativeLoginConfig::from_env(|name| {
+            (name != "OTERYN_DEV_OAUTH_CALLBACK_PORT").then(|| "test".into())
+        })?
+        .ok_or("missing native config")?;
         let (started, ready) = std::sync::mpsc::channel();
         let (release, resume) = std::sync::mpsc::channel();
         let resume = Mutex::new(resume);

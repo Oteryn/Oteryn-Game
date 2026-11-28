@@ -17,6 +17,14 @@ game node ─ Character projection (own mTLS identity) ─> Platform (ownership 
 
 ## Run
 
+**Current blocker for the legacy local stack:** the pinned Laravel Platform
+`3bc2d0e9` issues Character bootstrap intents at contract v3. Game now requires
+v4, including `requested_vocation`. At Game `5aad10531f87` the node becomes
+ready, then rejects the intent with `E6006 OPS_OUTCOME_AMBIGUOUS` before writing
+`client.env`. For headless coverage of the v4 producer, use the pinned
+[Game ↔ portal-rs qualification](../game_platform/README.md). For the Windows
+procedure below, obtain a fresh profile from a compatible test environment.
+
 ```bash
 # Platform main carrying U1 (>= 71bbe6c) and #1472, exactly the pinned SHA in run.sh:
 git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platform checkout 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
@@ -32,6 +40,94 @@ then holds per-run secrets).
 **Hosts.** By default every port is bound to loopback, so the full client walk needs the Windows client on the
 same host as the services (on a Windows PC run the script under WSL2 with Docker). To serve from another machine
 on the same LAN, such as a Synology NAS, set `LOGIN_LOCAL_HOST` (next section).
+
+## Native Windows acceptance on WSL2 loopback
+
+Use a fresh test profile with a test account whose Character is projected and
+an active channel. For a compatible local RUNBOOK-1 stack, start from a Game
+checkout at the SHA under test and wait for both `ready client_env=...` and
+`holding services`.
+
+```bash
+LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 bash tools/qualification/login_local/run.sh
+```
+
+An existing local `node_boot` stack with the pinned portal-rs producer can also
+serve this test. Use its public and Gateway loopback URLs, OAuth client ID, world,
+and gameplay certificate. Check that a Game-owned character is projected as
+`AVAILABLE` for the test account and the matching channel has a fresh ready report.
+Keep the disposable account handoff in the owner-only run directory.
+
+Portal-rs qualification registers an exact OAuth callback. For that stack, add
+`OTERYN_DEV_OAUTH_CALLBACK_PORT` with the port from its registered
+`http://127.0.0.1:<port>/callback` to the private profile. Use a client built
+with this option and leave that port free on Windows. The option is accepted
+only for a loopback Platform URL. Profiles without the option use an ephemeral
+callback port.
+
+On Windows, use the native executable from that SHA. For CI packages, verify the
+installer against the artifact's `SHA256SUMS` and use a test Windows account or
+machine if the existing installation must be preserved. The executable has a
+bundled UI theme in the installed release. For a source build, pass
+`--ui-assets` with the checkout's `apps/client/installer/ui-assets` directory or
+with the approved private UI-art directory.
+
+In a fresh PowerShell session, set the three paths below to the run's
+Windows-readable profile, the matching pinned world-asset root and the native
+executable. Load the connection settings into this process. Splitting
+on the first equals sign preserves the Windows certificate path verbatim.
+
+```powershell
+$profilePath = '\\wsl.localhost\UbuntuNew\tmp\login-local.REPLACE\client.env'
+$assetRoot = 'C:\test\matching-world-asset-root'
+$clientExe = 'C:\test\release\oteryn-client.exe'
+$keys = 'OTERYN_PLATFORM_URL', 'OTERYN_GATEWAY_URL', 'OTERYN_OAUTH_CLIENT_ID',
+        'OTERYN_WORLD', 'OTERYN_CHARACTER_ID', 'OTERYN_DEV_ROOT'
+$settings = @{}
+foreach ($line in Get-Content -LiteralPath $profilePath -ErrorAction Stop) {
+    $name, $value = $line -split '=', 2
+    if ($name -in $keys -or $name -eq 'OTERYN_DEV_OAUTH_CALLBACK_PORT') {
+        $settings[$name] = $value
+    }
+}
+foreach ($name in $keys) {
+    if ([string]::IsNullOrWhiteSpace($settings[$name])) { throw "Missing $name" }
+    [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
+}
+if ($settings.ContainsKey('OTERYN_DEV_OAUTH_CALLBACK_PORT')) {
+    $env:OTERYN_DEV_OAUTH_CALLBACK_PORT = $settings['OTERYN_DEV_OAUTH_CALLBACK_PORT']
+}
+if (-not (Test-Path -LiteralPath $env:OTERYN_DEV_ROOT -PathType Leaf)) {
+    throw 'Gameplay certificate is missing'
+}
+foreach ($path in 'content/assets/files/catalog-content.json',
+                  'imports/official/client-assets/15.30/manifest.json') {
+    if (-not (Test-Path -LiteralPath (Join-Path $assetRoot $path) -PathType Leaf)) {
+        throw "World asset root is missing $path"
+    }
+}
+$gameplayPort = 17281  # Use the run's advertised gameplay route port.
+foreach ($port in ([uri]$env:OTERYN_PLATFORM_URL).Port,
+                  ([uri]$env:OTERYN_GATEWAY_URL).Port, $gameplayPort) {
+    if (-not (Test-NetConnection 127.0.0.1 -Port $port -InformationLevel Quiet)) {
+        throw "RUNBOOK-1 loopback port $port is unreachable from Windows"
+    }
+}
+$env:OTERYN_ASSET_DIR = $assetRoot
+$evidence = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Path $evidence | Out-Null
+& $clientExe --preferences (Join-Path $evidence 'preferences.toml') `
+    --login-settings (Join-Path $evidence 'login-settings.toml') `
+    --ui-audit (Join-Path $evidence 'ui-audit.json')
+```
+
+Complete ordinary browser sign-in using the disposable account from the private
+handoff. Choose the test character and active channel in Bevy, wait for the map,
+then walk one tile. In `ui-audit.json`, compare `play_observation` before and after
+the input. Require the same generation, a new `last_step` receipt with
+`accepted: true` and `moved: true`, and a changed `map_center`. Record the current
+run ID in `walked.attest` only after that evidence. Keep the profile, browser
+URLs and any raw UI captures private.
 
 ## NAS server + PC client
 
@@ -185,9 +281,10 @@ A file is written only from a successful capture and is never replaced.
 `LOGIN_LOCAL_RESULT=` is `BLOCKED`, `FAIL`, `READY` (services up, environment written), `ADMITTED`
 (the client printed `Oteryn: admitted to World ...`) or `WALKED`.
 
-`WALKED` is only emitted from a post-READY operator attestation tied to the current run. **Gap:** the walk happens in
-the Windows shell, which has no machine-readable step output, and the node logs no per-step event, so `WALKED`
-cannot be derived automatically. The non-Windows client binary stops at admission (`ADMITTED`). For the walk, run
+`WALKED` is only emitted from a post-READY operator attestation tied to the current run. Use the Bevy
+`--ui-audit` step receipt described in the Windows acceptance procedure as evidence for the attestation.
+The runbook does not consume the audit file automatically. The non-Windows client invoked by the runbook
+stops at admission (`ADMITTED`). For the walk, run
 with `LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0` and use `client.env` on Windows (the dev root and ports are
 loopback, so run the node and client on the same host). `client.env` carries a Windows-readable
 `OTERYN_DEV_ROOT` (`wslpath -w` under WSL; otherwise set `LOGIN_LOCAL_DEV_ROOT_WINDOWS` to a writable path the
