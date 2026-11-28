@@ -43,6 +43,7 @@
 //! of one (World, Channel, digest, reset epoch) for the overlay rebuild,
 //! which re-hides every one of them.
 
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -606,7 +607,7 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, command).await?;
                     let Some(row) = load_receipt(&mut tx, command).await? else {
-                        commit_semantic_transaction(tx, deadline).await?;
+                        commit_semantic_read(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
                     let stored: Vec<u8> = row.try_get("intent_binding")?;
@@ -614,7 +615,7 @@ impl DurabilityRoot {
                         return Ok(Err(MapItemMintError::ConflictingCause));
                     }
                     let committed = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(committed)))
                 })
             })
@@ -650,7 +651,7 @@ impl DurabilityRoot {
                         return Ok(Err(MapItemMintError::ConflictingCause));
                     }
                     let receipt = decode_receipt(&row)?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(Some(receipt)))
                 })
             })
@@ -741,7 +742,7 @@ impl DurabilityRoot {
                     .bind(only_retired_casks)
                     .fetch_all(&mut *tx)
                     .await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(keys)
                 })
             })

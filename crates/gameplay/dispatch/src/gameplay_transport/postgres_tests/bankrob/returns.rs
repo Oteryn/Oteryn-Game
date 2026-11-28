@@ -14,6 +14,7 @@ pub(super) const BOARD: &str = "oteryn:item.tibia.i19236";
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Case {
     Announcements,
+    DisplacedGreeting,
     Rewards,
     Fifth,
     LostAck,
@@ -48,6 +49,7 @@ macro_rules! case {
 }
 
 case!(bankrob_announcements_and_bank_suspension, Announcements);
+case!(bankrob_greeting_cannot_reopen_after_displacement, DisplacedGreeting);
 #[test]
 fn bankrob_hand_in_rewards() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
@@ -252,6 +254,9 @@ impl Bank {
         if case == Case::Announcements {
             return self.announcements(owner, fence, h).await;
         }
+        if case == Case::DisplacedGreeting {
+            return self.displaced_greeting(owner, fence).await;
+        }
         if case == Case::Fifth {
             seed_return_count(h, fence).await?;
         }
@@ -359,6 +364,71 @@ impl Bank {
         Ok(())
     }
 
+    async fn displaced_greeting(
+        &self,
+        owner: &ComposedFreshAdmission<'_, '_, '_>,
+        fence: CurrentCharacterItemFence,
+    ) -> TestResult {
+        use crate::gameplay_transport::npc_command::ROBBERY_DIALOGUE_OBSERVED;
+        use oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES;
+        let range = i32::try_from(TALK_RANGE_TILES)?;
+        {
+            let mut runtime = self.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let mut at = movement.read(self.actor).map_err(debug)?;
+            for offset in 1..range {
+                at = movement
+                    .commit_cardinal(
+                        at,
+                        MovementLocalPosition {
+                            x: self.origin.x - offset,
+                            ..self.origin
+                        },
+                    )
+                    .map_err(debug)?;
+            }
+        }
+        let observed = Arc::new(tokio::sync::Notify::new());
+        let displaced = Arc::new(tokio::sync::Notify::new());
+        let (greeting, movement) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            tokio::join!(
+                ROBBERY_DIALOGUE_OBSERVED.scope(
+                    (Arc::clone(&observed), Arc::clone(&displaced)),
+                    self.talk(owner, fence, self.naji, 20, "hi"),
+                ),
+                async {
+                    observed.notified().await;
+                    let mut runtime = self.runtime.lock().await;
+                    let mut movement = runtime.borrow_movement_position();
+                    let before = movement.read(self.actor).map_err(debug)?;
+                    let result = movement
+                        .commit_cardinal(
+                            before,
+                            MovementLocalPosition {
+                                x: self.origin.x - range,
+                                ..self.origin
+                            },
+                        )
+                        .map_err(debug);
+                    displaced.notify_one();
+                    result?;
+                    TestResult::Ok(())
+                }
+            )
+        })
+        .await?;
+        movement?;
+        assert!(!greeting.unknown);
+        assert_eq!(greeting.disposition, NpcIntentDisposition::Rejected);
+        assert!(
+            greeting
+                .conversation
+                .and_then(|conversation| conversation.open)
+                .is_none()
+        );
+        Ok(())
+    }
+
     async fn announcements(
         &self,
         owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -423,12 +493,15 @@ impl Bank {
             .ok_or("parked Bank confirmation")?;
         assert!(!parked.unknown && parked.disposition == NpcIntentDisposition::Ok);
         assert!(line(&parked).contains("Ancient Temple"));
+        owner.npc_session_open(fence.game_session_id).await;
+        assert!(owner.states.chat.engaged(fence.game_session_id).is_none());
         let replay = owner
             .resume_npc_bank(self.actor, command(fence, 26))
             .await
             .ok_or("suspended Bank replay")?;
         assert_eq!(replay.disposition, parked.disposition);
         assert_eq!(line(&replay), line(&parked));
+        assert!(replay.conversation.ok_or("retained clue")?.open.is_none());
         let suspended: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_npc_bank_robbery_suspensions")
                 .fetch_one(&h.pool)
@@ -450,6 +523,8 @@ impl Bank {
         assert_eq!(state.reset_epoch, 0);
         assert!(!state.active);
         assert!(state.announcement.is_empty());
+        owner.reset_epoch = seed_december_robbery(h, fence.runtime_scope.world_id()).await?;
+        assert!(owner.world_event(command(fence, 19)).await.is_none());
         let map = owner.bundle_map().ok_or("World Board map")?;
         let pos = crate::map::overlay::TilePos {
             x: u16::try_from(self.origin.x)?,
@@ -521,6 +596,62 @@ impl Bank {
             )
             .await
     }
+}
+
+async fn seed_december_robbery(h: &Harness, world: crate::foundation::WorldId) -> TestResult<u64> {
+    // Use an odd epoch with all three daily changes from the real, independent draws.
+    let epoch = (1..=255)
+        .step_by(2)
+        .find(|&epoch| {
+            let day =
+                oteryn_gameplay_world_change::daily::roll_calendar(world.as_bytes(), epoch, 12, 13);
+            day.fury_gates.is_some() && day.grimvale_full_moon && day.their_masters_voice
+        })
+        .ok_or("December 13 with all three daily changes")?;
+    let epoch_id = epoch.to_string();
+    let world_id = world.as_bytes().as_slice();
+    sqlx::query("INSERT INTO game_world_reset_epochs
+        (world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
+        SELECT world_id,$2::text::numeric,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,
+               '2026-12-13 06:00:00 Europe/Berlin'::timestamptz,'2026-12'
+        FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world_id).bind(&epoch_id).execute(&h.pool).await?;
+    sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
+        .bind(world_id).bind(&epoch_id).execute(&h.pool).await?;
+    let base = oteryn_gameplay_world_change::scheduled::announcement_for_epoch(epoch)
+        .ok_or("odd epoch announcement")?;
+    let seasonal =
+        oteryn_gameplay_foundation::scheduled_events::content_schedule().seasonal_at(12, 13);
+    sqlx::query(
+        "INSERT INTO game_world_event_epochs
+        (world_id,reset_epoch,active,announcement,seasonal_calendar_revision,seasonal_event_keys)
+        VALUES(encode($1,'hex')::uuid,$2::text::numeric,true,$3,1,$4)",
+    )
+    .bind(world_id)
+    .bind(&epoch_id)
+    .bind(base)
+    .bind(&seasonal)
+    .execute(&h.pool)
+    .await?;
+    assert_eq!(h.root.world_change_calendar(world, epoch).await?, (12, 13));
+    let (fury, grimvale, voice) = h
+        .root
+        .world_change_snapshot(world, epoch)
+        .await
+        .map(|day| {
+            (
+                day.fury_gates.is_some(),
+                day.grimvale_full_moon,
+                day.their_masters_voice,
+            )
+        })?;
+    assert!(fury && grimvale && voice);
+    sqlx::query("INSERT INTO game_bank_robbery_occurrences
+        (world_id,reset_epoch,boot_ms,last_checked_hour,state,city,robber,firing_id,channel_id)
+        SELECT world_id,$2::text::numeric,boot_ms,last_checked_hour,1,city,robber,uuidv7(),channel_id
+        FROM game_bank_robbery_occurrences WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(world_id).bind(&epoch_id).execute(&h.pool).await?;
+    Ok(epoch)
 }
 
 async fn assert_other_channel_announcement(

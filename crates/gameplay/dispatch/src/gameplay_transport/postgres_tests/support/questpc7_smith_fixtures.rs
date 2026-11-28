@@ -17,14 +17,7 @@ pub(super) fn terrain() -> Vec<(Position, u16)> {
 }
 
 pub(super) fn items() -> Vec<(Position, u32)> {
-    vec![(
-        Position {
-            x: 32777,
-            y: 32254,
-            floor: -8,
-        },
-        2472,
-    )]
+    [32774, 32776, 32778].map(|x| (Position { x, y: 32253, floor: -8 }, 2472)).to_vec()
 }
 
 async fn guardian(
@@ -92,8 +85,8 @@ pub(super) async fn exercise(
     assert_eq!(guardian(owner).await?, Some(target));
     assert_eq!(super::questpc7_ferumbras_fixtures::value(owner, a, TRACK).await?, 1);
     let chest = Position {
-        x: 32777,
-        y: 32254,
+        x: 32776,
+        y: 32253,
         floor: -8,
     };
     assert_ne!(
@@ -122,10 +115,17 @@ pub(super) async fn exercise(
         .await?,
         1
     );
-    assert_eq!(
-        super::questpc7_ferumbras_fixtures::use_at(owner, a, chest, 2472).await?,
-        UseDisposition::Committed
-    );
+    for (index, x) in [32776, 32774, 32778].into_iter().enumerate() {
+        let approach = x.clamp(32775, 32777);
+        super::questpc7_ferumbras_fixtures::walk(owner, a, Position { x: approach, y: 32254, floor: -8 }).await?;
+        let site = Position { x, y: 32253, floor: -8 };
+        assert_eq!(
+            super::questpc7_ferumbras_fixtures::use_at(owner, a, site, 2472).await?,
+            UseDisposition::Committed
+        );
+        let stage = super::questpc7_ferumbras_fixtures::value(owner, a, TRACK).await?;
+        assert_eq!(stage, if index == 2 { 3 } else { 1 }, "the third distinct box completes the quest");
+    }
     let after = [
         quantity(h, 3208).await?,
         quantity(h, 3034).await?,
@@ -142,7 +142,8 @@ pub(super) async fn exercise(
     assert_eq!(super::questpc7_ferumbras_fixtures::value(owner, a, TRACK).await?, 3);
     let completed:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 AND completed_character_revision IS NOT NULL").bind(id(41).as_slice()).bind(QUEST).fetch_one(&h.pool).await?;
     assert_eq!(completed, 1);
-    let _ = super::questpc7_ferumbras_fixtures::use_at(owner, a, chest, 2472).await?;
+    super::questpc7_ferumbras_fixtures::walk(owner, a, Position { x: 32776, y: 32254, floor: -8 }).await?;
+    assert_ne!(super::questpc7_ferumbras_fixtures::use_at(owner, a, chest, 2472).await?, UseDisposition::Committed);
     assert_eq!(
         [
             quantity(h, 3208).await?,

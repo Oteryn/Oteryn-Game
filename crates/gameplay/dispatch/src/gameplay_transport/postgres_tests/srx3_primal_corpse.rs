@@ -178,13 +178,13 @@ fn srx3_all52_source_corpse_policy_exact_postgres() -> TestResult {
             // The complete pinned cohort includes Foam Stalker, Primal Menace
             // and Outburst; retain an independent exact root expectation.
             let expected_roots = [
-                111, 5973, 5993, 5995, 6028, 6081, 23478, 23564, 32610, 33792, 33797, 33801, 33805,
+                111, 5973, 5993, 5995, 6028, 6081, 9607, 23478, 23564, 32610, 33792, 33797, 33801, 33805,
                 33809, 33813, 33817, 33859, 33863, 33867, 33871, 33875, 33876, 33889, 33891, 33897,
                 33901, 33905, 33909, 33949, 33984, 34121, 34125, 34133, 39344, 39530, 43555, 43559,
                 43567, 43571, 43579, 43583, 43669, 43816, 43820, 43824, 43828, 43832, 43836, 43840,
                 43844, 44012, 44015, 44018, 44021, 44024,
             ];
-            assert_eq!(chains.len(), 55);
+            assert_eq!(chains.len(), expected_roots.len());
             assert_eq!(
                 capture["roots"],
                 serde_json::json!(expected_roots.as_slice())

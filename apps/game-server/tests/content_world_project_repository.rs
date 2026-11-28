@@ -17,18 +17,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "c5951bf58fe14c8aa677daac87b0329abb3dfbcb720b98df8dfba51bfd8ab0b1",
+        433,
+        "b62e1e256c1e463e7a3165e1807465de45bcc92cff3f363558aa02d28d9c6087",
     ),
     (
         "definitions/declarations.json",
-        27_931_783,
-        "788a182d9a3a2dda4d9d57a3e5fc45f17e0191512e57fca76f1f482afcdbe1c2",
+        28_201_730,
+        "abf6506abf99bfb75db81e1555a425f5700ba03c8f40a956d7448b9cb1152146",
     ),
     (
         "definitions/reference.json",
-        27_390_893,
-        "a375a7c94187351a674a9e5b6eeca22ffd2a40a420167f0757f8a92b8b7dd83a",
+        27_554_843,
+        "b84790389837ee2c016b3ebf994f9624809083c9d2ab920150d2e8d1c557a272",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "1da1653f7a76233b4fb30eb49cd9bbda7d5c095029dfffdee892785008397112",
+        1962,
+        "98a560c55942d43c23d06eb1ca30e982de706ad653837e9506f1c33e0f7567bf",
     ),
     (
         "presentations/bindings.json",
@@ -47,18 +47,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "05043666df0efe4eaa921c33d1e1cddc514197659d368805b6490dd8e0dfb935",
+        413,
+        "926800637dad8af459fbd6aefa079ff86b3b4383061f2d42e1c91f31cace902c",
     ),
     (
         "provenance/imports.json",
-        6_774_564,
-        "afada5e8e6de22656623ca9f2129461885103fc994976d92cc568969de2bf3e6",
+        6_777_146,
+        "b11635f58ff74ce3da1e7b9712dd835ad1d06e5c8916037b1dae014852a0c758",
     ),
     (
         "provenance/sources.json",
-        1_668_021,
-        "58d8ce37b1c537184c990fd091c16908bd7c69dd5435ef3da0c553466019feab",
+        1_685_650,
+        "b58230e5e3a52a3714a1c46a1627f7827628f307302c29ddc613dcff7e76313d",
     ),
     (
         "worlds/world.json",
@@ -118,6 +118,7 @@ fn is_spawn_family_file(locator: &str) -> bool {
     locator.strip_prefix("spawns/").is_some_and(|name| {
         name == "index.json"
             || name == "held-bosses.json"
+            || name == "unsupported-crystal-201189f8.json"
             || (name.starts_with("spawns-") && name.ends_with(".json"))
     })
 }
@@ -143,7 +144,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "e41da31fb88d3079816755a3d4822d8a534a80b8cec56f0d990c7ac3e9949c4b";
+const TREE_SHA256: &str = "714b6059116037edb8fa8bbbd18166b486bd018c5f151bfb5a9be70c4b9abf95";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450),
 /// plus the 68 client-only Crystal market Items minted by E06.
@@ -153,16 +154,18 @@ const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_865;
-const CREATURE_RECORDS: usize = 26_211;
-const CREATURE_PROFILES: usize = 25_068;
+const CREATURES: usize = 1_893;
+// Shared Creature definitions retain every distinct source receipt.
+const CREATURE_SOURCE_BINDINGS: usize = CREATURES + 16;
+const CREATURE_RECORDS: usize = 26_810;
+const CREATURE_PROFILES: usize = 25_657;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2_564;
 // Includes BANK-3's Henricus blessing Service.
 // S10 adds one bank, three promotion and six blessing Service declarations.
 // N3 adds Buddel’s travel Service.
-const NPC_DECLARATIONS: usize = 2534;
+const NPC_DECLARATIONS: usize = 2535;
 const NPC_DIALOGUES: usize = 852;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -189,7 +192,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 31,
+        max_import_records: 35,
         max_reimport_states: 404,
     }
 }
@@ -404,15 +407,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "seasonal-cake-creature-20261107-r1"
+        "cyclopedia-creatures-crystal-201189f-r1"
     );
-    // Thaian adds the 37th separately qualified batch; the historical cohort remains 25.
-    assert_eq!(project.imports().len(), 37);
+    // Both Crystal admissions preserve the historical cohort.
+    assert_eq!(project.imports().len(), 41);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
         .filter(|b| {
             !b.batch_id.starts_with("monster-full-mechanics-")
+                && b.batch_id != "cyclopedia-creatures-crystal-201189f-r1"
                 && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
                 && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
@@ -421,6 +425,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "item-client-market-mint-2dfa943b"
                 && b.batch_id != "seasonal-cake-creature-crystal-201189f-r1"
                 && b.batch_id != "questpc7-thaian-wiki-chosen-r1"
+                && b.batch_id != "crystal-spawn-creatures-201189f-r1"
+                && b.batch_id != "creature-parity-crystal-201189f-r1"
+                && b.batch_id != "crystal-spawn-delta-creatures-201189f8-r1"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -451,6 +458,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .find(|i| i.batch_id == batch)
             .expect("exact import batch")
     };
+    let crystal = import_for("crystal-spawn-delta-creatures-201189f8-r1");
+    assert_eq!(crystal.source_repository, "zimbadev/crystalserver");
+    assert_eq!(
+        crystal.source_revision,
+        "crystal-spawn-creatures:201189f871d23597b82caf88fd611454a2ddefb8"
+    );
+    assert_eq!(crystal.importer, "OTERYN_CRYSTAL_SPAWN_CREATURES/v1");
+    assert!(crystal.candidates.is_empty());
+    assert!(crystal.reimport_states.is_empty());
     let thaian = import_for("questpc7-thaian-wiki-chosen-r1");
     assert_eq!(thaian.source_repository, "tibiawiki.com.br");
     assert_eq!(
@@ -501,6 +517,21 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(thaian.mapper_revision, "creature-admission-r1");
     assert!(thaian.candidates.is_empty());
     assert!(thaian.reimport_states.is_empty());
+    let raid_spawn = import_for("crystal-spawn-creatures-201189f-r1");
+    assert_eq!(raid_spawn.source_repository, "zimbadev/crystalserver");
+    assert_eq!(
+        raid_spawn.source_revision,
+        "crystal-raid-spawn-creatures:201189f871d23597b82caf88fd611454a2ddefb8"
+    );
+    let crystal_bytes =
+        include_bytes!("../../../imports/crystalserver/spawn-delta-creatures-201189f.json");
+    assert_eq!(
+        raid_spawn.source_artifact_sha256,
+        Sha256::digest(crystal_bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    );
     let provenance = import_for("cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -1292,7 +1323,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 31);
+    assert_eq!(v2.sources.len(), 35);
     let source_for = |batch: &str| {
         v2.sources
             .iter()
@@ -1602,7 +1633,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         v2.source_identity_bindings.len(),
-        550 + 289 + CREATURES + ENCOUNTERS + NPC_BINDINGS + 22
+        550 + 289 + CREATURE_SOURCE_BINDINGS + ENCOUNTERS + NPC_BINDINGS + 22
     );
     assert_eq!(v2.editor.len(), 550);
     let new_source = v2
@@ -1687,6 +1718,105 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:201189f871d23597b82caf88fd611454a2ddefb8"
     );
     assert_eq!(cake_source.sha256, world_project_sha256(cake_bytes));
+    let spawn_source = source_for("crystal-spawn-creatures-201189f-r1");
+    assert_eq!(spawn_source.key, "oteryn:source.crystalserver");
+    assert_eq!(spawn_source.revision, raid_spawn.source_revision);
+    assert_eq!(spawn_source.sha256, raid_spawn.source_artifact_sha256);
+    let mut spawn_monsters = BTreeMap::from([
+        (
+            "data-global/monster/bosses/cublarc_the_plunderer.lua",
+            "cublarc_the_plunderer",
+        ),
+        ("data-global/monster/bosses/gorga.lua", "gorga"),
+        (
+            "data-global/monster/plants/grove_guardian.lua",
+            "grove_guardian",
+        ),
+        (
+            "data-global/monster/plants/rootthing_cocoon.lua",
+            "rootthing_cocoon",
+        ),
+        (
+            "data-global/monster/vermins/common_beetle.lua",
+            "common_beetle",
+        ),
+        ("data-global/monster/vermins/herd_weevil.lua", "herd_weevil"),
+    ]);
+    let parity_bytes =
+        include_bytes!("../../../imports/crystalserver/creature-parity-201189f.json");
+    let parity: serde_json::Value =
+        serde_json::from_slice(parity_bytes).expect("Crystal parity source receipt");
+    let parity_bindings: Vec<ProjectV2SourceIdentityBinding> = parity["definitions"]
+        .as_array()
+        .expect("Crystal parity definitions")
+        .iter()
+        .map(|row| serde_json::from_value(row["binding"].clone()).expect("Crystal bound Creature"))
+        .collect();
+    let parity_source = source_for("creature-parity-crystal-201189f-r1");
+    assert_eq!(parity_source.key, "oteryn:source.crystalserver");
+    assert_eq!(parity_source.sha256, world_project_sha256(parity_bytes));
+    let mut parity_seen = 0;
+    let crystal_spawn_source = source_for(&crystal.batch_id);
+    assert_eq!(crystal_spawn_source.key, "oteryn:source.crystalserver");
+    assert_eq!(crystal_spawn_source.revision, crystal.source_revision);
+    assert_eq!(crystal_spawn_source.sha256, crystal.source_artifact_sha256);
+    assert_eq!(
+        crystal_spawn_source.sha256,
+        world_project_sha256(include_bytes!(
+            "../../../imports/crystalserver/spawn-delta-creatures-201189f8.json"
+        ))
+    );
+    let mut crystal_spawn_bindings = BTreeMap::from([
+        (
+            "data-global/monster/bosses/gorga.lua",
+            "oteryn:creature.gorga",
+        ),
+        (
+            "data-global/monster/plants/grove_guardian.lua",
+            "oteryn:creature.grove_guardian",
+        ),
+        (
+            "data-global/monster/plants/rootthing_cocoon.lua",
+            "oteryn:creature.rootthing_cocoon",
+        ),
+        (
+            "data-global/monster/vermins/common_beetle.lua",
+            "oteryn:creature.common_beetle",
+        ),
+        (
+            "data-global/monster/vermins/herd_weevil.lua",
+            "oteryn:creature.herd_weevil",
+        ),
+    ]);
+    let cyclopedia_bytes =
+        include_bytes!("../../../imports/crystalserver/cyclopedia-creatures-201189f.json");
+    let cyclopedia_packet: serde_json::Value =
+        serde_json::from_slice(cyclopedia_bytes).expect("Cyclopedia source capture");
+    let cyclopedia_bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(cyclopedia_packet["bindings"].clone())
+            .expect("Cyclopedia typed bindings");
+    let cyclopedia_import = import_for("cyclopedia-creatures-crystal-201189f-r1");
+    let cyclopedia_source = source_for("cyclopedia-creatures-crystal-201189f-r1");
+    assert_eq!(
+        cyclopedia_import.source_artifact_sha256,
+        world_project_sha256(cyclopedia_bytes)
+    );
+    assert_eq!(
+        cyclopedia_source.sha256,
+        cyclopedia_import.source_artifact_sha256
+    );
+    assert_eq!(cyclopedia_source.key, "oteryn:source.crystalserver");
+    assert_eq!(
+        cyclopedia_source.revision,
+        cyclopedia_import.source_revision
+    );
+    assert_eq!(cyclopedia_bindings.len(), 6);
+    assert!(cyclopedia_bindings.iter().all(|binding| {
+        binding.source_key == cyclopedia_source.key
+            && binding.source_revision == cyclopedia_source.revision
+            && binding.target.family == ProjectV2Family::Creature
+            && v2.source_identity_bindings.contains(binding)
+    }));
     let mut creature_files = BTreeSet::new();
     let mut d44_wiki_bindings = 0;
     let mut thaian_wiki_bindings = 0;
@@ -1740,10 +1870,51 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             thaian_wiki_bindings += 1;
             continue;
         }
+        if binding.source_key == parity_source.key
+            && binding.source_revision == parity_source.revision
+        {
+            assert!(parity_bindings.contains(binding));
+            assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
+            parity_seen += 1;
+            continue;
+        }
         if cake_bindings.contains(binding) {
             assert_eq!(binding.target.family, ProjectV2Family::Creature);
             assert_eq!(binding.target.key, "oteryn:creature.cake_golem");
-            assert!(creature_files.insert(&binding.external_id));
+            assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
+            continue;
+        }
+        if binding.source_revision == spawn_source.revision {
+            let name = spawn_monsters
+                .remove(binding.external_id.as_str())
+                .expect("exact Crystal spawn Creature source file");
+            assert_eq!(binding.source_key, spawn_source.key);
+            assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.key, format!("oteryn:creature.{name}"));
+            assert_eq!(binding.target.revision, "definition-r1");
+            assert_eq!(
+                binding.disposition,
+                ProjectV2SourceIdentityDisposition::Exact
+            );
+            assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
+            continue;
+        }
+        if binding.source_key == crystal_spawn_source.key
+            && binding.source_revision == crystal_spawn_source.revision
+        {
+            assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
+            assert_eq!(binding.target.family, ProjectV2Family::Creature);
+            assert_eq!(binding.target.revision, "definition-r1");
+            assert_eq!(
+                crystal_spawn_bindings.remove(binding.external_id.as_str()),
+                Some(binding.target.key.as_str())
+            );
+            assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
+            continue;
+        }
+        if cyclopedia_bindings.contains(binding) {
+            assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
             continue;
         }
         if binding.target.family == ProjectV2Family::Creature {
@@ -1770,7 +1941,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                         )
                 );
                 assert!(binding.target.key.starts_with("oteryn:creature."));
-                assert!(creature_files.insert(&binding.external_id));
+                assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
                 crystal_creatures += 1;
                 continue;
             }
@@ -1781,7 +1952,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             );
             assert_eq!(binding.identity_namespace, "canary/monster-file");
             assert!(binding.target.key.starts_with("oteryn:creature."));
-            assert!(creature_files.insert(&binding.external_id));
+            assert!(creature_files.insert((&binding.source_revision, &binding.external_id)));
             continue;
         }
         if binding.target.family == ProjectV2Family::Encounter {
@@ -1888,15 +2059,18 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     assert_eq!(d44_wiki_bindings, 1);
     assert_eq!(thaian_wiki_bindings, 1);
+    assert!(spawn_monsters.is_empty());
+    assert!(crystal_spawn_bindings.is_empty());
     assert_eq!(
         creature_files.len(),
-        CREATURES - d44_wiki_bindings - thaian_wiki_bindings
+        CREATURE_SOURCE_BINDINGS - d44_wiki_bindings - thaian_wiki_bindings
     );
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
     assert_eq!(crystal_encounter_count, 4);
     assert_eq!(extra_item_count, 22);
     assert_eq!(crystal_creatures, 196);
+    assert_eq!(parity_seen, parity_bindings.len());
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));

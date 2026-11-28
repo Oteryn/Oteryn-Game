@@ -177,7 +177,7 @@ impl<'a> Type2Transaction<'a> {
         }
     }
 
-    pub async fn commit(self, deadline: std::time::Instant) -> Result<(), super::DurabilityError> {
+    pub async fn commit(self, deadline: tokio::time::Instant) -> Result<(), super::DurabilityError> {
         super::db::commit_semantic_transaction(self.transaction, deadline).await
     }
 

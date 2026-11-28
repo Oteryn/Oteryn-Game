@@ -5382,7 +5382,8 @@
           "cues": [],
           "speech": "Bound by ancient magic, the primal demonic beast bows to the will of the boxes owner ... for now.",
           "achievements": [
-            "oteryn:achievement/natural_born_cowboy"
+            "oteryn:achievement/natural_born_cowboy",
+            "oteryn:achievement/fiend_rider"
           ]
         }
       ]

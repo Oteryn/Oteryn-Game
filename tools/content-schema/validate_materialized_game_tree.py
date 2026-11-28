@@ -60,8 +60,8 @@ def spawn_family_files()->list[str]:
     req(payload.get("population_state")=="POPULATED","SPAWN_FAMILY_STATE")
     shards=payload.get("shards",[])
     req(shards and all(s.startswith(SPAWN_FAMILY) and "/" not in s[len(SPAWN_FAMILY):] for s in shards),"SPAWN_SHARD_OUTSIDE")
-    req({f.name for f in path.iterdir()}=={"index.json","held-bosses.json",*(s[len(SPAWN_FAMILY):] for s in shards)},"SPAWN_STRAY_FILE")
-    return ["spawns/index.json","spawns/held-bosses.json",*(s[len(LEGACY_ROOT):] for s in shards)]
+    req({f.name for f in path.iterdir()}=={"index.json","held-bosses.json","unsupported-crystal-201189f8.json",*(s[len(SPAWN_FAMILY):] for s in shards)},"SPAWN_STRAY_FILE")
+    return ["spawns/index.json","spawns/held-bosses.json","spawns/unsupported-crystal-201189f8.json",*(s[len(LEGACY_ROOT):] for s in shards)]
 def npc_placement_family_files()->list[str]:
     """The NPC placement family index, held file and shards, relative to the legacy root; the index must match the directory."""
     path=ROOT/NPC_PLACEMENT_FAMILY

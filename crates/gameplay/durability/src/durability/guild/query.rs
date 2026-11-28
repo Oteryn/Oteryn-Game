@@ -1,4 +1,5 @@
 //! Private, bounded Guild reads under the native recovery/session/root/Guild lock order.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use oteryn_protocol_oteryn::guild::{
     GuildInvitation, GuildMember, GuildQuery, GuildQueryResult, GuildRosterCursor, GuildSummary,
@@ -34,7 +35,7 @@ impl DurabilityRoot {
                     .await;
                     match result {
                         Ok(data) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            commit_semantic_read(tx, deadline).await?;
                             Ok(Ok(data))
                         }
                         Err(GuildError::Unavailable(error)) => {

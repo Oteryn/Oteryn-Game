@@ -213,15 +213,12 @@ mod tests {
     fn rottin_wall_bindings_are_registered_and_bounded() -> Result<(), String> {
         let expected = callbacks();
         super::super::world_callbacks::validate_callbacks(&expected)?;
-        let registered = super::super::world_callbacks::load()?;
-        assert!(
-            expected
-                .iter()
-                .all(|callback| registered.contains(callback))
-        );
+        let published = super::super::world_callbacks::load()?;
+        assert!(expected.iter().all(|callback| published.contains(callback)));
         let loaded = super::super::loader::load_embedded_quest_state("rottin-wall-test")
             .map_err(|err| format!("{err:?}"))?;
         let catalogue = loaded.catalogue();
+        let registered = super::super::world_callbacks::load_for(catalogue)?;
         assert_eq!(
             catalogue
                 .track(super::super::classic_talk::ROTTIN_WALLCOUNT)

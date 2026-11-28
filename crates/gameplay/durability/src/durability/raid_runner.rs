@@ -17,6 +17,7 @@ use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::raid_schedule::RaidWrite;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration};
 use oteryn_gameplay_content::content::ProductionKey;
 use oteryn_gameplay_encounter_rules::raid::{
@@ -216,7 +217,7 @@ impl DurabilityRoot {
                     raid_key: String::new(), running: false, committed_steps: 0, active_creatures: 0,
                 }
             };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(state)
         })).await
     }
@@ -521,7 +522,7 @@ impl DurabilityRoot {
                 last = Some(RaidFiringCursor { firing_id: bytes, fired_at_ms: row.try_get(2)? });
                 out.push((bytes, key));
             }
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(RaidFiringPage { firings: out, next: if more { last } else { None } })
         })).await
     }

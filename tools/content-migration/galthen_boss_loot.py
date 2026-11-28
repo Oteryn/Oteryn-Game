@@ -4,14 +4,25 @@ import argparse
 import copy
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import boss_corpse_profiles as base
 import item_detail_source_facts as item_details
 import m25_corpse_items
+from import_cyclopedia_global import apply_profile_weights
 
 ROOT = base.ROOT
 PATH = "tools/content-schema/native-gameplay/galthen-boss-loot.json"
+LEGACY_ROBES = (
+    "tools/content-schema/native-gameplay/galthen-boss-loot-legacy-robes.json"
+)
+LEGACY_REVISIONS = (
+    "e2152d050038cecdb3728c222af2ac184e1cac5a",
+    "25e8bba17f2077e225aad34186995a5d66a53685",
+    "50ef5550ef239478b056a8fa0adb82392ec5f3a1",
+)
+NATIVE_PROFILES = "content/items/definitions/spell-native-profiles.json"
 GLOBAL_DETAILS = "tools/content-schema/native-gameplay/galthen-global-item-details.json"
 PIN_PATH = "tools/content-schema/native-gameplay/galthen-boss-loot-pin.json"
 RUST_PIN = "crates/gameplay/content/src/content/native_gameplay/galthen_loot_pin.rs"
@@ -128,6 +139,12 @@ def capture(canary, crystal, root=ROOT):
         != base.SOURCE_HASHES["data/items/items.xml"]
     ):
         raise ValueError("M25_LOOT_CRYSTAL_SOURCE_HASH")
+    from crystal_equipment_slice_4 import equipment_pattern
+
+    # Crystal's XML carries the robe's Monk equip requirements. Extend this
+    # exact co-owner record so every consumer can still compare it in full.
+    robe = source.engine_items.load_items_xml(crystal_xml)[50255]["attrs"]
+    robe_patterns = source.K({"patterns": source.K([equipment_pattern(robe)])})
     slots = imbue.slots(blobs["data/items/items.xml"], set(IDS))
     crystal_slots = imbue.slots(crystal_xml, set(IDS))
     if {item: row["slot_count"] for item, row in slots.items()} != {
@@ -177,6 +194,8 @@ def capture(canary, crystal, root=ROOT):
         )
         base.complete_source_top_order(row, objects[item])
         complete_source_abilities(row, source.attrs(xml[item]) if item in xml else {})
+        if item == 50255:
+            row["semantics"]["equipment"] = robe_patterns
         if item in slots:
             fact = slots[item]
             row["semantics"]["imbuement"] = source.K(
@@ -206,6 +225,9 @@ def capture(canary, crystal, root=ROOT):
             row["authoring"]["taxonomy"] = copy.deepcopy(
                 taxonomy[binding["target"]["key"]]
             )
+        if item == 50255:
+            # The verified Global client shows 128.00 oz for Stoic Iks robe.
+            apply_profile_weights([row], root)
         if native_loot_yield_facts(binding["target"], row) is None:
             raise ValueError("M25_LOOT_CARRIED_SOURCE:" + str(item))
         records.append(row)
@@ -300,12 +322,41 @@ def global_details(root, source):
     return details
 
 
+def legacy_robes(root):
+    rows = []
+    for revision in LEGACY_REVISIONS:
+        raw = subprocess.check_output(
+            ["git", "show", f"{revision}:{NATIVE_PROFILES}"], cwd=root
+        )
+        [row] = [
+            row
+            for row in json.loads(raw)["records"]
+            if row["production_binding"]["external_id"] == "50255"
+        ]
+        rows.append(row)
+    return base.encode(rows)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--canary-root", type=Path, required=True)
-    parser.add_argument("--crystal-root", type=Path, required=True)
+    parser.add_argument("--canary-root", type=Path)
+    parser.add_argument("--crystal-root", type=Path)
+    parser.add_argument("--legacy-robes", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
+    if args.legacy_robes:
+        evidence = ROOT / LEGACY_ROBES
+        raw = legacy_robes(ROOT)
+        if args.check:
+            if evidence.read_bytes() != raw:
+                raise ValueError("M25_LEGACY_ROBE_GENERATED_DRIFT")
+        else:
+            evidence.write_bytes(raw)
+        return
+    if args.canary_root is None or args.crystal_root is None:
+        parser.error(
+            "--canary-root and --crystal-root are required for the current capture"
+        )
     raw = base.encode(capture(args.canary_root, args.crystal_root))
     sha = hashlib.sha256(raw).hexdigest()
     rust = (

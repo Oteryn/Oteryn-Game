@@ -1,4 +1,5 @@
 //! LOOP-TRAIN-1: DB-clock markers and native build participant in one physical transaction.
+use crate::durability::db::commit_semantic_read;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_build::{
     self, BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState,
@@ -215,7 +216,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let result = replay(&mut tx, fence, "logout").await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

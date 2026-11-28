@@ -9,6 +9,26 @@ use {
     oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
 
+#[test]
+fn crystal_equipment_bond_cues_resolve_from_committed_client_bindings() {
+    let bindings: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../../content/presentations/bindings/client-ids.json"
+    ))
+    .unwrap();
+    for colour in ["green", "pink"] {
+        let key = format!("canary.appearance:effect/{colour}_tigerclash");
+        let id = bindings["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["key"] == key)
+            .and_then(|row| row["client_id"].as_u64())
+            .and_then(|id| u16::try_from(id).ok())
+            .unwrap();
+        assert!(matches!(resolve_source_cue(&key), Some(Cue::Effect(bound)) if bound == id));
+    }
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }

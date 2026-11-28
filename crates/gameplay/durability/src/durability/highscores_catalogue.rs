@@ -120,7 +120,7 @@ impl DurabilityRoot {
                             })
                         })
                         .collect::<Result<Vec<_>, DurabilityError>>()?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(entries)
                 })
             })
@@ -150,7 +150,7 @@ pub async fn answer_session(
                 let current = store
                     .current_session_in_transaction(&mut tx, session)
                     .await?;
-                super::db::commit_semantic_transaction(tx, deadline).await?;
+                super::db::commit_semantic_read(tx, deadline).await?;
                 Ok(current)
             })
         })

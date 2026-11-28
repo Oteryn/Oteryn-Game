@@ -159,48 +159,28 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
         (5942, 8744) => (8742, 5905, 6000),
         (5942, 18958) => (18959, 5905, 6000),
         (5942, 18961) => (18959, 5905, 6000),
-        (5908, 7441) | (5942, 7441) => {
-            return Some((
-                GatheringTarget::Ice { spent_item: 7442 },
-                GatheringYield {
-                    item: 7442,
-                    threshold: 22_000,
-                },
-            ));
-        }
-        (5908, 10426) => {
+        (5908 | 5942, 10426) => {
             return Some((
                 GatheringTarget::Corpse { spent_item: 0 },
                 GatheringYield {
                     item: 10429,
-                    threshold: 24_000,
+                    threshold: 60_000,
                 },
             ));
         }
-        (5908, 7442) => {
+        (5908 | 5942, 7441 | 7442 | 7444 | 7445) => {
+            // Crystal Global skinning.lua:3-8,153-171.
+            let next = match target {
+                7441 => 7442,
+                7442 => 7444,
+                7444 => 7445,
+                _ => 7446,
+            };
             return Some((
-                GatheringTarget::Ice { spent_item: 7444 },
+                GatheringTarget::Ice { spent_item: next },
                 GatheringYield {
-                    item: 7444,
-                    threshold: 4_800,
-                },
-            ));
-        }
-        (5908, 7444) => {
-            return Some((
-                GatheringTarget::Ice { spent_item: 7445 },
-                GatheringYield {
-                    item: 7445,
-                    threshold: 900,
-                },
-            ));
-        }
-        (5908, 7445) => {
-            return Some((
-                GatheringTarget::Ice { spent_item: 7446 },
-                GatheringYield {
-                    item: 7446,
-                    threshold: 40,
+                    item: next,
+                    threshold: 22_344,
                 },
             ));
         }
@@ -243,7 +223,12 @@ pub fn gathering_yield(row: GatheringYield, roll: u32) -> Option<u16> {
     ((1..=100_000).contains(&roll) && roll <= row.threshold).then_some(row.item)
 }
 
-/// A successful sculpture stays on the map; only skins/dust/fish enter inventory.
+/// Both tools share the ice and marble recipes. The caller owns target custody.
+pub const fn is_sculpture(tool: u16, target: u16) -> bool {
+    matches!(tool, 5908 | 5942) && matches!(target, 7441 | 7442 | 7444 | 7445 | 10426)
+}
+
+/// An ice success replaces the target, while marble mints a separate figurine.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GatheringAttempt {
     pub after: Option<u16>,
@@ -275,16 +260,17 @@ pub fn gathering_attempt(
             consumes_bait: true,
         });
     }
-    if tool == 5908 && target == 10426 {
+    if matches!(tool, 5908 | 5942) && target == 10426 {
         if !(1..=100_000).contains(&yield_roll) {
             return None;
         }
         return Some(GatheringAttempt {
             after: None,
             yield_item: match yield_roll {
-                1..=530 => Some(10429),
-                531..=9_600 => Some(10428),
-                9_601..=24_000 => Some(10427),
+                // Crystal Global skinning.lua:10-14,174-195.
+                1..=10_000 => Some(10429),
+                10_001..=26_764 => Some(10428),
+                26_765..=60_000 => Some(10427),
                 _ => None,
             },
             consumes_bait: false,
@@ -321,6 +307,17 @@ pub fn gathering_attempt(
             }
         }
     })
+}
+
+/// Crystal 201189f, Global skinning.lua:10-14,176-181.
+pub fn marble_inscription(item: u16, sculptor: &str) -> Option<String> {
+    let template = match item {
+        10429 => "This little figurine of Tibiasula was masterfully sculpted by |PLAYERNAME|.",
+        10428 => "This little figurine made by |PLAYERNAME| has some room for improvement.",
+        10427 => "This shoddy work was made by |PLAYERNAME|.",
+        _ => return None,
+    };
+    Some(template.replace("|PLAYERNAME|", sculptor))
 }
 
 pub const WATER: [u16; 26] = [
@@ -468,11 +465,11 @@ mod tests {
 
     #[test]
     fn m09_both_sculpting_tools_reach_the_non_simple_ice_row() {
-        // Crystal data-crystal/scripts/actions/tools/skinning.lua:289-305,392-403.
+        // Crystal data-global/scripts/actions/tools/skinning.lua:3-8,153-171.
         for tool in [5908, 5942] {
             assert!(gathering_rule(tool, 7441).is_some());
             assert_eq!(
-                gathering_attempt(tool, 7441, 10, 1, 22_000),
+                gathering_attempt(tool, 7441, 10, 1, 22_344),
                 Some(GatheringAttempt {
                     after: Some(7442),
                     yield_item: None,
@@ -480,7 +477,7 @@ mod tests {
                 })
             );
             assert_eq!(
-                gathering_attempt(tool, 7441, 10, 1, 22_001),
+                gathering_attempt(tool, 7441, 10, 1, 22_345),
                 Some(GatheringAttempt {
                     after: None,
                     yield_item: None,
@@ -572,53 +569,57 @@ mod tests {
 
     #[test]
     fn m09_marble_sculpture_uses_ordered_chance_tiers_and_removes_the_rock() {
-        // Crystal data-crystal/scripts/actions/tools/skinning.lua:266-288,363-391.
-        for (roll, item) in [
-            (1, Some(10429)),
-            (530, Some(10429)),
-            (531, Some(10428)),
-            (9_600, Some(10428)),
-            (9_601, Some(10427)),
-            (24_000, Some(10427)),
-            (24_001, None),
-            (100_000, None),
-        ] {
-            assert_eq!(
-                gathering_attempt(5908, 10426, 10, 1, roll),
-                Some(GatheringAttempt {
-                    after: None,
-                    yield_item: item,
-                    consumes_bait: false,
-                })
-            );
+        // Crystal data-global/scripts/actions/tools/skinning.lua:10-14,174-195.
+        for tool in [5908, 5942] {
+            for (roll, item) in [
+                (1, Some(10429)),
+                (10_000, Some(10429)),
+                (10_001, Some(10428)),
+                (26_764, Some(10428)),
+                (26_765, Some(10427)),
+                (60_000, Some(10427)),
+                (60_001, None),
+                (100_000, None),
+            ] {
+                assert_eq!(
+                    gathering_attempt(tool, 10426, 10, 1, roll),
+                    Some(GatheringAttempt {
+                        after: None,
+                        yield_item: item,
+                        consumes_bait: false,
+                    })
+                );
+            }
         }
     }
 
     #[test]
     fn m09_ice_sculpture_chain_uses_each_donor_threshold() {
-        // Crystal data-crystal/scripts/actions/tools/skinning.lua:289-305,392-403.
-        for (target, next, threshold) in [
-            (7441, 7442, 22_000),
-            (7442, 7444, 4_800),
-            (7444, 7445, 900),
-            (7445, 7446, 40),
-        ] {
-            assert_eq!(
-                gathering_attempt(5908, target, 10, 1, threshold),
-                Some(GatheringAttempt {
-                    after: Some(next),
-                    yield_item: None,
-                    consumes_bait: false,
-                })
-            );
-            assert_eq!(
-                gathering_attempt(5908, target, 10, 1, threshold + 1),
-                Some(GatheringAttempt {
-                    after: None,
-                    yield_item: None,
-                    consumes_bait: false,
-                })
-            );
+        // Crystal data-global/scripts/actions/tools/skinning.lua:3-8,153-171.
+        for tool in [5908, 5942] {
+            for (target, next, threshold) in [
+                (7441, 7442, 22_344),
+                (7442, 7444, 22_344),
+                (7444, 7445, 22_344),
+                (7445, 7446, 22_344),
+            ] {
+                assert_eq!(
+                    gathering_attempt(tool, target, 10, 1, threshold),
+                    Some(GatheringAttempt {
+                        after: Some(next),
+                        yield_item: None,
+                        consumes_bait: false,
+                    })
+                );
+                assert_eq!(
+                    gathering_attempt(tool, target, 10, 1, threshold + 1),
+                    Some(GatheringAttempt {
+                        after: None,
+                        yield_item: None,
+                        consumes_bait: false,
+                    })
+                );
+            }
         }
     }
 
@@ -677,14 +678,14 @@ mod tests {
         }
         let ice_row = GatheringYield {
             item: 7442,
-            // Crystal skinning.lua:290-293 pins 22,000 out of 100,000.
-            threshold: 22_000,
+            // Crystal Global skinning.lua:4 pins the first-stage chance.
+            threshold: 22_344,
         };
         assert_eq!(
             gathering_rule(5908, 7441),
             Some((GatheringTarget::Ice { spent_item: 7442 }, ice_row))
         );
-        assert_eq!(gathering_yield(ice_row, 22_001), None);
+        assert_eq!(gathering_yield(ice_row, 22_345), None);
         let fishing_row = GatheringYield {
             item: 7158,
             threshold: 1_000,
@@ -743,7 +744,7 @@ mod tests {
     fn m09_ice_success_is_map_only_and_failure_removes_block() {
         for tool in [5908, 5942] {
             assert_eq!(
-                gathering_attempt(tool, 7441, 10, 1, 22_000),
+                gathering_attempt(tool, 7441, 10, 1, 22_344),
                 Some(GatheringAttempt {
                     after: Some(7442),
                     yield_item: None,
@@ -751,7 +752,7 @@ mod tests {
                 })
             );
             assert_eq!(
-                gathering_attempt(tool, 7441, 10, 1, 22_001),
+                gathering_attempt(tool, 7441, 10, 1, 22_345),
                 Some(GatheringAttempt {
                     after: None,
                     yield_item: None,

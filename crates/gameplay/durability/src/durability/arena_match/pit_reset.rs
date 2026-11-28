@@ -3,6 +3,7 @@
 //! A successful read is a snapshot, never a retained write grant. Retirement
 //! must call the same validation again in its deciding transaction.
 use super::*;
+use crate::durability::db::commit_semantic_read;
 
 impl DurabilityRoot {
     pub async fn read_arena_pit_reset(
@@ -27,7 +28,7 @@ impl DurabilityRoot {
                         return Ok(Err(error));
                     }
                     let accepted = lock_reset_custody(&mut tx, fence, &expected).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(accepted))
                 })
             })

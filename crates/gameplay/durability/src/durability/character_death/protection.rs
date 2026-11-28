@@ -1,4 +1,5 @@
 //! Read the latest immutable death outcome under the current admitted session fence.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use oteryn_protocol_oteryn::death_protection::FinalBlowKind;
@@ -40,7 +41,7 @@ impl DurabilityRoot {
                 },
                 None => None,
             };
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(death))
         })).await?
     }

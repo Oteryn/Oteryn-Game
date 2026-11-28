@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+  "startup": "data-global/startup/others/functions.lua:97-115",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.kv.deadarcher",
+      "position": [
+        32514,
+        32303,
+        10
+      ],
+      "appearance": 4240,
+      "unique": 6169,
+      "source_line": 1905
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.deeperfibula1",
+      "position": [
+        32239,
+        32471,
+        10
+      ],
+      "appearance": 4024,
+      "unique": 6008,
+      "source_line": 639
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.deeperfibula2",
+      "position": [
+        32239,
+        32478,
+        10
+      ],
+      "appearance": 4024,
+      "unique": 6009,
+      "source_line": 646
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.deeperfibula3",
+      "position": [
+        32233,
+        32491,
+        10
+      ],
+      "appearance": 4240,
+      "unique": 6010,
+      "source_line": 653
+    },
+    {
+      "claim": "oteryn:reward-claim.kv.deeperfibula4",
+      "position": [
+        32245,
+        32492,
+        10
+      ],
+      "appearance": 4025,
+      "unique": 6011,
+      "source_line": 660
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.key.id3980",
+      "position": [
+        32219,
+        32401,
+        10
+      ],
+      "appearance": 387,
+      "unique": 5000,
+      "source_line": 370
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [],
+  "teleport_source_sha256": "9e8f807264ec6ab85e263976136666ff38c195f1921cc30e73fd4431370fe87e",
+  "returns": [
+    {
+      "position": [
+        32208,
+        32433,
+        10
+      ],
+      "appearance": 1949,
+      "teleport": [
+        32167,
+        32438,
+        9
+      ],
+      "source_line": 614
+    },
+    {
+      "position": [
+        32234,
+        32502,
+        10
+      ],
+      "appearance": 1949,
+      "teleport": [
+        32167,
+        32438,
+        9
+      ],
+      "source_line": 621
+    }
+  ],
+  "route_doors": [
+    {
+      "position": [
+        32483,
+        31722,
+        15
+      ],
+      "appearance": 5111,
+      "action": 1060,
+      "source_line": 132
+    },
+    {
+      "position": [
+        33265,
+        32278,
+        7
+      ],
+      "appearance": 5293,
+      "action": 1040,
+      "source_line": 76
+    },
+    {
+      "position": [
+        33266,
+        32278,
+        7
+      ],
+      "appearance": 5293,
+      "action": 1040,
+      "source_line": 76
+    }
+  ]
+}

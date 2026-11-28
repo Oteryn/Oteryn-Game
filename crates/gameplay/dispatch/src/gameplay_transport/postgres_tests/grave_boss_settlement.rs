@@ -234,17 +234,11 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
                 completes: false,
                 experience: None,
                 world_change: None,
-                effects: [
-                    (objective.stage.clone(), objective.stage_value),
-                    (objective.counter.clone(), 0),
-                ]
-                .into_iter()
-                .map(|(track, value)| QuestEffect {
-                    track,
+                effects: vec![QuestEffect {
+                    track: objective.counter.clone(),
                     from: QuestComparison::Any,
-                    effect: QuestEffectKind::Set(value),
-                })
-                .collect(),
+                    effect: QuestEffectKind::Set(0),
+                }],
             })
             .map_err(debug)?,
     ));
@@ -297,8 +291,8 @@ async fn exercise(h: &Harness, creature: &str, case: Case) -> TestResult {
         "peer progression must be admitted before seeding its quest"
     );
     let session = admitted.game_session_id;
-    let primary = prepare_player(&deps, &owner, session).await?;
-    let other = prepare_player(&deps, &owner, peer).await?;
+    let primary = prepare_player(h, &deps, &owner, session, objective).await?;
+    let other = prepare_player(h, &deps, &owner, peer, objective).await?;
     assert_eq!(progress(h, id(101), objective).await?, (0, -1));
     let queue = owner.states.attack.lock().await.kills().clone();
     let observed = owner.owner_now();
@@ -515,9 +509,11 @@ fn simulate_idle_think(
 }
 
 async fn prepare_player(
+    h: &Harness,
     deps: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
+    objective: &DeathObjective,
 ) -> TestResult<ExactActorRef> {
     let fence = owner
         .current_quest_fence(session)
@@ -573,10 +569,29 @@ async fn prepare_player(
         )
         .await
         .map_err(debug)?;
-    assert!(
-        matches!(outcome, QuestTransitionOutcome::Committed(_)),
-        "{outcome:?}"
-    );
+    let QuestTransitionOutcome::Committed(receipt) = outcome else {
+        return Err(format!("boss quest setup did not commit: {outcome:?}").into());
+    };
+    // The real passage owns this stage. Import the participant's earlier progress
+    // at the setup revision so this scenario starts at the boss fight.
+    let mut prior = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *prior)
+        .await?;
+    let imported = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+            (character_id, quest_key, track_key, value, committed_character_revision)
+         VALUES (encode($1,'hex')::uuid, $2, $3, $4, $5::text::numeric)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(&objective.quest)
+    .bind(&objective.stage)
+    .bind(objective.stage_value)
+    .bind(receipt.committed_character_revision.get().to_string())
+    .execute(&mut *prior)
+    .await?;
+    assert_eq!(imported.rows_affected(), 1);
+    prior.commit().await?;
     owner.admit_quest_session(&admitted).await;
     assert!(owner.refresh_source_party_presence(actor, session).await);
     Ok(actor)
