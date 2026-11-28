@@ -707,7 +707,7 @@ class CharacterBootstrapTests(unittest.TestCase):
                     F5_C17A_ACCOUNT=unused F5_C17C_ACCOUNT=unused
                     F5_C13_ACCOUNT=unused F5_C18A_ACCOUNT=unused F5_C17D_ACCOUNT=unused
                     C11_UNASSIGNED_ACCOUNT=unused C11_KNIGHT_ACCOUNT=unused C12_MONK_ACCOUNT=unused
-                    C06_CASTER_ACCOUNT=unused
+                    C06_CASTER_ACCOUNT=unused C10_FULL_ACCOUNT=unused C10_CLIENT_ACCOUNT=unused
                     statuses=({statuses})
                     calls=0
                     python3() {{ :; }}
