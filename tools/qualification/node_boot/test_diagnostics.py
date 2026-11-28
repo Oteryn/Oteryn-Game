@@ -440,5 +440,40 @@ class KnownFailRowsTests(unittest.TestCase):
         self.assertEqual(len({row[0] for row in rows}), len(rows))
 
 
+class RowBatchFixtureTests(unittest.TestCase):
+    def test_world_seam_preserves_the_selected_row_batch(self):
+        seam = function("seam_stages")
+        account_vars = sorted(set(re.findall(r"\$([A-Z0-9_]*ACCOUNT[A-Z0-9_]*)", seam)))
+        assignments = "\n".join(f"{name}=fixture" for name in account_vars)
+        script = r"""
+set -Eeuo pipefail
+GAME_SOURCE=$PWD; NODE_BOOT_LIBTEST=$1
+export OTERYN_E2E_ROW_BATCH=300:1
+NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; NODE_BOOT_LIFECYCLE=native_reference
+BASE=/x; WORK=/x; node_log=/x/node.log; MAP_REVISION=m; WP5_PKI=/x; ADMIN_URL=u; WORLD_ID=w; CHANNEL_ID=c; WP5_PORT=1
+FRESH_KEY_ID=f; FRESH_SEED_HEX=s; RECOVERY_KEY_ID=r; RECOVERY_SEED_HEX=t
+W10_ACCOUNT_ID=w10; C16C_ACCOUNT_ID=c16c; G17_ACCOUNT=g17; G01_ACCOUNT=g01
+EXTRA_WORLD_ACCOUNTS=(e); NODE_GAMEPLAY_ENV=(); NODE_CLOCK_FEATURES=(); NODE_SPAWN_FEATURES=()
+declare -A STATUS=()
+sleep() { :; }
+"""
+        with tempfile.TemporaryDirectory() as work:
+            Path(work, "apps", "game-server").mkdir(parents=True)
+            executable = Path(work, "test-binary")
+            executable.write_text(
+                '#!/bin/bash\ncase "$1" in\n'
+                '  *qualification_spawn_transaction*) echo "test result: ok. 1 passed; 0 failed; 0 ignored;" ;;\n'
+                '  *) echo "batch=${OTERYN_E2E_ROW_BATCH-unset}" ;;\nesac\n'
+            )
+            executable.chmod(0o700)
+            result = subprocess.run(
+                ["bash", "-c", "\n".join((script, assignments, seam, "seam_stages")),
+                 "w19c", executable],
+                cwd=work, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.splitlines()[-1], "batch=300:1")
+
+
 if __name__ == '__main__':
     unittest.main()
