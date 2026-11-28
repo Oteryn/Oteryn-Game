@@ -289,7 +289,7 @@ facts and determines actual item loss. A lost backpack includes its contents.
 Request: `132:u8` plus optional `target:16 bytes`; absent target selects self.
 Reply: `132:u8, character:16 bytes, name_len:u8, name:utf8, badge_count:u8, badge_ids:u8[], equipment_count:u8`, followed by each `slot:u8, definition_len:u16le, definition:utf8, quantity:u32le`. Name is 2–29 bytes, definitions 1–512 bytes, equipment at most 32 unique slots, quantity positive; badges use the admitted catalogue in ascending order without duplicates. Reply is bounded to 17000 bytes.
 
-Identity, permanent account badges and equipped items are read together under the current viewer item/session, node and recovery fences and existing accepted VIP consent rule. Self queries refresh eligible badges first; foreign reads never grant awards. Refusal discloses no profile. Legacy empty command 387 and tab 7 remain unchanged. Native Badges and Inspection use this opt-in snapshot and discard cached facts on target changes or refused refreshes.
+Identity, permanent account badges and equipped items are read together under the current viewer item/session, node and recovery fences. A foreign profile requires accepted character VIP consent or accepted account friendship in the same World and includes only public badges. Self queries refresh eligible badges first; foreign reads never grant awards. Refusal discloses no profile. Legacy empty command 387 and tab 7 remain unchanged. Native Badges and Inspection use this opt-in snapshot and discard cached facts on target changes or refused refreshes.
 
 ## Named spell modifiers (selector 133, command 388)
 
