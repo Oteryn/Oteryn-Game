@@ -2,6 +2,7 @@ use super::Minimap;
 
 impl Minimap {
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {
+        self.tracking |= self.own != (x, y, floor);
         self.own = (x, y, floor);
         if self.tracking {
             self.x = x;

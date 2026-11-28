@@ -368,14 +368,13 @@ async fn verify(
         std::slice::from_ref(&marker)
     );
     wait_for_saved_marks(host, &cache_path, std::slice::from_ref(&marker)).await?;
-    let view = host.view()?;
     let worker = tokio::spawn(crate::play::run_session(session, commands, outbox));
-    let (_, _, _, zoom, tracking) = view.minimap_camera();
+    host.drag_minimap([4, 0])?;
+    let zoom = 1;
     assert_eq!(
-        view.minimap_camera(),
-        (origin.x, origin.y, origin.floor, zoom, true)
+        host.view()?.minimap_camera(),
+        (origin.x + 4, origin.y, origin.floor, zoom, false)
     );
-    assert!(tracking);
     host.step_east()?;
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
@@ -517,6 +516,7 @@ async fn verify(
     );
     let [marker_x, marker_y] = oteryn_client_ui::minimap::view()?.tile_to_screen(marker_tile);
     let stride = (oteryn_client_ui::minimap::COLUMNS * oteryn_client_ui::minimap::TILE_PX) as usize;
+    assert_eq!(pixels[44 * stride + 56], [255, 220, 40, 255], "N07d player crosshair border");
     assert_eq!(
         pixels[(marker_y as usize + 2) * stride + marker_x as usize + 2],
         palette_rgba(180),

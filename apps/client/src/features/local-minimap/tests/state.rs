@@ -177,14 +177,13 @@ fn t076_floor_and_zoom_controls_stop_following_and_recentre_on_the_player() {
     map.tracking = false;
     map.floor = floor_down(map.floor);
     map.zoom = zoom_out(map.zoom);
-    map.follow(101, 200, 7);
+    map.follow(100, 200, 7);
     assert_eq!((map.x, map.y, map.floor, map.zoom), (100, 200, 8, 2));
     assert_eq!(map.position(15, 12), Some((100, 200, 8)));
-    map.floor = floor_up(map.floor);
-    map.tracking = true;
-    let (x, y, floor) = map.own;
-    map.follow(x, y, floor);
-    assert_eq!((map.x, map.y, map.floor), (101, 200, 7));
+    assert_eq!(floor_up(map.floor), 7);
+    map.follow(101, 200, 7);
+    assert_eq!((map.x, map.y, map.floor, map.zoom), (101, 200, 7, 2));
+    assert!(map.tracking);
 }
 
 #[test]
