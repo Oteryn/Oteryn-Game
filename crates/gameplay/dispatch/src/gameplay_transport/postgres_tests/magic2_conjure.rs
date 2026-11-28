@@ -81,10 +81,8 @@ fn scenarios(cases: &[(bool, bool)], cooldown_clock: bool, combat_room_only: boo
                 world,
                 &controller,
                 &pin,
-                full,
-                missing_reagent,
-                cooldown_clock,
-                combat_room_only,
+                (full, missing_reagent),
+                (cooldown_clock, combat_room_only),
             )
             .await?;
         }
@@ -99,10 +97,8 @@ async fn scenario(
     world: crate::foundation::WorldId,
     controller: &crate::content::ContentActivationController,
     pin: &crate::content::NativeEntryContentPin,
-    full: bool,
-    missing_reagent: bool,
-    cooldown_clock: bool,
-    combat_room_only: bool,
+    (full, missing_reagent): (bool, bool),
+    (cooldown_clock, combat_room_only): (bool, bool),
 ) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
