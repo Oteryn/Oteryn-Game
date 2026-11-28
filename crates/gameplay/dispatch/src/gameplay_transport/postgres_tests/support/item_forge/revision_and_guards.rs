@@ -33,7 +33,7 @@ pub(super) async fn dust_stage_changed(
     let (status, paid) = exchange(owner, admitted, request(Operation::DustLimit, 192)).await?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(paid["succeeded"], true);
-    assert_eq!(balances(h).await?, (75, 101, 0, 0));
+    assert_eq!(balances(h).await?, (75, 120, 0, 0));
     let before_retry: Value = sqlx::query_scalar("SELECT jsonb_build_object('dust',(SELECT to_jsonb(d) FROM game_character_forge_dust d WHERE character_id=encode($1,'hex')::uuid),'entries',(SELECT count(*) FROM game_character_forge_dust_entries),'history',(SELECT count(*) FROM game_forge_history),'audit',(SELECT count(*) FROM game_item_audit_outbox))")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     let (status, refused) = exchange(owner, admitted, original).await?;

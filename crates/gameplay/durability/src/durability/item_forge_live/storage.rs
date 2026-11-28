@@ -8,7 +8,8 @@ pub(super) const RULESET: &str = "crystal-201189f-forge-v1";
 
 pub(super) fn ruleset(operation: Operation) -> &'static str {
     match operation {
-        Operation::Transfer | Operation::DustLimit => DUST_LIMIT_RULESET_REVISION,
+        Operation::Transfer => dust_audit::GLOBAL_FORGE_V2,
+        Operation::DustLimit => DUST_LIMIT_RULESET_REVISION,
         _ => RULESET,
     }
 }
@@ -200,9 +201,10 @@ pub(super) async fn insert(
         reserved.entry = legacy.entry_id;
         reserved.occurred_at = legacy.occurred_at_unix_ms;
         reserved.content = legacy.content_digest;
-        if legacy.ruleset_revision != DUST_LIMIT_RULESET_REVISION {
-            reserved.ruleset = RULESET.into();
-        }
+        reserved.ruleset = match legacy.ruleset_revision.as_str() {
+            "D1230" => RULESET.into(),
+            _ => legacy.ruleset_revision.clone(),
+        };
         reserved.world = legacy.world_id;
         reserved.channel = legacy.channel_id;
         reserved.simulation_revision = legacy.simulation_profile_revision;

@@ -465,7 +465,7 @@ fn check_funded(body: &serde_json::Value, operation: Operation) -> TestResult {
             "slivers_spent":0,"slivers_created":3,"cores_created":0}
         }),
         Operation::DustLimit => serde_json::json!({
-            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":101}
+            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":120}
         }),
         _ => return Err("unexpected funded Forge action".into()),
     };
@@ -563,7 +563,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut parity_failure = None;
     for (ordinal, operation, expected_balance) in [
         (10, Operation::DustToSlivers, (40, 100)),
-        (11, Operation::DustLimit, (15, 101)),
+        (11, Operation::DustLimit, (15, 120)),
     ] {
         client.service_liveness(Duration::from_millis(490)).await?;
         let before = client
@@ -686,7 +686,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         )
         .into());
     }
-    let balance = (15, 101);
+    let balance = (15, 120);
     let inventory = client
         .inventory()
         .cloned()
@@ -745,7 +745,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             bank_gold: 0,
             bank_spendable: true,
             dust: 15,
-            dust_limit: 101,
+            dust_limit: 120,
             cores: 0,
             slivers: 3,
         },
@@ -947,12 +947,12 @@ mod tests {
     }
 
     #[test]
-    fn funded_cap_requires_global_single_point_increase() {
+    fn funded_cap_requires_global_twenty_point_increase() {
         let mut receipt = serde_json::json!({
-            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":101}
+            "operation":"dust_limit","succeeded":true,"result":{"dust":15,"dust_limit":120}
         });
         assert!(check_funded(&receipt, Operation::DustLimit).is_ok());
-        receipt["result"]["dust_limit"] = 120.into();
+        receipt["result"]["dust_limit"] = 101.into();
         assert!(check_funded(&receipt, Operation::DustLimit).is_err());
     }
 

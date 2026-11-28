@@ -922,6 +922,7 @@ fn plan_dust_limit(
     before.raise_limit().map_err(|error| match error {
         ForgeDustError::InsufficientDust => ForgeDustLimitError::InsufficientDust,
         ForgeDustError::MaximumLimitReached => ForgeDustLimitError::MaximumLimitReached,
+        ForgeDustError::InvalidLimit => ForgeDustLimitError::InvalidInput,
         _ => ForgeDustLimitError::Unavailable(DurabilityError::InvalidStoredState),
     })
 }

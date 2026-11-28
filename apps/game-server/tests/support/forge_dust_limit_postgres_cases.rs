@@ -204,7 +204,7 @@ fn native_limit_raise_atomic_replay_new_command_and_ledger_audit() -> TestResult
                     entry.after.limit().get(),
                     entry.amount
                 ),
-                (100, 75, 101, 25)
+                (100, 75, 120, 25)
             );
             assert_eq!(effect_counts(h).await?, [2, 1, 1, 1]);
             assert_eq!(revision(h).await?, before_revision);
@@ -263,7 +263,7 @@ fn native_limit_raise_atomic_replay_new_command_and_ledger_audit() -> TestResult
                     audit.spent,
                     audit.balance.limit().get()
                 ),
-                (2, 100, 25, 101)
+                (2, 100, 25, 120)
             );
             Ok(())
         })
@@ -688,7 +688,7 @@ fn native_limit_raise_two_occurrences_serialize_and_loser_keeps_quoted_stage() -
                 entry.before.limit().get(),
                 entry.after.limit().get(),
                 entry.amount,
-            ) != (100, 75, 100, 101, 25)
+            ) != (100, 75, 100, 120, 25)
             {
                 return Err(
                     format!("concurrent winner did not pay its exact quote: {entry:?}").into(),
@@ -761,7 +761,7 @@ fn native_limit_raise_all_stages_are_paid_and_the_226th_is_refused() -> TestResu
                     .map_err(debug)?;
                 let entry = result.receipt.entry.ok_or("missing paid stage")?;
                 assert_eq!(entry.amount, 25 + u32::from(stage));
-                assert_eq!(entry.after.limit().get(), 100 + stage + 1);
+                assert_eq!(entry.after.limit().get(), 100 + 20 * (stage + 1));
             }
             let before = effect_counts(h).await?;
             assert_eq!(before, [450, 225, 225, 225]);
@@ -784,7 +784,7 @@ fn native_limit_raise_all_stages_are_paid_and_the_226th_is_refused() -> TestResu
                 audit_forge_dust_ledger(&mut connection, native::fence()?.character_id, 450)
                     .await
                     .map_err(debug)?;
-            assert_eq!(ledger.balance.limit().get(), 325);
+            assert_eq!(ledger.balance.limit().get(), 4_600);
             assert_eq!(ledger.spent, (25u64 + 249) * 225 / 2);
             assert_eq!(
                 ledger.credited - ledger.spent,
@@ -814,8 +814,8 @@ fn native_limit_raise_partial_ledger_and_forged_terminal_receipt_cannot_commit()
             sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
                 .execute(&mut *tx)
                 .await?;
-            sqlx::query("INSERT INTO game_character_forge_dust_entries(entry_id,character_id,previous_entry_id,kind,cause,cause_occurrence_id,transaction_id,amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after) SELECT r.entry_id,r.character_id,d.last_entry_id,'LIMIT_RAISE','forge_dust_limit',r.occurrence_id,r.transaction_id,25,0,100,75,100,101 FROM game_forge_dust_limit_reservations r JOIN game_character_forge_dust d USING(character_id)").execute(&mut *tx).await?;
-            sqlx::query("UPDATE game_character_forge_dust d SET balance=75,dust_limit=101,last_entry_id=r.entry_id FROM game_forge_dust_limit_reservations r WHERE r.character_id=d.character_id").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_forge_dust_entries(entry_id,character_id,previous_entry_id,kind,cause,cause_occurrence_id,transaction_id,amount,lost_amount,balance_before,balance_after,dust_limit_before,dust_limit_after) SELECT r.entry_id,r.character_id,d.last_entry_id,'LIMIT_RAISE','forge_dust_limit',r.occurrence_id,r.transaction_id,25,0,100,75,100,120 FROM game_forge_dust_limit_reservations r JOIN game_character_forge_dust d USING(character_id)").execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_character_forge_dust d SET balance=75,dust_limit=120,last_entry_id=r.entry_id FROM game_forge_dust_limit_reservations r WHERE r.character_id=d.character_id").execute(&mut *tx).await?;
             assert!(tx.commit().await.is_err());
             assert_eq!(effect_counts(h).await?, before);
             // Existing PROF-SHAPE-1b's closed SPEND/line pairing remains active after this append.
