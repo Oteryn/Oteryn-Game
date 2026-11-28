@@ -1244,6 +1244,67 @@ fn wrath_mission_five_loads_admission_handoff_and_city_routes() -> Result<(), St
 }
 
 #[test]
+fn chartan_reopens_supplies_after_the_daily_cooldown() -> Result<(), String> {
+    use crate::quest::reward_callbacks::{offered_for, primary_transition};
+
+    let loaded = crate::quest::loader::load_embedded_quest_state("chartan-supplies")
+        .map_err(|error| format!("{error:?}"))?;
+    let catalogue = loaded.catalogue();
+    let callbacks = offered_for(catalogue)?;
+    let chartan = callbacks
+        .iter()
+        .find(|row| row.key.ends_with("/wrath-city/chartan-supplies-repeat"))
+        .ok_or("Chartan's repeat offer")?;
+    assert_eq!(chartan.npc, "oteryn:npc.chartan");
+    assert!(chartan.requires.iter().any(|guard| {
+        guard.track.ends_with("/wrath_of_the_emperor/questline")
+            && guard.minimum == 34
+            && guard.maximum == 34
+    }));
+    let report = callbacks
+        .iter()
+        .find(|row| row.key.ends_with("/wrath-city/supplies-report"))
+        .ok_or("Zalamon's report")?;
+    let key = |name: &str| format!("oteryn:quest-progress/wrath-city/{name}");
+    let mut stored = BTreeMap::from([
+        (key("crate"), 1),
+        (key("fish"), 1),
+        (key("prisoners"), 1),
+        (key("supplies"), 1),
+    ]);
+    let now = 1_700_000_000;
+    let turn_in = catalogue
+        .evaluate(&primary_transition(report)?, &stored, now)
+        .map_err(|error| format!("{error:?}"))?;
+    stored.extend(
+        turn_in
+            .into_iter()
+            .map(|change| (change.track, change.after)),
+    );
+    assert_eq!(stored.get(&key("completed")), Some(&1));
+    assert_eq!(stored.get(&key("last-report")), Some(&now));
+    let repeat = primary_transition(chartan)?;
+    assert!(matches!(
+        catalogue.evaluate(&repeat, &stored, now + 86399),
+        Err(crate::quest::QuestRefusal::StageMismatch)
+    ));
+    let accepted = catalogue
+        .evaluate(&repeat, &stored, now + 86400)
+        .map_err(|error| format!("{error:?}"))?;
+    stored.extend(
+        accepted
+            .into_iter()
+            .map(|change| (change.track, change.after)),
+    );
+    for objective in ["crate", "fish", "prisoners"] {
+        assert_eq!(stored.get(&key(objective)), Some(&0), "{objective}");
+    }
+    assert_eq!(stored.get(&key("supplies")), Some(&1));
+    assert_eq!(stored.get(&key("completed")), Some(&1));
+    Ok(())
+}
+
+#[test]
 fn daniel_repeats_a_reported_starter_hunt_only_from_the_choice_prompt() -> Result<(), String> {
     use crate::quest::npc_rules::{NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger};
     let loaded = crate::quest::loader::load_embedded_quest_state("daniel-repeat")
