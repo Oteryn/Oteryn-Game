@@ -5356,6 +5356,7 @@ dependencies = [
 name = "oteryn-gameplay-entities"
 version = "0.1.0"
 dependencies = [
+ "jiff",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",
  "oteryn-gameplay-foundation",

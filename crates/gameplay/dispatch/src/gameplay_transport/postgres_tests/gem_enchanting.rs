@@ -14,10 +14,10 @@ use oteryn_protocol_oteryn::world_object::{
 use tokio::io::AsyncWriteExt;
 
 #[test]
-fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+fn gemx_legacy_shrine_refuses_without_inventory_or_vitals_change() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(false).map_err(|e| e.to_string()))?
@@ -27,10 +27,10 @@ fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
 }
 
 #[test]
-fn gemx_weapon_and_ammunition_wire_atomic_replay() -> TestResult {
-    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+fn gemx_legacy_weapons_refuse_and_live_gem_uses_commit_and_replay() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
-    }
+    };
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true).map_err(|e| e.to_string()))?
@@ -171,9 +171,23 @@ fn scenario(weapon: bool) -> TestResult {
                 ("oteryn:item.tibia.i3271", 1),
                 ("oteryn:item.tibia.i3447", 73),
                 ("oteryn:item.tibia.i8077", 1),
+                ("oteryn:item.tibia.i9020", 1),
             ],
         )
         .await?;
+        // The expiry owner leaves an empty timed row on the worn boots.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_item_timed_states(item_instance_id,state_revision)
+                     SELECT item_instance_id,3 FROM game_item_instances
+                     WHERE definition_production_key='oteryn:item.tibia.i9020'",
+        )
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -213,120 +227,46 @@ fn scenario(weapon: bool) -> TestResult {
                 .map(|s| s.vitals())
                 .ok_or("live")
         };
+        let inventory = async || {
+            sqlx::query_scalar::<_, serde_json::Value>(
+                "SELECT jsonb_agg(jsonb_build_array(to_jsonb(i),to_jsonb(e),to_jsonb(t)) ORDER BY i.item_instance_id)
+                 FROM game_item_instances i LEFT JOIN game_item_container_entries e USING(item_instance_id)
+                 LEFT JOIN game_item_timed_states t USING(item_instance_id)",
+            )
+            .fetch_one(&harness.pool)
+            .await
+        };
+        let before_inventory = inventory().await?;
+        let mut command = 1;
         if weapon {
-            for (command, target, result_key, count, charges) in [
-                (
-                    1,
-                    "oteryn:item.tibia.i3271",
-                    "oteryn:item.tibia.i660",
-                    1_i64,
-                    Some(1000_i32),
-                ),
-                (
-                    2,
-                    "oteryn:item.tibia.i3447",
-                    "oteryn:item.tibia.i763",
-                    73,
-                    None,
-                ),
-                (
-                    3,
-                    "oteryn:item.tibia.i8077",
-                    "oteryn:item.tibia.i8078",
-                    1,
-                    None,
-                ),
-            ] {
-                let intent = UseIntent {
-                    use_with_map_item: Some(MapUseTarget::Item(
-                        std::num::NonZeroU64::new(1).ok_or("target")?,
-                    )),
-                    ..intent.clone()
-                };
-                let payload = encode_item_use_intent(&intent).map_err(debug)?;
-                let before = live().await?;
-                let (next, result, actual) = exchange(
+            let item_use = UseIntent {
+                use_with_map_item: Some(MapUseTarget::Item(
+                    std::num::NonZeroU64::new(1).ok_or("target")?,
+                )),
+                ..intent
+            };
+            let payload = encode_item_use_intent(&item_use).map_err(debug)?;
+            let ruby = reference("oteryn:item.tibia.i676").ok_or("ruby")?;
+            let before = live().await?;
+            for target in ["oteryn:item.tibia.i3271", "oteryn:item.tibia.i3447"] {
+                let (next, result, _) = exchange(
                     &owner,
                     admitted,
                     command,
                     &payload,
-                    reference("oteryn:item.tibia.i676"),
+                    Some(ruby),
                     reference(target),
                 )
                 .await?;
                 admitted = next;
-                assert_eq!(result, UseDisposition::Committed);
-                assert_eq!(live().await?, before);
-                let row: (i64, Option<i32>) = sqlx::query_as("SELECT i.quantity,t.charges FROM game_item_instances i LEFT JOIN game_item_timed_states t USING(item_instance_id) WHERE i.definition_production_key=$1 AND i.lifecycle=1").bind(result_key).fetch_one(&harness.pool).await?;
-                assert_eq!(row, (count, charges));
-                // The retired input handles are deliberately retained: replay must use the receipt.
-                let (next, replay, _) =
-                    exchange(&owner, admitted, command, &actual, None, None).await?;
-                admitted = next;
-                assert_eq!(replay, UseDisposition::Committed);
-                replay_record(&owner, deps.actor, admitted, command, &actual).await?;
-                assert_eq!(live().await?, before);
+                command += 1;
                 assert_eq!(
-                    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
-                        .fetch_one(&harness.pool)
-                        .await?,
-                    i64::try_from(command)?
+                    result,
+                    UseDisposition::NothingToUse,
+                    "legacy target {target}"
                 );
-            }
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i676'").fetch_one(&harness.pool).await?, 0);
-            eprintln!("GEMX_WEAPON_AMMO_EXECUTED");
-        } else {
-            // A wrong item and wrong shrine spend no resources and create no receipt.
-            let before = live().await?;
-            let (next, wrong, _) = exchange(
-                &owner,
-                admitted,
-                1,
-                &payload,
-                reference("oteryn:item.tibia.i3577"),
-                None,
-            )
-            .await?;
-            admitted = next;
-            assert_ne!(wrong, UseDisposition::Committed);
-            assert_eq!(live().await?, before);
-            let wrong = UseIntent {
-                use_with_map_item: Some(MapUseTarget::Item(
-                    std::num::NonZeroU64::new(1).ok_or("target")?,
-                )),
-                ..intent.clone()
-            };
-            let (next, wrong, _) = exchange(
-                &owner,
-                admitted,
-                2,
-                &encode_item_use_intent(&wrong).map_err(debug)?,
-                reference(dough),
-                reference("oteryn:item.tibia.i3271"),
-            )
-            .await?;
-            admitted = next;
-            assert_eq!(wrong, UseDisposition::NothingToUse);
-            assert_eq!(live().await?, before);
-            // Insufficient mana, then insufficient soul. Each refusal leaves the stack intact.
-            for (command, mana, soul) in [(3, 899, 100), (4, 3000, 5)] {
-                {
-                    let runtime = deps.runtime.lock().await;
-                    let mut states = owner.states.spell_states.lock().await;
-                    let state = states
-                        .get_mut(&runtime, deps.actor, admitted.game_session_id)
-                        .ok_or("state")?;
-                    state.restore_saved_vitals(185, mana);
-                    state
-                        .restore_bed_rest([soul, 0, 0, 0], owner.owner_now().get())
-                        .ok_or("soul")?;
-                }
-                let before = live().await?;
-                let (next, refused, _) =
-                    exchange(&owner, admitted, command, &payload, reference(dough), None).await?;
-                admitted = next;
-                assert_eq!(refused, UseDisposition::NotPossible);
                 assert_eq!(live().await?, before);
+                assert_eq!(inventory().await?, before_inventory);
             }
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
@@ -334,7 +274,76 @@ fn scenario(weapon: bool) -> TestResult {
                     .await?,
                 0
             );
-            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3030'").fetch_one(&harness.pool).await?, 3);
+            for (target, output, remaining) in [
+                ("oteryn:item.tibia.i8077", "oteryn:item.tibia.i8078", 2_i64),
+                ("oteryn:item.tibia.i9020", "oteryn:item.tibia.i9019", 1),
+            ] {
+                let (next, result, actual) = exchange(
+                    &owner,
+                    admitted,
+                    command,
+                    &payload,
+                    Some(ruby),
+                    reference(target),
+                )
+                .await?;
+                admitted = next;
+                assert_eq!(result, UseDisposition::Committed, "live target {target}");
+                assert_eq!(live().await?, before);
+                let rows: Vec<(String, i64, i16)> = sqlx::query_as(
+                    "SELECT definition_production_key,quantity,lifecycle FROM game_item_instances
+                     WHERE definition_production_key=ANY($1) ORDER BY definition_production_key",
+                )
+                .bind(["oteryn:item.tibia.i676", target, output].as_slice())
+                .fetch_all(&harness.pool)
+                .await?;
+                assert_eq!(rows.len(), 3);
+                for (key, quantity, lifecycle) in [
+                    ("oteryn:item.tibia.i676", remaining, 1),
+                    (target, 0, 2),
+                    (output, 1, 1),
+                ] {
+                    assert!(
+                        rows.iter()
+                            .any(|row| row.0 == key && (row.1, row.2) == (quantity, lifecycle)),
+                        "{key}: {rows:?}"
+                    );
+                }
+                let committed_inventory = inventory().await?;
+                let (next, replay, _) =
+                    exchange(&owner, admitted, command, &actual, None, None).await?;
+                admitted = next;
+                assert_eq!(replay, UseDisposition::Committed);
+                replay_record(&owner, deps.actor, admitted, command, &actual).await?;
+                assert_eq!(live().await?, before);
+                assert_eq!(inventory().await?, committed_inventory);
+                command += 1;
+            }
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                2
+            );
+            // The SQL proof independently checks the same outputs as the gameplay rule.
+            use oteryn_gameplay_items::item_craft::enchanting::{ENCHANTED, GEMS, rule};
+            for source in ENCHANTED.into_iter().chain(GEMS) {
+                for target in [146, 150, 154, 158, 3271, 3447, 8077, 9020] {
+                    let persisted_rule: Option<i32> =
+                        sqlx::query_scalar("SELECT game_item_enchanting_result($1,$2)")
+                            .bind(i32::from(source))
+                            .bind(i32::from(target))
+                            .fetch_one(&harness.pool)
+                            .await?;
+                    assert_eq!(
+                        persisted_rule,
+                        rule(source, target, 3, 1).map(|rule| i32::from(rule.output)),
+                        "SQL rule for {source} -> {target}"
+                    );
+                }
+            }
+            eprintln!("GEMX_LIVE_USES_EXECUTED");
+        } else {
             {
                 let runtime = deps.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
@@ -346,31 +355,48 @@ fn scenario(weapon: bool) -> TestResult {
                     .restore_bed_rest([100, 0, 0, 0], owner.owner_now().get())
                     .ok_or("soul")?;
             }
-            let (next, result, actual) =
-                exchange(&owner, admitted, 5, &payload, reference(dough), None).await?;
-            admitted = next;
-            assert_eq!(result, UseDisposition::Committed);
-            let after = live().await?;
-            assert_eq!((after.mana, after.soul), (2100, 94));
-            let stored: (i32, i32) =
-                sqlx::query_as("SELECT mana,rest[1] FROM game_character_last_positions")
-                    .fetch_one(&harness.pool)
-                    .await?;
-            assert_eq!(stored, (2100, 94));
-            let outputs: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i676' AND minted_transaction_id IN (SELECT transaction_id FROM game_item_craft_records)").fetch_one(&harness.pool).await?;
-            assert_eq!(outputs, 3);
-            let (_, replay, _) = exchange(&owner, admitted, 5, &actual, None, None).await?;
-
-            assert_eq!(replay, UseDisposition::Committed);
-            replay_record(&owner, deps.actor, admitted, 5, &actual).await?;
-            assert_eq!(live().await?, after);
+            let before = live().await?;
+            let (next, result, _) =
+                exchange(&owner, admitted, command, &payload, reference(dough), None).await?;
+            assert_eq!(result, UseDisposition::NothingToUse, "legacy shrine");
+            assert_eq!(live().await?, before);
+            assert_eq!(inventory().await?, before_inventory);
             assert_eq!(
                 sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
                     .fetch_one(&harness.pool)
                     .await?,
-                1
+                0
             );
-            eprintln!("GEMX_SHRINE_EXECUTED");
+
+            let (next, result, _) = exchange(
+                &owner,
+                next,
+                command + 1,
+                &payload,
+                reference("oteryn:item.tibia.i3577"),
+                None,
+            )
+            .await?;
+            assert_ne!(result, UseDisposition::Committed);
+            let wrong_target = UseIntent {
+                use_with_map_item: Some(MapUseTarget::Item(
+                    std::num::NonZeroU64::new(1).ok_or("target")?,
+                )),
+                ..intent
+            };
+            let (_, result, _) = exchange(
+                &owner,
+                next,
+                command + 2,
+                &encode_item_use_intent(&wrong_target).map_err(debug)?,
+                reference(dough),
+                reference("oteryn:item.tibia.i3271"),
+            )
+            .await?;
+            assert_eq!(result, UseDisposition::NothingToUse);
+            assert_eq!(live().await?, before);
+            assert_eq!(inventory().await?, before_inventory);
+            eprintln!("GEMX_LEGACY_SHRINE_EXECUTED");
         }
         drop(owner);
         drop(authority);
@@ -522,39 +548,30 @@ fn gemx_native_output_closure_includes_stacks_elements_and_charges() -> TestResu
     let global: serde_json::Value = serde_json::from_slice(include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/enchanting-global-weapon-facts.json"
     ))?;
-    let weapons = [
-        3271, 7383, 7384, 7406, 7402, 3317, 3318, 7389, 7380, 3342, 3311, 3333, 7415, 7392, 3279,
-        3447, 8077,
-    ];
-    for gem in oteryn_gameplay_items::item_craft::enchanting::ENCHANTED {
-        for weapon in weapons {
-            let rule = oteryn_gameplay_items::item_craft::enchanting::rule(gem, weapon, 3, 1)
-                .ok_or("rule")?;
-            let output = oteryn_gameplay_items::item_craft::enchanting::output(native, rule)
-                .ok_or("output admission")?;
+    for weapon in donor["rules"]["weapons"].as_array().ok_or("weapons")? {
+        let target = weapon[0].as_u64().ok_or("target")?;
+        for output in weapon[1].as_array().ok_or("outputs")? {
+            let key = format!("oteryn:item.tibia.i{}", output.as_u64().ok_or("output")?);
             let record = native
-                .item_policy(&output.production_key, &output.revision_ref)
+                .item_policy(&key, "definition-r1")
                 .ok_or("policy")?
                 .record();
+            assert!(record.admission.materializable, "{key}");
             let expected = donor["records"]
                 .as_array()
                 .ok_or("donor rows")?
                 .iter()
                 .find(|row| {
-                    row["production_definition"]["production_key"].as_str()
-                        == Some(&output.production_key)
+                    row["production_definition"]["production_key"].as_str() == Some(key.as_str())
                 })
                 .ok_or("donor output")?;
-            let expected_weapon = global
-                .get(&output.production_key)
-                .unwrap_or(&expected["semantics"]["weapon"]);
+            let expected_weapon = global.get(&key).unwrap_or(&expected["semantics"]["weapon"]);
             assert_eq!(
                 &serde_json::to_value(&record.semantics.weapon)?,
                 expected_weapon,
-                "{}",
-                output.production_key
+                "{key}"
             );
-            if rule.charges.is_some() {
+            if !matches!(target, 3447 | 8077) {
                 assert!(
                     matches!(&record.semantics.charges,F::Known(charges) if charges.count == F::Known(1000))
                 );
