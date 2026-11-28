@@ -110,6 +110,33 @@ interrupt_run() {
 trap 'interrupt_run 130' INT
 trap 'interrupt_run 143' TERM
 
+p08_selected() {
+  [[ "$1" == rows ]] || return 1
+  python3 - "${OTERYN_E2E_ROW_BATCH:-0:15}" <<'PY_P08_BATCH'
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    raise SystemExit(0)
+start, separator, count = batch.partition(":")
+raise SystemExit(not (
+    separator and start.isascii() and start.isdecimal()
+    and count.isascii() and count.isdecimal()
+    and int(start) <= 163 < int(start) + int(count)
+))
+PY_P08_BATCH
+}
+
+p08_replay() {
+  local capture_dir=$1 log=$2 replay_log=$3 session
+  local test=weapon_proficiency::e2e_p08::e2e_p08_replays_catalogue_browse_select_and_stale_refusal
+  session=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P08\.client status=CAPTURED evidence=session=([0-9a-f-]{36});.*/\1/p' "$log")
+  [[ "$session" =~ ^[0-9a-f-]{36}$ ]] || return 1
+  E2E_ALL_CAPTURE_DIR="$capture_dir" P08_CAPTURE_SESSION="$session" \
+    cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact > "$replay_log" 2>&1 \
+    && grep -Fxq "test $test ... ok" "$replay_log"
+}
+
 failed=0
 index=0
 for group in "$@"; do
@@ -117,11 +144,26 @@ for group in "$@"; do
   log="$work_dir/$index-$group.log"
   started=$SECONDS
   status=0
-  NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
+  capture_dir=
+  capture_env=()
+  if p08_selected "$group"; then
+    capture_dir=$(mktemp -d "$work_dir/p08-capture.XXXXXX") || blocked p08_capture_dir_unavailable
+    capture_env=("E2E_ALL_CAPTURE_DIR=$capture_dir")
+  fi
+  env "${capture_env[@]}" NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
+  if [[ -n "$capture_dir" && "$status" == 0 ]]; then
+    if p08_replay "$capture_dir" "$log" "$work_dir/$index-p08-replay.log"; then
+      line="SEAM_EVIDENCE e2e_all scenario=P08.client status=PASS evidence=live_capture_replayed"
+    else
+      line="SEAM_EVIDENCE e2e_all scenario=P08.client status=FAIL evidence=live_capture_or_replay_failed"
+      status=1
+    fi
+    printf '%s\n' "$line" | tee -a "$log"
+  fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1
   [[ "$status" == 0 ]] || failed=1
 done

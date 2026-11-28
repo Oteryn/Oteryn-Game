@@ -16,10 +16,10 @@ use std::num::NonZeroU32;
 type Error = Box<dyn std::error::Error>;
 
 struct Captured {
-    catalogue: Vec<u8>,
-    browse: Vec<u8>,
-    select: Vec<u8>,
-    stale: Vec<u8>,
+    catalogue: GatedCommandResult,
+    browse: GatedCommandResult,
+    select: GatedCommandResult,
+    stale: GatedCommandResult,
     expected: String,
 }
 
@@ -60,10 +60,10 @@ fn fixture() -> Result<Captured, Error> {
         slot: None,
     };
     Ok(Captured {
-        catalogue: catalogue.encode().ok_or_else(none)?,
-        browse: browse.encode().ok_or_else(none)?,
-        select: select.encode().ok_or_else(none)?,
-        stale: stale.encode(),
+        catalogue: result(CommandStatus::Accepted, &catalogue.encode().ok_or_else(none)?),
+        browse: result(CommandStatus::Accepted, &browse.encode().ok_or_else(none)?),
+        select: result(CommandStatus::Accepted, &select.encode().ok_or_else(none)?),
+        stale: result(CommandStatus::Accepted, &stale.encode()),
         expected: "catalogue_total=1\ncatalogue_first=258|Wand|120\nmutation_definition=259\nbrowse_total=1\nbrowse_rows=1\nselect_result=Accepted\nselect_levels=[Some(0)]\nstale_result=StaleRevision\n".into(),
     })
 }
@@ -73,12 +73,46 @@ fn captured() -> Result<Captured, Error> {
         return fixture();
     };
     let path = std::path::Path::new(&path);
+    let expected = std::fs::read_to_string(path.join("p08-expected.txt"))?;
+    let captured_session = value(&expected, "session")?;
+    if let Some(session) = std::env::var_os("P08_CAPTURE_SESSION")
+        && session != captured_session
+    {
+        return Err("P08 capture session does not match the live verdict".into());
+    }
+    let mut previous = (0, 0);
+    let mut read = |name: &str| -> Result<GatedCommandResult, Error> {
+        let metadata = std::fs::read_to_string(path.join(format!("p08-{name}.meta")))?;
+        let mut fields = metadata.split_ascii_whitespace();
+        let session = fields.next().ok_or("P08 missing frame session")?;
+        let command_id = fields.next().ok_or("P08 missing command id")?.parse()?;
+        let server_sequence = fields
+            .next()
+            .ok_or("P08 missing server sequence")?
+            .parse()?;
+        let status = fields.next().ok_or("P08 missing status")?.parse::<u32>()?;
+        if session != captured_session
+            || status != CommandStatus::Accepted as u32
+            || command_id <= previous.0
+            || server_sequence <= previous.1
+            || fields.next().is_some()
+        {
+            return Err(format!("P08 invalid frame metadata for {name}").into());
+        }
+        previous = (command_id, server_sequence);
+        Ok(GatedCommandResult {
+            command_id,
+            server_sequence,
+            status: CommandStatus::Accepted,
+            payload: std::fs::read(path.join(format!("p08-{name}.bin")))?,
+        })
+    };
     Ok(Captured {
-        catalogue: std::fs::read(path.join("p08-catalogue.bin"))?,
-        browse: std::fs::read(path.join("p08-browse.bin"))?,
-        select: std::fs::read(path.join("p08-select.bin"))?,
-        stale: std::fs::read(path.join("p08-stale.bin"))?,
-        expected: std::fs::read_to_string(path.join("p08-expected.txt"))?,
+        catalogue: read("catalogue")?,
+        browse: read("browse")?,
+        select: read("select")?,
+        stale: read("stale")?,
+        expected,
     })
 }
 
@@ -112,10 +146,7 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
         (catalogue.kind, catalogue.payload.as_slice()),
         (660, &[0, 0, 0, 0][..])
     );
-    assert!(apply_result(
-        &mut p,
-        &result(CommandStatus::Accepted, &captured.catalogue)
-    ));
+    assert!(apply_result(&mut p, &captured.catalogue));
     let [definition, name, experience]: [&str; 3] = value(e, "catalogue_first")?
         .splitn(3, '|')
         .collect::<Vec<_>>()
@@ -140,10 +171,7 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
         (browse.kind, browse.payload.as_slice()),
         (641, &[0, 0, 0, 0][..])
     );
-    assert!(apply_result(
-        &mut p,
-        &result(CommandStatus::Accepted, &captured.browse)
-    ));
+    assert!(apply_result(&mut p, &captured.browse));
     let rows: u32 = value(e, "browse_rows")?.parse()?;
     let total = value(e, "browse_total")?;
     let header = format!("Weapons {}–{rows} / {total}", u32::from(rows > 0));
@@ -159,10 +187,7 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     let mut expected_payload = mutation_definition.to_be_bytes().to_vec();
     expected_payload.extend([0, 0]);
     assert_eq!((select.kind, select.payload), (378, expected_payload));
-    assert!(apply_result(
-        &mut p,
-        &result(CommandStatus::Accepted, &captured.select)
-    ));
+    assert!(apply_result(&mut p, &captured.select));
     assert_eq!(
         p.result,
         Some(format!(
@@ -182,16 +207,13 @@ fn e2e_p08_replays_catalogue_browse_select_and_stale_refusal() -> Result<(), Err
     expected_payload.extend(u64::MAX.to_be_bytes());
     assert_eq!(stale.payload, expected_payload);
     assert_eq!(
-        ModificationReply::decode(&captured.stale),
+        ModificationReply::decode(&captured.stale.payload),
         Some(ModificationReply {
             result: ModificationResult::StaleRevision,
             slot: None,
         })
     );
-    assert!(apply_result(
-        &mut p,
-        &result(CommandStatus::Accepted, &captured.stale)
-    ));
+    assert!(apply_result(&mut p, &captured.stale));
     assert_eq!(
         p.result,
         Some(format!(
