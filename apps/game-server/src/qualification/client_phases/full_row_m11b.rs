@@ -17,6 +17,25 @@ use oteryn_dev_client::{
     ChatDisposition, ChatIntent, ChatOutcome, ChatSpeechMode, DevClientSession,
 };
 
+pub(super) const APPROACH: TilePos = TilePos {
+    x: 32296,
+    y: 32331,
+    floor: -7,
+};
+pub(super) const ROPE: TilePos = TilePos {
+    x: 32296,
+    y: 32334,
+    floor: -8,
+};
+
+pub(super) fn isolated_batch() -> bool {
+    std::env::var("NODE_BOOT_E2E_ONLY").as_deref() == Ok("rows")
+        && matches!(
+            std::env::var("OTERYN_E2E_ROW_BATCH").as_deref(),
+            Ok("70:1" | "139:1")
+        )
+}
+
 const WORDS: &str = "exani tera";
 const MANA: u32 = 20;
 const ROPE_GROUNDS: &[u32] = &[
@@ -143,7 +162,12 @@ pub(super) async fn walk_to_rope(
             "M11B_STEP_SEND index={index} from={from:?} expected={expected:?} direction={direction:?} server_sequence={}",
             client.last_server_sequence(),
         ));
-        let mut outcome = client.step(direction).await?;
+        let mut outcome = client.step(direction).await.inspect_err(|error| {
+            evidence(&format!(
+                "M11B_STEP_UNACKNOWLEDGED index={index} server_sequence={} error={error:?}",
+                client.last_server_sequence()
+            ));
+        })?;
         evidence(&format!(
             "M11B_STEP_REPLY index={index} command={} server_sequence={} disposition={:?} wait_ms={}",
             outcome.command_id,
@@ -195,7 +219,9 @@ pub(super) async fn walk_to_rope(
                     return Err(format!("M11b occupant {blocker:?} stayed at {expected:?}").into());
                 }
             }
-            outcome = client.step(direction).await?;
+            outcome = client.step(direction).await.inspect_err(|error| {
+                evidence(&format!("M11B_STEP_UNACKNOWLEDGED index={index} after_clear=true server_sequence={} error={error:?}", client.last_server_sequence()));
+            })?;
             evidence(&format!(
                 "M11B_STEP_AFTER_CLEAR index={index} command={} server_sequence={} disposition={:?}",
                 outcome.command_id, outcome.result_server_sequence, outcome.disposition
@@ -240,8 +266,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spots = rope_spots(&bytes)?;
     let mut client = connect_character(clients, 0xb1, 1).await?;
     let start = tile(client.world_spatial().actor_position)?;
+    if isolated_batch() && start != APPROACH {
+        return Err(format!("M11b fixture entered at {start:?}, expected {:?}", APPROACH).into());
+    }
     let path = route(world, start, |at| {
-        spots.binary_search(&at).is_ok()
+        at == ROPE && spots.binary_search(&at).is_ok()
             && has_static_landing(at, |landing| {
                 world.base().tile(landing.x, landing.y, landing.floor)
                     .is_some_and(|tile| tile.walkable() && world.enterable(landing))
@@ -249,7 +278,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }).ok_or("step=rope-route missing=reachable-rope-spot-with-walkable-upstairs-neighbour owner=crates/gameplay/spell/src/spell/world_execution.rs:482")?;
     walk_to_rope(&mut client, world, &path).await?;
     let rope = tile(client.world_spatial().actor_position)?;
-    if spots.binary_search(&rope).is_err() {
+    if rope != ROPE || start == ROPE {
         return Err("step-1:STEP replies did not finish on rope spot".into());
     }
     evidence(&format!("M11B_CHECK step=1 status=PASS rope={rope:?}"));

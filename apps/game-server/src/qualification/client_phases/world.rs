@@ -1140,13 +1140,23 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=first_entry position={entered_at:?}"
     ));
-    if entered_at != TOWN {
+    let expected_start = if full_row_m11b::isolated_batch() {
+        full_row_m11b::APPROACH
+    } else {
+        TOWN
+    };
+    if entered_at != expected_start {
         return Err(format!(
-            "Platform-created character did not enter the configured town: expected={TOWN:?} actual={entered_at:?}"
+            "Platform-created character did not enter the configured town: expected={expected_start:?} actual={entered_at:?}"
         )
         .into());
     }
-    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    let (result, logout, attempts, busy_timed_out) = if full_row_m11b::isolated_batch() {
+        let reply = client.session_mut().logout().await?;
+        (reply.result, format!("{reply:?}"), 1, false)
+    } else {
+        logout_retrying_busy(&mut client).await?
+    };
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("first town entry logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }

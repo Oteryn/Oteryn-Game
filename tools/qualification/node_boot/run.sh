@@ -710,12 +710,15 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
-  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
+  python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" \
+    "${NODE_BOOT_E2E_ONLY:-}" "${OTERYN_E2E_ROW_BATCH:-}" <<'PY_REGION_PIN'
 import json, sys
 pin = json.load(open(sys.argv[1]))
 pin["schema"] = "OTERYN_QUALIFICATION_WORLD/v1"
 pin["digest"] = json.load(open(sys.argv[2]))["digest"]
 pin["entry_start"] = {"x": 32369, "y": 32238, "floor": -7}
+if sys.argv[4] == "rows" and sys.argv[5] in ("70:1", "139:1"):
+    pin["entry_start"] = {"x": 32296, "y": 32331, "floor": -7}
 with open(sys.argv[3], "w") as output:
     json.dump(pin, output, sort_keys=True)
 PY_REGION_PIN
@@ -839,6 +842,7 @@ TOML
     python3 - "$PIN" "$BASE/world/world.otbundle" >> "$WORK/node.toml" <<'PY_WORLD'
 import json, sys
 pin = json.load(open(sys.argv[1]))
+start = pin['entry_start']
 print(f'''[world_bundle]
 path = "{sys.argv[2]}"
 digest = "{pin['digest']}"
@@ -846,9 +850,9 @@ project_format_version = "{pin['project_format_version']}"
 world_schema_version = "{pin['world_schema_version']}"
 content_revision = "{pin['content_revision']}"
 production = false
-start_x = 32369
-start_y = 32238
-start_floor = 7''')
+start_x = {start['x']}
+start_y = {start['y']}
+start_floor = {abs(start['floor'])}''')
 PY_WORLD
     cat >> "$WORK/node.toml" <<'TOML'
 [premium_activation]

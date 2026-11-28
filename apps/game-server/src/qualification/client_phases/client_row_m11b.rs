@@ -96,9 +96,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let spots = rope_spots(&bytes)?;
     let mut client = connect_character(clients, 0xbb, 1).await?;
     let start = tile(client.world_spatial().actor_position)?;
-    let path = route(world, start, |at| spots.binary_search(&at).is_ok())
-        .ok_or("no reachable rope spot")?;
+    if full_row_m11b::isolated_batch() && start != full_row_m11b::APPROACH {
+        return Err(format!(
+            "M11b fixture entered at {start:?}, expected {:?}",
+            full_row_m11b::APPROACH
+        )
+        .into());
+    }
+    let path = route(world, start, |at| {
+        at == full_row_m11b::ROPE && spots.binary_search(&at).is_ok()
+    })
+    .ok_or("no reachable rope spot")?;
     full_row_m11b::walk_to_rope(&mut client, world, &path).await?;
+    if start == full_row_m11b::ROPE
+        || tile(client.world_spatial().actor_position)? != full_row_m11b::ROPE
+    {
+        return Err("M11b approach did not move onto the fixed rope spot".into());
+    }
     let before_position = *client.world_spatial();
     let before_vitals = client
         .actor_vitals()
