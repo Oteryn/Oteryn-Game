@@ -1441,10 +1441,13 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
 
 #[test]
 fn busy_holder_native_house_bootstrap_expires_after_acceptance_postgres() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
     super::kill_reward_e2e_fixtures::scenario_thread::run("busy-holder-native-house", move || {
         crate::bestiary_postgres_harness::runtime()?.block_on(async {
-            let h = Harness::create_with_admission_seed(admin, "busy_native_house", true, false).await?;
+            let h = Harness::create_with_admission_seed(admin, "busy_native_house", true, false)
+                .await?;
             let result = native_house_deadline(&h).await;
             h.cleanup().await?;
             result
@@ -1459,12 +1462,17 @@ async fn native_house_deadline(h: &Harness) -> TestResult {
     let evidence = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
     let (controller, cells, deps) = prepare_transfer_scene(h).await?;
     let mut owner = deps.owner(h, &authority);
     owner.movement_cells = (&cells).into();
     owner.evidence = &evidence.evidence;
-    let source = initialize_transfer_source(h, &owner, &deps, cells.scope().generation_digest).await?;
+    let source =
+        initialize_transfer_source(h, &owner, &deps, cells.scope().generation_digest).await?;
     let (inside, status, _) = drive(&owner, source, false).await?;
     assert_eq!(status, CommandStatus::Accepted);
     owner.active_generation = controller.active();
@@ -1473,10 +1481,16 @@ async fn native_house_deadline(h: &Harness) -> TestResult {
     // phases are held constant so an earlier phase cannot decide the result.
     struct Bootstrap<'a, 'r, 'c, 's>(&'a ComposedFreshAdmission<'r, 'c, 's>);
     impl FreshAdmissionAuthority for Bootstrap<'_, '_, '_, '_> {
-        async fn admit(&self, _: FreshAdmissionAttempt<'_>) -> Result<AdmittedSession, AdmissionRefusal> {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
             Err(AdmissionRefusal::Unavailable)
         }
-        async fn house_scope_ack(&self, admitted: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        async fn house_scope_ack(
+            &self,
+            admitted: AdmittedSession,
+        ) -> Result<Option<(u64, Vec<u8>)>, ()> {
             self.0.house_scope_ack(admitted).await
         }
     }
@@ -1484,22 +1498,250 @@ async fn native_house_deadline(h: &Harness) -> TestResult {
     let (mut server, mut peer) = tokio::io::duplex(1 << 20);
     let budget = crate::durability::ROOT_RECOVERY_WINDOW;
     let deadline = tokio::time::Instant::now() + budget;
-    let end = tokio::time::timeout(budget + std::time::Duration::from_secs(1), serve_admitted_by(
-        &mut server, inside, &Bootstrap(&owner), IDLE_LIVENESS, Some(deadline),
-    )).await?;
+    let end = tokio::time::timeout(
+        budget + std::time::Duration::from_secs(1),
+        serve_admitted_by(
+            &mut server,
+            inside,
+            &Bootstrap(&owner),
+            IDLE_LIVENESS,
+            Some(deadline),
+        ),
+    )
+    .await?;
     drop(server);
-    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(session) if session.game_session_id == inside.game_session_id));
+    assert!(
+        matches!(end, ConnectionEnd::AdmittedThenDisconnected(session) if session.game_session_id == inside.game_session_id)
+    );
     let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await?;
     let envelope = decode_wire_envelope(&frame).map_err(debug)?;
     assert_eq!(envelope.message_type(), MessageType::ProtocolError);
-    assert_eq!(envelope.connection_generation(), inside.continuity.connection_generation);
-    assert_eq!(oteryn_protocol_oteryn::decode_protocol_error(envelope.payload()).map_err(debug)?.error_code, 1051);
-    assert_eq!(crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await.unwrap_err().kind(), std::io::ErrorKind::UnexpectedEof);
+    assert_eq!(
+        envelope.connection_generation(),
+        inside.continuity.connection_generation
+    );
+    assert_eq!(
+        oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())
+            .map_err(debug)?
+            .error_code,
+        1051
+    );
+    assert!(
+        matches!(crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await, Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof)
+    );
     drop(held);
     h.root.await_ready().await?;
-    let receipt = h.root.house_transfer_recovery(inside.game_session_id).await?.ok_or("retained House receipt")?;
+    let receipt = h
+        .root
+        .house_transfer_recovery(inside.game_session_id)
+        .await?
+        .ok_or("retained House receipt")?;
     assert_eq!(receipt.ack.session, *inside.game_session_id.as_bytes());
     assert_eq!(receipt.source, source.game_session_id);
     assert_eq!(inside.runtime_actor, source.runtime_actor);
+    Ok(())
+}
+
+#[test]
+fn busy_holder_join_preserves_committed_handoff_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("busy-holder-saved-house", move || {
+        crate::bestiary_postgres_harness::runtime()?.block_on(async {
+            for after_commit in [false, true] {
+                let tag = if after_commit {
+                    "saved_house_after_commit"
+                } else {
+                    "saved_house_before_issue"
+                };
+                let h =
+                    Harness::create_with_admission_seed(admin.clone(), tag, true, false).await?;
+                let result = saved_house_join_handoff(&h, after_commit).await;
+                h.cleanup().await?;
+                result?;
+            }
+            Ok(())
+        })
+    })
+}
+
+async fn saved_house_join_handoff(h: &Harness, after_commit: bool) -> TestResult {
+    use crate::gameplay_transport::TerminalRelease;
+    use crate::gameplay_transport::connection::join_recovery::{
+        HouseJoinStage, JOIN_RECOVERY, JoinRecovery,
+    };
+    use crate::gameplay_transport::connection::{
+        ConnectionIdentifiers, GraceExpiryResult, admit_frame_by,
+    };
+    use crate::gameplay_transport::house_transfer::{
+        SAVED_HOUSE_JOIN_BARRIER, SavedHouseJoinBarrier,
+    };
+    use std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    };
+    use tokio::sync::Notify;
+
+    let evidence = RecoverySource::start(h).await?;
+    prepare_owned_session(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let (content, cells, deps) = prepare_transfer_scene(h).await?;
+    let mut owner = deps.owner(h, &authority);
+    owner.movement_cells = (&cells).into();
+    owner.evidence = &evidence.evidence;
+    let source =
+        initialize_transfer_source(h, &owner, &deps, cells.scope().generation_digest).await?;
+    let (inside, status, _) = drive(&owner, source, false).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    owner.active_generation = content.active();
+    assert_eq!(owner.write_due_last_positions(true).await, 0);
+    let controller = inside.controller.ok_or("House controller")?;
+    assert_eq!(
+        tokio::time::timeout(
+            Duration::from_secs(10),
+            owner.release_terminal(inside, TerminalRelease::StaffKick(controller.transport),)
+        )
+        .await?,
+        GraceExpiryResult::Released,
+    );
+    let token = RecoverySource::fresh_token(93)?;
+    let source_session = GameSessionId::decode(&id(93)).map_err(debug)?;
+    struct Candidate(GameSessionId);
+    impl ConnectionIdentifiers for Candidate {
+        fn game_session_id(&self) -> Option<GameSessionId> {
+            Some(self.0)
+        }
+        fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> {
+            crate::foundation::AuthenticatedTransportRefV1::decode(&[93; 16]).ok()
+        }
+    }
+    let frame = oteryn_protocol_oteryn::encode_client_bootstrap(
+        &oteryn_protocol_oteryn::ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
+            admission_material: token.as_bytes(),
+            client_build_id: "busy-holder-saved-house",
+            supported_capabilities: inside.continuity.selected_capabilities.as_slice(),
+        },
+    )
+    .map_err(debug)?;
+    let barrier = Arc::new(SavedHouseJoinBarrier {
+        after_commit,
+        reached: Notify::new(),
+        release: Notify::new(),
+    });
+    let release_holder = Notify::new();
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let budget = crate::durability::ROOT_RECOVERY_WINDOW;
+    let admit = JOIN_RECOVERY.scope(JoinRecovery::default(), async {
+        let deadline = tokio::time::Instant::now() + budget;
+        let end = SAVED_HOUSE_JOIN_BARRIER
+            .scope(
+                Arc::clone(&barrier),
+                admit_frame_by(
+                    &mut server,
+                    &frame,
+                    &owner,
+                    &Candidate(source_session),
+                    deadline,
+                ),
+            )
+            .await;
+        drop(server);
+        let Err(ConnectionEnd::AdmittedThenDisconnected(ended)) = end else {
+            return Err(format!("expected committed House expiry: {end:?}").into());
+        };
+        let pending = JOIN_RECOVERY
+            .with(|join| join.take_pending())
+            .ok_or("owner handoff")?;
+        let house = pending
+            .house
+            .as_ref()
+            .ok_or("exact pending House attempt")?;
+        assert_eq!(pending.source.game_session_id, source_session);
+        assert_eq!(pending.source.runtime_actor, ended.runtime_actor);
+        assert_eq!(matches!(house.stage, HouseJoinStage::Issuing), after_commit);
+        assert!(
+            h.root.holder_contended(),
+            "handoff does not read or wait for the holder"
+        );
+        release_holder.notify_one();
+        Ok::<_, Box<dyn std::error::Error>>((ended, pending))
+    });
+    let block = async {
+        barrier.reached.notified().await;
+        let mut held = h.root.try_acquire_ready()?;
+        // Cancel the owner at the precise stage without delivering the commit
+        // acknowledgement to its in-memory actor installation.
+        release_holder.notified().await;
+        assert_eq!(
+            held.return_to_pool_observed_until(Instant::now() + budget)
+                .await,
+            sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle,
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    };
+    let (ended, blocked) = tokio::time::timeout(budget + Duration::from_secs(3), async {
+        tokio::join!(admit, block)
+    })
+    .await?;
+    let (ended, pending) = ended?;
+    blocked?;
+    let error = crate::gameplay_transport::tcp_tls::read_frame(&mut client).await?;
+    let envelope = decode_wire_envelope(&error).map_err(debug)?;
+    assert_eq!(envelope.connection_generation(), 0);
+    assert_eq!(
+        oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())
+            .map_err(debug)?
+            .error_code,
+        1051
+    );
+    assert!(
+        matches!(crate::gameplay_transport::tcp_tls::read_frame(&mut client).await, Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof)
+    );
+    let recovered = owner
+        .settle_unpublished_join(&pending, ended)
+        .await
+        .map_err(|()| "House recovery")?;
+    let house = pending.house.as_ref().ok_or("expected operation")?;
+    assert_eq!(
+        recovered.runtime_actor, ended.runtime_actor,
+        "recovery reuses the original actor"
+    );
+    if after_commit {
+        assert_eq!(
+            recovered.game_session_id.as_bytes(),
+            &house.request.ack.session
+        );
+        let receipt = h
+            .root
+            .house_transfer_recovery(recovered.game_session_id)
+            .await?
+            .ok_or("committed receipt")?;
+        assert_eq!(receipt.ack.transfer, house.request.ack.transfer);
+    } else {
+        assert_eq!(recovered.game_session_id, source_session);
+        assert!(
+            h.root
+                .house_transfer_recovery(source_session)
+                .await?
+                .is_none()
+        );
+    }
+    let active: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_durability_reconnect_sessions WHERE session_state = 2",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        active, 1,
+        "the committed join has exactly one current controller"
+    );
     Ok(())
 }

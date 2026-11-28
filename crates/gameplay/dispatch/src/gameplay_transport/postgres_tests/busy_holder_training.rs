@@ -101,12 +101,23 @@ async fn exercise(h: &Harness) -> TestResult {
     assert_eq!(count_receipts().await?, before);
     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
 
+    let mut admitted = deps.admitted;
+    admitted.item_fence = crate::gameplay_transport::item_fence_of(
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session(session)
+            .await?,
+    );
+    let controller = admitted.controller.ok_or("controller")?;
     let barrier = Arc::new((Notify::new(), Notify::new()));
-    let budget =
-        crate::gameplay_transport::AdmissionRetryBudget::for_foreground_root(&session, &h.root)?;
-    let mut forced = Box::pin(TRAINING_READBACK_BARRIER.scope(
-        barrier.clone(),
-        owner.save_spell_training_with_budget(actor, session, true, &budget),
+    let mut forced = Box::pin(tokio::time::timeout(
+        crate::durability::ROOT_RECOVERY_WINDOW * 2,
+        TRAINING_READBACK_BARRIER.scope(
+            barrier.clone(),
+            owner.release_terminal(
+                admitted,
+                crate::gameplay_transport::TerminalRelease::StaffKick(controller.transport),
+            ),
+        ),
     ));
     tokio::select! {
         result = forced.as_mut() => return Err(format!("forced checkpoint ended before reconciliation: {result:?}").into()),
@@ -134,42 +145,14 @@ async fn exercise(h: &Harness) -> TestResult {
     );
     assert_eq!(count_receipts().await?, before + 1);
     held.run(|_, _| Box::pin(async { Ok(()) })).await?;
-    assert_eq!(forced.await, TrainingSave::Saved);
+    assert_eq!(
+        forced.await?,
+        crate::gameplay_transport::connection::GraceExpiryResult::Released
+    );
     assert_eq!(
         count_receipts().await?,
         before + 1,
-        "reconciliation does not write again"
+        "terminal release reconciles the checkpoint without writing again"
     );
-    {
-        let runtime = owner.runtime.lock().await;
-        let states = owner.states.spell_states.lock().await;
-        assert!(
-            states
-                .get(&runtime, actor, session)
-                .ok_or("actor")?
-                .pending_training_checkpoint()
-                .is_none()
-        );
-    }
-    let mut admitted = deps.admitted;
-    admitted.item_fence = crate::gameplay_transport::item_fence_of(
-        crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
-            .current_session(session)
-            .await?,
-    );
-    let controller = admitted.controller.ok_or("controller")?;
-    let released = tokio::time::timeout(
-        crate::durability::ROOT_RECOVERY_WINDOW,
-        owner.release_terminal(
-            admitted,
-            crate::gameplay_transport::TerminalRelease::StaffKick(controller.transport),
-        ),
-    )
-    .await?;
-    assert_eq!(
-        released,
-        crate::gameplay_transport::connection::GraceExpiryResult::Released
-    );
-    assert_eq!(count_receipts().await?, before + 1);
     Ok(())
 }

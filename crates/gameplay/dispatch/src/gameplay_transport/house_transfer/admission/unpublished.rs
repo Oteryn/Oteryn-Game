@@ -153,8 +153,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         Ok(if ended.game_session_id == destination {
             ended
         } else {
-            match pending.stage {
-                HouseJoinStage::Committed(known) => known,
+            match &pending.stage {
+                HouseJoinStage::Committed(known) => **known,
                 _ => admitted,
             }
         })

@@ -835,6 +835,10 @@ where
     admit_frame_inner(stream, frame, authority, identifiers, deadline).await
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "the terminal outcome carries the existing admitted connection for loss recovery"
+)]
 pub(super) async fn admit_frame_by<S, A, I>(
     stream: &mut S,
     frame: &[u8],
@@ -853,6 +857,10 @@ where
     .await
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "the terminal outcome carries the existing admitted connection for loss recovery"
+)]
 async fn admit_frame_inner<S, A, I>(
     stream: &mut S,
     frame: &[u8],
@@ -1724,6 +1732,10 @@ async fn close_admitted<S: AsyncWrite + Unpin>(
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "the terminal outcome carries the existing admitted connection for loss recovery"
+)]
 async fn write_join_frame<S: AsyncWrite + Unpin>(
     stream: &mut S,
     frame: &[u8],

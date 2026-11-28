@@ -20,7 +20,7 @@ pub(in crate::gameplay_transport) struct PendingHouseJoin {
 pub(in crate::gameplay_transport) enum HouseJoinStage {
     Prepared,
     Issuing,
-    Committed(AdmittedSession),
+    Committed(Box<AdmittedSession>),
 }
 
 #[derive(Default)]

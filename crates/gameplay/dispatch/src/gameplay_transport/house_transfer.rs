@@ -19,6 +19,8 @@ use oteryn_protocol_oteryn::house_transfer::{
 };
 #[path = "house_transfer/admission.rs"]
 mod admission;
+#[cfg(test)]
+pub(super) use admission::{SAVED_HOUSE_JOIN_BARRIER, SavedHouseJoinBarrier};
 #[path = "house_transfer/movement.rs"]
 mod movement;
 #[path = "house_transfer/session_views.rs"]

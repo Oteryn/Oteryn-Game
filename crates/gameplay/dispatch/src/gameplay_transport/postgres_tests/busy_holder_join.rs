@@ -110,9 +110,8 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
             ))
         ));
         drop(server);
-        assert_eq!(
-            read_frame(&mut peer).await.unwrap_err().kind(),
-            std::io::ErrorKind::UnexpectedEof
+        assert!(
+            matches!(read_frame(&mut peer).await, Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof)
         );
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts")
@@ -188,9 +187,8 @@ async fn exercise(h: &Harness, expire: bool) -> TestResult {
             let error =
                 oteryn_protocol_oteryn::decode_protocol_error(first.payload()).map_err(debug)?;
             assert_eq!(error.error_code, 1051);
-            assert_eq!(
-                read_frame(&mut client).await.unwrap_err().kind(),
-                std::io::ErrorKind::UnexpectedEof
+            assert!(
+                matches!(read_frame(&mut client).await, Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof)
             );
         } else {
             assert_eq!(first.message_type(), MessageType::ServerAccepted);

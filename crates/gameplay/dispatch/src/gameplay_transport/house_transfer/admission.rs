@@ -21,6 +21,29 @@ mod source_progression;
 #[path = "admission/unpublished.rs"]
 mod unpublished;
 
+#[cfg(test)]
+pub(in crate::gameplay_transport) struct SavedHouseJoinBarrier {
+    pub after_commit: bool,
+    pub reached: tokio::sync::Notify,
+    pub release: tokio::sync::Notify,
+}
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static SAVED_HOUSE_JOIN_BARRIER:
+        std::sync::Arc<SavedHouseJoinBarrier>;
+}
+
+#[cfg(test)]
+async fn pause_saved_house_join(after_commit: bool) {
+    if let Ok(barrier) = SAVED_HOUSE_JOIN_BARRIER.try_with(Clone::clone)
+        && barrier.after_commit == after_commit
+    {
+        barrier.reached.notify_one();
+        barrier.release.notified().await;
+    }
+}
+
 struct RestoreCheck<'a, 'r, 'c, 's> {
     owner: &'a ComposedFreshAdmission<'r, 'c, 's>,
     runtime: &'a crate::foundation::ChannelRuntimeV1,
@@ -256,6 +279,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             origin_position: origin,
         };
         retain_house_join(pending_source, &request, &candidate);
+        #[cfg(test)]
+        pause_saved_house_join(false).await;
         let (ack, mut runtime, lane, mut house) = loop {
             retry
                 .retry_unavailable(async || self.reserve_precondition().await)
@@ -304,6 +329,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             match result {
                 Ok((ack, _)) => {
+                    #[cfg(test)]
+                    pause_saved_house_join(true).await;
                     let house = check.candidate;
                     break (ack, runtime, lane, house);
                 }
@@ -350,7 +377,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             item_fence: Some(committed_fence),
         };
-        retain_house_stage(HouseJoinStage::Committed(admitted));
+        retain_house_stage(HouseJoinStage::Committed(Box::new(admitted)));
         runtime
             .restore_admitted_house_actor(
                 actor,
