@@ -5,6 +5,7 @@
 use super::*;
 use oteryn_dev_client::client_runtime::{boss_encounter, boss_rewards};
 use oteryn_protocol_oteryn::boss_rewards::{BrowseRequest, CollectAllRequest};
+use sha2::{Digest, Sha256};
 
 const UNKNOWN_DEATH: [u8; 16] = [0x57; 16];
 
@@ -57,6 +58,8 @@ fn same_inventory_contents(
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x06).await?;
+    let prior = super::full_row_w03::open(&mut client).await?;
+    super::full_row_w02::defeat_faceless_bane(&mut client, clients).await?;
     let session = client.join_snapshot().game_session_id;
     let inventory = client
         .inventory()
@@ -75,6 +78,77 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("reward OPEN status={:?}", open.status).into());
     }
     let chest = boss_encounter::decode_rewards(&open.payload).ok_or("chest reply malformed")?;
+    let earned = chest
+        .entries
+        .iter()
+        .find(|entry| {
+            entry.boss_key == super::full_row_w02::BOSS
+                && entry.item_count > 0
+                && entry.minted_at_unix_ms >= prior.now
+                && entry.expires_at_unix_ms > chest.now
+                && entry
+                    .expires_at_unix_ms
+                    .checked_sub(entry.minted_at_unix_ms)
+                    == Some(boss_encounter::BOSS_REWARD_EXPIRY_MS)
+                && !prior
+                    .entries
+                    .iter()
+                    .any(|previous| previous.death == entry.death)
+        })
+        .ok_or("W03.client OPEN did not expose a newly earned Faceless Bane reward")?;
+    let rejected = client
+        .session_mut()
+        .gated_command(
+            boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+            boss_encounter::COMMAND_TYPE_BOSS_REWARD_OPEN,
+            &[0xff],
+        )
+        .await?;
+    if rejected.status != CommandStatus::Rejected || !rejected.payload.is_empty() {
+        return Err("W03.client malformed OPEN should be rejected without a reward payload".into());
+    }
+
+    let collect = client
+        .session_mut()
+        .gated_command(
+            boss_rewards::boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
+            boss_rewards::boss_rewards::COMMAND_TYPE_BOSS_REWARD_COLLECT_ALL,
+            &boss_rewards::boss_rewards::encode_collect_all_request(&CollectAllRequest {
+                death: None,
+            })
+            .map_err(|error| format!("collect encode: {error:?}"))?,
+        )
+        .await?;
+    let collected =
+        boss_rewards::boss_rewards::decode_collect_reply(&collect.payload).map_err(|error| {
+            format!(
+                "collect reply malformed: {error:?} status={:?}",
+                collect.status
+            )
+        })?;
+    super::full_row_w03::approach_chest(&mut client, clients).await?;
+    let known = client
+        .session_mut()
+        .gated_command(
+            boss_rewards::boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
+            boss_rewards::boss_rewards::COMMAND_TYPE_BOSS_REWARD_BROWSE,
+            &boss_rewards::boss_rewards::encode_browse_request(&BrowseRequest {
+                death: earned.death,
+                after_ordinal: 0,
+            })
+            .map_err(|error| format!("known BROWSE encode: {error:?}"))?,
+        )
+        .await?;
+    let known_page = boss_rewards::boss_rewards::decode_browse_reply(&known.payload)
+        .map_err(|error| format!("known BROWSE reply malformed: {error:?}"))?;
+    if known.status != CommandStatus::Accepted
+        || known_page.status != BossRewardStatus::Ok
+        || known_page.death != earned.death
+        || known_page.expires_at_unix_ms != earned.expires_at_unix_ms
+        || known_page.rows.is_empty()
+    {
+        return Err("W03.client earned death did not return items at the reward chest".into());
+    }
     let browse = client
         .session_mut()
         .gated_command(
@@ -94,29 +168,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                 browse.status
             )
         })?;
-    let collect = client
-        .session_mut()
-        .gated_command(
-            boss_rewards::boss_rewards::CAPABILITY_BOSS_REWARDS_V1,
-            boss_rewards::boss_rewards::COMMAND_TYPE_BOSS_REWARD_COLLECT_ALL,
-            &boss_rewards::boss_rewards::encode_collect_all_request(&CollectAllRequest {
-                death: None,
-            })
-            .map_err(|error| format!("collect encode: {error:?}"))?,
-        )
-        .await?;
-    let collected =
-        boss_rewards::boss_rewards::decode_collect_reply(&collect.payload).map_err(|error| {
-            format!(
-                "collect reply malformed: {error:?} status={:?}",
-                collect.status
-            )
-        })?;
     if browse.status != CommandStatus::Accepted || collect.status != CommandStatus::Accepted {
         return Err(format!("browse={:?} collect={:?}", browse.status, collect.status).into());
     }
     use oteryn_protocol_oteryn::boss_rewards::BossRewardStatus;
-    if browsed.status != BossRewardStatus::OutOfReach
+    if browsed.status != BossRewardStatus::Empty
         || browsed.death != UNKNOWN_DEATH
         || browsed.expires_at_unix_ms != 0
         || !browsed.rows.is_empty()
@@ -166,6 +222,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("W03 relog cleanup logout was refused".into());
     }
 
+    capture("w03-rejected-open.bin", &rejected.payload)?;
     capture("w03-chest.bin", &open.payload)?;
     capture("w03-browse.bin", &browse.payload)?;
     capture("w03-collect.bin", &collect.payload)?;
@@ -181,6 +238,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         chest.now,
         chest.entries.len(),
     );
+    expected.push_str(&format!(
+        "rejected_open={}|{}\n",
+        rejected.command_id, rejected.server_sequence
+    ));
+    for (key, payload) in [
+        ("open", &open.payload),
+        ("rejected_open", &rejected.payload),
+        ("browse", &browse.payload),
+        ("collect", &collect.payload),
+    ] {
+        expected.push_str(&format!("{key}_sha256={}\n", hex(&Sha256::digest(payload))));
+    }
     for (index, group) in chest.entries.iter().enumerate() {
         expected.push_str(&format!(
             "group{index}={}|{}|{}|{}\n",
