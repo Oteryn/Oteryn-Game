@@ -80,6 +80,19 @@ fn main() -> Result<(), String> {
     let (generated, tests) =
         play_features::generate(&root.join("src/features"), &root.join("../.."))?;
     println!("cargo:rerun-if-changed=../../crates/client-ui/src/features");
+    let keys = root.join("../../tools/content-schema/native-gameplay/item-keys.json");
+    println!("cargo:rerun-if-changed={}", keys.display());
+    let index: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(keys).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    let rune = index["records"]
+        .as_array()
+        .ok_or("missing native item index")?
+        .iter()
+        .position(|row| row[0] == "oteryn:item.tibia.i3148" && row[1] == "definition-r1")
+        .ok_or("missing Destroy Field rune")?
+        + 1;
+    println!("cargo:rustc-env=DESTROY_FIELD_DEFINITION={rune}");
     let bindings = preference_bindings::generate(&root.join("../.."))?;
     let out = std::env::var("OUT_DIR").map_err(|e| e.to_string())?;
     prey_catalogue::emit(&root.join("../.."), std::path::Path::new(&out))?;

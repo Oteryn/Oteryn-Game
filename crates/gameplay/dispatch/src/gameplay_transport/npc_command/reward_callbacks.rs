@@ -601,6 +601,16 @@ fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> 
 }
 
 fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &str) -> bool {
+    if callback.npc == "oteryn:npc.gnome_trooper"
+        && callback
+            .key
+            .starts_with("oteryn:quest-reward/l12-spike-parcel-")
+    {
+        return callback
+            .keywords
+            .iter()
+            .any(|word| message_contains(text, word));
+    }
     if callback.npc == JORGE
         && callback.quest == "oteryn:quest.hunting_for_tokens"
         && callback.topic == 1
@@ -614,6 +624,22 @@ fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &st
                 .any(|word| message_contains(text, word));
     }
     matches_menu_or_exact_keyword(&callback.npc, &callback.keywords, text)
+}
+
+#[cfg(test)]
+#[test]
+fn fifth_outpost_accepts_a_delivery_sentence() -> Result<(), String> {
+    let callbacks = reward_callbacks::load()?;
+    let outpost = callbacks
+        .iter()
+        .find(|c| c.key.ends_with("l12-spike-parcel-32157-32521-15"))
+        .ok_or("fifth outpost")?;
+    assert!(matches_reward_keyword(
+        outpost,
+        "i have something to deliver"
+    ));
+    assert!(!matches_reward_keyword(outpost, "handsomething"));
+    Ok(())
 }
 
 #[cfg(test)]

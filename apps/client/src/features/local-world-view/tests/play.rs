@@ -421,6 +421,7 @@ fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(
     use oteryn_input_actions::{ButtonState, Modifier, Modifiers, MouseButton, NormalizedInputEvent, PointerCoordinate, PointerDelta, PointerMotion, PointerPosition};
     use oteryn_session::world_map::MapOrigin;
 
+    for appearances in [false, true] {
     let mut world = view()?;
     let mut map = live_snapshot(33080);
     let position = ActorPosition { x: 33080, y: 32583, floor: 3 };
@@ -439,10 +440,15 @@ fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(
     outbox.world_context_initialize(true, false);
     outbox.targeting_initialize(true);
     let rune = oteryn_session::ItemEntry {
-        handle: std::num::NonZeroU64::MIN, item_definition_ref: NonZeroU32::MIN,
+        handle: std::num::NonZeroU64::MIN, item_definition_ref: env!("DESTROY_FIELD_DEFINITION").parse()?,
         appearance_id: 3148, count: NonZeroU32::MIN, sub_type: 0,
     };
-    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory { entries: vec![rune], ..Default::default() }), false);
+    use oteryn_protocol_oteryn::item_view::{encode_character_inventory_with_appearances, decode_character_inventory_with_appearances};
+    let inventory = oteryn_session::CharacterInventory { entries: vec![rune], ..Default::default() };
+    let encoded = encode_character_inventory_with_appearances(&inventory, false, appearances).map_err(|e| format!("{e:?}"))?;
+    let decoded = decode_character_inventory_with_appearances(&encoded, false, appearances).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(decoded.entries[0].appearance_id, if appearances { 3148 } else { 0 });
+    outbox.inventory_initialize(Some(decoded), false);
     let at = TileCoord::new(position.x, position.y);
     let screen = world.scene().view().tile_to_screen(at);
     let mut router = crate::input::MouseActions::new()?;
@@ -472,6 +478,7 @@ fn inventory_rune_uses_selected_realm_fire_below_an_occupied_stack() -> Result<(
     assert_eq!(&object.placement[..32], &map.header.bundle_digest);
     let key = (33080u64 << 32) | (32583u64 << 16) | (3 << 8) | 1;
     assert_eq!(object.placement[32..], key.to_be_bytes());
+    }
     Ok(())
 }
 
