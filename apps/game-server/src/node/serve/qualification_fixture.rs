@@ -826,7 +826,7 @@ async fn prepare_build(
             (
                 "premium",
                 KNIGHT_ACCOUNT | MONK_ACCOUNT | HASTE_ACCOUNT | CHALLENGE_ACCOUNT | LIGHT_ACCOUNT
-                | PARTY_CASTER_ACCOUNT,
+                | PARTY_CASTER_ACCOUNT | Q_S10_ACCOUNT,
             ) => {
                 if !config
                     .premium_activation
