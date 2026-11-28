@@ -142,6 +142,15 @@ fn wheel_allocation_postgres_gift_trigger_snapshot_receipts_and_relogin() -> Tes
 }
 
 #[test]
+fn wheel_gift_status_preserves_active_vitals_across_busy_join() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run_wheel_case(Some(WheelExtensionCase::GiftBusyJoin))
+}
+
+#[test]
 fn wheel_allocation_postgres_atelier_v2_replace_vessel_accepts_refuses_and_replays() -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::ReplaceVessel))
 }
@@ -157,6 +166,7 @@ enum WheelExtensionCase {
     Socket,
     Unsocket,
     Gift,
+    GiftBusyJoin,
     Capacity,
     ReplaceVessel,
 }
@@ -479,6 +489,14 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
             assert_eq!(send(&owner, &mut admitted, &wire::encode_wheel_request(&unpaid).map_err(debug)?).await?,
                 expected(true, 1, vessels)?, "free accounts cannot change vessels");
             owner.premium_coordinator = Some(&gate);
+            if matches!(transition, WheelExtensionCase::GiftBusyJoin) {
+                assert!(owner.refresh_wheel_vitals(deps.actor, session).await);
+                assert_gift_survives_busy_join(&owner, admitted).await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
             let gift_remaining = if matches!(transition, WheelExtensionCase::Gift) {
                 h.seed_pvp_target().await?;
                 for target in [id(101), id(199)] {
@@ -643,7 +661,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                     assert_eq!(send(&restarted, &mut admitted, &[8, 0]).await?, reply(false, 2, points)?);
                     ([None; 4], 2)
                 }
-                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
+                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel | WheelExtensionCase::GiftBusyJoin => {
                     return Err("case already handled".into());
                 }
             };
@@ -665,7 +683,7 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
                 WheelExtensionCase::Socket => eprintln!("WHEEL_SOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Unsocket => eprintln!("WHEEL_UNSOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Gift => eprintln!("WHEEL_GIFT POSTGRES_CASE_COMPLETED"),
-                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
+                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel | WheelExtensionCase::GiftBusyJoin => {
                     return Err("case already handled".into());
                 }
             }
@@ -958,6 +976,59 @@ fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCa
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn assert_gift_survives_busy_join(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use crate::gameplay_transport::connection::route_wheel_gift_status_for_test;
+    use std::future::{Future, poll_fn};
+    use std::task::Poll;
+    let actor = admitted.runtime_actor.ok_or("Gift actor")?;
+    let session = admitted.game_session_id;
+    assert!(owner.refresh_pvp_locks(actor, session).await);
+    let before = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.get_mut(&runtime, actor, session).ok_or("Gift actor")?;
+        let facts = state.character_facts();
+        state.restore_saved_vitals(facts.max_health, facts.max_mana);
+        state.vitals()
+    };
+    owner.root.maintain_ready_once().await?;
+    let busy = owner.root.try_issue_semantic_pass()?;
+    let _ = owner.observe_join_vitals(actor, admitted, false).await;
+    {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session).ok_or("Gift actor")?;
+        assert_eq!(state.vitals(), before, "a busy join preserves Wheel maxima and current vitals");
+    }
+    busy.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    let (status, body) = route_wheel_gift_status_for_test(owner, &admitted)
+        .await
+        .ok_or("Gift status reply")?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(body.first(), Some(&3), "the busy join still reports active Gift III");
+
+    // Model a join that loaded the timer but missed its first Wheel projection.
+    {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states.get_mut(&runtime, actor, session).ok_or("Gift actor")?;
+        assert!(state.wheel_gift_loaded());
+        state.install_wheel_effects(Default::default());
+    }
+    let busy = owner.root.try_issue_semantic_pass()?;
+    let mut query = std::pin::pin!(route_wheel_gift_status_for_test(owner, &admitted));
+    assert!(
+        poll_fn(|cx| Poll::Ready(query.as_mut().poll(cx).is_pending())).await,
+        "a loaded timer cannot turn unknown eligibility into inactive Gift"
+    );
+    busy.run(|_, _| Box::pin(async { Ok(()) })).await?;
+    assert_eq!(query.await, Some((CommandStatus::Accepted, body)));
+    Ok(())
 }
 
 async fn assert_gift_runtime_guards(h: &Harness) -> TestResult {

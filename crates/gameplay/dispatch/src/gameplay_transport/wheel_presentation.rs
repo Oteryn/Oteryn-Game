@@ -161,25 +161,57 @@ pub(super) async fn execute(
 pub(super) async fn gift_status(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
-) -> Option<[u8; wire::GIFT_OF_LIFE_STATUS_BYTES]> {
-    let (stage, remaining) = match gift_status_snapshot(owner, admitted).await? {
-        (stage, Some(remaining)) => (stage, remaining),
-        (_, None) => {
-            // The join snapshot may have missed its best-effort Wheel reads.
-            let actor = admitted.runtime_actor?;
-            let session = admitted.game_session_id;
-            let generation = Some(admitted.continuity.connection_generation);
-            if !owner.load_wheel_gift_for_transport(actor, session, generation).await {
-                return None;
-            }
-            owner.refresh_wheel_vitals_for_transport(actor, session, generation).await;
-            let (stage, remaining) = gift_status_snapshot(owner, admitted).await?;
-            (stage, remaining?)
-        }
+) -> Result<Option<[u8; wire::GIFT_OF_LIFE_STATUS_BYTES]>, ()> {
+    let Some(actor) = admitted.runtime_actor else {
+        return Ok(None);
+    };
+    let Some((stage, remaining)) = gift_status_snapshot(owner, admitted).await else {
+        return Ok(None);
+    };
+    let session = admitted.game_session_id;
+    let needs_stage = |stage| stage == 0 && owner.wheel_has_current_allocation(session);
+    let (stage, remaining) = if let Some(remaining) = remaining
+        && !needs_stage(stage)
+    {
+        (stage, remaining)
+    } else {
+        // Join may have missed either read. Keep the command outstanding when
+        // the owner cannot establish the answer within its foreground budget.
+        let generation = Some(admitted.continuity.connection_generation);
+        let budget = super::AdmissionRetryBudget::for_foreground_command(owner.root).map_err(|_| ())?;
+        let recovered = budget
+            .retry_unavailable(async || {
+                let unavailable = super::AdmissionRefusal::Unavailable;
+                let Some((stage, remaining)) = gift_status_snapshot(owner, admitted).await else {
+                    return Ok(None);
+                };
+                if needs_stage(stage)
+                    && !owner
+                        .refresh_wheel_vitals_for_transport(actor, session, generation)
+                        .await
+                {
+                    return Err(unavailable);
+                }
+                if remaining.is_none()
+                    && !owner.load_wheel_gift_for_transport(actor, session, generation).await
+                {
+                    return Err(unavailable);
+                }
+                let Some((stage, remaining)) = gift_status_snapshot(owner, admitted).await else {
+                    return Ok(None);
+                };
+                Ok(Some((stage, remaining.ok_or(unavailable)?)))
+            })
+            .await
+            .map_err(|_| ())?;
+        let Some(recovered) = recovered else {
+            return Ok(None);
+        };
+        recovered
     };
     let mut result = [stage; wire::GIFT_OF_LIFE_STATUS_BYTES];
     result[1..].copy_from_slice(&remaining.div_ceil(1000).to_le_bytes());
-    Some(result)
+    Ok(Some(result))
 }
 
 async fn gift_status_snapshot(
@@ -211,8 +243,8 @@ macro_rules! authority_methods {
         fn wheel_gift_status(
             &self,
             _admitted: $crate::gameplay_transport::connection::AdmittedSession,
-        ) -> impl std::future::Future<Output = Option<[u8; 9]>> {
-            async { None }
+        ) -> impl std::future::Future<Output = Result<Option<[u8; 9]>, ()>> {
+            async { Ok(None) }
         }
         fn wheel_presentation_available(&self) -> bool {
             false
@@ -232,7 +264,7 @@ macro_rules! composed_methods {
         async fn wheel_gift_status(
             &self,
             admitted: connection::AdmittedSession,
-        ) -> Option<[u8; 9]> {
+        ) -> Result<Option<[u8; 9]>, ()> {
             wheel_presentation::gift_status(self, admitted).await
         }
 

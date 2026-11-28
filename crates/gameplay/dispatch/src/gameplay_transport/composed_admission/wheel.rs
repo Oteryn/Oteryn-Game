@@ -21,45 +21,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Without a current allocation there are no Wheel effects to qualify. In particular,
         // observing vitals must not take the root's sole holder away from death reconciliation.
         // Still apply zero bonuses below so a removed/stale allocation clears old maxima.
-        let current_allocation = self
-            .states
-            .wheel_sessions
-            .lock()
-            .ok()
-            .is_some_and(|sessions| {
-                sessions
-                    .get(&session)
-                    .and_then(Option::as_ref)
-                    .is_some_and(|allocation| allocation.current)
-            });
-        // Allocation checks this session's Premium owner too. The spell state's Premium
-        // cache can still be unset at entry or stale until the next spell-access refresh.
-        let premium = if current_allocation {
-            // Install the same owner-qualified promotion and conservative Premium deadline
-            // that spell casts use. A bool-only gate cannot authorize later combat reads.
-            self.refresh_and_apply_spell_access_for_transport(actor, session, None, generation)
+        let (promoted, premium) = if self.wheel_has_current_allocation(session) {
+            // Qualify both facts before changing live vitals. A failed owner read leaves the
+            // published state intact so join, cadence or a status recovery can try again.
+            let Some(eligibility) = self
+                .refresh_wheel_spell_access(actor, session, generation)
                 .await
-                .premium_gate()
-                .premium_current()
-        } else {
-            false
-        };
-        // Promotion is a separate permanent Character fact. Buying it does not replace
-        // the base vocation stored in the build or in the live spell state.
-        let promoted = current_allocation
-            && match self.current_quest_fence(session).await {
-                Ok(Some(fence))
-                    if generation.is_none_or(|generation| {
-                        generation == fence.connection_generation.get()
-                    }) =>
-                {
-                    self.root
-                        .read_promotion_for_session(self.character, self.holder, fence.item_fence())
-                        .await
-                        .unwrap_or(false)
-                }
-                _ => false,
+            else {
+                return false;
             };
+            eligibility
+        } else {
+            (false, false)
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if generation.is_some_and(|generation| {
@@ -98,6 +72,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 state.install_wheel_effects(bonuses);
                 true
+            })
+    }
+
+    pub(in crate::gameplay_transport) fn wheel_has_current_allocation(
+        &self,
+        session: GameSessionId,
+    ) -> bool {
+        self.states
+            .wheel_sessions
+            .lock()
+            .ok()
+            .is_some_and(|sessions| {
+                sessions
+                    .get(&session)
+                    .and_then(Option::as_ref)
+                    .is_some_and(|allocation| allocation.current)
             })
     }
 

@@ -183,6 +183,33 @@ impl RegisteredSpellAccessOwner {
     pub fn unavailable() -> Self {
         Self::Unavailable { account: None }
     }
+
+    /// Wheel may remove installed bonuses only on a known eligibility result.
+    fn wheel_premium_current(&self) -> Option<bool> {
+        let Self::Premium {
+            account,
+            consumer,
+            clock,
+            delivery,
+        } = self
+        else {
+            return None;
+        };
+        let now = clock.read_current_window()?;
+        if let Some(now) = delivery.delivered_now(Some(now)) {
+            if consumer.premium_current(*account, Some(now)) {
+                return Some(true);
+            }
+            return (consumer.current_premium_denial(*account, now).is_some()
+                || consumer.premium_entitlement_ended(*account, Some(now)))
+            .then_some(false);
+        }
+        delivery
+            .activation
+            .as_ref()
+            .is_none_or(|activation| now.upper_us() < activation.switch_over_us)
+            .then_some(false)
+    }
     /// The account's Premium standing now, from memory: open only once Premium has been
     /// delivered (a held latch row) and the account reads current authority (§1.2 step 1).
     /// Closed for an unavailable view, a lost clock and every other class.
@@ -778,6 +805,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(AccessFactsError::Unavailable(
                 "current Premium transition owners",
             ))?;
+        self.apply_spell_access_binding(current, access, budget, generation)
+            .await
+    }
+
+    async fn apply_spell_access_binding(
+        &self,
+        current: PremiumOwnerBinding,
+        access: &impl CurrentSpellAccessOwner,
+        budget: Option<&AdmissionRetryBudget<'_>>,
+        generation: Option<u64>,
+    ) -> Result<bool, AccessFactsError> {
+        let PremiumOwnerBinding { actor, session, .. } = current;
         if access
             .account_id()
             .is_some_and(|account| account != current.account)
@@ -857,6 +896,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         states
             .apply_current_premium(&runtime, actor, session, &facts, now, current.promoted)
             .map_err(|_| AccessFactsError::Unavailable("Premium transition refused"))
+    }
+
+    pub(super) async fn refresh_wheel_spell_access(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: Option<u64>,
+    ) -> Option<(bool, bool)> {
+        let coordinator = self.premium_coordinator?;
+        let current = self.current_premium_binding(actor, session, None).await?;
+        if generation
+            .is_some_and(|generation| generation != current.fence.connection_generation.get())
+        {
+            return None;
+        }
+        let _ = coordinator.premium_gate(current.account).await;
+        let access = coordinator.view(current.account);
+        let promoted = current.promoted;
+        let Some(premium) = access.wheel_premium_current() else {
+            // An authoritative lack of promotion is sufficient to disable the Wheel.
+            return (!promoted).then_some((false, false));
+        };
+        self.apply_spell_access_binding(current, &access, None, generation)
+            .await
+            .ok()?;
+        Some((promoted, premium))
     }
     pub(super) async fn refresh_and_apply_spell_access(
         &self,

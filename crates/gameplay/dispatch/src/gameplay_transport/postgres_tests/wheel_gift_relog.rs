@@ -9,6 +9,8 @@ use crate::gameplay_transport::item_fence_of;
 use crate::gameplay_transport::last_position::AdmissionPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt as _;
 use oteryn_protocol_oteryn::{CommandStatus, logout::LogoutResult, wheel_presentation};
+use std::future::{Future, poll_fn};
+use std::task::Poll;
 use std::time::Duration;
 
 #[test]
@@ -130,11 +132,16 @@ async fn scenario(admin: String) -> TestResult {
             "join could not read the timer while the holder was busy"
         );
     }
-    busy.run(|_, _| Box::pin(async { Ok(()) })).await?;
     let clock = owner.freeze_owner_clock_for_test();
-    let (disposition, status) = route_wheel_gift_status_for_test(&owner, &readmitted)
-        .await
-        .ok_or("Gift status reply")?;
+    let (disposition, status) = {
+        let mut query = std::pin::pin!(route_wheel_gift_status_for_test(&owner, &readmitted));
+        assert!(
+            poll_fn(|cx| Poll::Ready(query.as_mut().poll(cx).is_pending())).await,
+            "a busy status read must remain outstanding"
+        );
+        busy.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        query.await.ok_or("Gift status reply")?
+    };
     assert_eq!(
         disposition,
         CommandStatus::Accepted,

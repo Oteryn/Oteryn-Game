@@ -6,8 +6,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     a: &A,
     s: &AdmittedSession,
     c: ClientCommandView<'_>,
-) -> Dispatch {
-    match c.command_type {
+) -> Result<Dispatch, ()> {
+    Ok(match c.command_type {
         wire::COMMAND_TYPE_WHEEL_INSPECT_CHARACTER => {
             // Crystal refuses another Character's Wheel regardless of visibility.
             Dispatch::Reply(
@@ -20,7 +20,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             )
         }
         wire::COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS if c.payload.is_empty() => {
-            match a.wheel_gift_status(*s).await {
+            match a.wheel_gift_status(*s).await? {
                 Some(status) => Dispatch::Reply(CommandStatus::Accepted, status.to_vec()),
                 None => Dispatch::Reply(CommandStatus::Rejected, Vec::new()),
             }
@@ -29,7 +29,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Dispatch::Reply(CommandStatus::Rejected, Vec::new())
         }
         _ => route_presentation(a, s, c.payload).await,
-    }
+    })
 }
 
 async fn route_presentation<A: FreshAdmissionAuthority>(

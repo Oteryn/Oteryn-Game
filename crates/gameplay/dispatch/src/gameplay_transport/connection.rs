@@ -20,7 +20,10 @@ pub(super) async fn route_wheel_gift_status_for_test(
             oteryn_protocol_oteryn::wheel_presentation::COMMAND_TYPE_WHEEL_GIFT_OF_LIFE_STATUS,
         payload: &[],
     };
-    match routing::wheel_presentation::route(owner, admitted, command).await {
+    match routing::wheel_presentation::route(owner, admitted, command)
+        .await
+        .ok()?
+    {
         routing::Dispatch::Reply(status, payload) => Some((status, payload)),
         _ => None,
     }

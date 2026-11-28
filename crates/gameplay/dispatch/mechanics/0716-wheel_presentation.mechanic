@@ -4,4 +4,4 @@ transport=wheel_presentation
 composed=wheel_presentation
 authority=wheel_presentation
 [route]
-routing::wheel_presentation::route(authority, &session.admitted, command).await
+routing::wheel_presentation::route(authority, &session.admitted, command).await.map_err(|()| ServeEnd::Disconnected)?
