@@ -1,6 +1,7 @@
 //! Crystal boss-lever policy, current catalogue and durable room lifecycle.
 //! Crystal@201189f `boss_lever.lua`:151-158,183-218,243,266-280;
 //! `boss_lever_death.lua`:21-32. Values and placements come from authored content.
+use crate::durability::db::commit_semantic_read;
 use super::super::boss_encounter::cooldown_storage::{
     BossCooldownAdmissionData, BossCooldownChange, BossRewardKey, set_boss_cooldowns_data,
 };
@@ -138,7 +139,7 @@ impl ActivityHandoffOwner {
                         })
                     } else { origin_pin };
                     let result = read_definition(&mut tx, &key, fence.runtime_scope.world_id(), &current.content_revision, origin_pin).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -183,7 +184,7 @@ impl ActivityHandoffOwner {
                 result.push(ActivityReadyAllocation {scope,generation:ScopeOwnershipGeneration::new(parse_u64(row.try_get("generation")?)?).map_err(|_|DurabilityError::InvalidStoredState)?,
                     source_revision:parse_u64(row.try_get("revision")?)?,decision_identity:row.try_get("decision_identity")?});
             }
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            commit_semantic_read(tx,deadline).await?;Ok(result)
         })).await
     }
 
@@ -243,7 +244,7 @@ impl ActivityHandoffOwner {
                         reason:if row.try_get::<i16,_>("state")? == 2 {ActivityReturnReason::Defeated}else{ActivityReturnReason::Timeout}});
                 }
             }
-            commit_semantic_transaction(tx,deadline).await?;Ok(ActivityDueRoomPage {rooms:result,next_after})
+            commit_semantic_read(tx,deadline).await?;Ok(ActivityDueRoomPage {rooms:result,next_after})
         })).await
     }
 

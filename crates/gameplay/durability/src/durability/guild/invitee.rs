@@ -1,4 +1,5 @@
 //! Resolve an untrusted name to native Character data, never to an authorization fact.
+use crate::durability::db::commit_semantic_read;
 use super::*;
 impl DurabilityRoot {
     /// Reuse the original target on replay so a later rename/deletion cannot redirect an
@@ -47,7 +48,7 @@ impl DurabilityRoot {
                     }.await;
                     match result {
                         Ok(value) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            commit_semantic_read(tx, deadline).await?;
                             Ok(Ok(value))
                         }
                         Err(GuildError::Unavailable(error)) => {

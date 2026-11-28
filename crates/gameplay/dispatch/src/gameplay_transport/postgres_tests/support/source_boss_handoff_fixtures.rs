@@ -235,7 +235,7 @@ async fn assert_fresh_admission_refused(
     Ok(())
 }
 
-async fn publish_source_boss_successor_readiness(
+pub(super) async fn publish_source_boss_successor_readiness(
     h: &Harness,
     successor: &NodeIncarnationProof,
     moved: &AssignmentReceipt,

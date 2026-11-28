@@ -16,7 +16,7 @@ use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_chara
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
-use oteryn_protocol_oteryn::actor_spell;
+use oteryn_protocol_oteryn::{actor_spell, attack, world_spatial_entities::EntityRef};
 use std::time::Duration;
 
 /// What one vocation's scenario casts: the durable vocation and experience that reach every
@@ -37,10 +37,15 @@ const RAT_HEALTH: i64 = 100_000;
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Echo,
+    EchoCorners,
+    EchoHeldTarget,
     Grenade,
+    GrenadeBlocked,
+    GrenadeHeld { position_cast: bool },
     Pz,
     StageZero,
     Outburst(u8),
+    MonkBond { cue: &'static str, targeted: bool },
     Logout,
     DepartedTarget,
     QueuedOrder,
@@ -48,13 +53,27 @@ enum Case {
 
 #[test]
 fn delayed_strikes_postgres_death_echo_two_hits() -> TestResult {
+    echo(Case::Echo, "delayed_echo")
+}
+
+#[test]
+fn delayed_strikes_postgres_death_echo_hits_all_four_corners_twice() -> TestResult {
+    echo(Case::EchoCorners, "echo_corners")
+}
+
+#[test]
+fn delayed_strikes_postgres_death_echo_centers_on_caster_without_cursor() -> TestResult {
+    echo(Case::EchoHeldTarget, "echo_held")
+}
+
+fn echo(case: Case, tag: &'static str) -> TestResult {
     scenario(Plan {
-        tag: "delayed_echo",
+        tag,
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/death_echo", 120, 155)],
-        case: Case::Echo,
+        spells: &[("candidate:spell/death_echo", 120, 150)],
+        case,
     })
 }
 
@@ -70,6 +89,23 @@ fn delayed_strikes_postgres_grenade_pz_no_cost() -> TestResult {
 fn delayed_strikes_postgres_grenade_stage_zero_no_cost() -> TestResult {
     grenade(Case::StageZero, "delayed_stage_zero")
 }
+#[test]
+fn delayed_strikes_postgres_grenade_rejects_solid_endpoint_without_cost_marker_or_timer() -> TestResult {
+    grenade(Case::GrenadeBlocked, "delayed_grenade_solid")
+}
+
+#[test]
+fn delayed_strikes_postgres_grenade_hotkey_uses_caster_and_position_cast_uses_aim() -> TestResult {
+    grenade(
+        Case::GrenadeHeld { position_cast: true },
+        "delayed_grenade_aim",
+    )?;
+    grenade(
+        Case::GrenadeHeld { position_cast: false },
+        "delayed_grenade_hotkey",
+    )
+}
+
 fn grenade(case: Case, tag: &'static str) -> TestResult {
     scenario(Plan {
         tag,
@@ -88,12 +124,52 @@ fn delayed_strikes_postgres_outburst_full_harmony_repeats() -> TestResult {
 fn delayed_strikes_postgres_outburst_partial_harmony_no_repeat() -> TestResult {
     outburst(4, "delayed_partial")
 }
-fn outburst(harmony: u8, tag: &'static str) -> TestResult {
+#[test]
+fn delayed_strikes_postgres_outburst_repeats_the_cast_time_earth_bond() -> TestResult {
+    outburst_with_weapon(5, "delayed_earth", "oteryn:item.tibia.i50167")
+}
+
+#[test]
+fn monk_equipment_postgres_flurry_hits_with_the_earth_bond() -> TestResult {
+    monk_bond_attack("monk_flurry", &[("candidate:spell/flurry_of_blows", 0, 110)], "green_flurryofblows", false)
+}
+
+#[test]
+fn monk_equipment_postgres_sweeping_takedown_hits_with_the_earth_bond() -> TestResult {
+    monk_bond_attack("monk_takedown", &[("candidate:spell/sweeping_takedown", 0, 195)], "green_explosionhit", false)
+}
+
+#[test]
+fn monk_ordinary_postgres_mystic_repulse_uses_the_earth_bond() -> TestResult {
+    monk_bond_attack(
+        "monk_mystic",
+        &[("candidate:spell/mystic_repulse", 30, 150)],
+        "green_energypulse",
+        true,
+    )
+}
+
+fn monk_bond_attack(tag: &'static str, spells: &'static [(&'static str, u32, i64)], cue: &'static str, targeted: bool) -> TestResult {
     scenario(Plan {
         tag,
         vocation: "monk",
         experience: 30_000_000_000,
-        weapon: "oteryn:item.tibia.i3277",
+        weapon: "oteryn:item.tibia.i50167",
+        spells,
+        case: Case::MonkBond { cue, targeted },
+    })
+}
+
+fn outburst(harmony: u8, tag: &'static str) -> TestResult {
+    outburst_with_weapon(harmony, tag, "oteryn:item.tibia.i3277")
+}
+
+fn outburst_with_weapon(harmony: u8, tag: &'static str, weapon: &'static str) -> TestResult {
+    scenario(Plan {
+        tag,
+        vocation: "monk",
+        experience: 30_000_000_000,
+        weapon,
         spells: &[("candidate:spell/spiritual_outburst", 0, 425)],
         case: Case::Outburst(harmony),
     })
@@ -105,7 +181,7 @@ fn delayed_strikes_postgres_logout_drops_pending() -> TestResult {
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/death_echo", 120, 155)],
+        spells: &[("candidate:spell/death_echo", 120, 150)],
         case: Case::Logout,
     })
 }
@@ -117,7 +193,7 @@ fn delayed_strikes_postgres_departed_target_does_not_block_timer_lane() -> TestR
         vocation: "sorcerer",
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
-        spells: &[("candidate:spell/death_echo", 120, 155)],
+        spells: &[("candidate:spell/death_echo", 120, 150)],
         case: Case::DepartedTarget,
     })
 }
@@ -130,8 +206,8 @@ fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestRes
         experience: 30_000_000,
         weapon: "oteryn:item.tibia.i3277",
         spells: &[
-            ("candidate:spell/death_echo", 120, 155),
-            ("candidate:spell/death_echo", 120, 155),
+            ("candidate:spell/death_echo", 120, 150),
+            ("candidate:spell/death_echo", 120, 150),
         ],
         case: Case::QueuedOrder,
     })
@@ -157,6 +233,28 @@ fn scenario(plan: Plan) -> TestResult {
         started.elapsed().as_secs_f64()
     );
     result
+}
+
+async fn assert_monk_bond_cue(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    position: crate::foundation::MovementLocalPosition,
+    expected: &str,
+) -> TestResult {
+    let runtime = deps.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let cues = states
+        .presentations
+        .as_mut()
+        .ok_or("presentation owner")?
+        .take_for_current_publisher(&runtime)
+        .map_err(debug)?;
+    assert!(
+        cues.iter().any(|cue| cue.event.position == position
+            && cue.event.source_binding == format!("canary.appearance:effect/{expected}")),
+        "Earth impact at the target: {cues:?}"
+    );
+    Ok(())
 }
 
 async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
@@ -199,14 +297,37 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         entry
     };
     // Reuse crosshair_spells' open combat tile; the imported entry is a PZ.
-    let start = if plan.case == Case::Pz {
-        room.entry_start()
-    } else {
-        crate::content::NativeEntryStart {
-            x: 2,
+    let start = match plan.case {
+        Case::Pz => room.entry_start(),
+        Case::EchoCorners => crate::content::NativeEntryStart {
+            x: 1,
+            y: 13,
+            floor: -7,
+        },
+        Case::EchoHeldTarget => crate::content::NativeEntryStart {
+            x: 0,
+            y: 13,
+            floor: -7,
+        },
+        Case::GrenadeBlocked => crate::content::NativeEntryStart {
+            // Thalom's solid rock five tiles east has ground and does not block projectiles.
+            x: 1,
+            y: -10,
+            floor: -7,
+        },
+        Case::GrenadeHeld { .. } => crate::content::NativeEntryStart {
+            // Thalom has clear ground six cells east.
+            x: -10,
+            y: -9,
+            floor: -7,
+        },
+        _ => crate::content::NativeEntryStart {
+            // The outer Takedown row is four tiles east. Start one tile west
+            // so its target stands on open ground at (5, 11), before the wall.
+            x: if plan.tag == "monk_takedown" { 1 } else { 2 },
             y: 11,
             floor: -7,
-        }
+        },
     };
     let cp = ChannelContentPin::from_activation(
         world,
@@ -217,8 +338,18 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    let mut deps =
-        Dependencies::with_content_and_capacity(cp, room.clone(), native.spell_book().clone(), 3)?;
+    // Live spawns reserve half of these small fixtures' slots for players.
+    let capacity = match plan.case {
+        Case::EchoCorners => 12,
+        Case::EchoHeldTarget => 6,
+        _ => 3,
+    };
+    let mut deps = Dependencies::with_content_and_capacity(
+        cp,
+        room.clone(),
+        native.spell_book().clone(),
+        capacity,
+    )?;
     deps.combat_room = Some(room);
     // Every spell here is premium: the account holds a Current Premium.
     let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
@@ -290,7 +421,10 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         )
         .await
         .map_err(debug)?;
-    if matches!(plan.case, Case::Grenade | Case::Pz | Case::Outburst(_)) {
+    if matches!(
+        plan.case,
+        Case::Grenade | Case::GrenadeBlocked | Case::GrenadeHeld { .. } | Case::Pz | Case::Outburst(_)
+    ) {
         let purchase = super::atelier_fixtures::fixture::prepare(&h).await?;
         let fence = current_fence(&owner, session).await?;
         let promoted = owner
@@ -361,7 +495,10 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         assert!(i64::from(facts.max_mana) >= *mana, "{key} max mana");
     }
     let target;
+    let target_ref;
     let position;
+    let mut corners = Vec::new();
+    let mut held_target = None;
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -378,37 +515,96 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .map_err(debug)?,
             )
             .map_err(debug)?;
+        if matches!(plan.case, Case::MonkBond { targeted: false, .. }) {
+            let before = runtime.read_actor_position(actor).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_turn(before, crate::foundation::MovementFacing::East)
+                .map_err(debug)?;
+        }
         let p = runtime
             .read_actor_position(actor)
             .map_err(debug)?
             .position();
-        position = crate::foundation::MovementLocalPosition {
-            x: p.x + 1,
+        let offset_x = match plan.case {
+            Case::EchoCorners | Case::EchoHeldTarget => -1,
+            Case::GrenadeHeld { .. } => 6,
+            _ => match plan.tag {
+                "monk_flurry" => 3,
+                "monk_takedown" => 4,
+                _ => 1,
+            },
+        };
+        let primary = crate::foundation::MovementLocalPosition {
+            x: p.x + offset_x,
             y: p.y,
             floor: p.floor,
         };
-        runtime
-            .install_companion_policies(native.policies().clone())
-            .map_err(debug)?;
+        position = primary;
+        let policies = if plan.weapon == "oteryn:item.tibia.i50167" {
+            let mut rat = native.policies().policies().iter()
+                .find(|policy| policy.definition_key == "oteryn:creature.rat")
+                .ok_or("rat policy")?
+                .as_ref()
+                .clone();
+            rat.damage_immunities = vec!["physical".into()];
+            crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+                native.source_digest(),
+                vec![rat],
+            ).map_err(debug)?
+        } else {
+            native.policies().clone()
+        };
+        runtime.install_companion_policies(policies).map_err(debug)?;
         let health = runtime
             .companion_policy("oteryn:creature.rat")
             .map_err(debug)?
             .maximum_health;
+        let mut spawns = vec![(primary.x, primary.y, primary.floor)];
+        if plan.case == Case::EchoCorners {
+            for (dx, dy) in [(-2, -2), (-2, 2), (2, -2), (2, 2)] {
+                spawns.push((position.x + dx, position.y + dy, position.floor));
+            }
+        }
+        if plan.case == Case::EchoHeldTarget {
+            spawns.push((p.x + 3, p.y, p.floor));
+        }
         runtime
             .realize_activation_spawns(vec![(
-                vec![(position.x, position.y, position.floor)],
+                spawns,
                 60_000,
                 5_000,
                 "oteryn:creature.rat".into(),
                 u64::try_from(health)?,
             )])
             .map_err(|error| format!("realize crosshair target spawn: {error:?}"))?;
-        target = runtime
-            .visible_entities()
-            .creatures
-            .first()
-            .ok_or("rat")?
-            .actor;
+        let mut primary_target = None;
+        for row in runtime.visible_entities().creatures {
+            let at = runtime
+                .read_actor_position(row.actor)
+                .map_err(debug)?
+                .position();
+            if at == primary {
+                primary_target = Some((
+                    row.actor,
+                    EntityRef {
+                        identity: row.actor.placement_identity(),
+                        generation: row.generation,
+                    },
+                ));
+            } else if plan.case == Case::EchoCorners {
+                corners.push((row.actor, at));
+            } else if plan.case == Case::EchoHeldTarget {
+                held_target = Some((
+                    row.actor,
+                    oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                        identity: row.actor.placement_identity(),
+                        generation: row.generation,
+                    },
+                ));
+            }
+        }
+        (target, target_ref) = primary_target.ok_or("rat at primary position")?;
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -457,6 +653,22 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if matches!(plan.case, Case::MonkBond { targeted: true, .. }) {
+        let entity = {
+            let runtime = deps.runtime.lock().await;
+            let visible = runtime.visible_entities();
+            let row = visible.creatures.iter().find(|row| row.actor == target)
+                .ok_or("cast target")?;
+            oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                identity: target.placement_identity(),
+                generation: row.generation,
+            }
+        };
+        assert_eq!(
+            owner.select_attack_target(actor, session, 9, Some(entity)).await,
+            oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+        );
+    }
     for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
@@ -474,17 +686,135 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .checked_sub(Duration::from_secs(7))
                 .ok_or("clock advance")?;
         }
-        deps.runtime
-            .lock()
-            .await
-            .set_test_creature_health(target, RAT_HEALTH)
-            .map_err(debug)?;
+        {
+            let mut runtime = deps.runtime.lock().await;
+            runtime
+                .set_test_creature_health(target, RAT_HEALTH)
+                .map_err(debug)?;
+            for &(corner, _) in &corners {
+                runtime
+                    .set_test_creature_health(corner, RAT_HEALTH)
+                    .map_err(debug)?;
+            }
+            if let Some((held, _)) = held_target {
+                runtime
+                    .set_test_creature_health(held, RAT_HEALTH)
+                    .map_err(debug)?;
+            }
+        }
+        if plan.case == Case::EchoHeldTarget {
+            let (_, entity) = held_target.ok_or("held rat")?;
+            assert_eq!(
+                owner
+                    .select_attack_target(actor, session, 9, Some(entity))
+                    .await,
+                oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+            );
+        }
         let before = owner
             .observe_actor_vitals(actor, session)
             .await
             .ok_or("before vitals")?
             .1
             .mana;
+        if matches!(plan.case, Case::GrenadeBlocked | Case::GrenadeHeld { .. }) {
+            let caster = crate::foundation::MovementLocalPosition {
+                x: start.x,
+                y: start.y,
+                floor: start.floor,
+            };
+            let mut commands = Vec::new();
+            if matches!(plan.case, Case::GrenadeHeld { .. }) {
+                commands.push((
+                    attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+                    attack::encode_attack_target_intent(Some(&target_ref)).map_err(debug)?,
+                ));
+                admitted.continuity.selected_capabilities =
+                    SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7, 17])
+                        .ok_or("attack capabilities")?;
+            }
+            let blocked = crate::foundation::MovementLocalPosition {
+                x: caster.x + 5,
+                ..caster
+            };
+            let wire_position = |p: crate::foundation::MovementLocalPosition| {
+                actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                    x: p.x,
+                    y: p.y,
+                    floor: p.floor.abs(),
+                })
+            };
+            let (intent_target, expected_marker) = match plan.case {
+                Case::GrenadeBlocked => (wire_position(blocked), None),
+                Case::GrenadeHeld { position_cast: true } => {
+                    let aimed = crate::foundation::MovementLocalPosition {
+                        // Aim within Divine Grenade's four-tile range, with the rat still held at six.
+                        x: caster.x + 4,
+                        ..position
+                    };
+                    (wire_position(aimed), Some(aimed))
+                }
+                _ => (actor_spell::SpellTarget::AttackTarget, Some(caster)),
+            };
+            commands.push((
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+                    spell,
+                    target: intent_target,
+                    aim_at_target: intent_target == actor_spell::SpellTarget::AttackTarget,
+                }),
+            ));
+            let (results, _) =
+                super::parameter_spell_fixtures::exchange(&owner, &mut admitted, &commands, false, false)
+                    .await?;
+            if results.len() == 2 {
+                assert_eq!(
+                    attack::decode_attack_intent_result(&results[0].1).map_err(debug)?,
+                    attack::AttackIntentDisposition::Ok,
+                    "the monster six tiles away is held"
+                );
+            }
+            let disposition = actor_spell::decode_spell_cast_result(
+                &results.last().ok_or("spell result")?.1,
+            )
+            .map_err(debug)?;
+            assert_eq!(
+                disposition == actor_spell::SpellCastDisposition::Cast,
+                expected_marker.is_some(),
+                "cast disposition: {disposition:?}"
+            );
+            let after = owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("after vitals")?
+                .1
+                .mana;
+            assert_eq!(
+                i64::from(before) - i64::from(after),
+                if expected_marker.is_some() { *mana } else { 0 }
+            );
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let markers = states
+                .presentations
+                .as_mut()
+                .ok_or("presentation owner")?
+                .take_for_current_publisher(&runtime)
+                .map_err(debug)?;
+            assert_eq!(markers.len(), usize::from(expected_marker.is_some()));
+            if let Some(expected) = expected_marker {
+                assert_eq!(
+                    markers[0].event.source_binding,
+                    "canary.appearance:effect/divine_grenade"
+                );
+                assert_eq!(markers[0].event.position, expected);
+            }
+            assert_eq!(
+                states.spell_timers.as_ref().map_or(0, |t| t.payloads.len()),
+                usize::from(expected_marker.is_some())
+            );
+            continue;
+        }
         if let Case::Outburst(charges) = plan.case {
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
@@ -547,7 +877,9 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 10 + index as u64,
                 actor_spell::SpellCastIntent {
                     spell,
-                    target: if matches!(plan.case, Case::Outburst(_)) {
+                    target: if matches!(plan.case, Case::MonkBond { targeted: true, .. }) {
+                        actor_spell::SpellTarget::AttackTarget
+                    } else if matches!(plan.case, Case::Outburst(_) | Case::MonkBond { .. } | Case::EchoHeldTarget) {
                         actor_spell::SpellTarget::None
                     } else {
                         actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
@@ -599,12 +931,46 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             actor_spell::SpellCastDisposition::Cast,
             "{key}"
         );
+        if let Some((held, _)) = held_target {
+            assert_eq!(
+                deps.runtime.lock().await.live_creature_health(held),
+                Some(u64::try_from(RAT_HEALTH)?),
+                "the held rat is outside the caster-centered strike",
+            );
+        }
+        let mut corner_health = Vec::new();
+        if plan.case == Case::EchoCorners {
+            assert_eq!(corners.len(), 4);
+            let runtime = deps.runtime.lock().await;
+            for &(corner, at) in &corners {
+                let hp = runtime
+                    .live_creature_health(corner)
+                    .ok_or("corner rat survives")?;
+                assert!(
+                    hp < u64::try_from(RAT_HEALTH)?,
+                    "initial strike missed corner {at:?}"
+                );
+                corner_health.push((corner, at, hp));
+            }
+        }
         let hit = deps
             .runtime
             .lock()
             .await
             .live_creature_health(target)
             .ok_or("rat survives")?;
+        if let Case::MonkBond { cue, .. } = plan.case {
+            assert!(hit < u64::try_from(RAT_HEALTH)?, "bonded attack hits a Physical-immune target");
+            assert_monk_bond_cue(&owner, &deps, position, cue).await?;
+            let costs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(costs, 1, "one durable payment for the bonded attack");
+            continue;
+        }
+        if plan.weapon == "oteryn:item.tibia.i50167" {
+            assert_monk_bond_cue(&owner, &deps, position, "green_energyshock").await?;
+        }
         if plan.case == Case::Grenade {
             assert_eq!(hit, u64::try_from(RAT_HEALTH)?, "marker does no damage");
             {
@@ -821,6 +1187,69 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             *mana,
             "{key} exact one-time cast payment before the delayed hit"
         );
+        if plan.case == Case::Grenade {
+            use crate::spell::delayed_execution::TimerPayload;
+            use oteryn_gameplay_domain::domain::condition::ConditionValues;
+            use oteryn_gameplay_foundation::foundation::condition::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+            };
+            use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let timer = states
+                .spell_timers
+                .as_ref()
+                .and_then(|timers| timers.payloads.first())
+                .ok_or("grenade timer")?;
+            let TimerPayload::Strike(saved) = &timer.payload else {
+                return Err("grenade strike payload".into());
+            };
+            let cast_at = saved.binding.cast_at.get();
+            let snapshot = saved.binding.cast_snapshot.as_ref().ok_or("cast snapshot")?;
+            assert_eq!(snapshot.stage, 3);
+            let state = states.get_mut(&runtime, actor, session).ok_or("caster")?;
+            assert_eq!(
+                state.cooldowns.spells.get(*key).map(|ready| ready.get() - cast_at),
+                Some(16_000_000),
+                "paid grade-three cooldown"
+            );
+            // Make the live range clearly distinguishable from the planted range,
+            // regardless of the damage and critical rolls.
+            let magic_boost = ConditionDefinition::new(
+                "fixture:grenade_magic_level",
+                1,
+                ConditionValues::SpellSkills {
+                    duration_ms: 60_000,
+                    sub_id: 0,
+                    magic_level: 1000,
+                    fist: 0,
+                    melee: 0,
+                    distance: 0,
+                    shielding: 0,
+                },
+            )
+            .ok_or("magic boost definition")?;
+            let root = GameplayDecisionRoot::from_bytes(native.source_digest());
+            state
+                .conditions
+                .apply(
+                    &magic_boost,
+                    None,
+                    ConditionSourceKind::SelfUse,
+                    &[],
+                    &ApplicationFacts {
+                        now: owner.owner_now().get(),
+                        base_speed: 100,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: true,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes(id(98)),
+                    },
+                )
+                .map_err(debug)?;
+        }
         let expected_echo = if plan.case == Case::Echo {
             let runtime = deps.runtime.lock().await;
             let creature = runtime.companion_snapshot(target).map_err(debug)?;
@@ -901,9 +1330,14 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         } else {
             None
         };
+        let advance_ms = if matches!(plan.case, Case::EchoCorners | Case::EchoHeldTarget) {
+            1000
+        } else {
+            1100
+        };
         owner.clock_origin = owner
             .clock_origin
-            .checked_sub(Duration::from_millis(1100))
+            .checked_sub(Duration::from_millis(advance_ms))
             .ok_or("clock")?;
         let report = owner.drain_native_ai_timers().await.map_err(debug)?;
         assert!(
@@ -926,6 +1360,35 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             assert_eq!(echo, hit);
         } else {
             assert!(echo < hit, "delayed strike damages live area");
+        }
+        if plan.weapon == "oteryn:item.tibia.i50167" {
+            assert_monk_bond_cue(&owner, &deps, position, "green_energyshock").await?;
+        }
+        if plan.case == Case::Grenade {
+            assert!(
+                hit - echo >= 4000,
+                "fresh 1000 magic levels contribute 8000 minimum raw damage before mitigation, got {} HP loss",
+                hit - echo
+            );
+        }
+        {
+            let runtime = deps.runtime.lock().await;
+            for (corner, at, hp) in corner_health {
+                assert!(
+                    runtime
+                        .live_creature_health(corner)
+                        .ok_or("corner rat survives")?
+                        < hp,
+                    "echo missed corner {at:?}",
+                );
+            }
+            if let Some((held, _)) = held_target {
+                assert_eq!(
+                    runtime.live_creature_health(held),
+                    Some(u64::try_from(RAT_HEALTH)?),
+                    "the held rat is outside the saved caster-centered echo",
+                );
+            }
         }
         if let Some(expected) = expected_echo {
             assert_eq!(

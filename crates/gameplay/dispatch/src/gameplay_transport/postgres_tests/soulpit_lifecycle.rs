@@ -272,7 +272,7 @@ fn scenario() -> TestResult {
                     .bind(request.handoff_id.as_slice()).execute(&mut **tx).await?;
             }
             assert!(
-                tx.commit(std::time::Instant::now() + std::time::Duration::from_secs(5))
+                tx.commit(tokio::time::Instant::now() + std::time::Duration::from_secs(5))
                     .await
                     .is_err(),
                 "an absent destination admission or uncommitted handoff must roll back the core"

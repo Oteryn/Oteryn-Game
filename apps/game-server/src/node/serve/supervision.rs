@@ -59,6 +59,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
             }
             _ => None,
         },
+        movement_cells: owners.movement_cells,
         world: material.world,
         channel: material.channel,
         generation,

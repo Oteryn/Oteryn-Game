@@ -716,7 +716,7 @@
     {
       "creature": "oteryn:creature.chocolate_blob",
       "display_name": "Chocolate Blob",
-      "exclusive": true,
+      "exclusive": false,
       "experience": 17,
       "max_health": 70,
       "tier": 1
@@ -6224,10 +6224,10 @@
     {
       "examples": [
         "Rat",
-        "Spit Nettle",
-        "Lion",
+        "Hyaena",
+        "Cobra",
         "Troll Champion",
-        "Smuggler",
+        "Chakoya Windcaller",
         "Nomad Female",
         "Elf Scout",
         "Pirate Quartermaster"
@@ -6236,10 +6236,10 @@
       "experience_max": 99,
       "experience_min": 1,
       "minimum_level": 1,
-      "nonexclusive_count": 89,
+      "nonexclusive_count": 90,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 78,
-      "runtime_unsettleable_count": 71,
+      "runtime_available_count": 74,
+      "runtime_unsettleable_count": 66,
       "tier": 1
     },
     {
@@ -6259,8 +6259,8 @@
       "minimum_level": 50,
       "nonexclusive_count": 162,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 130,
-      "runtime_unsettleable_count": 125,
+      "runtime_available_count": 124,
+      "runtime_unsettleable_count": 119,
       "tier": 2
     },
     {
@@ -6280,8 +6280,8 @@
       "minimum_level": 100,
       "nonexclusive_count": 188,
       "normal_three_slot_capacity": true,
-      "runtime_available_count": 160,
-      "runtime_unsettleable_count": 160,
+      "runtime_available_count": 157,
+      "runtime_unsettleable_count": 156,
       "tier": 3
     },
     {

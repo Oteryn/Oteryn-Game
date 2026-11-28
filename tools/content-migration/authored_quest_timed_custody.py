@@ -79,9 +79,12 @@ def omitted_expiry_contract(root, callbacks, item_key, expiry):
             if inputs != [{'item': item_key, 'count': 1}] or callback.get('take') != inputs:
                 raise ValueError('AUTHORED_TIMED_OMISSION_UNBOUND_ITEM')
             consumers.append(callback)
-    if len(producers) != 1 or len(consumers) != 1:
+    replacement_key = 'oteryn:quest-reward/chosen/trader/replace-cheese'
+    replacements = [row for row in producers if row['key'] == replacement_key]
+    initial = [row for row in producers if row['key'] != replacement_key]
+    if len(initial) != 1 or len(consumers) != 1 or len(replacements) > 1:
         raise ValueError('AUTHORED_TIMED_OMISSION_CLOSED_ROUTE')
-    producer, consumer = producers[0], consumers[0]
+    producer, consumer = initial[0], consumers[0]
     if (producer.get('quest') != OMISSION_QUEST or consumer.get('quest') != OMISSION_QUEST
             or producer.get('npc') != 'oteryn:npc.miraia' or consumer.get('npc') != 'oteryn:npc.rashid'
             or producer.get('state_ops') or consumer.get('state_ops')):
@@ -97,6 +100,16 @@ def omitted_expiry_contract(root, callbacks, item_key, expiry):
             and not storage.get('preserve') and not storage.get('read_only')
             for storage in consumer.get('storage', [])):
         raise ValueError('AUTHORED_TIMED_OMISSION_CLOSED_ROUTE')
+    # Crystal miraia.lua:121-169 sells a replacement while delivery is open.
+    for replacement in replacements:
+        phase = advances[0]['set']
+        if (replacement.get('quest') != OMISSION_QUEST or replacement.get('npc') != producer['npc']
+                or replacement.get('repeatable') is not True or replacement.get('take') != []
+                or replacement.get('fee') != {'gold': 100, 'include_bank': True}
+                or replacement.get('requires_premium') is not True or replacement.get('state_ops')
+                or replacement.get('storage') != [{'track': advances[0]['track'],
+                    'minimum': phase, 'maximum': phase, 'set': phase, 'preserve': True}]):
+            raise ValueError('AUTHORED_TIMED_OMISSION_REPLACEMENT')
     return OmittedExpiryContract(expiry[0], expiry[1], OMISSION_QUEST, producer['key'],
                                  (consumer['key'],), OMISSION_PATH + '#/records/45/definition/'
                                  'oteryn_recipe/payload/recipe/adaptations/0', OMISSION_ADAPTATION)

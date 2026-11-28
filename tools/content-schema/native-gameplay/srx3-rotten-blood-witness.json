@@ -78,6 +78,38 @@
                     "radius_tiles": 7,
                     "shape": "Circle"
                   },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.bakragore.attack-10",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-10",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
                   "cast_cue": "canary.sound:effect/9",
                   "effects": [
                     {
@@ -243,6 +275,103 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.bakragore.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.bakragore.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.bakragore.attack-9",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -368,6 +497,42 @@
                     },
                     "chance_ppm": 100000,
                     "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.bakragore.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 170000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.bakragore.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 140000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.bakragore.attack-9",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.bakragore.attack-10",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 180000,
+                    "interval_ms": 2000
                   }
                 ],
                 "defenses": [
@@ -479,6 +644,11 @@
                   },
                   {
                     "family": "Ability",
+                    "key": "oteryn:ability.creature.bakragore.attack-10",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
                     "key": "oteryn:ability.creature.bakragore.attack-2",
                     "revision": "definition-r1"
                   },
@@ -500,6 +670,21 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.bakragore.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.bakragore.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.bakragore.attack-8",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.bakragore.attack-9",
                     "revision": "definition-r1"
                   },
                   {
@@ -652,6 +837,22 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-10",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "ice",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/water_drop",
@@ -734,6 +935,54 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "life_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/drawblood"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/gazharagoth"
@@ -758,6 +1007,21 @@
             "target": {
               "family": "Formula",
               "key": "oteryn:formula.creature.bakragore.attack-1-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 2450,
+                "minimum": 2200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-10-1",
               "revision": "definition-r1"
             }
           },
@@ -841,6 +1105,51 @@
               "kind": "Formula",
               "profile": {
                 "formula": "Range",
+                "maximum": 2500,
+                "minimum": 2000
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 2400,
+                "minimum": 2200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 2450,
+                "minimum": 1500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-9-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
                 "maximum": 3500,
                 "minimum": 2500
               }
@@ -887,6 +1196,21 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.bakragore.attack-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.bakragore.attack-10",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-10",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -970,6 +1294,51 @@
             "effects": [
               {
                 "family": "Effect",
+                "key": "oteryn:effect.creature.bakragore.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.bakragore.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.bakragore.attack-9",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.bakragore.attack-9",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
                 "key": "oteryn:effect.creature.bakragore.defense-1",
                 "revision": "definition-r1"
               }
@@ -1034,6 +1403,21 @@
             "identity": {
               "family": "Effect",
               "key": "oteryn:effect.creature.bakragore.attack-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-10-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-10",
               "revision": "definition-r1"
             },
             "kind": "Effect"
@@ -1115,6 +1499,51 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-9-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.bakragore.attack-9",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -1132,6 +1561,14 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.bakragore.attack-1-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-10-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -1172,6 +1609,30 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.bakragore.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.bakragore.attack-9-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -1251,6 +1712,42 @@
                   "revision": "definition-r1"
                 },
                 "chance_ppm": 100000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.bakragore.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 170000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.bakragore.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 140000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.bakragore.attack-9",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.bakragore.attack-10",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 180000,
                 "interval_ms": 2000
               }
             ],
@@ -1368,6 +1865,11 @@
               },
               {
                 "family": "Ability",
+                "key": "oteryn:ability.creature.bakragore.attack-10",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
                 "key": "oteryn:ability.creature.bakragore.attack-2",
                 "revision": "definition-r1"
               },
@@ -1389,6 +1891,21 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.bakragore.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.bakragore.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.bakragore.attack-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.bakragore.attack-9",
                 "revision": "definition-r1"
               },
               {
@@ -2816,6 +3333,72 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.chagorz.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.chagorz.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.chagorz.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.chagorz.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -2897,6 +3480,24 @@
                       "revision": "definition-r1"
                     },
                     "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.chagorz.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.chagorz.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
                     "interval_ms": 2000
                   }
                 ],
@@ -3002,6 +3603,16 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.chagorz.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.chagorz.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.chagorz.attack-8",
                     "revision": "definition-r1"
                   },
                   {
@@ -3213,6 +3824,38 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/electricalspark"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.chagorz.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.chagorz.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/gazharagoth"
@@ -3328,6 +3971,36 @@
               "kind": "Formula",
               "profile": {
                 "formula": "Range",
+                "maximum": 2000,
+                "minimum": 1500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.chagorz.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.chagorz.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
                 "maximum": 1500,
                 "minimum": 700
               }
@@ -3420,6 +4093,36 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.chagorz.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.chagorz.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.chagorz.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.chagorz.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.chagorz.attack-8",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -3549,6 +4252,36 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.chagorz.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.chagorz.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.chagorz.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.chagorz.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -3606,6 +4339,22 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.chagorz.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.chagorz.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.chagorz.attack-8-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -3677,6 +4426,24 @@
                   "revision": "definition-r1"
                 },
                 "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.chagorz.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.chagorz.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
                 "interval_ms": 2000
               }
             ],
@@ -3787,6 +4554,16 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.chagorz.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.chagorz.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.chagorz.attack-8",
                 "revision": "definition-r1"
               },
               {
@@ -10459,6 +11236,182 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_chagorz.attack-4",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_chagorz.attack-5",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "key": "oteryn:effect.creature.echo_of_chagorz.attack-6",
+                        "operation": {
+                          "condition": {
+                            "condition_type": "paralyze",
+                            "lifetime": "FixedDuration",
+                            "speed_formula": {
+                              "family": "Formula",
+                              "key": "oteryn:formula.creature.echo_of_chagorz.attack-6-1",
+                              "revision": "definition-r1"
+                            }
+                          },
+                          "duration_ms": 20000,
+                          "operation": "Condition"
+                        },
+                        "presentation": {
+                          "impact_asset_binding": "canary.appearance:effect/sound_red"
+                        }
+                      },
+                      "kind": "Inline"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_chagorz.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_chagorz.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -10557,6 +11510,51 @@
                     },
                     "chance_ppm": 370000,
                     "interval_ms": 3300
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_chagorz.attack-4",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_chagorz.attack-5",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_chagorz.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_chagorz.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_chagorz.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
                   }
                 ],
                 "defenses": [
@@ -10633,6 +11631,31 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.echo_of_chagorz.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_chagorz.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_chagorz.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_chagorz.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_chagorz.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_chagorz.attack-8",
                     "revision": "definition-r1"
                   },
                   {
@@ -10751,6 +11774,70 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "earth",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/electricalspark"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/magic_blue"
@@ -10805,6 +11892,89 @@
             "target": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_chagorz.attack-3-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 500,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-4-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 500,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-5-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "SpeedModifier",
+                "maximum_multiplier": {
+                  "denominator": 1,
+                  "numerator": 0
+                },
+                "maximum_offset": 40,
+                "minimum_multiplier": {
+                  "denominator": 1,
+                  "numerator": 0
+                },
+                "minimum_offset": 40
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-6-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 600
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-8-1",
               "revision": "definition-r1"
             }
           },
@@ -10889,6 +12059,75 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.echo_of_chagorz.attack-3",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_chagorz.attack-4",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_chagorz.attack-5",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_chagorz.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_chagorz.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_chagorz.attack-8",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -10993,6 +12232,66 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_chagorz.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -11026,6 +12325,46 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_chagorz.attack-3-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_chagorz.attack-8-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -11079,6 +12418,51 @@
                 },
                 "chance_ppm": 370000,
                 "interval_ms": 3300
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_chagorz.attack-4",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_chagorz.attack-5",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_chagorz.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_chagorz.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_chagorz.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
               }
             ],
             "defenses": [
@@ -11176,6 +12560,31 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.echo_of_chagorz.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_chagorz.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_chagorz.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_chagorz.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_chagorz.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_chagorz.attack-8",
                 "revision": "definition-r1"
               },
               {
@@ -11344,6 +12753,212 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "key": "oteryn:effect.creature.echo_of_ichgahal.attack-4",
+                        "operation": {
+                          "condition": {
+                            "condition_type": "paralyze",
+                            "lifetime": "FixedDuration",
+                            "speed_formula": {
+                              "family": "Formula",
+                              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-4-1",
+                              "revision": "definition-r1"
+                            }
+                          },
+                          "duration_ms": 20000,
+                          "operation": "Condition"
+                        },
+                        "presentation": {
+                          "impact_asset_binding": "canary.appearance:effect/sound_red"
+                        }
+                      },
+                      "kind": "Inline"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_ichgahal.attack-5",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 5,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_ichgahal.attack-6",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": true,
+                  "range_tiles": 7
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 1,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_ichgahal.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": true,
+                  "range_tiles": 7
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_ichgahal.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 3,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_ichgahal.attack-9",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -11442,6 +13057,60 @@
                     },
                     "chance_ppm": 370000,
                     "interval_ms": 3300
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_ichgahal.attack-4",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_ichgahal.attack-5",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_ichgahal.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_ichgahal.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_ichgahal.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_ichgahal.attack-9",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 300000,
+                    "interval_ms": 2000
                   }
                 ],
                 "defenses": [
@@ -11518,6 +13187,36 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.echo_of_ichgahal.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_ichgahal.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_ichgahal.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_ichgahal.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_ichgahal.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_ichgahal.attack-8",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_ichgahal.attack-9",
                     "revision": "definition-r1"
                   },
                   {
@@ -11636,6 +13335,92 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "earth",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/smallplants"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "physical",
+                "mitigated_by": [
+                  "Armor"
+                ],
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/poisonarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/purpleteleport"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "physical",
+                "mitigated_by": [
+                  "Armor"
+                ],
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/groundshaker"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/magic_blue"
@@ -11690,6 +13475,104 @@
             "target": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_ichgahal.attack-3-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "SpeedModifier",
+                "maximum_multiplier": {
+                  "denominator": 1,
+                  "numerator": 0
+                },
+                "maximum_offset": 40,
+                "minimum_multiplier": {
+                  "denominator": 1,
+                  "numerator": 0
+                },
+                "minimum_offset": 40
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-4-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 400,
+                "minimum": 200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-5-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 800,
+                "minimum": 250
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-6-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 700,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 400,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-9-1",
               "revision": "definition-r1"
             }
           },
@@ -11774,6 +13657,90 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.echo_of_ichgahal.attack-3",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_ichgahal.attack-5",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_ichgahal.attack-6",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_ichgahal.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_ichgahal.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_ichgahal.attack-9",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_ichgahal.attack-9",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -11878,6 +13845,81 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-9-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_ichgahal.attack-9",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -11911,6 +13953,54 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_ichgahal.attack-3-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_ichgahal.attack-9-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -11964,6 +14054,60 @@
                 },
                 "chance_ppm": 370000,
                 "interval_ms": 3300
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_ichgahal.attack-4",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_ichgahal.attack-5",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_ichgahal.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_ichgahal.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_ichgahal.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_ichgahal.attack-9",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 300000,
+                "interval_ms": 2000
               }
             ],
             "defenses": [
@@ -12061,6 +14205,36 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.echo_of_ichgahal.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_ichgahal.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_ichgahal.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_ichgahal.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_ichgahal.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_ichgahal.attack-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_ichgahal.attack-9",
                 "revision": "definition-r1"
               },
               {
@@ -12229,6 +14403,199 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 3,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_murcion.attack-4",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_murcion.attack-5",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_murcion.attack-6",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_murcion.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_murcion.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_murcion.attack-9",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -12327,6 +14694,60 @@
                     },
                     "chance_ppm": 370000,
                     "interval_ms": 3300
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_murcion.attack-4",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 160000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_murcion.attack-5",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_murcion.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 170000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_murcion.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 140000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_murcion.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_murcion.attack-9",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 180000,
+                    "interval_ms": 2000
                   }
                 ],
                 "defenses": [
@@ -12403,6 +14824,36 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.echo_of_murcion.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_murcion.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_murcion.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_murcion.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_murcion.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_murcion.attack-8",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_murcion.attack-9",
                     "revision": "definition-r1"
                   },
                   {
@@ -12521,6 +14972,102 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/groundshaker"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "earth",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/smallplants"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "life_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/drawblood"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/magic_blue"
@@ -12575,6 +15122,96 @@
             "target": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_murcion.attack-3-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 750,
+                "minimum": 650
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-4-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1650,
+                "minimum": 1100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-5-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1500,
+                "minimum": 1000
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-6-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1200,
+                "minimum": 1200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1250,
+                "minimum": 700
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1450,
+                "minimum": 1200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-9-1",
               "revision": "definition-r1"
             }
           },
@@ -12659,6 +15296,96 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.echo_of_murcion.attack-3",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_murcion.attack-4",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_murcion.attack-5",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_murcion.attack-6",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_murcion.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_murcion.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_murcion.attack-9",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_murcion.attack-9",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -12763,6 +15490,96 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-9-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_murcion.attack-9",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -12796,6 +15613,54 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_murcion.attack-3-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_murcion.attack-9-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -12849,6 +15714,60 @@
                 },
                 "chance_ppm": 370000,
                 "interval_ms": 3300
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_murcion.attack-4",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 160000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_murcion.attack-5",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_murcion.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 170000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_murcion.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 140000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_murcion.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_murcion.attack-9",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 180000,
+                "interval_ms": 2000
               }
             ],
             "defenses": [
@@ -12946,6 +15865,36 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.echo_of_murcion.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_murcion.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_murcion.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_murcion.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_murcion.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_murcion.attack-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_murcion.attack-9",
                 "revision": "definition-r1"
               },
               {
@@ -13114,6 +16063,182 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_vemiath.attack-4",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_vemiath.attack-5",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "key": "oteryn:effect.creature.echo_of_vemiath.attack-6",
+                        "operation": {
+                          "condition": {
+                            "condition_type": "paralyze",
+                            "lifetime": "FixedDuration",
+                            "speed_formula": {
+                              "family": "Formula",
+                              "key": "oteryn:formula.creature.echo_of_vemiath.attack-6-1",
+                              "revision": "definition-r1"
+                            }
+                          },
+                          "duration_ms": 20000,
+                          "operation": "Condition"
+                        },
+                        "presentation": {
+                          "impact_asset_binding": "canary.appearance:effect/sound_red"
+                        }
+                      },
+                      "kind": "Inline"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_vemiath.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.echo_of_vemiath.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -13212,6 +16337,51 @@
                     },
                     "chance_ppm": 370000,
                     "interval_ms": 3300
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_vemiath.attack-4",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_vemiath.attack-5",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_vemiath.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_vemiath.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.echo_of_vemiath.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
                   }
                 ],
                 "defenses": [
@@ -13288,6 +16458,31 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.echo_of_vemiath.attack-3",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_vemiath.attack-4",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_vemiath.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_vemiath.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_vemiath.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.echo_of_vemiath.attack-8",
                     "revision": "definition-r1"
                   },
                   {
@@ -13406,6 +16601,70 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "earth",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-4",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-5",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/electricalspark"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/magic_blue"
@@ -13460,6 +16719,89 @@
             "target": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_vemiath.attack-3-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 500,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-4-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 500,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-5-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "SpeedModifier",
+                "maximum_multiplier": {
+                  "denominator": 1,
+                  "numerator": 0
+                },
+                "maximum_offset": 40,
+                "minimum_multiplier": {
+                  "denominator": 1,
+                  "numerator": 0
+                },
+                "minimum_offset": 40
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-6-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 600
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-8-1",
               "revision": "definition-r1"
             }
           },
@@ -13544,6 +16886,75 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.echo_of_vemiath.attack-3",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_vemiath.attack-4",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_vemiath.attack-5",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_vemiath.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.echo_of_vemiath.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.echo_of_vemiath.attack-8",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -13648,6 +17059,66 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-4",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.echo_of_vemiath.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -13681,6 +17152,46 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.echo_of_vemiath.attack-3-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-4-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.echo_of_vemiath.attack-8-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -13734,6 +17245,51 @@
                 },
                 "chance_ppm": 370000,
                 "interval_ms": 3300
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_vemiath.attack-4",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_vemiath.attack-5",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_vemiath.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_vemiath.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.echo_of_vemiath.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
               }
             ],
             "defenses": [
@@ -13831,6 +17387,31 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.echo_of_vemiath.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_vemiath.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_vemiath.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_vemiath.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_vemiath.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.echo_of_vemiath.attack-8",
                 "revision": "definition-r1"
               },
               {
@@ -15246,6 +18827,134 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "radius_tiles": 5,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.ichgahal.attack-6",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": true,
+                  "range_tiles": 7
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 1,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.ichgahal.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": true,
+                  "range_tiles": 7
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 6,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.ichgahal.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 3,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.ichgahal.attack-9",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -15318,6 +19027,42 @@
                       "revision": "definition-r1"
                     },
                     "chance_ppm": 350000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.ichgahal.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.ichgahal.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.ichgahal.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.ichgahal.attack-9",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 300000,
                     "interval_ms": 2000
                   }
                 ],
@@ -15429,6 +19174,26 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.ichgahal.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.ichgahal.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.ichgahal.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.ichgahal.attack-8",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.ichgahal.attack-9",
                     "revision": "definition-r1"
                   },
                   {
@@ -15620,6 +19385,76 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "physical",
+                "mitigated_by": [
+                  "Armor"
+                ],
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/poisonarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/purpleteleport"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "physical",
+                "mitigated_by": [
+                  "Armor"
+                ],
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/groundshaker"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/gazharagoth"
@@ -15721,6 +19556,66 @@
               "profile": {
                 "formula": "Range",
                 "maximum": 1200,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-6-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 700,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 400,
+                "minimum": 100
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-9-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1200,
                 "minimum": 800
               }
             },
@@ -15797,6 +19692,66 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.ichgahal.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.ichgahal.attack-6",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.ichgahal.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.ichgahal.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.ichgahal.attack-9",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.ichgahal.attack-9",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -15911,6 +19866,66 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-9-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.ichgahal.attack-9",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -15960,6 +19975,38 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.ichgahal.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.ichgahal.attack-9-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -16022,6 +20069,42 @@
                   "revision": "definition-r1"
                 },
                 "chance_ppm": 350000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.ichgahal.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.ichgahal.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.ichgahal.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.ichgahal.attack-9",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 300000,
                 "interval_ms": 2000
               }
             ],
@@ -16138,6 +20221,26 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.ichgahal.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.ichgahal.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.ichgahal.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.ichgahal.attack-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.ichgahal.attack-9",
                 "revision": "definition-r1"
               },
               {
@@ -17531,6 +21634,103 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.murcion.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.murcion.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.murcion.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.murcion.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "radius_tiles": 7,
+                    "shape": "Circle"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.murcion.attack-9",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.murcion.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -17612,6 +21812,33 @@
                       "revision": "definition-r1"
                     },
                     "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.murcion.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 140000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.murcion.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.murcion.attack-9",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 180000,
                     "interval_ms": 2000
                   }
                 ],
@@ -17710,6 +21937,21 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.murcion.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.murcion.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.murcion.attack-8",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.murcion.attack-9",
                     "revision": "definition-r1"
                   },
                   {
@@ -17925,6 +22167,54 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.murcion.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "life_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/drawblood"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.murcion.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "mana_drain",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/stun"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.murcion.attack-9",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/gazharagoth"
@@ -18040,6 +22330,51 @@
               "kind": "Formula",
               "profile": {
                 "formula": "Range",
+                "maximum": 2400,
+                "minimum": 2200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 2450,
+                "minimum": 1500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 2450,
+                "minimum": 2200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-9-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
                 "maximum": 1500,
                 "minimum": 800
               }
@@ -18132,6 +22467,51 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.murcion.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.murcion.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.murcion.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.murcion.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.murcion.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.murcion.attack-9",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.murcion.attack-9",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -18261,6 +22641,51 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.murcion.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.murcion.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-9-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.murcion.attack-9",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -18318,6 +22743,30 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.murcion.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.murcion.attack-9-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -18389,6 +22838,33 @@
                   "revision": "definition-r1"
                 },
                 "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.murcion.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 140000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.murcion.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.murcion.attack-9",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 180000,
                 "interval_ms": 2000
               }
             ],
@@ -18492,6 +22968,21 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.murcion.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.murcion.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.murcion.attack-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.murcion.attack-9",
                 "revision": "definition-r1"
               },
               {
@@ -24498,6 +28989,85 @@
               "profile": {
                 "details": {
                   "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 3
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.sopping_corpus.attack-6",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.sopping_corpus.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "north": [
+                      "......x......",
+                      ".....xxx.....",
+                      "....xxxxx....",
+                      "...xxxxxxx...",
+                      "..xxx...xxx..",
+                      ".xxx.....xxx.",
+                      "xxxx..C..xxxx",
+                      ".xxx.....xxx.",
+                      "..xxx...xxx..",
+                      "...xxxxxxx...",
+                      "....xxxxx....",
+                      ".....xxx.....",
+                      "......x......"
+                    ],
+                    "shape": "Matrix"
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.spell.largefirering.effect",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": false,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.largefirering",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
                     "north": [
                       "......x......",
                       ".....xxx.....",
@@ -24600,6 +29170,28 @@
                       "maximum": 1200,
                       "minimum": 1000
                     }
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.sopping_corpus.attack-6",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.largefirering",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 100000,
+                    "interval_ms": 2000,
+                    "magnitude": {
+                      "maximum": 1200,
+                      "minimum": 1000
+                    }
                   }
                 ],
                 "movement": {
@@ -24676,6 +29268,16 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.sopping_corpus.attack-5",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.sopping_corpus.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.largefirering",
                     "revision": "definition-r1"
                   },
                   {
@@ -24912,6 +29514,38 @@
               "profile": {
                 "damage_type": "earth",
                 "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/poisonarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.sopping_corpus.attack-6",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "fire",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/fireattack"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.spell.largefirering.effect",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "earth",
+                "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/green_rings"
                 }
               }
@@ -25009,6 +29643,21 @@
               "key": "oteryn:formula.creature.sopping_corpus.attack-5-1",
               "revision": "definition-r1"
             }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1500,
+                "minimum": 1200
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.sopping_corpus.attack-6-1",
+              "revision": "definition-r1"
+            }
           }
         ],
         "records": [
@@ -25083,6 +29732,36 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.sopping_corpus.attack-5",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.sopping_corpus.attack-6",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.sopping_corpus.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.spell.largefirering.effect",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.largefirering",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -25215,6 +29894,36 @@
             "effect_family": "Damage",
             "formula": {
               "family": "Formula",
+              "key": "oteryn:formula.creature.sopping_corpus.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.sopping_corpus.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.caster-magnitude",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.spell.largefirering.effect",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
               "key": "oteryn:formula.creature.caster-magnitude",
               "revision": "definition-r1"
             },
@@ -25269,6 +29978,14 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.sopping_corpus.attack-5-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.sopping_corpus.attack-6-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -25329,6 +30046,28 @@
                 "ability": {
                   "family": "Ability",
                   "key": "oteryn:ability.spell.largepoisonring",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 100000,
+                "interval_ms": 2000,
+                "magnitude": {
+                  "maximum": 1200,
+                  "minimum": 1000
+                }
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.sopping_corpus.attack-6",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.largefirering",
                   "revision": "definition-r1"
                 },
                 "chance_ppm": 100000,
@@ -25418,6 +30157,16 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.sopping_corpus.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.sopping_corpus.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.largefirering",
                 "revision": "definition-r1"
               },
               {
@@ -25778,6 +30527,72 @@
               "kind": "Ability",
               "profile": {
                 "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.vemiath.attack-7",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.vemiath.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
+                  "area": {
+                    "length_tiles": 8,
+                    "shape": "Beam",
+                    "spread_tiles": 0
+                  },
+                  "effects": [
+                    {
+                      "effect": {
+                        "family": "Effect",
+                        "key": "oteryn:effect.creature.vemiath.attack-8",
+                        "revision": "definition-r1"
+                      },
+                      "kind": "Executable"
+                    }
+                  ],
+                  "kind": "Spell",
+                  "needs_direction": true,
+                  "needs_target": false,
+                  "range_tiles": 0
+                }
+              }
+            },
+            "target": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.vemiath.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Ability",
+              "profile": {
+                "details": {
                   "effects": [
                     {
                       "effect": {
@@ -25859,6 +30674,24 @@
                       "revision": "definition-r1"
                     },
                     "chance_ppm": 200000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.vemiath.attack-7",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
+                    "interval_ms": 2000
+                  },
+                  {
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.vemiath.attack-8",
+                      "revision": "definition-r1"
+                    },
+                    "chance_ppm": 250000,
                     "interval_ms": 2000
                   }
                 ],
@@ -25964,6 +30797,16 @@
                   {
                     "family": "Ability",
                     "key": "oteryn:ability.creature.vemiath.attack-6",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.vemiath.attack-7",
+                    "revision": "definition-r1"
+                  },
+                  {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.vemiath.attack-8",
                     "revision": "definition-r1"
                   },
                   {
@@ -26175,6 +31018,38 @@
             "data": {
               "kind": "Effect",
               "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/electricalspark"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.vemiath.attack-7",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
+                "damage_type": "death",
+                "presentation": {
+                  "impact_asset_binding": "canary.appearance:effect/mortarea"
+                }
+              }
+            },
+            "target": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.vemiath.attack-8",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Effect",
+              "profile": {
                 "damage_type": "healing",
                 "presentation": {
                   "impact_asset_binding": "canary.appearance:effect/gazharagoth"
@@ -26290,6 +31165,36 @@
               "kind": "Formula",
               "profile": {
                 "formula": "Range",
+                "maximum": 2000,
+                "minimum": 1500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.vemiath.attack-7-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
+                "maximum": 1000,
+                "minimum": 500
+              }
+            },
+            "target": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.vemiath.attack-8-1",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "data": {
+              "kind": "Formula",
+              "profile": {
+                "formula": "Range",
                 "maximum": 1500,
                 "minimum": 800
               }
@@ -26382,6 +31287,36 @@
             "identity": {
               "family": "Ability",
               "key": "oteryn:ability.creature.vemiath.attack-6",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.vemiath.attack-7",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.vemiath.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Ability"
+          },
+          {
+            "effects": [
+              {
+                "family": "Effect",
+                "key": "oteryn:effect.creature.vemiath.attack-8",
+                "revision": "definition-r1"
+              }
+            ],
+            "identity": {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.vemiath.attack-8",
               "revision": "definition-r1"
             },
             "kind": "Ability"
@@ -26511,6 +31446,36 @@
           },
           {
             "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.vemiath.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.vemiath.attack-7",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
+            "effect_family": "Damage",
+            "formula": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.vemiath.attack-8-1",
+              "revision": "definition-r1"
+            },
+            "identity": {
+              "family": "Effect",
+              "key": "oteryn:effect.creature.vemiath.attack-8",
+              "revision": "definition-r1"
+            },
+            "kind": "Effect"
+          },
+          {
+            "client_projection": "ServerOnly",
             "effect_family": "Heal",
             "formula": {
               "family": "Formula",
@@ -26568,6 +31533,22 @@
             "identity": {
               "family": "Formula",
               "key": "oteryn:formula.creature.vemiath.attack-6-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.vemiath.attack-7-1",
+              "revision": "definition-r1"
+            },
+            "kind": "Formula"
+          },
+          {
+            "identity": {
+              "family": "Formula",
+              "key": "oteryn:formula.creature.vemiath.attack-8-1",
               "revision": "definition-r1"
             },
             "kind": "Formula"
@@ -26639,6 +31620,24 @@
                   "revision": "definition-r1"
                 },
                 "chance_ppm": 200000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.vemiath.attack-7",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
+                "interval_ms": 2000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.vemiath.attack-8",
+                  "revision": "definition-r1"
+                },
+                "chance_ppm": 250000,
                 "interval_ms": 2000
               }
             ],
@@ -26749,6 +31748,16 @@
               {
                 "family": "Ability",
                 "key": "oteryn:ability.creature.vemiath.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.vemiath.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.vemiath.attack-8",
                 "revision": "definition-r1"
               },
               {
@@ -29473,5 +34482,5 @@
       }
     }
   ],
-  "source_definitions_sha256": "e331d90b077420d8ed9d4cb31a75c879849116476285ab46237dcfeca7d285c2"
+  "source_definitions_sha256": "0b2fe785ebcc9d3cc218ba80cee75e598cc35781b4576cd5511dea7e28456b69"
 }

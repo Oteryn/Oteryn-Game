@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.maryza",
+      "greet": "Welcome to the Jolly Axeman, |PLAYERNAME|. Have a good time and eat some food!",
+      "farewell": "Good bye!",
+      "walkaway": "Good bye!",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/maryza.lua:56-72:sha256:2679133985d89cc1b399f8d3ef9c0cb5079055a6ce0d115f4f0eca023581afcc"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.melchior",
+      "greet": "Greetings, |PLAYERNAME|. I do not see your face, but I can read a thousand things in your voice!",
+      "farewell": "Farewell, stranger. May Uman the Wise guide your steps in this treacherous land.",
+      "walkaway": "Farewell, stranger. May Uman the Wise guide your steps in this treacherous land.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melchior.lua:52-60:sha256:1ec7aa8fc1a9b1f972239df7299911f72976aadeacae6c011fd49bc5033383df"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.umar",
+      "greet": "You know the word of greeting. Why are you here?",
+      "farewell": "<salutes>Aaaa -tention!",
+      "walkaway": "<salutes>Aaaa -tention!",
+      "greeting_words": ["djanni'hah"],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/umar.lua:73-93:sha256:392e2457a309053a4b12f27ea22368ec8a0b7b808e3151138d6791abcef91df7"
+      ]
+    }
+  ]
+}

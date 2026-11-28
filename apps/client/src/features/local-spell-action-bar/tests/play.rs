@@ -213,20 +213,45 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
     assert!(
         matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==71)
     );
+    let received_at = std::time::Instant::now() + std::time::Duration::from_secs(1);
     outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
         server_sequence: 1,
         base_revision: 1,
         new_revision: 2,
-        value: oteryn_session::ActorCooldowns {
-            server_now_ms: 100,
-            rtt_ms: None,
-            entries: vec![oteryn_session::ActorCooldown {
-                kind: oteryn_session::ActorCooldownKind::Spell,
-                id: 71,
-                expires_at_ms: 600,
-            }],
+        value: oteryn_session::ActorCooldownUpdate {
+            value: oteryn_session::ActorCooldowns {
+                server_now_ms: 100,
+                rtt_ms: None,
+                entries: vec![oteryn_session::ActorCooldown {
+                    kind: oteryn_session::ActorCooldownKind::Spell,
+                    id: 71,
+                    expires_at_ms: 600,
+                }],
+            },
+            received_at,
+            snapshot: true,
         },
     })]);
+    outbox.push(vec![oteryn_session::SessionEvent::ActorCooldowns(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 2,
+            new_revision: 3,
+            value: oteryn_session::ActorCooldownUpdate {
+                value: oteryn_session::ActorCooldowns {
+                    server_now_ms: 0,
+                    rtt_ms: None,
+                    entries: vec![oteryn_session::ActorCooldown {
+                        kind: oteryn_session::ActorCooldownKind::Spell,
+                        id: 99,
+                        expires_at_ms: 1000,
+                    }],
+                },
+                received_at,
+                snapshot: false,
+            },
+        },
+    )]);
     let mailbox = crate::play::mailbox::lock(&link.mailbox);
     let text = oteryn_client_ui::spell_action_bar::panel_text(
         &mailbox.spell_bar,

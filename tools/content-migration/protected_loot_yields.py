@@ -9,7 +9,9 @@ import encounter_loot_item_admissions as source
 ARBAZILOTH_HARD_ITEMS = {
     f"oteryn:item.tibia.i{i}" for i in (49531, 49532, 49533, 49534, 50189)
 }
-ITEMS = ARBAZILOTH_HARD_ITEMS | {
+# Crystal 201189f8 cultist loot includes the quest doll and four Hunter verses.
+CULT_LOOT_ITEMS = {f"oteryn:item.tibia.i{i}" for i in (5810, 6087, 6088, 6089, 6090)}
+ITEMS = ARBAZILOTH_HARD_ITEMS | CULT_LOOT_ITEMS | {
     f"oteryn:item.tibia.i{i}"
     for i in (
         2852,

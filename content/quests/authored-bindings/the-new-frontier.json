@@ -76,6 +76,12 @@
           "maximum": 3
         },
         {
+          "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
           "key": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/telas",
           "initial": 0,
           "minimum": 0,
@@ -1763,10 +1769,156 @@
               "outfit": null,
               "achievement": null,
               "reply": [
-                "Why should we support the settlement?"
+                "Ah, I vaguely remember that our little allies were eager to build some base. So speak up, what do you want?"
               ],
               "sources": [
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-109"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-71",
+                "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+              ],
+              "requires_premium": true,
+              "failure_reply": [
+                "Sorry, not possible."
+              ],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                  "minimum": 0,
+                  "maximum": 0
+                }
+              ]
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/new-frontier/ask-first-king_tibianus",
+                "quest": "oteryn:quest.the_new_frontier_quest",
+                "npc": "oteryn:npc.king_tibianus",
+                "keywords": [
+                  "farmine"
+                ],
+                "topic": 0,
+                "next_topic": 1,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Ah, I vaguely remember that our little allies were eager to build some base. So speak up, what do you want?"
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-71",
+                  "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+                ],
+                "requires_premium": true,
+                "failure_reply": [
+                  "Sorry, not possible."
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "minimum": 14,
+                    "maximum": 14
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                    "minimum": 0,
+                    "maximum": 0
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/new-frontier/resume-prepaid-king_tibianus",
+                "quest": "oteryn:quest.the_new_frontier_quest",
+                "npc": "oteryn:npc.king_tibianus",
+                "keywords": [
+                  "farmine"
+                ],
+                "topic": 0,
+                "next_topic": 7,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 1
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Why should I assist in the construction of the Farmine base?"
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-71",
+                  "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+                ],
+                "requires_premium": true,
+                "failure_reply": [
+                  "Sorry, not possible."
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "minimum": 14,
+                    "maximum": 14
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "key": "offer-polisher-king_tibianus",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/offer-polisher-king_tibianus",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.king_tibianus",
+              "keywords": [
+                "farmine"
+              ],
+              "topic": 0,
+              "next_topic": 8,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Did you come to apologise for your inappropriate behaviour?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-75",
+                "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
               ],
               "requires_premium": true,
               "failure_reply": [
@@ -1783,6 +1935,175 @@
           }
         },
         {
+          "key": "hand-in-polisher-king_tibianus",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/new-frontier/hand-in-polisher-king_tibianus",
+              "quest": "oteryn:quest.the_new_frontier_quest",
+              "npc": "oteryn:npc.king_tibianus",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 8,
+              "next_topic": 7,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 1
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i10009",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Hm, a well thought out and tasteful present. So let's continue our negotiations. Why should I assist in the construction of the Farmine base?"
+              ],
+              "sources": [
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:77-81",
+                "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+              ],
+              "requires_premium": true,
+              "failure_reply": [],
+              "requires": [
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                  "minimum": 14,
+                  "maximum": 14
+                }
+              ],
+              "inventory": [
+                {
+                  "item": "oteryn:item.tibia.i10009",
+                  "minimum": 1,
+                  "maximum": 4294967295
+                }
+              ]
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/new-frontier/hand-in-first-polisher-king_tibianus",
+                "quest": "oteryn:quest.the_new_frontier_quest",
+                "npc": "oteryn:npc.king_tibianus",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 8,
+                "next_topic": 7,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 1
+                  }
+                ],
+                "take": [
+                  {
+                    "item": "oteryn:item.tibia.i10009",
+                    "count": 1
+                  }
+                ],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Hm, a well thought out and tasteful present. So let's continue our negotiations. Why should I assist in the construction of the Farmine base?"
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:77-81",
+                  "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+                ],
+                "requires_premium": true,
+                "failure_reply": [
+                  "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "minimum": 14,
+                    "maximum": 14
+                  }
+                ],
+                "inventory": [
+                  {
+                    "item": "oteryn:item.tibia.i10009",
+                    "minimum": 1,
+                    "maximum": 4294967295
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/new-frontier/missing-polisher-king_tibianus",
+                "quest": "oteryn:quest.the_new_frontier_quest",
+                "npc": "oteryn:npc.king_tibianus",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 8,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                    "minimum": 0,
+                    "maximum": 0,
+                    "set": 2
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:77-85"
+                ],
+                "requires_premium": true,
+                "failure_reply": [
+                  "Sorry, not possible."
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "minimum": 14,
+                    "maximum": 14
+                  }
+                ],
+                "inventory": [
+                  {
+                    "item": "oteryn:item.tibia.i10009",
+                    "minimum": 0,
+                    "maximum": 0
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
           "key": "pledge-king_tibianus",
           "completes": false,
           "trigger": {
@@ -1792,6 +2113,8 @@
               "quest": "oteryn:quest.the_new_frontier_quest",
               "npc": "oteryn:npc.king_tibianus",
               "keywords": [
+                "flatter",
+                "impress",
                 "reason"
               ],
               "topic": 1,
@@ -1812,20 +2135,126 @@
                 "You have my support for Farmine."
               ],
               "sources": [
-                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:67-109"
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:87-101",
+                "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
               ],
               "requires_premium": true,
               "failure_reply": [
-                "Sorry, not possible."
+                "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
               ],
               "requires": [
                 {
                   "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
                   "minimum": 14,
                   "maximum": 14
+                },
+                {
+                  "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                  "minimum": 0,
+                  "maximum": 0
                 }
               ]
-            }
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/new-frontier/pledge-unpersuaded-king_tibianus",
+                "quest": "oteryn:quest.the_new_frontier_quest",
+                "npc": "oteryn:npc.king_tibianus",
+                "keywords": [
+                  "threaten",
+                  "bluff",
+                  "plea"
+                ],
+                "topic": 1,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 2
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:87-101",
+                  "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+                ],
+                "requires_premium": true,
+                "failure_reply": [
+                  "Sorry, not possible."
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "minimum": 14,
+                    "maximum": 14
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                    "minimum": 0,
+                    "maximum": 0
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/new-frontier/pledge-prepaid-king_tibianus",
+                "quest": "oteryn:quest.the_new_frontier_quest",
+                "npc": "oteryn:npc.king_tibianus",
+                "keywords": [
+                  "flatter",
+                  "threaten",
+                  "bluff",
+                  "impress",
+                  "reason",
+                  "plea"
+                ],
+                "topic": 7,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 3
+                  },
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus_prepaid",
+                    "minimum": 1,
+                    "maximum": 1,
+                    "set": 0
+                  }
+                ],
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "You have my support for Farmine."
+                ],
+                "sources": [
+                  "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/king_tibianus.lua:87-110",
+                  "https://www.tibiawiki.com.br/wiki/The_New_Frontier_Quest"
+                ],
+                "requires_premium": true,
+                "failure_reply": [
+                  "Sorry, not possible."
+                ],
+                "requires": [
+                  {
+                    "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+                    "minimum": 14,
+                    "maximum": 14
+                  }
+                ]
+              }
+            ]
           }
         },
         {

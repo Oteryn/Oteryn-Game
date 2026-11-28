@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::prey as wire;
 use oteryn_protocol_oteryn::CommandStatus;
 
 #[derive(Clone, Copy)]
-enum Case { Tier, Daily, PickAgain, Checkpoint, LapsedCheckpoint, History }
+enum Case { Tier, Daily, PickAgain, Checkpoint, LapsedCheckpoint, History, StaleOffer }
 
 fn run_case(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -28,6 +28,11 @@ fn run_case(case: Case) -> TestResult {
 #[test] fn prey_diff_chosen_race_checkpoint_is_independent_per_slot() -> TestResult { run_case(Case::Checkpoint) }
 #[test] fn prey_diff_checkpoint_preserves_admitted_activity_after_premium_lapses() -> TestResult { run_case(Case::LapsedCheckpoint) }
 #[test] fn prey_diff_end_history_commits_measured_counters_with_transition() -> TestResult { run_case(Case::History) }
+
+#[test]
+fn prey_diff_refresh_drops_only_unavailable_offer_and_preserves_cooldown() -> TestResult {
+    run_case(Case::StaleOffer)
+}
 
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
@@ -121,6 +126,42 @@ fn scenario(case: Case) -> TestResult {
         let catalogue = crate::durability::prey::PreyCatalogue::try_from(native).map_err(debug)?;
         let first = initial.slots[0].creatures[0].clone();
         match case {
+            Case::StaleOffer => {
+                let stale = "oteryn:creature.bonelord";
+                assert!(native.reward_table().row(stale).map_err(debug)?.loot_table.entries.len() > 7);
+                let valid = initial.slots[0].creatures.iter().take(2).cloned().collect::<Vec<_>>();
+                assert_eq!(valid.len(), 2);
+                let cooldown = 4_000_000_000_000_i64;
+                let stale_grid = vec![valid[0].clone(), stale.to_owned(), valid[1].clone()];
+                sqlx::query("UPDATE game_character_prey_slots SET creature_list=$1, free_reroll_at=$2 WHERE slot=1")
+                    .bind(&stale_grid)
+                    .bind(cooldown)
+                    .execute(&h.pool).await?;
+                let refreshed = send(&owner, &mut admitted, &wire::Request::Query).await?;
+                assert_eq!(refreshed.slots[0].creatures, valid, "refresh must preserve valid offers");
+                assert_eq!(refreshed.slots[0].free_reroll_at, u64::try_from(cooldown)?);
+                assert_eq!(refreshed.wildcard_balance, initial.wildcard_balance);
+                let saved: (Vec<String>, i64) = sqlx::query_as("SELECT creature_list, free_reroll_at FROM game_character_prey_slots WHERE slot=1")
+                    .fetch_one(&h.pool).await?;
+                assert_eq!(saved, (valid.clone(), cooldown));
+
+                // A selection arriving before any refresh must not select the
+                // valid offer that moves into the unavailable monster's index.
+                sqlx::query("UPDATE game_character_prey_slots SET creature_list=$1 WHERE slot=1")
+                    .bind(&stale_grid).execute(&h.pool).await?;
+                let refused = send(&owner, &mut admitted, &wire::Request::Select { slot: 1, index: 2 }).await?;
+                assert_eq!(refused.status, wire::STATUS_CONTENT_UNAVAILABLE);
+                assert_eq!(refused.slots[0].state, 1);
+                assert_eq!(refused.slots[0].creatures, valid);
+                assert_eq!(refused.slots[0].free_reroll_at, u64::try_from(cooldown)?);
+
+                // Expire the seeded cooldown so the ordinary free reroll is available.
+                sqlx::query("UPDATE game_character_prey_slots SET free_reroll_at=0 WHERE slot=1")
+                    .execute(&h.pool).await?;
+                let redrawn = send(&owner, &mut admitted, &wire::Request::ListReroll { slot: 1 }).await?;
+                assert!(!redrawn.slots[0].creatures.is_empty());
+                assert!(!redrawn.slots[0].creatures.iter().any(|key| key == stale));
+            }
             Case::Tier => {
                 let tier = initial.slots[0].allowed_tier;
                 let tier_command = admitted.continuity.next_command_id;

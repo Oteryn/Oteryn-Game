@@ -5,8 +5,8 @@ brother Ajax that violence is not the answer; Ajax is provoked with "MINE", "no"
 "say please" and, after one hour, reports back. Bron then wants a fighting spirit, 50 red and
 50 green pieces of cloth, 10 spools of yarn and a warrior's sweat before he gives the wig
 (addon 2). Ajax wants 100 iron ore, a huge chunk of crude iron, 50 perfect behemoth fangs and
-50 lizard leathers, and forges the axe (addon 1) two hours later. The Brutal Politeness
-achievement is tracked separately in the full-outfit achievement follow-up.
+50 lizard leathers, and forges the axe (addon 1) two hours later with the Brutal Politeness
+achievement (Crystal 201189f8, data-global/npc/ajax.lua:134-141).
 
 Not modelled: Ajax setting the player on fire when he says please, the one hour of silence
 that restarts if the player talks earlier, and the stage-dependent greetings of both NPCs.
@@ -395,5 +395,6 @@ def append(add, storage, offers, callbacks, prefix):
         at(16, 17),
         "Axe is done! For you. Take. Wear like me.",
         outfit=("barbarian", 1),
+        achievement="oteryn:achievement/brutal_politeness",
     )
     timer_elapsed(TWO_HOURS)

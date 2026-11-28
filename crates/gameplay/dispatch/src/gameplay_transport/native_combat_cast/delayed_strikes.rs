@@ -42,6 +42,7 @@ pub(super) fn facts(
     tiles: &BTreeMap<TilePosition, TileFlags>,
     explicit_target: Option<u64>,
     saved: Option<&SavedStrike>,
+    requires_walkable_landing: bool,
 ) -> Result<NativeDelayedFacts, SpellCastDisposition> {
     // Planner identities are data, never authority. Full exact actor, session, UUIDs and
     // lease fences remain in CastBinding and the sealed SQL due evidence.
@@ -132,7 +133,9 @@ pub(super) fn facts(
         current: Some(current),
         cast_position: origin,
         cast_position_exists: at.present,
-        cast_position_legal: at.present,
+        // Crystal 201189f divine_grenade.lua:49-56 validates the endpoint itself.
+        cast_position_legal: at.present
+            && (!requires_walkable_landing || (!at.solid && !at.projectile)),
         caster_in_protection_zone: caster_tile.protection,
         cast_position_in_protection_zone: at.protection,
         immediate_succeeded: true,
@@ -152,13 +155,13 @@ pub(super) fn facts(
         field_tiles: Vec::new(),
         field_items: Vec::new(),
         created_field_instances: BTreeSet::new(),
-        captured_raw_bounds: saved.and_then(|s| s.scheduled.captured_raw_bounds),
     })
 }
 
 pub(in crate::gameplay_transport) fn combat(
     strike: Option<&StrikePlan>,
     cooldown_ms: Option<u64>,
+    monk_bond: Option<crate::spell::native_combat::Element>,
 ) -> NativeCombatPlan {
     let element = match strike.map(|s| s.element).unwrap_or(Element::Holy) {
         Element::Physical => crate::spell::native_combat::Element::Physical,
@@ -168,7 +171,7 @@ pub(in crate::gameplay_transport) fn combat(
         Element::Holy => crate::spell::native_combat::Element::Holy,
     };
     NativeCombatPlan::Combat(CombatPlan {
-        element,
+        element: monk_bond.unwrap_or(element),
         area: None,
         hits: strike
             .into_iter()
@@ -200,8 +203,8 @@ pub(super) fn paid(
     before: &PlayerSpellState,
     spell: &SpellDefinition,
     operational: &OperationalCastFacts,
-    facts: &NativeCombatFacts,
-    delayed: Option<&NativeDelayedFacts>,
+    facts: Facts<'_>,
+    monk_bond: Option<crate::spell::native_combat::Element>,
     now: SemanticTimeMicros,
     draw: &mut dyn FnMut(i64, i64) -> i64,
     caster: &crate::spell::CasterState,
@@ -216,7 +219,7 @@ pub(super) fn paid(
         before,
         spell,
         operational,
-        delayed.map_or(Facts::Combat(facts), Facts::Delayed),
+        facts,
         now,
         draw,
         caster,
@@ -235,7 +238,11 @@ pub(super) fn paid(
     else {
         return reject();
     };
-    paid.plan = Plan::Combat(Box::new(combat(immediate.as_ref(), *cooldown_ms)));
+    paid.plan = Plan::Combat(Box::new(combat(
+        immediate.as_ref(),
+        *cooldown_ms,
+        monk_bond,
+    )));
     Ok((paid, Some(*plan)))
 }
 
@@ -248,6 +255,7 @@ pub(super) fn requests(
     lowered: &crate::spell::combat_batch::LoweredNativeCombat,
     plan: Option<&NativeDelayedPlan>,
     facts: Option<&NativeDelayedFacts>,
+    monk_bond: Option<crate::spell::native_combat::Element>,
     profile: &crate::spell::native::CompiledNativeSpell,
     occurrence: &AbilityOccurrence,
     position: TilePosition,
@@ -276,8 +284,6 @@ pub(super) fn requests(
         canonical_hex,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    // Preserve the source raw formula snapshot. Crystal computes current Wheel
-    // flat/gem/Focus bonuses in the new due Combat, never inside planted bounds.
     let scheduled = scheduled.clone();
     Ok(vec![ScheduleRequest {
         occurrence: SpellTimerOccurrence {
@@ -303,6 +309,7 @@ pub(super) fn requests(
                 cast_snapshot: Some(facts.ok_or(SpellCastDisposition::Rejected)?.cast.clone()),
             },
             scheduled,
+            monk_bond,
             resolved: None,
             cast_modifiers,
             first_sub_ordinal: lowered.next_sub_ordinal,
@@ -310,6 +317,10 @@ pub(super) fn requests(
     }])
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "qualified combat and presentation owners"
+)]
 pub(super) fn cues(
     room: &QualifiedNativeEntryRoom,
     runtime: &ChannelRuntimeV1,
@@ -318,15 +329,24 @@ pub(super) fn cues(
     profile: &crate::spell::native::CompiledNativeSpell,
     bindings: &[LiveActorBinding],
     caster: ExactActorRef,
+    monk_impact: Option<&str>,
 ) -> Result<Vec<super::super::super::spell_presentations::LocatedCueRequest>, SpellCastDisposition>
 {
     let Some(NativeDelayedPlan::Cast {
         immediate, marker, ..
     }) = plan
     else {
-        return presentation_requests(room, runtime, combat, profile, bindings, caster);
+        return presentation_requests(
+            room,
+            runtime,
+            combat,
+            profile,
+            bindings,
+            caster,
+            monk_impact,
+        );
     };
-    let mut cues = strike_cues(room, runtime, immediate.as_ref(), bindings)?;
+    let mut cues = strike_cues(room, runtime, immediate.as_ref(), bindings, monk_impact)?;
     if let Some(marker) = marker {
         use crate::gameplay_transport::spell_presentations::{
             CueTarget, LocatedCueRequest, QualifiedCueTile,
@@ -347,6 +367,7 @@ pub(in crate::gameplay_transport) fn strike_cues(
     runtime: &ChannelRuntimeV1,
     strike: Option<&StrikePlan>,
     bindings: &[LiveActorBinding],
+    monk_impact: Option<&str>,
 ) -> Result<
     Vec<crate::gameplay_transport::spell_presentations::LocatedCueRequest>,
     SpellCastDisposition,
@@ -357,10 +378,11 @@ pub(in crate::gameplay_transport) fn strike_cues(
     let Some(strike) = strike else {
         return Ok(Vec::new());
     };
+    let impact = monk_impact.unwrap_or(&strike.effect_asset_binding);
     let mut cues = Vec::new();
     for p in &strike.area_tiles {
         cues.push(LocatedCueRequest {
-            binding: strike.effect_asset_binding.clone(),
+            binding: impact.into(),
             target: CueTarget::Tile(
                 QualifiedCueTile::from_owners(room, runtime, cell(*p))
                     .map_err(|_| SpellCastDisposition::Rejected)?,
@@ -369,7 +391,7 @@ pub(in crate::gameplay_transport) fn strike_cues(
     }
     for id in &strike.chain_targets {
         cues.push(LocatedCueRequest {
-            binding: strike.effect_asset_binding.clone(),
+            binding: impact.into(),
             target: CueTarget::Actor(
                 bindings
                     .iter()

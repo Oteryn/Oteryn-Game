@@ -7,6 +7,7 @@ use super::item_transfer::CurrentCharacterItemFence;
 use super::item_use::ItemUseError;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::durability::db::commit_semantic_read;
 use sqlx::Row;
 
 #[derive(Debug, Clone)]
@@ -53,7 +54,7 @@ impl DurabilityRoot {
                     conditions: row.try_get("snapshot")?,
                 })
             }).transpose()?;
-            commit_semantic_transaction(tx, deadline).await?;
+            commit_semantic_read(tx, deadline).await?;
             Ok(Ok(saved))
         })).await?
     }

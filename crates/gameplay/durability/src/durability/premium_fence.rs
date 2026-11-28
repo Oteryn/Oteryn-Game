@@ -27,6 +27,7 @@
 //! Every outcome returns the durable view after the transaction. The caller authorizes benefit
 //! only from that view (fence before authorize, §6.3); this module holds no Premium policy.
 
+use crate::durability::db::commit_semantic_read;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 use sha2::{Digest, Sha256};
@@ -230,7 +231,7 @@ impl DurabilityRoot {
                 None=>PremiumAccountRecord{fence:None,conflicting:semantic_conflict(&mut tx,account).await?},
             };
             let hint=profile_b_hint(&mut tx,account).await?;
-            commit_semantic_transaction(tx,deadline).await?;Ok((record,hint))
+            commit_semantic_read(tx,deadline).await?;Ok((record,hint))
         })).await
     }
 
@@ -274,7 +275,7 @@ impl DurabilityRoot {
                             conflicting: semantic_conflict(&mut tx, account_id).await?,
                         },
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(record)
                 })
             })

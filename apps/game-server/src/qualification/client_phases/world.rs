@@ -635,6 +635,7 @@ struct HuntDeath {
     stamina: u16,
     reward_occurrence: Option<[u8; 16]>,
     shared: bool,
+    committed_at_ms: i64,
     awards: BTreeMap<[u8; 16], u64>,
 }
 
@@ -661,14 +662,15 @@ async fn committed_hunt_death(
         &clients.scope_generation.to_be_bytes(),
     ]
     .concat();
-    type ReceiptRow = (Vec<u8>, i32, bool, Option<Vec<u8>>);
+    type ReceiptRow = (Vec<u8>, i32, bool, Option<Vec<u8>>, i64);
     tokio::time::timeout_at(deadline, async {
         let mut database = sqlx::PgConnection::connect(clients.url).await?;
         loop {
             // The Channel death key is the exact byte sequence hashed by
             // ExactActorRef::placement_identity after its domain separator.
             let row: Option<ReceiptRow> = sqlx::query_as(
-                "SELECT r.death_key, m.stamina_minutes, r.shared, uuid_send(m.reward_occurrence_id)
+                "SELECT r.death_key, m.stamina_minutes, r.shared, uuid_send(m.reward_occurrence_id),
+                        floor(EXTRACT(EPOCH FROM r.committed_at) * 1000)::bigint
                  FROM game_party_kill_xp_receipts r JOIN game_party_kill_xp_members m
                  ON m.death_key=r.death_key AND m.character_id=r.principal_id
                  WHERE ($1::bytea IS NULL OR r.principal_id=encode($1,'hex')::uuid)
@@ -685,7 +687,7 @@ async fn committed_hunt_death(
             .bind(target.identity.as_slice())
             .fetch_optional(&mut database)
             .await?;
-            if let Some((death_key, stamina, shared, reward_occurrence)) = row {
+            if let Some((death_key, stamina, shared, reward_occurrence, committed_at_ms)) = row {
                 let slot = death_key
                     .get(40..44)
                     .ok_or("missing death actor slot")?
@@ -717,6 +719,7 @@ async fn committed_hunt_death(
                         .map(|id| id.as_slice().try_into())
                         .transpose()?,
                     shared,
+                    committed_at_ms,
                     awards: awards
                         .into_iter()
                         .map(|(id, xp)| {
