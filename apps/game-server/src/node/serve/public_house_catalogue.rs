@@ -175,6 +175,7 @@ fn public_enabled(material: &Material) -> bool {
         .is_some_and(|p| p.enabled)
 }
 
+#[allow(clippy::too_many_arguments)] // one-shot capture takes the fenced root, authority, node proof, assignment and map revision; bundling them adds a type with one caller
 async fn capture_once(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,

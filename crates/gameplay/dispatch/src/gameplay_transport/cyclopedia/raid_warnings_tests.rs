@@ -43,7 +43,7 @@ fn raid_warning_windows_use_full_area_discovery_and_ground_floor_coverage()
     let fired_at = 2 * AREA_LEAD_MS;
     let start = fired_at + i64::from(wave.delay_ms);
     assert!(
-        start - AREA_LEAD_MS - 1 >= fired_at,
+        start - AREA_LEAD_MS > fired_at,
         "the scheduler must have committed the firing before the hour boundary"
     );
     let region = Warning {
