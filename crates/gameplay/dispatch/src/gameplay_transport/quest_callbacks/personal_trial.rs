@@ -29,8 +29,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return false;
         }
-        if callback.starts_merchant_wave() {
-            // Each merchant placement is attempted separately at the spawn deadline.
+        if callback.starts_merchant_wave()
+            || world_callbacks::spike_mound::chances(callback).is_some()
+        {
+            // Digging and merchant waves settle even if placement fails at the spawn deadline.
             return encounter
                 .monsters
                 .iter()

@@ -158,6 +158,14 @@ impl Callback {
             }
             Some(NativeRule::IceSealPaint { .. }) => None,
             Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
+            None if self.key.starts_with("oteryn:quest-callback/spike/nest-")
+                && changes.iter().any(|change| {
+                    change.track == "oteryn:quest-progress/spike/nests/progress"
+                        && (change.before, change.after) == (5, 6)
+                }) =>
+            {
+                Some("You have destroyed a monster nest. Report back to Gnombold.")
+            }
             Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }
     }

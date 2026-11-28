@@ -161,6 +161,11 @@ mod tests {
             if let Some(range) = chances(row) {
                 let p = row.selector.position.ok_or("mound position")?;
                 let draws = mounds.entry((p.x, p.y, p.floor)).or_insert([0u8; 100]);
+                assert_eq!(
+                    row.committed_message(&[])
+                        .is_some_and(|text| text.contains("Gnomilly")),
+                    range.contains(&100)
+                );
                 for draw in range {
                     draws[usize::from(draw - 1)] += 1;
                     let phase = row
@@ -184,6 +189,15 @@ mod tests {
                         seconds: 120
                     }
                 ));
+                for before in 1..=5 {
+                    let change = crate::quest::QuestTrackChange {
+                        track: row.storage[0].track.clone(),
+                        before,
+                        after: before + 1,
+                    };
+                    let message = row.committed_message(&[change]).ok_or("nest feedback")?;
+                    assert_eq!(message.contains("Gnombold"), before == 5);
+                }
                 nests += 1;
             } else if row
                 .key
@@ -195,6 +209,7 @@ mod tests {
                     row.state_ops[0].effect,
                     crate::quest::reward_callbacks::StateMutation::SetNow
                 ));
+                assert_eq!((row.storage[0].minimum, row.storage[0].maximum), (1, 6));
                 pads += 1;
             }
         }

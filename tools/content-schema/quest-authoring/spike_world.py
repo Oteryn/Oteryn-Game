@@ -158,7 +158,7 @@ def mounds(pos, ordinal, shard):
             "sources": [SOURCE, SCRIPT + "actions_spirit_shovel.lua", str(shard)],
             "success_message": "You've found nothing special."
             if outcome == "empty"
-            else "You unearthed a spirit's anger!"
+            else "You unearthed a spirit's anger! Report back to Gnomilly."
             if soul
             else "You have disturbed the dead.",
         }
@@ -235,7 +235,7 @@ def world(root):
                                     {
                                         "track": phase,
                                         "minimum": 1,
-                                        "maximum": 5,
+                                        "maximum": 6 if pad else 5,
                                         "set": 1,
                                         ("preserve" if pad else "increment"): True,
                                     }

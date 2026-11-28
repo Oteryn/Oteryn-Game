@@ -347,7 +347,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -725,7 +725,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -1103,7 +1103,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -1481,7 +1481,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -1859,7 +1859,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -2237,7 +2237,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -2615,7 +2615,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -2993,7 +2993,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -3371,7 +3371,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z08-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -3749,7 +3749,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -4127,7 +4127,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -4505,7 +4505,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -4883,7 +4883,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -5261,7 +5261,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -5639,7 +5639,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -6017,7 +6017,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -6395,7 +6395,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -6773,7 +6773,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -7151,7 +7151,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z09-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -7529,7 +7529,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -7907,7 +7907,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -8285,7 +8285,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -8663,7 +8663,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -9041,7 +9041,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -9419,7 +9419,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -9797,7 +9797,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x125-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -10175,7 +10175,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -10553,7 +10553,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -10931,7 +10931,7 @@
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
         "content/world/placements/region-z10-x126-y127.b3"
       ],
-      "success_message": "You unearthed a spirit's anger!",
+      "success_message": "You unearthed a spirit's anger! Report back to Gnomilly.",
       "effects": {
         "encounter": {
           "minimum_level": 25,
@@ -11238,7 +11238,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 5,
+          "maximum": 6,
           "set": 1,
           "preserve": true
         }
@@ -11283,7 +11283,7 @@
         {
           "track": "oteryn:quest-progress/spike/nests/progress",
           "minimum": 1,
-          "maximum": 5,
+          "maximum": 6,
           "set": 1,
           "preserve": true
         }
