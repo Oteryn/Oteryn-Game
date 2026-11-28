@@ -98,20 +98,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let current = match budget
             .retry_logged_holder(
                 "first_entry_session",
-                async || store.observe_committed_admission(request.operation()).await,
+                async || {
+                    let observed = store.observe_committed_admission(request.operation()).await;
+                    #[cfg(test)]
+                    if matches!(observed, Err(crate::durability::DurabilityError::RootUnavailable))
+                        && let Some(probe) = &probe
+                    {
+                        probe.blocked();
+                    }
+                    observed
+                },
                 |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
             )
             .await
         {
             Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
             Ok(_) => return (FirstEntryOutcome::RefusedStaleAuthority, None, None),
-            Err(_error) => {
-                #[cfg(test)]
-                if matches!(_error, crate::durability::DurabilityError::RootUnavailable)
-                    && let Some(probe) = &probe
-                {
-                    probe.blocked();
-                }
+            Err(_) => {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
         };
