@@ -1215,16 +1215,39 @@ async fn prepare_items(
                 )
             },
             async || {
+                if named == Some((2853, 1)) {
+                    return root
+                        .freeze_reward_claim_mint_weighted(
+                            authority,
+                            proof,
+                            fence,
+                            request.clone(),
+                            &FixtureItemContent(native),
+                        )
+                        .await;
+                }
                 root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
                     .await
             },
         )
         .await
         .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
-        let outcome = root
-            .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
+        let outcome = if named == Some((2853, 1)) {
+            root.commit_reward_claim_mint_weighted_noticed(
+                authority,
+                proof,
+                fence,
+                &mut candidate,
+                None,
+                &FixtureItemContent(native),
+            )
             .await
-            .map_err(|error| format!("qualification Item commit: {error:?}"))?;
+            .map(|(outcome, _)| outcome)
+        } else {
+            root.commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
+                .await
+        }
+        .map_err(|error| format!("qualification Item commit: {error:?}"))?;
         fixture_item_committed(outcome, quantity)?;
     }
     Ok(())
