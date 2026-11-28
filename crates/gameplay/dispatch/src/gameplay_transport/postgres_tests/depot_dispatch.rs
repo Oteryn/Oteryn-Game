@@ -121,6 +121,25 @@ fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
 }
 
 #[test]
+fn royal_mailbox_requires_postman_completion_even_when_premium_expires() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(
+                false, false, false, false, false, Some(EntitlementState::Expired),
+                Mode::RoyalMail,
+            )
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "royal mailbox scenario panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn mail_dispatch_posting_a_parcel_refreshes_sender_capacity() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -259,6 +278,7 @@ enum Mode {
     MailPostCapacity,
     ManualSort,
     Retrieve,
+    RoyalMail,
     StashActions(stash_cases::ActionCase),
 }
 
@@ -317,7 +337,7 @@ fn scenario_with_premium(
 ) -> TestResult {
     let mail = matches!(
         mode,
-        Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
+        Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List | Mode::RoyalMail
     );
     let retrieve = mode == Mode::Retrieve;
     let managed = matches!(mode, Mode::ManagedContainerMove | Mode::ManagedArmor);
@@ -438,6 +458,25 @@ fn scenario_with_premium(
                 sector.tiles.push(tile.clone());
             }
         }
+        let mut start = crate::content::NativeEntryStart { x: 7, y: 0, floor: 7 };
+        if mode == Mode::RoyalMail {
+            // Translate the fixture so its first mailbox occupies the sourced Orc Fortress tile.
+            let x_offset = mail_cases::ROYAL_MAILBOX.x - 8;
+            let y_offset = mail_cases::ROYAL_MAILBOX.y;
+            let sector = bundle.sectors.first_mut().ok_or("mail sector")?;
+            sector.sx = x_offset / 32;
+            sector.sy = y_offset / 32;
+            bundle.manifest.world.min_x = sector.sx * 32;
+            bundle.manifest.world.min_y = sector.sy * 32;
+            bundle.manifest.world.max_x = bundle.manifest.world.min_x + 32;
+            bundle.manifest.world.max_y = bundle.manifest.world.min_y + 32;
+            for tile in &mut sector.tiles {
+                tile.x += x_offset;
+                tile.y += y_offset;
+            }
+            start.x += i32::from(x_offset);
+            start.y += i32::from(y_offset);
+        }
         let bytes =
             oteryn_world_bundle::writer::write(&bundle.manifest, &bundle.sectors, &bundle.spawns)
                 .map_err(debug)?;
@@ -451,8 +490,8 @@ fn scenario_with_premium(
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: bundle_pins,
                 start: crate::map::overlay::TilePos {
-                    x: 7,
-                    y: 0,
+                    x: u16::try_from(start.x)?,
+                    y: u16::try_from(start.y)?,
                     floor: -7,
                 },
             },
@@ -482,11 +521,7 @@ fn scenario_with_premium(
                     cells.clone(),
                     frame,
                     world.map_revision_digest(),
-                    crate::content::NativeEntryStart {
-                        x: 7,
-                        y: 0,
-                        floor: 7,
-                    },
+                    start,
                 )
                 .ok_or("bundle combat view")?,
         );
@@ -497,7 +532,7 @@ fn scenario_with_premium(
             generation.identity().client_artifact_digest(),
             frame,
             world.map_revision_digest(),
-            (7, 0, 7),
+            (start.x, start.y, start.floor),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
@@ -519,9 +554,9 @@ fn scenario_with_premium(
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: 7,
-                    y: 0,
-                    floor: 7,
+                    x: start.x,
+                    y: start.y,
+                    floor: start.floor,
                 },
             )
             .map_err(debug)?;
@@ -561,6 +596,9 @@ fn scenario_with_premium(
             );
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
+        if mode == Mode::RoyalMail {
+            owner.premium_coordinator = Some(&premium);
+        }
         owner.movement_cells = (&cells).into();
         let session = deps.admitted.game_session_id;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
@@ -951,16 +989,26 @@ fn scenario_with_premium(
                     .collect::<TestResult<Vec<_>>>()?;
                 admitted = depot_list::prepare(&owner, admitted, &extras).await?;
             }
-            mail_cases::exercise(
-                &owner,
-                admitted,
-                &harness.pool,
-                letter,
-                parcel,
-                label,
-                mode,
-            )
-            .await?;
+            if mode == Mode::RoyalMail {
+                let mailbox = ItemKey::MapBase {
+                    bundle_digest: world.base().digest(),
+                    placement_key: crate::map::view::placement_key(mail_cases::ROYAL_MAILBOX, 1)
+                        .ok_or("royal mailbox placement key")?,
+                    reset_epoch: owner.reset_epoch,
+                };
+                mail_cases::exercise_royal(&owner, admitted, &harness.pool, letter, mailbox).await?;
+            } else {
+                mail_cases::exercise(
+                    &owner,
+                    admitted,
+                    &harness.pool,
+                    letter,
+                    parcel,
+                    label,
+                    mode,
+                )
+                .await?;
+            }
             drop(owner);
             drop(authority);
             drop(seal);

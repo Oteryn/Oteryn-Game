@@ -79,14 +79,9 @@ pub(super) async fn execute(
     else {
         return Some(MailOutcome::Rejected);
     };
-    let Some(in_reach) = mailbox_reach(owner, actor, admitted.game_session_id, placement_key).await
+    let Some(target) = mailbox_target(owner, actor, admitted.game_session_id, placement_key).await
     else {
         return Some(MailOutcome::Rejected);
-    };
-    let target = if in_reach {
-        MailPostTarget::Reachable(placement_key)
-    } else {
-        MailPostTarget::ReplayOnly(placement_key)
     };
     match owner
         .root
@@ -116,6 +111,29 @@ const MAILBOX_KEYS: [&str; 6] = [
     "oteryn:item.tibia.i23402",
 ];
 
+// Tibia Fandom /wiki/Mailbox, Royal Mailboxes (locked). The World placement
+// regions identify the mailbox tiles at the listed pins and landmarks.
+// Ordinary boxes share the same appearances, so access is a placement property.
+const ROYAL_MAILBOX_TILES: [(u16, u16, i8); 17] = [
+    (31921, 32651, -8),  // Talahu teleportation hub
+    (32008, 32862, -5),  // Nargor
+    (32386, 32950, -7),  // Laguna Islands
+    (32423, 32095, -15), // Mintwallin
+    (32448, 31964, -10), // Kazordoon Mine Hub
+    (32454, 31975, -10), // Kazordoon Mine Hub
+    (32459, 31964, -10), // Kazordoon Mine Hub
+    (32524, 32025, -13), // Robson's Isle
+    (32535, 31969, -7),  // Kazordoon surface
+    (32615, 31434, -7),  // Mistrock
+    (32970, 31778, -7),  // Orc Fortress
+    (32995, 32446, -7),  // Drefia north beach
+    (33075, 31212, -7),  // Razachai magistracy
+    (33083, 32184, -8),  // Shadowthorn, north of the floor descent
+    (33200, 31064, -9),  // Zao Rebel Camp
+    (33271, 31656, -8),  // Cyclopolis
+    (33307, 32292, -7),  // Minotaur Pyramid
+];
+
 /// A carried letter or parcel moved onto a mailbox tile posts it, as Canary `Tile::addThing`
 /// hands the thing to the tile's mailbox (`tile.cpp:1695`) and `Mailbox::sendItem` moves it into
 /// the recipient's Inbox (`mailbox.cpp:74`). `None` for an item that is no unstamped letter or
@@ -125,11 +143,11 @@ pub(super) async fn post_moved(
     fence: CurrentCharacterItemFence,
     command_id: u64,
     item: [u8; 16],
-    mailbox: u64,
+    mailbox: MailPostTarget,
 ) -> Option<LoopMoveResult> {
     match owner
         .root
-        .post_admitted_mail(
+        .post_admitted_mail_with_target(
             owner.character,
             owner.holder,
             fence,
@@ -152,12 +170,12 @@ pub(super) async fn post_moved(
 /// its floor: the reach every other map destination of an item move has (`loop_move` in_reach).
 /// Canary posts on any move into a mailbox (`mailbox.cpp:18`), so its throw range of 15 and line
 /// of sight (`game.cpp:2221`) would also admit a farther mailbox; Oteryn keeps its move reach.
-async fn mailbox_reach(
+async fn mailbox_target(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
     placement_key: u64,
-) -> Option<bool> {
+) -> Option<MailPostTarget> {
     let (pos, ordinal) = crate::map::view::placement_of(placement_key)?;
     let mut runtime = owner.runtime.lock().await;
     if runtime.player_control_facts(actor, session).is_err()
@@ -171,23 +189,35 @@ async fn mailbox_reach(
         owner.movement_cells(),
         actor,
     )?;
-    Some(
-        i64::from(at.at.floor) == i64::from(pos.floor)
-            && (i64::from(at.at.x) - i64::from(pos.x)).abs() <= 1
-            && (i64::from(at.at.y) - i64::from(pos.y)).abs() <= 1
-            && mailbox_ordinals(at.map, index, pos).contains(&ordinal),
-    )
+    if i64::from(at.at.floor) == i64::from(pos.floor)
+        && (i64::from(at.at.x) - i64::from(pos.x)).abs() <= 1
+        && (i64::from(at.at.y) - i64::from(pos.y)).abs() <= 1
+        && mailbox_ordinals(at.map, index, pos).contains(&ordinal)
+    {
+        Some(reachable_mailbox(pos, placement_key))
+    } else {
+        Some(MailPostTarget::ReplayOnly(placement_key))
+    }
 }
 
-/// The placement key of the mailbox a move onto `pos` posts into: the topmost unhidden one,
+fn reachable_mailbox(pos: TilePos, key: u64) -> MailPostTarget {
+    if ROYAL_MAILBOX_TILES.contains(&(pos.x, pos.y, pos.floor)) {
+        MailPostTarget::Royal(key)
+    } else {
+        MailPostTarget::Reachable(key)
+    }
+}
+
+/// The mailbox a move onto `pos` posts into: the topmost unhidden one,
 /// as Canary `Tile::getMailbox` (`tile.cpp:298`) takes the last mailbox of the tile.
 pub(super) fn mailbox_at(
     map: &crate::map::boot::BundleMap,
     index: &ItemDefinitionIndex,
     pos: TilePos,
-) -> Option<u64> {
+) -> Option<MailPostTarget> {
     let ordinal = mailbox_ordinals(map, index, pos).pop()?;
-    crate::map::view::placement_key(pos, ordinal)
+    let key = crate::map::view::placement_key(pos, ordinal)?;
+    Some(reachable_mailbox(pos, key))
 }
 
 /// The ordinals of `pos`'s unhidden top-level base entries whose admitted definition is a
@@ -254,9 +284,9 @@ fn wire_post_outcome(outcome: MailPostOutcome) -> MailOutcome {
             MailPostRefusal::NotMailable => MailOutcome::NotMailable,
             MailPostRefusal::RecipientInboxFull => MailOutcome::RecipientInboxFull,
             MailPostRefusal::Exhausted => MailOutcome::Exhausted,
-            MailPostRefusal::MailboxOutOfReach | MailPostRefusal::ReplayConflict => {
-                MailOutcome::Rejected
-            }
+            MailPostRefusal::MailboxOutOfReach
+            | MailPostRefusal::PostmanRequired
+            | MailPostRefusal::ReplayConflict => MailOutcome::Rejected,
         },
     }
 }

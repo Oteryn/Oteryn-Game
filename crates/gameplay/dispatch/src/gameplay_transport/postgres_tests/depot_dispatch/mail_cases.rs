@@ -27,6 +27,167 @@ async fn state(pool: &sqlx::PgPool, item: [u8; 16]) -> TestResult<(String, i64, 
         .bind(item.as_slice()).fetch_one(pool).await?)
 }
 
+// Tibia Fandom /wiki/Mailbox, Royal Mailboxes (locked), Orc Fortress.
+pub(super) const ROYAL_MAILBOX: crate::map::overlay::TilePos = crate::map::overlay::TilePos {
+    x: 32970,
+    y: 31778,
+    floor: -7,
+};
+
+pub(super) async fn exercise_royal(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    pool: &sqlx::PgPool,
+    letter: [u8; 16],
+    mailbox: ItemKey,
+) -> TestResult {
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 115, 153])
+            .ok_or("mail capability")?;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let fence = admitted.item_fence.ok_or("fence")?;
+    let name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(pool)
+    .await?;
+    set_text(pool, letter, &name).await?;
+    let item = ItemKey::Instance(letter);
+    let post = encode_intent(&MailIntent::Post {
+        item_handle: 1,
+        mailbox_handle: 2,
+    })
+    .map_err(debug)?;
+    let send = |command_id| {
+        owner.mail_command(
+            actor,
+            admitted,
+            command_id,
+            &post,
+            Some(item),
+            Some(mailbox),
+        )
+    };
+    let move_letter = |command_id| {
+        owner.move_loop_item(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                item,
+                count: None,
+                slot: None,
+                target: LoopTarget::Ground(WorldTilePosition {
+                    x: ROYAL_MAILBOX.x.into(),
+                    y: ROYAL_MAILBOX.y.into(),
+                    floor: ROYAL_MAILBOX.floor.into(),
+                }),
+            },
+        )
+    };
+
+    // Mission progress is insufficient. Only Kevin's final promotion completes the quest.
+    const POSTMAN: &str = "oteryn:quest.the_postman_missions_quest";
+    let catalogue = super::super::quest_container_chests_fixtures::embedded_catalogue()?;
+    let hash = catalogue
+        .definition_hash(POSTMAN)
+        .ok_or("Postman definition")?;
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_character_quest_states(character_id,quest_key,pinned_content_revision,definition_hash,started_character_revision,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2,2)")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(POSTMAN)
+        .bind(catalogue.content_revision()).bind(hash.as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert_eq!(
+        send(500).await,
+        Some(MailOutcome::Rejected),
+        "unfinished Postman cannot post to the royal mailbox"
+    );
+    assert_eq!(
+        move_letter(501).await,
+        LoopMoveResult::Refused(LoopMoveRefusal::Rejected)
+    );
+    assert_eq!(
+        state(pool, letter).await?,
+        ("oteryn:item.tibia.i3505".into(), 0, 0)
+    );
+    let carried = owner
+        .root
+        .read_character_backpack(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("sender backpack")?;
+    assert!(
+        carried
+            .entries
+            .iter()
+            .any(|entry| entry.item.item_instance_id == letter)
+    );
+
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_quest_states SET completed_character_revision=3,committed_character_revision=3 WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(POSTMAN).execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert_eq!(move_letter(502).await, LoopMoveResult::Committed);
+    assert_eq!(send(502).await, Some(MailOutcome::Posted));
+    assert_eq!(
+        state(pool, letter).await?,
+        ("oteryn:item.tibia.i3506".into(), 1, 1)
+    );
+    let carried = owner
+        .root
+        .read_character_backpack(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?
+        .ok_or("sender backpack")?;
+    assert!(
+        carried
+            .entries
+            .iter()
+            .all(|entry| entry.item.item_instance_id != letter)
+    );
+    let inbox = owner
+        .root
+        .read_depot_search(owner.character, fence.character_id, 3506)
+        .await
+        .map_err(debug)?
+        .ok_or("stamped letter in Inbox search")?;
+    assert_eq!(inbox.inbox, 1);
+    use oteryn_protocol_oteryn::depot_search::{Outcome, Request};
+    let retrieved = owner
+        .depot_search_command(
+            actor,
+            admitted,
+            503,
+            Request::Retrieve {
+                client_id: 3506,
+                all: true,
+            },
+        )
+        .await;
+    assert_eq!(
+        (retrieved.outcome, retrieved.retrieved),
+        (Outcome::Retrieved, 1)
+    );
+    assert_eq!(
+        state(pool, letter).await?,
+        ("oteryn:item.tibia.i3506".into(), 0, 1)
+    );
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED royal_mailbox_requires_postman_completion_even_when_premium_expires"
+    );
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,

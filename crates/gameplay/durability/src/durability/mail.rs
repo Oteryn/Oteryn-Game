@@ -22,6 +22,7 @@ pub enum MailPostRefusal {
     RecipientInboxFull,
     Exhausted,
     MailboxOutOfReach,
+    PostmanRequired,
     ReplayConflict,
 }
 
@@ -35,6 +36,7 @@ pub enum MailPostOutcome {
 #[derive(Debug, Clone, Copy)]
 pub enum MailPostTarget {
     Reachable(u64),
+    Royal(u64),
     ReplayOnly(u64),
 }
 
@@ -74,7 +76,7 @@ impl crate::durability::DurabilityRoot {
         target: MailPostTarget,
     ) -> Result<MailPostOutcome, DurabilityError> {
         let (mailbox_placement_key, fresh_refusal) = match target {
-            MailPostTarget::Reachable(key) => (key, None),
+            MailPostTarget::Reachable(key) | MailPostTarget::Royal(key) => (key, None),
             MailPostTarget::ReplayOnly(key) => (key, Some(MailPostRefusal::MailboxOutOfReach)),
         };
         let invalid_fence = fresh_refusal.unwrap_or(MailPostRefusal::NotMailable);
@@ -126,6 +128,22 @@ impl crate::durability::DurabilityRoot {
             }
             if !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
                 return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
+            }
+            if matches!(target, MailPostTarget::Royal(_)) {
+                // Kevin's final promotion completes the character quest. Its durable
+                // completion also qualifies posting after the account's premium lapses.
+                let completed: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_character_quest_states
+                     WHERE character_id=encode($1,'hex')::uuid
+                     AND quest_key='oteryn:quest.the_postman_missions_quest'
+                     AND completed_character_revision IS NOT NULL)",
+                )
+                .bind(fence.character_id.as_bytes().as_slice())
+                .fetch_one(&mut *tx)
+                .await?;
+                if !completed {
+                    return Ok(MailPostOutcome::Refused(MailPostRefusal::PostmanRequired));
+                }
             }
             // The address was a hint read before the ordered root locks. Recheck it
             // under the sender lock before using the derived recipient and stamp.
