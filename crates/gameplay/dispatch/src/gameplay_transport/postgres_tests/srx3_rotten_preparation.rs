@@ -252,8 +252,8 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
             } else {
                 CommandStatus::Accepted
             };
-            // Reopening serve_admitted reconciles a pending callback before it reads
-            // the replay of the original command ID and payload.
+            // Reopening serve_admitted calls prepare_quest_callback_resume before
+            // it reads the replay of the original command ID and payload.
             let (reply, feedback) = flame_wire(
                 &owner, &mut admitted, command, payload, expected_status,
             ).await?;

@@ -727,6 +727,42 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
         "oteryn:quest-progress/hunting-tasks/minotaurs/phase".into(),
         3,
     );
+    for (task, phase, repeat_count, expected, done) in [
+        (
+            "necromancers",
+            2,
+            0,
+            "finding and fighting Necropharus",
+            false,
+        ),
+        ("necromancers", 3, 0, "You faced Necropharus", false),
+        ("necromancers", 3, 1000, "You've finished this task", true),
+        ("minotaurs", 2, 0, "hideout of The Horned Fox", false),
+    ] {
+        let mut scenario = state.clone();
+        let track = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
+        scenario.insert(track.clone(), phase);
+        scenario.insert(
+            "oteryn:quest-progress/hunting-tasks/necromancers-repeat/count".into(),
+            repeat_count,
+        );
+        let slot = quest
+            .missions
+            .iter()
+            .position(|m| m.track == track)
+            .ok_or("declared hunt")?;
+        let line = loaded
+            .content
+            .line(&Facts(scenario), index)
+            .ok_or("listed hunt")?;
+        let mission = line
+            .missions
+            .iter()
+            .find(|m| m.index as usize == slot)
+            .ok_or("projected hunt")?;
+        assert!(mission.text.contains(expected));
+        assert_eq!(mission.done, done);
+    }
     let programme = NpcRuleCatalog::runtime()
         .map_err(|e| e.to_string())?
         .admitted_for_npc(npc, catalogue)
@@ -798,7 +834,11 @@ fn grizzly_real_quest_log_shows_live_counts() -> Result<(), String> {
             "Hunted 1/1000. Report to Lugri after the hunt.",
             false,
         ),
-        ("minotaurs", "You reported this hunt to Budrik.", true),
+        (
+            "minotaurs",
+            "You have slain 5000 minotaurs and fought The Horned Fox for Budrik and the whole dwarven kind.",
+            true,
+        ),
     ] {
         let track = format!("oteryn:quest-progress/hunting-tasks/{task}/phase");
         let slot = quest
