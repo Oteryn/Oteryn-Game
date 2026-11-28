@@ -628,6 +628,22 @@ fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &st
 
 #[cfg(test)]
 #[test]
+fn fifth_outpost_accepts_a_delivery_sentence() -> Result<(), String> {
+    let callbacks = reward_callbacks::load()?;
+    let outpost = callbacks
+        .iter()
+        .find(|c| c.key.ends_with("l12-spike-parcel-32157-32521-15"))
+        .ok_or("fifth outpost")?;
+    assert!(matches_reward_keyword(
+        outpost,
+        "i have something to deliver"
+    ));
+    assert!(!matches_reward_keyword(outpost, "handsomething"));
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
 fn jorge_matches_souvenir_and_all_replica_names_in_messages() -> Result<(), String> {
     let callbacks = reward_callbacks::load()?;
     let jorge = callbacks.iter().filter(|callback| callback.npc == JORGE);

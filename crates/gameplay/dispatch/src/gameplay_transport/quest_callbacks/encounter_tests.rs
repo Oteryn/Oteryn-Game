@@ -25,6 +25,7 @@ fn engenc_personal_encounter_pending_requires_original_command_and_physical_fenc
         context: None,
         paid_arrivals: Vec::new(),
         ingress_settled: false,
+        nest_spawn: None,
         participants: Vec::new(),
         flame: None,
         flame_effect_sent: false,

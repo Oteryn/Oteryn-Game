@@ -80,6 +80,7 @@ struct Pending {
     paid_arrivals: Vec<PaidArrival>,
     flame: Option<crate::durability::quest_state::rotten_flame::RottenFlameUse>,
     ingress_settled: bool,
+    nest_spawn: Option<&'static str>,
     participants: Vec<GameSessionId>,
     projection_target: Option<u64>,
     flame_effect_sent: bool,
@@ -111,6 +112,8 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     scene_item_receipts: scene_items::SceneItemReceipts,
+    #[cfg(test)]
+    pub(super) nest_draw: std::sync::atomic::AtomicU8,
     #[cfg(test)]
     pub(super) mound_draw: std::sync::atomic::AtomicU8,
     #[cfg(test)]
@@ -2174,6 +2177,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         paid_arrivals: Vec::new(),
                         flame: None,
                         ingress_settled: false,
+                        nest_spawn: None,
                         participants: Vec::new(),
                         projection_target: None,
                         flame_effect_sent: false,
