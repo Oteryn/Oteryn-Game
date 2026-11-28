@@ -123,6 +123,46 @@ pub(super) fn object_target(
     })
 }
 
+const GUILD_START: TilePos = TilePos { x: 32203, y: 32304, floor: -6 };
+
+async fn place_at_guild(scope: &SeamClients<'_>, from: TilePos) -> TestResult {
+    wait_character_released(scope, 0).await?;
+    let mut connection = sqlx::PgConnection::connect(scope.url).await?;
+    let placed = sqlx::query(
+        "UPDATE game_character_last_positions AS p
+         SET tile_x=$4, tile_y=$5, tile_floor=$6
+         FROM game_character_roots AS c
+         WHERE p.character_id=c.character_id
+           AND c.character_id=encode($1,'hex')::uuid
+           AND c.account_id=$2::text::uuid
+           AND p.world_id=encode($3,'hex')::uuid
+           AND (p.tile_x,p.tile_y,p.tile_floor)=($7,$8,$9)
+           AND p.house_key IS NULL
+           AND NOT EXISTS (
+               SELECT 1 FROM game_durability_reconnect_sessions AS s
+               WHERE s.character_id=p.character_id AND s.world_id=p.world_id
+                 AND s.session_state<>3
+           )",
+    )
+    .bind(scope.characters[0].as_slice())
+    .bind(&scope.accounts[0])
+    .bind(scope.world.as_slice())
+    .bind(i32::from(GUILD_START.x))
+    .bind(i32::from(GUILD_START.y))
+    .bind(-i16::from(GUILD_START.floor))
+    .bind(i32::from(from.x))
+    .bind(i32::from(from.y))
+    .bind(-i16::from(from.floor))
+    .execute(&mut connection)
+    .await?;
+    connection.close().await?;
+    if placed.rows_affected() != 1 {
+        return Err("W15d placement requires one released dedicated character at its last observed tile".into());
+    }
+    evidence(&format!("FIXTURE row=W15d input=guild-placement from={from:?} to={GUILD_START:?}"));
+    Ok(())
+}
+
 pub(super) async fn prepare(
     row: &str,
     scope: &SeamClients<'_>,
@@ -133,9 +173,15 @@ pub(super) async fn prepare(
     let mut client = connect_character(scope, tag, 0).await?;
     let session = client.join_snapshot().game_session_id;
     request_fixture_control(uuid_text(session.as_bytes()), "--profile", "q_w15d".into()).await?;
+    let from = tile(client.world_spatial().actor_position)?;
     logout_once(&mut client).await?;
     drop(client);
+    place_at_guild(scope, from).await?;
     let mut client = connect_character(scope, tag, 0).await?;
+    let placed = tile(client.world_spatial().actor_position)?;
+    if placed != GUILD_START {
+        return Err(format!("W15d fixture admission at {placed:?}, expected {GUILD_START:?}").into());
+    }
     if client.join_snapshot().game_session_id == session {
         return Err("seeded stats require a fresh admission".into());
     }
@@ -199,18 +245,10 @@ async fn walk_to(
     goal: TilePos,
 ) -> TestResult {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = find_route(
-        from,
-        |at| at.floor == goal.floor && at.x.abs_diff(goal.x).max(at.y.abs_diff(goal.y)) == 1,
-        |at, direction| {
-            let next = destination(world, at, direction)?;
-            (next.x.abs_diff(from.x) <= 180
-                && next.y.abs_diff(from.y) <= 180
-                && next.floor.abs_diff(from.floor) <= 2)
-                .then_some(next)
-        },
-    )
-    .map_err(|visited| format!("no playable route from {from:?} to {goal:?}, visited={visited}"))?;
+    let path = route(world, from, |at| {
+        at.floor == goal.floor && at.x.abs_diff(goal.x).max(at.y.abs_diff(goal.y)) == 1
+    })
+    .ok_or_else(|| format!("no playable route from {from:?} to {goal:?}"))?;
     evidence(&format!(
         "W15D_ROUTE from={from:?} goal={goal:?} steps={}",
         path.len()
