@@ -4,6 +4,7 @@
 use super::*;
 use crate::durability::item_use::proficiency_catalyst::catalyst_progress;
 use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
+use crate::durability::{DurabilityError, SqlxFailureClass};
 use crate::gameplay_transport::connection::UseOutcome;
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -74,7 +75,7 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
     let binding = owner.progression_binding(session)?;
     let definitions =
         catalogue.for_content(&binding.context.content) as Arc<dyn ProficiencyDefinitions>;
-    // Crystal proficiency_catalysts.lua:9-16: only a weapon with a proficiency takes it.
+    // Tibia Fandom, Proficiency Catalyst: "Use it on a weapon to gain 25,000 ... XP."
     let Some(resolved) = definitions.resolve_weapon(&target.definition.production_key) else {
         return disposition(UseDisposition::NotPossible);
     };
@@ -209,9 +210,18 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
         }
         Ok(ProficiencyCommitOutcome::Refused(_))
         | Err(
-            CharacterProgressionError::CharacterRevisionMismatch
+            CharacterProgressionError::InvalidInput
+            | CharacterProgressionError::AuthorityRejected
+            | CharacterProgressionError::CharacterRevisionMismatch
             | CharacterProgressionError::ConflictingOccurrence,
         ) => return disposition(UseDisposition::Rejected),
+        // COMMIT failures have their own classes. A statement rejection rolls back
+        // both the proficiency write and the catalyst burn.
+        Err(CharacterProgressionError::Unavailable(
+            DurabilityError::Database(SqlxFailureClass::Database(_) | SqlxFailureClass::RetryableStatement)
+            | DurabilityError::CommitRejected
+            | DurabilityError::CommitTransactionTimeout,
+        )) => return disposition(UseDisposition::Rejected),
         // An unknown outcome is reconciled by the occurrence; still unknown disconnects.
         Err(_) => match owner
             .root
