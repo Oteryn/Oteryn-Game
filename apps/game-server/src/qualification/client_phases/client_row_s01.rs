@@ -401,8 +401,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let peer_view = send(&mut peer, None).await?;
     check_state_with_xp(&peer_view, &after_pass, None, true)?;
 
-    check_peer_shield(&mut leader, own(&peer)?, 8, leader_before_pass, Vec::new()).await?;
-    check_peer_shield(&mut peer, own(&leader)?, 7, peer_before_pass, Vec::new()).await?;
+    let leader_ref = own(&leader)?;
+    let peer_ref = own(&peer)?;
+    tokio::try_join!(
+        check_peer_shield(&mut leader, peer_ref, 8, leader_before_pass, Vec::new()),
+        check_peer_shield(&mut peer, leader_ref, 7, peer_before_pass, Vec::new()),
+    )?;
 
     let leader_before_leave = leader.last_server_sequence();
     let peer_before_leave = peer.last_server_sequence();
