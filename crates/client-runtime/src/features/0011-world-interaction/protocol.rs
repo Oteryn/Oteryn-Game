@@ -95,6 +95,16 @@ pub async fn send_framed<S: SessionStream>(
     command: &Command,
     raw_wire: bool,
 ) -> Result<String, SessionError> {
+    send_observing_result(session, command, raw_wire, |_| {}).await
+}
+
+/// Dispatch a context action and observe its original command result, if sent.
+pub async fn send_observing_result<S: SessionStream>(
+    session: &mut Session<S>,
+    command: &Command,
+    raw_wire: bool,
+    observe: impl FnOnce(&oteryn_session::GatedCommandResult),
+) -> Result<String, SessionError> {
     // The session task continues receiving while the native popup owns the UI loop.
     // Drain already-readable pushes before consulting the session's current stores.
     session
@@ -156,6 +166,7 @@ pub async fn send_framed<S: SessionStream>(
         }
         _ => return Ok(format!("{label} unavailable")),
     };
+    observe(&result);
     if command.action != Action::Look
         && matches!(
             result.status,

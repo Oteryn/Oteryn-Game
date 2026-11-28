@@ -2,7 +2,9 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_dev_client::client_runtime::world_interaction::{Target, look_payload};
+use oteryn_dev_client::client_runtime::world_interaction::{
+    Action, Command, Selection, Target, look_payload, send_observing_result,
+};
 use oteryn_protocol_oteryn::item_look as wire;
 use std::num::NonZeroU64;
 
@@ -56,8 +58,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let own = entities
         .iter()
         .find(|entry| entry.entity.identity == *entities.own_identity())
-        .ok_or("I03.client own actor missing")?
-        .entity;
+        .ok_or("I03.client own actor missing")?;
+    let (own, own_position) = (own.entity, own.position);
     let backpack = client
         .inventory()
         .and_then(|inventory| inventory.main_backpack)
@@ -86,22 +88,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
         Ok(())
     };
-    let own_reply = look(&mut client, Target::Creature(own)).await?;
+    let own_command = Command {
+        action: Action::Look,
+        target: Target::Creature(own),
+        selection: Some(Selection {
+            position: own_position,
+            binding: None,
+        }),
+    };
+    let mut own_result = None;
+    let own_text = send_observing_result(client.session_mut(), &own_command, false, |reply| {
+        own_result = Some(reply.clone());
+    })
+    .await?;
+    let own_reply = own_result.ok_or("I03.client self LOOK did not dispatch")?;
     assert_unchanged(&client, "self LOOK")?;
-    let item_reply = look(&mut client, Target::Item(backpack.handle)).await?;
+    let mut item_result = None;
+    let item_command = Command {
+        action: Action::Look,
+        target: Target::Item(backpack.handle),
+        selection: None,
+    };
+    let item_text = send_observing_result(client.session_mut(), &item_command, false, |reply| {
+        item_result = Some(reply.clone());
+    })
+    .await?;
+    let item_reply = item_result.ok_or("I03.client backpack LOOK did not dispatch")?;
     assert_unchanged(&client, "backpack LOOK")?;
+    let stale_command = Command {
+        target: Target::Item(absent),
+        ..item_command
+    };
+    let mut dispatched = false;
+    let stale = send_observing_result(client.session_mut(), &stale_command, false, |_| {
+        dispatched = true;
+    })
+    .await?;
+    if dispatched || stale != "Target changed" {
+        return Err(format!(
+            "I03.client native stale selection: {stale:?} dispatched={dispatched}"
+        )
+        .into());
+    }
+    assert_unchanged(&client, "native stale LOOK")?;
     let refusal_reply = look(&mut client, Target::Item(absent)).await?;
-    if own_reply.0.status != CommandStatus::Accepted
-        || item_reply.0.status != CommandStatus::Accepted
+    if own_reply.status != CommandStatus::Accepted
+        || item_reply.status != CommandStatus::Accepted
         || refusal_reply.0.status != CommandStatus::Accepted
     {
         return Err("I03.client LOOK command was not accepted".into());
     }
-    let (wire::ItemLookResult::Text(own_text), wire::ItemLookResult::Text(item_text)) =
-        (&own_reply.1, &item_reply.1)
-    else {
-        return Err("I03.client positive LOOK did not return text".into());
-    };
     if refusal_reply.1 != wire::ItemLookResult::Refused(wire::ItemLookRefusal::NotAvailable) {
         return Err("I03.client absent item did not return NotAvailable".into());
     }
@@ -129,8 +165,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("I03.client post-relog logout refused: {detail}").into());
     }
-    capture(&directory, "i03-self.json", &session, &own_reply.0)?;
-    capture(&directory, "i03-item.json", &session, &item_reply.0)?;
+    capture(&directory, "i03-self.json", &session, &own_reply)?;
+    capture(&directory, "i03-item.json", &session, &item_reply)?;
     capture(&directory, "i03-refusal.json", &session, &refusal_reply.0)?;
     use std::io::Write;
     let head = std::process::Command::new("git")
@@ -143,6 +179,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let head = std::str::from_utf8(&head.stdout)?.trim();
     std::fs::File::create_new(directory.join("i03-run.txt"))?
         .write_all(format!("{session}\n{head}\n{}\n", directory.display()).as_bytes())?;
+    evidence(&format!("I03_CAPTURE_SESSION {session}"));
     Ok(())
 }
 

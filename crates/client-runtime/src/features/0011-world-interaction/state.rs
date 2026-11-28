@@ -50,7 +50,10 @@ pub(super) fn current<S: SessionStream>(
         return session.world_entities().is_some_and(|entities| {
             entities.iter().any(|entity| {
                 (entity.entity.identity != *entities.own_identity()
-                    || matches!(command.action, super::Action::UseOn(_)))
+                    || matches!(
+                        command.action,
+                        super::Action::UseOn(_) | super::Action::Look
+                    ))
                     && entity.entity == reference
                     && entity.position == spatial_position
                     && matches!(

@@ -125,6 +125,11 @@ def replay_targets():
         "oteryn-client", "e2e_e09_real_mail_outcomes_replay_into_mail_panel",
         capture_names("e09", mail.read_text()),
     )]
+    i03 = ROOT / "crates/client-runtime/src/features/0011-world-interaction/tests/e2e_i03.rs"
+    targets["e2e_i03"] = [(
+        "oteryn-client-runtime", "e2e_i03_replays_original_look_results",
+        capture_names("i03", i03.read_text()),
+    )]
     return targets
 
 
@@ -138,11 +143,21 @@ def replay_cause(row, package, test, names, captures, server, log):
     if not package or not server:
         return "replay-not-run"
 
+    replay_env = os.environ.copy()
+    test_args = ["--nocapture"]
+    if row == "I03":
+        sessions = re.findall(r"^SEAM_EVIDENCE I03_CAPTURE_SESSION ([0-9a-f-]+)$",
+                              log.read_text(), re.MULTILINE)
+        if len(sessions) != 1:
+            return "capture-session-missing-or-duplicate"
+        replay_env["I03_LIVE_CAPTURE_SESSION"] = sessions[0]
+        test_args.append("--ignored")
+
     try:
         result = subprocess.run(
             [os.environ.get("CARGO", "cargo"), "test", "--locked", "-p", package,
-             "--lib", test, "--", "--nocapture"],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+             "--lib", test, "--", *test_args],
+            cwd=ROOT, env=replay_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except OSError:
         return "replay-not-run"

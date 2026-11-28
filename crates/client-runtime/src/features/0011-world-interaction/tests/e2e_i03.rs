@@ -338,10 +338,11 @@ fn varint(output: &mut Vec<u8>, mut value: u64) {
 mod tileless;
 
 #[test]
+#[ignore = "requires a fresh I03 live capture"]
 fn e2e_i03_replays_original_look_results() -> Result<(), BoxError> {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return Ok(());
-    };
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("I03 replay requires a fresh live capture")?;
+    let live_session = std::env::var("I03_LIVE_CAPTURE_SESSION")?;
     let directory = std::fs::canonicalize(directory)?;
     let meta = std::fs::read_to_string(directory.join("i03-run.txt"))?;
     let lines: Vec<_> = meta.lines().collect();
@@ -352,7 +353,8 @@ fn e2e_i03_replays_original_look_results() -> Result<(), BoxError> {
         .args(["rev-parse", "HEAD"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .output()?;
-    if !head.status.success()
+    if live_session != *session
+        || !head.status.success()
         || std::str::from_utf8(&head.stdout)?.trim() != *commit
         || directory.as_path() != std::path::Path::new(capture_dir)
         || !session.split('-').map(str::len).eq([8, 4, 4, 4, 12])
@@ -360,6 +362,11 @@ fn e2e_i03_replays_original_look_results() -> Result<(), BoxError> {
     {
         return Err("I03 capture run identity mismatch".into());
     }
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join("i03.replayed"))?;
+    scripted_look_checks_wire_shape_and_selection()?;
     let mut previous = (0, 0);
     for (file, expected) in [
         ("i03-self.json", "You see yourself (Level 1, sorcerer)."),
