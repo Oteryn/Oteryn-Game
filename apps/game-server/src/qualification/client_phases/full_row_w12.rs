@@ -1,31 +1,12 @@
-//! W12 full-row player scenario, derived from the matrix row, the Crystal reaudit,
-//! and the production Cyclopedia owner (`gameplay_transport/cyclopedia.rs`):
-//! 1. Admit the node-boot Character and send a Cyclopedia query; expect an accepted,
-//!    decodable state frame identifying revision, discovery, POIs, donation pool,
-//!    reset epoch and improved-respawn state.
-//! 2. Send FIND before starting exploration; expect an accepted result frame with
-//!    refusal code 4 and no discovery, POI, pool, epoch or respawn-state mutation.
-//! 3. Send START.  A premium Character must receive code 0 and seven server-selected
-//!    POIs; a non-premium Character must receive code 2 with unchanged durable state.
-//! 4. When START succeeds, discover the POIs only by walking the Character through
-//!    the compiled world and sending FIND at each server-revealed coordinate; expect
-//!    found-count deltas culminating in discovered=true, found=7 and 100 percent.
-//! 5. Send a one-gold DONATE through the ordinary physical trade path; expect either
-//!    code 0 with an exact +1 pool delta or code 6 with no delta when player-earned
-//!    funds are insufficient.  Then really attempt the 10,000,000-gold goal; expect
-//!    code 0, pool/epoch/improved deltas and the improved respawn selection, or record
-//!    code 6 as the observed refusal (the test never mints money).
-//! 6. Send a malformed/unknown-area intent; expect the command-status refusal with no
-//!    result payload, then query again to prove that the connection and state survived.
-//! 7. Logout normally, make a fresh admission, query again, and require the discovery,
-//!    donation pool, epoch and improved-respawn state from the last accepted action to
-//!    be durable.  Movement-speed parity is not inferred from travel time: W12 needs a
-//!    server result/delta exposing the donated-area respawn speed before it can PASS.
+//! W12 full-row player scenario on the production Cyclopedia routes.
+//! Movement completes the automatically activated POIs. Full area discovery grants a
+//! player speed contribution. Donations fund creature respawns for a future server save.
+//! Read the server's speed contribution before and after donating, then after fresh
+//! admission at the saved tile, alongside discovery and donation readback.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::cyclopedia as wire;
-
-const SOURCE_GAP: &str = "source:crates/gameplay/domain/src/domain/cyclopedia/basic.rs:6";
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
 struct Failure {
@@ -91,6 +72,21 @@ async fn query(client: &mut DevClientSession, step: u8) -> Result<wire::MapResul
         .map_err(|error| Failure::new(step, format!("result-decode={error:?};reply={reply:?}")))
 }
 
+async fn discovery_speed(client: &mut DevClientSession, step: u8) -> Result<u16, Box<Failure>> {
+    let reply = exchange(client, wire::COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY, &[])
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            let mut failure = Failure::new(step, format!("speed-query={error}"));
+            failure.source = Some(error);
+            failure
+        })?;
+    match (reply.status, reply.payload.as_slice()) {
+        (CommandStatus::Accepted, [low, high]) => Ok(u16::from_le_bytes([*low, *high])),
+        _ => Err(Failure::new(step, format!("speed-reply={reply:?}"))),
+    }
+}
+
 async fn action(
     client: &mut DevClientSession,
     step: u8,
@@ -138,7 +134,110 @@ async fn logout(client: &mut DevClientSession, step: u8) -> Result<(), Box<Failu
     Ok(())
 }
 
+fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )
+}
+
+fn membership(world: &BundleWorld, at: TilePos) -> Option<(u32, u32)> {
+    world.base().subareas.resolve(at.x, at.y, -at.floor)
+}
+
+async fn discover_area(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    area: u32,
+    mut state: wire::MapResult,
+) -> TestResult {
+    let mut surveyed = BTreeSet::<(u32, TilePos)>::new();
+    let mut completed = BTreeSet::new();
+    while state.area_percent < 100 {
+        let from = tile(client.world_spatial().actor_position)?;
+        let (parent, subarea) = membership(world, from).ok_or("missing discovery membership")?;
+        if parent != area {
+            return Err(format!("discovery walk left area {area} at {from:?}").into());
+        }
+        if state.discovered {
+            completed.insert(subarea);
+        }
+        surveyed.insert((subarea, from));
+
+        let path = state.visible.iter().find_map(|&(x, y, floor)| {
+            route(world, from, |at| {
+                at == TilePos {
+                    x,
+                    y,
+                    floor: -floor,
+                }
+            })
+            .filter(|path| !path.is_empty())
+        });
+        let walked_to_poi = path.is_some();
+        // The server prefers hidden POIs. Visit a fresh viewport in an unfinished
+        // subarea when no revealed point is reachable, then query from that tile.
+        let unfinished = |at| {
+            membership(world, at).filter(|&(parent, child)| {
+                parent == area && !completed.contains(&child) && !surveyed.contains(&(child, at))
+            })
+        };
+        let path = path
+            .or_else(|| {
+                route(world, from, |at| {
+                    unfinished(at).is_some_and(|(_, child)| {
+                        !surveyed.iter().any(|&(seen_child, seen)| {
+                            seen_child == child
+                                && seen.floor == at.floor
+                                && seen.x.abs_diff(at.x) <= 4
+                                && seen.y.abs_diff(at.y) <= 3
+                        })
+                    })
+                })
+            })
+            .or_else(|| route(world, from, |at| unfinished(at).is_some()));
+        let path =
+            path.ok_or_else(|| format!("no-reachable-poi-or-new-viewport;state={state:?}"))?;
+        walk(client, world, &path).await?;
+        let next = query(client, 4).await?;
+        if next.code != 0 || (walked_to_poi && next.found <= state.found) {
+            return Err(format!("discovery walk failed: before={state:?};after={next:?}").into());
+        }
+        state = next;
+    }
+    Ok(())
+}
+
+async fn paced_probe(
+    client: &mut DevClientSession,
+    direction: StepDirection,
+    expected: ActorPosition,
+    step: u8,
+) -> Result<u32, Box<Failure>> {
+    let outcome = client.step_retrying(direction).await.map_err(|error| {
+        verdict::record_error(verdict::IndexedError::as_error(&error));
+        let mut failure = Failure::new(step, format!("paced-step={error}"));
+        failure.source = Some(error.into());
+        failure
+    })?;
+    if outcome.status != CommandStatus::Accepted
+        || outcome.disposition != StepDisposition::Moved
+        || outcome.step_wait_ms == 0
+        || !outcome
+            .world_spatial_delta
+            .is_some_and(|delta| delta.value.actor_position == expected)
+    {
+        return Err(Failure::new(step, "expected-paced-step-and-position-delta"));
+    }
+    Ok(outcome.step_wait_ms)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
+    let world = qualification_world(clients).map_err(|error| Failure::new(1, error.to_string()))?;
     let mut client = connect_world(clients, 0xb8).await.map_err(|error| {
         verdict::record_error(verdict::IndexedError::as_error(&error));
         let mut failure = Failure::new(1, format!("admission={error}"));
@@ -147,80 +246,66 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     })?;
     let first_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client, 1).await?;
-
-    let refused_find = action(&mut client, 2, 3, 0).await?;
-    if refused_find.code != 4 || !stable(&initial, &refused_find) {
+    let initial_speed = discovery_speed(&mut client, 1).await?;
+    if initial.code != 0 || initial.area_percent == 100 || initial_speed != 0 {
         return Err(Failure::new(
-            2,
-            format!("expected-code=4-and-no-delta;observed={refused_find:?}"),
+            1,
+            format!(
+                "expected-incomplete-area-and-zero-speed;state={initial:?};speed={initial_speed}"
+            ),
         ));
     }
 
-    let started = action(&mut client, 3, 1, 0).await?;
-    if !matches!(started.code, 0 | 2) || (started.code == 2 && !stable(&initial, &started)) {
+    let origin = tile(client.world_spatial().actor_position)
+        .map_err(|error| Failure::new(1, error.to_string()))?;
+    let (area, subarea) =
+        membership(world, origin).ok_or_else(|| Failure::new(1, "missing entry subarea"))?;
+    let (direction, reverse, neighbour) = [
+        (StepDirection::North, StepDirection::South),
+        (StepDirection::East, StepDirection::West),
+        (StepDirection::South, StepDirection::North),
+        (StepDirection::West, StepDirection::East),
+    ]
+    .into_iter()
+    .find_map(|(direction, reverse)| {
+        let next = destination(world, origin, direction)?;
+        (next.floor == origin.floor
+            && membership(world, next) == Some((area, subarea))
+            && destination(world, next, reverse) == Some(origin))
+        .then_some((direction, reverse, next))
+    })
+    .ok_or_else(|| Failure::new(1, "no reversible same-subarea pacing probe"))?;
+    let basis =
+        spatial_basis::current(&mut client).map_err(|error| Failure::new(1, error.to_string()))?;
+    let baseline_wait = paced_probe(&mut client, direction, basis.position(neighbour), 1).await?;
+
+    let progress = query(&mut client, 4).await?;
+    discover_area(&mut client, world, area, progress)
+        .await
+        .map_err(|error| Failure::new(4, error.to_string()))?;
+    let from = tile(client.world_spatial().actor_position)
+        .map_err(|error| Failure::new(4, error.to_string()))?;
+    let return_path = route(world, from, |at| at == origin)
+        .ok_or_else(|| Failure::new(4, "no return route to pacing probe"))?;
+    walk(&mut client, world, &return_path)
+        .await
+        .map_err(|error| Failure::new(4, error.to_string()))?;
+    let completed_wait = paced_probe(&mut client, direction, basis.position(neighbour), 4).await?;
+    if completed_wait >= baseline_wait {
         return Err(Failure::new(
-            3,
-            format!("expected-start-or-premium-refusal;observed={started:?}"),
+            4,
+            format!("discovery-did-not-reduce-pace;before={baseline_wait};after={completed_wait}"),
         ));
     }
-    // START's private points are deliberately revealed only in the player's viewport.
-    // Exercise every currently revealed point with real automatic-walk and FIND commands.
-    let mut progress = started.clone();
-    if started.code == 0 {
-        for _ in 0..7 {
-            let Some(&(x, y, floor)) = progress.visible.first() else {
-                break;
-            };
-            let walked = client
-                .session_mut()
-                .target_walk(ActorPosition {
-                    x: i32::from(x),
-                    y: i32::from(y),
-                    floor: i16::from(-floor),
-                })
-                .await
-                .map_err(|error| {
-                    verdict::record_error(verdict::IndexedError::as_error(&error));
-                    let mut failure =
-                        Failure::new(4, format!("walk-to-poi={x},{y},{floor}:{error}"));
-                    failure.source = Some(error.into());
-                    failure
-                })?;
-            if walked.status != CommandStatus::Accepted || walked.payload != [8, 1] {
-                return Err(Failure::new(4, format!("walk-reply={walked:?}")));
-            }
-            let target = ActorPosition {
-                x: i32::from(x),
-                y: i32::from(y),
-                floor: i16::from(-floor),
-            };
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
-            while client.world_spatial().actor_position != target {
-                if tokio::time::Instant::now() >= deadline {
-                    return Err(Failure::new(
-                        4,
-                        format!(
-                            "walk-timeout target={target:?} observed={:?}",
-                            client.world_spatial().actor_position
-                        ),
-                    ));
-                }
-                client
-                    .service_liveness(Duration::from_millis(100))
-                    .await
-                    .map_err(|error| {
-                        verdict::record_error(verdict::IndexedError::as_error(&error));
-                        let mut failure = Failure::new(4, format!("walk-liveness={error}"));
-                        failure.source = Some(error.into());
-                        failure
-                    })?;
-            }
-            let before = progress.found;
-            progress = action(&mut client, 4, 3, 0).await?;
-            if progress.code != 0 || (!progress.discovered && progress.found <= before) {
-                return Err(Failure::new(4, format!("find-no-delta={progress:?}")));
-            }
-        }
+    paced_probe(&mut client, reverse, basis.position(origin), 4).await?;
+    let rules = oteryn_gameplay_domain::domain::cyclopedia::DiscoverySpeed::embedded()
+        .ok_or_else(|| Failure::new(4, "missing discovery speed rules"))?;
+    let speed = discovery_speed(&mut client, 4).await?;
+    if !(rules.bonus(1, 2, true)..=rules.bonus(2, 2, true)).contains(&speed) {
+        return Err(Failure::new(
+            4,
+            format!("completed-area-speed-out-of-range={speed}"),
+        ));
     }
 
     let before_donation = query(&mut client, 5).await?;
@@ -230,7 +315,27 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     {
         return Err(Failure::new(5, format!("one-gold-donation={donated:?}")));
     }
-    let goal = action(&mut client, 5, 4, 10_000_000).await?;
+    let goal_amount = 10_000_000;
+    let goal = action(&mut client, 5, 4, goal_amount).await?;
+    if !((goal.code == 0
+        && Some(goal.pool) == donated.pool.checked_add(u64::from(goal_amount))
+        && goal.epoch == donated.epoch
+        && goal.improved == donated.improved)
+        || (goal.code == 6 && stable(&donated, &goal)))
+    {
+        return Err(Failure::new(5, format!("goal-donation={goal:?}")));
+    }
+    let donated_wait = paced_probe(&mut client, direction, basis.position(neighbour), 5).await?;
+    paced_probe(&mut client, reverse, basis.position(origin), 5).await?;
+    let donated_speed = discovery_speed(&mut client, 5).await?;
+    if donated_speed != speed || donated_wait != completed_wait {
+        return Err(Failure::new(
+            5,
+            format!(
+                "donation-changed-player-movement;speed={speed}/{donated_speed};step_wait_ms={completed_wait}/{donated_wait}"
+            ),
+        ));
+    }
 
     let malformed = exchange(
         &mut client,
@@ -248,6 +353,13 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
         return Err(Failure::new(6, format!("malformed-reply={malformed:?}")));
     }
     let retained = query(&mut client, 6).await?;
+    if !stable(&goal, &retained) {
+        return Err(Failure::new(
+            6,
+            format!("before={goal:?};after={retained:?}"),
+        ));
+    }
+    let saved_position = client.world_spatial().actor_position;
     logout(&mut client, 7).await?;
     drop(client);
 
@@ -260,37 +372,42 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     if fresh.join_snapshot().game_session_id == first_session {
         return Err(Failure::new(7, "fresh-admission-reused-session"));
     }
+    let observed_position = fresh.world_spatial().actor_position;
+    if observed_position != saved_position {
+        return Err(Failure::new(
+            7,
+            format!("saved-position={saved_position:?};fresh-position={observed_position:?}"),
+        ));
+    }
+    // Observe STEP before any Cyclopedia query could refresh the live contribution.
+    let fresh_wait = paced_probe(&mut fresh, direction, basis.position(neighbour), 7).await?;
+    paced_probe(&mut fresh, reverse, basis.position(origin), 7).await?;
     let after = query(&mut fresh, 7).await?;
-    let cleanup = logout(&mut fresh, 7).await;
+    let fresh_speed = discovery_speed(&mut fresh, 7).await?;
+    logout(&mut fresh, 7).await?;
     if !stable(&retained, &after) {
         return Err(Failure::new(
             7,
-            format!("before={retained:?};after={after:?}"),
+            format!(
+                "saved-position={saved_position:?};fresh-position={observed_position:?};before={retained:?};after={after:?}"
+            ),
         ));
     }
-    cleanup?;
-
-    if started.code == 2 {
+    if fresh_speed != speed || fresh_wait != completed_wait {
         return Err(Failure::new(
-            3,
-            format!("premium-required;reply={started:?}"),
+            7,
+            format!(
+                "movement-changed-on-relog;speed={speed}/{fresh_speed};step_wait_ms={completed_wait}/{fresh_wait}"
+            ),
         ));
     }
-    if !progress.discovered || progress.found != 7 || progress.area_percent != 100 {
-        return Err(Failure::new(
-            4,
-            format!("discovery-incomplete={progress:?}"),
-        ));
-    }
+    evidence(&format!(
+        "W12_SPEED step=7 discovery_speed_initial={initial_speed} discovery_speed_completed={speed} discovery_speed_after_donation={donated_speed} discovery_speed_relog={fresh_speed} step_wait_ms_initial={baseline_wait} step_wait_ms_completed={completed_wait} step_wait_ms_after_donation={donated_wait} step_wait_ms_relog={fresh_wait}"
+    ));
     if goal.code != 0 {
         return Err(Failure::new(5, format!("goal-donation-refused={goal:?}")));
     }
-    // Reaching this point proves the playable discovery/donation lifecycle.  The owner
-    // still emits no speed result/delta, so the full row cannot honestly claim PASS.
-    Err(Failure::new(
-        7,
-        format!("movement-speed-delta-unavailable;{SOURCE_GAP}"),
-    ))
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -304,20 +421,13 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => {
-            let missing = error.observed.contains(SOURCE_GAP);
             evidence(&format!(
                 "W12_CHECK step={} FAIL observed={}",
                 error.step, error.observed
             ));
             evidence(&format!(
-                "e2e_all scenario=W12.full status={} seconds={:.3}{}",
-                if missing { "MISSING-SERVER" } else { "FAIL" },
+                "e2e_all scenario=W12.full status=FAIL seconds={:.3}",
                 started.elapsed().as_secs_f64(),
-                if missing {
-                    format!(" evidence={SOURCE_GAP}")
-                } else {
-                    String::new()
-                }
             ));
         }
         Err(_) => evidence(&format!(
