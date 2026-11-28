@@ -7,31 +7,70 @@ use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
 };
 use crate::foundation::{ChannelContentPin, CharacterLease};
+use crate::gameplay_transport::actor_spell::NativeCastDispatch;
 use crate::gameplay_transport::connection::{AdmissionRefusal, FreshAdmissionAuthority};
+use crate::gameplay_transport::spell_access_facts::{
+    AccessFactsError, CurrentSpellAccessOwner, owner_registration,
+};
 use crate::gameplay_transport::{AdmissionRetryBudget, SeamRooms};
 use crate::spell::cast::CharacterCastFacts;
+use crate::spell::owned_cast_facts::{AccessProjections, CastFactsBinding};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
 use std::num::NonZeroU32;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 const BLANK: &str = "oteryn:item.tibia.i3147";
+const LIGHT_MISSILE: &str = "oteryn:item.tibia.i3174";
 const MISSILE: &str = "oteryn:item.tibia.i3198";
 
 #[test]
 fn magic2_conjure_postgres_full_bag_rolls_back_then_merges_mints_and_replays() -> TestResult {
-    large_stack(|| scenarios(&[(true, false)], false))
+    large_stack(|| scenarios(&[(true, false)], ScenarioMode::Ordinary))
 }
 
 #[test]
 fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_terminal() -> TestResult {
-    large_stack(|| scenarios(&[(false, true), (false, false)], false))
+    large_stack(|| scenarios(&[(false, true), (false, false)], ScenarioMode::Ordinary))
+}
+
+#[test]
+fn c10_light_magic_missile_conjure_uses_preparation_clock_postgres() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    large_stack(|| scenarios(&[(false, false)], ScenarioMode::CooldownClock))
+}
+
+struct AdvanceDuringAccess<'a> {
+    clock: &'a AtomicU64,
+    ready_at: u64,
+}
+
+impl owner_registration::Registered for AdvanceDuringAccess<'_> {}
+impl CurrentSpellAccessOwner for AdvanceDuringAccess<'_> {
+    fn read_current(
+        &self,
+        _: &CastFactsBinding,
+        _: u64,
+    ) -> Result<AccessProjections, AccessFactsError> {
+        self.clock.store(self.ready_at + 1, Ordering::Relaxed);
+        Ok(AccessProjections::default())
+    }
 }
 
 #[test]
 fn magic2_conjure_postgres_without_qualified_room() -> TestResult {
-    large_stack(|| scenarios(&[(true, false), (false, false)], true))
+    large_stack(|| scenarios(&[(true, false), (false, false)], ScenarioMode::CombatRoomOnly))
 }
 
-fn scenarios(cases: &[(bool, bool)], combat_room_only: bool) -> TestResult {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ScenarioMode {
+    Ordinary,
+    CooldownClock,
+    CombatRoomOnly,
+}
+
+fn scenarios(cases: &[(bool, bool)], mode: ScenarioMode) -> TestResult {
     run(async |admin| {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
@@ -51,7 +90,7 @@ fn scenarios(cases: &[(bool, bool)], combat_room_only: bool) -> TestResult {
                 &pin,
                 full,
                 missing_reagent,
-                combat_room_only,
+                mode,
             )
             .await?;
         }
@@ -68,8 +107,10 @@ async fn scenario(
     pin: &crate::content::NativeEntryContentPin,
     full: bool,
     missing_reagent: bool,
-    combat_room_only: bool,
+    mode: ScenarioMode,
 ) -> TestResult {
+    let cooldown_clock = mode == ScenarioMode::CooldownClock;
+    let combat_room_only = mode == ScenarioMode::CombatRoomOnly;
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
     prepare_current_session(&h).await?;
@@ -118,7 +159,7 @@ async fn scenario(
     let build = convert_vocation(
         formula,
         &DurableBuildState::default(),
-        if full || missing_reagent {
+        if full || missing_reagent || cooldown_clock {
             "druid"
         } else {
             "paladin"
@@ -150,7 +191,7 @@ async fn scenario(
                 actor,
                 session,
                 CharacterCastFacts {
-                    vocation: if full || missing_reagent {
+                    vocation: if full || missing_reagent || cooldown_clock {
                         crate::spell::Vocation::Druid
                     } else {
                         crate::spell::Vocation::Paladin
@@ -177,6 +218,9 @@ async fn scenario(
         entries.extend(std::iter::repeat_n(("oteryn:item.tibia.i3607", 1), 18));
         seed_main_backpack(&h, &entries).await?;
     }
+    if cooldown_clock {
+        seed_main_backpack(&h, &[(BLANK, 2)]).await?;
+    }
     if missing_reagent {
         seed_main_backpack(&h, &[]).await?;
     }
@@ -201,7 +245,13 @@ async fn scenario(
         })
     };
     // Without a bag, use a reagent-free spell so the failure reaches the destination writer.
-    let intent = find(if full || missing_reagent { 3198 } else { 3447 })?;
+    let intent = find(if cooldown_clock {
+        3174
+    } else if full || missing_reagent {
+        3198
+    } else {
+        3447
+    })?;
     assert!(
         AdmissionRetryBudget::for_root(&session, &h.root)
             .retry_until(async || owner.ensure_source_map_initialized().await)
@@ -225,10 +275,52 @@ async fn scenario(
             .ok()
     };
     let before = owner.observe_vitals(actor, session).await.ok_or("vitals")?;
+    if cooldown_clock {
+        let clock = &owner.states.test_owner_time;
+        let now = owner.owner_now().get();
+        clock.store(now + 1, Ordering::Relaxed);
+        let first = cast(2).await.ok_or("first Light Magic Missile cast")?;
+        assert_eq!(first.disposition, SpellCastDisposition::Cast);
+        let after = owner
+            .observe_vitals(actor, session)
+            .await
+            .ok_or("paid vitals")?;
+        assert_eq!(after.1.soul, before.1.soul - 1);
+        let (spell, _) = native
+            .spell_book()
+            .source_indexed(intent.spell)
+            .ok_or("spell")?;
+        let ready_at = now + spell.cooldown_micros;
+        assert_eq!(spell.cooldown_micros, 2_000_000);
+        clock.store(ready_at, Ordering::Relaxed); // One microsecond before expiry.
+        let access = AdvanceDuringAccess { clock, ready_at };
+        let refused = owner
+            .cast_world_items(actor, session, 3, &intent, &access)
+            .await;
+        let NativeCastDispatch::Outcome(refused) = refused else {
+            return Err("second Light Magic Missile cast did not settle".into());
+        };
+        assert_eq!(
+            refused.disposition,
+            SpellCastDisposition::CoolingDown,
+            "a cast prepared before expiry refuses even when its access read crosses expiry"
+        );
+        assert_eq!(owner.observe_vitals(actor, session).await, Some(after));
+        assert_eq!(quantity(&h, BLANK).await?, 1);
+        assert_eq!(quantity(&h, LIGHT_MISSILE).await?, 10);
+        assert_eq!(receipt_count(&h).await?, 1);
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return h.cleanup().await;
+    }
     if full {
         let holder = h.root.try_acquire_ready().map_err(debug)?;
         assert!(
-            owner.cast_spell_completion(actor, session, 1, intent).await.is_none(),
+            owner
+                .cast_spell_completion(actor, session, 1, intent)
+                .await
+                .is_none(),
             "a busy holder leaves the full-bag cast pending"
         );
         drop(holder);
