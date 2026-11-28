@@ -2264,7 +2264,7 @@ async fn prove_authored_hunt(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
-    observe_return_occupants: bool,
+    augment_bps: u64,
 ) -> TestResult {
     let home = tile(client.world_spatial().actor_position)?;
     let authored = authored_client_cast_route(world, spawns, home)?;
@@ -2276,15 +2276,7 @@ async fn prove_authored_hunt(
     if tile(client.world_spatial().actor_position)? != CLIENT_CAST_TILE {
         return Err("C12 did not reach the authored cast tile".into());
     }
-    super::client_row_c12::cast_at_authored_spawn(
-        client.session_mut(),
-        if observe_return_occupants {
-            0
-        } else {
-            AUGMENT_BPS
-        },
-    )
-    .await?;
+    super::client_row_c12::cast_at_authored_spawn(client.session_mut(), augment_bps).await?;
     let cleared = client.session_mut().attack_target(None).await?;
     require_mechanic_acceptance(cleared.status, "C12 authored target clear")?;
     if cleared.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
@@ -2336,11 +2328,7 @@ async fn prove_authored_hunt(
     evidence("C12_AUTHORED_RETURN rope=32296,32334,-8 landing=32296,32335,-7");
     let back = route(world, upstairs, |at| at == home)
         .ok_or("C12 no surface return route from the authored rope exit")?;
-    if observe_return_occupants {
-        walk_authored_return(client, world, &back).await?;
-    } else {
-        walk_exact_route(client, world, &back).await?;
-    }
+    walk_authored_return(client, world, &back).await?;
     Ok(())
 }
 
@@ -2394,7 +2382,7 @@ pub(super) async fn prepare_client_capture(
     select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
     equip_right(&mut client, definition).await?;
 
-    prove_authored_hunt(&mut client, world, &metadata.spawns, false).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, AUGMENT_BPS).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
     let route = client_cast_route(world, position)?;
@@ -2529,7 +2517,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let offset = std::fs::metadata(&use_log)?.len();
     select_fists_damage_perks(&mut client, clients, definition).await?;
     require_no_use_holder_wait(&use_log, offset, "catalyst_")?;
-    prove_authored_hunt(&mut client, world, &metadata.spawns, true).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, 0).await?;
     row.pass("acquire-50271", (acquired, purchase_balance));
 
     require_current_premium(client.session_mut()).await?;
