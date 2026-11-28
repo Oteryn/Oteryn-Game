@@ -48,6 +48,8 @@ use std::time::{Duration, Instant};
 pub use oteryn_client_runtime as client_runtime;
 pub use oteryn_client_ui as client_ui;
 pub use oteryn_session as native_session;
+mod inbound_capture;
+pub use inbound_capture::{InboundCapture, RecordingTransport};
 
 /// Everything `connect_and_join` needs to admit with one grant and read its join snapshot.
 #[derive(Debug, Clone, Copy)]
@@ -236,15 +238,43 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 /// `oteryn_session::Session` for the sequence, revision and liveness discipline it carries.
 pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSession, DevClientError> {
     let started = Instant::now();
-    let stream = oteryn_session_tcp::connect(TcpConnect {
+    let stream = connect_transport(request, started).await?;
+    let session = admit_transport(stream, request, started).await?;
+    Ok(DevClientSession { session, started })
+}
+
+/// Admits over TLS and records the original inbound stream starting at admission.
+pub async fn connect_recording_session(
+    request: JoinRequest<'_>,
+    limit: std::num::NonZeroUsize,
+) -> Result<(Session<RecordingTransport<TcpTlsStream>>, InboundCapture), DevClientError> {
+    let started = Instant::now();
+    let stream = connect_transport(request, started).await?;
+    let (stream, capture) = RecordingTransport::new(stream, limit);
+    let session = admit_transport(stream, request, started).await?;
+    Ok((session, capture))
+}
+
+async fn connect_transport(
+    request: JoinRequest<'_>,
+    started: Instant,
+) -> Result<TcpTlsStream, DevClientError> {
+    oteryn_session_tcp::connect(TcpConnect {
         address: request.address,
         server_name: request.server_name,
         root_certificate: request.root_certificate,
         deadline: request.deadline,
     })
     .await
-    .map_err(|error| contextualize_transport(error, started))?;
-    let session = Session::admit(
+    .map_err(|error| contextualize_transport(error, started))
+}
+
+async fn admit_transport<S: oteryn_session::SessionStream>(
+    stream: S,
+    request: JoinRequest<'_>,
+    started: Instant,
+) -> Result<Session<S>, DevClientError> {
+    Session::admit(
         stream,
         Admission {
             appearance_items: None,
@@ -260,8 +290,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
     .map_err(|error| {
         let last_frame = join_last_frame(&error);
         contextualize_session(error, "join_snapshot", started, last_frame)
-    })?;
-    Ok(DevClientSession { session, started })
+    })
 }
 
 /// Connect a fresh TLS transport and recover the same server session with its retained selection.

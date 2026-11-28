@@ -5,10 +5,15 @@
 #[test]
 fn connect_and_join_decodes_join_snapshot_with_entry_door_overlay()
 -> Result<(), Box<dyn StdError + Send + Sync>> {
-    block_on(run_join_snapshot_case())?
+    block_on(run_join_snapshot_case(false))?
 }
 
-async fn run_join_snapshot_case() -> Result<(), Box<dyn StdError + Send + Sync>> {
+#[test]
+fn recording_admission_retains_complete_join_frames() -> Result<(), Box<dyn StdError + Send + Sync>> {
+    block_on(run_join_snapshot_case(true))?
+}
+
+async fn run_join_snapshot_case(record: bool) -> Result<(), Box<dyn StdError + Send + Sync>> {
     let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
     let certificate: CertificateDer<'static> = generated.cert.der().clone();
     let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
@@ -27,7 +32,7 @@ async fn run_join_snapshot_case() -> Result<(), Box<dyn StdError + Send + Sync>>
     let server = tokio::spawn(run_fake_server(listener, acceptor));
 
     let character_id = CharacterId::decode(&test_uuid_v7(4))?;
-    let snapshot = connect_and_join(JoinRequest {
+    let request = JoinRequest {
         address,
         server_name: "localhost",
         root_certificate: &certificate,
@@ -36,9 +41,26 @@ async fn run_join_snapshot_case() -> Result<(), Box<dyn StdError + Send + Sync>>
         admission_material: b"fixture-grant",
         client_build_id: CLIENT_BUILD_ID,
         deadline: TEST_DEADLINE,
-    })
-    .await
-    .map_err(|error| format!("connect_and_join: {error}"))?;
+    };
+    let snapshot = if record {
+        let (session, capture) =
+            crate::connect_recording_session(request, std::num::NonZeroUsize::MIN.saturating_add(8191)).await?;
+        let bytes = capture.bytes().ok_or("admission capture overflow")?;
+        let mut input = bytes.as_slice();
+        for expected in [
+            MessageType::ServerAccepted,
+            MessageType::SnapshotBegin,
+            MessageType::SnapshotChunk,
+            MessageType::SnapshotCommit,
+        ] {
+            let frame = oteryn_session::read_frame(&mut input).await?;
+            assert_eq!(decode_wire_envelope(&frame)?.message_type(), expected);
+        }
+        assert!(input.is_empty());
+        session.into_join_snapshot()
+    } else {
+        connect_and_join(request).await?
+    };
 
     server.await??;
 
