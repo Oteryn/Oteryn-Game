@@ -151,8 +151,8 @@ pub struct PendingKillSettlement {
     /// re-evaluate a later Premium state or attribute this kill to a successor.
     pub(super) prey_checkpoint: Option<crate::durability::prey::PreyCheckpoint>,
     pub(super) forge: Option<ForgeDeath>,
-    /// Frozen at death and added after ordinary loot modifiers.
-    fiendish_sliver: Option<Arc<FiendishCorpseLoot>>,
+    /// Special drops frozen at death and added after ordinary loot modifiers.
+    corpse_bonus_loot: Option<Arc<CorpseBonusLoot>>,
     /// Frozen callback facts survive corpse replay and actor-slot reuse.
     pub(super) echo: Option<super::echo_warden::rewards::EchoDeathReward>,
     pub(super) callback_loot: Vec<crate::combat::LootDefinitionRef>,
@@ -177,9 +177,10 @@ pub struct PendingKillSettlement {
 }
 
 #[derive(Debug)]
-struct FiendishCorpseLoot {
-    sliver: crate::combat::LootTableEntry,
-    // The sliver cause and its destination slot must both replay after a partial settle.
+struct CorpseBonusLoot {
+    sliver: Option<crate::combat::LootTableEntry>,
+    gems: Vec<(crate::combat::LootDefinitionRef, u32)>,
+    // The mint causes and placement slots must replay after a partial settle.
     prepared: OnceLock<crate::combat::LootTableDefinition>,
 }
 
@@ -224,6 +225,12 @@ pub(super) fn tracks_native_progression(creature: &str) -> bool {
 }
 
 impl PendingKillSettlement {
+    fn corpse_bonus_mint_count(&self) -> usize {
+        self.corpse_bonus_loot.as_ref().map_or(0, |loot| {
+            loot.gems.len() + usize::from(loot.sliver.is_some())
+        })
+    }
+
     pub(super) fn has_boss_achievement_work(&self) -> bool {
         self.boss_achievements.is_some()
     }
@@ -310,7 +317,7 @@ impl PendingKillSettlement {
             world_change: None,
             prey_checkpoint: None,
             forge: None,
-            fiendish_sliver: None,
+            corpse_bonus_loot: None,
             echo: None,
             callback_loot: Vec::new(),
             tutorial_loot: Arc::default(),
@@ -1657,9 +1664,7 @@ impl KillSettlementQueue {
                 // loot (`data/libs/functions/monstertype.lua:89-100`), after this admission
                 // point; capacity therefore has to cover every direct and nested candidate.
                 mints
-                    .checked_add(
-                        entry.callback_loot.len() + usize::from(entry.fiendish_sliver.is_some()),
-                    )
+                    .checked_add(entry.callback_loot.len() + entry.corpse_bonus_mint_count())
                     .and_then(|mints| {
                         mints.checked_add(
                             usize::from(entry.creature == "oteryn:creature.the_corruptor") * 3,
@@ -2354,7 +2359,7 @@ pub fn record_creature_kill(
                             world_change,
                             prey_checkpoint,
                             forge: None,
-                            fiendish_sliver: None,
+                            corpse_bonus_loot: None,
                             echo,
                             callback_loot: Vec::new(),
                             tutorial_loot: Arc::default(),
@@ -2536,14 +2541,11 @@ pub fn record_creature_kill(
             return;
         };
         let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
-        Some(Arc::new(FiendishCorpseLoot {
-            sliver: crate::combat::LootTableEntry {
-                min_count: count,
-                max_count: count,
-                ..sliver.clone()
-            },
-            prepared: OnceLock::new(),
-        }))
+        Some(crate::combat::LootTableEntry {
+            min_count: count,
+            max_count: count,
+            ..sliver.clone()
+        })
     } else {
         None
     };
@@ -2693,6 +2695,7 @@ pub fn record_creature_kill(
         Arc::make_mut(&mut row).loot_table.entries.clear();
     }
     let mut callback_loot = Vec::new();
+    let mut corpse_gems = Vec::new();
     if !top.is_gone() {
         if echo.is_some() {
             if let Some(scroll) =
@@ -2714,6 +2717,20 @@ pub fn record_creature_kill(
             .prey
             .and_then(|states| states.live_stamina(principal.actor, principal.session))
             .is_none_or(oteryn_gameplay_characters::stamina::hunting_loot_allowed);
+        if can_receive_loot
+            && personal_reward_row.is_none()
+            && row.corpse_item.is_some()
+            && let Some((kind, _)) = forge_kind
+            && let Some(gems) = super::gem_atelier_drops::roll(
+                sink.rewards,
+                runtime.content_pin().server_artifact_digest(),
+                boss_reward_settlement::personal_death_id(facts.death),
+                *principal.character.as_bytes(),
+                kind.into(),
+            )
+        {
+            corpse_gems = gems;
+        }
         if let Some(items) = super::echo_warden::drops::soul_core_drops(
             runtime,
             sink.rewards,
@@ -2748,7 +2765,13 @@ pub fn record_creature_kill(
         boss_reward,
         activity_death,
         forge,
-        fiendish_sliver,
+        corpse_bonus_loot: (fiendish_sliver.is_some() || !corpse_gems.is_empty()).then(|| {
+            Arc::new(CorpseBonusLoot {
+                sliver: fiendish_sliver,
+                gems: corpse_gems,
+                prepared: OnceLock::new(),
+            })
+        }),
         echo,
         callback_loot,
         tutorial_loot: Arc::default(),
@@ -3870,7 +3893,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .and_then(|reference| plan_creature_loot(seed, reference, table).ok())
                 .map_or(0, |plan| plan.entries.len())
                 + entry.callback_loot.len()
-                + usize::from(entry.fiendish_sliver.is_some())
+                + entry.corpse_bonus_mint_count()
         };
         let (before, after) = (count(loot_table), count(&extended));
         let extra = after.saturating_sub(before);
@@ -4335,11 +4358,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let retained_fiendish_loot = entry
-            .fiendish_sliver
+        let retained_corpse_bonus = entry
+            .corpse_bonus_loot
             .as_ref()
-            .and_then(|fiendish| fiendish.prepared.get());
-        let loot_table = if let Some(retained) = retained_fiendish_loot {
+            .and_then(|bonus| bonus.prepared.get());
+        let loot_table = if let Some(retained) = retained_corpse_bonus {
             retained.clone()
         } else {
             let mut loot_table = row.loot_table.clone();
@@ -4432,12 +4455,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 }
             }
             super::quest_death_loot::append(&mut loot_table, &entry);
-            // Crystal monster.cpp:2526-2540 inserts a selected stack directly into the corpse.
             if row.corpse_item.is_some()
-                && let Some(fiendish) = &entry.fiendish_sliver
+                && let Some(bonus) = &entry.corpse_bonus_loot
             {
-                loot_table.entries.push(fiendish.sliver.clone());
-                let _ = fiendish.prepared.set(loot_table.clone());
+                loot_table.entries.extend(bonus.sliver.iter().cloned());
+                if let Some(reference) = row.loot_table_ref.as_ref() {
+                    super::gem_atelier_drops::append_corpse_gems(
+                        &mut loot_table,
+                        loot_plan_seed(entry.facts.death),
+                        reference,
+                        &bonus.gems,
+                    );
+                }
+                let _ = bonus.prepared.set(loot_table.clone());
             }
             loot_table
         };
@@ -4455,7 +4485,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         // The cached first table can contain more ordinary rolls than this
         // retry's live modifiers reserved. Charge only its positive shortfall;
         // the existing take and extras are both released on every requeue/end.
-        if (tutorial_corruptor.is_some() || retained_fiendish_loot.is_some())
+        if (tutorial_corruptor.is_some() || retained_corpse_bonus.is_some())
             && let Some(reference) = row.loot_table_ref.as_ref()
             && let Ok(plan) =
                 plan_creature_loot(loot_plan_seed(entry.facts.death), reference, &loot_table)

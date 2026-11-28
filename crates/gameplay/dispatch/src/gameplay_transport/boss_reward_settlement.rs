@@ -1,6 +1,8 @@
 //! The production descendant of a frozen reward-boss death. Personal loot uses the complete
 //! death-time census and the original immutable table; the ordinary corpse has no reward loot.
 use super::*;
+use crate::combat::LootDefinitionRef;
+use crate::content::creature_reward::CreatureRewardTable;
 use crate::domain::item_definition::ItemDefinitionFacts;
 use crate::durability::boss_encounter::reward_chest::scoped_death_id;
 use crate::durability::boss_encounter::reward_chest::{
@@ -8,6 +10,7 @@ use crate::durability::boss_encounter::reward_chest::{
     BossRewardChestPlan, BossRewardContributor, BossRewardDeath, BossRewardItem,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
+use crate::gameplay_transport::gem_atelier_drops;
 use oteryn_gameplay_encounter_rules::boss::pity::{
     boosted_probability_ppm, is_pity_item, pity_boss_key,
 };
@@ -86,13 +89,35 @@ fn reward_quantity(entry: LootPlanEntry) -> Result<RewardQuantity, PlanError> {
     ))
 }
 
-/// Retain the first-seen stack order. A populated container is a distinct
-/// reward, and a child's stack only aggregates with siblings of that container.
+#[cfg(test)]
 fn materialize_plan(
     plan: LootPlan,
     facts: &impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
 ) -> Result<Vec<BossRewardItem>, PlanError> {
-    let mut totals = Vec::<RewardTotal>::new();
+    materialize_plan_with_gems(plan, facts, Vec::new())
+}
+
+/// Retain the first-seen stack order. Donor gems seed the personal loot before
+/// the ordinary roll, and a child's stack only aggregates within its container.
+fn materialize_plan_with_gems(
+    plan: LootPlan,
+    facts: &impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
+    gems: Vec<(LootDefinitionRef, u32)>,
+) -> Result<Vec<BossRewardItem>, PlanError> {
+    let mut totals: Vec<_> = gems
+        .into_iter()
+        .map(|(gem, count)| RewardTotal {
+            item: (
+                TypedDefinitionRef {
+                    family: gem.family,
+                    production_key: gem.production_key,
+                    revision_ref: gem.revision_ref,
+                },
+                u64::from(count),
+            ),
+            children: Vec::new(),
+        })
+        .collect();
     let mut entries = plan.entries.into_iter().enumerate().peekable();
     while let Some((index, entry)) = entries.next() {
         if entry.parent.is_some() {
@@ -190,7 +215,15 @@ fn plan_personal_death(
     frozen: &boss_reward_contribution::FrozenBossDeath,
     facts: impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
 ) -> Result<BossRewardDeath, PlanError> {
-    plan_personal_death_with_slots(death, boss_key, frozen, facts, &[], &[], |_| false)
+    plan_personal_death_with_slots(
+        death,
+        boss_key,
+        frozen,
+        facts,
+        &[],
+        &[],
+        (|_: &str| false, None),
+    )
 }
 
 /// Capability 492: the recipient's own copy of the boss table with every Moonsilver
@@ -218,6 +251,11 @@ fn pity_loot_table(
     Some(boosted)
 }
 
+struct GemLootContent<'a> {
+    table: &'a CreatureRewardTable,
+    digest: [u8; 32],
+}
+
 fn plan_personal_death_with_slots(
     death: [u8; 16],
     boss_key: &str,
@@ -225,8 +263,14 @@ fn plan_personal_death_with_slots(
     facts: impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
     bonuses: &[([u8; 16], u16)],
     pity: &[([u8; 16], u16)],
-    equipment: impl Fn(&str) -> bool,
+    content: (impl Fn(&str) -> bool, Option<GemLootContent<'_>>),
 ) -> Result<BossRewardDeath, PlanError> {
+    let (equipment, gem_content) = content;
+    let archfoe = frozen
+        .reward
+        .boss
+        .as_ref()
+        .is_some_and(|boss| boss.category.eq_ignore_ascii_case("archfoe"));
     if frozen.participants.len() > BOSS_REWARD_CONTRIBUTORS_MAX {
         return Err(PlanError::InvalidCensus);
     }
@@ -315,7 +359,18 @@ fn plan_personal_death_with_slots(
                 &equipment,
             )
             .map_err(PlanError::Loot)?;
-            materialize_plan(loot, &facts)
+            let gems = match &gem_content {
+                Some(content) if archfoe => gem_atelier_drops::roll(
+                    content.table,
+                    content.digest,
+                    death,
+                    character,
+                    gem_atelier_drops::Source::Archfoe,
+                )
+                .ok_or(PlanError::ContentUnavailable)?,
+                _ => Vec::new(),
+            };
+            materialize_plan_with_gems(loot, &facts, gems)
         })();
         match planned {
             Ok(items) => items,
@@ -566,7 +621,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .get()
                 .map_or(&[][..], |v| v.as_slice()),
             entry.boss_pity.get().map_or(&[][..], |v| v.as_slice()),
-            |key| admission.reward_table().is_daily_boss_equipment(key),
+            (
+                |key: &str| admission.reward_table().is_daily_boss_equipment(key),
+                Some(GemLootContent {
+                    table: admission.reward_table(),
+                    digest,
+                }),
+            ),
         ) {
             Ok(plan) => plan,
             Err(error) => {

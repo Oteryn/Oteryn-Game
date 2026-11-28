@@ -327,7 +327,7 @@ fn pity_bonus_reaches_the_personal_roll_and_only_adds_drops() {
             |definition| Some(facts(definition, ItemStackClass::NonStackable)),
             &[],
             pity,
-            |_| false,
+            (|_: &str| false, None),
         )
         .expect("plan")
         .chests[0]

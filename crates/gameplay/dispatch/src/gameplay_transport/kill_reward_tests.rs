@@ -142,7 +142,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     PendingKillSettlement {
         world_change: None,
         forge: None,
-        fiendish_sliver: None,
+        corpse_bonus_loot: None,
         // W06 callbacks are absent for this ordinary-kill fixture.
         echo: None,
         callback_loot: Vec::new(),

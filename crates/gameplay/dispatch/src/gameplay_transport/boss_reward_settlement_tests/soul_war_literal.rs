@@ -56,7 +56,10 @@ fn srx3_soul_war_personal_loot_keeps_literal_local_chance_for_every_recipient()
                     },
                     &[],
                     &[],
-                    |key| native.reward_table().is_daily_boss_equipment(key),
+                    (
+                        |key: &str| native.reward_table().is_daily_boss_equipment(key),
+                        None,
+                    ),
                 )
                 .map_err(|e| format!("{e:?}"))
             };

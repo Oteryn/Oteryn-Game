@@ -85,6 +85,7 @@ pub mod fresh_evidence;
 mod furniture_catalog;
 pub mod gameplay_drain;
 mod gameplay_idle_presence;
+mod gem_atelier_drops;
 mod grizzly_boss;
 mod grizzly_kills;
 mod grizzly_rewards;
