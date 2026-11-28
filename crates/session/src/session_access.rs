@@ -254,6 +254,16 @@ impl<S: SessionStream> Session<S> {
         self.open_container.as_ref()
     }
 
+    /// Capture the next two successfully applied open-container deltas for wire verification.
+    pub fn begin_open_container_delta_capture(&mut self) {
+        self.open_container_delta_capture = Some(Vec::with_capacity(2));
+    }
+
+    /// Stop capturing and return the original payloads in receive order.
+    pub fn take_open_container_delta_capture(&mut self) -> Vec<OpenContainerDeltaCapture> {
+        self.open_container_delta_capture.take().unwrap_or_default()
+    }
+
     /// The own-actor position after every delta applied so far.
     pub fn world_spatial(&self) -> &WorldSpatialObservation {
         &self.world_spatial

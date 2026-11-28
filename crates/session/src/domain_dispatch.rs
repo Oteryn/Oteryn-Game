@@ -458,6 +458,14 @@ impl<S: SessionStream> Session<S> {
                 )
                 .map_err(SessionError::ItemView)?;
                 self.open_container = Some(value.clone());
+                if let Some(capture) = self.open_container_delta_capture.as_mut()
+                    && capture.len() < 2
+                {
+                    capture.push(OpenContainerDeltaCapture {
+                        server_sequence,
+                        payload: payload.to_vec(),
+                    });
+                }
                 self.container_revision = new_revision;
                 Ok(SessionEvent::OpenContainer(applied(
                     server_sequence,

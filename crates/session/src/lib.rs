@@ -401,6 +401,7 @@ pub struct Session<S> {
     chat_revision: u64,
     map_header: Option<oteryn_protocol_oteryn::world_map::MapViewHeader>,
     inventory_revision: u64,
+    open_container_delta_capture: Option<Vec<OpenContainerDeltaCapture>>,
     container_revision: u64,
     inventory: Option<CharacterInventory>,
     open_container: Option<OpenContainer>,

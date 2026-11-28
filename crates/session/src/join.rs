@@ -210,6 +210,7 @@ impl<S: SessionStream> Session<S> {
             container_revision,
             inventory,
             open_container,
+            open_container_delta_capture: None,
             container_views,
             chat,
             vip_presence: None,

@@ -11,6 +11,13 @@ pub struct AppliedDelta<T> {
     pub value: T,
 }
 
+/// The original state-delta payload and sequence from one applied open-container update.
+#[derive(Debug)]
+pub struct OpenContainerDeltaCapture {
+    pub server_sequence: u64,
+    pub payload: Vec<u8>,
+}
+
 /// One command's decoded outcome: the `CommandResult` (its `command_id`, `status`, the typed
 /// `disposition` and the `server_sequence` it arrived at) plus, for `Moved` (domain 1) and `Cast`
 /// (domain 3), the first delta of that domain applied after the result, by revision alone: the

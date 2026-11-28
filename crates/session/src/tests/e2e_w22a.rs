@@ -1,8 +1,4 @@
-//! W22a client replay: the rat corpse the Character opened (domain 11) goes through
-//! `Session::admit` and `Session::apply_state_delta` (`domain_dispatch.rs`) and is read through
-//! `Session::open_container`. The views are session-owned, so the row re-encodes them with the
-//! production `item_view::encode_open_container` (the C17c practice). Moving the first rolled stack
-//! removes it from the corpse; a malformed delta is refused and leaves the corpse unchanged.
+//! Replays the two original open-container delta payloads captured by W22a.client.
 use super::*;
 use crate::tests::{BoxError, admission_with, join_peer_with};
 use oteryn_protocol_oteryn::{encode_state_delta, item_view};
@@ -26,7 +22,7 @@ fn entry(handle: u64, reference: u32, count: u32) -> Result<ItemEntry, BoxError>
 }
 
 fn fixture() -> Result<Capture, BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+    if let Some(path) = std::env::var_os("W22A_CAPTURE_DIR") {
         let path = std::path::Path::new(&path);
         return Ok(Capture {
             before: std::fs::read(path.join("w22a-before.bin"))?,
@@ -41,10 +37,22 @@ fn fixture() -> Result<Capture, BoxError> {
         })
         .map_err(|error| BoxError::from(format!("{error:?}")))
     };
+    let delta = |sequence, base, next, entries| -> Result<Vec<u8>, BoxError> {
+        let frame = encode_state_delta(
+            1,
+            sequence,
+            item_view::STATE_DOMAIN_OPEN_CONTAINER,
+            base,
+            next,
+            item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
+            &encode(entries)?,
+        )?;
+        Ok(decode_wire_envelope(&frame)?.payload().to_vec())
+    };
     Ok(Capture {
-        before: encode(vec![entry(51, 3607, 1)?, entry(52, 3031, 3)?])?,
-        after: encode(vec![entry(52, 3031, 3)?])?,
-        expected: "before=3607:1;3031:3\nafter=3031:3\ntable=3031:1:4;3607:1:1\n".into(),
+        before: delta(41, 3, 4, vec![entry(51, 3607, 1)?, entry(52, 3031, 3)?])?,
+        after: delta(43, 4, 5, vec![entry(52, 3031, 3)?])?,
+        expected: "session=unit\nopen_sequence=41\npickup_sequence=43\nappearances=false\nexpanded=false\nbefore=3607:1;3031:3\nafter=3031:3\ntable=3031:1:4;3607:1:1\n".into(),
     })
 }
 
@@ -74,44 +82,56 @@ fn e2e_w22a_rat_corpse_loot_replay() -> Result<(), BoxError> {
     block_on(async {
         let capture = fixture()?;
         let expected = capture.expected.as_str();
-        let (before_payload, after_payload) = (capture.before.clone(), capture.after.clone());
+        let open_sequence = value(expected, "open_sequence")?.parse::<u64>()?;
+        let pickup_sequence = value(expected, "pickup_sequence")?.parse::<u64>()?;
+        assert!(open_sequence != 0 && pickup_sequence > open_sequence);
+        let base = oteryn_protocol_oteryn::decode_state_delta(&capture.before)?.base_revision;
+        let mut selected = SELECTED.to_vec();
+        if value(expected, "appearances")?.parse::<bool>()? {
+            selected.push(item_view::CAPABILITY_ITEM_APPEARANCE_V1);
+        }
+        if value(expected, "expanded")?.parse::<bool>()? {
+            selected.push(item_view::CAPABILITY_CORPSE_CONTAINER_48_V1);
+        }
+
+        // Initialize the empty domain. Only the two captured payloads drive the proof.
         let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let server_selected = selected.clone();
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                SELECTED,
-                SELECTED,
+                &server_selected,
+                &server_selected,
                 &[],
                 item_snapshot(vec![])?,
                 &[
                     inventory_domain(3, &CharacterInventory::default())?,
                     (
                         item_view::STATE_DOMAIN_OPEN_CONTAINER,
-                        3,
+                        base,
                         item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
-                        before_payload,
+                        item_view::encode_open_container(&OpenContainer::default())
+                            .map_err(|error| format!("{error:?}"))?,
                     ),
                 ],
             )
-            .await?;
-            write_frame(
-                &mut server,
-                &encode_state_delta(
-                    1,
-                    41,
-                    item_view::STATE_DOMAIN_OPEN_CONTAINER,
-                    3,
-                    4,
-                    item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
-                    &after_payload,
-                )?,
-            )
-            .await?;
-            let mut rest = Vec::new();
-            let _ = server.read_to_end(&mut rest).await;
-            Ok::<(), BoxError>(())
+            .await
         });
-        let mut session = Session::admit(client, admission_with(SELECTED)?).await?;
+        let admission = Admission {
+            supported_capabilities: &selected,
+            ..admission_with(SELECTED)?
+        };
+        let mut session = Session::admit(client, admission).await?;
+        peer.await??;
+        assert_eq!(session.open_container(), Some(&OpenContainer::default()));
+        assert!(session.take_open_container_delta_capture().is_empty());
+        session.begin_open_container_delta_capture();
+        let SessionEvent::OpenContainer(opened) =
+            session.apply_state_delta(open_sequence, &capture.before)?
+        else {
+            return Err("open payload is not an open-container delta".into());
+        };
+        assert_eq!(opened.server_sequence, open_sequence);
         assert_eq!(listed(session.open_container()), value(expected, "before")?);
         // Every rolled stack lies inside the server's rat table range.
         let table: Vec<(u32, u32, u32)> = value(expected, "table")?
@@ -132,27 +152,55 @@ fn e2e_w22a_rat_corpse_loot_replay() -> Result<(), BoxError> {
                 .ok_or("rolled definition outside the rat table")?;
             assert!((*min..=*max).contains(&entry.count.get()));
         }
-        session.service_liveness(Duration::from_millis(100)).await?;
+        let mut remaining = opened.value;
+        assert!(remaining.container_handle.is_some());
+        assert!(!remaining.entries.is_empty());
+        remaining.entries.remove(0);
+        let SessionEvent::OpenContainer(picked_up) =
+            session.apply_state_delta(pickup_sequence, &capture.after)?
+        else {
+            return Err("pickup payload is not an open-container delta".into());
+        };
+        assert_eq!(picked_up.server_sequence, pickup_sequence);
+        assert_eq!(picked_up.value, remaining);
         assert_eq!(listed(session.open_container()), value(expected, "after")?);
         assert_ne!(value(expected, "before")?, value(expected, "after")?);
         let applied = session.open_container().cloned();
+        let bad_sequence = pickup_sequence
+            .checked_add(1)
+            .ok_or("capture sequence overflow")?;
+        let new_revision = picked_up
+            .new_revision
+            .checked_add(1)
+            .ok_or("capture revision overflow")?;
         let bad = encode_state_delta(
             1,
-            42,
+            bad_sequence,
             item_view::STATE_DOMAIN_OPEN_CONTAINER,
-            4,
-            5,
+            picked_up.new_revision,
+            new_revision,
             item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
             &[0xff],
         )?;
         assert!(
             session
-                .apply_state_delta(42, decode_wire_envelope(&bad)?.payload())
+                .apply_state_delta(bad_sequence, decode_wire_envelope(&bad)?.payload())
                 .is_err()
         );
         assert_eq!(session.open_container().cloned(), applied);
-        drop(session);
-        peer.abort();
+        let captured = session.take_open_container_delta_capture();
+        let [recorded_open, recorded_pickup] = captured.as_slice() else {
+            return Err("capture did not retain exactly the two successful deltas".into());
+        };
+        assert_eq!(recorded_open.server_sequence, open_sequence);
+        assert_eq!(recorded_open.payload, capture.before);
+        assert_eq!(recorded_pickup.server_sequence, pickup_sequence);
+        assert_eq!(recorded_pickup.payload, capture.after);
+        assert!(session.take_open_container_delta_capture().is_empty());
+        println!(
+            "W22A_REPLAY session={} open_sequence={open_sequence} pickup_sequence={pickup_sequence}",
+            value(expected, "session")?,
+        );
         Ok(())
     })?
 }
