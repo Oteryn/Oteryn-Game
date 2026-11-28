@@ -277,6 +277,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let target_name = own_name(&target)?;
     let caster_name = own_name(&caster)?;
 
+    let initial = list(&mut target).await?;
+    if matches!(initial.modes, 0 | 2) || !initial.players.is_empty() {
+        return Err(format!(
+            "step 1 expected a distinct enabled mode and no explicit entries: {initial:?}"
+        )
+        .into());
+    }
     if settings(&mut target, &[0, 0]).await? != [1]
         || list(&mut target).await?
             != (PlayerList {
@@ -294,8 +301,14 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("denied-cast", denied);
 
-    if settings(&mut target, &[0, 2]).await? != [1] {
-        return Err("step 3 SetModes(2) lacked accepted receipt".into());
+    if settings(&mut target, &[0, 2]).await? != [1]
+        || list(&mut target).await?
+            != (PlayerList {
+                modes: 2,
+                players: Vec::new(),
+            })
+    {
+        return Err("step 3 SetModes(2) did not enable the empty explicit list".into());
     }
     let mut add = vec![6];
     add.extend(caster_name.as_bytes());
@@ -368,12 +381,16 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if removed.modes != 2 || !removed.players.is_empty() {
         return Err(format!("step 7 removal delta mismatch: {removed:?}").into());
     }
-    row.pass("remove-player", removed);
+    row.pass("remove-player", &removed);
 
-    let ready = tokio::time::Instant::now() + Duration::from_millis(2200);
-    while tokio::time::Instant::now() < ready {
-        caster.service_liveness(Duration::from_millis(100)).await?;
-        caster.take_events();
+    let removal_session = target.join_snapshot().game_session_id;
+    logout(&mut target).await?;
+    drop(target);
+    let mut target = connect_character(clients, 0xd8, 0).await?;
+    if target.join_snapshot().game_session_id == removal_session
+        || list(&mut target).await? != removed
+    {
+        return Err("step 8 fresh admission did not retain the removed entry and mode".into());
     }
     let (_, denied) = cast(&mut caster, &target_name, ChatDisposition::Rejected).await?;
     if !denied.iter().any(|line| line == PROTECTED_REPLY) {

@@ -14,13 +14,14 @@ fn expected_value<'a>(text: &'a str, key: &str) -> Result<&'a str, Box<dyn std::
 
 #[test]
 fn e2e_p17_replays_exiva_deny_add_and_remove_lists() -> Result<(), Box<dyn std::error::Error>> {
-    let (denied, allowed, removed, expected) = if let Some(path) =
+    let (denied, allowed, refused, removed, expected) = if let Some(path) =
         std::env::var_os("E2E_ALL_CAPTURE_DIR")
     {
         let path = std::path::Path::new(&path);
         (
             std::fs::read(path.join("p17-denied.bin"))?,
             std::fs::read(path.join("p17-allowed.bin"))?,
+            std::fs::read(path.join("p17-refused.bin"))?,
             std::fs::read(path.join("p17-removed.bin"))?,
             std::fs::read_to_string(path.join("p17-expected.txt"))?,
         )
@@ -29,6 +30,7 @@ fn e2e_p17_replays_exiva_deny_add_and_remove_lists() -> Result<(), Box<dyn std::
         (
             list(0, Vec::new()).ok_or("deny fixture")?,
             list(2, vec![([9; 16], "Aldric Vane".into())]).ok_or("allow fixture")?,
+            vec![0],
             list(2, Vec::new()).ok_or("remove fixture")?,
             format!(
                 "denied_modes=0\nallowed_modes=2\nplayer={} Aldric Vane\nremoved_modes=2\nrefused_status=Rejected\n",
@@ -36,6 +38,21 @@ fn e2e_p17_replays_exiva_deny_add_and_remove_lists() -> Result<(), Box<dyn std::
             ),
         )
     };
+    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+        let binding = std::env::var("E2E_P17_BINDING")?;
+        assert_eq!(expected_value(&expected, "binding")?, binding);
+        let (_, sequence) = binding.split_once(':').ok_or("missing capture sequences")?;
+        let sequence = sequence
+            .split(':')
+            .map(str::parse::<u64>)
+            .collect::<Result<Vec<_>, _>>()?;
+        let [deny, allow, refuse, remove] = sequence.as_slice() else {
+            return Err("expected four server sequences".into());
+        };
+        assert!(0 < *deny && deny < allow && allow < refuse && refuse < remove);
+        assert_eq!(expected_value(&expected, "refused_status")?, "Rejected");
+    }
+    assert_eq!(refused, [0]);
     let (hex, name) = expected_value(&expected, "player")?
         .split_once(' ')
         .ok_or("expected player line malformed")?;
@@ -78,6 +95,8 @@ fn e2e_p17_replays_exiva_deny_add_and_remove_lists() -> Result<(), Box<dyn std::
 
     // A malformed or out-of-range payload leaves the last authoritative list untouched.
     let accepted = panel.list.clone();
+    assert!(!panel.apply(&refused));
+    assert_eq!(panel.list, accepted);
     assert!(!panel.apply(&[0, 32]));
     assert_eq!(panel.list, accepted);
     assert_eq!(panel.error, Some("Exiva request refused; refresh the list"));

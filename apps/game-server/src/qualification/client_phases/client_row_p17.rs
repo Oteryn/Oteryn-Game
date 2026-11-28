@@ -27,7 +27,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 async fn settings(
     client: &mut DevClientSession,
     payload: &[u8],
-) -> TestResult<(CommandStatus, Vec<u8>)> {
+) -> TestResult<(CommandStatus, Vec<u8>, u64)> {
     let reply = client
         .session_mut()
         .gated_command(
@@ -36,21 +36,21 @@ async fn settings(
             payload,
         )
         .await?;
-    Ok((reply.status, reply.payload))
+    Ok((reply.status, reply.payload, reply.server_sequence))
 }
 
-async fn accepted(client: &mut DevClientSession, payload: &[u8]) -> TestResult<Vec<u8>> {
-    let (status, reply) = settings(client, payload).await?;
+async fn accepted(client: &mut DevClientSession, payload: &[u8]) -> TestResult<(Vec<u8>, u64)> {
+    let (status, reply, sequence) = settings(client, payload).await?;
     if status != CommandStatus::Accepted {
         return Err(format!("settings {payload:?} refused: {status:?}").into());
     }
-    Ok(reply)
+    Ok((reply, sequence))
 }
 
-async fn list(client: &mut DevClientSession) -> TestResult<(Vec<u8>, PlayerList)> {
-    let payload = accepted(client, &[5]).await?;
+async fn list(client: &mut DevClientSession) -> TestResult<(Vec<u8>, PlayerList, u64)> {
+    let (payload, sequence) = accepted(client, &[5]).await?;
     let decoded = PlayerList::decode(&payload).ok_or("server List undecodable")?;
-    Ok((payload, decoded))
+    Ok((payload, decoded, sequence))
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
@@ -74,26 +74,39 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     logout(&mut caster).await?;
     drop(caster);
     let mut target = connect_character(clients, 0x42, 0).await?;
-    let (_, initial) = list(&mut target).await?;
+    let (_, initial, _) = list(&mut target).await?;
+    if matches!(initial.modes, 0 | 2) || !initial.players.is_empty() {
+        return Err(format!(
+            "expected a distinct enabled mode and no explicit entries: {initial:?}"
+        )
+        .into());
+    }
+    let capture_session = uuid_text(target.join_snapshot().game_session_id.as_bytes());
 
-    if accepted(&mut target, &[0, 0]).await? != [1] {
+    if accepted(&mut target, &[0, 0]).await?.0 != [1] {
         return Err("SetModes(0) lacked the accepted receipt".into());
     }
-    let (denied_bytes, denied) = list(&mut target).await?;
+    let (denied_bytes, denied, denied_sequence) = list(&mut target).await?;
     if denied.modes != 0 || !denied.players.is_empty() {
         return Err(format!("deny-all List mismatch: {denied:?}").into());
     }
     capture(capture_root, "p17-denied.bin", &denied_bytes)?;
 
-    if accepted(&mut target, &[0, 2]).await? != [1] {
-        return Err("SetModes(2) lacked the accepted receipt".into());
+    if accepted(&mut target, &[0, 2]).await?.0 != [1]
+        || list(&mut target).await?.1
+            != (PlayerList {
+                modes: 2,
+                players: Vec::new(),
+            })
+    {
+        return Err("SetModes(2) did not enable the empty explicit list".into());
     }
     let mut add = vec![6];
     add.extend(caster_name.as_bytes());
-    if accepted(&mut target, &add).await? != [1] {
+    if accepted(&mut target, &add).await?.0 != [1] {
         return Err("AddName lacked the accepted receipt".into());
     }
-    let (allowed_bytes, allowed) = list(&mut target).await?;
+    let (allowed_bytes, allowed, allowed_sequence) = list(&mut target).await?;
     let [(caster_id, listed_name)] = allowed.players.as_slice() else {
         return Err(format!("allow List mismatch: {allowed:?}").into());
     };
@@ -102,21 +115,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture(capture_root, "p17-allowed.bin", &allowed_bytes)?;
 
-    let (status, refused) = settings(&mut target, &[0, 32]).await?;
+    let (status, refused, refused_sequence) = settings(&mut target, &[0, 32]).await?;
     if status != CommandStatus::Rejected || refused != [0] {
         return Err(format!("malformed SetModes: status={status:?} payload={refused:?}").into());
     }
-    let (after_bytes, _) = list(&mut target).await?;
+    capture(capture_root, "p17-refused.bin", &refused)?;
+    let (after_bytes, _, _) = list(&mut target).await?;
     if after_bytes != allowed_bytes {
         return Err("malformed SetModes changed the allow list".into());
     }
 
     let mut remove = vec![2];
     remove.extend(caster_id);
-    if accepted(&mut target, &remove).await? != [1] {
+    if accepted(&mut target, &remove).await?.0 != [1] {
         return Err("RemovePlayer lacked the accepted receipt".into());
     }
-    let (removed_bytes, removed) = list(&mut target).await?;
+    let (removed_bytes, removed, removed_sequence) = list(&mut target).await?;
     if removed.modes != 2 || !removed.players.is_empty() {
         return Err(format!("removal List mismatch: {removed:?}").into());
     }
@@ -131,7 +145,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("fresh admission did not retain the removed list".into());
     }
     // Leave the target's permissions as found.
-    if accepted(&mut target, &[0, initial.modes]).await? != [1]
+    if accepted(&mut target, &[0, initial.modes]).await?.0 != [1]
         || list(&mut target).await?.1 != initial
     {
         return Err("restoring the target's initial settings did not take".into());
@@ -139,12 +153,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     logout(&mut target).await?;
     release_row_characters(clients).await?;
     let id_hex: String = caster_id.iter().map(|byte| format!("{byte:02x}")).collect();
+    if !(0 < denied_sequence
+        && denied_sequence < allowed_sequence
+        && allowed_sequence < refused_sequence
+        && refused_sequence < removed_sequence)
+    {
+        return Err("P17 capture results are out of order".into());
+    }
+    let binding = format!(
+        "{capture_session}:{denied_sequence}:{allowed_sequence}:{refused_sequence}:{removed_sequence}"
+    );
     let expected = format!(
-        "denied_modes={}\nallowed_modes={}\nplayer={id_hex} {caster_name}\nremoved_modes={}\nrefused_status=Rejected\n",
+        "binding={binding}\ndenied_modes={}\nallowed_modes={}\nplayer={id_hex} {caster_name}\nremoved_modes={}\nrefused_status=Rejected\n",
         denied.modes, allowed.modes, removed.modes
     );
     capture(capture_root, "p17-expected.txt", expected.as_bytes())?;
-    Ok(expected.replace('\n', ";").replace(' ', "_"))
+    Ok(binding)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
