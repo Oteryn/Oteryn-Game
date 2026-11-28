@@ -251,6 +251,19 @@ impl ItemUseGates {
         gate.settle(1, UseDisposition::Committed, &[]);
         Some(())
     }
+    pub(super) fn settle_recovered_promotion_scroll(
+        &mut self,
+        actor: ExactActorRef,
+        command: crate::foundation::CommandRef,
+        disposition: UseDisposition,
+    ) {
+        if let Some((_, _, gate)) = self.0.iter_mut().find(|(present, session, _)| {
+            *present == actor && *session == command.game_session_id()
+        }) {
+            gate.settle(command.command_id().get(), disposition, &[]);
+        }
+    }
+
     pub(in crate::gameplay_transport) fn house_transfer_ready(
         &self,
         actor: ExactActorRef,
@@ -821,20 +834,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(Err(_)) => (UseDisposition::Rejected, false, false),
         };
-        if scroll {
-            if ambiguous {
-                // The live routes leave this command outstanding. Resume probes the
-                // original transaction, even after the source handle has retired.
-                return Err(UseDisposition::Rejected);
-            }
-            if disposition == UseDisposition::Committed
-                && let Ok(id) = crate::foundation::CommandId::new(command.command_id)
-            {
-                let reference = crate::foundation::CommandRef::new(session, id);
-                self.states
-                    .command_ingress
-                    .complete_item_use(reference, disposition);
-            }
+        if scroll && ambiguous {
+            // The live routes leave this command outstanding. Resume probes the
+            // original transaction, even after the source handle has retired.
+            return Err(UseDisposition::Rejected);
         }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -871,8 +874,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
             gate.last_utterance = *utterance;
         }
-        if scroll && disposition != UseDisposition::Committed {
-            self.mark_use_receipt(command, None);
+        if scroll {
+            // Publish the proven result only after releasing the gate. A cancellation
+            // before this point leaves the pending receipt available for resume.
+            if disposition == UseDisposition::Committed {
+                if let Ok(id) = crate::foundation::CommandId::new(command.command_id) {
+                    let reference = crate::foundation::CommandRef::new(session, id);
+                    self.states
+                        .command_ingress
+                        .complete_item_use(reference, disposition);
+                }
+            } else {
+                self.mark_use_receipt(command, None);
+            }
         }
         Ok(disposition)
     }

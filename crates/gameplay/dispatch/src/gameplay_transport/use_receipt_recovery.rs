@@ -178,6 +178,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        if matches!(receipt, UseReceipt::PromotionScroll(_)) {
+            let _runtime = self.runtime.lock().await;
+            self.states
+                .spell_states
+                .lock()
+                .await
+                .item_uses
+                .settle_recovered_promotion_scroll(actor, reference, disposition);
+        }
         ingress.complete_item_use(reference, disposition)?;
         if disposition == UseDisposition::Committed
             && matches!(

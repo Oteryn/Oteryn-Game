@@ -5,8 +5,8 @@ use super::item_look_fixtures::{read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelContentPin, ExactActorRef, GameSessionId, MessageType,
-    WorldId, decode_wire_envelope,
+    ActivityTransferMember, AuthenticatedTransportRefV1, ChannelContentPin, CharacterId,
+    CharacterLease, ExactActorRef, GameSessionId, MessageType, WorldId, decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -364,9 +364,22 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             .current_session_at(admitted.game_session_id)
             .await?;
     let fence = item_fence_of(current).ok_or("current item fence")?;
+    if case.scroll_lost_ack() || matches!(case, Case::ScrollRolledBack) {
+        let lease = CharacterLease::new(
+            CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        )
+        .map_err(debug)?;
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(deps.actor, admitted.game_session_id, lease)
+            .map_err(debug)?;
+    }
     admitted.item_fence = Some(fence);
     let supported: &[u32] = match case {
-        Case::ScrollWithoutCapability => &[4, 6, 11, 18],
+        // Scrolls use ITEM_USE_V1. WORLD_INTERACTION_V1 also requires it.
+        Case::ScrollWithoutCapability => &[4, 6, 18],
         Case::ScrollHandleCommitted => &[4, 6, 11, 15, 18, 171],
         _ => &[4, 6, 11, 15, 18, 22, 171],
     };
@@ -557,6 +570,10 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             .map_err(|error| format!("pending USE resume: {error:?}"))?;
         assert!(owner.states.command_ingress.resumable(&resumed));
         assert_eq!(resumed.continuity.next_command_id, 2);
+        if case.scroll_lost_ack() || matches!(case, Case::ScrollRolledBack) {
+            assert_scroll_handoff_prepares(&owner, resumed).await?;
+        }
+
         let committed =
             case.scroll_lost_ack() || matches!(case, Case::CubeCommitted | Case::CoinCommitted);
         let expected = if committed {
@@ -621,6 +638,47 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
         replay?;
         assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
     }
+    Ok(())
+}
+
+async fn assert_scroll_handoff_prepares(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    resumed: AdmittedSession,
+) -> TestResult {
+    let actor = resumed.runtime_actor.ok_or("resumed scroll user")?;
+    let session = resumed.game_session_id;
+    let destination = GameSessionId::decode(&id(99)).map_err(debug)?;
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let attack = owner.states.attack.lock().await;
+    // These are the production admission steps used by House and boss entry.
+    assert!(
+        states
+            .prepare_house_transfer_views(&runtime, &attack, actor, session, destination)
+            .is_some(),
+        "a resolved scroll must allow House transfer preparation"
+    );
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let member = ActivityTransferMember {
+        source_actor: actor,
+        source_session: session,
+        source_lease: lease,
+        destination_session: destination,
+        destination_lease: CharacterLease::new(lease.character_id(), lease.generation() + 1)
+            .map_err(debug)?,
+        destination_cell: runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+    };
+    let mut destination_states =
+        crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
+    let mut prepared = states
+        .prepare_activity_states(&mut destination_states, &[member])
+        .map_err(|()| "a resolved scroll must allow native boss entry preparation")?;
+    states.abort_activity_states(&mut prepared);
     Ok(())
 }
 
