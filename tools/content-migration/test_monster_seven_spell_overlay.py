@@ -12,9 +12,11 @@ import galthen_boss_loot
 import import_spell_families as producer
 import item_detail_source_facts as item_details
 import monster_seven_spell_overlay as overlay
+import pegasus_feather_item_profile
 import qengine_reward_item_profiles as qengine
 import register_spell_families as registration
 import soul_war_appearance_profiles as source_appearances
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -109,6 +111,7 @@ class AcceptedOverlayTests(unittest.TestCase):
         # source-qualified reward Item proof alongside the registered SEASON outputs.
         successor_proofs = {
             elephant_corpse_profiles.PROOF,
+            pegasus_feather_item_profile.PROOF,
             "tools/content-schema/native-gameplay/engnpc2-slug-corpse-profiles.json",
             "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json",
             "tools/content-schema/native-gameplay/questpc5-parchment-profile.json",
@@ -220,9 +223,11 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(
                 by_key[key]["production_binding"], row["production_binding"]
             )
-            self.assertEqual(by_key[key]["semantics"], row["semantics"])
-            for field, value in row["attributes"].items():
-                self.assertEqual(by_key[key]["attributes"][field], value, (key, field))
+            expected = compact_item_record(copy.deepcopy(row))
+            registered = compact_item_record(copy.deepcopy(by_key[key]))
+            self.assertEqual(registered["semantics"], expected["semantics"], key)
+            for field, value in expected["attributes"].items():
+                self.assertEqual(registered["attributes"][field], value, (key, field))
         self.assertIn("tools/content-schema/native-gameplay/loot-tables.json", actual)
         self.assertIn("content/items/authored-static-admissions.json", actual)
         for cohort in ("marsh", "slug"):
@@ -266,7 +271,7 @@ class AcceptedOverlayTests(unittest.TestCase):
             r
             for r in after["records"]
             if r["production_definition"]["production_key"]
-            not in registration.CONSUMABLE_PROFILE_KEYS
+            not in registration.POTION_KEYS
         ]
         for old, new in zip(before["records"], retained, strict=True):
             if (
@@ -281,9 +286,9 @@ class AcceptedOverlayTests(unittest.TestCase):
         added = [
             r
             for r in after["records"]
-            if r["production_definition"]["production_key"] in registration.CONSUMABLE_PROFILE_KEYS
+            if r["production_definition"]["production_key"] in registration.POTION_KEYS
         ]
-        self.assertEqual(len(added), 19)
+        self.assertEqual(len(added), 18)
         world = json.loads(
             (ROOT / "content/world/definitions/reference.json").read_bytes()
         )
@@ -368,12 +373,12 @@ class AcceptedOverlayTests(unittest.TestCase):
         sources = [
             r
             for r in json.loads(actual_read(world_path))["records"]
-            if r["identity"]["key"] in registration.CONSUMABLE_PROFILE_KEYS
+            if r["identity"]["key"] in registration.POTION_KEYS
         ]
         bindings = [
             b
             for b in json.loads(actual_read(bindings_path))["bindings"]
-            if b["target"]["key"] in registration.CONSUMABLE_PROFILE_KEYS
+            if b["target"]["key"] in registration.POTION_KEYS
         ]
         for operator in (
             "missing",

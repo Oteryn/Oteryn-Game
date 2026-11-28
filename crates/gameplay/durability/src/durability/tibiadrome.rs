@@ -566,6 +566,17 @@ async fn grant_cosmetic(
     sqlx::query("INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) VALUES(encode($1,'hex')::uuid,$2,$3,'crystal-201189f-tibiadrome-v1',encode($4,'hex')::uuid,'npc',$1)")
         .bind(id.as_slice()).bind(account).bind(key).bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,encode($3,'hex')::uuid)").bind(account).bind(key).bind(id.as_slice()).execute(&mut **tx).await?;
+    // TibiaWiki Phantastic!: purchase the Phant from the Tibiadrome.
+    if selector == 17 {
+        super::account_achievement::grant_missing(
+            tx,
+            fence.character_id,
+            &["oteryn:achievement/phantastic"],
+            "oteryn:tibiadrome-shop",
+            &id,
+        )
+        .await?;
+    }
     state.progress.points -= price;
     Ok(1)
 }

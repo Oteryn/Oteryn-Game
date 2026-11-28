@@ -15,13 +15,29 @@ def definitions():
 
 
 class NativeGoalCorpseProof(unittest.TestCase):
+    def test_bonelord_has_an_admitted_corpse_and_exact_decay_chain(self):
+        sources, _ = native.policies()
+        self.assertEqual([sources.get(item) for item in (5992, 4089, 4090, 4091)], [
+            (32, 10000, 4089), (32, 300000, 4090), (32, 300000, 4091),
+            (None, 60000, None),
+        ])
+        root = native.ROOT
+        profiles = json.loads((root / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        corpse = next(row for row in profiles['records']
+                      if row['production_definition']['production_key'] == 'oteryn:item.tibia.i5992')
+        self.assertEqual(corpse['admission']['legal_destinations'], ['Ground'])
+        loot = json.loads((root / 'tools/content-schema/native-gameplay/loot-tables.json').read_bytes())
+        facts = next(row for row in loot['items'] if row['item']['key'] == 'oteryn:item.tibia.i5992')
+        self.assertTrue(facts['materializable'])
+        self.assertEqual(facts['container_capacity'], 32)
+
     def test_portable_native_profiles_remain_exact_and_conflicts_are_atomic(self):
         root = native.ROOT
         profiles = 'content/items/definitions/spell-native-profiles.json'
         manifest = 'content/spells.manifest.json'
         generated = {path: (root / path).read_bytes() for path in (profiles, manifest)}
         original = json.loads(generated[profiles])
-        keys = {f'oteryn:item.tibia.i{i}' for i in (3990, 4103, 4104)}
+        keys = {f'oteryn:item.tibia.i{i}' for i in (3990, 4103, 4104, 4143)}
         selected = lambda doc: {r['production_definition']['production_key']: r
             for r in doc['records'] if r['production_definition']['production_key'] in keys}
         order = lambda r: r['production_definition']['production_key']
@@ -40,7 +56,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
         import sys
         sys.path.insert(0, str(native.ROOT / 'tools/content-migration'))
         import encounter_loot_item_admissions as source
-        profiles = source.facts(native.ROOT, {3990, 4103, 4104}, allow_containers=True)
+        profiles = source.facts(native.ROOT, {3990, 4103, 4104, 4143}, allow_containers=True)
         items = {d['identity']['key']: d for d in definitions()}
         for key, profile in profiles.items():
             with self.subTest(item=key):
@@ -49,7 +65,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
 
     def test_full_decay_closure_keeps_source_weights_and_capacities(self):
         policies, weights = native.policies()
-        self.assertEqual(len(policies), 29)
+        self.assertEqual(len(policies), 48)
         self.assertEqual({item: policies[item] for item in (7535, 7537, 7538, 7539, 7540)}, {
             7535: (7, 10000, 7537),
             7537: (7, 10000, 7538),
@@ -67,6 +83,10 @@ class NativeGoalCorpseProof(unittest.TestCase):
         self.assertEqual(weights[4041], 120000)
         self.assertEqual(weights[4013], 85000)
         self.assertEqual(weights[5973], 0)
+        self.assertEqual(policies[36847], (25, 10000, 36846))
+        self.assertEqual(policies[36846], (25, 300000, 36845))
+        self.assertEqual(policies[36845], (25, 300000, 36844))
+        self.assertEqual(policies[36844], (None, 60000, None))
 
     def test_admission_preserves_unowned_items_and_unrelated_semantics(self):
         items = definitions()
@@ -79,7 +99,8 @@ class NativeGoalCorpseProof(unittest.TestCase):
             self.assertTrue(new['materializable'])
             self.assertEqual(new['semantics']['physical']['value']['pickupable']['value'],
                              new['identity']['key'] in {'oteryn:item.tibia.i3990',
-                                 'oteryn:item.tibia.i4103', 'oteryn:item.tibia.i4104'})
+                                 'oteryn:item.tibia.i4103', 'oteryn:item.tibia.i4104',
+                                 'oteryn:item.tibia.i4143'})
             for group, accepted in old.get('semantics', {}).items():
                 if group not in native.GROUPS:
                     self.assertEqual(new['semantics'][group], accepted)

@@ -19,6 +19,7 @@ use crate::foundation::{
     NpcPlacements,
 };
 use crate::gameplay_transport::NpcTalkBook;
+use oteryn_gameplay_world_change::daily::DailyWorldChanges;
 use oteryn_world_bundle::{bundle, npc};
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -513,6 +514,7 @@ pub(super) fn talk_book(boot: Option<&NpcBoot>) -> Option<Arc<NpcTalkBook>> {
 pub(super) fn place(
     runtime: &mut ChannelRuntimeV1,
     boot: Option<&NpcBoot>,
+    daily: Option<&DailyWorldChanges>,
 ) -> Result<usize, BootError> {
     if let Some(catalogue_sha256) = catalogue_sha256(boot) {
         event(&format!(
@@ -538,10 +540,18 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
-            let unix_ms = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .ok()
-                .and_then(|elapsed| i64::try_from(elapsed.as_millis()).ok())
+            // The Christmas calendar owns when the compiled Messenger cells become actors.
+            table
+                .npcs
+                .retain(|npc| npc.key != seasonal::MESSENGER || !admitted.contains(&npc.key));
+            if let Some(daily) = daily {
+                table.npcs.retain_mut(|npc| {
+                    !admitted.contains(&npc.key)
+                        || super::daily_world_changes::retain_bundle_npc(daily, npc)
+                });
+            }
+            let unix_ms = crate::world_clock::now_utc_ms()
+                .and_then(|now| i64::try_from(now).ok())
                 .unwrap_or(0);
             oteryn_gameplay_entities::rashid_schedule::rotate_placements(&mut table, unix_ms);
             let outcome = runtime
@@ -734,7 +744,7 @@ pub(crate) mod tests {
         let boot = bind(frame, Some(&loaded(&[SMITH, TRADER], &catalogue)), true).expect("bind");
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 2);
+        assert_eq!(place(&mut runtime, Some(&boot), None).expect("placed"), 2);
         assert_eq!(catalogue_sha256(Some(&boot)), Some(catalogue.as_str()));
         let binding = runtime.binding();
         // W02: the scoped binding now returns Option; this fixture still requires Channel.
@@ -764,7 +774,7 @@ pub(crate) mod tests {
         assert!(visible.creatures.is_empty());
         // Placement runs once, at Channel start.
         assert!(matches!(
-            place(&mut runtime, Some(&boot)),
+            place(&mut runtime, Some(&boot), None),
             Err(BootError::Readiness("NPC actor placement"))
         ));
         Ok(())
@@ -772,6 +782,18 @@ pub(crate) mod tests {
 
     #[test]
     fn rottin_wood_boots_from_repository_npc_placement() -> Result<(), Box<dyn std::error::Error>> {
+        assert_repository_npc_boots("oteryn:npc.rottin_wood", (32_652, 32_201, 7))
+    }
+
+    #[test]
+    fn dorian_boots_on_global_floor_eight() -> Result<(), Box<dyn std::error::Error>> {
+        assert_repository_npc_boots("oteryn:npc.dorian", (32_318, 32_209, 8))
+    }
+
+    fn assert_repository_npc_boots(
+        key: &str,
+        (x, y, floor): (u16, u16, i16),
+    ) -> Result<(), Box<dyn std::error::Error>> {
         use crate::content::{
             NpcDataCatalogue, capture_world_project, npc_catalogue_preproduction_limits,
         };
@@ -779,8 +801,6 @@ pub(crate) mod tests {
         use std::ffi::OsStr;
 
         let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
-        let key = "oteryn:npc.rottin_wood";
-        let (x, y) = (32_652, 32_201);
         let project = source::project_regions(root, &[(x / 256, y / 256)])?;
         let (registry, palette) = source::registry(root, &project)?;
         let identity = serde_json::from_slice(&source::read(
@@ -810,7 +830,7 @@ pub(crate) mod tests {
         )
         .map_err(|error| error.to_string())?;
         let mut runtime = channel_runtime_with(128);
-        place(&mut runtime, boot.as_ref()).map_err(|error| error.to_string())?;
+        place(&mut runtime, boot.as_ref(), None).map_err(|error| error.to_string())?;
         let visible = runtime.visible_entities();
         let positions: Vec<_> = visible
             .npcs
@@ -818,110 +838,32 @@ pub(crate) mod tests {
             .filter(|entry| runtime.npc_key(entry.actor) == Some(key))
             .map(|entry| (entry.position.x, entry.position.y, entry.position.floor))
             .collect();
-        assert_eq!(positions, [(i32::from(x), i32::from(y), 7)]);
+        assert_eq!(positions, [(i32::from(x), i32::from(y), floor)]);
         Ok(())
     }
 
-    #[test]
-    fn compiled_town_boots_king_tibianus_and_sam_at_authored_placements()
-    -> Result<(), Box<dyn std::error::Error>> {
-        use oteryn_world_bundle_compiler::{compile, project, source};
-        use std::process::Command;
-
-        let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../..")).canonicalize()?;
-        let regions =
-            std::fs::read_to_string(root.join("tools/qualification/node_boot/town-regions.txt"))?;
-        let regions = regions
-            .trim()
-            .split(';')
-            .map(|region| {
-                let (x, y) = region.split_once(',').ok_or("town region must be x,y")?;
-                Ok((x.parse()?, y.parse()?))
-            })
-            .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
-        let project = source::project_town_qualification(&root, &regions)?;
-        let (registry, palette) = source::registry(&root, &project)?;
-        let compiled = compile::compile(
-            &compile::Input {
-                regions: &project.regions,
-                palette: &palette,
-                identity: serde_json::from_slice(&source::read(
-                    &root.join("content/world/pins/oteryn.identity.json"),
-                )?)?,
-                world: source::world_extent(&root)?,
-                build_class: bundle::BuildClass::NonProduction,
-                draft_areas: project::draft_areas(&project.index)?,
-                families: &project.families,
-            },
-            &registry,
-        )?;
-
-        let output = Command::new("bash")
-            .args([
-                "-eu",
-                "-c",
-                r#"
-                    WORK=$(mktemp -d)
-                    trap 'rm -rf -- "$WORK"' EXIT
-                    BASE="$WORK/node"
-                    mkdir "$BASE"
-                    NODE_NPC_ARGS=()
-                    as_operator=()
-                    source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
-                    node_boot_stage_npc_data
-                    printf '%s\n' "$WORK" "${NODE_NPC_ARGS[@]}"
-                    trap - EXIT
-                "#,
-            ])
-            .env("GAME_SOURCE", &root)
-            .env("NODE_BOOT_UNPRIVILEGED", "1")
-            .env("NODE_BOOT_E2E_ONLY", "f6")
-            .output()?;
-        assert!(
-            output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
+    pub(crate) fn place_rashid_for_clock_test(
+        mut placements: Vec<NpcPlacement>,
+    ) -> Result<crate::foundation::MovementLocalPosition, String> {
+        use oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY;
+        placements.sort_unstable_by_key(|at| (at.floor, at.y, at.x));
+        let mut boot = timed_boot(&[RASHID_NPC_KEY]);
+        let NpcBoot::Place { table, .. } = &mut boot else {
+            return Err("Rashid boot fixture has no placements".into());
+        };
+        table.npcs.push(NpcPlacements {
+            key: RASHID_NPC_KEY.into(),
+            placements,
+        });
+        let mut runtime = channel_runtime();
+        assert_eq!(
+            place(&mut runtime, Some(&boot), None).map_err(|err| err.to_string())?,
+            1
         );
-        let output = String::from_utf8(output.stdout)?;
-        let mut lines = output.lines();
-        let work = lines.next().ok_or("missing staging directory")?;
-        let prepared = (|| -> Result<_, Box<dyn std::error::Error>> {
-            let frame = read(&compiled.bytes).map_err(|error| format!("{error:?}"))?;
-            let args: Vec<_> = lines.collect();
-            let project = match args.as_slice() {
-                ["--npc-data-project", path, "--npc-data-sha256", digest] => {
-                    let path = Path::new(path);
-                    let catalogue = crate::content::load_data_only_npc_catalogue(path, digest)
-                        .map_err(|error| error.to_string())?;
-                    Some((catalogue, path))
-                }
-                [] => None,
-                _ => return Err(format!("unexpected NPC staging arguments: {args:?}").into()),
-            };
-            prepare(
-                Some(frame),
-                project.as_ref().map(|(catalogue, path)| (catalogue, *path)),
-                false,
-            )
-            .map_err(|error| format!("{error:?}").into())
-        })();
-        std::fs::remove_dir_all(work)?;
-        let mut runtime = channel_runtime_with(4096);
-        place(&mut runtime, prepared?.as_ref()).map_err(|error| format!("{error:?}"))?;
         let visible = runtime.visible_entities();
-        for (key, expected) in [
-            ("oteryn:npc.king_tibianus", (32311, 32172, 6)),
-            ("oteryn:npc.sam", (32361, 32198, 7)),
-        ] {
-            let positions: Vec<_> = visible
-                .npcs
-                .iter()
-                .filter(|entry| runtime.npc_key(entry.actor) == Some(key))
-                .map(|entry| (entry.position.x, entry.position.y, entry.position.floor))
-                .collect();
-            assert_eq!(positions, [expected], "{key}");
-        }
-        Ok(())
+        let npc = visible.npcs.first().ok_or("placed Rashid")?;
+        assert_eq!(runtime.npc_key(npc.actor), Some(RASHID_NPC_KEY));
+        Ok(npc.position)
     }
 
     fn timed_boot(keys: &[&str]) -> NpcBoot {
@@ -932,6 +874,67 @@ pub(crate) mod tests {
             production: true,
             talk: Arc::new(NpcTalkBook::default()),
         }
+    }
+
+    #[test]
+    fn christmas_messengers_share_the_season_with_santa_on_distinct_cells() {
+        let messenger = "oteryn:npc.messenger_of_santa";
+        let santa = "oteryn:npc.santa_claus";
+        let mut boot = timed_boot(&[messenger, santa]);
+        let NpcBoot::Place { table, .. } = &mut boot else {
+            unreachable!("timed boot has a placement table");
+        };
+        table.npcs.push(NpcPlacements {
+            key: messenger.into(),
+            placements: [
+                (32654, 31665, -8),
+                (32308, 31837, -8),
+                (32641, 31892, -9),
+                (32356, 32210, -7),
+                (32916, 32070, -9),
+            ]
+            .into_iter()
+            .map(|(x, y, floor)| NpcPlacement {
+                x,
+                y,
+                floor,
+                direction: MovementFacing::South,
+            })
+            .collect(),
+        });
+        let mut runtime = channel_runtime_with(32);
+        assert_eq!(
+            place(&mut runtime, Some(&boot), None).expect("static boot"),
+            0
+        );
+
+        let mut closed = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &[], |_| true);
+        closed.tick(&mut runtime).expect("out of season");
+        assert!(runtime.visible_entities().npcs.is_empty());
+
+        let christmas = ["christmas".into()];
+        let mut active = seasonal::SeasonalNpcSpawns::admit(Some(&boot), &christmas, |at| {
+            (at.x, at.y, at.floor) != (32654, 31665, -8)
+        });
+        active.tick(&mut runtime).expect("seasonal placements");
+        active.tick(&mut runtime).expect("idempotent retry");
+        let positions: BTreeSet<_> = runtime
+            .visible_entities()
+            .npcs
+            .into_iter()
+            .filter(|npc| runtime.npc_key(npc.actor) == Some(messenger))
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor))
+            .collect();
+        assert_eq!(
+            positions,
+            BTreeSet::from([
+                (32308, 31837, 8),
+                (32641, 31892, 9),
+                (32356, 32210, 7),
+                (32916, 32070, 9),
+            ])
+        );
+        assert_eq!(runtime.visible_entities().npcs.len(), 19);
     }
 
     #[test]
@@ -1238,7 +1241,7 @@ pub(crate) mod tests {
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), true).expect("bind");
         let mut runtime = channel_runtime();
         assert!(matches!(
-            place(&mut runtime, Some(&boot)),
+            place(&mut runtime, Some(&boot), None),
             Err(BootError::ContentActivation(
                 "NPC not admitted by the NPC catalogue"
             ))
@@ -1249,7 +1252,7 @@ pub(crate) mod tests {
 
         let boot = bind(read(&bytes).expect("frame"), Some(&only_smith), false).expect("bind");
         let mut runtime = channel_runtime();
-        assert_eq!(place(&mut runtime, Some(&boot)).expect("placed"), 1);
+        assert_eq!(place(&mut runtime, Some(&boot), None).expect("placed"), 1);
         let visible = runtime.visible_entities();
         assert_eq!(visible.npcs.len(), 1);
         assert_eq!(runtime.npc_key(visible.npcs[0].actor), Some(SMITH));
@@ -1278,7 +1281,7 @@ pub(crate) mod tests {
                 }
             ));
             let mut runtime = channel_runtime();
-            assert_eq!(place(&mut runtime, Some(&boot)).expect("skipped"), 0);
+            assert_eq!(place(&mut runtime, Some(&boot), None).expect("skipped"), 0);
             assert!(runtime.visible_entities().npcs.is_empty());
         }
         // A bundle without NPCs needs no catalogue, in production too.

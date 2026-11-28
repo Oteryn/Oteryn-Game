@@ -34,6 +34,7 @@ mod spell_catalog;
 mod spell_repair;
 mod target_move;
 use command::CommandOutcome;
+mod cooldowns;
 mod effects;
 mod native_cues;
 mod outbound;
@@ -75,6 +76,7 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    cooldowns: Option<cooldowns::CooldownFeed>,
     cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,
@@ -524,15 +526,8 @@ where
                     integrity = std::mem::take(&mut session.integrity);
                     break;
                 }
-                let error = match &end {
-                    ServeEnd::Closed(error) => format!("{error:?}"),
-                    ServeEnd::ControlLost(path) => format!("ControlLost({path})"),
-                    ServeEnd::Disconnected => "Disconnected".to_owned(),
-                    ServeEnd::LoggedOut => "LoggedOut".to_owned(),
-                    ServeEnd::Transferred(_) => "Transferred".to_owned(),
-                };
                 operator_event(&format!(
-                    "event=serve_command_end error={error} next_command_id={}",
+                    "event=serve_command_end next_command_id={}",
                     session.admitted.continuity.next_command_id,
                 ));
                 authority.player_trade_disconnected(session.admitted.game_session_id);

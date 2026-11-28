@@ -90,3 +90,33 @@ fn worldchg_fury_and_nightmare_real_map_returns_reach_the_selected_city() -> Tes
         Ok(())
     })
 }
+
+#[test]
+fn worldchg_nightmare_real_map_ladder_reaches_the_lower_floor() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let ladder = native_selector(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/world/placements/region-z09-x130-y127.b3"
+        )),
+        (33472, 32645),
+        20142,
+    )?;
+    assert_eq!(ladder, (Some(64103), None));
+    super::kill_reward_e2e_fixtures::scenario_thread::run("nightmare-real-ladder", move || {
+        super::daily_world_gates_fixtures::scenario(
+            ladder.0,
+            ladder.1,
+            "nightmare_isle/darashia-north",
+            true,
+            MovementLocalPosition {
+                x: 33475,
+                y: 32641,
+                floor: 10,
+            },
+            false,
+        )
+    })
+}

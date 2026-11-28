@@ -1,0 +1,12 @@
+{
+"schema":"OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+"family":"Item",
+"bindings":[
+{"disposition":"EXACT","external_id":"39934","identity_namespace":"ots/item_server_id","source_key":"oteryn:source.crystalserver","source_revision":"201189f871d23597b82caf88fd611454a2ddefb8","target":{"family":"Item","key":"oteryn:item.tibia.i39934","revision":"definition-r1"}},
+{"disposition":"EXACT","external_id":"39935","identity_namespace":"ots/item_server_id","source_key":"oteryn:source.crystalserver","source_revision":"201189f871d23597b82caf88fd611454a2ddefb8","target":{"family":"Item","key":"oteryn:item.tibia.i39935","revision":"definition-r1"}},
+{"disposition":"EXACT","external_id":"39936","identity_namespace":"ots/item_server_id","source_key":"oteryn:source.crystalserver","source_revision":"201189f871d23597b82caf88fd611454a2ddefb8","target":{"family":"Item","key":"oteryn:item.tibia.i39936","revision":"definition-r1"}},
+{"disposition":"EXACT","external_id":"39937","identity_namespace":"ots/item_server_id","source_key":"oteryn:source.crystalserver","source_revision":"201189f871d23597b82caf88fd611454a2ddefb8","target":{"family":"Item","key":"oteryn:item.tibia.i39937","revision":"definition-r1"}},
+{"disposition":"EXACT","external_id":"39938","identity_namespace":"ots/item_server_id","source_key":"oteryn:source.crystalserver","source_revision":"201189f871d23597b82caf88fd611454a2ddefb8","target":{"family":"Item","key":"oteryn:item.tibia.i39938","revision":"definition-r1"}},
+{"disposition":"EXACT","external_id":"39939","identity_namespace":"ots/item_server_id","source_key":"oteryn:source.crystalserver","source_revision":"201189f871d23597b82caf88fd611454a2ddefb8","target":{"family":"Item","key":"oteryn:item.tibia.i39939","revision":"definition-r1"}}
+]
+}

@@ -302,6 +302,63 @@ mod tests {
     }
 
     #[test]
+    fn native_untagged_elane_crossbow_and_inukaya_barrel_bind_source_claims()
+    -> Result<(), ClaimsError> {
+        struct CapturedTiles;
+        impl RewardClaimBase for CapturedTiles {
+            type Tile<'a> = Tile;
+
+            fn tile(&self, x: u16, y: u16, floor: i8) -> Option<Tile> {
+                let appearance = match (x, y, floor) {
+                    (32369, 32795, -10) => 2472,
+                    (32483, 31110, -8) => 2523,
+                    _ => return None,
+                };
+                Some(Tile {
+                    appearance,
+                    uid: None,
+                    ground_uid: None,
+                })
+            }
+        }
+
+        let report = super::super::bind_embedded_reward_claims(&CapturedTiles, &|_| true)?;
+        let children: &[(&str, u32)] = &[
+            ("oteryn:item.tibia.i7158", 3),
+            ("oteryn:item.tibia.i3031", 48),
+            ("oteryn:item.tibia.i7290", 1),
+        ];
+        for (key, item, children) in [
+            (
+                "oteryn:reward-claim.quest.u7_8.hunter_outfits.elane_crossbow",
+                "oteryn:item.tibia.i5947",
+                &[][..],
+            ),
+            (
+                "oteryn:reward-claim.quest.u8_0.shardsof_ancient_winters.inukaya",
+                "oteryn:item.tibia.i7343",
+                children,
+            ),
+        ] {
+            let claim = report
+                .served
+                .iter()
+                .find(|claim| claim.key.as_str() == key)
+                .ok_or(ClaimsError("missing native untagged claim"))?;
+            assert_eq!(claim.placements.len(), 1);
+            let placement = &claim.placements[0];
+            assert_eq!(placement.placement.items[0].item.key().as_str(), item);
+            let actual = placement
+                .contents
+                .iter()
+                .map(|child| (child.item.key().as_str(), child.count))
+                .collect::<Vec<_>>();
+            assert_eq!(actual, children);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn native_alias_cannot_change_source_revision_uid_position_or_reward() -> Result<(), ClaimsError>
     {
         let (shard, document) = fixture()?;

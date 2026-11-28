@@ -1,24 +1,29 @@
-//! G16: daily reward details and one-click shrine claim (commands 738 and 354).
-//! Shrine collection and duplicate refusal follow Crystal 201189f8:
-//! data/modules/scripts/daily_reward/daily_reward.lua:407-428.
-//! Oteryn's current contract resolves reward quantities on the server.
+//! G16 daily reward details, picker and pick claim (capability 182, commands 738, 6122, 6123).
+//! 1. Admit the node-boot character; read the 30-day details (738) and the daily wall.
+//! 2. Walk to the production daily shrine and USE it so the claim is enabled.
+//! 3. Query the picker (6122): on a pick day it offers items and a maximum count.
+//! 4. Claim a pick (6123); the reply must be the "new" disposition and the character's durable
+//!    claim-bound Inbox/pick quantity (read-only SQL) must equal the picked count.
+//! 5. Claim again: duplicate disposition, no further delivery. Log out, freshly admit and
+//!    re-check the same transaction, Inbox/pick proof and exhausted picker.
+//!
+//! The row fails when the day was already claimed (it shares the character with P09) or when the
+//! current lane day is not a pick day; it never alters server state outside player commands.
 
 use super::*;
 use crate::map::view::MapFacts;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::CommandStatus;
-use oteryn_protocol_oteryn::daily_reward::{self as daily, details};
+use oteryn_protocol_oteryn::daily_reward::{self as daily, details, picker};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result =
-        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
-            .await;
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
     let (status, detail) = match result {
         Ok(Ok(())) => (
             "PASS",
-            "daily-shrine-claim-delivered-and-durable".to_owned(),
+            "daily-pick-claimed-delivered-and-durable".to_owned(),
         ),
         Ok(Err(error)) => ("FAIL", compact(&error.to_string())),
         Err(_) => ("FAIL", "step=journey-observed=timeout".to_owned()),
@@ -103,31 +108,15 @@ async fn wall(client: &mut DevClientSession) -> TestResult<daily::DailyRewardWal
     }
 }
 
-type RewardLine = (String, i32, Option<i16>);
-
+/// Read-only evidence of the receipt and every selected output of this exact claim.
+#[derive(Debug)]
 struct ClaimEvidence {
     transaction: [u8; 16],
     epoch: u64,
     day: u8,
-    lines: Vec<RewardLine>,
-}
-
-fn expected_lines(tier: details::Tier) -> Vec<RewardLine> {
-    [
-        ("BOUNTY_REROLL", tier.bounty_tokens, None),
-        ("COSMETIC_TOKEN", tier.cosmetic_tokens, None),
-        ("PREY_WILDCARD", tier.prey_wildcards, None),
-        ("TEMPLE_SCROLL", tier.temple_scrolls, None),
-        (
-            "XP_BOOST",
-            tier.xp_minutes,
-            Some(i16::from(tier.xp_percent)),
-        ),
-    ]
-    .into_iter()
-    .filter(|(_, quantity, _)| *quantity > 0)
-    .map(|(kind, quantity, percent)| (kind.to_owned(), i32::from(quantity), percent))
-    .collect()
+    item: u32,
+    count: u8,
+    proof: (i64, i64, i64, i64),
 }
 
 async fn claim_count(clients: &SeamClients<'_>, epoch: u64) -> TestResult<i64> {
@@ -138,26 +127,28 @@ async fn claim_count(clients: &SeamClients<'_>, epoch: u64) -> TestResult<i64> {
         .bind(epoch.to_string()).fetch_one(&mut connection).await?)
 }
 
-async fn delivery(clients: &SeamClients<'_>, data: &ClaimEvidence) -> TestResult<Vec<RewardLine>> {
+async fn delivery(
+    clients: &SeamClients<'_>,
+    data: &ClaimEvidence,
+) -> TestResult<(i64, i64, i64, i64)> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    // The epoch receipt binds the returned transaction to this character/world/day.
+    // Picks bind each selected instance; custody, lifecycle and mint provenance must all agree.
     Ok(sqlx::query_as(
-        "SELECT l.kind, l.quantity, CASE WHEN l.kind = 'XP_BOOST' THEN l.xp_boost_percent END
-         FROM game_character_daily_reward_claims c
-         JOIN game_character_daily_reward_lines l ON l.claim_id=c.transaction_id
-         WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid
-           AND c.reset_epoch=$3::text::numeric AND c.transaction_id=encode($4,'hex')::uuid
-           AND c.lane_day=$5 AND l.status='DELIVERED' AND l.delivering_transaction_id=c.transaction_id
-         ORDER BY l.kind LIMIT 6",
+        "SELECT COALESCE(sum(p.quantity),0)::bigint, \
+         COALESCE(sum(i.quantity) FILTER (WHERE i.lifecycle=1 AND i.minted_transaction_id=c.transaction_id AND b.character_id=c.character_id AND l.character_id=c.character_id),0)::bigint, \
+         (SELECT count(*) FROM game_daily_reward_picks outputs WHERE outputs.claim_id=encode($4,'hex')::uuid), \
+         (SELECT COALESCE(sum(minted.quantity),0)::bigint FROM game_daily_reward_picks outputs JOIN game_item_instances minted USING(item_instance_id) WHERE outputs.claim_id=encode($4,'hex')::uuid) \
+         FROM game_character_daily_reward_claims c \
+         JOIN game_daily_reward_picks p ON p.claim_id=c.transaction_id AND p.source_id=$6 \
+         LEFT JOIN game_item_instances i ON i.item_instance_id=p.item_instance_id AND i.world_id=c.world_id AND i.definition_production_key=$7 \
+         LEFT JOIN game_item_bindings b ON b.item_instance_id=i.item_instance_id AND b.world_id=c.world_id \
+         LEFT JOIN game_item_character_inbox_locations l ON l.item_instance_id=i.item_instance_id AND l.world_id=c.world_id \
+         WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.reset_epoch=$3::text::numeric AND c.transaction_id=encode($4,'hex')::uuid AND c.lane_day=$5",
     ).bind(clients.characters[0].as_slice()).bind(clients.world.as_slice())
         .bind(data.epoch.to_string()).bind(data.transaction.as_slice()).bind(i16::from(data.day))
-        .fetch_all(&mut connection).await?)
-}
-
-async fn claim_tier(clients: &SeamClients<'_>, transaction: &[u8; 16]) -> TestResult<bool> {
-    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    Ok(sqlx::query_scalar(
-        "SELECT premium FROM game_character_daily_reward_claims WHERE transaction_id=encode($1,'hex')::uuid",
-    ).bind(transaction.as_slice()).fetch_one(&mut connection).await?)
+        .bind(i64::from(data.item)).bind(format!("oteryn:item.tibia.i{}", data.item))
+        .fetch_one(&mut connection).await?)
 }
 
 fn claim_result(payload: &[u8]) -> TestResult<daily::DailyRewardResult> {
@@ -236,56 +227,73 @@ async fn body(
     if !ready.claim_enabled || ready.claimed {
         return Err(format!("step=shrine observed=wall:{ready:?}").into());
     }
-    if claim_count(clients, table.epoch).await? != 0 {
-        return Err("step=claim observed=preexisting-epoch-receipt".into());
+    let offer = accepted(client, CAPABILITY, picker::QUERY, &[]).await?;
+    let offer = picker::Offer::decode(&offer)?;
+    if offer.maximum == 0 {
+        return Err(format!(
+            "step=picker observed=maximum-0-day:{}-lane:{} needed=pick-day-reward",
+            offer.day, ready.lane_day
+        )
+        .into());
     }
-    let reply = accepted(
-        client,
-        CAPABILITY,
-        daily::COMMAND_TYPE_DAILY_REWARD_CLAIM,
-        &[],
-    )
-    .await?;
+    let item = offer
+        .items
+        .iter()
+        .copied()
+        .find(|item| *item != 0)
+        .ok_or("step=picker observed=no-offered-item")?;
+    let count = offer.maximum;
+    if claim_count(clients, offer.epoch).await? != 0 {
+        return Err(
+            "step=claim observed=preexisting-epoch-receipt needed=fresh-entitlement".into(),
+        );
+    }
+    let claim = picker::Claim {
+        epoch: offer.epoch,
+        day: offer.day,
+        picks: vec![picker::Pick { item, count }],
+    }
+    .encode()?;
+    let reply = accepted(client, CAPABILITY, picker::CLAIM, &claim).await?;
     let result = claim_result(&reply)?;
     if result.disposition != 1 {
         return Err(format!("step=claim observed={result:?} needed=new-disposition").into());
     }
-    let transaction = result
-        .transaction_id
-        .ok_or("step=claim observed=no-transaction")?;
-    let day = ready.lane_day;
-    let tiers = table
-        .days
-        .get(
-            usize::from(day)
-                .checked_sub(1)
-                .ok_or("step=claim observed=day-zero")?,
+    let mut data = ClaimEvidence {
+        transaction: result
+            .transaction_id
+            .ok_or("step=claim observed=no-transaction")?,
+        epoch: offer.epoch,
+        day: offer.day,
+        item,
+        count,
+        proof: (0, 0, 0, 0),
+    };
+    data.proof = delivery(clients, &data).await?;
+    if claim_count(clients, data.epoch).await? != 1
+        || data.proof.0 != i64::from(count)
+        || data.proof.1 != i64::from(count)
+    {
+        return Err(format!(
+            "step=claim observed=proof:{:?} needed=claim-bound-pick-and-Inbox-quantity-{count}",
+            data.proof
         )
-        .ok_or("step=claim observed=day-outside-catalogue")?;
-    let tier = if claim_tier(clients, &transaction).await? {
-        tiers.premium
-    } else {
-        tiers.free
-    };
-    let data = ClaimEvidence {
-        transaction,
-        epoch: table.epoch,
-        day,
-        lines: expected_lines(tier),
-    };
-    verify(client, clients, &data).await?;
-    let reply = accepted(
-        client,
-        CAPABILITY,
-        daily::COMMAND_TYPE_DAILY_REWARD_CLAIM,
-        &[],
-    )
-    .await?;
-    let duplicate = claim_result(&reply)?;
-    if duplicate.disposition != 2 || duplicate.transaction_id.is_some() {
-        return Err(format!("step=duplicate observed={duplicate:?}").into());
+        .into());
     }
-    verify(client, clients, &data).await?;
+    if !wall(client).await?.claimed {
+        return Err("step=claim observed=wall-not-claimed".into());
+    }
+    let reply = accepted(client, CAPABILITY, picker::CLAIM, &claim).await?;
+    let duplicate = claim_result(&reply)?;
+    if duplicate.disposition != 2
+        || duplicate.transaction_id.is_some()
+        || claim_count(clients, data.epoch).await? != 1
+        || delivery(clients, &data).await? != data.proof
+    {
+        return Err(
+            format!("step=duplicate observed={duplicate:?}-or-claim-Inbox-proof-changed").into(),
+        );
+    }
     Ok(data)
 }
 
@@ -294,27 +302,17 @@ async fn verify(
     clients: &SeamClients<'_>,
     data: &ClaimEvidence,
 ) -> TestResult {
-    let wall = wall(client).await?;
-    let table =
-        details::Details::decode(&accepted(client, CAPABILITY, details::COMMAND_TYPE, &[]).await?)?;
-    let history_matches = table
-        .history
-        .iter()
-        .flatten()
-        .filter(|receipt| {
-            receipt.epoch == data.epoch && receipt.lane_day == data.day && receipt.own_character
-        })
-        .count()
-        == 1;
-    let lines = delivery(clients, data).await?;
     if claim_count(clients, data.epoch).await? != 1
-        || !history_matches
-        || !wall.claimed
-        || wall.claim_enabled
-        || data.lines.is_empty()
-        || lines != data.lines
+        || delivery(clients, data).await? != data.proof
+        || data.proof.0 != i64::from(data.count)
+        || data.proof.1 != i64::from(data.count)
+        || !wall(client).await?.claimed
     {
-        return Err(format!("step=verify observed=wall:{wall:?},history:{history_matches},lines:{lines:?} needed={:?}", data.lines).into());
+        return Err("step=relog observed=claim-Inbox-proof-or-wall-lost".into());
+    }
+    let offer = accepted(client, CAPABILITY, picker::QUERY, &[]).await?;
+    if picker::Offer::decode(&offer)?.maximum != 0 {
+        return Err("step=relog observed=picker-still-offers".into());
     }
     Ok(())
 }

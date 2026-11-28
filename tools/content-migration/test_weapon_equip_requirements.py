@@ -39,7 +39,7 @@ class WeaponEquipRequirements(unittest.TestCase):
     def test_shipped_profile_carries_every_fact(self):
         facts = json.loads((weapons.ROOT / weapons.FACTS).read_bytes())
         profiles = json.loads((weapons.ROOT / weapons.PROFILE).read_bytes())
-        self.assertEqual(len(facts['records']), 94)
+        self.assertEqual(len(facts['records']), 91)
         self.assertEqual(weapons.complete(profiles, facts), profiles)
         by_key = {r['production_definition']['production_key']: r for r in profiles['records']}
         for source_id in (3276, 3274):

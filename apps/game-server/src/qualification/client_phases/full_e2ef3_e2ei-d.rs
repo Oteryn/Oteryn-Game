@@ -58,12 +58,26 @@ pub(super) async fn run(
     covet: bool,
     starter_seconds: f64,
 ) -> TestResult<DevClientSession> {
-    const SEEDED_BAGS: [(&str, u32, &str, &str); 2] = [
-        (I08, 39546, "PRIMAL_BAG", "primal-bag"),
-        (I13, 43895, "BAG_YOU_COVET", "bag-you-covet"),
-    ];
-    for (row, _, _, prerequisite) in SEEDED_BAGS {
-        character_prep::declare_seeded(row, prerequisite, "bag conversion and persistence");
+    for (id, used, action, route) in [
+        (
+            I08,
+            primal,
+            "obtain-primal-bag",
+            "Primal Bag 39546: no carried bag observed, Hazard 12 Primal Ordeal reward held and no Plunder Patriarch spawn in the compiled town regions (reward_bag_use.rs:16)",
+        ),
+        (
+            I13,
+            covet,
+            "obtain-bag-you-covet",
+            "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill (reward_bag_use.rs:16)",
+        ),
+    ] {
+        match used {
+            true => evidence(&format!(
+                "e2e_all scenario={id}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
+            )),
+            false => Check::new(id, action).finish(Err(route.into())),
+        }
     }
     let mut mining = Check::new(I12, "obtain-pick-and-shiny-stone");
     let mut ring = Check::new(I15, "obtain-energy-ring");
@@ -73,51 +87,12 @@ pub(super) async fn run(
             Ok(client) => client,
             Err(rejoin) => {
                 let detail = format!("starter={error}; recovery-admission={rejoin}");
-                for (id, used) in [(I08, primal), (I13, covet)] {
-                    if used {
-                        evidence(&format!(
-                            "e2e_all scenario={id}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
-                        ));
-                    } else {
-                        Check::new(id, "seed-use-and-reload-bag")
-                            .finish(Err(detail.clone().into()));
-                    }
-                }
                 mining.finish(Err(detail.clone().into()));
                 ring.finish(Err(detail.into()));
                 return Err(rejoin);
             }
         },
     };
-    for ((row, id, constant, _), used) in SEEDED_BAGS.into_iter().zip([primal, covet]) {
-        if used {
-            evidence(&format!(
-                "e2e_all scenario={row}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
-            ));
-            continue;
-        }
-        let check = Check::new(row, "seed-use-and-reload-bag");
-        let result = async {
-            character_prep::grant_item(&client, id, 1).await?;
-            super::e2ei_a::relogin_starter(&mut client, clients).await?;
-            if !super::reward_bag(&mut client, constant).await? {
-                return Err("seeded reward bag missing from backpack".into());
-            }
-            let quantities = super::quantities(&client)?;
-            super::open_backpack(&mut client).await?;
-            let backpack = super::backpack_inspection(&mut client).await?;
-            super::e2ei_a::relogin_starter(&mut client, clients).await?;
-            super::open_backpack(&mut client).await?;
-            if super::quantities(&client)? != quantities
-                || super::backpack_inspection(&mut client).await? != backpack
-            {
-                return Err("reward conversion changed across fresh admission".into());
-            }
-            Ok(())
-        }
-        .await;
-        check.finish(result);
-    }
     let setup = load_hunt_world(clients)
         .and_then(|(metadata, world)| Ok((metadata, world, provisioning::item_index()?)));
     match setup {
@@ -216,37 +191,6 @@ async fn rejoin(client: &mut DevClientSession, clients: &SeamClients<'_>) -> Tes
     Ok(())
 }
 
-fn decode_lubo_window(
-    selected: &[u32],
-    payload: &[u8],
-) -> TestResult<npc::NpcTradeWindow> {
-    super::super::full_row_i14::decode_trade_window(selected, payload)
-}
-
-#[test]
-fn lubo_accepts_negotiated_trade_details() -> TestResult {
-    use oteryn_protocol_oteryn::trade_details::{CAPABILITY_TRADE_DETAILS_V1, NpcQuoteDetails};
-
-    let mut window = npc::NpcTradeWindow {
-        open: Some((oteryn_dev_client::EntityRef { identity: [1; 16], generation: 1 }, 9)),
-        offers: vec![npc::NpcOffer {
-            item_definition_ref: 42,
-            side: npc::NpcTradeSide::Buy,
-            count: 1,
-            unit_price: 50,
-        }],
-        details: Vec::new(),
-    };
-    let legacy = npc::encode_npc_trade_window(&window)
-        .map_err(|error| format!("legacy trade fixture: {error:?}"))?;
-    assert_eq!(decode_lubo_window(&[], &legacy)?, window);
-    window.details.push(NpcQuoteDetails { name: "pick".into(), maximum_quantity: 2 });
-    let extended = npc::encode_npc_trade_window_for(&window, true)
-        .map_err(|error| format!("extended trade fixture: {error:?}"))?;
-    assert_eq!(decode_lubo_window(&[CAPABILITY_TRADE_DETAILS_V1], &extended)?, window);
-    Ok(())
-}
-
 pub(super) async fn buy_from_lubo(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -283,7 +227,8 @@ pub(super) async fn buy_from_lubo(
         .session_mut()
         .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
         .await?;
-    let window = decode_lubo_window(client.selected_capabilities(), &delta.payload)?;
+    let window = npc::decode_npc_trade_window(&delta.payload)
+        .map_err(|error| format!("Lubo trade window: {error:?}"))?;
     let (offer_index, offer) = window
         .offers
         .iter()

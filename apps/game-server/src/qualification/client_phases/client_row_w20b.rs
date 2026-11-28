@@ -34,28 +34,9 @@ pub(super) async fn connect_player_caster(
     clients: &SeamClients<'_>,
     required_level: u32,
     premium_required: bool,
-    preparation_budget: Duration,
+    hunt_budget: Duration,
 ) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let deadline = tokio::time::Instant::now() + preparation_budget;
-    verdict::Harness::global().bounded_wait(deadline, "personal-light-preparation");
-    tokio::time::timeout_at(deadline, prepare_player_caster(clients, required_level, premium_required))
-        .await
-        .map_err(|_| format!("personal-light preparation exceeded {preparation_budget:?}"))?
-}
-
-async fn prepare_player_caster(
-    clients: &SeamClients<'_>,
-    required_level: u32,
-    premium_required: bool,
-) -> TestResult<oteryn_dev_client::DevClientSession> {
-    const PREPARATION: character_prep::Seeded = character_prep::Seeded {
-        profile: "w20b-light",
-        reason: "Light tests cast, expiry and relog with an eligible caster",
-    };
-    let mut client = PREPARATION.connect(clients, 0x97, LIGHT_CHARACTER).await?;
-    if premium_required {
-        character_prep::grant_premium(&client).await?;
-    }
+    let mut client = connect_character(clients, 0x97, LIGHT_CHARACTER).await?;
     if premium_required
         && let Err(error) = full_e2ef7::require_current_light_premium(&mut client).await
     {
@@ -67,7 +48,8 @@ async fn prepare_player_caster(
         return Err(error);
     }
     if full_e2ef7::player_level(&mut client).await? < required_level {
-        return Err(format!("W20b fixture did not supply level {required_level}").into());
+        let world = full_e2ef7::qualification_world(clients)?;
+        full_e2ef7::earn_player_level(&mut client, world, required_level, hunt_budget).await?;
     }
     Ok(client)
 }
@@ -146,7 +128,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    character_prep::declare_seeded("W20b.client", "sorcerer-level-26,premium-if-required", "native Light packet capture");
     match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W20b.client status=CAPTURED evidence={observed}")),
         Ok(Err(error)) => evidence(&format!(
@@ -158,7 +139,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 #[test]
-fn qualification_review_w20b_uses_fenced_seeded_preparation() -> TestResult {
+fn qualification_review_w20b_never_uses_privileged_profile() -> TestResult {
     let capture = include_str!("client_row_w20b.rs");
     let (_, journey) = include_str!("full_e2ef7.rs")
         .split_once("async fn light_journey(")
@@ -168,8 +149,7 @@ fn qualification_review_w20b_uses_fenced_seeded_preparation() -> TestResult {
     assert!(!journey.contains(concat!("client_row_w20b::", "connect_caster")));
     assert!(journey.contains(concat!("client_row_w20b::", "connect_player_caster")));
     let (setup, packet) = capture.split_once("async fn journey(").ok_or("missing W20b packet journey")?;
-    assert!(setup.contains(concat!("character_prep::", "Seeded")));
-    assert!(setup.contains(concat!("character_prep::", "grant_premium")));
+    assert!(setup.contains(concat!("full_e2ef7::", "earn_player_level")));
     let (packet, _) = packet.split_once("pub(super) async fn run_packet(").ok_or("missing W20b runner")?;
     assert!(packet.contains(concat!("connect_player_", "caster(")));
     Ok(())

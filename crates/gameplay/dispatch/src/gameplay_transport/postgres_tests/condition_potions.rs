@@ -461,7 +461,8 @@ async fn assert_effect(
     potion: ConditionPotion,
     h: &Harness,
 ) -> TestResult {
-    super::cl6_status_fixtures::check_timer(owner, actor, session, potion.key(), true, 600_000).await?;
+    super::cl6_status_fixtures::check_timer(owner, actor, session, potion.key(), true, 600_000)
+        .await?;
     let (start, end): (String, String) = sqlx::query_as("SELECT applied_owner_micros::text,expires_owner_micros::text FROM game_item_condition_potion_receipts WHERE condition_key=$1 ORDER BY applied_owner_micros DESC LIMIT 1")
         .bind(potion.key()).fetch_one(&h.pool).await?;
     let (start, end) = (start.parse::<u64>()?, end.parse::<u64>()?);
@@ -486,7 +487,14 @@ async fn assert_effect(
         ConditionPotion::Bullseye => (0, 0, 0, 5, -10),
         ConditionPotion::Transcendence => (0, 4, 0, 0, 0),
     };
-    for at in [start, end - 1] {
+    // The durable start was checked above. Live condition reads cannot go back
+    // before the store's last pass, which the admitted stream may have advanced.
+    let observed_at = owner.owner_now().get();
+    assert!(
+        (start..end).contains(&observed_at),
+        "observe the original live interval"
+    );
+    for at in [observed_at, end - 1] {
         let value = state
             .conditions
             .skill_adjustments(at)

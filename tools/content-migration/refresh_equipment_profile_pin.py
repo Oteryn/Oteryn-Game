@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import importlib
+import imbuement_item_profiles
 import json
 import os
 import re
@@ -20,6 +21,7 @@ import qready1_clock_equipment_pin
 import qready1_cradle_equipment_pin
 import qready1_craft_equipment_pin
 import questpc4_treasure_reward_equipment_pin
+from srx1_profile_updates import compact_item_record
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = (
@@ -67,7 +69,7 @@ SRX3_SOURCES = (
 
 
 def registered_source_document(root, document):
-    """Replay the later guarded House stage, retaining only this owner's keys."""
+    """Replay later source policies, retaining only this owner's keys."""
     proven = keys(document)
     generated = {
         "profiles": json.dumps(document).encode(),
@@ -93,6 +95,31 @@ def registered_source_document(root, document):
     }
     if keys(result) != proven:
         raise ValueError("source registration changed the qualified identity set")
+    # For example, boss loot already admits 23545. The food action adds only
+    # consumption, and the cohort still checks the complete composed row.
+    import crystal_ordinary_items
+    crystal_ordinary_items.apply_food_policies(
+        {row['production_definition']['production_key']: row for row in result['records']},
+        crystal_ordinary_items.source_records(root),
+    )
+    # Replay the late equipped facts on the independent source rows so the
+    # census still compares complete profiles, including combat and Forge.
+    import build_source_item_profiles as source
+    import equipped_combat_forge_profiles as equipped
+    from forge_item_profiles import project
+
+    packet = equipped.load_facts(root)
+    capture = equipped.load_capture(root)
+    rows = equipped.records(result)
+    for fact in packet['combat']:
+        key = f'{equipped.PREFIX}{fact["id"]}'
+        if key in rows:
+            equipped.apply_combat(rows[key], fact, source, capture)
+    forge = [fact for fact in packet['forge'] if f'{equipped.PREFIX}{fact["id"]}' in rows]
+    if forge:
+        admitted = equipped.forge_owners(root, forge)
+        project({'records': [rows[key] for key in admitted]}, admitted)
+    imbuement_item_profiles.apply_crystal_audit(root, result, require_all=False)
     return result
 
 
@@ -317,7 +344,12 @@ def source_cohorts(root):
             ):
                 row["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
         previous = {f"oteryn:item.tibia.i{item}" for item in previous_ids}
-        result.append((name, registered_source_document(root, document), previous))
+        if module_name == "boss_reward_yield_profiles":
+            from crystal_equipment_slice import complete_boss_yield_pairs
+
+            complete_boss_yield_pairs(root, document)
+        document = registered_source_document(root, document)
+        result.append((name, document, previous))
     return result
 
 
@@ -362,6 +394,15 @@ def merged_source_duplicates(root, source):
     return engine_shared
 
 
+def profile_equivalent(source, qualified):
+    if source == qualified:
+        return True
+    fields = {"attributes", "semantics", "production_binding"}
+    if qualified is None or not fields <= (source.keys() & qualified.keys()):
+        return False
+    return compact_item_record(copy.deepcopy(source)) == compact_item_record(copy.deepcopy(qualified))
+
+
 def coowner_equivalent(source, qualified):
     """Two guarded captures may name their own revision of the SAME candidate."""
     normalized = copy.deepcopy(source)
@@ -393,7 +434,7 @@ def coowner_equivalent(source, qualified):
         ):
             return False
         normalized["authoring"]["item"] = copy.deepcopy(accepted)
-    return normalized == qualified
+    return profile_equivalent(normalized, qualified)
 
 
 def keys(document):
@@ -443,19 +484,14 @@ def source_speed_pin(source, qengine):
     marker = '("qengine-reward-item-profiles.json",'
     if marker not in source:
         return source
-    pick = "oteryn:item.tibia.i3456"
-    unknown = {
-        row["production_definition"]["production_key"]
-        for row in qengine["records"]
-        if row["attributes"].get("speed_bonus") is None
-    }
-    if unknown != {pick} or any(
-        row["attributes"].get("speed_bonus") not in (None, 0)
-        for row in qengine["records"]
-    ):
-        raise ValueError(
-            "QENGINE speed proof must retain only the existing unknown-speed pick"
-        )
+    # The Pigeon Trophy and Jade Amulet retain their existing unknown speed.
+    # The Shrunken Head Necklace's pinned XML explicitly supplies speed 10.
+    expected = {f'oteryn:item.tibia.i{item}': speed for item, speed in
+                {3456: None, 31266: None, 31268: None, 19357: 10}.items()}
+    observed = {row['production_definition']['production_key']: row['attributes'].get('speed_bonus')
+                for row in qengine['records'] if row['attributes'].get('speed_bonus') != 0}
+    if observed != expected:
+        raise ValueError('QENGINE exact source speed facts differ')
     source = re.sub(
         r'\("qengine-reward-item-profiles.json", [\d_]+\)',
         f'("qengine-reward-item-profiles.json", {len(keys(qengine))})',
@@ -474,13 +510,13 @@ def source_speed_pin(source, qengine):
                 .iter()
                 .find(|row| row.production_definition.production_key == key)
                 .ok_or_else(|| format!("missing source-qualified SEASON profile {key}"))?;
-            if path == "qengine-reward-item-profiles.json" && key == "oteryn:item.tibia.i3456" {
-                assert!(source["attributes"]["speed_bonus"].is_null(), "source speed {path}:{key}");
-                assert_eq!(actual.attributes.speed_bonus, None, "{path}:{key}");
+            let expected = if path == "qengine-reward-item-profiles.json" {
+                expected_qengine_reward_speed(key)
             } else {
-                assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(0), "source speed {path}:{key}");
-                assert_eq!(actual.attributes.speed_bonus, Some(0), "{path}:{key}");
-            }
+                Some(0)
+            };
+            assert_eq!(source["attributes"]["speed_bonus"], serde_json::json!(expected), "source speed {path}:{key}");
+            assert_eq!(actual.attributes.speed_bonus, expected, "{path}:{key}");
             assert!(actual.admission.materializable, "{path}:{key}");
         }
     }"""
@@ -714,7 +750,7 @@ def regenerate(
         added_keys.update(new)
         for row in document["records"]:
             key = row["production_definition"]["production_key"]
-            if key in new and actual_rows.get(key) != row:
+            if key in new and not profile_equivalent(row, actual_rows.get(key)):
                 diagnostic = {
                     "cohort": name,
                     "key": key,
@@ -971,6 +1007,7 @@ def main():
     from import_cyclopedia_global import load_capture
     from item_detail_source_facts import apply_capture_stats
     from ranged_item_profiles import apply_authoring
+    from srx1_profile_updates import exact_source_keys, omit_unknown_attributes
 
     capture = load_capture(ROOT)
     forge_owners = owners(ROOT)
@@ -979,11 +1016,17 @@ def main():
         project(document, forge_owners)
         if name == "M25-GALTHEN-YIELDS":
             apply_authoring(ROOT, document)
+    coowners = source_coowners(ROOT)
+    exact_keys = exact_source_keys(json.loads((ROOT / paths[2]).read_bytes()))
+    for _, document, _ in (*srx3, *coowners):
+        for row in document["records"]:
+            if row["production_definition"]["production_key"] not in exact_keys:
+                omit_unknown_attributes(row)
     generated, count = regenerate(
         register(source),
         *documents,
         srx3=srx3,
-        coowners=source_coowners(ROOT),
+        coowners=coowners,
         engine_npc_shared=("oteryn:item.tibia.i27654",),
         duplicate_keys=merged_source_duplicates(ROOT, source),
         custody=custody,

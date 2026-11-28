@@ -14,7 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from oteryn_additive_driver import GAME_SERVER_MANIFEST, combine  # noqa: E402
+from oteryn_additive_driver import combine  # noqa: E402
 
 BASE = "mod a;\nmod z;\n"
 
@@ -71,25 +71,6 @@ class CombineTest(unittest.TestCase):
         text, combined, remaining = combine(merged, 7)
         self.assertEqual(text, merged)
         self.assertEqual((combined, remaining), (0, 1))
-
-    def test_cargo_feature_extension_merges_with_adjacent_feature(self) -> None:
-        base = 'qualification-spawn = ["durability/test-support"]\n'
-        edit = 'qualification-spawn = ["dep:time", "durability/test-support"]\n'
-        extra = '# Cloud-only feature.\nqualification-unprivileged = ["qualification-spawn"]\n'
-        for ours, theirs in ((edit, base + extra), (base + extra, edit)):
-            merged = "[features]\n" + hunk(ours, base, theirs)
-            self.assertEqual(
-                combine(merged, 7, GAME_SERVER_MANIFEST),
-                ("[features]\n" + edit + extra, 1, 0),
-            )
-            self.assertEqual(combine(merged, 7, "other/Cargo.toml"), (merged, 0, 1))
-
-    def test_cargo_feature_member_removal_keeps_conflict(self) -> None:
-        base = 'qualification-spawn = ["durability/test-support"]\n'
-        edit = 'qualification-spawn = ["dep:time", "dispatch/qualification"]\n'
-        extra = 'qualification-unprivileged = ["qualification-spawn"]\n'
-        merged = "[features]\n" + hunk(edit, base, base + extra)
-        self.assertEqual(combine(merged, 7, GAME_SERVER_MANIFEST), (merged, 0, 1))
 
     def test_mixed_hunks_resolve_only_the_insert_only_one(self) -> None:
         edit = hunk("x = 1;\n", "x = 0;\n", "x = 2;\n")

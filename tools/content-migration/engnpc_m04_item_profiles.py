@@ -138,10 +138,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                 if row['production_definition']['production_key'] == DIARY]
     diary = next(row for row in packet['records']
                  if row['production_definition']['production_key'] == DIARY)
+    # QENGINE's replay can already carry the qualified Crystal rewrite.
+    # This physical owner accepts either exact text profile.
+    writable_diary = copy.deepcopy(DIARY_TEXT)
+    writable_diary['value'].update(writeable=shared.source.K(True), write_once_target=shared.source.NA)
     if (len(carriers) != 1 or carriers[0]['admission'] not in ({
             'materializable': False, 'stack_class': 'NonStackable',
             'legal_destinations': ['Ground']}, diary['admission'])
-            or carriers[0]['semantics']['readable_writeable'] != DIARY_TEXT):
+            or carriers[0]['semantics']['readable_writeable'] not in (DIARY_TEXT, writable_diary)):
         raise ValueError('M04_DIARY_CARRIER_DRIFT')
     # Retain the exact qualified custody on replay or promote the old text carrier.
     # The strict merger still checks identity, bindings and all known facts.

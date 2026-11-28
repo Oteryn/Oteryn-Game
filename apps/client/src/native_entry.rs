@@ -229,6 +229,7 @@ impl AdmissionAttempt for NativeAttempt<'_> {
             self.config.preference_path.as_deref(),
         );
         capabilities.extend([615, 616, 617]);
+        capabilities.sort_unstable();
         self.queue = None;
         let traffic = std::sync::Arc::new(crate::traffic::Traffic::default());
         let counted = std::sync::Arc::clone(&traffic);

@@ -113,34 +113,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let distance = |a: TilePos, b: TilePos| {
         (a.floor == b.floor).then(|| a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)))
     };
-    let mut approaches = BTreeMap::new();
-    for (index, (at, _, _)) in readable.iter().enumerate() {
-        for x in at.x.saturating_sub(1)..=at.x.saturating_add(1) {
-            for y in at.y.saturating_sub(1)..=at.y.saturating_add(1) {
-                let approach = TilePos { x, y, floor: at.floor };
-                if distance(approach, *at) == Some(1) {
-                    approaches.entry(approach).or_insert(index);
-                }
-            }
-        }
-    }
-    let path = route(world, start, |pos| approaches.contains_key(&pos))
-        .ok_or("step=map-reading missing=reachable-authored-text-placement")?;
-    evidence(&format!("I03_CHECK near-map-reading walk_steps={}", path.len()));
-    walk(&mut client, world, &path).await?;
-    let arrived = tile(client.world_spatial().actor_position)?;
-    let &(at, key, ref text) = approaches
-        .get(&arrived)
-        .and_then(|index| readable.get(*index))
-        .ok_or("step=map-reading missing=authored-text-at-arrival")?;
+    let (at, key, text, path) = readable.into_iter().find_map(|(at, key, text)| {
+        let path = route(world, start, |pos| distance(pos, at) == Some(1))?;
+        Some((at, key, text, path))
+    }).ok_or("step=map-reading missing=reachable-authored-text-placement")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let target = wire::ItemLookTarget::WorldObject(oteryn_protocol_oteryn::world_object::WorldObjectTarget {
         placement,
         expected_revision: 0,
     });
+    walk(&mut client, world, &path).await?;
     let near = look(&mut client, target.clone()).await?;
-    if near.0 != CommandStatus::Accepted || !matches!(&near.1, wire::ItemLookResult::Text(value) if reading_matches(value, text)) {
+    if near.0 != CommandStatus::Accepted || !matches!(&near.1, wire::ItemLookResult::Text(value) if reading_matches(value, &text)) {
         return Err(format!("step=near-map-reading position={at:?} observed={near:?}").into());
     }
     let close = tile(client.world_spatial().actor_position)?;

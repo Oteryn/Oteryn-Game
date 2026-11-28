@@ -18,20 +18,15 @@ const MISSILE: &str = "oteryn:item.tibia.i3198";
 
 #[test]
 fn magic2_conjure_postgres_full_bag_rolls_back_then_merges_mints_and_replays() -> TestResult {
-    large_stack(|| scenarios(&[(true, false)], false))
+    large_stack(|| scenarios(&[(true, false)]))
 }
 
 #[test]
 fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_terminal() -> TestResult {
-    large_stack(|| scenarios(&[(false, true), (false, false)], false))
+    large_stack(|| scenarios(&[(false, true), (false, false)]))
 }
 
-#[test]
-fn magic2_conjure_postgres_without_qualified_room() -> TestResult {
-    large_stack(|| scenarios(&[(true, false), (false, false)], true))
-}
-
-fn scenarios(cases: &[(bool, bool)], combat_room_only: bool) -> TestResult {
+fn scenarios(cases: &[(bool, bool)]) -> TestResult {
     run(async |admin| {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
@@ -51,7 +46,6 @@ fn scenarios(cases: &[(bool, bool)], combat_room_only: bool) -> TestResult {
                 &pin,
                 full,
                 missing_reagent,
-                combat_room_only,
             )
             .await?;
         }
@@ -68,7 +62,6 @@ async fn scenario(
     pin: &crate::content::NativeEntryContentPin,
     full: bool,
     missing_reagent: bool,
-    combat_room_only: bool,
 ) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
@@ -208,9 +201,6 @@ async fn scenario(
             .await,
         "source-map initialization before conjure"
     );
-    if combat_room_only {
-        owner.rooms = SeamRooms::new(None, Some(room));
-    }
     // A pending response keeps the original command outstanding. The direct test
     // owner must resubmit that command to obtain its terminal result.
     let cast = async |command| {

@@ -104,7 +104,7 @@ def group_partition(groups: list[str]) -> list[list[str]]:
     These are the combinations the single-machine run already executes
     together; a group gets its own shard only through the custom set.
     """
-    journey = [g for g in groups if g not in {"rows", "c19a"}]  # F6 already includes C19a.
+    journey = [g for g in groups if g != "rows"]
     numbered = {g: int(m[1]) for g in journey if (m := re.fullmatch(r"f(\d+)[a-z]*", g))}
     parts = [
         [g for g in journey if g not in numbered],

@@ -32,7 +32,11 @@ fn srx1_write_once_document_production_dispatch_replay_and_read_only_postgres()-
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-            super::item_look_fixtures::seed_main_backpack(&h,&[("oteryn:item.tibia.i2818",1)]).await?;
+            super::item_look_fixtures::seed_main_backpack(&h, &[
+                ("oteryn:item.tibia.i2818", 1),
+                ("oteryn:item.tibia.i401", 1),
+                ("oteryn:item.tibia.i8747", 1),
+            ]).await?;
             let mut admitted=deps.admitted;
             admitted.item_fence=Some(fence);
             admitted.continuity.selected_capabilities=SelectedCapabilities::select(owner.offered_capabilities(),&[4,6,115]).ok_or("writing capability offer")?;
@@ -47,6 +51,57 @@ fn srx1_write_once_document_production_dispatch_replay_and_read_only_postgres()-
             assert_eq!(texts,1);
             let audits:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_audit_outbox WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(audits,1,"one write-once transform despite replay and refused rewrite");
+            // Move persisted receipts outside the two-write rate window between cases.
+            let expire_rate_window = "UPDATE game_item_text_write_receipts SET written_at=clock_timestamp()-interval '2 seconds'";
+            sqlx::query(expire_rate_window).execute(&h.pool).await?;
+            let book = Some(ItemKey::Instance(id(72)));
+            let oversized = encode_intent(&MailIntent::WriteText {
+                item_handle: 2,
+                text: "x".repeat(1024),
+            }).map_err(debug)?;
+            assert_eq!(
+                owner.mail_command(deps.actor, admitted, 3, &oversized, book, None).await,
+                Some(MailOutcome::TooLong)
+            );
+            for (sequence, text) in [(4, "First inscription"), (5, "Second inscription")] {
+                let payload = encode_intent(&MailIntent::WriteText {
+                    item_handle: 2,
+                    text: text.into(),
+                }).map_err(debug)?;
+                assert_eq!(
+                    owner.mail_command(deps.actor, admitted, sequence, &payload, book, None).await,
+                    Some(MailOutcome::TextWritten)
+                );
+            }
+            let item: (String, String, String) = sqlx::query_as(
+                "SELECT definition_production_key,text_revision::text,text FROM game_item_instances \
+                 JOIN game_item_texts USING (item_instance_id) \
+                 WHERE item_instance_id=encode($1,'hex')::uuid",
+            ).bind(id(72).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(item, ("oteryn:item.tibia.i401".into(), "2".into(), "Second inscription".into()));
+
+            sqlx::query(expire_rate_window).execute(&h.pool).await?;
+            let paper = Some(ItemKey::Instance(id(73)));
+            let old_paper = encode_intent(&MailIntent::WriteText {
+                item_handle: 3,
+                text: "Will of the old traveller".into(),
+            }).map_err(debug)?;
+            for (sequence, expected) in [
+                (6, MailOutcome::TextWritten),
+                (6, MailOutcome::TextWritten),
+                (7, MailOutcome::NotWritable),
+            ] {
+                assert_eq!(
+                    owner.mail_command(deps.actor, admitted, sequence, &old_paper, paper, None).await,
+                    Some(expected)
+                );
+            }
+            let result: (String, String) = sqlx::query_as(
+                "SELECT definition_production_key,text FROM game_item_instances \
+                 JOIN game_item_texts USING (item_instance_id) \
+                 WHERE item_instance_id=encode($1,'hex')::uuid",
+            ).bind(id(73).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(result, ("oteryn:item.tibia.i8748".into(), "Will of the old traveller".into()));
             drop(owner);drop(authority);drop(seal);h.cleanup().await?;
             eprintln!("SRX1_PG writing producer/replay/read-only elapsed={:?}",started.elapsed());
             Ok(())

@@ -17,7 +17,7 @@
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
-use oteryn_protocol_oteryn::item_view::{ItemEntry, ItemHandle};
+use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::{CommandStatus, depot, depot_search as wire};
 
 struct Journey {
@@ -109,7 +109,7 @@ fn carried(client: &DevClientSession, handle: ItemHandle) -> bool {
     })
 }
 
-pub(super) fn carried_count(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
+fn carried_count(client: &DevClientSession, definition: std::num::NonZeroU32) -> u64 {
     client.inventory().map_or(0, |inventory| {
         inventory
             .main_backpack
@@ -124,10 +124,11 @@ pub(super) fn carried_count(client: &DevClientSession, definition: std::num::Non
 
 async fn wait_carried(
     client: &mut DevClientSession,
-    expected: impl Fn(&DevClientSession) -> bool,
+    handle: ItemHandle,
+    expected: bool,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    while !expected(client) {
+    while carried(client, handle) != expected {
         if tokio::time::Instant::now() >= deadline {
             return Err("inventory-delta-timeout".into());
         }
@@ -135,21 +136,6 @@ async fn wait_carried(
         client.take_events();
     }
     Ok(())
-}
-
-pub(super) fn restored(client: &DevClientSession, deposited: ItemEntry) -> bool {
-    // The deposit took the item out of the item views. Its old session handle is stale.
-    !carried(client, deposited.handle)
-        && client.inventory().is_some_and(|inventory| {
-            inventory.entries.iter().any(|entry| {
-                entry.handle > deposited.handle
-                    && *entry
-                        == ItemEntry {
-                            handle: entry.handle,
-                            ..deposited
-                        }
-            })
-        })
 }
 
 pub(super) async fn depot_intent(
@@ -249,8 +235,7 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if moved.outcome != depot::DepotOutcome::Moved {
         return Err("deposit-not-moved".into());
     }
-    wait_carried(&mut client, |client| !carried(client, item.handle)).await?;
-    let deposited_count = carried_count(&client, item.item_definition_ref);
+    wait_carried(&mut client, item.handle, false).await?;
 
     journey.at("2-search");
     let found = command(&mut client, wire::Request::Search { client_id }).await?;
@@ -296,11 +281,8 @@ async fn run(journey: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
     if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved != expected {
         return Err("retrieve-all-count-mismatch".into());
     }
-    let durable_count = deposited_count + u64::from(retrieved.retrieved);
-    wait_carried(&mut client, |client| {
-        restored(client, item) && carried_count(client, item.item_definition_ref) == durable_count
-    })
-    .await?;
+    wait_carried(&mut client, item.handle, true).await?;
+    let durable_count = carried_count(&client, item.item_definition_ref);
 
     journey.at("5-empty-retrieve-refusal");
     let refused = command(

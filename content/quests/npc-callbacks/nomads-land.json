@@ -1,0 +1,185 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/nomads-land-assignment",
+      "quest": "oteryn:quest.tibia_tales",
+      "npc": "oteryn:npc.muhad",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/aritos_task_door",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "requires_premium": true,
+      "reply": [
+        "Thieves took a sacred casket from our people. Recover it before they learn what it holds.",
+        "Look for a sandstone pillar in Ankrahmun. Press the eye of the hawk to open their passage.",
+        "Use the passage behind me when you leave this cave."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/muhad.lua:71-101:sha256:da135cc046e9dc68900de3ed6810d42c0dc16921c07be63399a8d15d73294642"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/nomads-land-return-with-casket",
+      "quest": "oteryn:quest.authored.nomads_land_quest",
+      "npc": "oteryn:npc.muhad",
+      "keywords": [
+        "casket",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/nomads_land_quest/returned",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "completes": true,
+      "requires_premium": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_exit_reached",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7527",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i7527",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You brought back what we lost. Accept these coins with my thanks."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=22842&oldid=1002600",
+        "https://tibia.fandom.com/index.php?curid=20026&oldid=842864"
+      ],
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-callback/engenc2/nomads-land-window",
+          "track": "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/nomads-land-return-without-casket",
+      "quest": "oteryn:quest.authored.nomads_land_quest",
+      "npc": "oteryn:npc.muhad",
+      "keywords": [
+        "casket",
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/authored/nomads_land_quest/returned",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "completes": true,
+      "requires_premium": true,
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet",
+          "minimum": 1,
+          "maximum": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_exit_reached",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i7527",
+          "minimum": 0,
+          "maximum": 0
+        }
+      ],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 50,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Our people recovered the casket after you left the hideout. Accept these coins for your help."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=22842&oldid=1002600",
+        "https://tibia.fandom.com/index.php?curid=20026&oldid=842864"
+      ],
+      "required_receipts": [
+        {
+          "transition": "oteryn:quest-callback/engenc2/nomads-land-window",
+          "track": "oteryn:quest-progress/authored/nomads_land_quest/s4_window_obscured",
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/authored/nomads_land_quest/returned",
+      "quest": "oteryn:quest.authored.nomads_land_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=22842&oldid=1002600",
+        "https://tibia.fandom.com/index.php?curid=20026&oldid=842864"
+      ]
+    }
+  ]
+}

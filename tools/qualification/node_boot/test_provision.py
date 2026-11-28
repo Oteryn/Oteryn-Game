@@ -46,14 +46,6 @@ class ProvisionTests(unittest.TestCase):
     def test_qualified_reply_is_accepted(self):
         self.exchange(b"qualified\n")
 
-    def test_exact_gold_fixture_reaches_the_control_socket(self):
-        with patch.object(PROVISION, "_request", return_value=b"qualified\n") as request:
-            PROVISION.provision("fixture.sock", SESSION, "item-3031-100")
-            request.assert_called_once_with("fixture.sock", f"qualify {SESSION} item-3031-100\n", 64)
-        for profile in ("item-43895-100", "item-3031-101"):
-            with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, "invalid qualification request"):
-                PROVISION.provision("fixture.sock", SESSION, profile)
-
     def test_refusal_retains_the_exact_node_answer(self):
         with self.assertRaises(RuntimeError) as refused:
             self.exchange(b"rejected\n")

@@ -29,11 +29,22 @@ CUES_SHA256 = "3f3ca7f837e0865e04e75e42bff9317953dac0f09300439596847cdae4503362"
 # SPELL-PRESENT-0 §3: generated in place by build_presentation_bindings.py and
 # build_creature_races.py, checked by validate_presentation_bindings.py.
 PRESENTATION_BINDINGS = {
-    "content/presentations/bindings/client-ids.json": ("Presentation", "client_id_bindings"),
-    "content/presentations/bindings/hit-table.json": ("Presentation", "hit_presentation_table"),
-    "content/creatures/definitions/creature-races.json": ("Creature", "native_profile_overlay"),
+    "content/presentations/bindings/client-ids.json": (
+        "Presentation",
+        "client_id_bindings",
+    ),
+    "content/presentations/bindings/hit-table.json": (
+        "Presentation",
+        "hit_presentation_table",
+    ),
+    "content/creatures/definitions/creature-races.json": (
+        "Creature",
+        "native_profile_overlay",
+    ),
 }
-PRESENTATION_VALIDATOR = "tools/content-schema/native-gameplay/test_presentation_bindings.py"
+PRESENTATION_VALIDATOR = (
+    "tools/content-schema/native-gameplay/test_presentation_bindings.py"
+)
 PROVIDER_DESTINATIONS = {
     "catalog": CATALOG,
     "source_selection": SELECTION,
@@ -48,10 +59,14 @@ PROVIDER_DESTINATIONS = {
     "source_world": "imports/spells/r25/source-world.json",
 }
 PROVIDER_FAMILIES = {
-    "creature_profiles": "Creature", "presentation_profiles": "Presentation",
-    "item_profiles": "Item", "spell_appearances": "Presentation",
-    "build_training": "Ability", "familiar_config": "Creature",
-    "familiar_defenses": "Creature", "wheel_profile": "Ability",
+    "creature_profiles": "Creature",
+    "presentation_profiles": "Presentation",
+    "item_profiles": "Item",
+    "spell_appearances": "Presentation",
+    "build_training": "Ability",
+    "familiar_config": "Creature",
+    "familiar_defenses": "Creature",
+    "wheel_profile": "Ability",
 }
 NATIVE_SCHEMA_CONTRACTS = {
     "creature_profiles": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument",
@@ -64,7 +79,10 @@ NATIVE_SCHEMA_CONTRACTS = {
     "wheel_profile": "apps/game-server/src/content/spell_wheel_profile.rs",
 }
 DEPENDENCIES = {
-    "Ability": ("abilities", "content/abilities/definitions/player-spell-abilities.json"),
+    "Ability": (
+        "abilities",
+        "content/abilities/definitions/player-spell-abilities.json",
+    ),
     "Effect": ("effects", "content/abilities/effects/player-spell-effects.json"),
     "Formula": ("formulas", "content/abilities/formulas/player-spell-formulas.json"),
 }
@@ -82,7 +100,10 @@ def digest(data: bytes) -> str:
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    return (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode()
 
 
 def pinned_file(root: Path, path: str, expected: str) -> bytes:
@@ -102,11 +123,16 @@ def verified_inputs(root: Path = ROOT) -> tuple[dict[str, bytes], dict[str, byte
     runtime: dict[str, bytes] = {}
     for binding in status["runtime_inputs"]:
         key = binding["key"]
-        if key in runtime or manifest.get(key, {}).get("path") != binding["path"] or \
-                manifest[key]["sha256"] != binding["sha256"]:
+        if (
+            key in runtime
+            or manifest.get(key, {}).get("path") != binding["path"]
+            or manifest[key]["sha256"] != binding["sha256"]
+        ):
             raise ValueError(f"RUNTIME_BINDING_MISMATCH:{key}")
         runtime[key] = pinned_file(root, binding["path"], binding["sha256"])
-    if len(runtime) != 11 or {key for key, value in manifest.items() if isinstance(value, dict)} != set(runtime):
+    if len(runtime) != 11 or {
+        key for key, value in manifest.items() if isinstance(value, dict)
+    } != set(runtime):
         raise ValueError("RUNTIME_INPUT_COVERAGE")
     sidecars: dict[str, bytes] = {}
     for binding in status["source_sidecars"]:
@@ -120,7 +146,9 @@ def verified_inputs(root: Path = ROOT) -> tuple[dict[str, bytes], dict[str, byte
 
 
 def spell_validator(root: Path):
-    spec = importlib.util.spec_from_file_location("canonical_import_spell_validator", root / SCHEMA_ROOT / "validate_spell.py")
+    spec = importlib.util.spec_from_file_location(
+        "canonical_import_spell_validator", root / SCHEMA_ROOT / "validate_spell.py"
+    )
     if spec is None or spec.loader is None:
         raise ValueError("SPELL_VALIDATOR_UNAVAILABLE")
     validator = importlib.util.module_from_spec(spec)
@@ -128,9 +156,41 @@ def spell_validator(root: Path):
     return validator
 
 
-def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
+def project_death_echo_area(root: Path, spell: dict[str, Any]) -> None:
+    """Project the accepted Death Echo profile from the exact historical mask."""
+    if spell["identity"] != {
+        "key": "candidate:spell/death_echo",
+        "revision": "spell-p2-r20",
+    }:
+        return
+    parameters = spell["execution"]["native_behavior"]["parameters"]
+    # The verified r25 pack retains its exact historical mask.
+    historical_area = [
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 3, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+    ]
+    if canonical_bytes(parameters["area"]) != canonical_bytes(historical_area):
+        raise ValueError("UNEXPECTED_R25_DEATH_ECHO_AREA")
+    profiles = json.loads(
+        (root / SCHEMA_ROOT / "samples/native-spell-profiles.json").read_bytes()
+    )["profiles"]
+    profile = next(
+        row for row in profiles if row["spell"]["identity"] == spell["identity"]
+    )
+    parameters["area"] = profile["execution"]["native_behavior"]["parameters"]["area"]
+
+
+def validate_catalog(
+    root: Path, data: bytes, *, r25_baseline: bool = False
+) -> dict[str, Any]:
     catalog = json.loads(data)
-    if catalog.get("schema") != "OTERYN_EXECUTABLE_SPELL_CATALOG/v1" or len(catalog["bundles"]) != 246:
+    if (
+        catalog.get("schema") != "OTERYN_EXECUTABLE_SPELL_CATALOG/v1"
+        or len(catalog["bundles"]) != 246
+    ):
         raise ValueError("SPELL_CATALOG_COVERAGE")
     validator = spell_validator(root)
     identities = set()
@@ -140,7 +200,11 @@ def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
         if identity in identities:
             raise ValueError(f"DUPLICATE_SPELL_IDENTITY:{identity}")
         identities.add(identity)
-        errors = validator.validate(entry["bundle"], entry["dependencies"], entry["catalog"], entry["manifest"])
+        if r25_baseline:
+            project_death_echo_area(root, spell)
+        errors = validator.validate(
+            entry["bundle"], entry["dependencies"], entry["catalog"], entry["manifest"]
+        )
         if errors:
             raise ValueError(f"INVALID_SPELL:{identity}:{errors}")
     return catalog
@@ -149,7 +213,7 @@ def validate_catalog(root: Path, data: bytes) -> dict[str, Any]:
 def baseline_outputs(root: Path = ROOT) -> dict[str, bytes]:
     """Return every planned byte only after all pinned inputs and bundles validate."""
     runtime, sidecars = verified_inputs(root)
-    catalog = validate_catalog(root, runtime["catalog"])
+    catalog = validate_catalog(root, runtime["catalog"], r25_baseline=True)
     selection = json.loads(runtime["source_selection"])
     if selection["catalog_sha256"] != digest(runtime["catalog"]):
         raise ValueError("SOURCE_SELECTION_CATALOG_MISMATCH")
@@ -173,60 +237,91 @@ def baseline_outputs(root: Path = ROOT) -> dict[str, bytes]:
                     raise ValueError(f"CONFLICTING_DEPENDENCY:{family}:{identity}")
                 by_identity[identity] = record
         records = [by_identity[key] for key in sorted(by_identity)]
-        result[path] = canonical_bytes({
-            "schema": "OTERYN_SPELL_DEPENDENCY_COLLECTION/v1",
-            "family": family,
-            "representation": "spell_authoring_supplement",
-            "schema_refs": {"records": SCHEMA_REFS["dependencies"] + f"#/properties/{section}/items"},
-            "source_catalog": {"path": CATALOG, "sha256": digest(runtime["catalog"])},
-            "runtime_activation": False,
-            "record_count": len(records),
-            "records": records,
-        })
+        result[path] = canonical_bytes(
+            {
+                "schema": "OTERYN_SPELL_DEPENDENCY_COLLECTION/v1",
+                "family": family,
+                "representation": "spell_authoring_supplement",
+                "schema_refs": {
+                    "records": SCHEMA_REFS["dependencies"]
+                    + f"#/properties/{section}/items"
+                },
+                "source_catalog": {
+                    "path": CATALOG,
+                    "sha256": digest(runtime["catalog"]),
+                },
+                "runtime_activation": False,
+                "record_count": len(records),
+                "records": records,
+            }
+        )
     for path, data in sidecars.items():
         result["imports/spells/r25/" + Path(path).name] = data
     validator = spell_validator(root)
     schema = json.loads((root / COLLECTION_SCHEMA).read_bytes())
-    registry = validator.REGISTRY.with_resource(schema["$id"], validator.Resource.from_contents(schema))
+    registry = validator.REGISTRY.with_resource(
+        schema["$id"], validator.Resource.from_contents(schema)
+    )
     collection_validator = validator.Draft202012Validator(schema, registry=registry)
     for path in [CATALOG, *(path for _, path in DEPENDENCIES.values())]:
-        errors = list(collection_validator.iter_errors(json.loads(result[path])))
+        document = catalog if path == CATALOG else json.loads(result[path])
+        errors = list(collection_validator.iter_errors(document))
         if errors:
             raise ValueError(f"INVALID_FAMILY_COLLECTION:{path}:{errors[0].message}")
     return result
 
 
 def outputs(root: Path = ROOT) -> dict[str, bytes]:
-    from monster_seven_spell_overlay import apply_overlay
     from bind_monster_source_definitions import bind_definitions
+    from monster_seven_spell_overlay import apply_overlay
+
     return bind_definitions(root, apply_overlay(root, baseline_outputs(root)))
 
 
-def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) -> dict[str, list[dict[str, Any]]]:
+def descriptors(
+    root: Path = ROOT, generated: dict[str, bytes] | None = None
+) -> dict[str, list[dict[str, Any]]]:
     """Family index supplements, separate from legacy shards and their counts."""
     data = outputs(root) if generated is None else generated
     result: dict[str, list[dict[str, Any]]] = {}
     for family, (_, path) in DEPENDENCIES.items():
         document = json.loads(data[path])
-        result[family] = [{
-            "path": path, "sha256": digest(data[path]),
-            "record_count": document["record_count"],
-            "schema_refs": {**document["schema_refs"], "collection": COLLECTION_SCHEMA},
-            "representation": "spell_authoring_supplement", "runtime_activation": False,
-        }]
-    result["Ability"].insert(0, {
-        "path": CATALOG, "sha256": digest(data[CATALOG]), "record_count": 246,
-        "schema_refs": {**SCHEMA_REFS, "collection": COLLECTION_SCHEMA},
-        "source_selection": {"path": SELECTION, "sha256": digest(data[SELECTION])},
-        "representation": "complete_spell_catalog", "runtime_activation": False,
-    })
+        result[family] = [
+            {
+                "path": path,
+                "sha256": digest(data[path]),
+                "record_count": document["record_count"],
+                "schema_refs": {
+                    **document["schema_refs"],
+                    "collection": COLLECTION_SCHEMA,
+                },
+                "representation": "spell_authoring_supplement",
+                "runtime_activation": False,
+            }
+        ]
+    result["Ability"].insert(
+        0,
+        {
+            "path": CATALOG,
+            "sha256": digest(data[CATALOG]),
+            "record_count": 246,
+            "schema_refs": {**SCHEMA_REFS, "collection": COLLECTION_SCHEMA},
+            "source_selection": {"path": SELECTION, "sha256": digest(data[SELECTION])},
+            "representation": "complete_spell_catalog",
+            "runtime_activation": False,
+        },
+    )
     for key, family in PROVIDER_FAMILIES.items():
         path = PROVIDER_DESTINATIONS[key]
         document = json.loads(data[path])
         descriptor = {
-            "path": path, "sha256": digest(data[path]),
+            "path": path,
+            "sha256": digest(data[path]),
             "schema": document["schema"],
-            "schema_contract": {"kind": "rust_serde", "path": NATIVE_SCHEMA_CONTRACTS[key]},
+            "schema_contract": {
+                "kind": "rust_serde",
+                "path": NATIVE_SCHEMA_CONTRACTS[key],
+            },
             "representation": "native_profile_overlay",
             "creates_canonical_identities": False,
             "runtime_activation": False,
@@ -234,21 +329,34 @@ def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) ->
         if isinstance(document.get("records"), list):
             descriptor["record_count"] = len(document["records"])
         result.setdefault(family, []).append(descriptor)
-    result.setdefault("Presentation", []).append({
-        "path": CUES_DESTINATION, "sha256": digest(data[CUES_DESTINATION]),
-        "schema": "OTERYN_SOURCE_SPELL_CUES/v1",
-        "schema_contract": {"kind": "source_validator", "path": "tools/content-schema/native-gameplay/test_spell_cues.py"},
-        "record_count": len(json.loads(data[CUES_DESTINATION])["records"]),
-        "representation": "source_cue_alias_bindings",
-        "creates_canonical_identities": False, "runtime_activation": False,
-    })
+    result.setdefault("Presentation", []).append(
+        {
+            "path": CUES_DESTINATION,
+            "sha256": digest(data[CUES_DESTINATION]),
+            "schema": "OTERYN_SOURCE_SPELL_CUES/v1",
+            "schema_contract": {
+                "kind": "source_validator",
+                "path": "tools/content-schema/native-gameplay/test_spell_cues.py",
+            },
+            "record_count": len(json.loads(data[CUES_DESTINATION])["records"]),
+            "representation": "source_cue_alias_bindings",
+            "creates_canonical_identities": False,
+            "runtime_activation": False,
+        }
+    )
     for path, (family, representation) in PRESENTATION_BINDINGS.items():
         document = json.loads(data[path])
         descriptor = {
-            "path": path, "sha256": digest(data[path]), "schema": document["schema"],
-            "schema_contract": {"kind": "source_validator", "path": PRESENTATION_VALIDATOR},
+            "path": path,
+            "sha256": digest(data[path]),
+            "schema": document["schema"],
+            "schema_contract": {
+                "kind": "source_validator",
+                "path": PRESENTATION_VALIDATOR,
+            },
             "representation": representation,
-            "creates_canonical_identities": False, "runtime_activation": False,
+            "creates_canonical_identities": False,
+            "runtime_activation": False,
         }
         if "records" in document:
             descriptor["record_count"] = len(document["records"])
@@ -263,7 +371,11 @@ def main() -> int:
     args = parser.parse_args()
     planned = outputs()
     if args.check:
-        mismatches = [path for path, data in planned.items() if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data]
+        mismatches = [
+            path
+            for path, data in planned.items()
+            if not (ROOT / path).is_file() or (ROOT / path).read_bytes() != data
+        ]
         if mismatches:
             raise ValueError("CANONICAL_IMPORT_MISMATCH:" + ",".join(mismatches))
     else:
@@ -271,7 +383,11 @@ def main() -> int:
             target = ROOT / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
-    print(json.dumps({"files": len(planned), "checked": args.check, "runtime_activation": False}))
+    print(
+        json.dumps(
+            {"files": len(planned), "checked": args.check, "runtime_activation": False}
+        )
+    )
     return 0
 
 

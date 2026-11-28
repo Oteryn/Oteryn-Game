@@ -17,35 +17,18 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly SECOND_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000003
 readonly SECOND_PACKET_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000004
-readonly EXIVA_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000e
-readonly E03_CLIENT_ACCOUNT=01934f10-7c00-7000-8000-000000000022
 readonly G01_ACCOUNT=01934f10-7c00-7000-8000-000000000021
 readonly I17C_ACCOUNT=01934f10-7c00-7000-8000-000000000023
+readonly G17_ACCOUNT=01934f10-7c00-7000-8000-000000000020
 readonly LIGHT_ACCOUNT_ID=01934f10-7c00-7000-8000-00000000000d
 readonly EXTRA_WORLD_ACCOUNTS=(01934f10-7c00-7000-8000-000000000007 01934f10-7c00-7000-8000-000000000008 01934f10-7c00-7000-8000-000000000009 01934f10-7c00-7000-8000-00000000000a 01934f10-7c00-7000-8000-00000000000b 01934f10-7c00-7000-8000-00000000000c)
-readonly F5_C17A_ACCOUNT=01934f10-7c00-7000-8000-00000000000f
-readonly F5_C17C_ACCOUNT=01934f10-7c00-7000-8000-000000000010
-readonly F5_C13_ACCOUNT=01934f10-7c00-7000-8000-000000000011
-readonly F5_C18A_ACCOUNT=01934f10-7c00-7000-8000-000000000012
-readonly F5_C17D_ACCOUNT=01934f10-7c00-7000-8000-000000000013
-readonly C11_UNASSIGNED_ACCOUNT=01934f10-7c00-7000-8000-000000000014
-readonly C11_KNIGHT_ACCOUNT=01934f10-7c00-7000-8000-000000000015
-readonly C12_MONK_ACCOUNT=01934f10-7c00-7000-8000-000000000016
-readonly S13_ACCOUNT=01934f10-7c00-7000-8000-000000000017
-readonly W19A_ACCOUNT=01934f10-7c00-7000-8000-000000000019
-readonly C05_TARGET_ACCOUNT=01934f10-7c00-7000-8000-00000000001a
-readonly S13_PEER_ACCOUNT=01934f10-7c00-7000-8000-00000000001b
-readonly C06_CASTER_ACCOUNT=01934f10-7c00-7000-8000-00000000001c
-readonly C06_PEER_ACCOUNT=01934f10-7c00-7000-8000-00000000001d
-readonly W18_ACCOUNT=01934f10-7c00-7000-8000-00000000001e
-readonly C01_ACCOUNT=01934f10-7c00-7000-8000-00000000001f
 readonly FRESH_KEY_ID=node-boot-fresh-key-1
 readonly RECOVERY_KEY_ID=node-boot-recovery-key-1
 readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly CHANNEL_ID=01934f10-7c03-7001-805b-3b1122334401
-readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-700e-805b-3b112233440e 01934f10-7c04-700f-805b-3b112233440f 01934f10-7c04-7010-805b-3b1122334410 01934f10-7c04-7011-805b-3b1122334411 01934f10-7c04-7012-805b-3b1122334412 01934f10-7c04-7013-805b-3b1122334413 01934f10-7c04-7014-805b-3b1122334414 01934f10-7c04-7015-805b-3b1122334415 01934f10-7c04-7016-805b-3b1122334416 01934f10-7c04-7017-805b-3b1122334417 01934f10-7c04-7019-805b-3b1122334419 01934f10-7c04-701a-805b-3b112233441a 01934f10-7c04-701b-805b-3b112233441b 01934f10-7c04-701c-805b-3b112233441c 01934f10-7c04-701d-805b-3b112233441d 01934f10-7c04-701e-805b-3b112233441e 01934f10-7c04-701f-805b-3b112233441f 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7022-805b-3b1122334422 01934f10-7c04-7023-805b-3b1122334423)
+readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402 01934f10-7c04-7003-805b-3b1122334403 01934f10-7c04-7004-805b-3b1122334404 01934f10-7c04-7007-805b-3b1122334407 01934f10-7c04-7008-805b-3b1122334408 01934f10-7c04-7009-805b-3b1122334409 01934f10-7c04-700a-805b-3b112233440a 01934f10-7c04-700b-805b-3b112233440b 01934f10-7c04-700c-805b-3b112233440c 01934f10-7c04-700d-805b-3b112233440d 01934f10-7c04-7020-805b-3b1122334420 01934f10-7c04-7021-805b-3b1122334421 01934f10-7c04-7023-805b-3b1122334423)
 # The v4 bootstrap intent explicitly binds name, sex and vocation.
-readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Locate Caster" "Haste Caster" "Illusion Caster" "Summon Caster" "Aim Caster" "Challenge Knight" "Oressa Candidate" "Wheel Knight" "Augment Monk" "Party Caster" "Seasonal Bundle Buyer" "Locate Target" "Party Spell Peer" "Rune Caster" "Rune Refusal Target" "House Transfer Player" "Armored Rat Hunter" "House Control Player" "Coin Conversion Tester" "Equipment Purchase Tester")
+readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two" "Party One" "Party Two" "Party Three" "Party Four" "Sweep One" "Sweep Two" "Light Caster" "Returner Reward Player" "House Control Player" "Equipment Swap Tester")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
 # The served readiness.content_revision is this same revision: the quest and Task Board
@@ -91,8 +74,16 @@ for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_P
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || blocked "invalid_port_${node_boot_port,,}"
 done
-# Port zero lets the real PvP listener bind atomically and report its assigned port.
+# The native Platform lifecycle reads the game port from the environment (prepare.py route).
+export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-17181}"
+node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
+# Port zero lets the real listener bind atomically and report its assigned port.
 PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-0}"
+if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" ]] && (( PVP_GAME_PORT == node_boot_game_port
+  || PVP_GAME_PORT == ${NODE_BOOT_PG_PORT:-15433}
+  || PVP_GAME_PORT == ${NODE_BOOT_PLATFORM_PORT:-18463} )); then
+  blocked invalid_port_node_boot_pvp_game_port
+fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
@@ -167,27 +158,29 @@ esac
 NODE_BOOT_WORLD_PROFILE="${NODE_BOOT_WORLD_PROFILE:-town}"
 case "$NODE_BOOT_WORLD_PROFILE" in
   # Real Thais/town outskirts and the default-start and seller regions.
-  town)
-    WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt");125,124"
-    selected_groups="${NODE_BOOT_E2E_ONLY:-}"
-    case ",${selected_groups//[[:space:]]/}," in
-      ,,|*,rows,*) WORLD_REGIONS+=";131,122" ;;
-    esac
-    ;;
+  town) WORLD_REGIONS="$(<"$GAME_SOURCE/tools/qualification/node_boot/town-regions.txt")" ;;
   quests) WORLD_REGIONS='125,121;126,124;126,125;126,126;126,127;127,123;127,125;127,126;127,127;128,122;128,125;128,126;128,128;129,123;129,124;129,126;129,127;130,126;132,125;133,123;133,124' ;;
   *) blocked invalid_world_profile ;;
 esac
 readonly NODE_BOOT_WORLD_PROFILE WORLD_REGIONS
+# A kept or reused stack is one topology, so it never runs the separate basic pass.
+# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
+  && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
+  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
+  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
+fi
 if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then NODE_BOOT_WORLD=0; fi
 BOOTSTRAP_ACCOUNTS=("$ACCOUNT_ID" "$SECOND_ACCOUNT_ID")
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Packet journeys may move, loot or kill their Characters before the required core runs.
-  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$I17C_ACCOUNT")
+  BOOTSTRAP_ACCOUNTS+=("$PACKET_ACCOUNT_ID" "$SECOND_PACKET_ACCOUNT_ID" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" "$I17C_ACCOUNT")
 fi
 readonly BOOTSTRAP_ACCOUNTS
 source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
 NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "$NODE_BOOT_WORLD" "$NODE_BOOT_SPELLS")"
 NODE_GAMEPLAY_ENV=()
+NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   # Default: the canonical imported book. The r21 reference artifact stays selectable explicitly.
   NODE_BOOT_SPELL_MANIFEST="${NODE_BOOT_SPELL_MANIFEST:-$GAME_SOURCE/content/spells.manifest.json}"
@@ -228,23 +221,6 @@ if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
     ancestor="${ancestor%/*}"
     ancestor="${ancestor:-/}"
   done
-fi
-
-if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
-  node_boot_ports="$(python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" --select-ports)" \
-    || blocked listener_port_allocation_failed
-  while IFS= read -r node_boot_port; do
-    export "$node_boot_port"
-  done <<< "$node_boot_ports"
-  printf 'NODE_BOOT_PORTS %s NODE_BOOT_PVP_GAME_PORT=%s\n' "${node_boot_ports//$'\n'/ }" "$PVP_GAME_PORT"
-fi
-
-# A kept or reused stack is one topology, so it never runs the separate basic pass.
-# The game_platform lifecycle owns one Platform stack, so it never runs the basic pass either.
-if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 && "${NODE_BOOT_SKIP_BASIC:-0}" != 1 \
-  && "${NODE_BOOT_LIFECYCLE:-}" == native_reference \
-  && "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
-  NODE_BOOT_WORLD=0 bash "$GAME_SOURCE/tools/qualification/node_boot/run.sh"
 fi
 NODE_BOOT_LIBTEST=""
 WORLD_COMPILER=(cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler --)
@@ -333,6 +309,8 @@ ACTIVE_STAGE=setup
 PG_OBS="$WORK/postgres"
 PG_SAMPLER_PID=""
 STACK_KEPT=0
+node_seasonal_fixture=""
+kept_seasonal_fixture=""
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
 if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   rm -rf -- "$WORK"
@@ -342,8 +320,6 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
   fi
   # shellcheck source=/dev/null
   source "$REUSE_STATE"
-  kept_mode="${kept_mode:-}"
-  export NODE_BOOT_GAME_PORT="${NODE_BOOT_GAME_PORT:-${kept_mode##*/}}"
   if [[ "${kept_mode:-}" != "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}" ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
@@ -376,7 +352,7 @@ fi
 # Seed only this run's extra synthetic accounts through the same portal binary
 # and disposable environment as the upstream harness and composition.py.
 seed_mp_accounts() {
-  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$EXIVA_ACCOUNT_ID" "$F5_C17A_ACCOUNT" "$F5_C17C_ACCOUNT" "$F5_C13_ACCOUNT" "$F5_C18A_ACCOUNT" "$F5_C17D_ACCOUNT" "$C11_UNASSIGNED_ACCOUNT" "$C11_KNIGHT_ACCOUNT" "$C12_MONK_ACCOUNT" "$S13_ACCOUNT" "$W19A_ACCOUNT" "$C05_TARGET_ACCOUNT" "$S13_PEER_ACCOUNT" "$C06_CASTER_ACCOUNT" "$C06_PEER_ACCOUNT" "$W18_ACCOUNT" "$C01_ACCOUNT" "$G01_ACCOUNT" "$E03_CLIENT_ACCOUNT" "$I17C_ACCOUNT" <<'PY_MP_SEED'
+  python3 - "$WORK" "$PVP_WORLD_ID" "${PVP_ACCOUNT_IDS[@]}" "${EXTRA_WORLD_ACCOUNTS[@]}" "$LIGHT_ACCOUNT_ID" "$G17_ACCOUNT" "$G01_ACCOUNT" "$I17C_ACCOUNT" <<'PY_MP_SEED'
 import json
 from pathlib import Path
 import secrets
@@ -396,13 +372,9 @@ def seed(entity, args):
         raise SystemExit(f"node_boot_mp_seed_failed entity={entity}") from None
 
 seed("world", {"worldId": world, "name": "Open PvP", "region": "local"})
-row_accounts = {}
 for account in accounts:
-    credentials = {"email": f"nb-{account}@example.invalid", "password": secrets.token_urlsafe(48)}
-    seed("account", {"accountId": account, **credentials})
-    if account.endswith(("000000000016", "00000000001c", "00000000001d")):
-        row_accounts[account] = credentials
-(work / "row-accounts.json").write_text(json.dumps(row_accounts))
+    seed("account", {"accountId": account, "email": f"nb-{account}@example.invalid",
+                     "password": secrets.token_urlsafe(48)})
 PY_MP_SEED
 }
 
@@ -480,6 +452,7 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
     { declare -p "${names[@]}"
       printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT"
       printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
+      printf 'kept_seasonal_fixture=%q\n' "${node_seasonal_fixture:-}"
     } > "$REUSE_STATE" )
   STACK_KEPT=1
 }
@@ -700,7 +673,6 @@ PY_STAGE
   evidence "spell_input=full_manifest manifest_sha256=$(sha256sum "$NODE_BOOT_SPELL_MANIFEST" | cut -d ' ' -f 1) activation_wait_seconds=$NODE_ACTIVATION_WAIT_SECONDS"
 fi
 MAP_REVISION=map-s3b-1
-NODE_NPC_ARGS=()
 if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
@@ -720,9 +692,13 @@ PY_REGION_PIN
   install_owned root:root -d -m 0755 "$BASE/world"
   install_owned root:root -m 0644 "$WORK/world.otwb" "$BASE/world/world.otbundle"
   install_owned root:root -m 0644 "$PIN" "$BASE/world/world.json"
+  python3 "$GAME_SOURCE/deploy/synology-game/stage_npc_data.py" \
+    "$GAME_SOURCE/deploy/synology-game/npc-data.pin.json" "$GAME_SOURCE" "$WORK/npc-data"
+  "${as_operator[@]}" cp -R "$WORK/npc-data" "$BASE/npc-data"
+  "${as_operator[@]}" chmod -R a+rX "$BASE/npc-data"
+  NODE_NPC_ARGS=(--npc-data-project "$BASE/npc-data/content/world"
+    --npc-data-sha256 "$(<"$WORK/npc-data/PROJECT_SHA256")")
   MAP_REVISION="$WORLD_DIGEST"
-  source "$GAME_SOURCE/tools/qualification/node_boot/npc_data.sh"
-  node_boot_stage_npc_data
 fi
 install_owned "$SERVICE_UID" -d -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 install_owned "$SERVICE_UID" -d -m 0755 "$BASE/node/secrets"
@@ -825,9 +801,6 @@ source_authority = "oteryn:game:primary"
 client_certificate_file = "$BASE/node/secrets/public-projections.crt"
 client_key_file = "$BASE/node/secrets/public-projections.key"
 epoch_fence_file = "$BASE/public-projections/epoch-fence"
-# The qualification Platform PKI does not issue a T94 producer identity.
-[platform.world_event_outcomes]
-enabled = false
 [launch]
 authorization_file = "$BASE/state/$1"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"
@@ -847,11 +820,6 @@ start_x = 32369
 start_y = 32238
 start_floor = 7''')
 PY_WORLD
-    cat >> "$WORK/node.toml" <<'TOML'
-[premium_activation]
-activation_id = "node-boot-fixture-premium"
-switch_over_us = 1
-TOML
   fi
   if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
     game_platform_config "$WORK/node.toml"
@@ -866,16 +834,9 @@ if (( ${#NODE_CLOCK_FEATURES[@]} )); then
   printf '0' > "$OTERYN_QUALIFICATION_CLOCK_FILE"
   chmod 0644 "$OTERYN_QUALIFICATION_CLOCK_FILE"
   NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_CLOCK_FILE=$OTERYN_QUALIFICATION_CLOCK_FILE")
-fi
-if [[ "$NODE_BOOT_WORLD" == 1 && -f "$WORK/portal-report.json" ]]; then
-  # Use the Platform's disposable Premium-purpose client and trust root.
-  local_premium_dir="$WORK/portal/certs"
-  cat "$local_premium_dir/clients/premium.pem" "$local_premium_dir/clients/premium.key" > "$WORK/profile-b-client.pem"
-  secret_to "$SERVICE_UID" "$WORK/profile-b-client.pem" "$BASE/node/secrets/profile-b-client.pem"
-  NODE_GAMEPLAY_ENV+=("OTERYN_PLATFORM_PROFILE_B_AUTHORITY_ENABLED=true"
-    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM=$BASE/node/secrets/profile-b-client.pem"
-    "OTERYN_PLATFORM_STREAMS_URL=https://localhost:$WP5_PORT"
-    "OTERYN_PLATFORM_STREAMS_PLATFORM_CA_PEM=$BASE/node/secrets/platform-roots.pem")
+  if [[ "${OTERYN_QUALIFICATION_ECHO_PORTAL:-0}" == 1 ]]; then
+    NODE_GAMEPLAY_ENV+=("OTERYN_QUALIFICATION_ECHO_PORTAL=1")
+  fi
 fi
 fi # NODE_BOOT_REUSE_STACK == 0
 start_pg_sampler
@@ -892,7 +853,8 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$2" "${NODE_NPC_ARGS[@]}"
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" \
+      serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"
 }
@@ -1144,6 +1106,55 @@ stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's
 # Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
 known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
 
+# Give the journey runner the same parsed range used by the fixture and verifier.
+node_boot_row_selection() { # batch|w19a
+  python3 - "$1" "${OTERYN_E2E_ROW_BATCH-0:15}" "${NODE_BOOT_E2E_ONLY:-}" <<'PY_ROW_SELECTION'
+import os
+import re
+import struct
+import sys
+
+def env_text(value, default):
+    try:
+        return os.fsencode(value).decode("utf-8")
+    except UnicodeDecodeError:
+        # Rust env::var treats non-Unicode values as unset at this caller.
+        return default
+
+mode, raw_batch, raw_groups = sys.argv[1:]
+batch = env_text(raw_batch, "0:15")
+usize_max = (1 << (8 * struct.calcsize("P"))) - 1
+if batch == "all":
+    start, length = 0, usize_max
+else:
+    # Match Rust's unsigned decimal parser, including one optional leading +.
+    match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", batch)
+    if not match:
+        sys.exit(0)
+    digits = tuple(part.lstrip("0") or "0" for part in match.groups())
+    if any(len(part) > len(str(usize_max)) for part in digits):
+        sys.exit(0)
+    start, length = map(int, digits)
+    if max(start, length) > usize_max:
+        sys.exit(0)
+
+if mode == "batch":
+    print(batch if batch == "all" else f"{start}:{length}")
+else:
+    groups = env_text(raw_groups, "").strip()
+    if not groups or "rows" in (group.strip() for group in groups.split(",")):
+        # Indices passed to e2e_row_selected in the Rust journeys.
+        for index, row in ((12, "W19a.full"), (216, "W19a.client")):
+            if index >= start and index - start < length:
+                print(row)
+PY_ROW_SELECTION
+}
+
+w19a_rows() {
+  [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_D150_LEGACY:-0}" == 0 ]] || return 0
+  node_boot_row_selection w19a
+}
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -1186,9 +1197,18 @@ stage() { # name prerequisite... -- function
     [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
     if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
-      # Keep the failing incarnation before later probes truncate the live log.
-      [[ -f "$failed_node_log" || ! -f "$node_log" ]] || cp "$node_log" "$failed_node_log"
       echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+    fi
+    if [[ "$name" == seam_stages ]]; then
+      local row expected w19a
+      w19a="$(w19a_rows)"
+      for row in $w19a; do
+        case "$row" in W19a.full) expected=PASS ;; W19a.client) expected=CAPTURED ;; esac
+        if ! stage_rows "$WORK/stage-$name.log" "$expected" | grep -Fx "$row" >/dev/null; then
+          STATUS[$name]="FAIL(rows)"
+          echo "NODE_BOOT_STAGE_FAILED $name row=$row required_status=$expected"
+        fi
+      done
     fi
     if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
@@ -1358,11 +1378,27 @@ node_complete_assignment() {
   node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
+  local w19a
+  w19a="$(w19a_rows)"
+  if [[ -n "$w19a" ]]; then
+    local christmas_epoch
+    christmas_epoch="$({
+      echo 'PREPARE node_boot_christmas(UUID, UUID, TEXT, TEXT) AS'
+      cat "$GAME_SOURCE/tools/qualification/node_boot/christmas_epoch.sql"
+      printf "EXECUTE node_boot_christmas('%s', '%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WORLD_DIGEST" "$MAP_REVISION"
+    } | psql_admin oteryn_node_boot)"
+    [[ "$christmas_epoch" == 1 ]] || { fail "Christmas epoch fixture"; return 1; }
+    evidence "world_epoch=1 source=qualification_fixture seasonal_event=christmas"
+  fi
   local -a report_args=()
   assignment_report_args
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
+  if [[ -n "$w19a" ]]; then
+    await_log 'event=seasonal_calendar .*detail="reset_epoch=1 active=\[\\"christmas\\"\]"$' 60
+    remember node_seasonal_fixture christmas_epoch_1
+  fi
   # The canonical manifest makes each validation substantial. Prove the same
   # stale-predecessor rejection against the now-active sequence 1, without
   # spending the unassigned node's unchanged wait on this independent negative.
@@ -1384,8 +1420,13 @@ node_complete_assignment() {
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
       printf "EXECUTE node_boot_world_epoch('%s', '%s', %s, '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$epoch_digest_sql" "$MAP_REVISION"
     } | psql_admin oteryn_node_boot)"
-    [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
-    evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    if [[ -n "${w19a:-}" ]]; then
+      [[ "$epoch_result" == $'f\nf' ]] || fail "Christmas fixture epoch zero replay"
+      evidence "world_epoch_history=0 source=qualification_fixture replay=idempotent"
+    else
+      [[ "$epoch_result" == $'t\nf' ]] || fail "World epoch initialization/replay"
+      evidence "world_epoch=0 source=control_initializer bundle=$epoch_bundle content=issued replay=idempotent"
+    fi
   fi
   local control_socket_mode="uid${SERVICE_UID}_0600"
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
@@ -1399,43 +1440,11 @@ node_complete_assignment() {
   evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=$control_socket_mode"
 }
 
-control_socket_peer() {
+control_socket_peer() { # a non-root peer is closed without an answer
   if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 ]]; then
-    if ! timeout 30s python3 - "$BASE/run/control.sock" <<'PY'
-import json
-import socket
-import sys
-import time
-
-deadline = time.monotonic() + 25
-while True:
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
-        control.settimeout(3)
-        control.connect(sys.argv[1])
-        control.sendall(b"health\n")
-        control.shutdown(socket.SHUT_WR)
-        with control.makefile("rb") as response:
-            line = response.readline(65537)
-    if len(line) > 65536 or not line.endswith(b"\n"):
-        sys.exit("Qualification peer received an incomplete health response")
-    health = json.loads(line)
-    if not isinstance(health, dict) or type(health.get("readiness")) is not bool:
-        sys.exit("Qualification peer received invalid readiness")
-    if health["readiness"]:
-        break
-    # Health reflects the pool's current idle count, which can dip during work.
-    if time.monotonic() >= deadline:
-        sys.exit("Qualification peer did not receive ready health")
-    time.sleep(0.05)
-PY
-    then
-      fail "qualification control socket peer health"
-      return 1
-    fi
-    evidence "control_socket qualification_peer=ready"
+    evidence "control_socket service_user_peer=skipped"
     return 0
   fi
-  # With distinct operator and service identities, the service peer must be closed.
   sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" "${INTENT_OPERATIONS[0]}" <<'PY'
 import socket, sys
 s = socket.socket(socket.AF_UNIX)
@@ -1459,12 +1468,8 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     name="${INTENT_NAMES[$index]}"
     index=$((index + 1))
     requested_vocation="$vocation"
-    case "$account" in
-      "$S13_ACCOUNT"|"$LIGHT_ACCOUNT_ID"|"$EXIVA_ACCOUNT_ID"|"$F5_C17A_ACCOUNT"|"$F5_C17C_ACCOUNT"|"$F5_C13_ACCOUNT"|"$F5_C18A_ACCOUNT") requested_vocation=Sorcerer ;;
-      "$F5_C17D_ACCOUNT"|"$C11_UNASSIGNED_ACCOUNT"|"$C11_KNIGHT_ACCOUNT") requested_vocation=Knight ;;
-      "$C12_MONK_ACCOUNT") requested_vocation=Monk ;;
-      "$C06_CASTER_ACCOUNT") requested_vocation=Sorcerer ;;
-    esac
+    [[ "$account" != "$LIGHT_ACCOUNT_ID" ]] || requested_vocation=Sorcerer
+    [[ "$account" != "$I17C_ACCOUNT" ]] || requested_vocation=Sorcerer
     if ! python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
       "$WORK" "$account" "$WORLD_ID" "$operation" "${INTERPRETATION[@]}" "$name" "$requested_vocation"; then
       echo "platform intent issue failed for operation $operation"
@@ -1476,14 +1481,6 @@ character_bootstrap() { # §4.5 Characters from real Platform intents
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
   done
   [[ $failed == 0 ]] || fail "Character bootstrap"
-  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-    # A separate character uses the existing disposable tag-3 birth gate for this account.
-    local s16_operation=01934f10-7c04-7018-805b-3b1122334418
-    python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap \
-      "$WORK" "$C11_UNASSIGNED_ACCOUNT" "$WORLD_ID" "$s16_operation" "${INTERPRETATION[@]}" "First Vocation Candidate" Knight
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
-    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$s16_operation"
-  fi
   evidence "characters=${#BOOTSTRAP_ACCOUNTS[@]} source=platform_intents path=control_socket retry=idempotent"
 }
 
@@ -1554,24 +1551,12 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     test_env=("RUST_MIN_STACK=${RUST_MIN_STACK:-16777216}")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
-    test_env+=("NODE_BOOT_CAST_EVIDENCE_LOG=$node_log" "NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
-    test_env+=("NODE_BOOT_NPC_DATA=$BASE/npc-data")
-    local extra_accounts
+    test_env+=("NODE_BOOT_WORLD_BUNDLE=$BASE/world/world.otbundle" "NODE_BOOT_WORLD_PIN=$BASE/world/world.json" "NODE_BOOT_MAP_REVISION=$MAP_REVISION" "RUST_MIN_STACK=${RUST_MIN_STACK:-67108864}")
+    local extra_accounts row_batch
+    row_batch="$(node_boot_row_selection batch)"
+    test_env+=("OTERYN_E2E_ROW_BATCH=$row_batch")
     extra_accounts="$(IFS=,; echo "${EXTRA_WORLD_ACCOUNTS[*]}")"
-    test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_EXIVA_ACCOUNT_ID=$EXIVA_ACCOUNT_ID")
-    test_env+=("NODE_BOOT_F5_C17A_ACCOUNT=$F5_C17A_ACCOUNT" "NODE_BOOT_F5_C17C_ACCOUNT=$F5_C17C_ACCOUNT" "NODE_BOOT_F5_C13_ACCOUNT=$F5_C13_ACCOUNT" "NODE_BOOT_F5_C18A_ACCOUNT=$F5_C18A_ACCOUNT" "NODE_BOOT_F5_C17D_ACCOUNT=$F5_C17D_ACCOUNT")
-    test_env+=("NODE_BOOT_C11_UNASSIGNED_ACCOUNT=$C11_UNASSIGNED_ACCOUNT" "NODE_BOOT_C11_KNIGHT_ACCOUNT=$C11_KNIGHT_ACCOUNT" "NODE_BOOT_C12_MONK_ACCOUNT=$C12_MONK_ACCOUNT" "NODE_BOOT_S13_ACCOUNT=$S13_ACCOUNT")
-    test_env+=("NODE_BOOT_W19A_ACCOUNT=$W19A_ACCOUNT")
-    test_env+=("NODE_BOOT_C05_TARGET_ACCOUNT=$C05_TARGET_ACCOUNT")
-    test_env+=("NODE_BOOT_S13_PEER_ACCOUNT=$S13_PEER_ACCOUNT")
-    test_env+=("NODE_BOOT_C06_CASTER_ACCOUNT=$C06_CASTER_ACCOUNT")
-    test_env+=("NODE_BOOT_C06_PEER_ACCOUNT=$C06_PEER_ACCOUNT" "NODE_BOOT_PLATFORM_GRANT_DIR=$WORK"
-      "NODE_BOOT_PLATFORM_GRANT_ACCOUNTS=$C12_MONK_ACCOUNT,$C06_CASTER_ACCOUNT,$C06_PEER_ACCOUNT")
-    test_env+=("NODE_BOOT_E03_CLIENT_ACCOUNT=$E03_CLIENT_ACCOUNT")
-    test_env+=("NODE_BOOT_I17C_ACCOUNT=$I17C_ACCOUNT")
-    test_env+=("NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT")
-    test_env+=("NODE_BOOT_W18_ACCOUNT=$W18_ACCOUNT")
-    test_env+=("NODE_BOOT_C01_ACCOUNT=$C01_ACCOUNT")
+    test_env+=("NODE_BOOT_EXTRA_WORLD_ACCOUNTS=$extra_accounts" "NODE_BOOT_G17_ACCOUNT=$G17_ACCOUNT" "NODE_BOOT_G01_ACCOUNT=$G01_ACCOUNT" "NODE_BOOT_I17C_ACCOUNT=$I17C_ACCOUNT")
     test_env+=("NODE_BOOT_PACKET_ACCOUNT_ID=$PACKET_ACCOUNT_ID" "NODE_BOOT_PACKET_SECOND_ACCOUNT_ID=$SECOND_PACKET_ACCOUNT_ID" "NODE_BOOT_LIGHT_ACCOUNT_ID=$LIGHT_ACCOUNT_ID")
   fi
   if [[ "$NODE_BOOT_WORLD" == 1 && ${STATUS[pvp_character_bootstrap]:-} == PASS ]]; then
@@ -1633,7 +1618,8 @@ restart_without_supersession() { # fails at S2 custody, never ready
   ops authorization issue --file launch-b.json --binding node-boot-b
   write_node_config launch-b.json
   local code=0
-  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" "${NODE_NPC_ARGS[@]}" 2> "$WORK/restart.log" || code=$?
+  "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" timeout 120 "$BASE/bin/oteryn-game-server" \
+    serve --config "$BASE/node/node.toml" "${NODE_NPC_ARGS[@]}" 2> "$WORK/restart.log" || code=$?
   cat "$WORK/restart.log"
   [[ $code == 13 ]] || fail "restart without supersession exit=$code"
   local line node revision
@@ -1804,6 +1790,19 @@ ORDER BY r.account_id;
 SQL
 )"
   [[ "$births" == "knight|${INTERPRETATION[3]}|1"$'\n'"sorcerer|${INTERPRETATION[3]}|1" ]] || pvp_fail "PvP bootstrap vocation, starter or account projection readback"
+  # MP01 fights in Thais. Seed the victim's hometown before first admission
+  # so the real death/respawn flow returns within walking range of the fight.
+  local victim_town
+  victim_town="$(psql_admin "$PVP_DATABASE" <<SQL
+INSERT INTO game_character_home_towns (character_id, town_id)
+SELECT character_id, 8 FROM game_character_roots
+WHERE world_id = '$PVP_WORLD_ID' AND account_id = '${PVP_ACCOUNT_IDS[1]}'
+ON CONFLICT (character_id) DO NOTHING;
+SELECT h.town_id FROM game_character_home_towns h JOIN game_character_roots r USING (character_id)
+WHERE r.world_id = '$PVP_WORLD_ID' AND r.account_id = '${PVP_ACCOUNT_IDS[1]}';
+SQL
+)"
+  [[ "$victim_town" == 8 ]] || pvp_fail "PvP victim Thais hometown readback"
   evidence "pvp_characters=2 world=$PVP_WORLD_ID source=platform_intents path=pvp_control_socket retry=idempotent contract=4 starter=${INTERPRETATION[3]} births=knight,sorcerer projection_revision=1"
 }
 
@@ -1823,6 +1822,11 @@ fi
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
 if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+  reused_w19a="$(w19a_rows)"
+  if [[ -n "$reused_w19a" && "${kept_seasonal_fixture:-}" != christmas_epoch_1 ]]; then
+    result='BLOCKED reason=kept_stack_requires_christmas_epoch_1'
+    exit 2
+  fi
   stage "$seam_stage_name" -- seam_stages
 else
 stage operator_setup -- operator_setup
@@ -1859,10 +1863,11 @@ NODE_PID=""
 elif [[ ${STATUS[node_assigned_ready]:-PASS} == PASS ]]; then
   # The shutdown and restart stages did not run, so this is never a qualification pass.
   if [[ "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
-    # The node was started inside a stage subshell; its pid is in $VARS.
+    # The assignment stage records the node PID and any verified seasonal fixture.
     # shellcheck source=/dev/null
     NODE_PID="$(source "$VARS"; printf '%s' "${NODE_PID:-}")"
     PVP_GAME_PORT="$(source "$VARS"; printf '%s' "$PVP_GAME_PORT")"
+    node_seasonal_fixture="$(source "$VARS"; printf '%s' "${node_seasonal_fixture:-}")"
     [[ -z "$NODE_PID" ]] || save_reuse_state
   fi
   ORDER+=(stack_kept)

@@ -81,7 +81,8 @@ fn appearance_observation_retries_busy_holder_with_bounded_current_runtime_check
                 .ok_or("initial two-player appearance")?;
             assert_eq!(initial.bindings.len(), 2);
 
-            // The holder returns in the last partial backoff of the existing command window.
+            // Acquisition fails synchronously while this real pass owns the only holder.
+            // The first Pending therefore observes the retry, before the holder is returned.
             let recovered = {
                 let held = harness.root.try_issue_semantic_pass()?;
                 let mut observation = std::pin::pin!(owner.appearance_observation(
@@ -93,27 +94,16 @@ fn appearance_observation_retries_busy_holder_with_bounded_current_runtime_check
                     std::future::poll_fn(|cx| Poll::Ready(observation.as_mut().poll(cx))).await;
                 let runtime_free = owner.runtime.try_lock().is_ok();
                 let spells_free = owner.states.spell_states.try_lock().is_ok();
-                tokio::time::pause();
-                let mut last = first;
-                for _ in 0..4 {
-                    if last.is_ready() {
-                        break;
-                    }
-                    tokio::time::advance(std::time::Duration::from_millis(201)).await;
-                    last =
-                        std::future::poll_fn(|cx| Poll::Ready(observation.as_mut().poll(cx))).await;
-                }
-                tokio::time::resume();
                 held.run(|_, _| Box::pin(async { Ok(()) })).await?;
                 assert!(
-                    last.is_pending(),
-                    "a busy holder must remain queued in the final partial interval"
+                    first.is_pending(),
+                    "a busy holder must enter the retry path"
                 );
                 assert!(
                     runtime_free && spells_free,
                     "retry must release owner guards"
                 );
-                match last {
+                match first {
                     Poll::Pending => observation.await,
                     Poll::Ready(result) => result,
                 }

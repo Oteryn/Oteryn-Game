@@ -215,17 +215,6 @@ pub(super) async fn apply(
     let Some(gate) = admission.premium_coordinator else {
         return rejected();
     };
-    // Wait outside the purchase transaction. The snapshot publisher may need its database
-    // holder to finish fencing the response before it can update the consumer cache.
-    let Ok(_publication) = tokio::time::timeout(
-        crate::durability::ROOT_RECOVERY_WINDOW,
-        gate.consumer().lock_snapshot_publication(account),
-    )
-    .await
-    else {
-        // The purchase transaction has not checked for an existing receipt yet.
-        return unknown();
-    };
     match slot
         .commit_npc_purchase(
             admission.root,
@@ -377,6 +366,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
         return Some(outcome);
     }
     if let Some(outcome) = super::coin_exchange::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::bank_robbery::replay(admission, actor, command, None).await {
         return Some(outcome);
     }
     super::resume_bank_talk(admission, actor, command).await

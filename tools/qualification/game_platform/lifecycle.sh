@@ -6,8 +6,7 @@ GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
 game_platform_retain_test_logs() {
   [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -n "${WORK:-}" ]] || return 0
-  mkdir -p -- "$NODE_BOOT_FAILURE_LOG_DIR" || return 1
-  local log output value
+  local log value
   local -a evidence_args=()
   for value in "$GAME_PLATFORM_SHA" "$(git -C "$GAME_SOURCE" rev-parse HEAD)" "${WORLD_DIGEST:-}"; do
     [[ -z "$value" ]] || evidence_args+=(--evidence "$value")
@@ -16,12 +15,10 @@ game_platform_retain_test_logs() {
     value="$(sha256sum "$NODE_BOOT_SPELL_MANIFEST")"
     evidence_args+=(--evidence "${value%% *}")
   fi
-  for log in portal-harness.log portal/logs/serve.log identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
+  for log in portal-harness.log identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
     [[ -f "$WORK/$log" ]] || continue
-    output="${log##*/}"
-    [[ "$log" != portal/logs/serve.log ]] || output=portal-serve.log
     python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
-      "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$output" "${evidence_args[@]}" || return 1
+      "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" "${evidence_args[@]}" || return 1
   done
 }
 game_platform_fail() {

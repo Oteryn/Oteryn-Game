@@ -1,19 +1,18 @@
 //! E03 client replay capture: using a coin stack converts it to the next denomination. Client
 //! owner: the CharacterInventory domain in `crates/session` (`Session::inventory`). The inventory
 //! views are session-owned and re-encoded with the production encoder (C09/I11 practice).
-//! A dedicated character receives the exact gold stack before live conversion.
+//! The ordinary starter carries no coin stack, so the row reports FAIL until one is reachable.
 use super::*;
+use oteryn_protocol_oteryn::item_view;
 
-use super::client_row_e02::{backpack_coins, coin_refs, encoded_backpack, wait_coins};
+const COINS: [u32; 3] = [3031, 3035, 3043];
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "E03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
+        evidence(&format!("E03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
     }
 }
 
@@ -27,52 +26,44 @@ fn pairs(client: &oteryn_dev_client::DevClientSession) -> String {
     })
 }
 
+fn encoded(client: &oteryn_dev_client::DevClientSession) -> TestResult<Vec<u8>> {
+    let inventory = client.inventory().ok_or("inventory absent")?;
+    item_view::encode_character_inventory(inventory)
+        .map_err(|error| format!("inventory encode: {error:?}").into())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let identity =
-        character_prep::dedicated_character(clients, "NODE_BOOT_E03_CLIENT_ACCOUNT").await?;
-    let clients = &identity.clients(clients);
-    character_prep::declare_seeded(
-        "E03.client",
-        "100 carried gold coins",
-        "coin stack conversion",
-    );
-    let mut client = character_prep::Seeded {
-        profile: "item-3031-100",
-        reason: "coin stack conversion",
-    }
-    .connect(clients, 0x34, 0)
-    .await?;
-    let refs = coin_refs()?;
-    let before = backpack_coins(&client, refs)?;
-    let stack = client
-        .inventory()
-        .and_then(|inventory| {
+    let definitions = provisioning::item_index()?;
+    let mut client = connect_world(clients, 0x34).await?;
+    let mut stack = None;
+    for id in COINS {
+        let reference = provisioning::item_reference(&definitions, id)?;
+        stack = client.inventory().and_then(|inventory| {
             inventory
                 .entries
                 .iter()
-                .find(|item| item.item_definition_ref == refs[0] && item.count.get() == 100)
-        })
-        .copied()
-        .ok_or("E03 served inventory has no single stack of 100 gold coins")?;
-    let before_pairs = pairs(&client);
-    let before_payload = encoded_backpack(&client)?;
-    let outcome = client.use_item(stack.handle).await?;
-    if outcome.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
-        return Err(format!("E03 coin use refused: {:?}", outcome.disposition).into());
+                .find(|item| item.item_definition_ref == reference && item.count.get() >= 100)
+                .copied()
+        });
+        if stack.is_some() {
+            break;
+        }
     }
-    let after = [
-        before[0]
-            .checked_sub(100)
-            .ok_or("E03 gold count below selected stack")?,
-        before[1]
-            .checked_add(1)
-            .ok_or("E03 platinum count overflow")?,
-        before[2],
-    ];
-    wait_coins(&mut client, refs, after, "E03 gold-to-platinum").await?;
+    let stack = stack.ok_or("no coin stack of 100 in the ordinary starter inventory; conversion needs a legitimate gold source (see E02)")?;
+    let before_pairs = pairs(&client);
+    let before_payload = encoded(&client)?;
+    let outcome = client.use_item(stack.handle).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while pairs(&client) == before_pairs {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("coin use changed nothing disposition={:?}", outcome.disposition).into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+        client.take_events();
+    }
     let after_pairs = pairs(&client);
     capture("e03-before.bin", &before_payload);
-    capture("e03-after.bin", &encoded_backpack(&client)?);
+    capture("e03-after.bin", &encoded(&client)?);
     capture(
         "e03-expected.txt",
         format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),
@@ -82,9 +73,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
-        .await
-    {
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E03.client status=CAPTURED evidence={observed}"
         )),

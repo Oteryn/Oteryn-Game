@@ -101,67 +101,6 @@ pub async fn write_frame<S: AsyncWrite + Unpin>(
     Ok(())
 }
 
-/// Record post-admission client frame metadata for opt-in qualification diagnostics.
-pub(super) fn trace_client_frame(body: &[u8], generation: u64, selected: &[u32]) {
-    if std::env::var_os("OTERYN_QUALIFICATION_TRACE_CLIENT_FRAMES").as_deref()
-        != Some(std::ffi::OsStr::new("1"))
-    {
-        return;
-    }
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis();
-    let header = decode_wire_envelope(body);
-    let detail = match header {
-        Ok(envelope) if envelope.message_type() == MessageType::ClientCommand => {
-            match envelope.client_command(generation) {
-                Ok(command) => {
-                    let validation = match command.command_type {
-                        attack::COMMAND_TYPE_ATTACK_TARGET_INTENT => {
-                            if attack::decode_attack_target_intent(command.payload).is_ok() {
-                                "attack_valid"
-                            } else {
-                                "attack_malformed"
-                            }
-                        }
-                        world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => {
-                            if world_spatial::decode_step_intent_selected(selected, command.payload)
-                                .is_ok()
-                            {
-                                "step_valid"
-                            } else {
-                                "step_malformed"
-                            }
-                        }
-                        _ => "command_envelope_valid",
-                    };
-                    format!(
-                        "kind=ClientCommand id={} type={} validation={validation}",
-                        command.command_id, command.command_type
-                    )
-                }
-                Err(error) => format!("kind=ClientCommand validation={error:?}"),
-            }
-        }
-        Ok(envelope) if envelope.message_type() == MessageType::LivenessAck => {
-            match envelope.liveness_ack(generation) {
-                Ok(ack) => format!(
-                    "kind=LivenessAck probe={} last_applied={:?} validation=ack_valid",
-                    ack.probe_id, ack.last_applied_server_sequence
-                ),
-                Err(error) => format!("kind=LivenessAck validation={error:?}"),
-            }
-        }
-        Ok(envelope) => format!("kind={:?}", envelope.message_type()),
-        Err(error) => format!("kind=unknown validation={error:?}"),
-    };
-    eprintln!(
-        "QUALIFICATION_CLIENT_FRAME ts={ts} generation={generation} bytes={} {detail}",
-        body.len()
-    );
-}
-
 /// Reads one length-prefixed frame body (bounded by `FrameLength`).
 pub async fn read_frame<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SessionError> {
     let mut prefix = [0_u8; 4];

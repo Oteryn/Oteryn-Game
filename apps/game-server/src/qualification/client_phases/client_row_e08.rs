@@ -1,7 +1,6 @@
 //! E08 client replay capture: deposit a carried item at an authored depot locker, then capture the
 //! real Depot Search SEARCH, DETAIL, RETRIEVE(all) and empty-RETRIEVE replies. Client owner:
 //! `apply_result` in `crates/client-ui/src/features/0153-depot-search/protocol.rs`.
-use super::full_row_e08::{carried_count, restored};
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
@@ -64,12 +63,9 @@ fn carried(client: &DevClientSession, handle: ItemHandle) -> bool {
     })
 }
 
-async fn wait_carried(
-    client: &mut DevClientSession,
-    expected: impl Fn(&DevClientSession) -> bool,
-) -> TestResult {
+async fn wait_carried(client: &mut DevClientSession, handle: ItemHandle, expected: bool) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-    while !expected(client) {
+    while carried(client, handle) != expected {
         if tokio::time::Instant::now() >= deadline {
             return Err("inventory delta timeout".into());
         }
@@ -133,8 +129,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if moved.outcome != depot::DepotOutcome::Moved {
         return Err(format!("deposit outcome {:?}", moved.outcome).into());
     }
-    wait_carried(&mut client, |client| !carried(client, item.handle)).await?;
-    let deposited_count = carried_count(&client, item.item_definition_ref);
+    wait_carried(&mut client, item.handle, false).await?;
 
     let (found, found_bytes) = search_command(&mut client, wire::Request::Search { client_id }).await?;
     let row = found.results.first().ok_or("search returned no row")?;
@@ -170,11 +165,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved != total {
         return Err(format!("retrieve reply {retrieved:?}").into());
     }
-    let restored_count = deposited_count + u64::from(retrieved.retrieved);
-    wait_carried(&mut client, |client| {
-        restored(client, item) && carried_count(client, item.item_definition_ref) == restored_count
-    })
-    .await?;
+    wait_carried(&mut client, item.handle, true).await?;
     let (empty, empty_bytes) = search_command(
         &mut client,
         wire::Request::Retrieve {

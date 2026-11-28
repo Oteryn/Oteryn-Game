@@ -233,7 +233,8 @@ pub(super) fn encode(
         Dispatch::Reply(status, payload)
             if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
                 || command.command_type
-                    == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH =>
+                    == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
+                || routing::store::is_committed_claim(command.command_type, *status, payload) =>
         {
             (*status, payload.clone())
         }
@@ -313,18 +314,6 @@ pub(super) fn encode(
                 0,
             ),
         ),
-        // USE can be refused before it reaches its owner when input is unavailable.
-        Dispatch::Unregistered
-            if command.command_type
-                == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT =>
-        {
-            let disposition = UseDisposition::Rejected;
-            let payload = encode_use_result(disposition).map_err(|_| ServeEnd::Disconnected)?;
-            (
-                CommandStatus::Rejected,
-                detailed(session, payload, RefusalDetail::of_use(disposition)),
-            )
-        }
         Dispatch::Unregistered
             if command.command_type
                 == oteryn_protocol_oteryn::appearance::COMMAND_TYPE_APPEARANCE_CHANGE

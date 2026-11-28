@@ -5,6 +5,7 @@ import unittest
 
 import harvest_item_profiles as tool
 from house_decoration_actions import PROFILES, apply_top_order
+from srx1_profile_updates import compact_item_record
 
 
 class HarvestItemProfileTests(unittest.TestCase):
@@ -37,7 +38,7 @@ class HarvestItemProfileTests(unittest.TestCase):
                         'vocations': {'state': 'UNKNOWN'},
                     },
                 }
-            self.assertEqual(profiles[key], record)
+            self.assertEqual(compact_item_record(profiles[key]), compact_item_record(record), key)
         manifest = json.loads((tool.ROOT / 'content/spells.manifest.json').read_bytes())
         self.assertEqual(manifest['item_profiles']['sha256'], hashlib.sha256(raw).hexdigest())
 

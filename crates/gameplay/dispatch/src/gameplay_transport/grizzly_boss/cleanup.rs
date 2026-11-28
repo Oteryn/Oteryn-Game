@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::{AdmissionRetryBudget, connection::AdmissionRefusal};
 use crate::monster_owner_cycle::respawn_job::RespawnExit;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -185,9 +186,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(lookup_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        let entry = match self
-            .root
-            .pending_grizzly_boss_entry_for_session(self.character, session)
+        // Concurrent sessions share the non-blocking holder. Its being busy is
+        // not evidence of an unresolved visit; retry only that transient failure.
+        let entry = match AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                self.root
+                    .pending_grizzly_boss_entry_for_session(self.character, session)
+                    .await
+                    .map_err(|error| match error {
+                        CharacterProgressionError::Unavailable(
+                            crate::durability::DurabilityError::RootUnavailable,
+                        ) => AdmissionRefusal::Unavailable,
+                        _ => AdmissionRefusal::Rejected,
+                    })
+            })
             .await
         {
             Ok(entry) => entry,

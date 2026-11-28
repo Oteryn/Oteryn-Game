@@ -4,7 +4,7 @@ include!("map_model.rs");
 pub(super) async fn run(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
-    model: &MapModel,
+    model: &MapModel<'_>,
 ) -> TestResult {
     let start = tile(client.world_spatial().actor_position)?;
     let mut totals: BTreeMap<&str, [usize; 3]> = BTreeMap::new();
@@ -34,11 +34,10 @@ pub(super) async fn run(
     // Restore the caller's start so subsequent phases retain their own preconditions.
     let restore: TestResult = async {
         let here = tile(client.world_spatial().actor_position)?;
-        let snapshot = model.clone();
-        let back = route_work(client, move || Ok(snapshot.path(here, start, Some(start))))
-            .await?
+        let back = model
+            .path(here, start, Some(start))
             .ok_or("map journey has no return route")?;
-        walk(client, world, &back).await
+        walk_map_route(client, world, &back, start).await
     }
     .await;
     let (index, reason) = match restore {
@@ -66,9 +65,25 @@ pub(super) async fn run(
     Ok(())
 }
 
+async fn walk_map_route(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    bounds: TilePos,
+) -> TestResult {
+    walk_with_landing_budget(
+        client,
+        path,
+        |at, direction| destination(world, at, direction),
+        None,
+        Some(bounds),
+    )
+    .await
+}
+
 async fn check(
     client: &mut oteryn_dev_client::DevClientSession,
-    model: &MapModel,
+    model: &MapModel<'_>,
     sample: &Sample,
     bounds: TilePos,
 ) -> TestResult<Option<&'static str>> {
@@ -84,61 +99,49 @@ async fn check(
         sample.kind,
         "stairs_up" | "stairs_down" | "hole_down" | "teleport"
     ) || (sample.kind == "ladder" && model.world.floors().contains(target));
-    let snapshot = model.clone();
-    let kind = sample.kind;
-    let approaches = route_work(client, move || {
-        let model = &snapshot;
-        let mut approaches = Vec::new();
-        for at in DIRECTIONS
-            .into_iter()
-            .filter_map(|direction| adjacent(target, direction))
-        {
-            for direction in DIRECTIONS {
-                if adjacent(at, direction) != Some(target) {
-                    continue;
-                }
-                let landing = model.destination(at, direction);
-                if transition
-                    && !landing.is_some_and(|landed| match kind {
-                        "stairs_up" => landed.floor > at.floor,
-                        "stairs_down" | "hole_down" => landed.floor < at.floor,
-                        "ladder" => landed.floor != at.floor,
-                        _ => {
-                            Some(landed)
-                                == model.tiles.get(&target).and_then(|facts| facts.teleport)
-                        }
-                    })
-                {
-                    continue;
-                }
-                if model.tiles.get(&at).is_none_or(|facts| !facts.walkable) {
-                    continue;
-                }
-                if kind == "pz_border"
-                    && model
-                        .tiles
-                        .get(&target)
-                        .zip(model.tiles.get(&at))
-                        .is_none_or(|(target, origin)| {
-                            target.protection_zone == origin.protection_zone
-                        })
-                {
-                    continue;
-                }
-                // An automatic transition can make an apparently adjacent tile unstandable.
-                if let Some(path) = model.path(from, at, Some(bounds)) {
-                    approaches.push((path, at, direction, landing));
-                }
+    let mut approaches = Vec::new();
+    for at in DIRECTIONS
+        .into_iter()
+        .filter_map(|direction| adjacent(target, direction))
+    {
+        for direction in DIRECTIONS {
+            if adjacent(at, direction) != Some(target) {
+                continue;
+            }
+            let landing = model.destination(at, direction);
+            if transition
+                && !landing.is_some_and(|landed| match sample.kind {
+                    "stairs_up" => landed.floor > at.floor,
+                    "stairs_down" | "hole_down" => landed.floor < at.floor,
+                    "ladder" => landed.floor != at.floor,
+                    _ => Some(landed) == model.tiles.get(&target).and_then(|facts| facts.teleport),
+                })
+            {
+                continue;
+            }
+            if model.tiles.get(&at).is_none_or(|facts| !facts.walkable) {
+                continue;
+            }
+            if sample.kind == "pz_border"
+                && model
+                    .tiles
+                    .get(&target)
+                    .zip(model.tiles.get(&at))
+                    .is_none_or(|(target, origin)| target.protection_zone == origin.protection_zone)
+            {
+                continue;
+            }
+            // An automatic transition can make an apparently adjacent tile unstandable.
+            if let Some(path) = model.path(from, at, Some(bounds)) {
+                approaches.push((path, at, direction, landing));
             }
         }
-        approaches.sort_by_key(|(path, at, _, _)| (path.len(), *at));
-        Ok(approaches)
-    })
-    .await?;
+    }
+    approaches.sort_by_key(|(path, at, _, _)| (path.len(), *at));
     let Some((path, at, direction, landing)) = approaches.first() else {
         return Ok(Some("no_reachable_approach_within_160_tile_2_floor_budget"));
     };
-    walk(client, &model.world, path).await?;
+    walk_map_route(client, model.world, path, bounds).await?;
     if tile(client.world_spatial().actor_position)? != *at {
         return Err("map approach did not end at predicted position".into());
     }

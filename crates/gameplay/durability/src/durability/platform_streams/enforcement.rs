@@ -4,6 +4,7 @@ use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::super::{DurabilityError, DurabilityRoot};
 use super::enforcement_wire::*;
+use crate::durability::db::commit_semantic_read;
 use sqlx::Row;
 type Tx<'a> = sqlx::Transaction<'a, sqlx::Postgres>;
 
@@ -261,7 +262,7 @@ impl DurabilityRoot {
    let now:i64=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
    if now<=0 {return Err(DurabilityError::Unavailable);}
    let remaining:Option<i64>=sqlx::query_scalar("SELECT e.expires_at_ms-$2 FROM game_platform_enforcement_streams e JOIN game_durability_reconnect_sessions s ON s.character_id=e.character_id JOIN game_character_roots r ON r.character_id=e.character_id AND r.account_id=e.account_id WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state IN(1,2) AND e.profile='MUTE' AND e.state IN('PENDING','ACTIVE') AND e.effective_at_ms<=$2 AND $2<e.expires_at_ms ORDER BY e.expires_at_ms DESC LIMIT 1").bind(session.as_bytes().as_slice()).bind(now).fetch_optional(&mut *tx).await?;
-   commit_semantic_transaction(tx,deadline).await?;
+   commit_semantic_read(tx,deadline).await?;
    Ok(remaining.map(|ms|u32::try_from(ms/1000+i64::from(ms%1000!=0)).unwrap_or(u32::MAX)))
   })).await
     }

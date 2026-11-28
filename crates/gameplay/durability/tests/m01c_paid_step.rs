@@ -184,6 +184,35 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
         movement_revision: 1,
         party: Vec::new(),
     };
+    use durability::character_last_position::{
+        FinalLastPosition, LastPositionCell, LastPositionRecord,
+    };
+    use durability::quest_world_callback::{QuestWorldToolContext, paid_projection::PaidArrival};
+    let to: oteryn_gameplay_quests::quest::world_callbacks::Position =
+        serde_json::from_value(document["callbacks"][0]["teleport"].clone())?;
+    let landing = LastPositionCell {
+        x: i32::from(to.x),
+        y: i32::from(to.y),
+        floor: -i16::from(to.floor),
+    };
+    let fence = f::fence(1)?;
+    let context = QuestWorldToolContext::from(context).with_paid_arrivals(vec![PaidArrival {
+        character: *fence.character_id.as_bytes(),
+        lease_generation: fence.character_lease_generation,
+        placed: FinalLastPosition {
+            record: LastPositionRecord {
+                world_id: fence.runtime_scope.world_id(),
+                cell: landing,
+                coordinate_frame_digest: frame,
+                map_revision_digest: sha2::Sha256::digest(b"map-1").into(),
+                server_artifact_digest: native.source_digest(),
+                vitals: None,
+                rest: None,
+            },
+            write_sequence: 1,
+        },
+        retain_saved_vitals: true,
+    }]);
     let request = |number| -> f::TestResult<QuestTransitionRequest> {
         Ok(QuestTransitionRequest {
             transition_key: "oteryn:quest-callback/m01c-paid-step-fixture".into(),
@@ -191,7 +220,7 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
         })
     };
     let empty = slot
-        .commit_world_callback_with_items(
+        .commit_world_callback_with_items_selected(
             &h.root,
             &authority,
             &h.node,
@@ -249,7 +278,7 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
     ));
     premium.allowed = false;
     let denied = slot
-        .commit_world_callback_with_items(
+        .commit_world_callback_with_items_selected(
             &h.root,
             &authority,
             &h.node,
@@ -272,7 +301,7 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
     premium.allowed = true;
     for replay in [false, true] {
         let outcome = slot
-            .commit_world_callback_with_items(
+            .commit_world_callback_with_items_selected(
                 &h.root,
                 &authority,
                 &h.node,
@@ -296,6 +325,13 @@ async fn paid_step(h: &f::Harness) -> f::TestResult {
             "replay={replay}: {outcome:?}"
         );
         assert_eq!(carrots(h).await?, 1);
+        let saved = h
+            .root
+            .read_character_last_position(&authority, &h.node, f::fence(1)?)
+            .await
+            .map_err(f::debug)?
+            .ok_or("paid STEP landing")?;
+        assert_eq!(saved.record.cell, landing);
     }
     let progress:i64=sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/m01c-paid-step-fixture'").bind(f::id(f::CHARACTER).as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(progress, 1);

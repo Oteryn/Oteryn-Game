@@ -3,7 +3,7 @@
 //! `data/libs/systems/concoctions.lua:179-205`: instant effect, per-kind 24h cooldown.
 //! Receipt reads are historical evidence, never permission to reset current actor state.
 
-use super::super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::super::db::{begin_semantic_transaction, commit_semantic_read};
 use super::super::*;
 use crate::foundation::CommandRef;
 
@@ -67,7 +67,7 @@ impl DurabilityRoot {
                             }
                         }
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

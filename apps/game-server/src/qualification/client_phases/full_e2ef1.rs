@@ -777,26 +777,18 @@ mod e2ef1 {
                             pump(client).await?;
                         }
                     }
-                    walk_with_landings(client, &[direction], move |origin, step| {
+                    walk_with_landings(client, &[direction], |origin, step| {
                         (origin == at && step == direction).then_some(expected)
                     }).await?;
                     checks.pass("teleport", (object.at, expected));
                 } else {
-                    let snapshot = world.clone();
-                    let landing = move |at, direction| {
-                        stair_landing(destination(&snapshot, at, direction), || {
-                            destination_with_teleports(&snapshot, at, direction, false)
+                    let landing = |at, direction| {
+                        stair_landing(destination(world, at, direction), || {
+                            destination_with_teleports(world, at, direction, false)
                         })
                     };
                     let goal = |at: TilePos| at.floor != from.floor && outside(at);
-                    let landing_for_search = landing.clone();
-                    let snapshot = world.clone();
-                    let path = route_work(client, move || Ok(route_with_landings(
-                        from,
-                        |at: TilePos| at.floor != from.floor && snapshot.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone()),
-                        |_| true,
-                        landing_for_search,
-                    ))).await?
+                    let path = route_with_landings(from, goal, |_| true, landing)
                         .ok_or("no reachable outside-PZ stair transition")?;
                     walk_with_landings(client, &path, landing).await?;
                     if !goal(tile(client.world_spatial().actor_position)?) {

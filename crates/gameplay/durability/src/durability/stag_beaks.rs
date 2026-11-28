@@ -1,10 +1,11 @@
 //! M41: bounded self-skinning provenance; an inventory beak is never a quest credit.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::db::begin_semantic_transaction;
 use super::item_mint_audit::Type2Transaction;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
+use crate::durability::db::commit_semantic_read;
 use std::collections::BTreeMap;
 
 pub const HARTFORD: &str = "oteryn:npc.guard_captain_hartford";
@@ -105,7 +106,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let count = count(&mut tx, character).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(StagBeakPreview { character, count })
                 })
             })

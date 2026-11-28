@@ -76,6 +76,11 @@ pub(super) enum Case {
     CakeWorldBonusExpired,
     CakeKillBeforeActivation,
     CakeKillBeforeExpiry,
+    ForgeDoubleLoot,
+    ForgeReducedLoot,
+    ForgeBoostedExhausted,
+    ForgeBoostedExhaustedDoubleLoot,
+    ForgeDuplexRetry,
 }
 
 impl Case {
@@ -139,12 +144,18 @@ pub(super) fn run_with_admin(case: Case, admin: String) -> TestResult {
                     let (controller, pin) = if matches!(case, Case::Eqmod2 | Case::CharmSecondary) {
                         super::equipment_mods_fixtures::activate(world)?
                     } else {
-                        crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                            world,
-                            Some(include_bytes!(
-                                "../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-                            )),
-                        )
+                        let source_world = Some(include_bytes!(
+                            "../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                        ).as_slice());
+                        if matches!(case, Case::ForgeDuplexRetry) {
+                            crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
+                                world, source_world, Some(&super::forge_creature_fixtures::rat_loot_that_misses()?),
+                            )
+                        } else {
+                            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                                world, source_world,
+                            )
+                        }
                     };
                     let h = Harness::create(admin, &tag, false).await?;
                     eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED case={tag}");
@@ -177,7 +188,32 @@ async fn scenario(
     let cake_case = cake_world_bonus || cake_kill_before_activation || cake_kill_before_expiry;
     let task_board_case = case;
     let t94_case = matches!(case, Case::T94);
+    let forge_boosted_exhausted = matches!(
+        case, Case::ForgeBoostedExhausted | Case::ForgeBoostedExhaustedDoubleLoot
+    );
+    let loot_rate = match case {
+        Case::ForgeDoubleLoot | Case::ForgeBoostedExhaustedDoubleLoot => Some(200),
+        Case::ForgeReducedLoot => Some(1),
+        _ => None,
+    };
+    let _forge_clock = loot_rate
+        .map(|rate| {
+            use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
+
+            let schedule = Schedule::parse(&format!(
+                r#"{{"events":[{{"name":"forge-loot","startdate":"01/01/2030",
+                    "enddate":"01/02/2030","ingame":{{"lootrate":{rate}}}}}]}}"#
+            ))
+            .map_err(debug)?;
+            Ok::<_, String>(test_clock::set(schedule, 1_893_456_000))
+        })
+        .transpose()?;
     let case = match case {
+        Case::ForgeDoubleLoot
+        | Case::ForgeReducedLoot
+        | Case::ForgeBoostedExhausted
+        | Case::ForgeBoostedExhaustedDoubleLoot
+        | Case::ForgeDuplexRetry => Case::ForgeReplay,
         Case::T94 => Case::Shared,
         Case::CharmCarnage
         | Case::TaskBoardParty
@@ -260,6 +296,13 @@ async fn scenario(
     native
         .install_companion_policies(&mut runtime)
         .map_err(debug)?;
+    if forge_boosted_exhausted {
+        runtime.install_daily_boost(crate::content::daily_boost::DailyBoostSelection {
+            reset_epoch: 1,
+            creature: "oteryn:creature.rat".into(),
+            boss: "oteryn:creature.ferumbras".into(),
+        }).map_err(debug)?;
+    }
     // Explicit qualification placement through the normal activation owner. Policies and
     // health come from the active artifact; distinct sources permit two pending deaths.
     let mut sources = Vec::new();
@@ -516,6 +559,10 @@ async fn scenario(
                 .is_some()
         );
         assert!(states.load_owned_build(&runtime, actor, session, &build));
+        if forge_boosted_exhausted {
+            states.load_stamina(&runtime, actor, session, 840);
+            assert_eq!(states.live_stamina(actor, session), Some(840));
+        }
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
@@ -528,6 +575,7 @@ async fn scenario(
             | Case::TaskBoardUnbound
             | Case::TaskBoardPrechange
             | Case::TaskBoardOrdered
+            | Case::ForgeDuplexRetry
     ) {
         task_board::install_boards(&mut owner, h, &players, &pin).await?;
     }
@@ -1148,6 +1196,21 @@ async fn scenario(
             .clock_origin
             .checked_sub(Duration::from_secs(3))
             .expect("clock");
+    }
+    if matches!(task_board_case, Case::ForgeDuplexRetry) {
+        let pending = task_board::capture_pending(&owner, &players).await?;
+        return super::forge_creature_fixtures::assert_duplex_expiry_retry(&owner, h, &pending).await;
+    }
+    if forge_boosted_exhausted {
+        for (_, session) in &players {
+            assert_eq!(owner.drain_kill_rewards(*session).await, DrainOutcome::Drained);
+        }
+        let mints: Vec<String> = sqlx::query_scalar(
+            "SELECT loot_purpose_key FROM game_item_mint_receipts ORDER BY loot_purpose_key LIMIT 3",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(mints, ["CORPSE_MATERIALIZATION", "oteryn:item.tibia.i37109"]);
+        super::forge_creature_fixtures::assert_committed_sliver_in_corpse(h).await?;
+        return Ok(());
     }
     if cake_kill_before_activation || cake_kill_before_expiry {
         let died_at_unix_ms = {

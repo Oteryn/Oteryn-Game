@@ -148,7 +148,6 @@ pub struct PullTicket(u64);
 
 #[derive(Debug, Clone, Default)]
 struct AccountView {
-    publication: std::sync::Arc<tokio::sync::Mutex<()>>,
     profile_b_hint_revision: u64,
     profile_b_wake: Option<std::sync::Weak<tokio::sync::Notify>>,
     fence: Option<PremiumFenceView>,
@@ -302,20 +301,6 @@ impl PremiumConsumer {
         self.update(account_id, |view| view.fail_pull(ticket));
     }
 
-    /// Serialize durable consumers with in-process publication of validated snapshots.
-    /// Take this before opening a consumer transaction. Ingest holds it from before fencing
-    /// through cache publication, so a consumer cannot see the gap after the fence commits.
-    pub async fn lock_snapshot_publication(
-        &self,
-        account_id: [u8; 16],
-    ) -> tokio::sync::OwnedMutexGuard<()> {
-        let publication = {
-            let mut accounts = self.lock();
-            std::sync::Arc::clone(&accounts.entry(account_id).or_default().publication)
-        };
-        publication.lock_owned().await
-    }
-
     /// Validate, fence and apply one snapshot response to a request for `account_id` with
     /// `nonce`, as a pull that starts now.
     pub async fn ingest(
@@ -358,7 +343,6 @@ impl PremiumConsumer {
                 };
             }
         };
-        let _publication = self.lock_snapshot_publication(account_id).await;
         let Ok((outcome, hint)) = root.accept_premium_with_profile_b_hint(&evidence).await else {
             self.update(account_id, |view| view.quarantine(ticket));
             return IngestOutcome::FenceUnavailable;

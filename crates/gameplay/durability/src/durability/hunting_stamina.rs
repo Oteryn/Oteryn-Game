@@ -11,6 +11,7 @@ use super::db::{
 use super::offline_training_state::{self, OfflineChange};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterId;
+use crate::durability::db::commit_semantic_read;
 use sha2::{Digest, Sha256};
 
 impl DurabilityRoot {
@@ -29,7 +30,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let state = offline_training_state::load(&mut tx, character.as_bytes()).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(Ok(state.stamina_minutes))
                 })
             })

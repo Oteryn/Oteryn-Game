@@ -258,6 +258,7 @@ def refresh_consumer_pins(root):
     """Repin exact consumers only after their closed source producers rebuild."""
     path = root / "tools/content-migration/validate_world_project_v2_to_tree.py"
     text = path.read_text()
+    rust_pins = {}
     for module, packet, code, expected_count in (
         (
             "lower_item_hit_magic_packet",
@@ -277,7 +278,7 @@ def refresh_consumer_pins(root):
         )
         actual = digest((root / "docs/agents/evidence" / packet).read_bytes())
         pattern = (
-            r'(hashlib\.sha256\(raw\)\.hexdigest\(\) == ")[0-9a-f]{64}(", "'
+            r'(hashlib\.sha256\(raw\)\.hexdigest\(\)\s*==\s*")[0-9a-f]{64}(",\s*"'
             + code
             + '")'
         )
@@ -286,7 +287,26 @@ def refresh_consumer_pins(root):
         )
         if count != expected_count:
             raise ValueError(f"consumer pin shape changed: {code}")
+        name = module.removeprefix("lower_").removesuffix("_packet")
+        rust_path = (
+            root
+            / "crates/gameplay/content-promotion/src/content"
+            / f"{name}_promotion.rs"
+        )
+        rust_pattern = (
+            rf'(pub const {name.upper()}_PACKET_SHA256: &str =\s*")[0-9a-f]{{64}}(")'
+        )
+        rust_text, count = re.subn(
+            rust_pattern,
+            lambda match, value=actual: match[1] + value + match[2],
+            rust_path.read_text(),
+        )
+        if count != 1:
+            raise ValueError(f"Rust consumer pin shape changed: {name}")
+        rust_pins[rust_path] = rust_text
     path.write_text(text)
+    for rust_path, rust_text in rust_pins.items():
+        rust_path.write_text(rust_text)
 
 
 def main():
