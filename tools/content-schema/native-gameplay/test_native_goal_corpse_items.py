@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -30,6 +31,42 @@ class NativeGoalCorpseProof(unittest.TestCase):
         facts = next(row for row in loot['items'] if row['item']['key'] == 'oteryn:item.tibia.i5992')
         self.assertTrue(facts['materializable'])
         self.assertEqual(facts['container_capacity'], 32)
+
+    def test_served_rat_corpse_and_decay_resolve_to_active_item_profiles(self):
+        root = native.ROOT
+        manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
+
+        def provider(name):
+            pin = manifest[name]
+            raw = (root / 'content' / pin['path']).read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), pin['sha256'])
+            return json.loads(raw)['records']
+
+        rat, = [r['profile'] for r in provider('creature_profiles')
+                if r['profile']['target']['key'] == native.RAT]
+        corpse = rat['data']['profile']['details']['corpse_item']
+        self.assertEqual(corpse['family'], 'Item')
+        items = provider('item_profiles')
+        policies, _ = native.policies(root, creatures={native.RAT})
+        self.assertEqual(int(corpse['key'].rsplit('.i', 1)[1]), next(iter(policies)))
+        for item, (capacity, duration, successor) in policies.items():
+            with self.subTest(item=item):
+                record, = [r for r in items if r['production_definition'] == {
+                    'family': 'Item', 'production_key': f'oteryn:item.tibia.i{item}',
+                    'revision_ref': corpse['revision']}]
+                self.assertTrue(record['admission']['materializable'])
+                self.assertIn('Ground', record['admission']['legal_destinations'])
+                for flag in ('blocks_movement', 'blocks_projectile', 'immovable_block_solid'):
+                    self.assertIs(type(record['attributes'][flag]), bool)
+                semantics = record['semantics']
+                if capacity is not None:
+                    self.assertEqual(semantics['container']['value']['capacity']['value'], capacity)
+                temporal = semantics['temporal']['value']
+                self.assertEqual(temporal['duration']['value'], duration)
+                self.assertEqual(temporal['decay_target'], {
+                    'state': 'KNOWN', 'value': {
+                        'key': f'oteryn:item.tibia.i{successor}', 'revision': corpse['revision']},
+                } if successor else {'state': 'NOT_APPLICABLE'})
 
     def test_portable_native_profiles_remain_exact_and_conflicts_are_atomic(self):
         root = native.ROOT
@@ -65,7 +102,7 @@ class NativeGoalCorpseProof(unittest.TestCase):
 
     def test_full_decay_closure_keeps_source_weights_and_capacities(self):
         policies, weights = native.policies()
-        self.assertEqual(len(policies), 48)
+        self.assertEqual(len(policies), 52)
         self.assertEqual({item: policies[item] for item in (7535, 7537, 7538, 7539, 7540)}, {
             7535: (7, 10000, 7537),
             7537: (7, 10000, 7538),

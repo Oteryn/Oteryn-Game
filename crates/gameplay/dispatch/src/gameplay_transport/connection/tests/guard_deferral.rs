@@ -158,6 +158,15 @@ fn guard_case(
                         1,
                         &oteryn_protocol_oteryn::ClientCommandValue { command_id: 1, command_type, payload: &payload },
                     )?
+                } else if command_type == oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT {
+                    oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: 1,
+                            command_type,
+                            payload: &oteryn_protocol_oteryn::logout::encode_logout_intent(),
+                        },
+                    )?
                 } else {
                     command(1, 1, u64::from(command_type), StepDirection::East)
                 };
@@ -265,6 +274,12 @@ fn guard_case(
                                 assert_eq!(
                                     oteryn_protocol_oteryn::attack::decode_attack_intent_result(results[0].payload),
                                     Ok(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
+                                );
+                            }
+                            oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT => {
+                                assert_eq!(
+                                    oteryn_protocol_oteryn::logout::decode_logout_result(results[0].payload),
+                                    Ok(LogoutResult::Busy)
                                 );
                             }
                             _ => assert!(results[0].payload.is_empty()),
@@ -486,6 +501,19 @@ fn selected_expert_mode_guard_deferral_returns_retryable_refusal() -> Result<(),
             CAPABILITY_ATTACK_V1,
             CAPABILITY_PVP_EXPERT_V1,
         ],
+        false,
+    )
+}
+
+#[test]
+fn selected_logout_guard_deferral_returns_busy_and_keeps_the_command_stream()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::logout::{CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT};
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_LOGOUT_INTENT,
+        &[CAPABILITY_LOGOUT_V1],
         false,
     )
 }

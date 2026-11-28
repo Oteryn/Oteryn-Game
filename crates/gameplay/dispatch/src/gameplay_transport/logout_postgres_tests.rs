@@ -102,6 +102,24 @@ fn nbeof_logout_busy_holder_postgres() -> TestResult {
         held.run(|_, _| Box::pin(async { Ok(()) })).await?;
 
         {
+            use sqlx::pool::PoolConnectionReturnDisposition;
+            let mut held = owner.root.try_acquire_ready()?;
+            assert_eq!(
+                owner.logout(dependencies.admitted).await,
+                LogoutReply::Result(LogoutResult::Busy)
+            );
+            assert_eq!(
+                held.return_to_pool_observed().await,
+                PoolConnectionReturnDisposition::ReturnedToIdle
+            );
+            assert_eq!(
+                session_state(&harness, &dependencies).await?,
+                GameSessionState::Active
+            );
+            assert!(actor_present(&owner, &dependencies).await);
+        }
+
+        {
             use crate::gameplay_transport::{FenceHold, FenceStep, TerminalRelease, UnendedSettle};
             let controller = dependencies.admitted.controller.ok_or("controller")?;
             let token = TerminalRelease::Logout(controller.transport)

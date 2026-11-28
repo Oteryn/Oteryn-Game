@@ -1862,7 +1862,7 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     # verified top-order facts before deriving the separate SRX-1 supplement.
     robbery_creatures = native_goal_corpse_items.bank_robbery_creatures(root)
     late_corpses, _ = native_goal_corpse_items.policies(
-        root, creatures=robbery_creatures | {native_goal_corpse_items.BONELORD}
+        root, creatures=robbery_creatures | {native_goal_corpse_items.BONELORD, native_goal_corpse_items.RAT}
     )
     late_item_ids = late_corpses.keys() | native_goal_loot_items.selected(
         root, robbery_creatures

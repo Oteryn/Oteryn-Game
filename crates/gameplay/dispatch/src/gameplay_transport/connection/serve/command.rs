@@ -437,6 +437,9 @@ where
     {
         let mut refusal = match command.command_type {
             COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT => Dispatch::Step(StepOutcome::rejected(), 0),
+            COMMAND_TYPE_LOGOUT_INTENT if decode_logout_intent(command.payload).is_ok() => {
+                Dispatch::Logout(LogoutResult::Busy)
+            }
             COMMAND_TYPE_CHAT_INTENT => Dispatch::Chat(
                 ChatIntentResult {
                     disposition: ChatDisposition::Rejected,

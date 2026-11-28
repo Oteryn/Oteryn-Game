@@ -19,6 +19,8 @@ GOALS = 'tools/content-schema/quest-authoring/samples/native-kill-goals.json'
 CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
 GROUPS = ('physical', 'stack', 'container', 'temporal')
 BONELORD = 'oteryn:creature.bonelord'
+RAT = 'oteryn:creature.rat'
+RAT_CORPSE = 5964
 
 
 def module(name, root):
@@ -43,7 +45,7 @@ def policies(root=ROOT, *, creatures=None):
     roots = {7535} if creatures is None else set()
     if creatures is None:
         # MP09 settles a real Bonelord kill through the ordinary corpse owner.
-        creatures = covered_creatures(root) | {BONELORD, 'oteryn:creature.magma_bubble'}
+        creatures = covered_creatures(root) | {BONELORD, RAT, 'oteryn:creature.magma_bubble'}
     raw = (root / CREATURES).read_bytes()
     manifest = json.loads((root / 'content/spells.manifest.json').read_bytes())
     if hashlib.sha256(raw).hexdigest() != manifest['creature_profiles']['sha256']:
@@ -70,6 +72,17 @@ def policies(root=ROOT, *, creatures=None):
         if not 0 <= weight <= 2**63 - 1:
             raise ValueError('NATIVE_GOAL_CORPSE_WEIGHT_BOUND')
         weights[item] = weight
+    if RAT_CORPSE in result:
+        # The Rat article links Dead Rat (TIBIAWIKI_STRUCTURED, 2023-10-21),
+        # which verifies 5 min / 5 min / 60 s and 63 / 44 / 30 oz.
+        # The pinned Canary chain in encounter_corpse_items supplies the
+        # IDs and initial 10 s stage. Keep the authored D137 capacity of 16.
+        _, duration, target = result[RAT_CORPSE]
+        result[RAT_CORPSE] = (16, duration, target)
+        if [result[item][1:] for item in (3994, 3995, 3996)] != [
+                (300_000, 3995), (300_000, 3996), (60_000, None)]:
+            raise ValueError('RAT_CORPSE_GLOBAL_DECAY_CONFLICT')
+        weights[3996] = 3000
     return result, weights
 
 
@@ -113,7 +126,14 @@ def apply_admissions(definitions, root=ROOT):
         accepted_semantics = definition.get('semantics', {})
         replacement.setdefault('semantics', copy.deepcopy(observed['semantics']))
         for group in GROUPS:
-            if not compatible(accepted_semantics.get(group, {'state': 'UNKNOWN'}), observed['semantics'][group]):
+            accepted = accepted_semantics.get(group, {'state': 'UNKNOWN'})
+            if item == RAT_CORPSE and group == 'temporal':
+                # Accept the pre-chain D113 policy as the materializer input.
+                legacy = builder.corpse_definition(definition, capacity, 60_000, None,
+                                                    movable['value'])['semantics']['temporal']
+                if accepted == legacy:
+                    accepted = observed['semantics'][group]
+            if not compatible(accepted, observed['semantics'][group]):
                 raise ValueError('NATIVE_GOAL_CORPSE_KNOWN_FACT_CONFLICT')
             replacement['semantics'][group] = observed['semantics'][group]
         replacement['materializable'] = True

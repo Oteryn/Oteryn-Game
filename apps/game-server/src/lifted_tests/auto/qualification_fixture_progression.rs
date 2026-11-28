@@ -20,6 +20,7 @@ use std::sync::Arc;
 #[derive(Clone, Copy)]
 enum Case {
     Admitted,
+    BusyHolder,
     Advanced,
     FixtureXpCommitted,
     Vocation,
@@ -473,14 +474,37 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     )
     .await
     };
-    let result = prepare().await;
+    let result = if matches!(case, Case::BusyHolder) {
+        use crate::durability::{DurabilityError, DurabilityRoot};
+        use std::future::{Future, poll_fn};
+        use std::task::Poll;
+
+        let holder = h.root.try_issue_semantic_pass()?;
+        let preparation = DurabilityRoot::with_holder_owner(prepare());
+        tokio::pin!(preparation);
+        let first = poll_fn(|cx| Poll::Ready(preparation.as_mut().poll(cx))).await;
+        assert!(first.is_pending(), "fixture must wait for the holder");
+        holder.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        // Reproduce the scheduler racing the fixture after the holder returns.
+        assert!(matches!(
+            h.root.try_issue_background_semantic_pass(),
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert!(matches!(
+            DurabilityRoot::with_holder_owner(async { h.root.try_acquire_ready() }).await,
+            Err(DurabilityError::RootUnavailable)
+        ));
+        preparation.await
+    } else {
+        prepare().await
+    };
     if matches!(case, Case::FixtureXpCommitted | Case::BootstrapVocation) && result.is_ok() {
         // The build commit itself can also succeed before its caller loses the reply.
         prepare().await?;
     }
     if matches!(
         case,
-        Case::Admitted | Case::BootstrapOnly | Case::FixtureXpCommitted | Case::BootstrapVocation
+        Case::Admitted | Case::BusyHolder | Case::BootstrapOnly | Case::FixtureXpCommitted | Case::BootstrapVocation
     ) {
         result?;
         let expected_revision = if matches!(case, Case::BootstrapVocation) {
@@ -529,6 +553,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             Case::MismatchedPolicy => "spell fixture progression policy revision mismatch",
             Case::MismatchedReward => "spell fixture progression reward revision mismatch",
             Case::Admitted
+            | Case::BusyHolder
             | Case::BootstrapOnly
             | Case::FixtureXpCommitted
             | Case::BootstrapVocation => {
@@ -612,4 +637,9 @@ fn qualification_fixture_refuses_earned_xp_after_death_returns_it_to_zero() -> T
 #[test]
 fn qualification_fixture_resumes_its_exact_committed_experience() -> TestResult {
     run(Case::FixtureXpCommitted, "qfixture_resume_xp")
+}
+
+#[test]
+fn qualification_build_gets_returned_holder_ahead_of_competing_work() -> TestResult {
+    run(Case::BusyHolder, "fixture_busy_holder")
 }

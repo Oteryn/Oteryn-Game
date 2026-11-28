@@ -8,7 +8,7 @@ use super::{
     AdmissionRefusal, AdmissionRetryBudget, ComposedFreshAdmission, FenceHold, ReleaseAttempt,
     TerminalRelease, UnendedSettle, operator_event,
 };
-use crate::durability::fresh_admission::FreshAdmissionStore;
+use crate::durability::{DurabilityError, fresh_admission::FreshAdmissionStore};
 use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 /// What the connection does after one logout command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,11 +164,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=logout_busy stage=spell_reconcile");
             return Err(LogoutReply::Result(LogoutResult::Busy));
         }
-        if !self.refresh_pvp_locks(actor, session).await {
-            // An unreadable fence or PvP row proves no fight deadline. Close through the
-            // ordinary unknown/control-loss path without authorizing a terminal release.
-            operator_event("event=logout_unknown stage=pvp_refresh kind=unknown");
-            return Err(LogoutReply::Unknown);
+        match self.refresh_pvp_locks_checked(actor, session, None).await {
+            Ok(()) => {}
+            Err(DurabilityError::RootUnavailable) => {
+                // The preflight issued no release. A new command can retry it.
+                operator_event("event=logout_busy stage=pvp_refresh");
+                return Err(LogoutReply::Result(LogoutResult::Busy));
+            }
+            Err(_) => {
+                operator_event("event=logout_unknown stage=pvp_refresh kind=unknown");
+                return Err(LogoutReply::Unknown);
+            }
         }
         // Reconciliation can finish a retained spell relocation. Use its current cell
         // for both zone checks instead of carrying a pre-reconciliation PZ exception.

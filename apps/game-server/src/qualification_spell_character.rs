@@ -36,23 +36,38 @@ pub(super) async fn retry_holder<T, E>(
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
-    loop {
-        let outcome = step().await;
-        if !outcome.as_ref().is_err_and(&busy) || tokio::time::Instant::now() >= deadline {
-            return outcome;
-        }
+    // Scheduled passes can otherwise win the returned holder before the
+    // fixture reaches its next checkout, even while it holds a FIFO ticket.
+    let _foreground = root.and_then(|root| root.foreground_demand().ok());
+    let mut outcome = step().await;
+    while outcome.as_ref().is_err_and(&busy) && tokio::time::Instant::now() < deadline {
         let now = tokio::time::Instant::now();
         let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
         let earliest = (now + std::time::Duration::from_millis(50)).min(latest);
+        let waiter = root.and_then(DurabilityRoot::holder_waiter);
         if let Some(root) = root {
-            root.wait_holder_retry(earliest, latest).await;
+            if !root.wait_holder_turn(earliest, latest).await {
+                // A retired holder cannot notify a waiter. Ask the root's
+                // maintenance owner for readiness within this retry window.
+                let ready = tokio::time::timeout_at(latest, root.await_ready()).await;
+                let retry_at = if matches!(ready, Ok(Ok(()))) {
+                    earliest
+                } else {
+                    latest
+                };
+                tokio::time::sleep_until(retry_at).await;
+            }
         } else {
             tokio::time::sleep_until(earliest).await;
         }
         if tokio::time::Instant::now() >= deadline {
             return outcome;
         }
+        // Keep the ticket until the next checkout, including after yielding.
+        outcome = step().await;
+        drop(waiter);
     }
+    outcome
 }
 
 pub(super) fn progression_busy(
@@ -228,12 +243,12 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         root.read_character_build_state(authority, character).await
     })
     .await
-    .map_err(debug)?;
+    .map_err(|error| format!("qualification read_initial_build: {error:?}"))?;
     let progression = retry_holder(Some(root), deadline, progression_busy, async || {
         root.read_character_progression(authority, character).await
     })
     .await
-    .map_err(debug)?;
+    .map_err(|error| format!("qualification read_initial_progression: {error:?}"))?;
     let experience = policy
         .thresholds
         .iter()
@@ -252,7 +267,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
                 .await
         })
         .await
-        .map_err(debug)?
+        .map_err(|error| format!("qualification reconcile_experience: {error:?}"))?
         .filter(|receipt| {
             receipt.character_id == character
                 && receipt.level_before == 1
@@ -273,7 +288,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
                 .await
         })
         .await
-        .map_err(debug)?
+        .map_err(|error| format!("qualification reconcile_build: {error:?}"))?
         .is_some_and(|receipt| {
             receipt.character_id == character
                 && receipt.after.vocation() == vocation
@@ -293,7 +308,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
                 .await
         })
         .await
-        .map_err(debug)?
+        .map_err(|error| format!("qualification check_bootstrap_vocation: {error:?}"))?
     {
         return Err("spell fixture vocation is set".into());
     }
@@ -336,7 +351,9 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
                     .await
             })
             .await
-            .map_err(debug)?
+            .map_err(|error| {
+                format!("qualification check_experience_or_death_receipts: {error:?}")
+            })?
         {
             return Err(
                 "spell fixture noninitial progression revision has XP or death history".into(),
@@ -365,7 +382,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             async || root.read_current_character(authority, character).await,
         )
         .await
-        .map_err(debug)?
+        .map_err(|error| format!("qualification read_initial_character_revision: {error:?}"))?
         .revision,
     };
     if progression
@@ -390,7 +407,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             .await
         })
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("qualification initialize_progression: {error:?}"))?;
     }
     if level > 1 && !checkpoint {
         retry_holder(Some(root), deadline, progression_busy, async || {
@@ -412,14 +429,16 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             .await
         })
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("qualification commit_experience: {error:?}"))?;
     }
     fence.expected_character_revision =
         retry_holder(Some(root), deadline, authority_busy, async || {
             root.read_current_character(authority, character).await
         })
         .await
-        .map_err(debug)?
+        .map_err(|error| {
+            format!("qualification read_character_revision_after_experience: {error:?}")
+        })?
         .revision;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
         include_bytes!("../../../tools/content-schema/native-gameplay/build-training.json"),
@@ -451,7 +470,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             .await
         })
         .await
-        .map_err(debug)?;
+        .map_err(|error| format!("qualification commit_build: {error:?}"))?;
     }
     // Verify the requested owned state with typed errors; the cast-facts loader
     // erases holder-busy into Unavailable, which cannot safely be retried.
@@ -459,23 +478,23 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         root.read_current_character(authority, character).await
     })
     .await
-    .map_err(debug)?
+    .map_err(|error| format!("qualification read_verification_revision: {error:?}"))?
     .revision;
     let final_build = retry_holder(Some(root), deadline, progression_busy, async || {
         root.read_character_build_state(authority, character).await
     })
     .await
-    .map_err(debug)?;
+    .map_err(|error| format!("qualification read_final_build: {error:?}"))?;
     let final_progression = retry_holder(Some(root), deadline, progression_busy, async || {
         root.read_character_progression(authority, character).await
     })
     .await
-    .map_err(debug)?;
+    .map_err(|error| format!("qualification read_final_progression: {error:?}"))?;
     let verified_revision = retry_holder(Some(root), deadline, authority_busy, async || {
         root.read_current_character(authority, character).await
     })
     .await
-    .map_err(debug)?
+    .map_err(|error| format!("qualification read_final_character_revision: {error:?}"))?
     .revision;
     if verification_revision != verified_revision
         || final_build != after

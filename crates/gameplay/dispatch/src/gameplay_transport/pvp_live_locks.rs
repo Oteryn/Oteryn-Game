@@ -1,5 +1,6 @@
 //! Live combat locks and their fenced readmission refresh.
 use super::*;
+use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
 
 pub(in crate::gameplay_transport) fn lock_mut(
     states: &mut ChannelSpellStates,
@@ -69,17 +70,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         generation: Option<u64>,
     ) -> bool {
-        // NODEBOOT-1: both reads go through the shared holder that background passes also
-        // take, so a busy holder is retried briefly instead of refusing the command.
-        use crate::durability::{
-            DurabilityError, character_progression::CharacterProgressionError,
-        };
-        let Ok(budget) =
-            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
-        else {
-            return false;
-        };
-        let Ok((fence, stored, house_scope)) = budget
+        self.refresh_pvp_locks_checked(actor, session, generation)
+            .await
+            .is_ok()
+    }
+
+    pub(in crate::gameplay_transport) async fn refresh_pvp_locks_checked(
+        &self,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        generation: Option<u64>,
+    ) -> Result<(), DurabilityError> {
+        // NODEBOOT-1: both reads share the holder with background passes.
+        let budget =
+            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)?;
+        let (fence, stored, house_scope) = budget
             .retry_durability("pvp_refresh", async || {
                 let fence = self
                     .current_quest_fence_durable(session)
@@ -108,17 +113,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })?;
                 Ok((fence, stored, house_scope))
             })
-            .await
-        else {
-            return false;
-        };
+            .await?;
         // Every durable read is complete; retain no foreground demand while
         // waiting for the runtime and cached-lock publication below.
         drop(budget);
         let runtime = self.runtime.lock().await;
         if house_scope {
             let Ok(house) = runtime.house_actor_state(actor, session) else {
-                return false;
+                return Err(DurabilityError::CommitRejected);
             };
             if fence.game_session_id != session
                 || house.scope != fence.runtime_scope
@@ -126,17 +128,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || house.lease.character_id().as_bytes() != fence.character_id.as_bytes()
                 || house.lease.generation() != fence.character_lease_generation
             {
-                return false;
+                return Err(DurabilityError::CommitRejected);
             }
         } else if runtime.player_control_facts(actor, session).is_err() {
-            return false;
+            return Err(DurabilityError::CommitRejected);
         }
         let mut states = self.states.spell_states.lock().await;
         if generation.is_some_and(|generation| {
             generation != fence.connection_generation.get()
                 || !states.current_cooldown_transport(actor, session, generation)
         }) {
-            return false;
+            return Err(DurabilityError::CommitRejected);
         }
         states.pvp_locks.retain(|(a, s, _)| {
             runtime.player_control_facts(*a, *s).is_ok()
@@ -158,7 +160,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 deadline(stored.readmission_remaining.kill),
             );
         }
-        true
+        Ok(())
     }
 }
 pub(in crate::gameplay_transport) struct PvpBlocker<'a> {
