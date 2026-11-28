@@ -353,8 +353,8 @@ async fn seed_crowded_death(h: &Harness) -> TestResult {
               'definition-r1',1,1,txn FROM nodes
          ), bound AS (
             INSERT INTO game_item_bindings(item_instance_id,world_id,character_id,cause)
-            SELECT item,$2,$3,'STORE_PURCHASE' FROM nodes WHERE n<=3
-            UNION ALL SELECT $1,$2,$3,'STORE_PURCHASE'
+            SELECT item,$2,$3::uuid,'STORE_PURCHASE' FROM nodes WHERE n<=3
+            UNION ALL SELECT $1,$2,$3::uuid,'STORE_PURCHASE'
          )
          INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,
             placement_ordinal,placed_transaction_id)
