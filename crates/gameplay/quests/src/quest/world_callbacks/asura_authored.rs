@@ -46,7 +46,7 @@ mod tests {
         let callbacks = world_callbacks::load_for(catalogue)?;
         for (stage, previous) in [
             ("s2", "oteryn:quest-progress/authored/asura_palace_quest/s1"),
-            ("s3", "oteryn:quest-progress/engenc/asura/s2/opened"),
+            ("s3", "oteryn:quest-progress/authored/asura_palace_quest/s1"),
             ("s4", "oteryn:quest-progress/engenc/asura/s3/opened"),
         ] {
             let entered = format!("oteryn:quest-progress/engenc/asura/{stage}/entered");
@@ -124,17 +124,31 @@ mod tests {
         let loaded = loader::load_embedded_quest_state_with_bindings("content-1", &bindings)
             .map_err(|error| format!("{error:?}"))?;
         let catalogue = loaded.catalogue();
-        let tracks = std::collections::BTreeMap::from([
+        let mut tracks = std::collections::BTreeMap::from([
+            ("oteryn:quest-progress/engenc/asura/s3/count".into(), 2),
             ("oteryn:quest-progress/engenc/asura/s3/opened".into(), 2),
-            ("oteryn:quest-progress/engenc/asura/s4/opened".into(), 1),
+            ("oteryn:quest-progress/engenc/asura/hydra/count".into(), 3),
         ]);
         let entry = catalogue
             .transition("oteryn:quest-callback/engenc/asura/orchid/entry")
             .ok_or("Orchid entry transition")?;
         assert!(
-            catalogue.evaluate(entry, &tracks, 0).is_ok(),
+            catalogue.evaluate(entry, &tracks, 100_000).is_ok(),
             "saved admission cannot restart the unfinished encounter"
         );
+        let death = catalogue
+            .transition("oteryn:quest-transition/native-kills/engenc-asura-orchid")
+            .ok_or("Orchid death")?;
+        for change in catalogue.evaluate(death, &tracks, 100_000).map_err(|e| format!("{e:?}"))? {
+            tracks.insert(change.track, change.after);
+        }
+        assert_eq!(tracks["oteryn:quest-progress/engenc/asura/orchid/count"], 1);
+        assert_eq!(tracks["oteryn:quest-progress/engenc/asura/orchid/last_kill"], 100_000);
+        assert!(catalogue.evaluate(entry, &tracks, 172_000).is_err());
+        tracks.insert("oteryn:quest-progress/engenc/asura/hydra/count".into(), 3);
+        tracks.insert("oteryn:quest-progress/engenc/asura/s3/count".into(), 2);
+        assert!(catalogue.evaluate(entry, &tracks, 171_999).is_err());
+        assert!(catalogue.evaluate(entry, &tracks, 172_000).is_ok());
         Ok(())
     }
 

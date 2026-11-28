@@ -82,10 +82,34 @@
           "maximum": 1
         },
         {
+          "key": "oteryn:quest-progress/engenc/asura/hydra/count",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/hydra/entered",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
           "key": "oteryn:quest-progress/engenc/asura/orchid/count",
           "initial": 0,
           "minimum": 0,
           "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/orchid/attempt",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/asura/orchid/last_kill",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 9223372036854775807
         },
         {
           "key": "oteryn:quest-progress/engenc/asura/orchid/sapphire",
@@ -408,7 +432,7 @@
               "teleport": null,
               "storage": [
                 {
-                  "track": "oteryn:quest-progress/engenc/asura/s2/opened",
+                  "track": "oteryn:quest-progress/authored/asura_palace_quest/s1",
                   "minimum": 1,
                   "maximum": 1,
                   "set": 1,
@@ -773,6 +797,132 @@
           }
         },
         {
+          "key": "hydra-entry",
+          "completes": false,
+          "trigger": {
+            "kind": "step_in",
+            "callback": {
+              "key": "oteryn:quest-callback/engenc/asura/hydra/entry",
+              "quest": "oteryn:quest.authored.asura_palace_quest",
+              "trigger": "step_in",
+              "admission": {
+                "premium": true
+              },
+              "selector": {
+                "position": {
+                  "x": 32942,
+                  "y": 32677,
+                  "floor": -7
+                },
+                "unique": null,
+                "action": null,
+                "appearance": 1066,
+                "native": {
+                  "position": {
+                    "x": 32942,
+                    "y": 32677,
+                    "floor": -7
+                  },
+                  "ordinal": 1,
+                  "appearance": 1066
+                }
+              },
+              "lever": null,
+              "reversible": false,
+              "requires_world_admission": true,
+              "passages": [],
+              "teleport": null,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/hydra/entered",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 1
+                }
+              ],
+              "offerings": [],
+              "return_on_failure": false,
+              "failure_message": null,
+              "sources": [
+                "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
+                "authored per owner rule",
+                "https://tibia.fandom.com/wiki/Cave_Hydra"
+              ],
+              "effects": {
+                "encounter": {
+                  "minimum_level": 1,
+                  "players": [
+                    {
+                      "from": {
+                        "x": 32942,
+                        "y": 32677,
+                        "floor": -7
+                      },
+                      "to": {
+                        "x": 32943,
+                        "y": 32678,
+                        "floor": -8
+                      }
+                    }
+                  ],
+                  "room_min": {
+                    "x": 32938,
+                    "y": 32677,
+                    "floor": -8
+                  },
+                  "room_max": {
+                    "x": 32944,
+                    "y": 32681,
+                    "floor": -8
+                  },
+                  "monsters": [
+                    {
+                      "position": {
+                        "x": 32940,
+                        "y": 32678,
+                        "floor": -8
+                      },
+                      "creature": "oteryn:creature.cave_hydra"
+                    },
+                    {
+                      "position": {
+                        "x": 32944,
+                        "y": 32678,
+                        "floor": -8
+                      },
+                      "creature": "oteryn:creature.cave_hydra"
+                    },
+                    {
+                      "position": {
+                        "x": 32940,
+                        "y": 32681,
+                        "floor": -8
+                      },
+                      "creature": "oteryn:creature.cave_hydra"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "key": "hydra",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/engenc-asura-hydra",
+              "creature": "oteryn:creature.cave_hydra",
+              "track": "oteryn:quest-progress/engenc/asura/hydra/count",
+              "gate": "oteryn:quest-progress/engenc/asura/hydra/entered",
+              "gate_value": 1,
+              "maximum": 3,
+              "encounter_source": "oteryn:quest-callback/engenc/asura/hydra/entry"
+            }
+          }
+        },
+        {
           "key": "orchid-entry",
           "completes": false,
           "trigger": {
@@ -806,10 +956,10 @@
               "teleport": null,
               "storage": [
                 {
-                  "track": "oteryn:quest-progress/engenc/asura/s4/opened",
-                  "minimum": 1,
-                  "maximum": 1,
-                  "set": 1,
+                  "track": "oteryn:quest-progress/engenc/asura/hydra/count",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 3,
                   "preserve": true
                 },
                 {
@@ -819,11 +969,17 @@
                   "set": 2
                 },
                 {
-                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
-                  "minimum": 0,
-                  "maximum": 0,
-                  "set": 0,
+                  "track": "oteryn:quest-progress/engenc/asura/s3/count",
+                  "minimum": 2,
+                  "maximum": 2,
+                  "set": 2,
                   "preserve": true
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/attempt",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "set": 0
                 }
               ],
               "offerings": [],
@@ -833,6 +989,19 @@
                 "tools/content-schema/quest-authoring/samples/engenc/asura-chambers.json",
                 "authored per owner rule",
                 "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml"
+              ],
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/last_kill",
+                  "from": {
+                    "kind": "elapsed_at_least",
+                    "seconds": 72000
+                  },
+                  "effect": {
+                    "kind": "add",
+                    "value": 0
+                  }
+                }
               ],
               "activation": {
                 "track": "oteryn:quest-progress/engenc/asura/s3/opened",
@@ -890,7 +1059,55 @@
             "counter": {
               "key": "oteryn:quest-transition/native-kills/engenc-asura-orchid",
               "creature": "oteryn:creature.the_flaming_orchid",
-              "track": "oteryn:quest-progress/engenc/asura/orchid/count",
+              "track": "oteryn:quest-progress/engenc/asura/orchid/attempt",
+              "on_defeat": [
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/count",
+                  "from": {
+                    "kind": "between",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "effect": {
+                    "kind": "add_at_least",
+                    "value": 0,
+                    "minimum": 1
+                  }
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/orchid/last_kill",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/hydra/count",
+                  "from": {
+                    "kind": "between",
+                    "minimum": 3,
+                    "maximum": 3
+                  },
+                  "effect": {
+                    "kind": "add",
+                    "value": -3
+                  }
+                },
+                {
+                  "track": "oteryn:quest-progress/engenc/asura/s3/count",
+                  "from": {
+                    "kind": "between",
+                    "minimum": 2,
+                    "maximum": 2
+                  },
+                  "effect": {
+                    "kind": "add",
+                    "value": -2
+                  }
+                }
+              ],
               "gate": "oteryn:quest-progress/engenc/asura/s3/opened",
               "gate_value": 2,
               "maximum": 1,

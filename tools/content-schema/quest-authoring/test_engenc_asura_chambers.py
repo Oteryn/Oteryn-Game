@@ -34,7 +34,7 @@ class AsuraChambers(unittest.TestCase):
         )
         self.assertEqual(
             callback["storage"][0]["track"],
-            "oteryn:quest-progress/engenc/asura/s4/opened",
+            "oteryn:quest-progress/engenc/asura/hydra/count",
         )
         counter = stages["orchid-kill"]["trigger"]["counter"]
         self.assertEqual(counter["encounter_source"], callback["key"])
@@ -42,7 +42,17 @@ class AsuraChambers(unittest.TestCase):
         for name, item, entrance in (("sapphire", 3029, 2472), ("ruby", 3030, 1993)):
             claim = stages[f"orchid-{name}"]["trigger"]["callback"]
             self.assertEqual(claim["selector"]["native"]["appearance"], entrance)
-            self.assertEqual(claim["storage"], [{"track": f"oteryn:quest-progress/engenc/asura/orchid/{name}", "minimum": 0, "maximum": 0, "set": 1}])
+            self.assertEqual(
+                claim["storage"],
+                [
+                    {
+                        "track": f"oteryn:quest-progress/engenc/asura/orchid/{name}",
+                        "minimum": 0,
+                        "maximum": 0,
+                        "set": 1,
+                    }
+                ],
+            )
             self.assertEqual(
                 claim["effects"]["item_reward"],
                 {
@@ -60,7 +70,21 @@ class AsuraChambers(unittest.TestCase):
                 "appearance": 1676,
             },
         )
-        self.assertEqual(door["storage"][0]["track"], counter["track"])
+        milestone, clock, hydra, fire = counter["on_defeat"]
+        self.assertEqual(hydra["effect"], {"kind": "add", "value": -3})
+        hunt = stages["hydra"]["trigger"]["counter"]
+        self.assertEqual(hunt["creature"], "oteryn:creature.cave_hydra")
+        self.assertEqual(hunt["maximum"], 3)
+        self.assertEqual(hunt["track"], hydra["track"])
+        self.assertEqual(
+            stages["s3-entry"]["trigger"]["callback"]["storage"][0]["track"],
+            "oteryn:quest-progress/authored/asura_palace_quest/s1",
+        )
+        self.assertEqual(door["storage"][0]["track"], milestone["track"])
+        self.assertNotEqual(counter["track"], milestone["track"])
+        self.assertEqual(clock["track"], callback["state_ops"][0]["track"])
+        self.assertEqual(callback["state_ops"][0]["from"]["seconds"], 72000)
+        self.assertEqual(fire["effect"], {"kind": "add", "value": -2})
         self.assertEqual(door["minimum_level"], 250)
         self.assertEqual(door["teleport"], {"x": 32962, "y": 32673, "floor": -2})
 

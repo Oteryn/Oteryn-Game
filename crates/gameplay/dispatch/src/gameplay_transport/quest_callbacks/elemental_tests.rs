@@ -23,6 +23,11 @@ fn engenc_authored_elementals_activate_with_exact_combat_facts() -> Result<(), S
             assert!(greater.flags.attackable);
             assert_eq!(greater.forge_difficulty, None);
         }
+        let hydra = policies.iter().find(|p| p.definition_key == "oteryn:creature.cave_hydra")
+            .ok_or("Cave Hydra policy")?;
+        assert_eq!(hydra.display_name, "Cave Hydra");
+        assert_eq!(hydra.maximum_health, 2350);
+        assert!(hydra.flags.attackable);
         Ok(())
     }).map_err(|e| e.to_string())?.join().map_err(|_| "elemental activation thread failed".to_string())?
 }

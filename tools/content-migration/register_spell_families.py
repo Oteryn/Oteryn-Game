@@ -1830,6 +1830,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
 
     creatures = json.loads(generated[creature_path])
     engenc_elemental_profiles.apply(creatures)
+    import engenc_cave_hydra
+
+    engenc_cave_hydra.admit(root, creatures)
     nrwicked_profiles.admit_creatures(
         root,
         creatures,
