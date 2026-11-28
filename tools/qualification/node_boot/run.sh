@@ -732,6 +732,21 @@ CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_co
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
 SQL
+if [[ "$NODE_BOOT_UNPRIVILEGED" == 1 && "$NODE_BOOT_WORLD" == 1 &&
+      "${NODE_BOOT_E2E_ONLY:-}" == rows &&
+      "${OTERYN_E2E_ROW_BATCH:-}" =~ ^(43|182):1$ ]]; then
+  # The disposable login needs the Server's documented relay logging pins.
+  psql_admin oteryn_node_boot <<'SQL'
+GRANT SET ON PARAMETER log_parameter_max_length, log_statement,
+  log_min_duration_statement TO nb_runtime;
+SQL
+  relay_key="$BASE/node/secrets/s04a-relay"
+  (
+    umask 077
+    { printf '1 0 '; openssl rand -base64 32; } > "$relay_key"
+  )
+  NODE_GAMEPLAY_ENV+=("OTERYN_CHAT_RELAY_KEYS_FILE=$relay_key")
+fi
 secret_to() { # owner source destination
   install_owned "$1" -m 0600 "$2" "$3"
 }
