@@ -120,6 +120,9 @@ mod arena;
 mod backpack_outputs;
 pub mod boss_reward;
 mod charges;
+mod chest;
+#[cfg(any(test, feature = "test-support"))]
+pub use chest::with_stalled_reward_chest_commit;
 mod claimed;
 mod cake;
 mod contents;
@@ -226,6 +229,8 @@ pub struct RewardClaimMintRequest {
 /// Refusal reasons. A refusal writes nothing and the player can retry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RewardClaimRefusal {
+    /// The holder budget expired before any SQL of the chest MINT was issued.
+    HolderBusyBeforeIssue,
     /// The character already holds this `once` claim.
     AlreadyClaimed,
     /// Another CommandRef's MINT of this claim is still pending
@@ -562,115 +567,22 @@ impl DurabilityRoot {
         request: RewardClaimMintRequest,
         weights: Option<&dyn super::item_transfer::ItemWeightLookup>,
     ) -> Result<RewardClaimMintCandidate> {
-        validate_request(&request)?;
-        if weights.is_none() && request.item.container_capacity.is_some() {
-            return Err(RewardClaimMintError::Refused(
-                RewardClaimRefusal::RewardIsContainer,
-            ));
-        }
-        let intent_binding = intent_binding(&request, fence.character_id)?;
+        let binding = validate_claim_intent(&request, fence, weights)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
-        let node = node.clone();
-        let mut weight_context = weights;
-        let (request, reservation) = self
-            .try_issue_semantic_pass()?
-            .run_with_context(&mut weight_context, move |holder, deadline, weights| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    lock_cause(&mut tx, request.command).await?;
-                    if let Some(row) = load_reservation(&mut tx, request.command).await? {
-                        let stored: Vec<u8> = row.try_get("intent_binding")?;
-                        if stored != intent_binding {
-                            return Ok(Err(RewardClaimMintError::ConflictingCause));
-                        }
-                        let reservation = decode_reservation(&row)?;
-                        if !contents::reservation_matches(&row, &request, &reservation)?
-                            || !additional::reservation_matches(&row, &request, &reservation)?
-                        {
-                            return Ok(Err(RewardClaimMintError::ConflictingCandidate));
-                        }
-                        if load_receipt(&mut tx, request.command).await?.is_none() {
-                            if let Err(error) =
-                                admit(&mut tx, &node, &fence, &request, &reservation).await?
-                            {
-                                return Ok(Err(error));
-                            }
-                            if let Some(weights) = *weights
-                                && let Err(error) = contents::check_capacity(
-                                    &mut tx,
-                                    fence.character_id,
-                                    reservation.world_id,
-                                    &request,
-                                    weights,
-                                )
-                                .await?
-                            {
-                                return Ok(Err(error));
-                            }
-                        }
-                        commit_semantic_transaction(tx, deadline).await?;
-                        return Ok(Ok((request, reservation)));
-                    }
-                    let (world_id, channel_id) = match scope_of(&fence) {
-                        Ok(scope) => scope,
-                        Err(_) => return Ok(Err(RewardClaimMintError::AuthorityRejected)),
-                    };
-                    let row = sqlx::query(
-                        "SELECT game_character_uuid_v7()::text AS transaction_id, \
-                                game_character_uuid_v7()::text AS event_id, \
-                                game_character_uuid_v7()::text AS item_instance_id, \
-                                floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
-                                  AS occurred_at",
-                    )
-                    .fetch_one(&mut *tx)
-                    .await?;
-                    let reservation = Reservation {
-                        character_id: fence.character_id,
-                        world_id: *world_id.as_bytes(),
-                        channel_id: *channel_id.as_bytes(),
-                        transaction_id: uuid_text(row.try_get("transaction_id")?)?,
-                        event_id: uuid_text(row.try_get("event_id")?)?,
-                        item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
-                        occurred_at_unix_ms: row.try_get("occurred_at")?,
-                        work_units_used: 0,
-                    };
-                    if let Err(error) =
-                        admit(&mut tx, &node, &fence, &request, &reservation).await?
-                    {
-                        return Ok(Err(error));
-                    }
-                    if let Some(weights) = *weights
-                        && let Err(error) = contents::check_capacity(
-                            &mut tx,
-                            fence.character_id,
-                            reservation.world_id,
-                            &request,
-                            weights,
-                        )
-                        .await?
-                    {
-                        return Ok(Err(error));
-                    }
-                    insert_reservation(&mut tx, &request, &intent_binding, &reservation).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok((request, reservation)))
-                })
+        let mut admission = ClaimMintAdmission {
+            recovery,
+            node: node.clone(),
+            fence,
+            weights,
+            catalogue_len: None,
+        };
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut admission, move |holder, deadline, admission| {
+                Box::pin(reserve_reward_claim(holder, deadline, admission, binding, request))
             })
-            .await??;
-        Ok(RewardClaimMintCandidate {
-            request,
-            character_id: reservation.character_id,
-            transaction_id: reservation.transaction_id,
-            event_id: reservation.event_id,
-            item_instance_id: reservation.item_instance_id,
-            occurred_at_unix_ms: reservation.occurred_at_unix_ms,
-            intent_binding,
-            work_units_used: reservation.work_units_used,
-        })
+            .await?
     }
 
     /// Durably charge one DUR03-RL-08 work unit to the reservation in its own
@@ -690,46 +602,7 @@ impl DurabilityRoot {
             .reward_claim_pass(retry_until)
             .await?
             .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    let used = sqlx::query(
-                        "UPDATE game_reward_claim_mint_reservations \
-                            SET work_units_used = work_units_used + 1 \
-                          WHERE game_session_id = encode($1,'hex')::uuid \
-                            AND command_id = $2::text::numeric(20,0) \
-                            AND transaction_id = encode($3,'hex')::uuid \
-                            AND work_units_used < $4 RETURNING work_units_used",
-                    )
-                    .bind(command.game_session_id().as_bytes().as_slice())
-                    .bind(command.command_id().get().to_string())
-                    .bind(transaction_id.as_slice())
-                    .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))
-                    .fetch_optional(&mut *tx)
-                    .await?;
-                    let Some(used) = used else {
-                        let reserved = sqlx::query(
-                            "SELECT 1 FROM game_reward_claim_mint_reservations \
-                              WHERE game_session_id = encode($1,'hex')::uuid \
-                                AND command_id = $2::text::numeric(20,0) \
-                                AND transaction_id = encode($3,'hex')::uuid",
-                        )
-                        .bind(command.game_session_id().as_bytes().as_slice())
-                        .bind(command.command_id().get().to_string())
-                        .bind(transaction_id.as_slice())
-                        .fetch_optional(&mut *tx)
-                        .await?;
-                        return Ok(Err(if reserved.is_some() {
-                            RewardClaimMintError::CapacityExceeded
-                        } else {
-                            RewardClaimMintError::ConflictingCandidate
-                        }));
-                    };
-                    let used = u8::try_from(used.try_get::<i16, _>("work_units_used")?)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(used))
-                })
+                Box::pin(charge_reward_claim(holder, deadline, recovery, command, transaction_id))
             })
             .await?;
         match charged {
@@ -870,148 +743,17 @@ impl DurabilityRoot {
         self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate, retry_until)
             .await?;
         let frozen = FrozenClaim::of(candidate);
-        let node = node.clone();
-        let mut weight_context = weights;
-
+        let mut admission = ClaimMintAdmission {
+            recovery,
+            node: node.clone(),
+            fence,
+            weights,
+            catalogue_len,
+        };
         self.reward_claim_pass(retry_until)
             .await?
-            .run_with_context(&mut weight_context, move |holder, deadline, weights| {
-                Box::pin(async move {
-                    let mut tx = begin_type2_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    let command = frozen.request.command;
-                    lock_cause(&mut tx, command).await?;
-
-                    if let Some(row) = load_receipt(&mut tx, command).await? {
-                        let stored: Vec<u8> = row.try_get("intent_binding")?;
-                        if stored != frozen.intent_binding {
-                            return Ok(Err(RewardClaimMintError::ConflictingCause));
-                        }
-                        let committed = decode_receipt(&row)?;
-                        tx.commit(deadline).await?;
-                        return Ok(Ok((
-                            RewardClaimMintOutcome::AlreadyCommitted(committed),
-                            GrantNotice::None,
-                        )));
-                    }
-
-                    let Some(row) = load_reservation(&mut tx, command).await? else {
-                        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
-                    };
-                    let stored: Vec<u8> = row.try_get("intent_binding")?;
-                    if stored != frozen.intent_binding {
-                        return Ok(Err(RewardClaimMintError::ConflictingCause));
-                    }
-                    let reservation = decode_reservation(&row)?;
-                    if reservation.transaction_id != frozen.transaction_id
-                        || reservation.event_id != frozen.event_id
-                        || reservation.item_instance_id != frozen.item_instance_id
-                        || reservation.occurred_at_unix_ms != frozen.occurred_at_unix_ms
-                        || reservation.character_id != frozen.character_id
-                    {
-                        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
-                    }
-                    if !contents::reservation_matches(&row, &frozen.request, &reservation)?
-                        || !additional::reservation_matches(&row, &frozen.request, &reservation)?
-                    {
-                        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
-                    }
-                    let identity_reused: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_reward_claim_mint_receipts \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid \
-                                            OR item_instance_id = encode($3,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
-                                         WHERE transaction_id = encode($1,'hex')::uuid \
-                                            OR event_id = encode($2,'hex')::uuid) \
-                             OR EXISTS (SELECT 1 FROM game_item_instances \
-                                         WHERE item_instance_id = encode($3,'hex')::uuid \
-                                            OR minted_transaction_id = encode($1,'hex')::uuid)",
-                    )
-                    .bind(frozen.transaction_id.as_slice())
-                    .bind(frozen.event_id.as_slice())
-                    .bind(frozen.item_instance_id.as_slice())
-                    .fetch_one(&mut **tx)
-                    .await?;
-                    if identity_reused {
-                        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
-                    }
-
-                    let (destination, granter) =
-                        match admit(&mut tx, &node, &fence, &frozen.request, &reservation).await? {
-                            Ok(admitted) => admitted,
-                            Err(error) => return Ok(Err(error)),
-                        };
-                    if let Some(weights) = *weights
-                        && let Err(error) = contents::check_capacity(
-                            &mut tx,
-                            fence.character_id,
-                            reservation.world_id,
-                            &frozen.request,
-                            weights,
-                        )
-                        .await?
-                    {
-                        return Ok(Err(error));
-                    }
-                    let message = claim_message(&frozen, &reservation, &fence, destination);
-                    let tuple = tx.tuple();
-                    let envelope = match audit::encode_reward_claim_mint_event(
-                        RewardClaimMintEventIdentity {
-                            event_id: frozen.event_id,
-                            transaction_id: frozen.transaction_id,
-                            occurred_at_unix_ms: frozen.occurred_at_unix_ms,
-                            channel_id: reservation.channel_id,
-                            server_build_id: SERVER_BUILD_ID,
-                        },
-                        message,
-                        tuple.tuple(),
-                    ) {
-                        Ok(envelope) => envelope,
-                        Err(error) => return Ok(Err(error.into())),
-                    };
-                    // With the token `admit` minted after the fence and the
-                    // `character_root` row lock in this transaction; an error
-                    // drops the whole transaction.
-                    let mut notice = GrantNotice::None;
-                    if let Some(achievement) = &frozen.request.achievement {
-                        let grant = match achievement_grant(
-                            achievement,
-                            fence.character_id,
-                            &frozen.request.claim,
-                        ) {
-                            Ok(grant) => grant,
-                            Err(error) => return Ok(Err(error)),
-                        };
-                        match record_achievement_grant(&mut tx, granter, &grant).await? {
-                            Ok(AchievementGrantOutcome::Granted(fact)) => {
-                                if let Some(catalogue_len) = catalogue_len {
-                                    notice = granted_notice(
-                                        &mut tx,
-                                        fact.account_id,
-                                        grant,
-                                        catalogue_len,
-                                    )
-                                    .await?;
-                                }
-                            }
-                            Ok(_) => {}
-                            Err(error) => return Ok(Err(error.into())),
-                        }
-                    }
-                    let committed = apply_claim(
-                        &mut tx,
-                        &frozen,
-                        &reservation,
-                        destination,
-                        &envelope,
-                        tuple,
-                    )
-                    .await?;
-                    tx.commit(deadline).await?;
-                    Ok(Ok((RewardClaimMintOutcome::Committed(committed), notice)))
-                })
+            .run_with_context(&mut admission, move |holder, deadline, admission| {
+                Box::pin(commit_reward_claim(holder, deadline, admission, frozen))
             })
             .await?
     }
@@ -1033,25 +775,352 @@ impl DurabilityRoot {
         let binding = candidate.intent_binding;
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_cause(&mut tx, command).await?;
-                    let Some(row) = load_receipt(&mut tx, command).await? else {
-                        commit_semantic_read(tx, deadline).await?;
-                        return Ok(Ok(None));
-                    };
-                    let stored: Vec<u8> = row.try_get("intent_binding")?;
-                    if stored != binding {
-                        return Ok(Err(RewardClaimMintError::ConflictingCause));
-                    }
-                    let committed = decode_receipt(&row)?;
-                    commit_semantic_read(tx, deadline).await?;
-                    Ok(Ok(Some(committed)))
-                })
+                Box::pin(reconcile_reward_claim(holder, deadline, recovery, command, binding))
             })
             .await?
     }
+}
+
+struct ClaimMintAdmission<'a> {
+    recovery: CharacterRecoveryFenceV1,
+    node: NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    weights: Option<&'a dyn super::item_transfer::ItemWeightLookup>,
+    catalogue_len: Option<usize>,
+}
+
+fn validate_claim_intent(
+    request: &RewardClaimMintRequest,
+    fence: CurrentCharacterItemFence,
+    weights: Option<&dyn super::item_transfer::ItemWeightLookup>,
+) -> Result<[u8; 33]> {
+    validate_request(request)?;
+    if weights.is_none() && request.item.container_capacity.is_some() {
+        return Err(RewardClaimMintError::Refused(
+            RewardClaimRefusal::RewardIsContainer,
+        ));
+    }
+    intent_binding(request, fence.character_id)
+}
+
+fn candidate(
+    request: RewardClaimMintRequest,
+    intent_binding: [u8; 33],
+    reservation: Reservation,
+) -> RewardClaimMintCandidate {
+    RewardClaimMintCandidate {
+        request,
+        character_id: reservation.character_id,
+        transaction_id: reservation.transaction_id,
+        event_id: reservation.event_id,
+        item_instance_id: reservation.item_instance_id,
+        occurred_at_unix_ms: reservation.occurred_at_unix_ms,
+        intent_binding,
+        work_units_used: reservation.work_units_used,
+    }
+}
+
+async fn reserve_reward_claim(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    deadline: tokio::time::Instant,
+    admission: &ClaimMintAdmission<'_>,
+    intent_binding: [u8; 33],
+    request: RewardClaimMintRequest,
+) -> Pass<RewardClaimMintCandidate> {
+    let fence = admission.fence;
+    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+    assert_recovery_fence(&mut tx, &admission.recovery).await?;
+    lock_admission_relations(&mut tx).await?;
+    lock_cause(&mut tx, request.command).await?;
+    if let Some(row) = load_reservation(&mut tx, request.command).await? {
+        let stored: Vec<u8> = row.try_get("intent_binding")?;
+        if stored != intent_binding {
+            return Ok(Err(RewardClaimMintError::ConflictingCause));
+        }
+        let reservation = decode_reservation(&row)?;
+        if !contents::reservation_matches(&row, &request, &reservation)?
+            || !additional::reservation_matches(&row, &request, &reservation)?
+        {
+            return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+        }
+        if load_receipt(&mut tx, request.command).await?.is_none() {
+            if let Err(error) =
+                admit(&mut tx, &admission.node, &fence, &request, &reservation).await?
+            {
+                return Ok(Err(error));
+            }
+            if let Some(weights) = admission.weights
+                && let Err(error) = contents::check_capacity(
+                    &mut tx,
+                    fence.character_id,
+                    reservation.world_id,
+                    &request,
+                    weights,
+                )
+                .await?
+            {
+                return Ok(Err(error));
+            }
+        }
+        commit_semantic_transaction(tx, deadline).await?;
+        return Ok(Ok(candidate(request, intent_binding, reservation)));
+    }
+    let (world_id, channel_id) = match scope_of(&fence) {
+        Ok(scope) => scope,
+        Err(_) => return Ok(Err(RewardClaimMintError::AuthorityRejected)),
+    };
+    let row = sqlx::query(
+        "SELECT game_character_uuid_v7()::text AS transaction_id, \
+                game_character_uuid_v7()::text AS event_id, \
+                game_character_uuid_v7()::text AS item_instance_id, \
+                floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+                  AS occurred_at",
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    let reservation = Reservation {
+        character_id: fence.character_id,
+        world_id: *world_id.as_bytes(),
+        channel_id: *channel_id.as_bytes(),
+        transaction_id: uuid_text(row.try_get("transaction_id")?)?,
+        event_id: uuid_text(row.try_get("event_id")?)?,
+        item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+        occurred_at_unix_ms: row.try_get("occurred_at")?,
+        work_units_used: 0,
+    };
+    if let Err(error) =
+        admit(&mut tx, &admission.node, &fence, &request, &reservation).await?
+    {
+        return Ok(Err(error));
+    }
+    if let Some(weights) = admission.weights
+        && let Err(error) = contents::check_capacity(
+            &mut tx,
+            fence.character_id,
+            reservation.world_id,
+            &request,
+            weights,
+        )
+        .await?
+    {
+        return Ok(Err(error));
+    }
+    insert_reservation(&mut tx, &request, &intent_binding, &reservation).await?;
+    commit_semantic_transaction(tx, deadline).await?;
+    Ok(Ok(candidate(request, intent_binding, reservation)))
+}
+
+async fn charge_reward_claim(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    deadline: tokio::time::Instant,
+    recovery: CharacterRecoveryFenceV1,
+    command: CommandRef,
+    transaction_id: [u8; 16],
+) -> Pass<u8> {
+    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+    assert_recovery_fence(&mut tx, &recovery).await?;
+    let used = sqlx::query(
+        "UPDATE game_reward_claim_mint_reservations \
+            SET work_units_used = work_units_used + 1 \
+          WHERE game_session_id = encode($1,'hex')::uuid \
+            AND command_id = $2::text::numeric(20,0) \
+            AND transaction_id = encode($3,'hex')::uuid \
+            AND work_units_used < $4 RETURNING work_units_used",
+    )
+    .bind(command.game_session_id().as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .bind(transaction_id.as_slice())
+    .bind(i16::from(RL08_RETRY_WORK_UNITS_MAX))
+    .fetch_optional(&mut *tx)
+    .await?;
+    let Some(used) = used else {
+        let reserved = sqlx::query(
+            "SELECT 1 FROM game_reward_claim_mint_reservations \
+              WHERE game_session_id = encode($1,'hex')::uuid \
+                AND command_id = $2::text::numeric(20,0) \
+                AND transaction_id = encode($3,'hex')::uuid",
+        )
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(transaction_id.as_slice())
+        .fetch_optional(&mut *tx)
+        .await?;
+        return Ok(Err(if reserved.is_some() {
+            RewardClaimMintError::CapacityExceeded
+        } else {
+            RewardClaimMintError::ConflictingCandidate
+        }));
+    };
+    let used = u8::try_from(used.try_get::<i16, _>("work_units_used")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    commit_semantic_transaction(tx, deadline).await?;
+    Ok(Ok(used))
+}
+
+async fn commit_reward_claim(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    deadline: tokio::time::Instant,
+    admission: &ClaimMintAdmission<'_>,
+    frozen: FrozenClaim,
+) -> Pass<(RewardClaimMintOutcome, GrantNotice)> {
+    let fence = admission.fence;
+    let mut tx = begin_type2_transaction(holder, deadline).await?;
+    assert_recovery_fence(&mut tx, &admission.recovery).await?;
+    lock_admission_relations(&mut tx).await?;
+    let command = frozen.request.command;
+    lock_cause(&mut tx, command).await?;
+
+    if let Some(row) = load_receipt(&mut tx, command).await? {
+        let stored: Vec<u8> = row.try_get("intent_binding")?;
+        if stored != frozen.intent_binding {
+            return Ok(Err(RewardClaimMintError::ConflictingCause));
+        }
+        let committed = decode_receipt(&row)?;
+        tx.commit(deadline).await?;
+        return Ok(Ok((
+            RewardClaimMintOutcome::AlreadyCommitted(committed),
+            GrantNotice::None,
+        )));
+    }
+
+    let Some(row) = load_reservation(&mut tx, command).await? else {
+        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+    };
+    let stored: Vec<u8> = row.try_get("intent_binding")?;
+    if stored != frozen.intent_binding {
+        return Ok(Err(RewardClaimMintError::ConflictingCause));
+    }
+    let reservation = decode_reservation(&row)?;
+    if reservation.transaction_id != frozen.transaction_id
+        || reservation.event_id != frozen.event_id
+        || reservation.item_instance_id != frozen.item_instance_id
+        || reservation.occurred_at_unix_ms != frozen.occurred_at_unix_ms
+        || reservation.character_id != frozen.character_id
+    {
+        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+    }
+    if !contents::reservation_matches(&row, &frozen.request, &reservation)?
+        || !additional::reservation_matches(&row, &frozen.request, &reservation)?
+    {
+        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+    }
+    let identity_reused: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_reward_claim_mint_receipts \
+                         WHERE transaction_id = encode($1,'hex')::uuid \
+                            OR event_id = encode($2,'hex')::uuid \
+                            OR item_instance_id = encode($3,'hex')::uuid) \
+             OR EXISTS (SELECT 1 FROM game_item_audit_outbox \
+                         WHERE transaction_id = encode($1,'hex')::uuid \
+                            OR event_id = encode($2,'hex')::uuid) \
+             OR EXISTS (SELECT 1 FROM game_item_instances \
+                         WHERE item_instance_id = encode($3,'hex')::uuid \
+                            OR minted_transaction_id = encode($1,'hex')::uuid)",
+    )
+    .bind(frozen.transaction_id.as_slice())
+    .bind(frozen.event_id.as_slice())
+    .bind(frozen.item_instance_id.as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    if identity_reused {
+        return Ok(Err(RewardClaimMintError::ConflictingCandidate));
+    }
+
+    let (destination, granter) =
+        match admit(&mut tx, &admission.node, &fence, &frozen.request, &reservation).await? {
+            Ok(admitted) => admitted,
+            Err(error) => return Ok(Err(error)),
+        };
+    if let Some(weights) = admission.weights
+        && let Err(error) = contents::check_capacity(
+            &mut tx,
+            fence.character_id,
+            reservation.world_id,
+            &frozen.request,
+            weights,
+        )
+        .await?
+    {
+        return Ok(Err(error));
+    }
+    let message = claim_message(&frozen, &reservation, &fence, destination);
+    let tuple = tx.tuple();
+    let envelope = match audit::encode_reward_claim_mint_event(
+        RewardClaimMintEventIdentity {
+            event_id: frozen.event_id,
+            transaction_id: frozen.transaction_id,
+            occurred_at_unix_ms: frozen.occurred_at_unix_ms,
+            channel_id: reservation.channel_id,
+            server_build_id: SERVER_BUILD_ID,
+        },
+        message,
+        tuple.tuple(),
+    ) {
+        Ok(envelope) => envelope,
+        Err(error) => return Ok(Err(error.into())),
+    };
+    // With the token `admit` minted after the fence and the
+    // `character_root` row lock in this transaction; an error
+    // drops the whole transaction.
+    let mut notice = GrantNotice::None;
+    if let Some(achievement) = &frozen.request.achievement {
+        let grant = match achievement_grant(
+            achievement,
+            fence.character_id,
+            &frozen.request.claim,
+        ) {
+            Ok(grant) => grant,
+            Err(error) => return Ok(Err(error)),
+        };
+        match record_achievement_grant(&mut tx, granter, &grant).await? {
+            Ok(AchievementGrantOutcome::Granted(fact)) => {
+                if let Some(catalogue_len) = admission.catalogue_len {
+                    notice = granted_notice(
+                        &mut tx,
+                        fact.account_id,
+                        grant,
+                        catalogue_len,
+                    )
+                    .await?;
+                }
+            }
+            Ok(_) => {}
+            Err(error) => return Ok(Err(error.into())),
+        }
+    }
+    let committed = apply_claim(
+        &mut tx,
+        &frozen,
+        &reservation,
+        destination,
+        &envelope,
+        tuple,
+    )
+    .await?;
+    chest::commit_reward_transaction(tx, deadline).await?;
+    Ok(Ok((RewardClaimMintOutcome::Committed(committed), notice)))
+}
+
+async fn reconcile_reward_claim(
+    holder: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    deadline: tokio::time::Instant,
+    recovery: CharacterRecoveryFenceV1,
+    command: CommandRef,
+    binding: [u8; 33],
+) -> Pass<Option<CommittedRewardClaimMint>> {
+    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+    assert_recovery_fence(&mut tx, &recovery).await?;
+    lock_cause(&mut tx, command).await?;
+    let Some(row) = load_receipt(&mut tx, command).await? else {
+        commit_semantic_read(tx, deadline).await?;
+        return Ok(Ok(None));
+    };
+    let stored: Vec<u8> = row.try_get("intent_binding")?;
+    if stored != binding {
+        return Ok(Err(RewardClaimMintError::ConflictingCause));
+    }
+    let committed = decode_receipt(&row)?;
+    commit_semantic_read(tx, deadline).await?;
+    Ok(Ok(Some(committed)))
 }
 
 /// The notice of a `Granted` grant: the account's fact keys, read in the
