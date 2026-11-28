@@ -223,8 +223,12 @@ pub async fn replay_live_position_cast(
         let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
         if envelope.message_type() == oteryn_protocol_oteryn::MessageType::ClientCommand {
             let command = envelope.client_command(envelope.connection_generation())?;
+            let intent = decode_spell_cast_intent(command.payload)
+                .map_err(|error| format!("C18b replay cursor intent decode: {error:?}"))?;
             if command.command_id != result.command_id
-                || decode_spell_cast_intent(command.payload)?
+                || command.command_type != oteryn_protocol_oteryn::actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT
+                || envelope.client_command_session_id()?.is_some_and(|id| id != session.as_bytes())
+                || intent
                     != (SpellCastIntent {
                         spell,
                         target: SpellTarget::Position(target),
