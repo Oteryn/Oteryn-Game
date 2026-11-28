@@ -703,6 +703,8 @@ async fn wardrobe(
         experience: None,
         per_occurrence_mint: false,
         map_mark: None,
+        npc_area: None,
+        survey: None,
         world_claim: None,
         magic_effects: vec![],
         carried_item: None,

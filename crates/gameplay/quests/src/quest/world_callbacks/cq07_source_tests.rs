@@ -236,7 +236,7 @@ fn cave_explorer_loader_admits_donor_level_thresholds_and_completion_achievement
         assert_eq!(callback.minimum_level, Some(level));
         assert_eq!(
             callback.participants[0].state_ops[0].track,
-            "oteryn:quest-progress/spike/fame"
+            "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points"
         );
         assert_eq!(
             callback.participants[0].state_ops[0].from,

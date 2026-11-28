@@ -463,7 +463,7 @@ async fn spike(
     use super::{classic_quests_fixtures as npc, qengine_voucher_stories_fixtures as items};
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const FAME: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points";
     const OUTFIT: &str = "oteryn:outfit.cave_explorer";
     let mut capabilities = admitted
         .continuity
@@ -649,7 +649,7 @@ async fn spike_hunting(
 ) -> TestResult {
     use super::qengine_rewards_fixtures::talk;
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const FAME: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points";
     const DRILLWORM: &str = "oteryn:creature.drillworm";
     const REPORTED_AT: &str = "oteryn:quest-progress/spike/lower/reported_at";
     const PHASE: &str = "oteryn:quest-progress/spike/lower/phase";

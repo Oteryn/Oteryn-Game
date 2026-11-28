@@ -12,6 +12,8 @@ use std::sync::OnceLock;
 mod capture_tests;
 mod carried;
 mod carried_bounds;
+mod survey;
+pub use survey::Survey;
 #[cfg(test)]
 mod carried_exchange_tests;
 mod colours_peer;
@@ -270,6 +272,11 @@ pub struct RewardCallback {
     pub key: String,
     pub quest: String,
     pub npc: String,
+    /// Limit a dialogue to one physical outpost when several NPCs share a name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub npc_area: Option<SelfTarget>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub survey: Option<Survey>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub world_claim: Option<NativeClaimBinding>,
     /// Ordinary carried USE binding; NPC dialogue cannot execute this callback.
@@ -475,6 +482,10 @@ impl RewardCallback {
                     && self.creature_target.is_none()
             }
             (None, Some(_)) => false,
+            (Some(source), None) if self.survey.is_some() && self.take.is_empty() => {
+                self.give.is_none() && self.present.len() == 1
+                    && self.present[0].item == *source && self.present[0].count == 1
+            }
             (Some(source), None) => {
                 matches!(self.take.as_slice(), [input]
                 if input.item == *source && input.count == 1 && input.fluid_subtype.is_none())
@@ -1241,6 +1252,10 @@ fn validate_document_with_capacity(
                         b"._/-",
                         128,
                     )))
+            || c.survey.as_ref().is_some_and(|survey| !survey.valid() || c.carried_item.is_none()
+                || c.carried_exchange || c.carried_target.is_some() || c.creature_target.is_some()
+                || c.self_target.is_some() || c.peer_requires.is_some() || c.corpse_target.is_some())
+            || c.npc_area.as_ref().is_some_and(|area| !area.valid() || c.carried_item.is_some() || c.world_claim.is_some())
             || c.self_target.as_ref().is_some_and(|area| {
                 !area.valid()
                     || c.carried_item.is_none()
@@ -1568,6 +1583,8 @@ pub fn gated_binding(callback: &RewardCallback) -> Result<Option<[u8; 32]>, Stri
         && callback.carried_target.is_none()
         && !temporal_payment::guarded(callback)
         && callback.self_target.is_none()
+        && callback.npc_area.is_none()
+        && callback.survey.is_none()
         && !callback
             .key
             .starts_with("oteryn:quest-reward/worldchg-m31/")
@@ -2813,6 +2830,31 @@ mod tests {
                 }
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn spike_tools_require_the_selected_outpost_or_survey_area() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let rows = load_for(loaded.catalogue())?;
+        let parcels = rows.iter().filter_map(|row| row.npc_area.as_ref()).collect::<Vec<_>>();
+        assert_eq!(parcels.len(), 4);
+        for area in &parcels {
+            let p = area.minimum;
+            assert_eq!(parcels.iter().filter(|site| site.contains(p.x.into(), p.y.into(), -i16::from(p.floor))).count(), 1);
+        }
+        let readings = rows.iter().filter(|row| row.survey.is_some()).collect::<Vec<_>>();
+        assert_eq!(readings.len(), 4);
+        let thermometer = readings.iter().find(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19206")).unwrap().survey.as_ref().unwrap();
+        for player in [[0; 16], [1; 16]] {
+            assert_eq!(thermometer.clue(&player, 0, 32263, 32481, 13), None);
+            assert!(thermometer.clue(&player, 1, 32263, 32481, 13).is_some());
+            assert_eq!(thermometer.clue(&player, 1, 32163, 32558, 13), None);
+        }
+        let ghost = readings.iter().filter(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19205")).collect::<Vec<_>>();
+        assert_eq!(ghost.iter().filter(|row| row.take.is_empty() && row.present.len() == 1).count(), 2);
+        assert_eq!(ghost.iter().filter(|row| row.take.len() == 1).count(), 1);
         Ok(())
     }
 

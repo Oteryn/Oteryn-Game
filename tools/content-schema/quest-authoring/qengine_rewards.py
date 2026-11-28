@@ -3875,7 +3875,7 @@ def build():
     # The Spike task reports share the same character-owned fame balance.
     spike = "oteryn:quest-progress/spike/"
     cave = "cave_explorer_outfits_quest"
-    fame = spike + "fame"
+    fame = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points"
     fame_max = 2_147_483_647
     gnommander = "oteryn:npc.gnommander"
     outfit = "oteryn:outfit.cave_explorer"
@@ -4084,7 +4084,7 @@ def build():
                     "keywords": ["report"],
                     "topic": 0,
                     "any_topic": True,
-                    "next_topic": 25,
+                    "next_topic": 1,
                     "storage": [],
                     "reply": ["Which task are you reporting?"],
                 },
@@ -4112,7 +4112,7 @@ def build():
             npc,
             list(dict.fromkeys([report, "kill"])),
             [storage(phase, 1, 0), storage(kills, 7, 0)],
-            topic=25,
+            topic=1,
         )
         callbacks[-1].update(
             experience=xp,
@@ -4120,6 +4120,10 @@ def build():
             sources=[source],
             reply=["Your report earns one point of Spike fame."],
         )
+    from spike_parcel import append as append_parcels, append_surveys
+
+    append_surveys(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
+    append_parcels(ROOT, add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
     engoutfit_m36.append(
         add,
         storage,
@@ -4856,7 +4860,7 @@ def validate_callbacks(document):
             (
                 target is None
                 and (
-                    callback["take"] != [{"item": source, "count": 1}]
+                    (callback["take"] != [{"item": source, "count": 1}] and not (callback.get("survey") and not callback["take"] and callback.get("present") == [{"item": source, "count": 1}]))
                     or callback.get("give") is not None
                 )
             )
