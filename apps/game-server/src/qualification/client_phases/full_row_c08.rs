@@ -833,58 +833,51 @@ async fn resumed_poison_tick(
                 .into(),
         );
     }
-    let mut health = client
+    let before = client
         .actor_vitals()
         .ok_or("C08 restored vitals absent")?
         .health;
+    let mut health = before;
     client.take_events();
     let after = client.last_server_sequence();
     let started = tokio::time::Instant::now();
     let deadline = started + Duration::from_secs(15);
     let mut sampled_expected_tick = false;
-    let mut damage = None;
-    let mut health_loss = None;
+    let mut damage = 0_u32;
+    let mut damage_sequence = None;
     loop {
         require_isolated_poison_site(client, site, "poison-persistence")?;
         for event in client.take_events() {
             match event {
                 SessionEvent::ActorVitals(delta) if delta.server_sequence > after => {
-                    if delta.value.health < health
-                        && health_loss.replace((health, delta.value.health)).is_some()
-                    {
-                        return Err(
-                            "C08 multiple HP decreases before restored poison attribution".into(),
-                        );
+                    if delta.value.health > health {
+                        return Err("C08 health recovered during restored poison verification".into());
                     }
                     health = delta.value.health;
                 }
                 SessionEvent::AnalyserAttributedFacts(delta) if delta.server_sequence > after => {
                     for fact in &delta.value {
-                        if let Some(amount) = restored_poison_amount(fact)
-                            && damage.replace((delta.server_sequence, amount)).is_some()
-                        {
-                            return Err(
-                                "C08 multiple restored poison facts before HP verification".into(),
-                            );
+                        if matches!(fact.fact, oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput { .. }) {
+                            let amount = restored_poison_amount(fact).ok_or_else(|| {
+                                format!("C08 unexpected damage during restored poison verification: {fact:?}")
+                            })?;
+                            damage = damage.checked_add(amount).ok_or("C08 restored poison damage overflow")?;
+                            damage_sequence = Some(delta.server_sequence);
                         }
                     }
                 }
                 _ => {}
             }
         }
-        if let (Some((sequence, amount)), Some((before, after))) = (damage, health_loss) {
-            if before.checked_sub(amount) != Some(after) {
-                return Err(format!(
-                    "C08 restored poison amount {amount} did not match HP {before}->{after}"
-                )
-                .into());
-            }
-            return Ok((sequence, before, after));
+        if let Some(sequence) = damage_sequence
+            && before.checked_sub(damage) == Some(health)
+        {
+            return Ok((sequence, before, health));
         }
         if tokio::time::Instant::now() >= deadline {
             let (sequence, _) = poison_observation(client).await?;
             report_condition_receipt(client, sequence)?;
-            return Err(format!("C08 restored poison did not yield matching unowned Earth damage and HP change: damage={damage:?} health_loss={health_loss:?}").into());
+            return Err(format!("C08 restored poison did not yield matching unowned Earth damage and HP change: damage={damage} health={before}->{health}").into());
         }
         if !sampled_expected_tick && started.elapsed() >= Duration::from_secs(4) {
             let (sequence, _) = poison_observation(client).await?;
