@@ -285,7 +285,7 @@ async fn earn_pvp_kill(
 ) -> TestResult<DevClientSession> {
     use oteryn_protocol_oteryn::{attack, pvp_expert};
     let mut attacker = prepare_pvp_player(clients, "s08-knight", 0xca, 0).await?;
-    let axe_id = 3276;
+    let axe_id = 3266;
     let axe = provisioning::item_reference(&provisioning::item_index()?, axe_id)?;
     request_fixture_control_at(
         "NODE_BOOT_PVP_CONTROL_SOCKET",
