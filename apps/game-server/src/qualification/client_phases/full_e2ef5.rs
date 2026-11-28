@@ -2683,6 +2683,12 @@ pub(super) async fn monster_hit(
             return Ok(hit);
         }
         if tokio::time::Instant::now() >= until {
+            evidence(&format!(
+                "monster_hit deadline monster={monster:?} victim={own:?} attributed_frames={hit} health_before={health} health_after={:?} victim_at={:?} monster_at={:?}",
+                victim.actor_vitals().map(|vitals| vitals.health),
+                victim.world_spatial().actor_position,
+                victim.world_entities().and_then(|entities| entities.get(&monster)).map(|entry| entry.position),
+            ));
             return Err(
                 "no exact monster->victim damage presentation plus health frame within deadline"
                     .into(),
