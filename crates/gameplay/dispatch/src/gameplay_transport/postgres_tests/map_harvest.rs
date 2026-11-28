@@ -332,6 +332,26 @@ fn scenario(
                 .ok_or("craft offer selectable")?;
         let initial_admitted = admitted;
         assert_eq!(initial_admitted.continuity.next_command_id, 1);
+        if before == 3699 {
+            let ground_key = crate::map::view::placement_key(target_pos, 0).ok_or("ground")?;
+            let mut placement = map.base().digest().to_vec();
+            placement.extend_from_slice(&ground_key.to_be_bytes());
+            let mut stale_actor = deps.actor;
+            stale_actor.0.actor_local_id.0 = u32::MAX;
+            let outcome = owner
+                .use_map_harvest_object(
+                    stale_actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 100,
+                        item_fence: Some(fence),
+                    },
+                    &WorldObjectTarget { placement, expected_revision: 0 },
+                )
+                .await
+                .map_err(|_| "harvest lookup")?;
+            assert!(outcome.is_none(), "a non-harvestable object belongs to its own USE owner");
+        }
         let mut placement = map.base().digest().to_vec();
         if matches!(source, Some(ThawingSource::Daily { .. })) {
             assert!(map.facts().create_world_change_item(target_pos, 13842));

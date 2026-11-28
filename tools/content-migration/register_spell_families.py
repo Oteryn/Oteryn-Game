@@ -45,8 +45,8 @@ CONSUMABLE_KEY = "oteryn:item.tibia.i3577"
 # Crystal 201189f8 potions.lua:45-59; TibiaWiki revisions are pinned in the facts.
 # 238 still needs a canonical World correction beyond the immutable historical promotion chain.
 # I14G owner decision 2026-10-30 "wez global": admit the five conflicts using Global.
-# Food facts already pin The Carrot of Doom rev 1016926 (96s) and Energy Bar rev 1011115 (300s).
-POTION_KEYS = {
+# Food facts include crocodile steak (Crystal 201189f8 foods.lua:88,150–154).
+CONSUMABLE_PROFILE_KEYS = {
     f"oteryn:item.tibia.i{i}"
     for i in (
         236,
@@ -63,6 +63,7 @@ POTION_KEYS = {
         7642,
         7643,
         7876,
+        10219,
         23373,
         23374,
         23375,
@@ -477,7 +478,7 @@ def admit_consumable_profiles(root: Path, generated: dict[str, bytes]) -> None:
     bindings = json.loads(
         (root / "imports/crystalserver/bindings/items.json").read_bytes()
     )
-    for key in sorted(POTION_KEYS):
+    for key in sorted(CONSUMABLE_PROFILE_KEYS):
         sources = [r for r in world["records"] if r["identity"]["key"] == key]
         admitted = [b for b in bindings["bindings"] if b["target"]["key"] == key]
         if (

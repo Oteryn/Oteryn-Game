@@ -810,27 +810,15 @@ impl DurabilityRoot {
         &self,
         retry_until: Option<tokio::time::Instant>,
     ) -> std::result::Result<super::db::IssuedSemanticPass, DurabilityError> {
-        loop {
-            let result = self.try_issue_semantic_pass();
-            let Some(deadline) = retry_until else {
-                return result;
-            };
-            if !matches!(result, Err(DurabilityError::RootUnavailable))
-                || tokio::time::Instant::now() >= deadline
-            {
-                return result;
-            }
-            let now = tokio::time::Instant::now();
-            let latest = (now + std::time::Duration::from_millis(250)).min(deadline);
-            self.wait_holder_retry(
-                (now + std::time::Duration::from_millis(50)).min(latest),
-                latest,
-            )
-            .await;
-            if tokio::time::Instant::now() >= deadline {
-                return result;
-            }
-        }
+        let Some(deadline) = retry_until else {
+            return self.try_issue_semantic_pass();
+        };
+        self.retry_foreground_holder(
+            deadline,
+            |error| matches!(error, DurabilityError::RootUnavailable),
+            async || self.try_issue_semantic_pass(),
+        )
+        .await
     }
 
     /// [`Self::commit_reward_claim_mint`], with the notice of the grant this

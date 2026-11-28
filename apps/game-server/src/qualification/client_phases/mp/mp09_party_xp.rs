@@ -80,8 +80,8 @@ pub(super) async fn run(
     let mut before = Vec::new();
     let prepared = if admitted {
         check("join-and-level-range", async {
-            for (bot, vocation) in bots.iter_mut().zip(["knight", "druid", "paladin"]) {
-                let (xp, level, observed) = stats(bot).await?;
+            for (index, vocation) in ["knight", "druid", "paladin"].into_iter().enumerate() {
+                let (xp, level, observed) = bots::with_peer_liveness(&mut bots, index, async |bot| stats(bot).await).await?;
                 if observed != character::vocation_id(vocation) { return Err(format!("GeneralStats vocation={observed:?} expected={vocation} level={level} xp={xp}").into()); }
                 before.push((xp, level));
             }
@@ -370,7 +370,8 @@ async fn read_stats(bot: &mut Bot<'_, '_>) -> TestResult<(u64, u32, Option<u8>)>
 async fn views(bots: &mut [Bot<'_, '_>], leader: usize, count: usize) -> TestResult {
     let name = bots[leader].name.clone();
     let names: Vec<_> = bots.iter().map(|b| b.name.clone()).collect();
-    for bot in bots {
+    for index in 0..bots.len() {
+        bots::with_peer_liveness(bots, index, async |bot| {
         let reply = party(bot, None).await?;
         let durable = tokio::time::timeout(Duration::from_secs(15), async {
             let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
@@ -394,6 +395,8 @@ async fn views(bots: &mut [Bot<'_, '_>], leader: usize, count: usize) -> TestRes
         {
             return Err(format!("own party query participant={} reply={reply:?}", bot.name).into());
         }
+            Ok(())
+        }).await?;
     }
     Ok(())
 }
@@ -668,7 +671,9 @@ async fn contribute(
     target: EntityRef,
     deadline: tokio::time::Instant,
 ) -> TestResult {
-    set_hunt_modes(&mut bots[index]).await?;
+    bots::with_peer_liveness(bots, index, async |bot| set_hunt_modes(bot).await)
+        .await
+        .map_err(|error| format!("hunter {index} fight modes: {error}"))?;
     bots::pump(bots).await?;
     let client = bots[index].client()?;
     let after = client.last_server_sequence();
@@ -677,24 +682,34 @@ async fn contribute(
         .and_then(|view| view.get(&target))
         .and_then(|entity| hunt_health(entity.detail))
         .ok_or("spawned target health absent before swing")?;
-    attack_target(&mut bots[index], Some(&target)).await?;
+    bots::with_peer_liveness(bots, index, async |bot| {
+        attack_target(bot, Some(&target)).await
+    })
+    .await
+    .map_err(|error| format!("hunter {index} target selection: {error}"))?;
     let (mut selected, mut damaged) = (false, false);
-    bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
+    let (mut in_range, mut health_after) = (false, None);
+    let observation = bots::wait_observation(bots, deadline, "member lands committed damage on the hunt target", |bots, events| {
             let client = bots[index].session.as_ref().ok_or("hunter closed")?;
             let target_view = client.world_entities().and_then(|view| view.get(&target))
                 .ok_or_else(|| format!("spawned target left hunter {index}'s view during contribution"))?;
             let actor = client.world_spatial().actor_position;
-            let in_range = actor.floor == target_view.position.floor
+            in_range = actor.floor == target_view.position.floor
                 && actor.x.abs_diff(target_view.position.x).max(actor.y.abs_diff(target_view.position.y)) <= 1;
             selected |= events[index].iter().any(|event| {
                 matches!(event, SessionEvent::ActorCombatState(delta)
                     if delta.server_sequence > after && delta.value.target == Some(target) && delta.value.modes == HUNT_MODES)
             });
             damaged |= events[index].iter().any(|event| committed_swing(event, after));
+            health_after = hunt_health(target_view.detail);
             Ok(in_range && selected && damaged
-                && hunt_health(target_view.detail).is_some_and(|health| health < health_before))
-        }).await?;
-    Ok(())
+                && health_after.is_some_and(|health| health < health_before))
+        }).await;
+    observation.map_err(|error| {
+        format!(
+            "{error};hunter={index};selected={selected};damage_fact={damaged};in_range={in_range};target_health={health_before}->{health_after:?}"
+        ).into()
+    })
 }
 
 async fn inspect_hunt_damage(
@@ -850,18 +865,60 @@ async fn solo_hunt_award(
 }
 
 async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> TestResult {
-    let (_, leader_level, _) = stats(&mut bots[0]).await?;
-    let (_, low_level, _) = stats(&mut bots[3]).await?;
+    let (_, leader_level, _) =
+        bots::with_peer_liveness(bots, 0, async |bot| stats(bot).await).await?;
+    let (_, low_level, _) = bots::with_peer_liveness(bots, 3, async |bot| stats(bot).await).await?;
     if !is_threshold_probe(leader_level, low_level) {
         return Err(format!(
             "underlevel probe is eligible: leader={leader_level};member={low_level}"
         )
         .into());
     }
+    // The fixture mints an axe into the backpack. Wield it through the normal
+    // protocol before testing a real contribution against the armoured target.
+    let axe = provisioning::item_reference(&provisioning::item_index()?, 3276)?;
+    bots::with_peer_liveness(bots, 3, async |bot| {
+        let client = bot.client()?;
+        if client.inventory().is_some_and(|inventory| {
+            inventory
+                .equipment
+                .iter()
+                .any(|entry| entry.item.item_definition_ref == axe)
+        }) {
+            return Ok(());
+        }
+        let reply = client.session_mut().equip_item_definition(axe).await?;
+        if reply.status != CommandStatus::Accepted
+            || reply.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
+        {
+            return Err(format!("underlevel knight axe equip refused: {reply:?}").into());
+        }
+        Ok(())
+    })
+    .await?;
+    bots::wait_observation(
+        bots,
+        tokio::time::Instant::now() + Duration::from_secs(5),
+        "underlevel knight axe equipment delta",
+        |bots, _| {
+            Ok(bots[3]
+                .session
+                .as_ref()
+                .and_then(|client| client.inventory())
+                .is_some_and(|inventory| {
+                    inventory
+                        .equipment
+                        .iter()
+                        .any(|entry| entry.item.item_definition_ref == axe)
+                }))
+        },
+    )
+    .await?;
     prepare_hunt_ground(bots, world).await?;
     bots::invite_accept(bots, 0, 3).await?;
     for index in [0, 3] {
-        let view = party(&mut bots[index], None).await?;
+        let view =
+            bots::with_peer_liveness(bots, index, async |bot| party(bot, None).await).await?;
         if view.members.len() != 2
             || !view
                 .members
@@ -871,22 +928,38 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
             return Err(format!("two-member underlevel party absent: {view:?}").into());
         }
     }
-    let reply = bots[0]
-        .client()?
-        .chat(&oteryn_dev_client::ChatIntent::Say {
-            mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
-            text: "/sharedxp on".into(),
-        })
-        .await?;
+    let reply = bots::with_peer_liveness(bots, 0, async |bot| {
+        Ok(bot
+            .client()?
+            .chat(&oteryn_dev_client::ChatIntent::Say {
+                mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
+                text: "/sharedxp on".into(),
+            })
+            .await?)
+    })
+    .await
+    .map_err(|error| format!("underlevel shared-XP toggle: {error}"))?;
     if reply.status != CommandStatus::Accepted
         || reply.disposition != oteryn_dev_client::ChatDisposition::Ok
     {
         return Err(format!("underlevel shared-XP toggle refused: {reply:?}").into());
     }
     let session = uuid_text(bots[3].client()?.join_snapshot().game_session_id.as_bytes());
-    let selection = client_daily_boost::reward_selection(bots[0].client()?).await?;
+    let selection = bots::with_peer_liveness(bots, 0, async |bot| {
+        client_daily_boost::reward_selection(bot.client()?).await
+    })
+    .await
+    .map_err(|error| format!("underlevel reward selection: {error}"))?;
     let pool = client_daily_boost::boosted_xp(LEVEL_PROBE.1, LEVEL_PROBE.0, &selection)?;
-    let answer = request_spawn(session, LEVEL_PROBE.0.into()).await?;
+    let answer = super::observations::while_servicing_liveness(
+        request_spawn(session, LEVEL_PROBE.0.into()),
+        async || {
+            bots::pump(bots).await?;
+            Ok(())
+        },
+    )
+    .await?
+    .map_err(|error| format!("underlevel spawn: {error}"))?;
     let target = parse_spawned_entity(&answer)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
     bots::wait_observation(

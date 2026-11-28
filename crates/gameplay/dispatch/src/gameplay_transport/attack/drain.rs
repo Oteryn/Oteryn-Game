@@ -9,7 +9,10 @@ use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::durability::{DurabilityError, character_progression::CharacterProgressionError};
+use crate::durability::{
+    DurabilityError, character_progression::CharacterProgressionError,
+    task_board::BountyTalismanSnapshot,
+};
 use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
@@ -193,11 +196,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|entry| entry.session)
             .collect::<std::collections::BTreeSet<_>>();
         let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root);
+        // Talisman bonuses are optional. Keep the base swing when a holder or
+        // quest row is busy.
         let mut talismans = std::collections::BTreeMap::new();
         for session in sessions {
             if let Ok(snapshot) = retry
                 .retry_unavailable(async || {
-                    self.bounty_talisman_for_session(session)
+                    self.root
+                        .with_periodic_lock_budget(self.bounty_talisman_for_session(session))
                         .await
                         .map_err(|error| match error {
                             CharacterProgressionError::Unavailable(
@@ -212,6 +218,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         drop(retry);
+        let no_talisman = BountyTalismanSnapshot::default();
         let now = now.unwrap_or_else(|| self.owner_now());
         let needs_health_names = {
             let runtime = self.runtime.lock().await;
@@ -382,11 +389,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             }
-            // An unavailable bounty read affects this attacker only. Defer
-            // before consuming its swing clock or doing ranged payment.
-            if !talismans.contains_key(&entry.session)
-                || unavailable_source_players.contains(&entry.actor.placement_identity())
-            {
+            if unavailable_source_players.contains(&entry.actor.placement_identity()) {
                 continue;
             }
             let Ok(required_health) =
@@ -903,18 +906,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 };
                 let race_key = snapshot.state.policy.definition_key.clone();
-                let Some(talisman) = talismans.get(&entry.session) else {
-                    continue;
-                };
-                let Some([talisman_damage, talisman_life]) = bounty_talisman::hit_bonuses(
+                let talisman = talismans.get(&entry.session).unwrap_or(&no_talisman);
+                let [talisman_damage, talisman_life] = bounty_talisman::hit_bonuses(
                     talisman,
                     &race_key,
                     &root,
                     swing_occurrence(entry.actor, swing.lineage, ordinal, b"bounty-talisman"),
                     0,
-                ) else {
-                    continue;
-                };
+                )
+                .unwrap_or_default();
                 // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
                 // a creature without them takes no hit (fail closed).
                 let (Some(defense), Some(armor)) = (

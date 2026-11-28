@@ -42,6 +42,15 @@ struct Custody {
 
 fn custody(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestResult<Custody> {
     let inventory = client.inventory().ok_or("inventory snapshot absent")?;
+    let mut matching_slots = inventory
+        .equipment
+        .iter()
+        .filter(|entry| entry.item.item_definition_ref == definition)
+        .map(|entry| entry.slot);
+    let worn = matching_slots.next();
+    if matching_slots.next().is_some() {
+        return Err(format!("definition={definition} is worn in more than one slot").into());
+    }
     Ok(Custody {
         carried: inventory
             .entries
@@ -49,11 +58,7 @@ fn custody(client: &DevClientSession, definition: std::num::NonZeroU32) -> TestR
             .filter(|item| item.item_definition_ref == definition)
             .map(|item| u64::from(item.count.get()))
             .sum(),
-        worn: inventory
-            .equipment
-            .iter()
-            .find(|entry| entry.item.item_definition_ref == definition)
-            .map(|entry| entry.slot),
+        worn,
     })
 }
 
@@ -169,14 +174,21 @@ async fn assert_build(client: &mut DevClientSession) -> TestResult<()> {
 }
 
 async fn prepared_character(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
-    evidence("row=I17c.full mode=seeded prerequisites=paladin,shield,bow,quiver,arrows");
+    character_prep::declare_seeded(
+        "I17c.full",
+        "Paladin build, wooden shield, two-handed bow, blue quiver, ten arrows",
+        "the worn quiver requires an eligible vocation and the row verifies equipment moves",
+    );
     let mut client = connect_character(clients, TAG, 0).await?;
     request_fixture_control(
         uuid_text(client.join_snapshot().game_session_id.as_bytes()),
         "--profile",
-        "i17c-paladin".into(),
+        VOCATION.into(),
     )
     .await?;
+    for (id, count) in INPUTS {
+        character_prep::grant_item(&client, id, count).await?;
+    }
     let mut client = relog(&mut client, clients).await?;
     assert_build(&mut client).await?;
     for (id, count) in INPUTS {
@@ -217,23 +229,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     use EquipmentSlot::{LeftHand, RightHand};
     use ItemMoveOutcome::{Moved, SlotMismatch};
 
-    let account = required("NODE_BOOT_I17C_ACCOUNT")?;
-    let mut database = sqlx::PgConnection::connect(clients.url).await?;
-    let rows: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT uuid_send(character_id) FROM game_character_roots
-         WHERE account_id=$1::uuid AND world_id=$2::uuid LIMIT 2",
-    )
-    .bind(&account)
-    .bind(uuid_text(&clients.world))
-    .fetch_all(&mut database)
-    .await?;
-    database.close().await?;
-    let [character] = rows.as_slice() else {
-        return Err("I17c requires exactly one dedicated character in this world".into());
-    };
-    let characters = [character.as_slice().try_into()?];
-    let accounts = [account];
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_I17C_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
     let [shield, bow, quiver, arrow] = [
         reference(SHIELD)?,
         reference(BOW)?,

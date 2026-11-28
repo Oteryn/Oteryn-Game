@@ -60,6 +60,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         })
         .await;
+        tokio::task::yield_now().await;
     }
     #[cfg(test)]
     pub(super) async fn realize_elemental_altar_bosses(

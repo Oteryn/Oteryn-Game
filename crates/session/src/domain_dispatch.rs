@@ -199,6 +199,7 @@ impl<S: SessionStream> Session<S> {
                 self.entities = Some(next);
                 self.world_spatial.actor_position = entities_delta.actor_position;
                 self.spatial_revision = new_revision;
+                replay_capture::retain_delta(&mut self.replay.world_deltas, server_sequence, &delta);
                 if let Some(icons) = icons {
                     return Ok(SessionEvent::PartyIcons(applied(server_sequence, base_revision, new_revision, icons)));
                 }

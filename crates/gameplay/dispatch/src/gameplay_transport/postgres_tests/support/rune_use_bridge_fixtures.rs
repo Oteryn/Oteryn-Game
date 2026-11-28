@@ -66,7 +66,11 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
     EngencTraining,
+    Explosion,
+    Fireball,
+    FireballIneligible,
     IntenseHealingOwnSummon,
+    IntenseHealingSelfTile,
     ParalyzeMonster,
     ParalyzePlayer,
     Replay,
@@ -192,9 +196,13 @@ async fn client_cast(
         Some(original) => original,
         None => UseIntent {
             target: UseTarget::Item(source.ok_or("snapshot exposes the direct entry handle")?),
-            use_with: Some(victim),
+            use_with: (case != Case::IntenseHealingSelfTile).then_some(victim),
             use_with_map_item: None,
-            use_with_position: None,
+            use_with_position: (case == Case::IntenseHealingSelfTile).then_some(SpellTargetPosition {
+                x: CASTER.x,
+                y: CASTER.y,
+                floor: -CASTER.floor,
+            }),
         },
     };
     if retry {
@@ -237,6 +245,47 @@ async fn client_cast(
             assert!(own_summon_visible, "the admitted client must see the exact summon");
             assert_eq!(before, 1, "the owned summon must be healable");
             send_use(client, first_id, &intent, Expected::Result(UseDisposition::TargetIllegal))
+                .await?;
+        }
+        Case::Explosion | Case::Fireball | Case::FireballIneligible => {
+            let intent = UseIntent {
+                use_with: (case != Case::Explosion).then_some(victim),
+                use_with_position: (case == Case::Explosion).then_some(SpellTargetPosition {
+                    x: VICTIM.x,
+                    y: VICTIM.y,
+                    floor: -VICTIM.floor,
+                }),
+                ..intent.clone()
+            };
+            let expected = if case == Case::FireballIneligible {
+                UseDisposition::RequirementNotMet
+            } else {
+                UseDisposition::Committed
+            };
+            if case == Case::FireballIneligible {
+                owner.states.chat.admit(session, "Rune caster", owner.owner_now());
+            }
+            if case == Case::Fireball {
+                test_faults::arm(Point::SessionReadBusy);
+            }
+            send_use(client, first_id, &intent, Expected::Result(expected)).await?;
+            if case == Case::FireballIneligible {
+                // Crystal 201189f8: data/scripts/runes/fireball.lua:28 requires ML 4.
+                // src/creatures/combat/spells.cpp:460-463 sends the refusal from src/utils/tools.cpp:1494-1495.
+                assert_eq!(
+                    owner.states.chat.next_line(session, true),
+                    Some(oteryn_protocol_oteryn::chat::ChatLine::System {
+                        text: "You do not have enough magic level.".into(),
+                    }),
+                );
+                owner.states.chat.delivered(session);
+            }
+            if case == Case::Fireball {
+                send_use(client, first_id, &intent, Expected::Replay).await?;
+            }
+        }
+        Case::IntenseHealingSelfTile => {
+            send_use(client, first_id, &intent, Expected::Result(UseDisposition::Committed))
                 .await?;
         }
         Case::EngencTraining => {
@@ -517,15 +566,12 @@ async fn serve_cast(
     };
     let (admitted, cast) = join_two(
         serving,
-        client_cast(
-            &mut client,
-            owner,
-            harness,
-            victim,
-            case,
-            original,
-            first_id,
-        ),
+        async move {
+            client_cast(
+                &mut client, owner, harness, victim, case, original, first_id,
+            )
+            .await
+        },
     )
     .await;
     if owner.root.has_ready_demand() {
@@ -537,7 +583,12 @@ async fn serve_cast(
 pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     let trained_caster = matches!(
         case,
-        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingOwnSummon
+        Case::ParalyzeMonster
+            | Case::ParalyzePlayer
+            | Case::IntenseHealingOwnSummon
+            | Case::IntenseHealingSelfTile
+            | Case::Explosion
+            | Case::Fireball
     );
     let harness =
         Harness::create_with_admission_seed(admin, "rune_bridge", !trained_caster, false).await?;
@@ -620,6 +671,10 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .as_ref()
             .clone();
         policy.forge_difficulty = None;
+        if matches!(case, Case::Explosion | Case::Fireball) {
+            // Keep the exact target alive so its health can witness the hit.
+            policy.maximum_health = 1_000;
+        }
         let policies =
             crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
                 native.source_digest(),
@@ -778,7 +833,11 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
-    } else if case == Case::IntenseHealingOwnSummon {
+    } else if case == Case::Explosion {
+        "oteryn:item.tibia.i3200"
+    } else if matches!(case, Case::Fireball | Case::FireballIneligible) {
+        "oteryn:item.tibia.i3189"
+    } else if matches!(case, Case::IntenseHealingOwnSummon | Case::IntenseHealingSelfTile) {
         "oteryn:item.tibia.i3152"
     } else if case == Case::EngencTraining {
         "oteryn:item.tibia.i17512"
@@ -791,7 +850,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-    if case == Case::Replay {
+    if matches!(case, Case::Replay | Case::Explosion | Case::Fireball | Case::FireballIneligible) {
         // This direct fixture has no Channel maintenance loop. Finish the real
         // map owner setup before its vitals timer competes with rune commands.
         assert!(
@@ -814,8 +873,13 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         drop(seal);
         return harness.cleanup().await;
     }
-    if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
-        super::paralyze_rune_fixtures::prepare_target(&owner, &harness, victim, case).await?;
+    if matches!(
+        case,
+        Case::ParalyzeMonster | Case::ParalyzePlayer | Case::IntenseHealingSelfTile
+    ) {
+        if case != Case::IntenseHealingSelfTile {
+            super::paralyze_rune_fixtures::prepare_target(&owner, &harness, victim, case).await?;
+        }
         tokio::time::timeout(
             std::time::Duration::from_secs(30),
             serve_cast(&owner, &harness, admitted, victim, case, None),
@@ -1006,10 +1070,11 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         assert!(!owner.states.command_ingress.resumable(&resumed));
     }
     let (quantity, revision): (i64, String) = sqlx::query_as("SELECT quantity,state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
-    let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit);
+    let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit | Case::Explosion | Case::Fireball);
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
     assert_eq!(receipts, i64::from(committed));
+    // Crystal 201189f8 src/creatures/combat/spells.cpp:1526-1535 debits one rune after a successful cast.
     assert_eq!(quantity, if committed { 2 } else { 3 });
     assert_eq!(
         revision,
@@ -1019,12 +1084,14 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             "1"
         }
     );
-    let health = owner
-        .runtime
-        .lock()
-        .await
-        .live_creature_health(victim_actor)
-        .unwrap_or(0);
+    let health = owner.runtime.lock().await.live_creature_health(victim_actor);
+    let health = if matches!(case, Case::Explosion | Case::Fireball) {
+        // Crystal 201189f8 data/scripts/runes/explosion.lua:1-11 and
+        // data/scripts/runes/fireball.lua:1-11 apply damage to the selected creature.
+        health.ok_or("the exact rune target must survive to witness damage")?
+    } else {
+        health.unwrap_or(0)
+    };
     if committed {
         assert!(health < initial_health);
     } else {

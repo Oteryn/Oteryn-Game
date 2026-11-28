@@ -763,17 +763,19 @@ impl Row {
 /// state it starts from. No group currently consumes another group's state:
 /// each row owns its admissions and cleanup.
 const GROUPS: &[(&str, &[&str])] = &[
+    ("c19a", &[]),
     ("core", &[]),
     ("creature_sweep", &[]),
     ("f4", &[]),
     ("f5", &[]),
-    ("f6", &[]),
+    ("f6", &["c19a"]),
     ("f7add", &[]),
     ("f7clock", &[]),
     ("f7cont", &[]),
     ("f7forge", &[]),
     ("f7run", &[]),
     ("mp", &[]),
+    ("p16", &[]),
     ("rows", &[]),
 ];
 
@@ -1217,6 +1219,11 @@ mod verdict_tests {
         let rows = Groups::parse(Some("rows"), GROUPS)?;
         assert!(rows.runs("rows") && !rows.runs("core") && !rows.runs("f6"));
         assert!(!some.runs("rows"));
+        let starter = Groups::parse(Some("c19a"), GROUPS)?;
+        assert!(starter.runs("c19a") && !starter.runs("f6") && !starter.runs("core"));
+        assert!(all.runs("c19a") && some.runs("c19a"));
+        let blessing = Groups::parse(Some("p16"), GROUPS)?;
+        assert!(blessing.runs("p16") && !blessing.runs("f6") && !blessing.runs("core"));
         const CHAIN: &[(&str, &[&str])] = &[("a", &["b"]), ("b", &["c"]), ("c", &[]), ("d", &[])];
         let chained = Groups::parse(Some("a"), CHAIN)?;
         assert!(chained.runs("a") && chained.runs("b") && chained.runs("c") && !chained.runs("d"));

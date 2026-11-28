@@ -62,17 +62,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return GuildReply::Unavailable;
         };
-        match self
-            .root
-            .commit_guild_war(
-                self.character,
-                self.holder,
-                fence,
-                command,
-                Sha256::digest(canonical).into(),
-                intent,
-                war,
-                now,
+        let budget = super::AdmissionRetryBudget::for_command(self.root);
+        match budget
+            .retry_holder(
+                async || {
+                    self.root
+                        .commit_guild_war(
+                            self.character,
+                            self.holder,
+                            fence,
+                            command,
+                            Sha256::digest(&canonical).into(),
+                            intent,
+                            war,
+                            now,
+                        )
+                        .await
+                },
+                super::guild_intent::guild_holder_busy,
             )
             .await
         {

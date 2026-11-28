@@ -282,6 +282,14 @@ fn derive_identity(root: &Path, slug: &str) -> Result<Identity, Error> {
         provenance_summary.push('/');
         provenance_summary.push_str(&text(entry, "package_provenance_digest", "lock entry")?);
     }
+    let collision = read(&world.join("terrain/crystal-item-collision.bin"))?;
+    if collision != oteryn_world_bundle::crystal_item_collision::SOURCE_BYTES {
+        return Err(Error::Format(
+            "Crystal item collision differs from the compiler's embedded source".into(),
+        ));
+    }
+    provenance_summary.push_str("/crystal-item-collision:");
+    provenance_summary.push_str(&hex(&Sha256::digest(collision)));
     Ok(Identity {
         project_format_version: text(&project, "schema", "project.json")?,
         world_schema_version: text(&manifest, "semantic_schema_version", "manifest.json")?,

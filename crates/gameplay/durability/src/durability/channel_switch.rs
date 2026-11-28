@@ -80,6 +80,9 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    // Capacity is an advisory preflight. Yield the shared holder
+                    // on a contended read so admission can retry within its budget.
+                    super::db::bound_periodic_lock_wait(&mut tx).await?;
                     let full = sqlx::query_scalar(
                         "SELECT game_channel_full(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)",
                     )

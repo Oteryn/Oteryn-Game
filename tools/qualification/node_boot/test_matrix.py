@@ -33,7 +33,11 @@ class CoverageTests(unittest.TestCase):
     def assert_groups_once(self, shards):
         planned = [name for s in shards if s["env"].get("NODE_BOOT_E2E_ONLY", "rows") != "rows"
                    for name in s["env"]["NODE_BOOT_E2E_ONLY"].split(",")]
-        self.assertEqual(sorted(planned), sorted(g for g in self.groups if g != "rows"))
+        self.assertEqual(sorted(planned), sorted(g for g in self.groups if g not in {"rows", "c19a"}))
+
+    def test_custom_can_select_starter_without_other_journeys(self):
+        shards = matrix.plan("custom", groups="c19a")
+        self.assertEqual([s["env"]["NODE_BOOT_E2E_ONLY"] for s in shards], ["c19a"])
 
     def test_full_set_runs_every_group_row_and_mode_once(self):
         shards = matrix.plan("full")

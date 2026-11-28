@@ -705,6 +705,18 @@ impl NativeGameplayState {
     pub fn item_policy(&self, key: &str, revision: &str) -> Option<QualifiedItemPolicy<'_>> {
         qualified_item_policy(self.items.as_ref()?, self.source_digest, key, revision)
     }
+
+    /// Resolve a creature's object appearance to a wire Item definition.
+    pub fn object_look_item_ref(&self, source_id: u32) -> Option<std::num::NonZeroU32> {
+        let index = self.item_index()?;
+        if let Some(policy) = self.item_policy_for_source_id(source_id) {
+            let item = &policy.record().production_definition;
+            return index.definition_ref("Item", &item.production_key, &item.revision_ref);
+        }
+        let key = format!("oteryn:item.tibia.i{source_id}");
+        index.definition_ref("Item", &key, index.revision(&key)?)
+    }
+
     pub fn item_policy_for_source_id(&self, id: u32) -> Option<QualifiedItemPolicy<'_>> {
         let external = id.to_string();
         let record = self
@@ -5689,6 +5701,25 @@ mod tests {
         assert_eq!(empty.corpse_item, spite.corpse_item);
         assert!(empty.loot_table.entries.is_empty());
     }
+    #[test]
+    fn object_look_uses_the_pinned_item_without_a_gameplay_policy() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys = br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.tibia.i24227","definition-r1"]]}"#;
+        let compiled = compile_native_gameplay(baseline.compiled(), &v7_input(Some(keys))).unwrap();
+        let state = decode(&compiled.server_artifact).unwrap().state;
+
+        // Animated Sword's Crystal presentation uses lookTypeEx 24227. The
+        // exact Item is pinned even when it has no spell-use policy.
+        assert!(state.item_policy_for_source_id(24227).is_none());
+        assert_eq!(
+            state.object_look_item_ref(24227).map(|item| item.get()),
+            Some(1)
+        );
+        assert_eq!(state.object_look_item_ref(0), None);
+        assert_eq!(state.object_look_item_ref(24228), None);
+    }
+
     #[test]
     fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {
         let world = test_source(1).unwrap().world_id;

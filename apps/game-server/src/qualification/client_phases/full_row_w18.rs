@@ -171,8 +171,53 @@ fn auction_is_open(ends_ms: Option<u64>, now_ms: u64) -> bool {
     ends_ms.is_some_and(|deadline| deadline > now_ms)
 }
 
+async fn transfer_into_house(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    house: &str,
+) -> TestResult {
+    use oteryn_protocol_oteryn::house_transfer as wire;
+    let source = client.join_snapshot().game_session_id;
+    let mut transfer = vec![8, 1];
+    push_bytes(&mut transfer, 2, house.as_bytes());
+    wire::decode_house_transfer_intent(&transfer)
+        .map_err(|error| format!("step-2 transfer encoding: {error:?}"))?;
+    let response = client.session_mut().gated_command(
+        wire::CAPABILITY_HOUSE_TRANSFER_V1, wire::COMMAND_TYPE_HOUSE_TRANSFER, &transfer,
+    ).await?;
+    if response.status != CommandStatus::Accepted || response.payload.is_empty() {
+        return Err(format!("step-2 HOUSE TRANSFER house={house} refused: {:?}", response.status).into());
+    }
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let committed: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_house_transfer_receipts r
+            JOIN game_durability_reconnect_sessions d ON d.game_session_id=r.destination_game_session_id
+            WHERE r.source_game_session_id=$1::uuid AND r.direction=1 AND r.state=2
+              AND r.house_key=$2 AND r.acknowledgement=$3
+              AND r.character_id=$4::uuid AND r.world_id=$5::uuid AND r.origin_channel_id=$6::uuid
+              AND d.character_id=r.character_id AND d.account_id=r.account_id
+              AND d.runtime_scope_house_key=r.house_key
+              AND d.runtime_scope_world_id=r.world_id
+              AND d.scope_ownership_generation=r.destination_scope_generation
+              AND d.session_state=2
+        )",
+    )
+    .bind(uuid_text(source.as_bytes())).bind(house).bind(&response.payload)
+    .bind(uuid_text(&clients.characters[0])).bind(uuid_text(&clients.world))
+    .bind(uuid_text(&clients.channel)).fetch_one(&mut database).await?;
+    database.close().await?;
+    if !committed {
+        return Err(format!("step-2 HOUSE TRANSFER house={house} lacks a matching committed receipt and live destination scope").into());
+    }
+    evidence(&format!("W18_CHECK step=2 command=HOUSE_TRANSFER house={house} status=PASS scope=committed"));
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_character(clients, 0xc8, 1).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_W18_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    let mut client = connect_character(clients, 0xc8, 0).await?;
     if !client
         .selected_capabilities()
         .contains(&house_wire::CAPABILITY_HOUSE_V1)
@@ -220,35 +265,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         page.rows.iter().filter(|row| row.owned).count()
     ));
     if let Some(owned) = page.rows.iter().find(|row| row.owned) {
-        let mut transfer = vec![8, 1];
-        push_bytes(&mut transfer, 2, owned.key.as_bytes());
-        oteryn_protocol_oteryn::house_transfer::decode_house_transfer_intent(&transfer)
-            .map_err(|error| format!("step-2 transfer encoding: {error:?}"))?;
-        let response = client
-            .session_mut()
-            .gated_command(
-                oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1,
-                oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER,
-                &transfer,
-            )
-            .await?;
-        if response.status != CommandStatus::Accepted || response.payload.is_empty() {
-            return Err(format!(
-                "step-2 HOUSE TRANSFER house={} observed status={:?} payload={:?}; server needs an accepted house-scope acknowledgement",
-                owned.key, response.status, response.payload
-            )
-            .into());
-        }
-        evidence(&format!(
-            "W18_CHECK step=2 command=HOUSE_TRANSFER house={} status=Accepted ack_bytes={}",
-            owned.key,
-            response.payload.len()
-        ));
-        return Err(format!(
-            "step-3 entered owned house={} but no ordinary acquisition/placement reply exposes a podium item UUID; server needs a player furnishing route with durable item identity",
-            owned.key
-        )
-        .into());
+        transfer_into_house(&mut client, clients, &owned.key).await?;
+        return Err("step-3 missing player furnishing route with a server-issued podium item UUID".into());
     }
     let now_ms = u64::try_from(
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis(),
@@ -277,15 +295,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             auction.key, response.payload
         )
     })?;
-    evidence(&format!(
-        "W18_CHECK step=1 command=HOUSE_BID house={} maximum=1 status=Accepted disposition={} revision={revision}",
-        auction.key, disposition
-    ));
-    Err(format!(
-        "step-1 HOUSE BID house={} maximum=1 observed status=Accepted disposition={} revision={revision}; character still has no owned house/podium, server needs sufficient legitimately earned funds and a settled auction",
-        auction.key, disposition
+    if disposition != house_wire::HouseDisposition::Ok as u64 || revision != 0 {
+        return Err(format!("step-1 unexpected HOUSE BID result: disposition={disposition} revision={revision}").into());
+    }
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let committed: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT 1 FROM game_house_operations o
+            JOIN game_house_bids b USING (auction_id, account_id, world_id, character_id)
+            WHERE o.kind=1 AND o.game_session_id=$1::uuid AND o.command_id=$2::text::numeric
+              AND o.world_id=$3::uuid AND o.house_key=$4 AND o.character_id=$5::uuid
+              AND b.maximum=1 AND o.escrow_after=1+o.first_rent
+        )",
     )
-    .into())
+    .bind(uuid_text(client.join_snapshot().game_session_id.as_bytes()))
+    .bind(response.command_id.to_string())
+    .bind(uuid_text(&clients.world))
+    .bind(&auction.key)
+    .bind(uuid_text(&clients.characters[0]))
+    .fetch_one(&mut database).await?;
+    database.close().await?;
+    if !committed {
+        return Err("step-1 accepted HOUSE BID lacks the matching durable escrow receipt".into());
+    }
+    evidence(&format!(
+        "W18_CHECK step=1 command=HOUSE_BID house={} maximum=1 status=PASS escrow=committed",
+        auction.key,
+    ));
+    let readback = exchange(&mut client, house_wire::COMMAND_TYPE_HOUSE_QUERY, &payload).await?;
+    if readback.status != CommandStatus::Accepted {
+        return Err("step-1 post-bid HOUSE QUERY refused".into());
+    }
+    let page = decode_page(&readback.payload)?;
+    if page.disposition != house_wire::HouseDisposition::Ok as u64
+        || !page.rows.iter().any(|row| row.key == auction.key && row.owned)
+    {
+        return Err(format!("step-1 committed bid for {} has no settled ownership yet", auction.key).into());
+    }
+    transfer_into_house(&mut client, clients, &auction.key).await?;
+    Err("step-3 missing player furnishing route with a server-issued podium item UUID".into())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

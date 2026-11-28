@@ -120,7 +120,7 @@ fn bag_handle(
                 .find(|entry| entry.item_definition_ref == reference)
         })
         .map(|entry| entry.handle)
-        .ok_or_else(|| "step 3: purchased red Christmas bundle has no server-issued handle".into())
+        .ok_or_else(|| "step 3: red Christmas bundle has no server-issued handle".into())
 }
 
 async fn use_intent(
@@ -154,17 +154,15 @@ fn is_messenger_in_talk_range(
             <= npc::TALK_RANGE_TILES
 }
 
+const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
 async fn quote(
     client: &mut DevClientSession,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult<(npc::NpcTradeIntent, u32)> {
     use oteryn_dev_client::client_runtime::npc_shop as shop;
-    let seller = npcs
-        .npcs
-        .iter()
-        .find(|entry| entry.key == "oteryn:npc.messenger_of_santa")
-        .ok_or("step 2: compiled world has no Messenger of Santa acquisition actor")?;
+    let seller = npcs.npcs.iter().find(|entry| entry.key == MESSENGER && !entry.placements.is_empty())
+        .ok_or("step 2: compiled world has no Messenger of Santa placement")?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         seller
             .placements
@@ -330,8 +328,11 @@ pub(super) async fn acquire_bundles(client: &mut DevClientSession, clients: &Sea
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W19A_ACCOUNT").await?;
+    let (accounts, characters) = dedicated.replace_slot(clients, 1)?;
+    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let mut client = connect_world(clients, 0xa9).await?;
-    let purchase_sequence = acquire_bundles(&mut client, clients).await?;
+    let source_sequence = acquire_bundles(&mut client, clients).await?;
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
     let source = bag_handle(&client)?;
@@ -420,7 +421,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step 5: final LOGOUT refused".into());
     }
     evidence(&format!(
-        "W19A_CHECK purchase_sequence={purchase_sequence} refusal_sequence={} committed_sequence={} durable_outcomes={}",
+        "W19A_CHECK source_sequence={source_sequence} purchased=true refusal_sequence={} committed_sequence={} durable_outcomes={}",
         refused.2, committed.result_server_sequence, rule.picks
     ));
     Ok(())

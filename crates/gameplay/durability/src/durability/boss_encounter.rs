@@ -27,6 +27,45 @@ pub enum BossClockError {
     MissingClock,
     Unavailable(DurabilityError),
 }
+
+impl BossClockError {
+    /// The pass either did not start or PostgreSQL proved that its transaction
+    /// could not commit. An unknown commit still requires owner retirement.
+    pub fn retryable_activation(&self) -> bool {
+        matches!(
+            self,
+            Self::Unavailable(
+                DurabilityError::RootUnavailable
+                    | DurabilityError::Database(super::SqlxFailureClass::RetryableStatement)
+                    | DurabilityError::CommitTransactionTimeout
+            )
+        )
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn boss_clock_retries_only_safe_failures() {
+    use super::SqlxFailureClass;
+
+    for error in [
+        DurabilityError::RootUnavailable,
+        DurabilityError::Database(SqlxFailureClass::RetryableStatement),
+        DurabilityError::CommitTransactionTimeout,
+    ] {
+        let error = BossClockError::Unavailable(error);
+        assert!(error.retryable_activation(), "{error:?}");
+    }
+    for error in [
+        BossClockError::Unavailable(DurabilityError::CommitOutcomeUnknown),
+        BossClockError::Unavailable(DurabilityError::RootPassDeadlineExceeded),
+        BossClockError::Unavailable(DurabilityError::InvalidStoredState),
+        BossClockError::AuthorityRejected,
+    ] {
+        assert!(!error.retryable_activation(), "{error:?}");
+    }
+}
+
 impl From<DurabilityError> for BossClockError {
     fn from(error: DurabilityError) -> Self {
         Self::Unavailable(error)
@@ -532,9 +571,10 @@ impl super::DurabilityRoot {
             }.await;
             let result = match result {
                 Ok(BossClockClaim::Unchanged) => {
-                    match read_clock(&mut tx,&key).await.map_err(|_| super::DurabilityError::InvalidStoredState)? {
-                        Some(clock) if clock.state != BossClockState::Alive => Ok(BossClockClaim::Waiting(clock)),
-                        _ => Ok(BossClockClaim::Unchanged),
+                    match read_clock(&mut tx,&key).await {
+                        Ok(Some(clock)) if clock.state != BossClockState::Alive => Ok(BossClockClaim::Waiting(clock)),
+                        Ok(_) => Ok(BossClockClaim::Unchanged),
+                        Err(error) => Err(error),
                     }
                 }
                 other => other,

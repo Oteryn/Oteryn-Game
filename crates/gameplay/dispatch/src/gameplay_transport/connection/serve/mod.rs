@@ -526,8 +526,15 @@ where
                     integrity = std::mem::take(&mut session.integrity);
                     break;
                 }
+                let error = match &end {
+                    ServeEnd::Closed(error) => format!("{error:?}"),
+                    ServeEnd::ControlLost(path) => format!("ControlLost({path})"),
+                    ServeEnd::Disconnected => "Disconnected".to_owned(),
+                    ServeEnd::LoggedOut => "LoggedOut".to_owned(),
+                    ServeEnd::Transferred(_) => "Transferred".to_owned(),
+                };
                 operator_event(&format!(
-                    "event=serve_command_end next_command_id={}",
+                    "event=serve_command_end error={error} next_command_id={}",
                     session.admitted.continuity.next_command_id,
                 ));
                 authority.player_trade_disconnected(session.admitted.game_session_id);

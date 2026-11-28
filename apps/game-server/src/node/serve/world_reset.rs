@@ -64,8 +64,8 @@ pub(super) fn classify_exit(
     if state.requested.load(Ordering::Acquire) {
         return Err(BootError::Readiness("World reset drain"));
     }
-    if error.is_some() {
-        return Err(BootError::Serve);
+    if let Some(error) = error {
+        return Err(BootError::GameplayServe(error));
     }
     Ok(())
 }

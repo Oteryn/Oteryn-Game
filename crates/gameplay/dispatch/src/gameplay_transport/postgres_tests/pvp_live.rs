@@ -65,3 +65,9 @@ fn pvp_poison_arrow_joins_the_reconciled_hit() -> TestResult {
 fn pvp_paid_splash_survives_a_later_unknown_shot() -> TestResult {
     super::item_look_fixtures::large_stack(|| scenario(16))
 }
+
+
+#[test]
+fn pvp_live_open_world_melee_hits_equipped_player() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(15))
+}

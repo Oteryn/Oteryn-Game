@@ -320,6 +320,16 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     collect_files(&root, &root, &mut files);
     // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) are CI inputs, not package documents.
     files.retain(|locator| !locator.starts_with("pins/"));
+    // The collision table is a pinned compiler input outside the WorldProject documents.
+    let collision_table = "terrain/crystal-item-collision.bin";
+    assert!(files.iter().any(|locator| locator == collision_table));
+    let collision_bytes =
+        fs::read(root.join(collision_table)).expect("read Crystal collision table");
+    assert_eq!(
+        world_project_sha256(&collision_bytes),
+        "eb1df914bdb45a89332448c6bb969d8a3b06bfc419d930599b09bb4754d6fff7"
+    );
+    files.retain(|locator| locator != collision_table);
     let files_seen = files.clone();
     assert!(
         files_seen

@@ -113,6 +113,31 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
                 },
             )
             .map_err(debug)?;
+        let session = dependencies.admitted.game_session_id;
+        let mut unrelated_item_fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(debug)?
+            .ok_or("current gameplay fence")?
+            .item_fence();
+        unrelated_item_fence.character_lease_generation += 1;
+        let map = owner.bundle_map().ok_or("bundle map")?;
+        assert!(
+            owner
+                .use_bundle_chest(
+                    dependencies.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 1,
+                        item_fence: Some(unrelated_item_fence),
+                    },
+                    map,
+                    &door_target(world.base().digest(), 0),
+                )
+                .await
+                .is_none(),
+            "an unrelated reward fence must leave a door to the door owner"
+        );
         // One committed door USE (the world gate admits one act per owner turn): the door's
         // toggle is a domain 17 tile change, never a domain 2 entry.
         let outcome = owner

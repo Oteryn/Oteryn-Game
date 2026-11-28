@@ -158,6 +158,8 @@ fn guard_case(
                         1,
                         &oteryn_protocol_oteryn::ClientCommandValue { command_id: 1, command_type, payload: &payload },
                     )?
+                } else if command_type == COMMAND_TYPE_USE_INTENT {
+                    use_command(1, 1, u64::from(command_type), b"oteryn:cell/entry-door", 0)
                 } else {
                     command(1, 1, u64::from(command_type), StepDirection::East)
                 };
@@ -267,6 +269,12 @@ fn guard_case(
                                     Ok(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
                                 );
                             }
+                            COMMAND_TYPE_USE_INTENT => assert_eq!(
+                                oteryn_protocol_oteryn::world_object::decode_use_result(
+                                    results[0].payload
+                                ),
+                                Ok(UseDisposition::Rejected)
+                            ),
                             _ => assert!(results[0].payload.is_empty()),
                         }
                         assert_eq!(results[1].command_id, 1);
@@ -337,6 +345,17 @@ fn selected_chat_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn 
         true,
         COMMAND_TYPE_CHAT_INTENT,
         &[CAPABILITY_CHAT_V1],
+        false,
+    )
+}
+
+#[test]
+fn use_guard_deferral_returns_typed_rejection() -> Result<(), Box<dyn Error>> {
+    guard_case(
+        || DurabilityError::RootUnavailable,
+        true,
+        COMMAND_TYPE_USE_INTENT,
+        &[],
         false,
     )
 }

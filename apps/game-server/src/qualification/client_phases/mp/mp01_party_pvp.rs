@@ -61,9 +61,11 @@ pub(super) async fn run(
         && check(
             "profiles",
             bounded("profiles", 30, async {
-                let (victim, party_members) = bots.split_last_mut().ok_or("MP01 victim missing")?;
-                profiles(party_members, &["knight", "druid", "paladin"]).await?;
-                starter::check_profile(victim, Some(birth)).await
+                profiles(&mut bots, &["knight", "druid", "paladin"]).await?;
+                bots::with_peer_liveness(&mut bots, 3, async |victim| {
+                    starter::check_profile(victim, Some(birth)).await
+                })
+                .await
             })
             .await,
             &mut failures,
@@ -213,7 +215,8 @@ async fn bounded<T>(
 }
 
 async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
-    for (bot, &vocation) in bots.iter_mut().zip(vocations) {
+    for (index, &vocation) in vocations.iter().enumerate() {
+        bots::with_peer_liveness(bots, index, async |bot| {
         let view = tab(bot, character::CharacterTab::GeneralStats).await?;
         let expected =
             character::vocation_id(vocation).ok_or("MP01 vocation has no protocol id")?;
@@ -242,6 +245,8 @@ async fn profiles(bots: &mut [Bot<'_, '_>], vocations: &[&str]) -> TestResult {
             bot.name,
             view.general.as_ref().map(|stats| stats.level)
         ));
+            Ok(())
+        }).await?;
     }
     Ok(())
 }
@@ -259,8 +264,12 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
     let expected = expected.into_iter().map(str::to_owned).collect::<Vec<_>>();
     let leader = bots[0].name.to_owned();
     let mut party_id = None;
-    for bot in &mut bots[..3] {
-        let view = party(bot, None).await?;
+    for index in 0..3 {
+        let (view, rows) = bots::with_peer_liveness(bots, index, async |bot| {
+            Ok((party(bot, None).await?, durable_party(bot).await?))
+        })
+        .await?;
+        let bot = &bots[index];
         let mut members = view
             .members
             .iter()
@@ -277,7 +286,6 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             )
             .into());
         }
-        let rows = durable_party(bot).await?;
         let mut names = rows.iter().map(|r| r.1.as_str()).collect::<Vec<_>>();
         names.sort_unstable();
         if names != expected
@@ -298,12 +306,13 @@ async fn party_journey(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestRes
             bot.name
         ));
     }
-    if !party(&mut bots[3], None).await?.members.is_empty()
-        || !durable_party(&bots[3]).await?.is_empty()
-    {
-        return Err("MP01 D unexpectedly belongs to the party".into());
-    }
-    Ok(())
+    bots::with_peer_liveness(bots, 3, async |bot| {
+        if !party(bot, None).await?.members.is_empty() || !durable_party(bot).await?.is_empty() {
+            return Err("MP01 D unexpectedly belongs to the party".into());
+        }
+        Ok(())
+    })
+    .await
 }
 
 /// Read-only qualification observation, following death.rs's bounded durable receipt reader.

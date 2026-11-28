@@ -178,7 +178,17 @@ async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult 
     Ok(())
 }
 
+const LOGOUT_BUDGET: Duration = Duration::from_secs(930);
+
 pub(super) async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
+    logout_at_before(bot, stage, None).await
+}
+
+async fn logout_at_before(
+    bot: &mut Bot<'_, '_>,
+    stage: &str,
+    deadline: Option<tokio::time::Instant>,
+) -> TestResult {
     bot.progress(stage, "begin")?;
     let begin = bot
         .session
@@ -194,7 +204,14 @@ pub(super) async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult 
     .await;
     let (before_send, result) = match drained {
         Err(error) => (true, Err(error)),
-        Ok(()) => (false, logout(bot).await),
+        Ok(()) => (
+            false,
+            logout(
+                bot,
+                deadline.unwrap_or_else(|| tokio::time::Instant::now() + LOGOUT_BUDGET),
+            )
+            .await,
+        ),
     };
     if let Err(error) = result {
         let error = error.to_string();
@@ -273,6 +290,41 @@ async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
 
 pub(super) async fn pump(bots: &mut [Bot<'_, '_>]) -> TestResult<Vec<Vec<SessionEvent>>> {
     pump_at(bots, "liveness").await
+}
+
+pub(super) async fn with_peer_liveness<'p, 'a, T>(
+    bots: &mut [Bot<'p, 'a>],
+    actor: usize,
+    operation: impl AsyncFnOnce(&mut Bot<'p, 'a>) -> TestResult<T>,
+) -> TestResult<T> {
+    let (before, rest) = bots.split_at_mut_checked(actor).ok_or("MP actor missing")?;
+    let (active, after) = rest.split_first_mut().ok_or("MP actor missing")?;
+    let result = while_servicing_liveness(operation(active), async || {
+        for peer in before
+            .iter_mut()
+            .chain(after.iter_mut())
+            .filter(|bot| bot.session.is_some())
+        {
+            let result = async {
+                peer.client()?
+                    .service_liveness(Duration::from_millis(20))
+                    .await?;
+                TestResult::Ok(())
+            }
+            .await;
+            if let Err(error) = peer.contextualize("parked-peer-liveness", result) {
+                peer.session = None;
+                return Err(error);
+            }
+        }
+        Ok(())
+    })
+    .await;
+    if result.is_err() {
+        // A failed peer can interrupt the actor in the middle of an exchange.
+        active.session = None;
+    }
+    result?
 }
 
 async fn pump_at(bots: &mut [Bot<'_, '_>], stage: &str) -> TestResult<Vec<Vec<SessionEvent>>> {
@@ -633,8 +685,10 @@ pub(super) async fn party(
             None => "Query",
         };
         return Err(format!(
-            "party operation={operation};command_type={};command_id={command_id};status={:?}",
-            command.kind, reply.status,
+            "party operation={operation};command_type={};command_id={command_id};status={:?};disposition={:?}",
+            command.kind,
+            reply.status,
+            party::decode_party_result(&reply.operation).map(|result| result.disposition),
         )
         .into());
     }
@@ -653,8 +707,11 @@ pub(super) async fn invite_accept(
     peer: usize,
 ) -> TestResult {
     let target = bots[peer].own()?;
-    party(&mut bots[leader], Some(party::PartyIntent::Invite(target))).await?;
-    let invitations = party(&mut bots[peer], None).await?;
+    with_peer_liveness(bots, leader, async |bot| {
+        party(bot, Some(party::PartyIntent::Invite(target))).await
+    })
+    .await?;
+    let invitations = with_peer_liveness(bots, peer, async |bot| party(bot, None).await).await?;
     let leader_name = bots[leader].name.as_str();
     let handle = invitations
         .invitations
@@ -662,7 +719,10 @@ pub(super) async fn invite_accept(
         .find(|invite| invite.name == leader_name)
         .ok_or("invited bot did not observe leader invitation")?
         .handle;
-    party(&mut bots[peer], Some(party::PartyIntent::Accept(handle))).await?;
+    with_peer_liveness(bots, peer, async |bot| {
+        party(bot, Some(party::PartyIntent::Accept(handle))).await
+    })
+    .await?;
     Ok(())
 }
 
@@ -769,8 +829,7 @@ pub(super) async fn attack_target(bot: &mut Bot<'_, '_>, target: Option<&EntityR
 }
 
 /// Busy uses the shared helper; real combat blocks expire on server time, never a clock poke.
-async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
+async fn logout(bot: &mut Bot<'_, '_>, deadline: tokio::time::Instant) -> TestResult {
     verdict::Harness::global().bounded_wait(deadline, "MP-combat-logout");
     let mut activity_due = tokio::time::Instant::now();
     let context = bot.context("logout-attempt");
@@ -803,21 +862,44 @@ async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
     }).await.map_err(|_| "MP logout combat release deadline")?
 }
 
-async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
-    let mut failures = Vec::new();
-    let mut pending = Vec::new();
-    for bot in bots.iter_mut().filter(|bot| bot.session.is_some()) {
-        pending.push(Box::pin(logout_at(bot, "logout-all")));
-    }
-    while !pending.is_empty() {
-        let result = std::future::poll_fn(|cx| {
-            for index in 0..pending.len() {
-                if let std::task::Poll::Ready(result) = pending[index].as_mut().poll(cx) {
-                    drop(pending.remove(index));
-                    return std::task::Poll::Ready(result);
-                }
+async fn within_group_logout_deadline(
+    deadline: tokio::time::Instant,
+    attempts: impl std::future::Future<Output = TestResult>,
+) -> TestResult {
+    tokio::select! {
+        biased;
+        _ = tokio::time::sleep_until(deadline) => Err("MP group logout deadline".into()),
+        result = attempts => {
+            if tokio::time::Instant::now() >= deadline {
+                Err("MP group logout deadline".into())
+            } else {
+                result
             }
-            std::task::Poll::Pending
+        }
+    }
+}
+
+async fn logout_all(bots: &mut [Bot<'_, '_>]) -> TestResult {
+    let deadline = tokio::time::Instant::now() + LOGOUT_BUDGET;
+    let result = within_group_logout_deadline(deadline, logout_all_before(bots, deadline)).await;
+    if tokio::time::Instant::now() >= deadline {
+        // The deadline can cancel a command or peer read in flight.
+        for bot in bots {
+            bot.session = None;
+        }
+    }
+    result
+}
+
+async fn logout_all_before(bots: &mut [Bot<'_, '_>], deadline: tokio::time::Instant) -> TestResult {
+    let mut failures = Vec::new();
+    // Each logout settles through the same World durability holder.
+    for index in 0..bots.len() {
+        if bots[index].session.is_none() {
+            continue;
+        }
+        let result = with_peer_liveness(bots, index, async |bot| {
+            logout_at_before(bot, "logout-all", Some(deadline)).await
         })
         .await;
         if let Err(error) = result {
@@ -877,6 +959,34 @@ pub(super) async fn release_all(
         Ok(())
     } else {
         Err(failures.join("; ").into())
+    }
+}
+
+#[cfg(test)]
+mod logout_tests {
+    use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn second_bot_cannot_pass_after_group_logout_deadline() -> TestResult {
+        let start = tokio::time::Instant::now();
+        let deadline = start + LOGOUT_BUDGET;
+        let mut second_started = false;
+        let mut second_finished = false;
+        let result = within_group_logout_deadline(deadline, async {
+            tokio::time::sleep(LOGOUT_BUDGET - Duration::from_secs(1)).await;
+            second_started = true;
+            tokio::time::sleep(Duration::from_secs(2)).await;
+            second_finished = true;
+            Ok(())
+        })
+        .await;
+        assert!(second_started);
+        assert!(!second_finished);
+        assert_eq!(
+            result.err().map(|error| error.to_string()).as_deref(),
+            Some("MP group logout deadline")
+        );
+        Ok(())
     }
 }
 

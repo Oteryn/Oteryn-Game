@@ -83,10 +83,10 @@ fn beam_target_mode_without_target_uses_facing() {
         aimed_origin(caster, Some(Direction::South), None),
         Ok((at(100, 101), Direction::South))
     );
-    // No target and no facing is the facing cast's own refusal.
+    // Before the first turn or step, source spells use the initial south heading.
     assert_eq!(
         aimed_origin(caster, None, None),
-        Err(SpellCastDisposition::TargetRequired)
+        Ok((at(100, 101), Direction::South))
     );
 }
 

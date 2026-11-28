@@ -114,3 +114,76 @@ fn finite_policy_covers_every_base_vocation_level_without_extrapolation() -> Tes
     assert!(!PLAYABLE_VOCATIONS.contains(&"master_sorcerer"));
     Ok(())
 }
+
+#[test]
+fn qualification_provision_keeps_its_turn_for_the_admission_read() -> TestResult {
+    use crate::bestiary_postgres_harness::{Harness, debug, runtime};
+    use crate::durability::{DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore};
+    use crate::party_shared_xp_postgres_tests::committed_fresh_player;
+    use sqlx::pool::PoolConnectionReturnDisposition;
+    use std::future::{Future, poll_fn};
+    use std::task::Poll;
+    use std::time::Duration;
+
+    let Some(admin) = std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    let admin = admin
+        .into_string()
+        .map_err(|_| "OTERYN_TEST_POSTGRES_ADMIN_URL is not valid Unicode")?;
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            runtime().map_err(debug)?.block_on(async {
+                let harness = Harness::create(admin, "provision_turn", true).await?;
+                let result: TestResult = async {
+                    let root = &harness.root;
+                    let store = FreshAdmissionStore::from_root(root.clone());
+                    let now: i64 = sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
+                    )
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    let admitted = committed_fresh_player(&harness, 60, 62, 70, now).await?;
+                    let session = admitted.current_game_session_id();
+                    assert!(root.maintain_ready_once().await?);
+                    let mut busy = root.try_acquire_ready()?;
+                    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+                    let read = DurabilityRoot::with_holder_owner(retry_holder(
+                        Some(root),
+                        deadline,
+                        |error| matches!(error, DurabilityError::RootUnavailable),
+                        async || store.current_session(session).await,
+                    ));
+                    tokio::pin!(read);
+                    poll_fn(|cx| {
+                        assert!(read.as_mut().poll(cx).is_pending());
+                        Poll::Ready(())
+                    })
+                    .await;
+                    assert_eq!(
+                        busy.return_to_pool_observed().await,
+                        PoolConnectionReturnDisposition::ReturnedToIdle
+                    );
+                    // Deliberately poll the later writer before the woken fixture.
+                    let competing =
+                        DurabilityRoot::with_holder_owner(async { root.try_acquire_ready() }).await;
+                    let outcome = read.await;
+                    drop(competing);
+                    match outcome {
+                        Ok(current) if current == admitted => Ok(()),
+                        Err(error) => Err(format!("qualification admission: {error:?}").into()),
+                        Ok(_) => Err("qualification read returned a different session".into()),
+                    }
+                }
+                .await;
+                harness.cleanup().await?;
+                result
+            })
+            .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "qualification provision test thread failed")?
+        .map_err(Into::into)
+}
