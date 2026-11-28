@@ -302,8 +302,59 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     if initial_combat.in_fight {
         return Err(format!("C18a combat lock already present before Rat placement: {initial_combat:?}").into());
     }
-    // Place the live Rat only after the last paced step. The row must distinguish
-    // Scorch's lock transition from the Rat engaging the caster during approach.
+    // Complete the turn before the live Rat can engage the caster. The cast
+    // still has to follow the held target instead of this verified direction.
+    let facing = StepDirection::West;
+    let intent =
+        target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))
+            .map_err(|error| format!("C18a turn encoding failed: {error:?}"))?;
+    let turn_id = client.next_command_id();
+    let turn_before = client.last_server_sequence();
+    let (turn, mut turn_capture) = oteryn_dev_client::capture_qualification_exchange(
+        client.session_mut().gated_command(
+            target_move::CAPABILITY_TARGET_MOVE_V1,
+            target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
+            &intent,
+        )
+    ).await;
+    let turn = turn?;
+    let turn_reply = turn.server_sequence;
+    evidence(&format!("c18a_turn command={turn_id} before={turn_before} reply={turn_reply}"));
+    require_mechanic_acceptance(turn.status, "C18a turn away from the Rat tile")?;
+    if turn.payload != [8, 1] {
+        return Err("C18a turn away from the Rat tile was refused".into());
+    }
+    let turn_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let caster = loop {
+        let entities = client
+            .world_entities()
+            .ok_or("C18a has no post-turn entity projection")?;
+        let own = entities
+            .iter()
+            .find(|entry| &entry.entity.identity == entities.own_identity())
+            .ok_or("C18a has no own entity projection")?;
+        if own.position != here {
+            return Err(format!(
+                "C18a caster moved during turn: before={here:?} after={:?}", own.position
+            ).into());
+        }
+        if matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
+            trace_turn_frames(&turn_capture.inbound, own.entity, client.selected_capabilities()).await?;
+            break own.entity;
+        }
+        if tokio::time::Instant::now() >= turn_deadline {
+            trace_turn_frames(&turn_capture.inbound, own.entity, client.selected_capabilities()).await?;
+            return Err(format!(
+                "C18a TURN direction unobserved: command={turn_id} reply={turn_reply} last_frame={} expected={facing:?} actual={:?}",
+                client.last_server_sequence(), actor_state(own.detail)
+            ).into());
+        }
+        let (result, slice) = oteryn_dev_client::capture_qualification_exchange(
+            client.service_liveness(Duration::from_millis(20))
+        ).await;
+        turn_capture.inbound.extend_from_slice(&slice.inbound);
+        result?;
+    };
     let target = place_exact_rat(&mut client, clock_before.as_mut()).await?;
     evidence(&format!(
         "c18a_select_send at_ms={} command={} sequence={} caster={here:?} target={target:?}",
@@ -314,120 +365,55 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
     if selection.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("C18a selection refused: {selection:?}").into());
     }
-    let facing = StepDirection::West;
-    let intent =
-        target_move::encode_target_move_intent(target_move::TargetMoveIntent::Turn(facing))
-            .map_err(|error| format!("C18a turn encoding failed: {error:?}"))?;
-    let mut aim = None;
-    for attempt in 1..=12 {
-        let rat_before = client
-            .world_entities()
-            .and_then(|view| view.get(&target))
-            .ok_or("C18a exact Rat left visibility before re-aim")?
-            .position;
-        evidence(&format!(
-            "c18a_reaim attempt={attempt} caster={here:?} rat={rat_before:?} target={target:?}"
-        ));
-        if !rat_in_scorch_cone(here, rat_before) {
-            client.service_liveness(Duration::from_millis(500)).await?;
-            continue;
-        }
-        let turn_id = client.next_command_id();
-        let turn_before = client.last_server_sequence();
-        let (turn, mut turn_capture) = oteryn_dev_client::capture_qualification_exchange(
-            client.session_mut().gated_command(
-                target_move::CAPABILITY_TARGET_MOVE_V1,
-                target_move::COMMAND_TYPE_TARGET_MOVE_INTENT,
-                &intent,
-            )
-        ).await;
-        let turn = turn?;
-        let turn_reply = turn.server_sequence;
-        evidence(&format!("c18a_turn command={turn_id} before={turn_before} reply={turn_reply}"));
-        require_mechanic_acceptance(turn.status, "C18a turn away from the selected Rat")?;
-        if turn.payload != [8, 1] {
-            return Err("C18a turn away from the selected Rat was refused".into());
-        }
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
-        loop {
-            let entities = client
-                .world_entities()
-                .ok_or("C18a has no post-turn entity projection")?;
-            let own = entities
-                .iter()
-                .find(|entry| &entry.entity.identity == entities.own_identity())
-                .ok_or("C18a has no own entity projection")?;
-            let selected = entities
-                .get(&target)
-                .ok_or("C18a selected Rat generation left visibility during the turn")?;
-            if own.position != here {
-                return Err(format!(
-                    "C18a caster moved during turn: before={here:?} after={:?}", own.position
-                ).into());
-            }
-            if selected.position != rat_before {
-                evidence(&format!(
-                    "c18a_rat_moved_during_turn target={target:?} before={rat_before:?} after={:?}",
-                    selected.position
-                ));
-            }
-            if matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
-                if rat_in_scorch_cone(here, selected.position) {
-                    require_unique_rat_tile(
-                        entities.iter().map(|entity| (tile(entity.position).ok(), entity.detail)),
-                        tile(selected.position)?,
-                    )?;
-                    let Some((_, health_percent)) = actor_state(selected.detail) else {
-                        return Err("C18a selected Rat has no creature health".into());
-                    };
-                    if health_percent != 100 {
-                        return Err(format!(
-                            "C18a selected Rat was damaged before Scorch: health={health_percent}"
-                        ).into());
-                    }
-                    trace_turn_frames(&turn_capture.inbound, own.entity, client.selected_capabilities()).await?;
-                    aim = Some((own.entity, selected.position, health_percent));
-                }
-                break;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                trace_turn_frames(&turn_capture.inbound, own.entity, client.selected_capabilities()).await?;
-                return Err(format!(
-                    "C18a TURN direction unobserved: command={turn_id} reply={turn_reply} last_frame={} expected={facing:?} actual={:?}",
-                    client.last_server_sequence(), actor_state(own.detail)
-                ).into());
-            }
-            let (result, slice) = oteryn_dev_client::capture_qualification_exchange(
-                client.service_liveness(Duration::from_millis(20))
-            ).await;
-            turn_capture.inbound.extend_from_slice(&slice.inbound);
-            result?;
-        }
-        if aim.is_some() {
-            break;
-        }
-    }
-    let (caster, rat_position, health_before) =
-        aim.ok_or("C18a exact Rat did not enter the Scorch cone within 12 observations")?;
-    let combat_before = *client
-        .session_mut()
-        .combat_state()
-        .ok_or("C18a missing selected combat state")?;
-    if combat_before.target != Some(target) || combat_before.modes != initial_combat.modes {
-        return Err("C18a did not retain the exact selected Rat while facing away".into());
-    }
-    let precast_frame = collect_events(&mut client, None, clock_before.as_mut())?.combat;
     let cast_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let aim_deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let mut precast_frame = None;
+    let (rat_position, health_before, combat_before) = loop {
+        if let Some(frame) = collect_events(&mut client, None, clock_before.as_mut())?.combat {
+            precast_frame = Some(frame);
+        }
+        let combat = *client.session_mut().combat_state().ok_or("C18a missing selected combat state")?;
+        if combat.in_fight {
+            return Err(format!("C18a pre-cast lock must be absent: session={cast_session} frame={precast_frame:?}").into());
+        }
+        let entities = client.world_entities().ok_or("C18a has no pre-cast entity projection")?;
+        let own = entities.get(&caster).ok_or("C18a caster generation left visibility")?;
+        if own.position != here || !matches!(actor_state(own.detail), Some((direction, _)) if direction == facing) {
+            return Err(format!(
+                "C18a caster moved or turned while selecting the Rat: before={here:?} after={:?} detail={:?}",
+                own.position, own.detail
+            ).into());
+        }
+        let rat = entities.get(&target).ok_or("C18a selected Rat generation left visibility")?;
+        evidence(&format!("c18a_aim caster={here:?} rat={:?} target={target:?}", rat.position));
+        if rat_in_scorch_cone(here, rat.position)
+            && combat.target == Some(target)
+            && precast_frame.is_some_and(|(_, state)| state == combat)
+        {
+            require_unique_rat_tile(
+                entities.iter().map(|entity| (tile(entity.position).ok(), entity.detail)),
+                tile(rat.position)?,
+            )?;
+            let Some((_, 100)) = actor_state(rat.detail) else {
+                return Err(format!("C18a selected Rat lacks full pre-cast health: {:?}", rat.detail).into());
+            };
+            if combat.modes != initial_combat.modes {
+                return Err("C18a selecting the exact Rat changed fight modes".into());
+            }
+            break (rat.position, 100, combat);
+        }
+        if tokio::time::Instant::now() >= aim_deadline {
+            return Err(format!(
+                "C18a exact Rat was not held in the Scorch cone while facing away: rat={:?} combat={combat:?} frame={precast_frame:?}",
+                rat.position
+            ).into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    };
     evidence(&format!(
         "c18a_precast_lock session={cast_session} last_frame={} combat_frame={precast_frame:?} state={combat_before:?}",
         client.last_server_sequence()
     ));
-    let Some((_, projected_combat)) = precast_frame else {
-        return Err("C18a pre-cast combat condition frame absent".into());
-    };
-    if projected_combat != combat_before || combat_before.in_fight {
-        return Err(format!("C18a pre-cast lock must be absent: frame={precast_frame:?}").into());
-    }
     let pre_cast_sequence = client.last_server_sequence();
     let before = *client.actor_vitals().ok_or("C18a caster vitals absent")?;
     let mut feedback = SpellFeedback::default();
