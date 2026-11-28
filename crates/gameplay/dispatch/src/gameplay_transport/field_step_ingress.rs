@@ -406,24 +406,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
     ) -> super::actor_movement::StepInChannel {
-        use super::actor_movement::step_in_channel;
+        use super::super::paced_movement::special_movement::{
+            publish_snow_departures, snow_departures,
+        };
         let fail = || Err(MovementError::NotQualified);
         let Some(source) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
         else {
             Self::return_unused_field_step_pass(pass).await?;
-            return step_in_channel(
-                runtime,
-                states,
-                self.movement_cells(),
-                actor,
-                session,
-                now_us,
-                direction,
-                blocking,
-                equipment_delta,
-            );
+            return self
+                .step_without_field_ingress(
+                    permit,
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    now_us,
+                    direction,
+                    blocking,
+                    equipment_delta,
+                )
+                .await;
         };
         let Some(_room) = self.rooms().gate_field_step_ingress() else {
             return fail();
@@ -447,17 +451,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         {
             Self::return_unused_field_step_pass(pass).await?;
-            return step_in_channel(
-                runtime,
-                states,
-                self.movement_cells(),
-                actor,
-                session,
-                now_us,
-                direction,
-                blocking,
-                equipment_delta,
-            );
+            return self
+                .step_without_field_ingress(
+                    permit,
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    now_us,
+                    direction,
+                    blocking,
+                    equipment_delta,
+                )
+                .await;
         }
         if source.source_digest() != runtime.content_pin().server_artifact_digest()
             || states.has_pending_spell_commit(actor, session)
@@ -562,6 +568,108 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,None,None,None).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     }
                     let blood=read.items().iter().any(|item|crate::durability::creature_source_items::cloak_blood_percentage(&item.definition.production_key).is_some());
+                    if let Some(map) = owner.bundle_map() {
+                        use crate::durability::{DurabilityError, account_achievement};
+                        if map.overlay.runtime_scope() != fence.runtime_scope {
+                            return Err(DurabilityError::Unavailable);
+                        }
+                        let snow = snow_departures(map, actor, session, origin, now_us)
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                        if !snow.is_empty() && origin.position() != destination {
+                            let step = super::actor_movement::prepare_bundle_player_step(
+                                runtime, states, owner.movement_cells(), actor, session, now_us,
+                                direction, *blocking, equipment_delta,
+                            ).map_err(|_| DurabilityError::Unavailable)?;
+                            if step.proof().destination() != destination {
+                                return Err(DurabilityError::Unavailable);
+                            }
+                            let field = contact
+                                .map(|contact| states.prepare_non_player_field_contact(
+                                    runtime, actor, session, now_us, destination, contact,
+                                ))
+                                .transpose()
+                                .map_err(|_| DurabilityError::Unavailable)?;
+                            if blood {
+                                if !source.qualifies_soul_war_callbacks(source.source_digest())
+                                    || states.cloak_blood_steps.len() >= 32
+                                {
+                                    return Err(DurabilityError::Unavailable);
+                                }
+                                states.cloak_blood_steps.try_reserve(1)
+                                    .map_err(|_| DurabilityError::Unavailable)?;
+                            }
+                            let staged = step.stage(runtime)
+                                .map_err(|_| DurabilityError::Unavailable)?;
+                            let (last, prior) = snow.split_last()
+                                .ok_or(DurabilityError::Unavailable)?;
+                            for departure in prior {
+                                account_achievement::add_snowbunny_progress(
+                                    &mut tx, fence.character_id, &departure.event(),
+                                ).await?;
+                            }
+                            let removal_only = if player.is_none() { removal } else { None };
+                            let mut player_window = None;
+                            if player.is_some() || removal_only.is_some() {
+                                account_achievement::add_snowbunny_progress(
+                                    &mut tx, fence.character_id, &last.event(),
+                                ).await?;
+                                if let Some(pending) = player.take() {
+                                    let mut window = permit.open_commit_window(pending, super::player_field::park);
+                                    crate::durability::pvp_live::commit_live_pvp_transaction(
+                                        tx.into_inner(), deadline, &mut window,
+                                    ).await?;
+                                    player_window = Some(window);
+                                } else if let Some(item) = removal_only {
+                                    let pending = super::super::field_removal::PendingFieldRemoval {
+                                        fence,
+                                        content: source.source_digest(),
+                                        target: read.target().clone(),
+                                        item,
+                                        tool: None,
+                                        command: None,
+                                        binding: None,
+                                    };
+                                    let mut window = permit.open_commit_window(pending, super::super::field_removal::park);
+                                    crate::durability::pvp_live::commit_live_pvp_transaction(
+                                        tx.into_inner(), deadline, &mut window,
+                                    ).await?;
+                                    window.install();
+                                    owner.states.loop_ground.invalidate();
+                                }
+                            } else {
+                                account_achievement::commit_snowbunny_progress(
+                                    tx.into_inner(), fence.character_id, &last.event(), deadline,
+                                ).await?;
+                            }
+                            let (committed, duration) = staged.publish(states, actor, session);
+                            *outcome = Some(Ok((committed, duration)));
+                            publish_snow_departures(states, map, now_us, snow);
+                            if let Some(field) = field {
+                                states.publish_non_player_field_contact(
+                                    runtime, actor, session, destination, field,
+                                );
+                            }
+                            super::super::spite_step::stage_from_current_read(
+                                owner, runtime, states, actor, session, committed, &read,
+                            ).map_err(|_| DurabilityError::Unavailable)?;
+                            if let Some(mut window) = player_window {
+                                window.attempt_mut().retain_step_cooldowns(runtime, states);
+                                if !window.attempt().matches_current(runtime, states) {
+                                    return Err(DurabilityError::Unavailable);
+                                }
+                                window.install().install(runtime, states);
+                            }
+                            if blood {
+                                super::super::soul_war_cloak_blood::step::stage(
+                                    runtime, states, room, source, &read, actor, session,
+                                    committed, now_us,
+                                )?;
+                            } else {
+                                states.cloak_blood_cells.remove(&(destination.x, destination.y, destination.floor));
+                            }
+                            return Ok(());
+                        }
+                    }
                     if !blood { states.cloak_blood_cells.remove(&(destination.x,destination.y,destination.floor)); }
                     if blood {
                         if !source.qualifies_soul_war_callbacks(source.source_digest()) || states.cloak_blood_steps.len()>=32 {return Err(crate::durability::DurabilityError::Unavailable)}

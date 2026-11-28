@@ -171,8 +171,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(until) = now.checked_add(STAIRHOP_MICROS) else {
                     return UseDisposition::Rejected;
                 };
-                let Ok(snapshot) = runtime.commit_source_step(proof) else {
+                use crate::gameplay_transport::paced_movement::special_movement::{
+                    SnowDeparture, publish_snow_departures, snow_departures,
+                };
+                let Ok(snow) =
+                    snow_departures(map, actor, command.game_session_id, expected, now.get())
+                else {
                     return UseDisposition::Rejected;
+                };
+                let snapshot = if snow.is_empty() {
+                    let Ok(snapshot) = runtime.commit_source_step(proof) else {
+                        return UseDisposition::Rejected;
+                    };
+                    snapshot
+                } else {
+                    let pin = runtime.content_pin().server_artifact_digest();
+                    let Ok(staged) =
+                        runtime.stage_quest_encounter_with_phase(vec![proof], &[], |_, _| Ok(()))
+                    else {
+                        return UseDisposition::Rejected;
+                    };
+                    let events: Vec<_> = snow.iter().map(SnowDeparture::event).collect();
+                    let mut committed = None;
+                    let _ = self
+                        .commit_snowbunny_departure(
+                            &permit,
+                            command.game_session_id,
+                            actor,
+                            pin,
+                            &events,
+                            || {
+                                let (_, (positions, ())) = staged.publish();
+                                committed = Some(positions[0]);
+                                publish_snow_departures(&states, map, now.get(), snow);
+                            },
+                        )
+                        .await;
+                    let Some(snapshot) = committed else {
+                        return UseDisposition::Rejected;
+                    };
+                    snapshot
                 };
                 if let Some(state) = states.get_mut(&runtime, actor, command.game_session_id) {
                     state

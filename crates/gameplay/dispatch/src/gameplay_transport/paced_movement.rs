@@ -40,25 +40,6 @@ pub(super) fn player_bundle_doors<'a>(
     }
 }
 
-fn snowbunny_progress_operation(
-    snow_origin: bool,
-    actor: [u8; 16],
-    session: GameSessionId,
-    now: u64,
-) -> Option<[u8; 16]> {
-    use sha2::Digest;
-    snow_origin.then(|| {
-        let digest = sha2::Sha256::new()
-            .chain_update(actor)
-            .chain_update(session.as_bytes())
-            .chain_update(now.to_be_bytes())
-            .finalize();
-        let mut event = [0_u8; 16];
-        event.copy_from_slice(&digest[..16]);
-        event
-    })
-}
-
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn ordinary_paced_step(
         &self,
@@ -294,9 +275,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     super::soul_war_callbacks::qualifies_source(&runtime, native)
                 });
         let origin = runtime.read_actor_position(actor).ok();
-        let snow_origin = self.bundle_map().is_some_and(|map| {
-            origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
-        });
         let outcome = if self.bundle_map().is_some()
             && !native_blood_listener
             && !(field_step_room
@@ -324,18 +302,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 operator_event("event=step_rejected_field_pass_return");
                 return (StepOutcome::rejected(), None);
             }
-            states.step_with_non_player_field_contact(
+            self.step_without_field_ingress(
+                &permit,
                 &mut runtime,
-                self.movement_cells(),
+                &mut states,
                 actor,
                 session,
                 now,
                 cardinal,
                 blocking,
                 equipped_speed_delta,
-                None,
-                None,
             )
+            .await
         } else {
             self.step_with_field_ingress(
                 &mut permit,
@@ -435,15 +413,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
                 super::echo_warden::step_in(self, actor, session, now / 1000).await;
-                if let Some(event) = snowbunny_progress_operation(
-                    snow_origin,
-                    actor.placement_identity(),
-                    session,
-                    now,
-                ) && !self.add_snowbunny_progress(&permit, session, event).await
-                {
-                    super::operator_event("snowbunny_step_transaction_rolled_back");
-                }
                 if let Some(origin) = origin {
                     self.close_departed_door(
                         &permit,
@@ -529,33 +498,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 #[cfg(test)]
-mod snowbunny_operation_tests {
-    use super::*;
-
-    #[test]
-    fn snowbunny_stages_at_most_one_progress_operation_per_action() -> Result<(), &'static str> {
-        let mut bytes = [0; 16];
-        bytes[6] = 0x70;
-        bytes[8] = 0x80;
-        let session = GameSessionId::decode(&bytes).map_err(|_| "session")?;
-        assert!(snowbunny_progress_operation(false, [3; 16], session, 1).is_none());
-        let first = snowbunny_progress_operation(true, [3; 16], session, 1)
-            .ok_or("snow action operation")?;
-        assert_eq!(
-            snowbunny_progress_operation(true, [3; 16], session, 1),
-            Some(first),
-            "one action is represented by one idempotent database operation"
-        );
-        Ok(())
-    }
-}
-
-#[cfg(test)]
 #[test]
 fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), &'static str> {
     let source = include_str!("paced_movement.rs");
     let (body, _) = source
-        .split_once("\n#[cfg(test)]\nmod snowbunny_operation_tests")
+        .split_once("\n#[cfg(test)]\n#[test]")
         .ok_or("production body")?;
     for branch in [
         "dawnport",

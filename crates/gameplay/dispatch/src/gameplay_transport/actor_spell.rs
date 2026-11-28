@@ -3253,6 +3253,14 @@ pub(in crate::gameplay_transport) struct NonPlayerFieldContact {
         Option<oteryn_gameplay_domain::domain::condition::DotElement>,
     pub(in crate::gameplay_transport) content: [u8; 32],
 }
+pub(in crate::gameplay_transport) struct PreparedNonPlayerFieldContact {
+    index: usize,
+    next: PlayerSpellState,
+    changed: bool,
+    death: Option<PlayerDeathOccurrence>,
+    origin: NonPlayerFieldOrigin,
+}
+
 impl ChannelSpellStates {
     /// Real STEP and field initial HP/DOT are staged before movement. This is an
     /// owner method, not a callback that can mutate the stores during preflight.
@@ -3287,6 +3295,55 @@ impl ChannelSpellStates {
                 proof,
             );
         };
+        let expected = runtime
+            .read_actor_position(actor)
+            .map_err(crate::movement::MovementError::Actor)?;
+        let destination = if let Some(proof) = proof.as_ref() {
+            if !proof.matches_request(actor, session, direction) || proof.expected() != expected {
+                return Err(crate::movement::MovementError::NotQualified);
+            }
+            proof.validate_current(runtime)?;
+            proof.destination()
+        } else {
+            field_step_ingress::destination(
+                runtime, cells, actor, session, expected, direction, blocking,
+            )?
+        };
+        let field = self.prepare_non_player_field_contact(
+            runtime,
+            actor,
+            session,
+            now_us,
+            destination,
+            contact,
+        )?;
+        // Existing movement computes speed/ground/duration/current proof before
+        // committing its one physical position. It does not mutate Player state.
+        let result = actor_movement::step_in_channel_with_source_step(
+            runtime,
+            self,
+            cells,
+            actor,
+            session,
+            now_us,
+            direction,
+            blocking,
+            equipment_delta,
+            proof,
+        )?;
+        self.publish_non_player_field_contact(runtime, actor, session, result.0.position(), field);
+        Ok(result)
+    }
+
+    pub(in crate::gameplay_transport) fn prepare_non_player_field_contact(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+        destination: crate::foundation::MovementLocalPosition,
+        contact: NonPlayerFieldContact,
+    ) -> Result<PreparedNonPlayerFieldContact, crate::movement::MovementError> {
         if contact.content != runtime.content_pin().server_artifact_digest()
             || runtime.assert_actor_spell_unreserved(actor).is_err()
         {
@@ -3314,20 +3371,6 @@ impl ChannelSpellStates {
             target_is_player: true,
             decision_root: &root,
             occurrence: DecisionOccurrenceId::from_bytes(occurrence_bytes),
-        };
-        let expected = runtime
-            .read_actor_position(actor)
-            .map_err(crate::movement::MovementError::Actor)?;
-        let destination = if let Some(proof) = proof.as_ref() {
-            if !proof.matches_request(actor, session, direction) || proof.expected() != expected {
-                return Err(crate::movement::MovementError::NotQualified);
-            }
-            proof.validate_current(runtime)?;
-            proof.destination()
-        } else {
-            field_step_ingress::destination(
-                runtime, cells, actor, session, expected, direction, blocking,
-            )?
         };
         let stage_hit = |state: &PlayerSpellState, amount, element, now| {
             crate::spell::actor_conditions::stage_typed_hit_at_position(
@@ -3357,7 +3400,7 @@ impl ChannelSpellStates {
                 stage_hit,
             ),
         };
-        let (mut next, _damage) = staged.ok_or(crate::movement::MovementError::NotQualified)?;
+        let (next, _damage) = staged.ok_or(crate::movement::MovementError::NotQualified)?;
         let changed = next != *before;
         let death = if next.vitals().health == 0 {
             self.deaths
@@ -3367,20 +3410,30 @@ impl ChannelSpellStates {
         } else {
             None
         };
-        // Existing movement computes speed/ground/duration/current proof before
-        // committing its one physical position. It does not mutate Player state.
-        let result = actor_movement::step_in_channel_with_source_step(
-            runtime,
-            self,
-            cells,
-            actor,
-            session,
-            now_us,
-            direction,
-            blocking,
-            equipment_delta,
-            proof,
-        )?;
+        Ok(PreparedNonPlayerFieldContact {
+            index,
+            next,
+            changed,
+            death,
+            origin: contact.origin,
+        })
+    }
+
+    pub(in crate::gameplay_transport) fn publish_non_player_field_contact(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        destination: crate::foundation::MovementLocalPosition,
+        field: PreparedNonPlayerFieldContact,
+    ) {
+        let PreparedNonPlayerFieldContact {
+            index,
+            mut next,
+            changed,
+            death,
+            origin,
+        } = field;
         if changed {
             // The committed step may have started stair-hop exhaustion in the same cooldown
             // owner. Preserve it when publishing the staged field contact.
@@ -3398,16 +3451,14 @@ impl ChannelSpellStates {
                 actor,
                 session,
                 PlayerDeath {
-                    public_cause: matches!(contact.origin, NonPlayerFieldOrigin::Creature)
-                        .then_some(
+                    public_cause: matches!(origin, NonPlayerFieldOrigin::Creature).then_some(
                         crate::durability::character_death::PublicDeathCause::UnidentifiedCreature,
                     ),
                     occurrence,
-                    cell: result.0.position(),
+                    cell: destination,
                 },
             ));
         }
-        Ok(result)
     }
 }
 

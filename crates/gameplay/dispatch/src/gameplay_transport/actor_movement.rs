@@ -460,6 +460,139 @@ pub fn step_in_channel_with_source_step(
     Ok(result)
 }
 
+/// Prepare a bundle step before a durable movement consequence. The prepared
+/// carrier remains private until the consequence has committed.
+pub(in crate::gameplay_transport) struct PreparedBundlePlayerStep<'a> {
+    proof: crate::map::floor::BundleStepProof<'a>,
+    duration: Duration,
+    stairhop: Option<SemanticTimeMicros>,
+    walk: bool,
+}
+
+impl PreparedBundlePlayerStep<'_> {
+    pub(in crate::gameplay_transport) fn proof(&self) -> &crate::map::floor::BundleStepProof<'_> {
+        &self.proof
+    }
+
+    pub(in crate::gameplay_transport) fn stage<'a>(
+        self,
+        runtime: &'a mut ChannelRuntimeV1,
+    ) -> Result<StagedBundlePlayerStep<'a>, MovementError> {
+        let staged = runtime
+            .stage_quest_encounter_with_phase(vec![self.proof], &[], |_, _| Ok(()))
+            .map_err(MovementError::Actor)?;
+        Ok(StagedBundlePlayerStep {
+            staged,
+            duration: self.duration,
+            stairhop: self.stairhop,
+            walk: self.walk,
+        })
+    }
+}
+
+pub(in crate::gameplay_transport) struct StagedBundlePlayerStep<'a> {
+    staged: oteryn_gameplay_entities::carrier::encounter_access::StagedQuestEncounter<'a, ()>,
+    duration: Duration,
+    stairhop: Option<SemanticTimeMicros>,
+    walk: bool,
+}
+
+impl StagedBundlePlayerStep<'_> {
+    pub(in crate::gameplay_transport) fn publish(
+        self,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> (MovementPositionSnapshot, Duration) {
+        let (runtime, (positions, ())) = self.staged.publish();
+        // The staging call supplied exactly one proof.
+        let snapshot = positions[0];
+        if let Some(until) = self.stairhop
+            && let Some(state) = states.get_mut(runtime, actor, session)
+        {
+            use oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY;
+            state
+                .cooldowns
+                .groups
+                .insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+        }
+        if self.walk {
+            runtime.record_walk(actor, snapshot, self.duration);
+        }
+        (snapshot, self.duration)
+    }
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "uses the normal step owner's inputs"
+)]
+pub(in crate::gameplay_transport) fn prepare_bundle_player_step<'a>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+    direction: CardinalStep,
+    blocking: &'a dyn crate::map::floor::CellBlocker,
+    equipment_delta: Option<i32>,
+) -> Result<PreparedBundlePlayerStep<'a>, MovementError> {
+    if states.has_pending_spell_commit(actor, session) || states.is_dead(actor) {
+        return Err(MovementError::NotQualified);
+    }
+    let direction = if runtime.forced_player_step_current(actor, session) {
+        direction
+    } else {
+        states.drome_step_direction(runtime, actor, session, now_us, direction)?
+    };
+    let expected = runtime
+        .read_actor_position(actor)
+        .map_err(MovementError::Actor)?;
+    let proof = crate::map::floor::prepare_bundle_step(
+        runtime, cells, actor, session, expected, direction, false, blocking,
+    )?;
+    let state = states.get(runtime, actor, session);
+    let speed = match state {
+        Some(state) => spell_state_speed(
+            runtime,
+            state,
+            actor,
+            session,
+            now_us,
+            equipment_delta,
+            false,
+        ),
+        None => baseline_speed(runtime, actor, session, now_us),
+    };
+    let to = proof.destination();
+    if blocking.blocks(cell(to)) {
+        return Err(MovementError::Blocked);
+    }
+    let duration = duration_onto(&EngineeringGroundSpeed, to, speed, direction)?;
+    let stairhop = if proof.starts_stairhop() && state.is_some() {
+        use oteryn_gameplay_spell_rules::cast::STAIRHOP_MICROS;
+        let until = now_us
+            .checked_add(STAIRHOP_MICROS)
+            .ok_or(MovementError::NotQualified)?;
+        Some(SemanticTimeMicros::from_micros(until))
+    } else {
+        None
+    };
+    let from = expected.position();
+    let (dx, dy) = direction.delta();
+    let walk = to.floor == from.floor
+        && from.x.checked_add(dx) == Some(to.x)
+        && from.y.checked_add(dy) == Some(to.y)
+        && !crate::map::floor::is_teleport(cells, cell(to));
+    Ok(PreparedBundlePlayerStep {
+        proof,
+        duration,
+        stairhop,
+        walk,
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 fn step_in_channel_inner(
     runtime: &mut ChannelRuntimeV1,

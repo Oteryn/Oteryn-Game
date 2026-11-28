@@ -15,6 +15,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::{AdmissionRetryBudget, AutoWalkTarget, ComposedFreshAdmission};
 use crate::map::boot::{BootPins, boot};
 use crate::map::facts::ItemDefinition;
+use crate::map::view::MapFacts;
 use crate::map::overlay::TilePos;
 use oteryn_protocol_oteryn::item_view::{
     ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
@@ -28,6 +29,8 @@ use oteryn_protocol_oteryn::{
 use std::time::Duration;
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
+const SNOW: &str = "oteryn:item.tibia.i799";
+const FOOTPRINT: &str = "oteryn:item.tibia.i6594";
 const BAG: &str = "oteryn:item.tibia.i2854";
 const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: false,
@@ -40,7 +43,7 @@ const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
 fn autowalk_real_session_use_move_cancel_and_stale_on_postgres() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "autowalk e2e panicked")?
         .map_err(Into::into)
@@ -50,7 +53,7 @@ fn autowalk_real_session_use_move_cancel_and_stale_on_postgres() -> TestResult {
 fn target_move_real_dispatch_walk_turn_follow_and_cancel_on_postgres() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "target move e2e panicked")?
         .map_err(Into::into)
@@ -63,89 +66,108 @@ fn snowbunny_step_and_progress_share_one_postgres_transaction() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| snowbunny_transaction_scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, true).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "snowbunny transaction scenario panicked")??;
     Ok(())
 }
 
-fn snowbunny_transaction_scenario() -> TestResult {
-    run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "snowbunny_step", true, false).await?;
-        let character = crate::domain::CharacterId::from_bytes(id(41))?;
-        let event = id(91);
+async fn snowbunny_live_step(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+        encode_step_intent,
+    };
 
-        // This table stands in for the durable movement write already present in the transaction
-        // handed to commit_snowbunny_progress.  It lets the test observe transaction rollback
-        // without adding a test-only branch to production SQL.
-        sqlx::query("CREATE TABLE snowbunny_step_probe(event BYTEA PRIMARY KEY)")
-            .execute(&h.pool)
-            .await?;
-        sqlx::query(
-            "CREATE FUNCTION reject_snowbunny_progress() RETURNS trigger LANGUAGE plpgsql AS \
-             $$ BEGIN RAISE EXCEPTION 'forced snowbunny progress failure'; END $$",
-        )
-        .execute(&h.pool)
-        .await?;
-        sqlx::query(
-            "CREATE TRIGGER reject_snowbunny_progress BEFORE INSERT ON \
-             game_character_achievement_progress FOR EACH ROW EXECUTE FUNCTION \
-             reject_snowbunny_progress()",
-        )
-        .execute(&h.pool)
-        .await?;
+    sqlx::raw_sql(
+        "CREATE SEQUENCE snowbunny_write_attempt; \
+         GRANT USAGE ON SEQUENCE snowbunny_write_attempt TO oteryn_game_runtime;",
+    )
+    .execute(&h.pool)
+    .await?;
+    sqlx::query(
+        "CREATE FUNCTION reject_snowbunny_progress() RETURNS trigger LANGUAGE plpgsql AS \
+         $$ BEGIN PERFORM nextval('snowbunny_write_attempt'); \
+         RAISE EXCEPTION 'forced snowbunny progress failure'; END $$",
+    )
+    .execute(&h.pool)
+    .await?;
+    sqlx::query(
+        "CREATE TRIGGER reject_snowbunny_progress BEFORE INSERT ON \
+         game_character_achievement_progress FOR EACH ROW EXECUTE FUNCTION \
+         reject_snowbunny_progress()",
+    )
+    .execute(&h.pool)
+    .await?;
 
-        let mut failed = h.pool.begin().await?;
-        sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
-            .bind(event.as_slice())
-            .execute(&mut *failed)
-            .await?;
-        assert!(
-            crate::durability::account_achievement::commit_snowbunny_progress(
-                failed,
-                character,
-                &event,
-                tokio::time::Instant::now() + Duration::from_secs(5),
-            )
-            .await
-            .is_err()
-        );
-        let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM snowbunny_step_probe")
-            .fetch_one(&h.pool)
-            .await?;
-        assert_eq!(steps, 0, "progress failure rolls the durable step back");
-
-        sqlx::query(
-            "DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress",
-        )
-        .execute(&h.pool)
-        .await?;
-        let mut committed = h.pool.begin().await?;
-        sqlx::query("INSERT INTO snowbunny_step_probe(event) VALUES($1)")
-            .bind(event.as_slice())
-            .execute(&mut *committed)
-            .await?;
-        crate::durability::account_achievement::commit_snowbunny_progress(
-            committed,
-            character,
-            &event,
-            tokio::time::Instant::now() + Duration::from_secs(5),
-        )
-        .await?;
-        let progress: i64 = sqlx::query_scalar(
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let before = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+    let map = owner.bundle_map().ok_or("bundle map")?;
+    let source = pos(1, 1);
+    let tile = map.overlay.base().tile(source.x, source.y, source.floor).ok_or("snow tile")?;
+    let snow = *tile.ids().get(1).ok_or("snow palette")?;
+    let appearance = || map.facts.base_entry(source, 1, snow).map(|entry| entry.appearance_id);
+    let progress = || async {
+        sqlx::query_scalar::<_, i64>(
             "SELECT progress FROM game_character_achievement_progress WHERE \
              character_id=encode($1,'hex')::uuid AND achievement_key=$2",
         )
         .bind(id(41).as_slice())
         .bind(crate::durability::account_achievement::SNOWBUNNY_KEY)
-        .fetch_one(&h.pool)
-        .await?;
-        assert_eq!(progress, 1, "one committed snow step adds exactly one");
-        Ok(())
-    })
+        .fetch_optional(&h.pool)
+        .await
+    };
+    assert_eq!(appearance(), Some(799));
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let client_flow = async {
+        let exercise = async {
+            loop {
+                if decode_wire_envelope(&read(&mut client).await?)?.message_type()
+                    == MessageType::SnapshotCommit
+                {
+                    break;
+                }
+            }
+            let step = encode_step_intent(StepDirection::East);
+            send(&mut client, 1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, &step).await?;
+            let (reply, steps) = result(&mut client, 1).await?;
+            let attempted: bool = sqlx::query_scalar("SELECT is_called FROM snowbunny_write_attempt")
+                .fetch_one(&h.pool)
+                .await?;
+            assert!(attempted, "live STEP reached the injected PostgreSQL write failure");
+            assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Rejected);
+            assert_eq!(steps, 0);
+            assert_eq!(owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?, before);
+            assert_eq!(appearance(), Some(799));
+            assert_eq!(progress().await?, None);
+
+            sqlx::query("DROP TRIGGER reject_snowbunny_progress ON game_character_achievement_progress")
+                .execute(&h.pool)
+                .await?;
+            send(&mut client, 2, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, &step).await?;
+            let (reply, _) = result(&mut client, 2).await?;
+            assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+            let after = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?;
+            assert_eq!(after.position(), at(2, 1));
+            assert_eq!(after.revision(), before.revision() + 1);
+            assert_eq!(appearance(), Some(6594));
+            assert_eq!(progress().await?, Some(1));
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        client.shutdown().await?;
+        exercise
+    };
+    let (_, result) = join_two(
+        DurabilityRoot::with_holder_owner(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS)),
+        client_flow,
+    ).await;
+    result
 }
 
-fn scenario(target_move: bool) -> TestResult {
+fn scenario(target_move: bool, snow_step: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "autowalk", true, false).await?;
         prepare_current_session(&h).await?;
@@ -169,7 +191,29 @@ fn scenario(target_move: bool) -> TestResult {
                 .definition_ref("Item", key, "definition-r1")
                 .ok_or("item ref")
         };
-        let (bytes, pins) = bundle(reference(DOOR)?.get() - 1, reference(COIN)?.get() - 1)?;
+        let (mut bytes, mut pins) = bundle(reference(DOOR)?.get() - 1, reference(COIN)?.get() - 1)?;
+        if snow_step {
+            use oteryn_world_bundle::writer;
+            let mut snow = writer::read(&bytes).map_err(debug)?;
+            let palette = snow.manifest.palette.len().try_into()?;
+            for (key, palette_id) in [(SNOW, reference(SNOW)?), (FOOTPRINT, reference(FOOTPRINT)?)] {
+                snow.manifest.palette.push(writer::PaletteEntry {
+                    key: key.into(),
+                    family: writer::Family::Item,
+                    id: palette_id.get() - 1,
+                    terrain: None,
+                });
+            }
+            let start = snow.sectors[0].tiles.iter_mut()
+                .find(|tile| (tile.x, tile.y) == (1, 1)).ok_or("snow origin")?;
+            start.items.push(oteryn_world_bundle::sector::Item {
+                palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
+            bytes = writer::write(&snow.manifest, &snow.sectors, &Default::default()).map_err(debug)?;
+            pins.digest = writer::read(&bytes).map_err(debug)?.digest;
+        }
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let world = boot(
             &bytes,
@@ -302,6 +346,9 @@ fn scenario(target_move: bool) -> TestResult {
                     .context(),
                 r.pinned_movement_context()
             );
+        }
+        if snow_step {
+            return snowbunny_live_step(&h, &owner, admitted).await;
         }
         if target_move {
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(

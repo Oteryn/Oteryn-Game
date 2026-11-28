@@ -5,7 +5,10 @@
 //! `bath_tub.lua` lines 3-17,25-33 and `snow.lua` lines 3-23 at `201189f8`.
 use crate::content::ReferenceResistanceKind;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
-use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::gameplay_transport::actor_spell::{
+    ChannelSpellStates,
+    actor_movement::{StepInChannel, prepare_bundle_player_step},
+};
 use crate::map::boot::BundleMap;
 use crate::map::overlay::TilePos;
 use crate::map::view::{EntryFacts, MapFacts, placement_key};
@@ -291,72 +294,260 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         .ok()
     }
 
-    pub(in crate::gameplay_transport) async fn add_snowbunny_progress(
+    pub(in crate::gameplay_transport) async fn commit_snowbunny_departure(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         session: GameSessionId,
-        event_id: [u8; 16],
-    ) -> bool {
+        actor: ExactActorRef,
+        pin: [u8; 32],
+        events: &[[u8; 16]],
+        publish: impl FnOnce() + Send,
+    ) -> Result<(), crate::durability::DurabilityError> {
         use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
         use crate::foundation::{CommandId, CommandRef};
-        let pin = {
-            let runtime = self.runtime.lock().await;
-            runtime.content_pin().server_artifact_digest()
-        };
-        let Some(fence) = self.current_quest_fence(session).await.ok().flatten() else {
-            return false;
-        };
-        let Ok(command_id) = CommandId::new(self.owner_now().get().max(1)) else {
-            return false;
-        };
-        let command = CommandRef::new(session, command_id);
-        let character_id = fence.character_id;
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            return false;
-        };
-        let mut context = self;
-        pass.run_with_context(&mut context, move |holder, deadline, owner| {
+
+        let command = CommandRef::new(
+            session,
+            CommandId::new(self.owner_now().get().max(1))
+                .map_err(|_| DurabilityError::Unavailable)?,
+        );
+        let pass = self.root.try_issue_semantic_pass()?;
+        let mut context = (self, events, Some(publish));
+        pass.run_with_context(&mut context, move |holder, deadline, ctx| {
             Box::pin(async move {
+                let (owner, events, publish) = ctx;
                 let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                let store = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    owner.root.clone(),
+                );
+                let current = store
+                    .current_session_in_transaction(&mut tx, session)
+                    .await?;
+                let fence = crate::gameplay_transport::item_fence_of(current)
+                    .ok_or(DurabilityError::Unavailable)?;
+                if fence.runtime_scope != actor.runtime_scope()
+                    || fence.scope_ownership_generation != actor.scope_generation()
+                {
+                    return Err(DurabilityError::Unavailable);
+                }
                 item_tx::assert_spell_item_authority_in_transaction(
                     &mut tx,
                     permit,
                     owner.root,
                     owner.character,
                     owner.holder,
-                    &fence.item_fence(),
+                    &fence,
                     command,
                     pin,
                 )
                 .await
                 .map_err(|_| DurabilityError::Unavailable)?;
-                // The authority read and Snowbunny +1 share this transaction and its only
-                // commit. Crystal donor: data/scripts/movements/snow.lua:13-20
-                // (commit 201189f871d23597b82caf88fd611454a2ddefb8).
+                let (last, prior) = events.split_last().ok_or(DurabilityError::Unavailable)?;
+                for event in prior {
+                    crate::durability::account_achievement::add_snowbunny_progress(
+                        &mut tx,
+                        fence.character_id,
+                        event,
+                    )
+                    .await?;
+                }
                 crate::durability::account_achievement::commit_snowbunny_progress(
                     tx,
-                    character_id,
-                    &event_id,
+                    fence.character_id,
+                    last,
                     deadline,
                 )
                 .await?;
+                if let Some(publish) = publish.take() {
+                    publish();
+                }
                 Ok(())
             })
         })
         .await
-        .is_ok()
     }
 }
 
-pub(in crate::gameplay_transport) fn snow_at(
+/// A footprint changes one concrete placement at a concrete step-out. Position
+/// revisions distinguish successive steps without relying on clock resolution.
+pub(in crate::gameplay_transport) struct SnowDeparture {
+    key: u64,
+    before: EntryFacts,
+    after: u16,
+    placement_revision: u64,
+    event: [u8; 16],
+}
+
+impl SnowDeparture {
+    pub(in crate::gameplay_transport) fn event(&self) -> [u8; 16] {
+        self.event
+    }
+
+    pub(in crate::gameplay_transport) fn publish(self, map: &BundleMap, now: u64) -> bool {
+        map.facts.object_revision(self.key) == self.placement_revision
+            && map
+                .facts
+                .start_movement_decay(self.key, self.before, self.after, now, SNOW_DECAY_US)
+    }
+}
+
+const SNOW_DECAY_US: u64 = 10_000_000;
+
+fn snow_footprint_event(
+    actor: [u8; 16],
+    session: GameSessionId,
+    origin_revision: u64,
+    key: u64,
+    placement_revision: u64,
+) -> [u8; 16] {
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:snow-footprint")
+        .chain_update(actor)
+        .chain_update(session.as_bytes())
+        .chain_update(origin_revision.to_be_bytes())
+        .chain_update(key.to_be_bytes())
+        .chain_update(placement_revision.to_be_bytes())
+        .finalize();
+    let mut event = [0; 16];
+    event.copy_from_slice(&digest[..16]);
+    event
+}
+
+pub(in crate::gameplay_transport) fn snow_departures(
     map: &BundleMap,
-    position: MovementLocalPosition,
-) -> bool {
-    tile_entries(map, position).is_some_and(|tile| {
-        tile.entries
-            .iter()
-            .any(|(_, entry)| snow_transform(entry.appearance_id, true, false).is_some())
-    })
+    actor: ExactActorRef,
+    session: GameSessionId,
+    origin: crate::foundation::MovementPositionSnapshot,
+    now: u64,
+) -> Result<Vec<SnowDeparture>, crate::movement::MovementError> {
+    let Some(tile) = tile_entries(map, origin.position()) else {
+        return Ok(Vec::new());
+    };
+    tile.entries
+        .into_iter()
+        .filter_map(|(key, before)| {
+            let after = snow_transform(before.appearance_id, true, false)?;
+            map.facts.movement_item_facts(after)?;
+            let revision = map.facts.object_revision(key);
+            if now.checked_add(SNOW_DECAY_US).is_none()
+                || !map.facts.quest_callback_capacity(key, revision, 2)
+            {
+                return Some(Err(crate::movement::MovementError::NotQualified));
+            }
+            let event = snow_footprint_event(
+                actor.placement_identity(),
+                session,
+                origin.revision(),
+                key,
+                revision,
+            );
+            Some(Ok(SnowDeparture {
+                key,
+                before,
+                after,
+                placement_revision: revision,
+                event,
+            }))
+        })
+        .collect()
+}
+
+pub(in crate::gameplay_transport) fn publish_snow_departures(
+    states: &ChannelSpellStates,
+    map: &BundleMap,
+    now: u64,
+    departures: Vec<SnowDeparture>,
+) {
+    for departure in departures {
+        if departure.publish(map, now) {
+            states.owner_wake.notify_one();
+        } else {
+            crate::gameplay_transport::operator_event("snowbunny_footprint_projection_refused");
+        }
+    }
+}
+
+impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "binds the current movement owner and pace"
+    )]
+    pub(in crate::gameplay_transport) async fn step_without_field_ingress(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+        direction: crate::movement::CardinalStep,
+        blocking: &dyn crate::map::floor::CellBlocker,
+        equipment_delta: Option<i32>,
+    ) -> StepInChannel {
+        use crate::movement::MovementError;
+        let ordinary = |runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates| {
+            states.step_with_non_player_field_contact(
+                runtime,
+                self.movement_cells(),
+                actor,
+                session,
+                now,
+                direction,
+                blocking,
+                equipment_delta,
+                None,
+                None,
+            )
+        };
+        let Some((map, origin)) = self
+            .bundle_map()
+            .zip(runtime.read_actor_position(actor).ok())
+        else {
+            return ordinary(runtime, states);
+        };
+        let departures = snow_departures(map, actor, session, origin, now)?;
+        if departures.is_empty() {
+            return ordinary(runtime, states);
+        }
+        if map.overlay.runtime_scope() != runtime.binding().runtime_scope() {
+            return Err(MovementError::ScopeMismatch);
+        }
+        let step = prepare_bundle_player_step(
+            runtime,
+            states,
+            self.movement_cells(),
+            actor,
+            session,
+            now,
+            direction,
+            blocking,
+            equipment_delta,
+        )?;
+        let pin = runtime.content_pin().server_artifact_digest();
+        let same_tile = step.proof().destination() == origin.position();
+        let step = step.stage(runtime)?;
+        if same_tile {
+            return Ok(step.publish(states, actor, session));
+        }
+        let events: Vec<_> = departures.iter().map(SnowDeparture::event).collect();
+        let mut committed = None;
+        let result = self
+            .commit_snowbunny_departure(permit, session, actor, pin, &events, || {
+                committed = Some(step.publish(states, actor, session));
+                publish_snow_departures(states, map, now, departures);
+            })
+            .await;
+        if committed.is_none()
+            && let Err(error) = result
+        {
+            use crate::durability::DurabilityError;
+            crate::gameplay_transport::operator_event(match error {
+                DurabilityError::CommitOutcomeUnknown => "snowbunny_step_commit_unknown",
+                _ => "snowbunny_step_write_refused",
+            });
+        }
+        committed.ok_or(MovementError::NotQualified)
+    }
 }
 
 pub(in crate::gameplay_transport) fn swimming_selection() -> AppearanceSelection<String> {
@@ -601,15 +792,16 @@ impl ChannelSpellStates {
             for (key, entry) in &tile.entries {
                 // Crystal snow.lua:3-23. No current actor can enter ghost mode; the
                 // rule keeps that distinct from ordinary invisible player conditions.
-                if let Some(appearance) = snow_transform(entry.appearance_id, true, false)
+                if origin != Some(destination)
+                    && let Some(appearance) = snow_transform(entry.appearance_id, true, false)
                     && map
                         .facts
-                        .start_movement_decay(*key, *entry, appearance, now, 10_000_000)
+                        .start_movement_decay(*key, *entry, appearance, now, SNOW_DECAY_US)
                 {
                     changed = true;
                     self.owner_wake.notify_one();
-                    // TODO(M10-MOVE): fenced, idempotent Snowbunny +1/10000 progress.
-                    // durability/account_achievement.rs:add_progress is transaction-private.
+                    // TODO(M10-SNOW): admit the remaining relocation callers through the
+                    // prepared departure used by STEP and dropdown.
                 }
                 if entry.appearance_id == 26100 {
                     changed |= map.facts.transform_movement_item(*key, 26077);
@@ -1304,6 +1496,21 @@ mod tests {
             .spawn(|| movement_case(26077, 26100, false, true))?
             .join()
             .map_err(|_| "bath tub test thread")?
+    }
+
+    #[test]
+    fn snowbunny_stages_at_most_one_progress_operation_per_footprint() -> Result<(), &'static str> {
+        let mut bytes = [0; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        let session = GameSessionId::decode(&bytes).map_err(|_| "session")?;
+        let actor = [3; 16];
+        let first = snow_footprint_event(actor, session, 1, 2, 0);
+        assert_eq!(first, snow_footprint_event(actor, session, 1, 2, 0));
+        assert_ne!(first, snow_footprint_event(actor, session, 2, 2, 0));
+        assert_ne!(first, snow_footprint_event(actor, session, 1, 3, 0));
+        assert_ne!(first, snow_footprint_event(actor, session, 1, 2, 1));
+        Ok(())
     }
 
     #[test]
