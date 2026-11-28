@@ -1,8 +1,4 @@
-//! W24 client replay: the private ambient-sound domain (101, capability 288) goes through
-//! `Session::apply_state_delta` (`presentation.rs`). The outside cue 0 and the city replacement cue
-//! are session-owned presentation batches; the row re-encodes them with the production
-//! `encode_presentation_batch` (the C17c practice). A malformed batch and a stale replay are
-//! refused and leave the revision and the queue unchanged.
+//! W24 replays captured admission and ambient envelopes, preserving wire metadata.
 use super::*;
 use crate::tests::{BoxError, join_peer_with};
 use oteryn_protocol_oteryn::encode_state_delta;
@@ -18,14 +14,6 @@ struct Capture {
 }
 
 fn fixture() -> Result<Capture, BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        return Ok(Capture {
-            outside: std::fs::read(path.join("w24-outside.bin"))?,
-            city: std::fs::read(path.join("w24-city.bin"))?,
-            expected: std::fs::read_to_string(path.join("w24-expected.txt"))?,
-        });
-    }
     let batch = |cue_id| {
         encode_presentation_batch(&[PresentationEvent {
             decision_ordinal: 1,
@@ -66,8 +54,66 @@ fn cue_of(event: SessionEvent) -> Result<u32, BoxError> {
     }
 }
 
+async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
+    let expected = std::fs::read_to_string(path.join("w24-expected.txt"))?;
+    let (session_id, expected) = expected
+        .split_once('\n')
+        .ok_or("missing W24 capture session")?;
+    let expected: Vec<u64> = expected
+        .split_whitespace()
+        .map(str::parse)
+        .collect::<Result<_, _>>()?;
+    let [0, outside_sequence, city_cue, city_sequence] = expected.as_slice() else {
+        return Err("invalid W24 capture metadata".into());
+    };
+    assert!(*city_cue != 0 && outside_sequence < city_sequence);
+    let bytes = std::fs::read(path.join("w24-wire.bin"))?;
+    let stream = tokio::io::join(std::io::Cursor::new(bytes), tokio::io::sink());
+    let mut session =
+        Session::admit(stream, admission_with(CLIENT_SUPPORTED_CAPABILITIES)?).await?;
+    assert_eq!(
+        format!("{:?}", session.join_snapshot().game_session_id),
+        session_id
+    );
+    let mut sequence = session.last_server_sequence();
+    let mut observed = Vec::new();
+    while sequence < *city_sequence {
+        let frame = read_frame(&mut session.stream).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        envelope.validate(Direction::ServerToClient, true)?;
+        assert_eq!(
+            envelope.connection_generation(),
+            session.connection_generation
+        );
+        let next = envelope.server_sequence();
+        if next != 0 {
+            assert_eq!(next, sequence + 1);
+            sequence = next;
+        }
+        if envelope.message_type() == MessageType::StateDelta
+            && oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?.domain_id
+                == STATE_DOMAIN_AMBIENT_SOUND
+        {
+            observed.push((
+                sequence,
+                u64::from(cue_of(
+                    session.apply_state_delta(sequence, envelope.payload())?,
+                )?),
+            ));
+        }
+    }
+    assert_eq!(
+        observed,
+        [(*outside_sequence, 0), (*city_sequence, *city_cue)]
+    );
+    Ok(())
+}
+
 #[test]
 fn e2e_w24_ambient_zone_sound_replay() -> Result<(), BoxError> {
+    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        return block_on(replay_live(std::path::Path::new(&path)))?;
+    }
     block_on(async {
         let capture = fixture()?;
         let expected = capture.expected.as_str();

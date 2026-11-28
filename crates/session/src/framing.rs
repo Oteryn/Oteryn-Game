@@ -101,6 +101,24 @@ pub async fn write_frame<S: AsyncWrite + Unpin>(
     Ok(())
 }
 
+tokio::task_local! {
+    static QUALIFICATION_FRAMES: std::cell::RefCell<Vec<u8>>;
+}
+
+/// Records inbound framed bytes for a single qualification journey.
+#[doc(hidden)]
+pub async fn with_qualification_frames<T>(journey: impl Future<Output = T>) -> T {
+    QUALIFICATION_FRAMES
+        .scope(Default::default(), journey)
+        .await
+}
+
+/// Takes the active recording. The caller can discard it to start a new admission recording.
+#[doc(hidden)]
+pub fn take_qualification_frames() -> Vec<u8> {
+    QUALIFICATION_FRAMES.with(|frames| std::mem::take(&mut *frames.borrow_mut()))
+}
+
 /// Reads one length-prefixed frame body (bounded by `FrameLength`).
 pub async fn read_frame<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, SessionError> {
     let mut prefix = [0_u8; 4];
@@ -125,6 +143,11 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    let _ = QUALIFICATION_FRAMES.try_with(|frames| {
+        let mut frames = frames.borrow_mut();
+        frames.extend_from_slice(&prefix);
+        frames.extend_from_slice(&body);
+    });
     Ok(body)
 }
 

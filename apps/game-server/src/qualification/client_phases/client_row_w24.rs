@@ -1,20 +1,17 @@
-//! W24 client replay capture: the private ambient-sound domain (101). The outside join cue
-//! (`cue_id: 0`) and the city replacement cue a real STEP route produces are the
-//! `SessionEvent::Presentation` batches the session applied; the session owns the decoded
-//! events, so (the C17c practice) each batch is re-encoded with the production
-//! `encode_presentation_batch` and labelled as such in `crates/session/src/tests/e2e_w24.rs`.
+//! W24 records the original inbound session frames for client replay.
 use super::*;
-use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::presentation::{
-    PresentationEvent, PresentationEventKind, encode_presentation_batch,
+use oteryn_dev_client::{
+    DevClientSession, SessionEvent,
+    native_session::{take_qualification_frames, with_qualification_frames},
 };
+use oteryn_protocol_oteryn::presentation::{PresentationEvent, PresentationEventKind};
 
 use super::full_row_w24::{city_replacement, clock_snapshot, zone};
 
 fn ambient_batch(
     client: &mut DevClientSession,
     minute: &mut u16,
-) -> TestResult<Option<(PresentationEvent, u16)>> {
+) -> TestResult<Option<(PresentationEvent, u16, u64)>> {
     let mut batch = None;
     for event in client.take_events() {
         match event {
@@ -22,7 +19,9 @@ fn ambient_batch(
             SessionEvent::Presentation(delta) => {
                 for event in delta.value {
                     if matches!(event.kind, PresentationEventKind::AmbientSound { .. })
-                        && batch.replace((event, *minute)).is_some()
+                        && batch
+                            .replace((event, *minute, delta.server_sequence))
+                            .is_some()
                     {
                         return Err("step=ambient unexpected multiple cues".into());
                     }
@@ -37,7 +36,7 @@ fn ambient_batch(
 async fn wait_for_ambient(
     client: &mut DevClientSession,
     minute: &mut u16,
-) -> TestResult<Option<(PresentationEvent, u16)>> {
+) -> TestResult<Option<(PresentationEvent, u16, u64)>> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
     loop {
         if let Some(batch) = ambient_batch(client, minute)? {
@@ -100,7 +99,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     let mut minute = clock_snapshot(&mut client)?;
     let from = tile(client.world_spatial().actor_position)?;
     if let Some(city) = zone(world, from) {
-        let (event, observed_minute) = wait_for_ambient(&mut client, &mut minute)
+        let (event, observed_minute, _) = wait_for_ambient(&mut client, &mut minute)
             .await?
             .ok_or("step=starting-city no active ambient cue at admission")?;
         city_cue(city, event, observed_minute)?;
@@ -119,13 +118,14 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
             return Err("step=outside logout refused".into());
         }
         drop(client);
+        take_qualification_frames();
         client = connect_character(clients, 0x9d, 1).await?;
         minute = clock_snapshot(&mut client)?;
         if client.world_spatial().actor_position != outside {
             return Err("step=outside fresh admission changed the saved position".into());
         }
     }
-    let (outside, _) = wait_for_ambient(&mut client, &mut minute)
+    let (outside, _, outside_sequence) = wait_for_ambient(&mut client, &mut minute)
         .await?
         .ok_or("step=outside no zero ambient cue at admission")?;
     if !matches!(
@@ -135,6 +135,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         return Err(format!("step=outside incorrect admission cue {:?}", outside.kind).into());
     }
     let from = tile(client.world_spatial().actor_position)?;
+    let from_position = client.world_spatial().actor_position;
     let path = route(world, from, |at| zone(world, at).is_some())
         .ok_or("step=city-entry no compiled player route into a supported city")?;
     for direction in path {
@@ -147,9 +148,13 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     }
     let city = zone(world, tile(client.world_spatial().actor_position)?)
         .ok_or("step=city-entry route ended outside the city")?;
-    let (entry, observed_minute) = wait_for_ambient(&mut client, &mut minute)
+    let (entry, observed_minute, city_sequence) = wait_for_ambient(&mut client, &mut minute)
         .await?
         .ok_or("step=city-entry no ambient replacement after walking into the city")?;
+    let expected_position = client.world_spatial().actor_position;
+    if expected_position == from_position || city_sequence <= outside_sequence {
+        return Err("step=city-entry missing position or sequence transition".into());
+    }
     let city_cue = city_cue(city, entry, observed_minute)?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -160,15 +165,24 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
         .or_else(|| std::env::var_os("E2E_ALL_CAPTURE_DIR"))
         .ok_or("step=replay capture directory missing")?;
     let root = Path::new(&root);
-    let outside_payload =
-        encode_presentation_batch(&[outside]).map_err(|error| format!("encode {error:?}"))?;
-    let entry_payload =
-        encode_presentation_batch(&[entry]).map_err(|error| format!("encode {error:?}"))?;
-    std::fs::write(root.join("w24-outside.bin"), outside_payload)?;
-    std::fs::write(root.join("w24-city.bin"), entry_payload)?;
+    let outside_session = client.join_snapshot().game_session_id;
+    let frames = take_qualification_frames();
+    drop(client);
+    let mut fresh = connect_character(clients, 0x9d, 1).await?;
+    if fresh.join_snapshot().game_session_id == outside_session
+        || fresh.world_spatial().actor_position != expected_position
+    {
+        return Err("step=city-relog saved position differs from city entry".into());
+    }
+    if fresh.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("step=city-relog logout refused".into());
+    }
+    std::fs::write(root.join("w24-wire.bin"), frames)?;
     std::fs::write(
         root.join("w24-expected.txt"),
-        format!("outside=0\ncity={city_cue}\n"),
+        format!("{outside_session:?}\n0 {outside_sequence} {city_cue} {city_sequence}"),
     )?;
     Ok(format!("outside=0 city={city_cue}"))
 }
@@ -176,7 +190,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     match verdict::indexed_timeout(
         Duration::from_secs(240),
-        verdict::observe(journey(clients, world)),
+        verdict::observe(with_qualification_frames(journey(clients, world))),
     )
     .await
     {
