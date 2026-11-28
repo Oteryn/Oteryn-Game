@@ -1194,6 +1194,7 @@ mod tests {
             include_str!("../../../../../content/quests/world-callbacks/cursed-crystal.json"),
             include_str!("../../../../../content/quests/world-callbacks/dream-courts.json"),
             include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/spike-objectives.json"),
             include_str!("../../../../../content/quests/world-callbacks/great-dragon-hunt.json"),
             include_str!("../../../../../content/quests/world-callbacks/hot-cuisine-books.json"),
             include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),

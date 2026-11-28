@@ -290,7 +290,7 @@ def build_draconia(root=ROOT):
                    if index['palette'][palette]['source_item_id'] == 5097]
         if len(matches) != 1 or (matches[0][1] or {}).get('action') != 3012:
             raise ValueError('M01C_DRACONIA_NATIVE_DOOR_ACTION')
-        placement = (x << 32) | (y << 16) | (((-z) & 255) << 8) | matches[0][0]
+        placement = (x << 32) | (y << 16) | (z << 8) | matches[0][0]
         stages.append(
             {
                 "key": f"s1-key-{x}-{y}",

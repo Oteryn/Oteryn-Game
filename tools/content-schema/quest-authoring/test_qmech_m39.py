@@ -60,6 +60,12 @@ class M39SampleAuthoring(unittest.TestCase):
         offers = json.loads(self.outputs['content/quests/shared-reward-offers.json'])['offers']
         cael = [o for o in offers if o['npc'] == 'oteryn:npc.cael' and 'tome' in o['keywords']]
         self.assertEqual(len(cael), 13)
+        self.assertTrue(all("tomes of knowledge" in offer["keywords"] for offer in cael))
+        clock = self.callbacks["l2-cael-tome-13"]["state_ops"]
+        self.assertEqual(len(clock), 1)
+        self.assertEqual(clock[0]["from"], {"kind": "elapsed_at_least", "seconds": 72000})
+        self.assertEqual(clock[0]["effect"], {"kind": "set_now"})
+        self.assertTrue(all(callback["state_ops"] == clock for callback in handins))
         self.assertTrue(all(o['any_topic'] and o['failure_reply'] for o in cael))
 
     def test_authoring_rejects_reversed_inventory_ranges(self):

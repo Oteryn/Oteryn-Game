@@ -1,7 +1,11 @@
 """Exercise the shipped regions with the world placement decoder."""
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
+import classic_quest_placements as classic
 import quest_chest_bindings as world
 
 
@@ -34,6 +38,53 @@ def native_tiles(positions):
 
 
 class ClassicQuestPlacements(unittest.TestCase):
+    def test_overlay_summary_counts_only_changes_to_tiles(self):
+        position = [32, 32, 7]
+        region = classic.region_path(position)
+        tiles = [(32, 32, 0, 0, (), [(0, 0, {"action": 3667})])]
+        sector = world.codec.encode_sector_tiles(1, 1, tiles)
+        raw = world.codec.encode_region(7, 0, 0, {9: sector})
+        outputs = {
+            region: raw,
+            world.INDEX: world.canonical(
+                {
+                    "palette": [{"source_item_id": 5106}, {"source_item_id": 2969}],
+                    "source": {},
+                    "regions": [{"path": region, "items": 1}],
+                    "totals": {"items": 1},
+                }
+            ),
+            world.SUMMARY: world.canonical(
+                {
+                    "item_attributes": {"action": 1},
+                    "bytes_on_disk": len(raw),
+                    "palette": {"families": {"item": {"occurrences": 1}}},
+                    "totals": {"items": 1},
+                }
+            ),
+        }
+        rows = [
+            {"position": position, "appearance": 5106, "attributes": {"action": 3667}},
+            {
+                "position": position,
+                "appearance": 2969,
+                "insert": True,
+                "attributes": {"action": 3001},
+            },
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            capture = root / classic.CAPTURE
+            capture.parent.mkdir(parents=True)
+            capture.write_bytes(world.canonical({"placements": rows}))
+            classic.overlay_outputs(outputs, root)
+            summary = json.loads(outputs[world.SUMMARY])
+            self.assertEqual(summary["item_attributes"]["action"], 2)
+            self.assertEqual(summary["palette"]["families"]["item"]["occurrences"], 2)
+            expected = outputs.copy()
+            classic.overlay_outputs(outputs, root)
+            self.assertEqual(outputs, expected)
+
     def check(self, rows):
         tiles = dict(native_tiles(row[0] for row in rows))
         for position, appearance, attribute, value in rows:
@@ -44,6 +95,9 @@ class ClassicQuestPlacements(unittest.TestCase):
                     if i == appearance and d == 0
                 ]
                 self.assertEqual(matching, [value])
+
+    def test_realm_house_level_door(self):
+        self.check([((32826, 31496, 7), 9863, "action", 1040)])
 
     def test_devil_helmet_startup_carriers_plate_and_gates(self):
         self.check(

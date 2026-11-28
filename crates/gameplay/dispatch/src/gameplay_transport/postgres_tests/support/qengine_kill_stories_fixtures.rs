@@ -463,7 +463,7 @@ async fn spike(
     use super::{classic_quests_fixtures as npc, qengine_voucher_stories_fixtures as items};
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const FAME: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points";
     const OUTFIT: &str = "oteryn:outfit.cave_explorer";
     let mut capabilities = admitted
         .continuity
@@ -505,7 +505,7 @@ async fn spike(
         // fame already in place. The hunting story below has its own coverage.
         super::qengine_outfit_stories_fixtures::earn_level(owner, admitted, authority, 80).await?;
         super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
-            h, owner, admitted, &[(FAME.into(), 300)], 124,
+            h, owner, admitted, &[(FAME.into(), 100)], 124,
         )
         .await?;
         assert_eq!(
@@ -517,8 +517,8 @@ async fn spike(
             owner, admitted, h, authority, [argery, commander, milly, bold],
         ))
         .await?;
-        // Bring the balance to the three-purchase boundary after proving how fame is earned.
-        arrange_track(h, FAME, 300).await?;
+        // Bring the balance to the qualification threshold after proving how fame is earned.
+        arrange_track(h, FAME, 100).await?;
     }
     owner
         .refresh_quest_session(admitted.game_session_id, false)
@@ -531,7 +531,7 @@ async fn spike(
             .bind(progress).execute(&h.pool).await?;
     }
     for (index, (keyword, remaining, mask)) in
-        [("basic", 200, 0), ("second", 100, 2), ("first", 0, 3)]
+        [("basic", 100, 0), ("second", 100, 2), ("first", 100, 3)]
             .into_iter()
             .enumerate()
     {
@@ -677,7 +677,7 @@ async fn spike_hunting(
 ) -> TestResult {
     use super::qengine_rewards_fixtures::talk;
     use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
-    const FAME: &str = "oteryn:quest-progress/spike/fame";
+    const FAME: &str = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points";
     const DRILLWORM: &str = "oteryn:creature.drillworm";
     const REPORTED_AT: &str = "oteryn:quest-progress/spike/lower/reported_at";
     const PHASE: &str = "oteryn:quest-progress/spike/lower/phase";

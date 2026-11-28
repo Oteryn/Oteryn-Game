@@ -1238,17 +1238,9 @@ def overlay_outputs(outputs, root=ROOT, require_all=False):
     return imported
 
 
-def apply_return_transitions(returns, check):
+def return_transition_rows(returns):
     import convert_world_metadata as metadata
 
-    family = "Transition.Teleport"
-    index_path = ROOT / "content/world/transitions/index.json"
-    index = json.loads(index_path.read_bytes())
-    existing = {
-        row["declaration"]["identity"]["key"]: row
-        for path in index["shards"]
-        for row in json.loads((ROOT / path).read_bytes())["records"]
-    }
     candidates = [
         {
             "from": position,
@@ -1267,6 +1259,21 @@ def apply_return_transitions(returns, check):
     )
     for row in rows:
         row["source_bindings"][0]["source_revision"] = REVISION
+    return rows
+
+
+def apply_return_transitions(returns, check):
+    import convert_world_metadata as metadata
+
+    family = "Transition.Teleport"
+    index_path = ROOT / "content/world/transitions/index.json"
+    index = json.loads(index_path.read_bytes())
+    existing = {
+        row["declaration"]["identity"]["key"]: row
+        for path in index["shards"]
+        for row in json.loads((ROOT / path).read_bytes())["records"]
+    }
+    for row in return_transition_rows(returns):
         key = row["declaration"]["identity"]["key"]
         if existing.setdefault(key, row) != row:
             raise ValueError(f"QUEST_ROUTE_TRANSITION_CONFLICT: {key}")

@@ -34,6 +34,12 @@ pub(super) async fn exercise(
         )
         .await?;
         assert_eq!(carried(h, 10217).await?, 1);
+        assert_eq!(
+            grant(owner, admitted, cael, "l2-cael-tome-13").await?.0,
+            NpcIntentDisposition::Rejected
+        );
+        assert_eq!(carried(h, 10217).await?, 1);
+        elapse_tome_interval(h, owner, admitted).await?;
         let (result, command) = grant(owner, admitted, cael, "l2-cael-tome-13").await?;
         assert_eq!(result, NpcIntentDisposition::Ok);
         assert_eq!(carried(h, 10217).await?, 0);

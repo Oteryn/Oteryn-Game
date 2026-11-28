@@ -228,11 +228,16 @@ impl Scene {
     }
 
     pub(crate) fn item_target_at(&self, tile: TileCoord) -> Option<crate::play::GroundItem> {
-        self.visible
-            .iter()
-            .rev()
-            .filter(|target| target.tile == tile)
-            .find_map(|target| target.item)
+        self.target
+            .filter(|selected| selected.tile == tile)
+            .and_then(|selected| selected.item)
+            .or_else(|| {
+                self.visible
+                    .iter()
+                    .rev()
+                    .filter(|target| target.tile == tile)
+                    .find_map(|target| target.item)
+            })
     }
 
     pub(crate) fn target_at(&self, tile: TileCoord) -> Option<Targetable> {
@@ -253,6 +258,22 @@ impl Scene {
     pub fn select_tile(&mut self, tile: TileCoord) -> Result<Option<Targetable>, BatchError> {
         let Some(picked) = pick_target(tile, &self.visible) else {
             return Ok(None);
+        };
+        // Repeated selections walk the server-projected item stack in draw order.
+        let picked = if picked.kind == TargetKind::Object {
+            let mut stack = self
+                .visible
+                .iter()
+                .rev()
+                .filter(|entry| entry.tile == tile && entry.item.is_some());
+            self.target
+                .and_then(|selected| {
+                    stack.find(|entry| **entry == selected)?;
+                    stack.next().copied()
+                })
+                .unwrap_or(picked)
+        } else {
+            picked
         };
         self.target = Some(picked);
         self.rebuild_sprites()?;

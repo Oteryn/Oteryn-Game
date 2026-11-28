@@ -264,77 +264,115 @@ def append_friends(root, callbacks, offers, inputs, pin):
         "Now I can forge royal steel for you.",
         take=[(3560, 3)],
     )
-    cyclops = "a_sweaty_cyclops"
-    add(
-        "request-friendship",
-        cyclops,
-        -1,
-        0,
-        ["yes"],
-        "Bring three bast skirts for my partner.",
-        topic=2,
-        next_topic=3,
+    # Older packages have no QC programme. Once its canonical settlement is
+    # installed, that programme owns the entire quote and confirmation chain.
+    qc_path = root / "content/quests/npc-callbacks/qc-programmes.json"
+    qc_callbacks = (
+        json.loads(qc_path.read_bytes())["callbacks"] if qc_path.is_file() else []
     )
-    add(
-        "hand-in-skirts",
-        cyclops,
-        0,
-        1,
-        ["yes"],
-        "My partner will be delighted. I can work with you now.",
-        take=[(3560, 3)],
-        topic=4,
-    )
-    add(
-        "draconian-steel",
-        cyclops,
-        1,
-        1,
-        ["yes"],
-        "Here is your draconian steel.",
-        take=[(3416, 1)],
-        give=(5889, 1),
-        counter="draconian-steel-uses",
-        maximum=15,
-        topic=6,
-    )
-    for words, topic, next_topic, low, high, reply in [
-        (
-            ["uth'lokr"],
+    if not any(
+        row["key"] == "oteryn:quest-reward/qc-obsidian-draconian-steel"
+        for row in qc_callbacks
+    ):
+        cyclops = "a_sweaty_cyclops"
+        add(
+            "request-friendship",
+            cyclops,
+            -1,
+            0,
+            ["yes"],
+            "Bring three bast skirts for my partner.",
+            topic=2,
+            next_topic=3,
+        )
+        add(
+            "hand-in-skirts",
+            cyclops,
             0,
             1,
-            -1,
-            -1,
-            "I can forge steel from a dragon shield. Do you want to trade?",
-        ),
-        (["yes"], 1, 2, -1, -1, "First, will you do a favour for me?"),
-        (["uth'lokr"], 0, 4, 0, 0, "Did you bring three bast skirts?"),
-        (
-            ["uth'lokr"],
-            0,
-            6,
+            ["yes"],
+            "My partner will be delighted. I can work with you now.",
+            take=[(3560, 3)],
+            topic=4,
+        )
+        add(
+            "draconian-steel",
+            cyclops,
             1,
-            15,
-            "Shall I forge your dragon shield into draconian steel?",
-        ),
-    ]:
+            1,
+            ["yes"],
+            "Here is your draconian steel.",
+            take=[(3416, 1)],
+            give=(5889, 1),
+            counter="draconian-steel-uses",
+            maximum=15,
+            topic=6,
+        )
+        for words, topic, next_topic, low, high, reply in [
+            (
+                ["uth'lokr"],
+                0,
+                1,
+                -1,
+                -1,
+                "I can forge steel from a dragon shield. Do you want to trade?",
+            ),
+            (["yes"], 1, 2, -1, -1, "First, will you do a favour for me?"),
+            (
+                ["uth'lokr", "bast skirt"],
+                0,
+                4,
+                0,
+                0,
+                "Did you bring three bast skirts?",
+            ),
+            (
+                ["uth'lokr"],
+                0,
+                6,
+                1,
+                15,
+                "Shall I forge your dragon shield into draconian steel?",
+            ),
+        ]:
+            offers.append(
+                {
+                    "npc": "oteryn:npc." + cyclops,
+                    "keywords": words,
+                    "topic": topic,
+                    "any_topic": "uth'lokr" in words,
+                    "next_topic": next_topic,
+                    "storage": [
+                        {
+                            "track": track,
+                            "minimum": low,
+                            "maximum": high,
+                            "set": low,
+                            "preserve": True,
+                        }
+                    ],
+                    "reply": [reply],
+                }
+            )
+    else:
+        # The transcript also permits naming the materials at the hand-in.
         offers.append(
             {
-                "npc": "oteryn:npc." + cyclops,
-                "keywords": words,
-                "topic": topic,
-                "any_topic": words == ["uth'lokr"],
-                "next_topic": next_topic,
+                "npc": "oteryn:npc.a_sweaty_cyclops",
+                "keywords": ["bast skirt"],
+                "topic": 0,
+                "any_topic": True,
+                "next_topic": 4,
                 "storage": [
                     {
                         "track": track,
-                        "minimum": low,
-                        "maximum": high,
-                        "set": low,
+                        "minimum": 0,
+                        "maximum": 0,
+                        "set": 0,
                         "preserve": True,
                     }
                 ],
-                "reply": [reply],
+                "reply": ["Did you bring three bast skirts?"],
             }
         )
     add(

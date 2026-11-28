@@ -51,9 +51,9 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
     // Isolate each real caller at its authored predecessor, with no fabricated receipts.
     let predecessor = match stage(name)? {
         "s2" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
-        "s3" => "oteryn:quest-progress/engenc/asura/s2/opened",
+        "s3" => "oteryn:quest-progress/authored/asura_palace_quest/s1",
         "s4" => "oteryn:quest-progress/engenc/asura/s3/opened",
-        "orchid" => "oteryn:quest-progress/engenc/asura/s4/opened",
+        "orchid" => "oteryn:quest-progress/engenc/asura/hydra/count",
         _ => return Err("Asura stage".into()),
     };
     b.quests[0]
@@ -61,8 +61,10 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
         .iter_mut()
         .find(|t| t.key == predecessor)
         .ok_or("predecessor")?
-        .initial = 1;
+        .initial = if stage(name)? == "orchid" { 3 } else { 1 };
     if stage(name)? == "orchid" {
+        b.quests[0].tracks.iter_mut().find(|t| t.key == "oteryn:quest-progress/engenc/asura/s3/count")
+            .ok_or("fire defender kills")?.initial = 2;
         b.quests[0]
             .tracks
             .iter_mut()
@@ -88,7 +90,15 @@ pub(super) fn catalogue(name: &str) -> TestResult<QuestStateCatalogue> {
                 .initial = value;
         }
     }
-    Ok(b.attach(&QuestStateCatalogue::empty("content-1").ok_or("catalogue")?)?)
+    let base = if stage(name)? == "orchid" {
+        let published = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?;
+        let tarun = published.catalogue().track("oteryn:quest-progress/quest/u10_80/the_lost_brother_quest")
+            .ok_or("published Tarun report")?.clone();
+        QuestStateCatalogue::new("content-1", vec![tarun], vec![]).map_err(debug)?
+    } else {
+        QuestStateCatalogue::empty("content-1").ok_or("catalogue")?
+    };
+    Ok(b.attach(&base)?)
 }
 
 fn library_portal() -> TestResult<super::l6_world_pickups_fixtures::ExpectedTeleport> {
@@ -656,9 +666,14 @@ async fn exercise_orchid(
     let command = admitted.continuity.next_command_id;
     assert_eq!(
         use_target(owner, admitted, command, &target).await?,
-        UseDisposition::Rejected
+        UseDisposition::Committed
     );
-    assert_eq!(carried(h, 3029).await?, 0);
+    assert_eq!(carried(h, 3029).await?, 3);
+
+    super::rottin_rewards_fixtures::seed_tracks(
+        h, owner, admitted, &[("oteryn:quest-progress/quest/u10_80/the_lost_brother_quest", 3)],
+    ).await?;
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 0);
 
     let encounter = callback
         .effects
@@ -689,6 +704,8 @@ async fn exercise_orchid(
         stage(h, "oteryn:quest-progress/engenc/asura/orchid/count").await?,
         Some(1)
     );
+
+    assert_eq!(super::lost_brother_fixtures::palace_raider_grants(h).await?, 1);
 
     let library_door = TilePos {
         x: 32962,
@@ -761,7 +778,7 @@ async fn exercise_orchid(
         let command = admitted.continuity.next_command_id;
         assert_eq!(
             use_target(owner, admitted, command, &target).await?,
-            UseDisposition::Committed
+            if item == 3029 { UseDisposition::Rejected } else { UseDisposition::Committed }
         );
         assert_eq!(carried(h, item).await?, 3);
         let command = admitted.continuity.next_command_id;

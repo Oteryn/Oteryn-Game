@@ -2476,7 +2476,7 @@ pub(super) async fn exercise(
             if family == "battle-mage" {
                 let mut single = (*item).clone();
                 single.count = 1;
-                for _ in current..i64::from(item.count) {
+                for _ in current..i64::from(item.count) - 1 {
                     supply(owner, admitted, h, &single, &mut bags, &mut occurrence).await?;
                 }
             } else if current < i64::from(item.count) {
@@ -2589,14 +2589,14 @@ pub(super) async fn exercise(
         }
         if family == "battle-mage" && let [item] = callback.take.as_slice() {
             let before = counts(h).await?;
-            assert_eq!(quantity(h, &item.item).await?, i64::from(item.count));
+            assert_eq!(quantity(h, &item.item).await?, i64::from(item.count) - 1);
             let (result, _, _) =
                 super::qengine_rewards_fixtures::wire_reward(owner, admitted, npc, callback, false).await?;
-            assert_eq!(result, NpcIntentDisposition::Rejected, "Crystal requires one item above the debit");
+            assert_eq!(result, NpcIntentDisposition::Rejected, "missing one material must reject the trade");
             assert_eq!(counts(h).await?, before);
-            let mut surplus = item.clone();
-            surplus.count = 1;
-            supply(owner, admitted, h, &surplus, &mut bags, &mut occurrence).await?;
+            let mut last_material = item.clone();
+            last_material.count = 1;
+            supply(owner, admitted, h, &last_material, &mut bags, &mut occurrence).await?;
         }
         let required = requirements(callback)?;
         let other_addon = outfit_requirements.get(&callback.key);

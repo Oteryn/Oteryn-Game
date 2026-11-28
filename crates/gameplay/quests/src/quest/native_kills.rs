@@ -517,6 +517,9 @@ fn great_dragon_hunt_loads_both_species_and_only_credits_source_areas() -> Resul
             "Crystal credits kills before the explorer resets the count"
         );
         for position in [
+            (33085, 32589, -4),
+            (33069, 32674, -5),
+            (33031, 32713, -4),
             (33061, 32646, -6),
             (33027, 32634, -7),
             (32983, 32616, -7),

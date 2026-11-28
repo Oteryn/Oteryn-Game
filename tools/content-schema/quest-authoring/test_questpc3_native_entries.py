@@ -25,7 +25,7 @@ class NativeEntries(unittest.TestCase):
         gate, = [r for r in capture['placements'] if r['position'] == [32804, 31583, 2]]
         self.assertEqual((gate['appearance'], gate['attributes']), (5102, {'action': 1025}))
         self.assertEqual(len(quest['stages']), 2)
-        expected = {(x << 32) | (y << 16) | (246 << 8) | 1
+        expected = {(x << 32) | (y << 16) | (10 << 8) | 1
                     for x, y in [(32675, 31649), (32676, 31671)]}
         self.assertEqual({s['trigger']['usage']['native_placement_key']
                           for s in quest['stages']}, expected)

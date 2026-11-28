@@ -12,6 +12,7 @@ use std::sync::OnceLock;
 mod m39_sample_tests;
 mod published_markers;
 mod selector_partitions;
+pub mod spike_mound;
 
 pub const EMBEDDED: &str = include_str!("../../../../../content/quests/world-callbacks.json");
 // Each source document retains its closed admission bound.
@@ -20,7 +21,7 @@ pub const MAX_CALLBACKS: usize = 512;
 pub(crate) const MAX_RUNTIME_CALLBACKS: usize = 1280;
 const MAX_COFFIN_RECOVERY_VARIANTS: usize = 2;
 pub(super) const MAX_EMBEDDED_CALLBACKS: usize =
-    MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS;
+    MAX_RUNTIME_CALLBACKS + MAX_COFFIN_RECOVERY_VARIANTS + spike_mound::MAX_PUBLISHED;
 pub const MAX_EFFECTS: usize = 8;
 pub const MAX_SELECTOR_POSITIONS: usize = 8;
 
@@ -373,6 +374,9 @@ pub use ground_stack::GroundStackEntry as GroundStackItem;
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
+    /// Require this authored placement to have been removed in the shared map.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub hidden: bool,
     pub position: Position,
     /// Zero only for a mutable Ground stack; otherwise the legacy map appearance.
     #[serde(default, skip_serializing_if = "WorldRequirement::zero_appearance")]
@@ -389,6 +393,8 @@ impl<'de> Deserialize<'de> for WorldRequirement {
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
         struct Wire {
+            #[serde(default)]
+            hidden: bool,
             position: Position,
             #[serde(default)]
             appearance: u16,
@@ -399,6 +405,7 @@ impl<'de> Deserialize<'de> for WorldRequirement {
         }
         let wire = Wire::deserialize(deserializer)?;
         let requirement = Self {
+            hidden: wire.hidden,
             position: wire.position,
             appearance: wire.appearance,
             ground_stack: wire.ground_stack,
@@ -420,6 +427,8 @@ impl WorldRequirement {
     }
     pub fn valid(&self) -> bool {
         (-15..=0).contains(&self.position.floor)
+            && (!self.hidden
+                || (self.appearance != 0 && self.ground_stack.is_none() && self.ground.is_none()))
             && match &self.ground {
                 Some(ground) => {
                     self.appearance == 0 && self.ground_stack.is_none() && ground.valid()
@@ -979,6 +988,7 @@ fn load_embedded_callbacks() -> Result<Vec<Callback>, String> {
             .into_iter()
             .filter(|callback| super::in_runtime_scope(&callback.quest)),
     );
+    callbacks.extend(parse(spike_mound::DOCUMENT)?);
     validate_registry(&callbacks)?;
     callbacks.sort_by(|left, right| left.key.cmp(&right.key));
     Ok(callbacks)
@@ -996,8 +1006,10 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
         .iter()
         .filter(|callback| callback.vampire_coffin_fallback().is_some())
         .count();
+    let spike = spike_mound::published_count(callbacks)?;
     if coffin_variants > MAX_COFFIN_RECOVERY_VARIANTS
-        || callbacks.len() - coffin_variants > MAX_RUNTIME_CALLBACKS
+        || spike > spike_mound::MAX_PUBLISHED
+        || callbacks.len() - coffin_variants - spike > MAX_RUNTIME_CALLBACKS
     {
         return Err("callback runtime registry bounds".into());
     }
@@ -1058,7 +1070,11 @@ fn validate_registry(callbacks: &[Callback]) -> Result<(), String> {
             || peers.iter().any(|peer| {
                 let coffin_pair = peer.vampire_coffin_fallback() == Some(callback.key.as_str())
                     || callback.vampire_coffin_fallback() == Some(peer.key.as_str());
+                let separate_mounds = spike_mound::chances(peer)
+                    .zip(spike_mound::chances(callback))
+                    .is_some_and(|(a, b)| a.end() < b.start() || b.end() < a.start());
                 !coffin_pair
+                    && !separate_mounds
                     && !phase::exclusive(peer, callback)
                     && !phase::disjoint(peer, callback)
                     && !guarded_routes::disjoint(callback, peer)
@@ -1106,7 +1122,8 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
         let unique_storage: BTreeSet<_> = callback.storage.iter().map(|s| &s.track).collect();
         let operation_tracks: BTreeSet<_> = callback.operations().map(|s| &s.track).collect();
         let alias_positions: BTreeSet<_> = selector.position_aliases.iter().copied().collect();
-        if !completed_quests::valid(callback)
+        if (callback.key.starts_with("oteryn:quest-callback/spike/mound-") && spike_mound::chances(callback).is_none())
+            || !completed_quests::valid(callback)
             || (callback.key == super::dreamer_fire_bug::IGNITE
                 && !super::dreamer_fire_bug::callbacks().contains(callback))
             || (matches!(
@@ -2594,6 +2611,7 @@ mod tests {
         }
         callback.actor_kind = ActorKind::Player;
         callback.world_requirements = vec![WorldRequirement {
+            hidden: false,
             ground: None,
             position: Position {
                 x: 1,

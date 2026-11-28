@@ -12,7 +12,7 @@ pub const PREFIX: &str = "oteryn:quest-door-use/";
 #[serde(deny_unknown_fields)]
 pub struct DoorUse {
     pub key: String,
-    /// Native bundle codec, including its signed floor byte; not a terrain-use key.
+    /// Native bundle codec, including its unsigned depth byte; not a terrain-use key.
     pub native_placement_key: u64,
     pub key_number: u16,
     pub storage: Vec<Storage>,
@@ -30,6 +30,7 @@ impl DoorUse {
         if !crate::quest::valid_quest_key(&self.key)
             || !self.key.starts_with(PREFIX)
             || self.native_placement_key >> 48 != 0
+            || (self.native_placement_key >> 8) & 255 > 15
             || self.native_placement_key & 255 > 63
             || self.key_number == 0
             || self.storage.is_empty()

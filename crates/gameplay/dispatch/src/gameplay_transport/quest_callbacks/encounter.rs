@@ -368,6 +368,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
                     callback,
                 )
+                    || oteryn_gameplay_quests::quest::world_callbacks::spike_mound::chances(
+                        callback,
+                    )
+                    .is_some()
                     || (callback.starts_merchant_wave() && projection.is_some());
                 let ready = ready
                     && encounter.players.is_empty()
@@ -553,9 +557,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|(actor, session, _)| (*actor, *session))
             .collect();
         let scoped_hash = self.quest_catalogue.as_deref().and_then(|catalogue| {
+            use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
             let bindings = catalogue.authored_bindings()?;
             bindings.quests.iter().find(|quest| quest.stages.iter().any(|stage|
-                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::MapUse { callback: source }
+                matches!(&stage.trigger, Trigger::MapUse { callback: source } | Trigger::StepIn { callback: source }
                     if source.as_ref() == callback))
                 && quest.stages.iter().any(|stage|
                     matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::Kill { counter }

@@ -85,8 +85,9 @@ def outputs(root=ROOT, *, terrain_index=None):
     index = json.loads(
         (root / INDEX).read_bytes() if terrain_index is None else terrain_index
     )
-    if NOTE not in index["notes"]:
-        index["notes"] += NOTE
+    import activity_static
+
+    index["notes"] = activity_static.compose_terrain_notes(index["notes"] + NOTE)
     return {
         SHARD: json.dumps({"family": "Terrain", "records": [record]}, indent=2) + "\n",
         INDEX: json.dumps(index, indent=2, ensure_ascii=False) + "\n",

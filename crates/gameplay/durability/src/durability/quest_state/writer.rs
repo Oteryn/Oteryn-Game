@@ -2028,6 +2028,16 @@ impl DurabilityRoot {
                         } else if world.effects.item_reward_per_use {
                             super::super::reward_claim_mint::quest::QuestMintClaim::WorldUse
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
+                        let alternatives = &world.effects.alternative_rewards;
+                        let reward = if alternatives.is_empty() {
+                            reward
+                        } else {
+                            let outcomes = i32::try_from(alternatives.len() + 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let index: i32 = sqlx::query_scalar("SELECT floor(random() * $1::integer)::integer")
+                                .bind(outcomes).fetch_one(&mut *tx).await?;
+                            std::iter::once(reward).chain(alternatives).nth(usize::try_from(index).map_err(|_| DurabilityError::InvalidStoredState)?)
+                                .ok_or(DurabilityError::InvalidStoredState)?
+                        };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
                             || admission.weights.generation_digest() != admission.native.source_digest()
                             || super::super::reward_claim_mint::quest::mint(&mut tx,tuple,&node,fence,command,&world.key,claim,reward,admission,legacy_world_claim).await?.is_none()
@@ -2119,7 +2129,9 @@ impl DurabilityRoot {
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
                     }
-                    if let Some(world) = &callback && !world.achievements.is_empty() {
+                    if let Some(world) = &callback && !world.achievements.is_empty()
+                        && world.effects.achievement_at.as_ref().is_none_or(|guard| changes.iter().any(|change|
+                            change.track == guard.track && change.after == guard.minimum && change.before < change.after)) {
                         let (cause, ordinal) = request.cause.key();
                         let occurrence = serde_json::to_vec(&(cause, ordinal, &world.key)).map_err(|_| DurabilityError::InvalidStoredState)?;
                         let occurrence = sha2::Sha256::digest(&occurrence);
@@ -2382,6 +2394,9 @@ impl DurabilityRoot {
                             tx.rollback().await?;
                             return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch)));
                         }
+                    }
+                    if request.transition_key == super::lost_palace_raider::ORCHID {
+                        super::lost_palace_raider::earn(&mut tx, character).await?;
                     }
                     super::hero_of_bounac::earn(&mut tx, fence, &request, &changes, lionheart.as_ref()).await?;
                     super::world_change_journal_rewards::earn(&mut tx, fence, &request, &catalogue,

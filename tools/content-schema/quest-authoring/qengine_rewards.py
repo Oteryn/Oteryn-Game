@@ -1380,7 +1380,7 @@ def build():
     library_done = [requirement(library + "library_permission", 7)]
     for name, bit, item, count, words in [
         ("book", 1, 28792, 5, ["book", "books", "sturdy books"]),
-        ("epaulettes", 2, 28793, 20, ["epaulettes"]),
+        ("epaulettes", 2, 28793, 20, ["epaulette", "epaulettes"]),
     ]:
         addon = prefix + "u11_80/battle_mage_outfits/addon"
         other = addon + str(3 - bit)
@@ -1402,7 +1402,7 @@ def build():
             )
             callbacks[-1].update(
                 inventory=[
-                    {"item": f"oteryn:item.tibia.i{item}", "minimum": count + 1, "maximum": 4294967295}
+                    {"item": f"oteryn:item.tibia.i{item}", "minimum": count, "maximum": 4294967295}
                 ],
                 failure_reply=["Bring more of the required materials before we trade."],
                 sources=[barbarian_and_library_source("dedoras", "198-216")],
@@ -1432,7 +1432,7 @@ def build():
     ice = "the_ice_islands_quest"
     stage = barbarian + "questline"
     for words, topic, next_topic, before, reply in [
-        (["barbarian"], 0, 1, -1, "Ask me about the test to become a barbarian."),
+        (["barbarian", "barbarians"], 0, 1, -1, "Ask me about the test to become a barbarian."),
         (["test"], 0, 2, -1, "Are you willing to take the barbarian test?"),
         (["test"], 1, 2, -1, "Are you willing to take the barbarian test?"),
         (["yes"], 2, 3, -1, "Can you take ten sips of our mead without passing out?"),
@@ -1475,6 +1475,7 @@ def build():
         [
             storage(stage, 1, 2),
             storage(barbarian + "mission01", 1, 2),
+            storage(barbarian + "mead_success_sips", -1, 0, 2147483647),
             storage(barbarian + "mead_total_sips", 0, 0, 2147483647),
         ],
         take=[(5902, 1)],
@@ -3683,15 +3684,15 @@ def build():
             ],
         )
         # Vanys and Undal allow either exchange as soon as the outfit is earned.
-        for bit, part, word, item, count in (
-            (1, "first", "pomegranates", 30169, 5),
-            (2, "second", "ice shield", 30168, 1),
+        for bit, part, words, item, count in (
+            (1, "first", ["pomegranate", "pomegranates"], 30169, 5),
+            (2, "second", ["shield", "ice shield"], 30168, 1),
         ):
             add(
                 label + "-" + part,
                 dream_quest,
                 npc,
-                [word],
+                words,
                 [],
                 take=[(item, count)],
                 outfit=("dream_warrior", bit),
@@ -3744,15 +3745,15 @@ def build():
             "citizen_of_issavi",
             250,
             [requirement(wanted, 1)],
-            "issavi attire",
+            ["wanted", "issavi attire"],
         ),
     ]
-    for label, quest, npc, family, level, ready, word in desks:
+    for label, quest, npc, family, level, ready, words in desks:
         add(
             "l11-" + label + "-base",
             quest,
             npc,
-            [word],
+            words,
             [],
             outfit=(family, 0),
             requires=ready,
@@ -3874,7 +3875,7 @@ def build():
     # The Spike task reports share the same character-owned fame balance.
     spike = "oteryn:quest-progress/spike/"
     cave = "cave_explorer_outfits_quest"
-    fame = spike + "fame"
+    fame = "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points"
     fame_max = 2_147_483_647
     gnommander = "oteryn:npc.gnommander"
     outfit = "oteryn:outfit.cave_explorer"
@@ -4002,7 +4003,7 @@ def build():
                 "minimum_level": level,
                 "requires": [requirement(fame, 100, fame_max)],
                 "reply": [
-                    f"Buy the {label} outfit reward for {gold:,} gold and 100 Spike fame?"
+                    f"Buy the {label} outfit reward for {gold:,} gold? You qualify with 100 Spike fame."
                 ],
                 "failure_reply": ["You need more experience or Spike fame."],
             }
@@ -4026,7 +4027,7 @@ def build():
                 {
                     "quest": "oteryn:quest.spike_task",
                     "storage": [],
-                    "state_ops": [fame_change(100, fame_max, -100)],
+                    "state_ops": [fame_change(100, fame_max, 0)],
                 }
             ],
             sources=[source],
@@ -4083,7 +4084,7 @@ def build():
                     "keywords": ["report"],
                     "topic": 0,
                     "any_topic": True,
-                    "next_topic": 25,
+                    "next_topic": 1,
                     "storage": [],
                     "reply": ["Which task are you reporting?"],
                 },
@@ -4109,9 +4110,9 @@ def build():
             "l12-spike-" + tier + "-report",
             "spike_task",
             npc,
-            [report],
+            list(dict.fromkeys([report, "kill"])),
             [storage(phase, 1, 0), storage(kills, 7, 0)],
-            topic=25,
+            topic=1,
         )
         callbacks[-1].update(
             experience=xp,
@@ -4119,6 +4120,13 @@ def build():
             sources=[source],
             reply=["Your report earns one point of Spike fame."],
         )
+    import spike_world
+    from spike_parcel import append as append_parcels
+    from spike_parcel import append_surveys
+
+    spike_world.dialogue(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
+    append_surveys(add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
+    append_parcels(ROOT, add, storage, callbacks, offers, spike_track, elapsed, stamp, fame_change)
     engoutfit_m36.append(
         add,
         storage,
@@ -4142,7 +4150,7 @@ def build():
     ]
     callbacks = [callback for callback in callbacks if callback not in m39_callbacks]
     m39_tracks = [
-        track for track in declarations if track["key"].endswith("/corruption_hole")
+        track for track in declarations if track["key"].endswith(("/corruption_hole", "/last_tome_delivery"))
     ]
     declarations = [track for track in declarations if track not in m39_tracks]
     validate_callbacks({"schema": 1, "tracks": m39_tracks, "callbacks": m39_callbacks})
@@ -4512,6 +4520,7 @@ def build():
             "callbacks": sorted(m39_callbacks, key=lambda callback: callback["key"]),
         }
     )
+    generated[spike_world.WORLD] = encoded(spike_world.world(ROOT))
     generated[qmech_m39.WORLD_SHARD] = encoded(qmech_m39.worlds(inputs))
     from hot_cuisine_books import build as cookbook_sources
 
@@ -4855,7 +4864,7 @@ def validate_callbacks(document):
             (
                 target is None
                 and (
-                    callback["take"] != [{"item": source, "count": 1}]
+                    (callback["take"] != [{"item": source, "count": 1}] and not (callback.get("survey") and not callback["take"] and callback.get("present") == [{"item": source, "count": 1}]))
                     or callback.get("give") is not None
                 )
             )

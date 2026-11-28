@@ -46,6 +46,7 @@ pub(crate) fn accepts(callback: &Callback) -> bool {
                             | "oteryn:quest-callback/qc-lizard-sanctuary-altar-1"
                             | "oteryn:quest-callback/qc-lizard-sanctuary-altar-2"
                             | "oteryn:quest-callback/alawars-vault-folda-shaft"
+                            | "oteryn:quest-callback/m07/realm-begin"
                             | "oteryn:quest-callback/an-interest-in-botany/s2"
                             | "oteryn:quest-callback/an-interest-in-botany/s3"
                             | "oteryn:quest-callback/an-interest-in-botany/s3-web"

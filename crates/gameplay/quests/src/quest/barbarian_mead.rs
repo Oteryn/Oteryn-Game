@@ -68,7 +68,7 @@ pub fn message(changes: &[super::QuestTrackChange]) -> Option<&'static str> {
 
 /// Source randomness is needed only for an eligible sip, not round resets or passed tests.
 pub fn needs_draw(questline: i64, total_sips: i64) -> bool {
-    questline == 2 && total_sips <= 20
+    questline == 2 && (0..20).contains(&total_sips)
 }
 
 /// Locked source snapshot: questline, mission01, successful sips, total sips.
@@ -79,17 +79,20 @@ pub fn apply(mut state: [i64; 4], roll: u8) -> Result<[i64; 4], QuestRefusal> {
     }
     if needs_draw(state[0], state[3]) {
         state[2] = if roll > 1 {
-            state[2].checked_add(1).ok_or(QuestRefusal::OutOfRange)?
+            state[2]
+                .max(0)
+                .checked_add(1)
+                .ok_or(QuestRefusal::OutOfRange)?
         } else {
             0
         };
-        if state[2] == 9 {
+        state[3] += 1;
+        if state[2] >= 10 {
             state[0] = 3;
             state[1] = 3;
             return Ok(state);
         }
-        state[3] = state[3].checked_add(1).ok_or(QuestRefusal::OutOfRange)?;
-    } else if state[3] > 20 {
+    } else if state[0] == 2 && state[3] >= 20 {
         state[0] = 1;
         state[1] = 1;
     } else if state[0] < 3 {
@@ -145,7 +148,7 @@ mod tests {
         let transition = catalogue.transition(KEY).ok_or("M47 transition")?;
         let stored = TRACKS
             .into_iter()
-            .zip([2, 2, 8, 20])
+            .zip([2, 2, 9, 19])
             .map(|(k, v)| (k.to_owned(), v))
             .collect();
         assert_eq!(
@@ -169,7 +172,7 @@ mod tests {
             assert_eq!(changes[4].after, i64::from(roll));
             assert!(callback.committed_message(&changes).is_some());
             assert_eq!(changes[0].after, if roll == 1 { 2 } else { 3 });
-            assert_eq!(changes[3].after, if roll == 1 { 21 } else { 20 });
+            assert_eq!(changes[3].after, 20);
         }
         Ok(())
     }
@@ -233,7 +236,7 @@ mod tests {
                     .iter()
                     .find(|c| c.track == TRACKS[2])
                     .map(|c| c.after),
-                Some(0)
+                Some(i64::from(roll > 1))
             );
             assert_eq!(
                 message(&changes),
@@ -260,7 +263,7 @@ mod tests {
         let transition = catalogue.transition(KEY).ok_or("M47 transition")?;
         let stored = TRACKS
             .into_iter()
-            .zip([2, 2, 8, 20])
+            .zip([2, 2, 9, 19])
             .map(|(k, v)| (k.to_owned(), v))
             .collect();
         assert_eq!(
@@ -282,18 +285,19 @@ mod tests {
             assert_eq!(changes.len(), 5);
             assert!(callback.committed_message(&changes).is_some());
             assert_eq!(changes[0].after, if roll == 1 { 2 } else { 3 });
-            assert_eq!(changes[3].after, if roll == 1 { 21 } else { 20 });
+            assert_eq!(changes[3].after, 20);
         }
         Ok(())
     }
 
     #[test]
     fn m47_mead_source_boundaries() {
-        assert_eq!(apply([2, 2, 8, 20], 5), Ok([3, 3, 9, 20]));
-        assert_eq!(apply([2, 2, 8, 20], 1), Ok([2, 2, 0, 21]));
-        assert_eq!(apply([2, 2, 0, 21], 5), Ok([1, 1, 0, 21]));
+        assert_eq!(apply([2, 2, 9, 19], 5), Ok([3, 3, 10, 20]));
+        assert_eq!(apply([2, 2, 9, 19], 1), Ok([2, 2, 0, 20]));
+        assert_eq!(apply([2, 2, 0, 20], 5), Ok([1, 1, 0, 20]));
         for roll in 2..=5 {
-            assert_eq!(apply([2, 2, -1, -1], roll), Ok([2, 2, 0, 0]));
+            assert_eq!(apply([2, 2, -1, 0], roll), Ok([2, 2, 1, 1]));
+            assert_eq!(apply([2, 2, 8, 18], roll), Ok([2, 2, 9, 19]));
         }
         assert!(apply([1, 1, 0, 0], 5).is_err());
         assert!(apply([2, 2, 0, 0], 0).is_err());

@@ -850,6 +850,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
+        if let Some(survey) = &callback.survey {
+            let position = self
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(actor)
+                .map_err(|_| ())?
+                .position();
+            if let Some(clue) = survey.clue(
+                fence.character_id.as_bytes(),
+                self.reset_epoch,
+                position.x,
+                position.y,
+                position.floor,
+            ) {
+                self.states
+                    .chat
+                    .push_quest_feedback(command.game_session_id, clue);
+                return Ok(Some(outcome(UseDisposition::NotPossible)));
+            }
+        }
         // Lane -> Character sequence -> runtime is retained through COMMIT.
         // The proof's borrow prevents detaching a live target snapshot.
         let mut sequence = self.revision_sequencer.acquire(fence.character_id).await;

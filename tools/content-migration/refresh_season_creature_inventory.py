@@ -87,6 +87,10 @@ def validate_inventory(root, rows, native, schedules):
     from engenc_elemental_profiles import inventory_extension as elemental_inventory
 
     elemental_native, elemental_schedules = elemental_inventory(native)
+    from engenc_cave_hydra import inventory as hydra_inventory
+
+    extra_schedules += hydra_inventory(root, native)
+    extra_native += 1
     extra_native += elemental_native
     extra_schedules += elemental_schedules
     from nrwicked_profiles import inventory_extension as nrwicked_inventory

@@ -49,27 +49,6 @@
       ],
       "topic": 0,
       "any_topic": true,
-      "next_topic": 4,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Did you bring three bast skirts?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "uth'lokr"
-      ],
-      "topic": 0,
-      "any_topic": true,
       "next_topic": 6,
       "storage": [
         {
@@ -82,6 +61,28 @@
       ],
       "reply": [
         "Shall I forge your dragon shield into draconian steel?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "uth'lokr",
+        "bast skirt"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Did you bring three bast skirts?"
       ]
     },
     {
@@ -1142,7 +1143,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1174,7 +1176,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1206,7 +1209,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1238,7 +1242,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1270,7 +1275,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1302,7 +1308,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1334,7 +1341,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1371,7 +1379,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1408,7 +1417,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1445,7 +1455,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1482,7 +1493,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1519,7 +1531,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -1556,7 +1569,8 @@
       "npc": "oteryn:npc.cael",
       "keywords": [
         "tome",
-        "knowledge"
+        "knowledge",
+        "tomes of knowledge"
       ],
       "topic": 0,
       "any_topic": true,
@@ -2874,6 +2888,28 @@
     {
       "npc": "oteryn:npc.gnomargery",
       "keywords": [
+        "deliver",
+        "delivery"
+      ],
+      "topic": 0,
+      "next_topic": 31,
+      "minimum_level": 80,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/lower/parcel/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you deliver supplies to four different gnome outposts?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
         "kill"
       ],
       "topic": 0,
@@ -2899,10 +2935,31 @@
       ],
       "topic": 0,
       "any_topic": true,
-      "next_topic": 25,
+      "next_topic": 1,
       "storage": [],
       "reply": [
         "Which task are you reporting?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomargery",
+      "keywords": [
+        "temperature"
+      ],
+      "topic": 0,
+      "next_topic": 32,
+      "minimum_level": 80,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/temperature/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you find the hottest lava pool?"
       ]
     },
     {
@@ -2933,12 +2990,34 @@
     },
     {
       "npc": "oteryn:npc.gnombold",
+      "topic": 0,
+      "keywords": [
+        "nests"
+      ],
+      "next_topic": 31,
+      "minimum_level": 50,
+      "maximum_level": 79,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/nests/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you use the gnomish transformer and destroy eight monster nests?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnombold",
       "keywords": [
         "report"
       ],
       "topic": 0,
       "any_topic": true,
-      "next_topic": 25,
+      "next_topic": 1,
       "storage": [],
       "reply": [
         "Which task are you reporting?"
@@ -2972,15 +3051,60 @@
     },
     {
       "npc": "oteryn:npc.gnomilly",
+      "topic": 0,
+      "keywords": [
+        "release"
+      ],
+      "next_topic": 31,
+      "minimum_level": 25,
+      "maximum_level": 49,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you release an angry spirit from an ominous mound?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomilly",
       "keywords": [
         "report"
       ],
       "topic": 0,
       "any_topic": true,
-      "next_topic": 25,
+      "next_topic": 1,
       "storage": [],
       "reply": [
         "Which task are you reporting?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.gnomilly",
+      "keywords": [
+        "track",
+        "tracking"
+      ],
+      "topic": 0,
+      "next_topic": 32,
+      "minimum_level": 25,
+      "maximum_level": 49,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/tracking/progress",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Will you track the malevolent presence?"
       ]
     },
     {
@@ -3007,7 +3131,7 @@
       "storage": [],
       "requires": [
         {
-          "track": "oteryn:quest-progress/spike/fame",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
           "minimum": 100,
           "maximum": 2147483647
         }
@@ -3030,13 +3154,13 @@
       "minimum_level": 25,
       "requires": [
         {
-          "track": "oteryn:quest-progress/spike/fame",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
           "minimum": 100,
           "maximum": 2147483647
         }
       ],
       "reply": [
-        "Buy the basic outfit reward for 1,000 gold and 100 Spike fame?"
+        "Buy the basic outfit reward for 1,000 gold? You qualify with 100 Spike fame."
       ],
       "failure_reply": [
         "You need more experience or Spike fame."
@@ -3053,13 +3177,13 @@
       "minimum_level": 50,
       "requires": [
         {
-          "track": "oteryn:quest-progress/spike/fame",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
           "minimum": 100,
           "maximum": 2147483647
         }
       ],
       "reply": [
-        "Buy the first outfit reward for 2,000 gold and 100 Spike fame?"
+        "Buy the first outfit reward for 2,000 gold? You qualify with 100 Spike fame."
       ],
       "failure_reply": [
         "You need more experience or Spike fame."
@@ -3076,13 +3200,13 @@
       "minimum_level": 80,
       "requires": [
         {
-          "track": "oteryn:quest-progress/spike/fame",
+          "track": "oteryn:quest-progress/quest/u10_20/spike_task_quest/constants/spike_fame_points",
           "minimum": 100,
           "maximum": 2147483647
         }
       ],
       "reply": [
-        "Buy the second outfit reward for 3,000 gold and 100 Spike fame?"
+        "Buy the second outfit reward for 3,000 gold? You qualify with 100 Spike fame."
       ],
       "failure_reply": [
         "You need more experience or Spike fame."
@@ -6404,7 +6528,8 @@
     {
       "npc": "oteryn:npc.sven",
       "keywords": [
-        "barbarian"
+        "barbarian",
+        "barbarians"
       ],
       "topic": 0,
       "next_topic": 1,

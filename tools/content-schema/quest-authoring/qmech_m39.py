@@ -90,6 +90,12 @@ def append(add, callbacks, offers, declarations, inputs, pin):
     # Cael owns New Frontier's existing counter, rather than a parallel quest flag.
     cael='data-global/npc/cael.lua'
     counter=frontier+'tomeof_knowledge'
+    delivered_at = frontier + "last_tome_delivery"
+    declarations.append({
+        "key": delivered_at, "quest": "oteryn:quest.the_new_frontier_quest",
+        "initial": 0, "min": 0, "max": 9223372036854775807, "writable": True,
+        "sources": ["https://www.tibiawiki.com.br/wiki/Tomes_of_Knowledge_Quest"],
+    })
     for number in range(1,14):
         before=min(number-1,12)
         states=[state(counter,-1 if number==1 else before,min(number,12),maximum=0 if number==1 else None)]
@@ -113,6 +119,10 @@ def append(add, callbacks, offers, declarations, inputs, pin):
             next_topic=number + 20,
             requires=requires,
         )
+        callbacks[-1]["state_ops"] = [{
+            "track": delivered_at, "from": {"kind": "elapsed_at_least", "seconds": 72000},
+            "effect": {"kind": "set_now"},
+        }]
         callbacks[-1]["sources"] = [witness(cael, "84-128")]
         callbacks[-1]["reply"] = [
             "Thank you! I look forward to reading this interesting discovery of yours and learn a few things about Zao."
@@ -133,7 +143,7 @@ def append(add, callbacks, offers, declarations, inputs, pin):
         offers.append(
             {
                 "npc": "oteryn:npc.cael",
-                "keywords": ["tome", "knowledge"],
+                "keywords": ["tome", "knowledge", "tomes of knowledge"],
                 "topic": 0,
                 "any_topic": True,
                 "next_topic": number,

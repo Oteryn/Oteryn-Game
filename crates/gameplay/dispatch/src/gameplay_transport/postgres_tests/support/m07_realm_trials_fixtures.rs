@@ -1,3 +1,4 @@
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{Harness,debug}};
 
@@ -53,7 +54,25 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(key_count(harness).await?,1);
     assert_eq!(Box::pin(use_source(owner,admitted,2,CONTROL,3,0)).await?,UseDisposition::Rejected,"a key is not a started trial");
     assert_eq!(receipts(harness).await?,0);
-    assert_eq!(Box::pin(use_source(owner,admitted,3,BEGIN,1,0)).await?,UseDisposition::Committed);
+    let mut selected = admitted.continuity.selected_capabilities.as_slice().to_vec();
+    selected.extend([3, 4, 6, 11, 15, 18]);
+    selected.sort_unstable();
+    selected.dedup();
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &selected)
+            .ok_or("Realm item use capabilities")?;
+    assert!(admitted.continuity.selected_capabilities.as_slice().contains(&11));
+    let rune = Offering { position: BEGIN, item: "oteryn:item.tibia.i3148".into(), count: 1 };
+    super::quest_world_callbacks_fixtures::input_item(owner, fence.item_fence(), &rune, 82, true).await?;
+    assert_eq!(super::tibia_tales_fixtures::use_tool_at(owner, admitted, BEGIN, 1, 3148).await?, UseDisposition::Committed);
+    let field = placement_key(crate::map::overlay::TilePos { x: BEGIN.x, y: BEGIN.y, floor: BEGIN.floor }, 1).ok_or("field")?;
+    let stone = placement_key(crate::map::overlay::TilePos { x: CONTROL.x, y: CONTROL.y, floor: CONTROL.floor }, 1).ok_or("stone")?;
+    assert!(owner.bundle_map().ok_or("map")?.facts.base_hidden(field));
+    assert!(!owner.bundle_map().ok_or("map")?.facts.base_hidden(stone));
+    let (step, _) = owner.paced_step(admitted.runtime_actor.ok_or("actor")?, admitted.game_session_id,
+        oteryn_protocol_oteryn::world_spatial::StepDirection::East).await;
+    assert_eq!(step.disposition, oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved);
+    assert!(owner.bundle_map().ok_or("map")?.facts.base_hidden(stone));
     assert_eq!(phase(owner,fence,callback).await?,Some(1));
     let blocker={
         let mut runtime=owner.runtime.lock().await;
@@ -120,7 +139,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
         "cleared trial commits despite >4096 live creatures outside its area"
     );
     assert_eq!(phase(owner,fence,callback).await?,Some(2));
-    assert_eq!(receipts(harness).await?,2);assert_eq!(key_count(harness).await?,1,"both native uses retain the exact key");
+    assert_eq!(receipts(harness).await?,2);assert_eq!(key_count(harness).await?,1,"using the rune and lever leaves the portal key intact");
     assert_eq!(Box::pin(use_source(owner,admitted,5,CONTROL,3,0)).await?,UseDisposition::Committed,"historical command replays without another write");
     assert_eq!(receipts(harness).await?,2);
     let control = placement_key(
@@ -137,8 +156,8 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     assert_eq!(map.facts.expire_movement_items(wall_due), 1);
     assert_eq!(map.facts.object_revision(wall), 2);
     assert_eq!(map.facts.object_revision(control), 1);
-    let control_due = map.facts.next_movement_decay_time().ok_or("control cooldown")?;
-    assert_eq!(control_due - wall_due, 240_000_000);
+    let control_due = wall_due;
+    assert_eq!(map.facts.next_movement_decay_time(), None);
     let remaining = control_due.checked_sub(owner.owner_now().get()).ok_or("live cooldown")?;
     owner.clock_origin = owner.clock_origin
         .checked_sub(std::time::Duration::from_micros(remaining))
@@ -171,14 +190,22 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     let map = owner.bundle_map().ok_or("map")?;
     assert!(map.facts.base_hidden(wall));
     assert_eq!(map.facts.next_movement_decay_time(), Some(due));
-    assert_eq!(map.facts.expire_movement_items(due), 1);
-    assert!(!map.facts.base_hidden(wall));
+    assert_eq!(map.facts.expire_movement_items(due - 1), 0);
     assert_eq!(
         Box::pin(use_source(owner, admitted, 9, CONTROL, 3, 4)).await?,
         UseDisposition::NothingToUse,
         "returning the switch leaves the opening cooldown in force",
     );
     assert_eq!(receipts(harness).await?, 3);
+    let map = owner.bundle_map().ok_or("map")?;
+    assert_eq!(map.facts.expire_movement_items(due), 1);
+    assert!(!map.facts.base_hidden(wall));
+    assert_eq!(
+        Box::pin(use_source(owner, admitted, 10, CONTROL, 3, 4)).await?,
+        UseDisposition::Committed,
+        "the restored wall and expired lever cooldown allow the next opening",
+    );
+    assert_eq!(receipts(harness).await?, 4);
     Ok(())
 }
 

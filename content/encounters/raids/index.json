@@ -1,7 +1,7 @@
 {
   "active_count": 138,
   "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
-  "catalogue_sha256": "44176ce2868942a0d646268358a02b673b1db82d5294761d9787a62e5fd1e759",
+  "catalogue_sha256": "78b94a05179bdb94b2ed3e7e855b5798443f3061ab5c6ce9be3ec0e9b416e3bd",
   "evidence_record_count": 122,
   "evidence_shards": [
     "content/encounters/raids/evidence-00000-00121.json"

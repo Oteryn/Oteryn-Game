@@ -1452,6 +1452,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return Some(UseOutcome::rejected());
         }
+        if selected
+            .iter()
+            .any(|c| world_callbacks::spike_mound::chances(c).is_some())
+        {
+            use std::hash::{BuildHasher, RandomState};
+            // A server-secret keyed hash keeps a command's draw stable through retries.
+            static DRAW: OnceLock<RandomState> = OnceLock::new();
+            let sample = 1
+                + (DRAW.get_or_init(RandomState::new).hash_one((
+                    command.game_session_id,
+                    command.command_id,
+                    resolved.placement_key,
+                )) % 100) as u8;
+            selected.retain(|c| {
+                world_callbacks::spike_mound::chances(c)
+                    .is_some_and(|range| range.contains(&sample))
+            });
+            if selected.len() != 1 {
+                return Some(UseOutcome::rejected());
+            }
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());
@@ -2343,6 +2364,13 @@ fn world_requirements_match(map: &BundleMap, callback: &Callback) -> bool {
                             let Some(key) = placement_key(position, ordinal) else {
                                 return false;
                             };
+                            if requirement.hidden {
+                                return map.facts.base_hidden(key)
+                                    && map
+                                        .facts
+                                        .quest_callback_base_appearance(position, ordinal, *id)
+                                        == Some(requirement.appearance);
+                            }
                             !map.facts.base_hidden(key)
                                 && map.facts.base_entry(position, ordinal, *id).is_some_and(
                                     |entry| {

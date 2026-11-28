@@ -34,18 +34,18 @@
         {
           "track": "oteryn:quest-progress/m07/chayenne_realm/guardian_trial",
           "minimum": -1,
-          "maximum": 0,
-          "set": 1
+          "maximum": 2,
+          "set": 1,
+          "at_least": true
         }
       ],
       "state_ops": [],
       "offerings": [],
       "item_on_target": {
-        "item": "oteryn:item.tibia.i14682",
+        "item": "oteryn:item.tibia.i3148",
         "count": 1,
-        "replacement": null,
-        "target_replacement": null,
-        "reusable": true
+        "target_remove": true,
+        "selected_instance": true
       },
       "requires_world_admission": true,
       "admission": {
@@ -53,14 +53,62 @@
       },
       "return_on_failure": false,
       "failure_message": null,
-      "success_message": "The fire reveals the entrance switch. Clear the tower before operating it.",
+      "success_message": "The fire is gone, revealing a pressure plate.",
       "effects": {},
       "sources": [
         "docs/reference/content-prep/questpc4-M07-native-trials.md",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:1-29",
-        "OTERYN_CHOSEN_REALM_TRIAL:exact native entry control; no recovered action-id claim"
+        "OTERYN_CHOSEN_REALM_TRIAL:exact native entry control; no recovered action-id claim",
+        "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/realm-plate",
+      "quest": "oteryn:quest.chayenne_realm",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32583,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 430
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33080,
+            "y": 32582,
+            "floor": -3
+          },
+          "appearance": 1772,
+          "replacement": null
+        }
       ],
-      "minimum_level": 40
+      "world_requirements": [
+        {
+          "position": {
+            "x": 33080,
+            "y": 32583,
+            "floor": -3
+          },
+          "appearance": 2124,
+          "hidden": true
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm:33080,32583,3;33080,32582,3"
+      ]
     },
     {
       "key": "oteryn:quest-callback/m07/realm-draconia-book",
@@ -143,17 +191,23 @@
           "minimum": -1,
           "maximum": 1,
           "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/m07/chayenne_realm/draconia_book",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
         }
       ],
       "offerings": [],
       "return_on_failure": true,
-      "failure_message": "You need level 40 and Chayenne's magical key.",
+      "failure_message": "You need Chayenne's magical key and the knowledge from the Draconia book.",
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/movements_enter_realm.lua:8-16",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/teleport.lua:285-288"
       ],
       "requires_world_admission": true,
-      "minimum_level": 40,
       "present": [
         {
           "item": "oteryn:item.tibia.i14682",
@@ -318,13 +372,22 @@
             "floor": -3
           },
           "appearance": 2129
+        },
+        {
+          "position": {
+            "x": 33080,
+            "y": 32582,
+            "floor": -3
+          },
+          "appearance": 1772,
+          "hidden": true
         }
       ],
       "teleport": null,
       "storage": [
         {
           "track": "oteryn:quest-progress/m07/chayenne_realm/guardian_trial",
-          "minimum": 1,
+          "minimum": -1,
           "maximum": 2,
           "set": 2
         }
@@ -337,10 +400,10 @@
       },
       "return_on_failure": false,
       "failure_message": null,
-      "success_message": "The guardians are gone. Your key reveals and operates the hidden switch; the passage opens briefly.",
+      "success_message": "The passage opens.",
       "effects": {
         "reset_after_ms": 300000,
-        "passages_reset_after_ms": 60000,
+        "passages_reset_after_ms": 300000,
         "clear_area": {
           "minimum": {
             "x": 33074,
@@ -353,6 +416,7 @@
             "floor": -3
           },
           "additional_floors": [
+            -7,
             -6,
             -5,
             -4
@@ -361,19 +425,64 @@
             "oteryn:creature.dragon",
             "oteryn:creature.dragon_lord",
             "oteryn:creature.fire_elemental"
+          ],
+          "floor_bounds": [
+            {
+              "minimum": {
+                "x": 33066,
+                "y": 32566,
+                "floor": -7
+              },
+              "maximum": {
+                "x": 33080,
+                "y": 32586,
+                "floor": -7
+              }
+            },
+            {
+              "minimum": {
+                "x": 33078,
+                "y": 32578,
+                "floor": -6
+              },
+              "maximum": {
+                "x": 33111,
+                "y": 32619,
+                "floor": -6
+              }
+            },
+            {
+              "minimum": {
+                "x": 33078,
+                "y": 32579,
+                "floor": -5
+              },
+              "maximum": {
+                "x": 33105,
+                "y": 32603,
+                "floor": -5
+              }
+            },
+            {
+              "minimum": {
+                "x": 33081,
+                "y": 32584,
+                "floor": -4
+              },
+              "maximum": {
+                "x": 33094,
+                "y": 32593,
+                "floor": -4
+              }
+            }
           ]
         }
       },
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/chayenne_realm/actions_lever.lua:3-28",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:391-394",
-        "docs/reference/content-prep/questpc4-M07-native-trials.md"
-      ],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i14682",
-          "count": 1
-        }
+        "docs/reference/content-prep/questpc4-M07-native-trials.md",
+        "https://tibia.fandom.com/wiki/Realm_of_Dreams_Quest/Spoiler"
       ]
     }
   ]

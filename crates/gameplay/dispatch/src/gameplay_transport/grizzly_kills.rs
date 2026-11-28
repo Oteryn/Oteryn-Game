@@ -215,18 +215,21 @@ fn freeze_at(
             continue;
         }
         for counter in &snapshot.native_counters {
+            let spike =
+                oteryn_gameplay_quests::quest::kill_objectives::party_hunt(&counter.transition);
             if counter.creature == creature
                 && counter.encounter_source.is_none()
-                && counter.death_area.is_none_or(|area| {
-                    death_position.is_some_and(|position| area.contains(position))
-                })
+                && spike.map_or_else(
+                    || {
+                        counter.death_area.is_none_or(|area| {
+                            death_position.is_some_and(|position| area.contains(position))
+                        })
+                    },
+                    |hunt| corpse.is_some_and(|at| hunt.contains(at.x, at.y, at.floor)),
+                )
             {
                 use crate::durability::quest_state::native_kills::NativeDeathSource;
-                let source = if oteryn_gameplay_quests::quest::kill_objectives::party_hunt(
-                    &counter.transition,
-                )
-                .is_some()
-                {
+                let source = if spike.is_some() {
                     let Some(at) = corpse.and_then(super::quest_callbacks::native) else {
                         continue;
                     };

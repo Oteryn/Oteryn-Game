@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "e89cc698674b6293eb3f29d452d6a2d5820b81b4b834693ca64a065671db0d1d",
+    "content/items/definitions/spell-native-profiles.json": "2467a216b5f6cc708a56015f09b156a6e2ddf5c11d5e81a5025c1155d7b13d59",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -698,7 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/placements/index.json": "f7c4e7b87596b4785ec8ce598437426e63323e7c7f0e75e0494210dfaa5b6146",
+    "content/world/placements/index.json": "4097e58acbcbcf8ee4effcf7c555c07d206d2e9003144a1d437b290ba0b16db7",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "203006f5b15052cb12493a3b1e52047f3859b2e5bb186a58295f4868ea1da1bf",

@@ -2003,6 +2003,7 @@
       "quest": "oteryn:quest.dream_warrior_outfits_quest",
       "npc": "oteryn:npc.vanys",
       "keywords": [
+        "pomegranate",
         "pomegranates"
       ],
       "topic": 8,
@@ -2049,6 +2050,7 @@
       "quest": "oteryn:quest.dream_warrior_outfits_quest",
       "npc": "oteryn:npc.vanys",
       "keywords": [
+        "shield",
         "ice shield"
       ],
       "topic": 8,
@@ -2177,6 +2179,7 @@
       "quest": "oteryn:quest.dream_warrior_outfits_quest",
       "npc": "oteryn:npc.undal",
       "keywords": [
+        "pomegranate",
         "pomegranates"
       ],
       "topic": 8,
@@ -2223,6 +2226,7 @@
       "quest": "oteryn:quest.dream_warrior_outfits_quest",
       "npc": "oteryn:npc.undal",
       "keywords": [
+        "shield",
         "ice shield"
       ],
       "topic": 8,
@@ -2269,6 +2273,7 @@
       "quest": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
       "npc": "oteryn:npc.eshaya",
       "keywords": [
+        "wanted",
         "issavi attire"
       ],
       "topic": 0,
