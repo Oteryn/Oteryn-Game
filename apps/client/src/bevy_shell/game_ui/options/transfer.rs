@@ -418,6 +418,17 @@ mod tests {
         let exported = PreferenceStore::read_transfer(&active)?;
         assert_eq!(exported.audio_device, "Headset");
         assert_eq!(exported.audio.master_volume, 37);
+        assert_ne!(
+            exported.bar_layout,
+            ReferencePreferences::default().bar_layout
+        );
+        assert_eq!(
+            exported.bar_actions.0.get(&0),
+            Some(&crate::play::BarAction::Text {
+                text: "Headset".into(),
+                send_automatically: false,
+            })
+        );
         let world = app.world_mut();
         let parent = world.spawn_empty().id();
         let skins = Skins {
@@ -432,7 +443,17 @@ mod tests {
             font: default(),
         };
         let mut queue = bevy::ecs::world::CommandQueue::default();
-        build(&mut Commands::new(&mut queue, world), parent, &skins);
+        super::super::widgets::page(
+            &mut Commands::new(&mut queue, world),
+            parent,
+            (Page::Misc, None, "", None),
+            &skins,
+            &super::super::CheckSkins {
+                checked: default(),
+                unchecked: default(),
+            },
+            &exported,
+        );
         queue.apply(world);
         let field = world
             .query_filtered::<Entity, With<PathField>>()
@@ -453,8 +474,13 @@ mod tests {
             .ok_or("production path field")?
             .editor_mut()
             .set_text(export.to_str().ok_or("export path")?);
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.edit_preferences(|draft| draft.audio_device = "Unsaved draft".into());
+        }
         press_built(&mut app, "misc.transfer.export")?;
         assert_eq!(PreferenceStore::read_transfer(&export)?, exported);
+        assert_eq!(device(&app)?, ("Unsaved draft".into(), "Headset".into()));
 
         save_device(&mut app, "Speakers", 62);
         let reset_backup = PreferenceStore::read_transfer(&active)?;
@@ -466,6 +492,7 @@ mod tests {
             .use_background_preferences();
         press_built(&mut app, "misc.transfer.defaults")?;
         finish_transfer(&mut app)?;
+        assert_eq!(device(&app)?, (String::new(), String::new()));
         assert_eq!(PreferenceStore::read_transfer(&active)?, expected_defaults);
         let backup = active.with_extension("backup.json");
         assert_eq!(PreferenceStore::read_transfer(&backup)?, reset_backup);
@@ -526,6 +553,15 @@ mod tests {
         owner.edit_preferences(|draft| {
             draft.audio_device = device.into();
             draft.audio.master_volume = volume;
+            draft.bar_layout.rows[0].locked = false;
+            draft.bar_layout.rows[0].count = 10;
+            draft.bar_actions.0.insert(
+                0,
+                crate::play::BarAction::Text {
+                    text: device.to_owned(),
+                    send_automatically: false,
+                },
+            );
         });
         owner.apply(false);
     }
