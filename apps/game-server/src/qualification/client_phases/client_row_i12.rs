@@ -36,9 +36,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .ok_or("I12 requires the named replay executable")?;
     let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_I12_ACCOUNT").await?;
     let clients = &identity.clients(clients);
+    evidence("I12_STEP phase=fixture_admission");
     let mut client = connect_character(clients, 0xc2, 0).await?;
+    evidence("I12_STEP phase=fixture_grants");
     character_prep::grant_item(&client, PICK, 1).await?;
     character_prep::grant_item(&client, SHINY_STONE, 1).await?;
+    evidence("I12_STEP phase=prepared_admission");
     relog(&mut client, clients).await?;
     let index = provisioning::item_index()?;
     let pick_ref = provisioning::item_reference(&index, PICK)?;
@@ -77,10 +80,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let session = client.join_snapshot().game_session_id;
     let baseline_sequence = client.session_mut().last_server_sequence();
     let selected = client.session_mut().selected_capabilities().to_vec();
+    let command_id = client.session_mut().next_command_id();
+    evidence(&format!(
+        "I12_STEP phase=refine_use session={} command_id={command_id}",
+        uuid_text(session.as_bytes()),
+    ));
     let reply = client.session_mut().world_context_use(&payload).await?;
     let reply_received_ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_millis();
+    evidence(&format!(
+        "I12_USE_RESULT session={} command_id={} status={:?} payload={:02x?} server_sequence={}",
+        uuid_text(session.as_bytes()),
+        reply.command_id,
+        reply.status,
+        reply.payload,
+        reply.server_sequence,
+    ));
     let disposition = oteryn_protocol_oteryn::world_object::decode_use_result(&reply.payload)
         .map_err(|error| format!("pick reply: {error:?}"))?;
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
@@ -149,10 +165,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !matches_reward {
         return Err(format!("unexpected refining inventory: {observed:?}").into());
     }
+    evidence("I12_STEP phase=durability_relog");
     relog(&mut client, clients).await?;
     if super::full_row_w19a::quantities(&client)? != observed {
         return Err("refining inventory changed after fresh admission".into());
     }
+    evidence("I12_STEP phase=final_logout");
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
