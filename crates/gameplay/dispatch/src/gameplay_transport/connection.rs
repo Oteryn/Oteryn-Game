@@ -792,6 +792,21 @@ impl Liveness {
         Ok(next)
     }
 
+    fn ack_applied<A: FreshAdmissionAuthority>(
+        &mut self,
+        authority: &A,
+        admitted: &AdmittedSession,
+        ack: oteryn_protocol_oteryn::LivenessAckView,
+    ) -> Result<(), FoundationProtocolError> {
+        self.ack(ack.probe_id)?;
+        if let Some(applied) = ack.last_applied_server_sequence
+            && applied <= admitted.continuity.server_sequence
+        {
+            authority.npc_replies_acknowledged(admitted.game_session_id, applied);
+        }
+        Ok(())
+    }
+
     /// An ack of a probe never sent is a protocol violation.
     fn ack(&mut self, probe_id: u64) -> Result<(), FoundationProtocolError> {
         if probe_id == 0 || probe_id > self.last_sent {

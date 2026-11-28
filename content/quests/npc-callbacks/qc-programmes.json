@@ -130,6 +130,136 @@
         "track": "oteryn:quest-progress/qc/friends/crude-iron-uses",
         "maximum": 1000000000000
       }
+    },
+    {
+      "key": "oteryn:quest-reward/qc-friends-soul-orbs",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 9,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": 1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5944",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i6528",
+        "count": 100,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L187-L217"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/qc/friends/soul-orbs-uses",
+        "maximum": 1000000000000
+      },
+      "exact_take": true
+    },
+    {
+      "key": "oteryn:quest-reward/qc-friends-melt-gold",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9058",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i12804",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Whoooosh There!"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L220-L234"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/qc/friends/melt-gold-uses",
+        "maximum": 1000000000000
+      }
+    },
+    {
+      "key": "oteryn:quest-reward/qc-friends-gear-wheel",
+      "quest": "oteryn:quest.friends_and_traders",
+      "npc": "oteryn:npc.a_sweaty_cyclops",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/friends/program",
+          "minimum": -1,
+          "maximum": 15,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5880",
+          "count": 1
+        }
+      ],
+      "present": [],
+      "give": {
+        "item": "oteryn:item.tibia.i8775",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Cling clang!"
+      ],
+      "sources": [
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L238-L251"
+      ],
+      "counter": {
+        "track": "oteryn:quest-progress/qc/friends/gear-wheel-uses",
+        "maximum": 1000000000000
+      }
     }
   ]
 }

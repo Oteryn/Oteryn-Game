@@ -479,6 +479,52 @@ pub(crate) async fn apply(
             .bind(&callback.key).bind(i64::try_from(fee.gold).map_err(|_|DurabilityError::InvalidStoredState)?)
             .bind(fee.include_bank).bind(committed.to_string()).execute(&mut **tx).await?;
     }
+    // Crystal trades the entire carried supply and rolls a second stack for
+    // each orb independently. Resolve the plan inside the fenced transaction
+    // so the input proof, mint and command receipt all use the same quantities.
+    let mut soul_exchange;
+    let callback = if callback.key == "oteryn:quest-reward/qc-friends-soul-orbs" {
+        let orbs: i64 = sqlx::query_scalar(
+            "SELECT coalesce(sum(i.quantity), 0)::bigint
+             FROM game_quest_callback_carried(encode($1,'hex')::uuid,encode($2,'hex')::uuid) c
+             JOIN game_item_instances i ON i.item_instance_id=c.item
+             WHERE i.lifecycle=1 AND i.definition_production_key='oteryn:item.tibia.i5944'",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if !(1..=i64::from(GAMEITEM01_CONTAINER_ENTRIES_MAX)).contains(&orbs) {
+            return Ok(false);
+        }
+        let bonus: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM generate_series(1, $1::bigint) WHERE random() < 0.01",
+        )
+        .bind(orbs)
+        .fetch_one(&mut **tx)
+        .await?;
+        if orbs + bonus > i64::from(GAMEITEM01_CONTAINER_ENTRIES_MAX) {
+            return Ok(false);
+        }
+        soul_exchange = callback.clone();
+        let [input] = soul_exchange.take.as_mut_slice() else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        input.count = u16::try_from(orbs).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let reward = soul_exchange
+            .give
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let stack = oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+            item: reward.item.clone(),
+            count: reward.count,
+            fluid_subtype: None,
+        };
+        reward.additional = (1..orbs + bonus).map(|_| stack.clone()).collect();
+        &soul_exchange
+    } else {
+        callback
+    };
     if !super::super::quest_world_callback::consume_reward_inputs(
         tx,
         fence,
@@ -581,6 +627,11 @@ pub(crate) async fn apply(
     }
     sqlx::query("INSERT INTO game_quest_reward_sources(character_id,cause_id,cause_ordinal,transition_key,plan,mint_transaction_id,grant_keys) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,CASE WHEN $6::bytea IS NULL THEN NULL ELSE encode($6,'hex')::uuid END,$7)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan).bind(minted.map(|i|i.to_vec())).bind(grant_keys).execute(&mut **tx).await?;
+    if callback.key == "oteryn:quest-reward/qc-friends-melt-gold" {
+        let transaction = minted.ok_or(DurabilityError::InvalidStoredState)?;
+        schedule_quest_item_expiry(tx, admission.native, "oteryn:item.tibia.i12804", transaction)
+            .await?;
+    }
     if callback.corpse_target.is_some() {
         let (Some(proof), Some(carried)) = (admission.creature_use, admission.carried_use) else {
             return Ok(false);
@@ -683,12 +734,12 @@ pub(crate) async fn give_world(
         .bind(command.command_id().get().to_string()).bind(&request.transition_key).bind(plan)
         .bind(transaction.as_slice()).execute(&mut **tx).await?;
     if reward.item == "oteryn:item.tibia.i4837" {
-        schedule_ice_sample(tx, admission.native, &reward.item, transaction).await?;
+        schedule_quest_item_expiry(tx, admission.native, &reward.item, transaction).await?;
     }
     Ok(true)
 }
 
-async fn schedule_ice_sample(
+async fn schedule_quest_item_expiry(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     native: &NativeGameplayState,
     item: &str,

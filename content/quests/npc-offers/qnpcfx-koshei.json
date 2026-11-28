@@ -7,6 +7,7 @@
         "amulet"
       ],
       "topic": 0,
+      "any_topic": true,
       "next_topic": 12,
       "storage": [
         {

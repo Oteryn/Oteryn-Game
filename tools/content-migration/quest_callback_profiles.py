@@ -63,6 +63,7 @@ EXPLORER_SAMPLE_WEIGHTS = {
         (4870, (1800, 2000)),
     )
 }
+MOLTEN_GOLD = "oteryn:item.tibia.i12804"
 ICE_SAMPLE = "oteryn:item.tibia.i4837"
 EXPLORER_TRACING_SHEETS = {"oteryn:item.tibia.i4842", "oteryn:item.tibia.i4843"}
 # Orc powder already uses the world-change Item owner, later in native composition.
@@ -450,6 +451,7 @@ def _requested_inputs(root, extra_keys=()):
     authored_keys.update(
         f"oteryn:item.tibia.i{number}" for number in (3452, 6093, 6105, 6119, 9843)
     )
+    authored_keys.add(MOLTEN_GOLD)
     keys.update(authored_keys)
     authored_callbacks = []
     explorer_npc = root / "content/quests/npc-callbacks/explorer-society.json"
@@ -941,6 +943,25 @@ def admit(
                 definition, present.get(key)
             )
         identity = definition["identity"]
+        if key == MOLTEN_GOLD:
+            # The exchange starts the absolute deadline at mint, like the ice sample.
+            node = next(item for item in source_items if item.get("id") == "12804")
+            fields = {attr.get("key"): attr.get("value") for attr in node.findall("attribute")}
+            if (fields.get("duration"), fields.get("decayTo")) != ("36000", "0"):
+                raise ValueError("CYCLOPS_MOLTEN_GOLD_EXPIRY")
+            profile = authored_quest_item_custody.qualify(
+                root, definition, raw, terminal_expiry=True, _inputs=custody_inputs
+            )
+            profile["semantics"]["temporal"] = {
+                "state": "KNOWN", "value": {
+                    "consumption_mode": {"state": "KNOWN", "value": "DURABLE_ABSOLUTE_DEADLINE"},
+                    "duration": {"state": "KNOWN", "value": 36000000},
+                    "stop_duration": {"state": "KNOWN", "value": False},
+                    "decay_target": {"state": "NOT_APPLICABLE"},
+                },
+            }
+            document["records"].append(profile)
+            continue
         if key in authored_keys and key not in present:
             import authored_quest_timed_custody
 

@@ -194,6 +194,7 @@ pub(super) async fn npc<S, A: FreshAdmissionAuthority>(
 where
     S: AsyncRead + AsyncWrite + Unpin,
 {
+    let previous_sequence = session.sequence;
     let Some(update_frames) = npc_update_frames(
         authority,
         (
@@ -219,7 +220,11 @@ where
                 .as_ref()
                 .is_some_and(|reply| !reply.lines.is_empty())
         {
-            authority.recovered_npc_reply_delivered(session.admitted.game_session_id, command);
+            authority.npc_reply_sent(
+                session.admitted.game_session_id,
+                command,
+                previous_sequence + 1,
+            );
         }
     }
     Ok(())

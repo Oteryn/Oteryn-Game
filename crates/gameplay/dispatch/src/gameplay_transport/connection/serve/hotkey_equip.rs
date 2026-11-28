@@ -102,10 +102,11 @@ where
             && envelope.connection_generation() == session.generation
             && envelope.message_type() == MessageType::LivenessAck
         {
-            if let Err(error) = envelope
-                .liveness_ack(session.generation)
-                .and_then(|ack| session.liveness.ack(ack.probe_id))
-            {
+            if let Err(error) = envelope.liveness_ack(session.generation).and_then(|ack| {
+                session
+                    .liveness
+                    .ack_applied(authority, &session.admitted, ack)
+            }) {
                 return Err(close(stream, session.admitted, error).await);
             }
             continue;

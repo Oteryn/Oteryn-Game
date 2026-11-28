@@ -867,6 +867,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             resumed.item_fence = super::item_fence_of(current);
         }
+        self.states.npc_conversations.acknowledge_replies(
+            resumed.game_session_id,
+            attempt.last_applied_server_sequence,
+            true,
+        );
         Ok(resumed)
     }
 

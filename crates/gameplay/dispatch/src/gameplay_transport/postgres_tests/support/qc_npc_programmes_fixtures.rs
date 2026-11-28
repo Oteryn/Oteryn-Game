@@ -21,7 +21,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-const STEEL_QUOTE: &str = "I can make draconian steel from a Dragon Shield. Do you want to trade?";
+const STEEL_QUOTE: &str = FAVOR_QUOTE;
 const AMULET_QUOTE: &str =
     "Me can do unbroken but Big Ben want gold 5000 and all four pieces. Yes?";
 const FAVOR_QUOTE: &str = "Firy steel it is. Need green ones' breath to melt. Or red even better. Me can make from shield. Lil' one want to trade?";
@@ -81,6 +81,9 @@ pub(super) async fn exercise(
         "keyword" | "repeat" => mint(owner, admitted, SHIELD, 1, 7101).await?,
         "donor-exchanges" => {
             mint(owner, admitted, SHIELD, 1, 7101).await?;
+            for (input, count) in [(5944, 2), (9058, 1), (5880, 1)] {
+                mint(owner, admitted, input, count, u64::from(input)).await?;
+            }
             for (_, input, _) in DONOR_EXCHANGES {
                 mint(owner, admitted, input, 1, u64::from(input)).await?;
             }
@@ -126,14 +129,26 @@ pub(super) async fn exercise(
         );
 
         mint(owner, admitted, SHIELD, 1, 7102).await?;
-        with_wire(owner, admitted, cyclops, async |wire| {
+        let flushed = with_wire(owner, admitted, cyclops, async |wire| {
             wire.greet().await?;
             wire.line("uth'lokr", STEEL_QUOTE).await?;
             assert_eq!(quantity(h, SHIELD).await?, 1, "the quote spends no shield");
             assert_eq!(quantity(h, STEEL).await?, 1);
-            wire.line("yes", "Cling clang!").await
+            wire.line("yes", "Cling clang!").await?;
+            Ok(wire.last_dialogue_sequence)
         })
         .await?;
+        // Both a live delta and its retransmission may flush before control loss.
+        let mut sent = flushed;
+        for _ in 0..2 {
+            owner.states.npc_conversations.acknowledge_replies(admitted.game_session_id, sent - 1, true);
+            sent = with_wire(owner, admitted, cyclops, async |wire| {
+                wire.recovered_reply("Cling clang!").await?;
+                Ok(wire.last_dialogue_sequence)
+            }).await?;
+        }
+        owner.states.npc_conversations.acknowledge_replies(admitted.game_session_id, sent, true);
+
         assert_eq!(quantity(h, SHIELD).await?, 0);
         assert_eq!(quantity(h, STEEL).await?, 2);
         assert_exchange_receipts(h).await?;
@@ -146,9 +161,11 @@ pub(super) async fn exercise(
             }).await
         }).await?;
         let committed = snapshot(h).await?;
-        with_wire(owner, admitted, cyclops, async |wire| {
-            wire.recovered_reply("Cling clang!").await
+        let sent = with_wire(owner, admitted, cyclops, async |wire| {
+            wire.recovered_reply("Cling clang!").await?;
+            Ok(wire.last_dialogue_sequence)
         }).await?;
+        owner.states.npc_conversations.acknowledge_replies(admitted.game_session_id, sent, true);
         assert!(owner.states.npc_conversations.recovered_quest_lines(admitted.game_session_id).is_none());
         assert_eq!(snapshot(h).await?, committed);
         assert_eq!(quantity(h, STEEL).await?, 3);
@@ -201,6 +218,17 @@ async fn exercise_conversation(
                 assert_eq!(quantity(h, item).await?, 0, "amulet fragment {item}");
             }
             assert_eq!(quantity(h, PLATINUM).await?, 0);
+            if case == "amulet-replaces-steel" {
+                wire.line("uth'lokr amulet", STEEL_QUOTE).await?;
+                let (result, lines) = wire.talk("amulet", true).await?.ok_or("waiting reply")?;
+                assert_eq!(result, NpcIntentDisposition::Rejected);
+                assert!(
+                    matches!(lines.as_slice(), [line] if line.starts_with("Big Ben still hammering! Come back in "))
+                );
+                wire.line("yes", "Cling clang!").await?;
+                assert_eq!(quantity(h, SHIELD).await?, 0);
+                assert_eq!(quantity(h, STEEL).await?, 1);
+            }
             if case == "locked-soul-orb" {
                 wire.line("uth'lokr", FAVOR_QUOTE).await?;
                 assert!(wire.talk("soul orb", false).await?.is_some());
@@ -235,10 +263,22 @@ async fn exercise_conversation(
                 assert_eq!(quantity(h, SHIELD).await?, 1, "{word} replaced the steel quote");
                 assert_eq!(quantity(h, STEEL).await?, 0);
             }
-            // PARTIAL: these services supersede the quote but have no admitted exchange.
-            for word in ["soul orb", "melt", "gear whell"] {
+            for (word, input, output) in [("soul orb", 5944, 6528), ("melt", 9058, 12804), ("gear whell", 5880, 8775)] {
+                let quote = offers.iter().find(|row| row["keywords"][0] == word)
+                    .and_then(|row| row["reply"][0].as_str()).ok_or(word)?;
                 wire.line("uth'lokr", STEEL_QUOTE).await?;
-                assert!(wire.talk(word, false).await?.is_some());
+                wire.line(&format!("{word} amulet"), quote).await?;
+                wire.line("yes", if word == "melt" { "Whoooosh There!" } else { "Cling clang!" }).await?;
+                assert_eq!(quantity(h, input).await?, 0);
+                let minted = quantity(h, output).await?;
+                if word == "soul orb" {
+                    assert!(matches!(minted, 200 | 300 | 400));
+                } else {
+                    assert_eq!(minted, 1);
+                }
+                // A second quote with no input cannot consume the old shield.
+                wire.line("uth'lokr", STEEL_QUOTE).await?;
+                wire.line(word, quote).await?;
                 wire.disposition("yes", NpcIntentDisposition::Rejected).await?;
                 assert_eq!(quantity(h, SHIELD).await?, 1, "{word}");
                 assert_eq!(quantity(h, STEEL).await?, 0);
@@ -249,6 +289,7 @@ async fn exercise_conversation(
             wire.disposition("yes", NpcIntentDisposition::Rejected)
                 .await?;
             wire.line("please forge UTH'LOKR", STEEL_QUOTE).await?;
+            wire.line("please forge UTH'LOKR amulet", STEEL_QUOTE).await?;
             assert!(wire.talk("yes please", false).await?.is_some());
             assert!(wire.talk(" yes ", false).await?.is_some());
             assert_eq!(quantity(h, SHIELD).await?, 1);
@@ -533,6 +574,7 @@ pub(super) struct Wire<'a> {
     npc: EntityRef,
     generation: u64,
     next: u64,
+    last_dialogue_sequence: u64,
     clock: &'a AtomicU64,
 }
 
@@ -620,6 +662,7 @@ impl Wire<'_> {
                 MessageType::StateDelta => {
                     let delta = decode_state_delta(frame.payload()).map_err(debug)?;
                     if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION {
+                        self.last_dialogue_sequence = frame.server_sequence();
                         let conversation = decode_npc_conversation(delta.payload).map_err(debug)?;
                         if let Some(result) = disposition {
                             assert_eq!(
@@ -678,6 +721,7 @@ impl Wire<'_> {
                 MessageType::StateDelta => {
                     let delta = decode_state_delta(frame.payload()).map_err(debug)?;
                     if delta.domain_id == STATE_DOMAIN_NPC_CONVERSATION {
+                        self.last_dialogue_sequence = frame.server_sequence();
                         assert!(closed && committed, "reply follows the closed snapshot");
                         let reply = decode_npc_conversation(delta.payload).map_err(debug)?;
                         assert!(reply.open.is_none(), "the reply cannot reopen the old focus");
@@ -742,6 +786,7 @@ pub(super) async fn with_wire<T>(
             npc,
             generation: before.continuity.connection_generation,
             next: before.continuity.next_command_id,
+            last_dialogue_sequence: 0,
             clock,
         };
         let result = conversation(&mut wire).await?;

@@ -141,8 +141,11 @@ where
             }
             match decode_wire_envelope(&frame)
                 .and_then(|envelope| envelope.liveness_ack(session.generation))
-                .and_then(|ack| session.liveness.ack(ack.probe_id))
-            {
+                .and_then(|ack| {
+                    session
+                        .liveness
+                        .ack_applied(authority, &session.admitted, ack)
+                }) {
                 Ok(()) => return Ok(None),
                 Err(error) => return Err(close(stream, session.admitted, error).await),
             }

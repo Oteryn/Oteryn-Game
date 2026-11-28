@@ -203,13 +203,7 @@ pub(super) fn prepare(
         }
     }
     if matches!(phase, Phase::Rewards { .. }) {
-        offer_topic::retire_cyclops_offer(
-            admission,
-            command.game_session_id,
-            &context,
-            &offers,
-            &text,
-        )?;
+        offer_topic::retire_cyclops_offer(admission, command.game_session_id, &context, &text)?;
     }
     if says_no
         || (phase == Phase::Offers
@@ -275,7 +269,7 @@ pub(super) fn prepare(
             // The Cyclops keeps each metal quote on refusal. Apply a failure
             // topic where the source changes it, including skirt delivery.
             failure_topic = match (context.2.as_str(), topic.number, text.as_str()) {
-                (offer_topic::CYCLOPS, 12, "yes") | ("oteryn:npc.yeo", 1, "yes") => Some(0),
+                (offer_topic::CYCLOPS, 9..=12, "yes") | ("oteryn:npc.yeo", 1, "yes") => Some(0),
                 _ => None,
             };
             let meets_level = |minimum: Option<u32>| {
@@ -302,11 +296,38 @@ pub(super) fn prepare(
                 })
             };
             if let Phase::Rewards { skip_opening } = phase {
-                let topic = if text == "mission"
-                    && matches!(
-                        context.2.as_str(),
-                        oteryn_gameplay_quests::quest::classic_talk::ROTTIN | storkus::NPC
-                    ) {
+                let amulet = context.2 == offer_topic::CYCLOPS && text == "amulet";
+                if amulet {
+                    match track_value("oteryn:quest-progress/qnpcfx/koshei/amulet") {
+                        Some(1) => {
+                            let started = track_value(
+                                "oteryn:quest-progress/qnpcfx/koshei/amulet_started_at",
+                            )?;
+                            let remaining = started
+                                .saturating_add(86400)
+                                .saturating_sub(crate::gameplay_transport::unix_seconds()?);
+                            if remaining > 0 {
+                                return refusal(&[offer_topic::waiting_reply(remaining)], None);
+                            }
+                        }
+                        Some(2) => {
+                            return refusal(
+                                &[
+                                    "Lil' one already has mighty amulet. Big Ben no make another!"
+                                        .into(),
+                                ],
+                                Some(0),
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+                let topic = if amulet
+                    || text == "mission"
+                        && matches!(
+                            context.2.as_str(),
+                            oteryn_gameplay_quests::quest::classic_talk::ROTTIN | storkus::NPC
+                        ) {
                     0
                 } else {
                     topic.number
@@ -849,7 +870,13 @@ fn callback_keyword(
         if trimmed.eq_ignore_ascii_case("yes") {
             return text.to_ascii_lowercase();
         }
-        return offer_topic::amulet_keyword(&trimmed.to_ascii_lowercase()).into();
+        let unlocked = storkus::track(
+            admission,
+            command,
+            "oteryn:quest-progress/questpc7/friends/program",
+        )
+        .is_some_and(|stage| (1..=15).contains(&stage));
+        return offer_topic::keyword(&trimmed.to_ascii_lowercase(), unlocked).into();
     }
     trimmed.to_ascii_lowercase()
 }

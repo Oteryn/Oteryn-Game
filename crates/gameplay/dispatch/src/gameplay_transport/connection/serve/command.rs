@@ -45,10 +45,11 @@ where
             .await);
         }
         Ok(envelope) if envelope.message_type() == MessageType::LivenessAck => {
-            match envelope
-                .liveness_ack(session.generation)
-                .and_then(|ack| session.liveness.ack(ack.probe_id))
-            {
+            match envelope.liveness_ack(session.generation).and_then(|ack| {
+                session
+                    .liveness
+                    .ack_applied(authority, &session.admitted, ack)
+            }) {
                 Ok(()) => return Ok(()),
                 Err(error) => return Err(close(stream, session.admitted, error).await),
             }

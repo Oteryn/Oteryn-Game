@@ -576,6 +576,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         ))
     }
 
+    fn npc_reply_sent(&self, session: GameSessionId, command: u64, sequence: u64) {
+        self.states
+            .npc_conversations
+            .record_reply_sequence(session, command, sequence);
+    }
+
+    fn npc_replies_acknowledged(&self, session: GameSessionId, applied: u64) {
+        self.states
+            .npc_conversations
+            .acknowledge_replies(session, applied, false);
+    }
+
+    #[cfg(test)]
     fn recovered_npc_reply_delivered(&self, session: GameSessionId, command: u64) {
         self.states
             .npc_conversations

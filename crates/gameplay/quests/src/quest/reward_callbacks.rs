@@ -713,6 +713,49 @@ pub(super) fn retain_warrior_reward_predecessor(
     Ok(())
 }
 
+/// Keep the pre-exchange Friends and Traders save readable. Only these three
+/// callbacks, their value markers and their counters changed the definition.
+pub(super) fn retain_cyclops_predecessor(active: &mut QuestStateCatalogue) -> Result<(), String> {
+    const QUEST: &str = "oteryn:quest.friends_and_traders";
+    let mut tracks: BTreeMap<_, _> = active
+        .tracks
+        .iter()
+        .filter(|(_, track)| track.quest == QUEST)
+        .map(|(key, track)| (key.clone(), track.clone()))
+        .collect();
+    let mut transitions: BTreeMap<_, _> = active
+        .transitions
+        .iter()
+        .filter(|(_, transition)| transition.quest == QUEST)
+        .map(|(key, transition)| (key.clone(), transition.clone()))
+        .collect();
+    let callbacks = load()?;
+    for key in [
+        "oteryn:quest-reward/qc-friends-soul-orbs",
+        "oteryn:quest-reward/qc-friends-melt-gold",
+        "oteryn:quest-reward/qc-friends-gear-wheel",
+    ] {
+        let row = callbacks.iter().find(|row| row.key == key).ok_or(key)?;
+        let counter = &row.counter.as_ref().ok_or(key)?.track;
+        tracks.remove(counter).ok_or(key)?;
+        transitions.remove(key).ok_or(key)?;
+        transitions.remove(&reward_rule_key(row)?).ok_or(key)?;
+    }
+    let hash = super::definition_hash(QUEST, &tracks, &transitions);
+    active
+        .predecessors
+        .entry(QUEST.into())
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: tracks
+                .into_iter()
+                .map(|(key, track)| (key, track.initial))
+                .collect(),
+        });
+    Ok(())
+}
+
 /// The current immutable catalogue's explicit authored callbacks plus the retained source owners.
 pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<RewardCallback>, String> {
     let mut callbacks = load()?;

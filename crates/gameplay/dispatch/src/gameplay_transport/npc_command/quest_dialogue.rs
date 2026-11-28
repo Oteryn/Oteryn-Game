@@ -40,12 +40,53 @@ pub(super) struct State {
     // A failed offer does not advance the topic, but still owns its confirmation.
     pub(super) reward_request: Option<Context>,
     pending: Option<Pending>,
-    undelivered_replies: BTreeMap<u64, Vec<String>>,
+    undelivered_replies: BTreeMap<u64, RetainedReply>,
     #[cfg(test)]
     interrupt_after_commit: Option<u64>,
 }
 
+struct RetainedReply {
+    lines: Vec<String>,
+    sent_at: Option<u64>,
+}
+
 impl NpcConversations {
+    pub(in crate::gameplay_transport) fn record_reply_sequence(
+        &self,
+        session: GameSessionId,
+        command: u64,
+        sequence: u64,
+    ) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(reply) = sessions
+                .get_mut(&session)
+                .and_then(|s| s.quest_dialogue.undelivered_replies.get_mut(&command))
+        {
+            reply.sent_at = Some(sequence);
+        }
+    }
+
+    pub(in crate::gameplay_transport) fn acknowledge_replies(
+        &self,
+        session: GameSessionId,
+        applied: u64,
+        resuming: bool,
+    ) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+        {
+            state.quest_dialogue.undelivered_replies.retain(|_, reply| {
+                if reply.sent_at.is_some_and(|sequence| sequence <= applied) {
+                    return false;
+                }
+                if resuming {
+                    reply.sent_at = None;
+                }
+                true
+            });
+        }
+    }
+
     pub(in crate::gameplay_transport) fn recovered_quest_lines(
         &self,
         session: GameSessionId,
@@ -53,11 +94,17 @@ impl NpcConversations {
         self.sessions.lock().ok().and_then(|sessions| {
             sessions
                 .get(&session)
-                .and_then(|s| s.quest_dialogue.undelivered_replies.first_key_value())
-                .map(|(&command, lines)| (command, lines.clone()))
+                .and_then(|s| {
+                    s.quest_dialogue
+                        .undelivered_replies
+                        .iter()
+                        .find(|(_, reply)| reply.sent_at.is_none())
+                })
+                .map(|(&command, lines)| (command, lines.lines.clone()))
         })
     }
 
+    #[cfg(test)]
     pub(in crate::gameplay_transport) fn quest_lines_delivered(
         &self,
         session: GameSessionId,
@@ -309,10 +356,13 @@ fn finish(
                 if let QuestCause::Command(original) = pending.request.cause
                     && !pending.reply.is_empty()
                 {
-                    state
-                        .quest_dialogue
-                        .undelivered_replies
-                        .insert(original.command_id().get(), pending.reply);
+                    state.quest_dialogue.undelivered_replies.insert(
+                        original.command_id().get(),
+                        RetainedReply {
+                            lines: pending.reply,
+                            sent_at: None,
+                        },
+                    );
                 }
                 pending.next_topic
             }

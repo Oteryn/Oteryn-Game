@@ -141,13 +141,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .map_err(|_| ServeEnd::Disconnected)?;
         }
         admitted.continuity.server_sequence = sequence;
+        zones_nologout_transport::delivered(&mut admitted);
         if item_domains
             .iter()
             .any(|domain| domain.domain_id == STATE_DOMAIN_NPC_CONVERSATION)
         {
             super::setup::recovered_npc_reply(stream, authority, &mut admitted).await?;
         }
-        zones_nologout_transport::delivered(&mut admitted);
         // A retained idle owner survives a House handoff or transport retry.
         // Only a genuinely fresh recovered actor needs its initial clock value.
         if admitted.continuity.gameplay_idle.last_activity().is_none() {
@@ -290,11 +290,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             }
             if envelope.message_type() == MessageType::LivenessAck {
                 liveness
-                    .ack(
+                    .ack_applied(
+                        authority,
+                        &admitted,
                         envelope
                             .liveness_ack(generation)
-                            .map_err(ServeEnd::Closed)?
-                            .probe_id,
+                            .map_err(ServeEnd::Closed)?,
                     )
                     .map_err(ServeEnd::Closed)?;
                 continue;

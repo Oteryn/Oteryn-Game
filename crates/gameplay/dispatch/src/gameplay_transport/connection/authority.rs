@@ -1543,6 +1543,11 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    fn npc_reply_sent(&self, _session: GameSessionId, _command: u64, _sequence: u64) {}
+
+    fn npc_replies_acknowledged(&self, _session: GameSessionId, _applied: u64) {}
+
+    #[cfg(test)]
     fn recovered_npc_reply_delivered(&self, _session: GameSessionId, _command: u64) {}
 
     /// NPC-CMD-1a: the domain 7 payload when the conversation differs from the NPC `shown` to

@@ -245,11 +245,6 @@ where
         }
     }
     record_join_progress("snapshot_flushed", admitted.first_entry);
-    if sessions.npc_active {
-        recovered_npc_reply(stream, authority, admitted)
-            .await
-            .map_err(JoinFailure::Delivered)?;
-    }
     zones_nologout_transport::delivered(admitted);
     if let Some(trade) = payloads
         .iter()
@@ -269,6 +264,11 @@ where
     }
     if let Some((revision, state)) = &sessions.combat_sent {
         admitted.continuity.combat.snapshot_sent(*revision, *state);
+    }
+    if sessions.npc_active {
+        recovered_npc_reply(stream, authority, admitted)
+            .await
+            .map_err(JoinFailure::Delivered)?;
     }
     live(
         authority,
@@ -309,7 +309,7 @@ pub(super) async fn recovered_npc_reply<S: AsyncWrite + Unpin, A: FreshAdmission
             .map_err(|_| ServeEnd::Disconnected)?;
         admitted.continuity.server_sequence = sequence;
         admitted.continuity.npc.conversation_revision = revision;
-        authority.recovered_npc_reply_delivered(admitted.game_session_id, command);
+        authority.npc_reply_sent(admitted.game_session_id, command, sequence);
     }
     Ok(())
 }
