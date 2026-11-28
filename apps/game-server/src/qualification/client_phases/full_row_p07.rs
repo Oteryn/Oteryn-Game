@@ -7,11 +7,12 @@
 //!    and another revision increment.
 //! 4. Grade a compatible modifier with command 424; expect the grade delta plus the quoted gold
 //!    and fragment debits.
-//! 5. Reveal another gem, lock/unlock it with command 309, switch its domain with command 424,
-//!    then socket it through Wheel command 161; expect lock, domain and vessel deltas.
+//! 5. Reveal another gem and lock/unlock it with command 309. The retired Switch Domain
+//!    command must refuse without changing Atelier state or balances. Then socket the gem
+//!    through Wheel command 161 and verify the vessel delta.
 //! 6. Replay a stale Atelier revision; expect a refused reply with no state or resource delta.
 //! 7. Log out, freshly admit the same character, and query again; expect the exact durable gems,
-//!    grades, locks, domains, vessel assignment and resource balances committed above. Resonance
+//!    grades, locks, vessel assignment and resource balances committed above. Resonance
 //!    is asserted through the admitted Wheel/Atelier vessel projection exposed by command 161.
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -317,6 +318,7 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         observed => seen.fail("5-unlock", (&response.status, observed)),
     }
 
+    let before_switch = query(&mut client).await?;
     let switch = atelier::MutateRequest {
         occurrence: occurrence(session, 7),
         expected_revision: revision,
@@ -328,15 +330,27 @@ async fn journey(clients: &SeamClients<'_>, seen: &mut Observations) -> TestResu
         atelier::encode_mutate(&switch).map_err(|e| format!("switch encode: {e:?}"))?,
     )
     .await?;
-    match atelier_reply(&response) {
-        Ok(reply)
-            if response.status == CommandStatus::Accepted
-                && !reply.refused
-                && reply.revision > revision =>
-        {
-            seen.pass("5-switch-domain");
-        }
-        observed => seen.fail("5-switch-domain", (&response.status, observed)),
+    let receipt = atelier_reply(&response);
+    let after_switch = query(&mut client).await?;
+    if !before_switch.0.refused
+        && before_switch.0.revision == revision
+        && before_switch
+            .0
+            .gems
+            .iter()
+            .any(|row| row.id == gem && !row.locked)
+        && response.status == CommandStatus::Accepted
+        && receipt
+            .as_ref()
+            .is_ok_and(|reply| reply.refused && reply.revision == revision)
+        && after_switch == before_switch
+    {
+        seen.pass("5-retired-switch-domain-refused-unchanged");
+    } else {
+        seen.fail(
+            "5-retired-switch-domain-refused-unchanged",
+            (&response.status, &receipt, &before_switch, &after_switch),
+        );
     }
 
     let wheel_query = wheel::WheelAllocationRequest {
