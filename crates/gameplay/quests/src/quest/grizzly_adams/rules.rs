@@ -162,6 +162,13 @@ pub fn plan_action(
         GrizzlyAction::Promote => {
             let next = promotion_due(state, actor.level).ok_or(GrizzlyRefusal::NoPromotion)?;
             plan.set(PROMOTION_STORAGE, next)?;
+            // TibiaWiki pages 62537 and 62838 award the confirmed Huntsman and
+            // Elite Hunter ranks. Crystal grizzly_adams.lua:742-768 sets them here.
+            plan.transition.achievement = match next {
+                0 => Some("Huntsman".into()),
+                7 => Some("Elite Hunter".into()),
+                _ => None,
+            };
         }
         GrizzlyAction::SelectBoss(id) => select_boss(&mut plan, actor, *id)?,
         GrizzlyAction::ReportBoss(id) => {

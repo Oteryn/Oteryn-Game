@@ -55,21 +55,20 @@ pub fn effective_level(
 }
 
 /// Both exact actors must be in the qualified source zone of this runtime.
-/// The player projection proves the active map frame; summoned creatures are not hazard mobs.
+/// The general Crystal Hazard callback flags monsters in the zone, including the
+/// masterless Primal creatures whose special callback does not set those flags.
 pub fn effects_for_monster(
     runtime: &ChannelRuntimeV1,
     player: ExactActorRef,
     session: GameSessionId,
     monster: ExactActorRef,
 ) -> Option<HazardAreaEffects> {
-    if !source_position(runtime, monster)
-        || runtime
-            .companion_snapshot_including_dead(monster)
-            .ok()?
-            .state
-            .master
-            .is_some()
-    {
+    if !source_position(runtime, monster) {
+        return None;
+    }
+    let creature = runtime.companion_snapshot_including_dead(monster).ok()?;
+    // Crystal 201189f hazard.lua:174–195 and hazard_primal.lua:13,84–96.
+    if creature.state.master.is_some() {
         return None;
     }
     provisional_effects(effective_level(runtime, player, session)?).ok()

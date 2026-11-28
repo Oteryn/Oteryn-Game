@@ -6,7 +6,7 @@ use super::house_scope_handoff::HouseId;
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
-use oteryn_protocol_oteryn::house_wrap::{Refusal, Reply, Request};
+use oteryn_protocol_oteryn::house_wrap::{Action, Refusal, Reply, Request};
 use sqlx::Row;
 
 mod purchased_kit;
@@ -61,6 +61,7 @@ impl DurabilityRoot {
             let key: Option<String> = sqlx::query_scalar("SELECT definition_production_key FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
                 .bind(request.item.as_slice()).bind(house.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let after = key.as_deref().and_then(conversion).unwrap_or_default();
+            let unwraps_snowman = request.action == Action::Unwrap && after == "oteryn:item.tibia.i10208";
             let backpack: Option<String> = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_slots b JOIN game_item_instances i USING(item_instance_id,world_id) WHERE b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_revision_ref='definition-r1'")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(house.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let capacity = backpack.as_deref().and_then(capacity).map(i32::from);
@@ -86,6 +87,26 @@ impl DurabilityRoot {
                 },
             };
             let revision = row.try_get::<String,_>(0)?.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
+            if unwraps_snowman {
+                // TibiaWiki page 90295, revision 984842 counts each time a Snowman
+                // emerges from a package or kit. Only this transaction's receipt counts.
+                let event: Option<Vec<u8>> = sqlx::query_scalar(
+                    "SELECT uuid_send(transaction_id) FROM game_house_furniture_wrap_evidence \
+                     WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric \
+                       AND created_xact_id=pg_current_xact_id_if_assigned()",
+                )
+                .bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(command.to_string())
+                .fetch_optional(&mut *tx)
+                .await?;
+                if let Some(event) = event {
+                    let rule = oteryn_gameplay_progression::achievement_granters::THE_SNOWMAN;
+                    super::account_achievement::add_progress(
+                        &mut tx, fence.character_id, rule.key, rule.total, "oteryn:house-wrap", &event,
+                    )
+                    .await?;
+                }
+            }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Reply::Committed(revision))
         })).await

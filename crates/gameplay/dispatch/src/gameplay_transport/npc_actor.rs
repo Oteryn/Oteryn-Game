@@ -71,18 +71,21 @@ impl NpcWalkState {
             .read(actor)
             .map_err(|_| WalkError::NotCurrentNpc)?;
         if snapshot.revision() != 1 {
-            let schedule = oteryn_gameplay_entities::rashid_schedule::destination_at(
-                super::npc_trade_command::unix_ms_now(),
-            )
-            .placement;
-            let exact_schedule = key == oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY
-                && snapshot.position()
-                    == MovementLocalPosition {
-                        x: i32::from(schedule.x),
-                        y: i32::from(schedule.y),
-                        floor: -i16::from(schedule.floor),
-                    };
-            if !scheduled_anchor || !exact_schedule {
+            if !scheduled_anchor || key != oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY
+            {
+                return Err(WalkError::InitialPlacementUnavailable);
+            }
+            let schedule_now = crate::world_clock::now_utc_ms()
+                .and_then(|now| i64::try_from(now).ok())
+                .unwrap_or(0);
+            let schedule =
+                oteryn_gameplay_entities::rashid_schedule::destination_at(schedule_now).placement;
+            let anchor = MovementLocalPosition {
+                x: i32::from(schedule.x),
+                y: i32::from(schedule.y),
+                floor: -i16::from(schedule.floor),
+            };
+            if snapshot.position() != anchor {
                 return Err(WalkError::InitialPlacementUnavailable);
             }
         }

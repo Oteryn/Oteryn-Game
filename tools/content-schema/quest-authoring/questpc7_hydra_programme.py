@@ -21,7 +21,8 @@ def build(root):
                 raise ValueError('QUESTPC7_HYDRA_RECIPE_DRIFT')
             region='content/world/placements/region-z03-x128-y127.b3'
             sources=[f'canonical:{path.relative_to(root).as_posix()}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}',
-                f'{region}:1#(33004,32664,-3)/2:sha256:{hashlib.sha256((root/region).read_bytes()).hexdigest()}']
+                f'{region}:1#(33004,32664,-3)/2:sha256:{hashlib.sha256((root/region).read_bytes()).hexdigest()}',
+                'tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json:149279']
             requirements={'min_level':0,'premium':True,'completed_quests':[]}
             entry={'key':'oteryn:quest-callback/questpc7-hydra-entry','quest':QUEST,'trigger':'step_in',
                 'selector':{'position':{'x':33003,'y':32665,'floor':-3},'appearance':1019,'unique':None,'action':None},
@@ -30,12 +31,11 @@ def build(root):
                            {'track':KILLS,'minimum':-1,'maximum':-1,'set':0}],
                 'minimum_level':None,'experience':None,'monk_reward':None,'offerings':[],
                 'item_on_target':None,'return_on_failure':False,'failure_message':None,
-                'requirements':requirements,'success_message':'You have reached the Hydra nest. Defeat its guardian and recover an egg.',
+                'requirements':requirements,'success_message':'You have reached the Hydra nest. Recover an egg from the northeast nest.',
                 'sources':sources}
             nest=dict(entry,key='oteryn:quest-callback/questpc7-hydra-nest',trigger='use',
                 selector={'position':{'x':33004,'y':32664,'floor':-3},'appearance':1063,'unique':None,'action':None},
-                storage=[{'track':TRACK,'minimum':1,'maximum':1,'set':2},
-                         {'track':KILLS,'minimum':1,'maximum':1,'set':1,'preserve':True}],
+                storage=[{'track':TRACK,'minimum':1,'maximum':1,'set':2}],
                 requirements=dict(requirements,owned_items=[{'item':'oteryn:item.tibia.i4839','count':1,'map_source':MAP_SOURCE}]),
                 completes=True,success_message='You have recovered an egg from the Hydra nest.')
             objective={'key':'oteryn:quest-death/questpc7-hydra-guardian','quest':QUEST,

@@ -99,8 +99,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             .ok_or(ServeEnd::Disconnected)?;
         let actor = admitted.runtime_actor.ok_or(ServeEnd::Disconnected)?;
         let selected = admitted.continuity.selected_capabilities;
-        let (mut services, item_domains) =
+        let (mut services, mut item_domains) =
             house_hireling::State::prepare(authority, actor, &mut admitted).await?;
+        super::cooldowns::snapshot(
+            authority,
+            &admitted,
+            services.cooldowns.as_mut(),
+            &mut item_domains,
+        )?;
         let mut domains = vec![DomainSnapshot {
             domain_id: STATE_DOMAIN_HOUSE_SCOPE,
             revision: 1,
@@ -336,8 +342,8 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             } else {
                 authority.enter_input(admitted.game_session_id).await
             };
-            let guard_deferred =
-                permit.is_some() && !super::command::guards(authority, admitted, command).await?;
+            let guard_deferred = permit.is_some()
+                && !super::command::guards(authority, &mut admitted, command).await?;
             if guard_deferred {
                 drop(permit.take());
                 if command.command_type == COMMAND_PROJECTION
@@ -482,6 +488,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 (None, Vec::new(), CommandStatus::Rejected)
             };
             drop(permit);
+            let cooldown_frames = if next.is_none() {
+                super::cooldowns::frames(
+                    authority,
+                    services.cooldowns.as_ref(),
+                    &mut admitted.continuity,
+                    None,
+                )?
+            } else {
+                Vec::new()
+            };
             let sequence = admitted
                 .continuity
                 .server_sequence
@@ -515,7 +531,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             ) {
                 // The native release already committed. A failed final write
                 // remains a logout, never a second control-loss transition.
-                if write_frame(stream, &result).await.is_ok()
+                if super::cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
+                    .await
+                    .is_ok()
                     && (!second_logout
                         || send_error(
                             stream,
@@ -533,9 +551,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 }
                 return Err(ServeEnd::LoggedOut);
             }
-            write_frame(stream, &result)
-                .await
-                .map_err(|_| ServeEnd::Disconnected)?;
+            super::cooldowns::write_batch(stream, &cooldown_frames, Some(&result)).await?;
             if second_logout {
                 return Err(close(
                     stream,
@@ -547,7 +563,12 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             if lost_while_logging_out {
                 return Err(ServeEnd::Disconnected);
             }
-            if command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+            if routing::store::is_committed_claim(command.command_type, status, &payload) {
+                services.invalidate_capacity();
+                services
+                    .refresh_inventory(stream, authority, &mut admitted)
+                    .await?;
+            } else if command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
                 && matches!(
                     oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
                     Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
@@ -561,7 +582,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             {
                 services.inventory(stream, authority, &mut admitted).await?;
             }
-            if let Some(effects) = effects {
+            // House Store replies use the claim-specific inventory refresh above.
+            if let Some(effects) =
+                effects.filter(|_| !routing::store::handles_command(command.command_type))
+            {
                 services
                     .effects(stream, authority, &mut admitted, effects)
                     .await?;

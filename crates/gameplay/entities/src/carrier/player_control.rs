@@ -46,6 +46,45 @@ impl ChannelRuntimeV1 {
         self.carrier
             .bound_attacker_lease(&self.continuity, actor.0, game_session_id)
     }
+    /// Read the lease of a physically present player, including reconnect grace.
+    /// This is roster evidence. Damage writes still require an unfenced attacker.
+    pub fn present_player_lease(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<(GameSessionId, CharacterLease), CarrierError> {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::Occupied {
+            generation,
+            game_session_id: Some(session),
+            committed: true,
+            position: Some(_),
+            lifecycle,
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Err(CarrierError::SupersededAttackerSession);
+        };
+        if *generation != actor.0.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        let authority = self
+            .carrier
+            .attacker_authority(index, *generation)
+            .ok_or(CarrierError::SupersededAttackerSession)?;
+        if authority.fence.is_some()
+            && authority.fence
+                != lifecycle
+                    .control_loss
+                    .map(|mark| WriteFenceToken::ControlLoss(mark.epoch))
+        {
+            return Err(CarrierError::SupersededAttackerSession);
+        }
+        let lease = authority
+            .lease
+            .ok_or(CarrierError::SupersededAttackerSession)?;
+        Ok((*session, lease))
+    }
     /// Mirror one committed durable control loss onto the still-present player actor.
     /// Recording the identical decision again is a no-op; a different one conflicts.
     pub fn record_control_loss(

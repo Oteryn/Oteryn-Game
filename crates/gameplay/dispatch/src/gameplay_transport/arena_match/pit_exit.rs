@@ -30,6 +30,7 @@ pub(super) fn owns_exit(
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn step_arena_exit(
         &self,
+        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         entered: crate::foundation::MovementPositionSnapshot,
@@ -45,7 +46,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let cause = durable::MatchCause::Step { command, actor: actor.placement_identity(), revision: entered.revision(), epoch: self.reset_epoch };
         let Ok(payload) = wire::encode_match_request(A::Advance) else { return entered; };
-        let _ = self.arena_match_native(caller, cause, A::Advance, &payload, Some(entered)).await;
+        let _ = self.arena_match_native(caller, cause, A::Advance, &payload, Some(entered), Some(permit)).await;
         self.runtime.lock().await.read_actor_position(actor).unwrap_or(entered)
     }
 }

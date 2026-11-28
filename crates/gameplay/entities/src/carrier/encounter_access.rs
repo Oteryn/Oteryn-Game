@@ -16,6 +16,44 @@ pub struct StagedQuestEncounter<'owner, T> {
 }
 
 impl<'owner, T> StagedQuestEncounter<'owner, T> {
+    pub(super) fn new(
+        runtime: &'owner mut ChannelRuntimeV1,
+        carrier: ChannelActorCarrier,
+        output: (Vec<MovementPositionSnapshot>, T),
+    ) -> Self {
+        Self {
+            runtime,
+            carrier,
+            output,
+        }
+    }
+
+    pub fn prepared(&self) -> &T {
+        &self.output.1
+    }
+
+    /// Observe the original owner, before any staged replacement is published.
+    pub fn retains_creature(&self, actor: ExactActorRef) -> bool {
+        self.runtime.contains_live_creature(actor) || self.runtime.corpse_projection_pinned(actor)
+    }
+
+    /// Keep an identity used by a durable write retired even if staging is dropped.
+    /// Only the generation advances in the live carrier; the slot remains vacant.
+    pub fn retain_spawn_generation(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
+        let index = self
+            .carrier
+            .validate_ref(&self.runtime.continuity, actor.0)?;
+        let Slot::VacantReusable { generation, .. } = &mut self.runtime.carrier.slots[index] else {
+            return Err(CarrierError::PlanConflict);
+        };
+        let staged_generation = actor.actor_local_generation();
+        if generation.checked_add(1) != Some(staged_generation) {
+            return Err(CarrierError::PlanConflict);
+        }
+        *generation = staged_generation;
+        Ok(())
+    }
+
     pub fn publish(
         self,
     ) -> (

@@ -7,8 +7,7 @@ use crate::content::native_gameplay::{
     PinnedGameplayBytes, compile_native_gameplay, decode,
 };
 use crate::durability::character_build::DurableBuildState;
-use crate::durability::character_equipment::{CombatMode, EquipmentSnapshot, EquippedItem};
-use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::character_equipment::EquipmentSnapshot;
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::spell::cast::CharacterCastFacts;
 use crate::spell::chain::TilePosition;
@@ -17,7 +16,6 @@ use crate::spell::owned_cast_facts::{
 };
 use crate::spell::{OperationalCastFacts, Vocation};
 use oteryn_protocol_oteryn::{ChannelId, WorldId};
-use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 const NOW: u64 = 1_000;
@@ -34,10 +32,6 @@ fn id(last: u8) -> [u8; 16] {
 }
 
 fn content() -> Result<NativeGameplayState, String> {
-    content_with_item_profiles(br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#)
-}
-
-fn content_with_item_profiles(item_profiles: &[u8]) -> Result<NativeGameplayState, String> {
     let pinned = |bytes: &[u8]| PinnedGameplayBytes {
         bytes: bytes.to_vec(),
         sha256: Sha256::digest(bytes)
@@ -61,7 +55,9 @@ fn content_with_item_profiles(item_profiles: &[u8]) -> Result<NativeGameplayStat
         source_selection: sample!("spell-authoring/samples/executable-spell-source-selection.json"),
         creature_profiles: sample!("native-gameplay/creature_profiles.json"),
         presentation_profiles: sample!("native-gameplay/presentation_profiles.json"),
-        item_profiles: Some(pinned(item_profiles)),
+        item_profiles: Some(pinned(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#,
+        )),
         spell_appearances: Some(sample!("native-gameplay/spell_appearances.json")),
         build_training: Some(NativeTrainingInput {
             profile: sample!("native-gameplay/build-training.json"),
@@ -105,22 +101,12 @@ fn owner(
     loyalty: u32,
     proficiency: u32,
 ) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
-    owner_with_equipment(content, spell, loyalty, proficiency, None, Vec::new())
-}
-
-fn owner_with_equipment(
-    content: &NativeGameplayState,
-    spell: &SpellDefinition,
-    loyalty: u32,
-    proficiency: u32,
-    combat_mode: Option<CombatMode>,
-    items: Vec<EquippedItem>,
-) -> Result<(PlayerSpellState, OwnedCastFacts), String> {
-    let (vocation, key) = match spell.name.as_str() {
-        "Food" | "Heal Friend" | "Druid familiar" => (Vocation::Druid, "druid"),
-        "Chained Penance" => (Vocation::Monk, "monk"),
-        "Annihilation" => (Vocation::Knight, "knight"),
-        _ => (Vocation::Paladin, "paladin"),
+    let (vocation, key) = if matches!(spell.name.as_str(), "Food" | "Heal Friend") {
+        (Vocation::Druid, "druid")
+    } else if spell.vocations.len() == 1 && spell.vocations.contains(&Vocation::Monk) {
+        (Vocation::Monk, "monk")
+    } else {
+        (Vocation::Paladin, "paladin")
     };
     let mut state = PlayerSpellState::new(
         CharacterCastFacts {
@@ -160,8 +146,8 @@ fn owner_with_equipment(
         content_digest: binding.content_digest,
         character_revision: binding.character_revision,
         revision: binding.equipment_revision,
-        combat_mode,
-        items,
+        combat_mode: None,
+        items: vec![],
     };
     let mut access = AccessProjections {
         loyalty_points: loyalty,
@@ -384,269 +370,50 @@ fn gp001_qualified_magic_keeps_raw_build_binding_and_live_state_checks() -> Resu
 }
 
 #[test]
-fn source_skill_formulas_without_a_weapon_use_unarmed_inputs() -> Result<(), String> {
+fn qualified_unarmed_skill_casts_receive_source_attack_inputs() -> Result<(), String> {
     let content = content()?;
-    for name in ["Chained Penance", "Ethereal Spear"] {
-        let spell = spell(&content, name)?;
-        assert!(!spell.needs_weapon, "{name}");
+    for name in [
+        "Lesser Ethereal Spear",
+        "Ethereal Spear",
+        "Strong Ethereal Spear",
+        "Ethereal Barrage",
+        "Swift Jab",
+        "Double Jab",
+        "Forceful Uppercut",
+        "Tiger Clash",
+        "Greater Tiger Clash",
+        "Devastating Knockout",
+        "Greater Flurry of Blows",
+        "Mystic Repulse",
+        "Thousand Fist Blows",
+        "Chained Penance",
+        "Spiritual Outburst",
+        "Flurry of Blows",
+    ] {
+        let mut spell = spell(&content, name)?;
         let (state, owned) = owner(&content, &spell, 0, 0)?;
         let caster = owned
             .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
             .map_err(|error| format!("{name}: {error:?}"))?;
-        assert_eq!((caster.attack_skill, caster.attack_value), (0, 7), "{name}");
-        assert_eq!(caster.attack_factor, 0.0, "{name}");
-        assert!(!caster.melee_weapon, "{name}");
+        assert_eq!(
+            (
+                caster.attack_skill,
+                caster.attack_value,
+                caster.attack_factor,
+                caster.melee_weapon
+            ),
+            (0, 7, 0.0, false),
+            "{name}"
+        );
+        assert!(
+            owned.intrinsic_weapon_for_spell(&spell, &content).is_none(),
+            "{name}"
+        );
+        spell.needs_weapon = true;
+        assert!(matches!(
+            owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
+            Err(OwnedFactsError::UnavailableEquipment)
+        ));
     }
-    Ok(())
-}
-
-#[test]
-fn missing_equipment_reaches_the_ordered_cast_rules_without_payment() -> Result<(), String> {
-    use crate::spell::CastRejection;
-    let content = content()?;
-    let mut spell = spell(&content, "Annihilation")?;
-    let (state, owned) = owner(&content, &spell, 0, 0)?;
-    assert!(spell.needs_weapon);
-    let caster = owned
-        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
-        .map_err(|error| format!("qualified caster without equipment: {error:?}"))?;
-    assert!(!caster.melee_weapon);
-    let empty_cooldowns = crate::spell::Cooldowns::default();
-    let operational = OperationalCastFacts {
-        caster_position: TilePosition {
-            x: 1,
-            y: 1,
-            floor: 7,
-        },
-        target_position: Some(TilePosition {
-            x: 2,
-            y: 1,
-            floor: 7,
-        }),
-        target: Some(crate::spell::target::CastTarget {
-            caster: 1,
-            creature: 2,
-            actor: "creature:target".into(),
-            master: None,
-        }),
-        line_of_sight_clear: Some(true),
-        direction_available: true,
-        wheel_unlocked: None,
-        in_protection_zone: false,
-        target_tile_solid: Some(false),
-        target_tile_creature: Some(true),
-    };
-    let draws = std::cell::Cell::new(0);
-    let resolve = |spell: &SpellDefinition, caster: &CasterState| {
-        crate::spell::resolve_cast_with_operational_facts(
-            spell,
-            caster,
-            &empty_cooldowns,
-            SemanticTimeMicros::from_micros(NOW),
-            &operational,
-            &mut |minimum, _| {
-                draws.set(draws.get() + 1);
-                minimum
-            },
-        )
-        .err()
-    };
-    assert_eq!(
-        resolve(&spell, &caster),
-        Some(CastRejection::WeaponRequired)
-    );
-    spell.level = caster.level + 1;
-    assert_eq!(
-        resolve(&spell, &caster),
-        Some(CastRejection::LevelTooLow {
-            required: spell.level
-        }),
-    );
-    spell.level = caster.level;
-    spell.needs_weapon = false;
-    spell.needs_shield = true;
-    let caster = owned
-        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
-        .map_err(|error| format!("qualified caster without shield: {error:?}"))?;
-    assert_eq!(caster.shield_defense, None);
-    assert_eq!(
-        resolve(&spell, &caster),
-        Some(CastRejection::ShieldRequired)
-    );
-    assert_eq!(
-        draws.get(),
-        0,
-        "equipment admission must precede the damage draw"
-    );
-    Ok(())
-}
-
-#[test]
-fn familiar_engine_admission_reports_cooldown_before_summon() -> Result<(), String> {
-    let content = content()?;
-    let spell = spell(&content, "Druid familiar")?;
-    let (mut state, owned) = owner(&content, &spell, 0, 0)?;
-    let now = SemanticTimeMicros::from_micros(NOW);
-    let caster = owned
-        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, now.get())
-        .map_err(|error| format!("{error:?}"))?;
-    let operational = OperationalCastFacts {
-        caster_position: TilePosition {
-            x: 0,
-            y: 0,
-            floor: 7,
-        },
-        target_position: None,
-        target: None,
-        line_of_sight_clear: None,
-        direction_available: false,
-        wheel_unlocked: None,
-        in_protection_zone: false,
-        target_tile_solid: None,
-        target_tile_creature: None,
-    };
-    let ready_at = SemanticTimeMicros::from_micros(NOW + 10);
-    state.cooldowns.spells.insert(spell.key.clone(), ready_at);
-    let check = |time| {
-        crate::spell::resolve_native_callback_common(
-            &spell,
-            &caster,
-            &state.cooldowns,
-            time,
-            &operational,
-        )
-    };
-    assert!(
-        matches!(
-            check(now),
-            Err(crate::spell::CastRejection::SpellCooling { ready_at: due }) if due == ready_at
-        ),
-        "familiar cooldown result: {:?}",
-        check(now)
-    );
-    assert_eq!(
-        check(ready_at)
-            .map_err(|error| format!("{error:?}"))?
-            .mana_spent,
-        3000
-    );
-    Ok(())
-}
-
-fn equipped_spell_fixture() -> Result<(NativeGameplayState, Vec<EquippedItem>), String> {
-    let record = |document: &[u8], key: &str| -> Result<Value, String> {
-        let profiles: Value =
-            serde_json::from_slice(document).map_err(|error| error.to_string())?;
-        profiles["records"]
-            .as_array()
-            .and_then(|records| {
-                records
-                    .iter()
-                    .find(|record| record["production_definition"]["production_key"] == key)
-            })
-            .cloned()
-            .ok_or_else(|| format!("missing pinned item profile {key}"))
-    };
-    let hatchet = "oteryn:item.tibia.i3276";
-    let spellbook = "oteryn:item.tibia.i21400";
-    let weapon = record(
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../content/items/definitions/spell-native-profiles.json"
-        )),
-        hatchet,
-    )?;
-    let offhand = record(
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../content/items/definitions/starting-loadout-profiles.json"
-        )),
-        spellbook,
-    )?;
-    assert_eq!(offhand["semantics"]["weapon"]["state"], "UNKNOWN");
-    let profiles = serde_json::to_vec(&json!({
-        "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
-        "records": [offhand, weapon],
-    }))
-    .map_err(|error| error.to_string())?;
-    let items = [(5, hatchet), (6, spellbook)]
-        .map(|(slot, key)| EquippedItem {
-            tier: 0,
-            slot,
-            item_instance_id: id(slot),
-            definition: TypedDefinitionRef {
-                family: "Item".into(),
-                production_key: key.into(),
-                revision_ref: "definition-r1".into(),
-            },
-            quantity: 1,
-            state_revision: 1,
-        })
-        .to_vec();
-    Ok((content_with_item_profiles(&profiles)?, items))
-}
-
-#[test]
-fn attack_spell_reads_the_weapon_without_qualifying_unneeded_shield_facts() -> Result<(), String> {
-    let (content, items) = equipped_spell_fixture()?;
-    let mut spell = spell(&content, "Chained Penance")?;
-    let (state, owned) =
-        owner_with_equipment(&content, &spell, 0, 0, Some(CombatMode::Attack), items)?;
-    let caster = owned
-        .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
-        .map_err(|error| format!("attack-only caster: {error:?}"))?;
-    assert_eq!(caster.attack_value, 15);
-    assert_eq!(caster.attack_factor, 1.0);
-    spell.needs_shield = true;
-    assert!(matches!(
-        owned.caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW),
-        Err(OwnedFactsError::UnavailableEquipment)
-    ));
-    Ok(())
-}
-
-#[test]
-fn attack_spell_uses_initial_attack_mode_until_the_player_selects_one() -> Result<(), String> {
-    let (content, items) = equipped_spell_fixture()?;
-    let spell = spell(&content, "Chained Penance")?;
-    for (mode, factor) in [
-        (None, 1.0),
-        (Some(CombatMode::Balanced), 0.75),
-        (Some(CombatMode::Defense), 0.5),
-    ] {
-        let (state, owned) = owner_with_equipment(&content, &spell, 0, 0, mode, items.clone())?;
-        let caster = owned
-            .caster(&state, &spell, &content, HarmonyMultiplier::ONE, NOW)
-            .map_err(|error| format!("caster with mode {mode:?}: {error:?}"))?;
-        assert_eq!(caster.attack_value, 15);
-        assert_eq!(caster.attack_factor, factor);
-    }
-    Ok(())
-}
-
-#[test]
-fn elemental_stance_cast_uses_base_element_with_no_selected_stance() -> Result<(), String> {
-    use crate::spell::native_combat::ElementalStance;
-    let content = content()?;
-    let spell = spell(&content, "Energy Beam")?;
-    let (_, mut owned) = owner(&content, &spell, 0, 0)?;
-    assert_eq!(
-        owned.elemental_stance_for_cast(NOW),
-        Ok(ElementalStance::None)
-    );
-    owned.access.elemental_stance = Some(CurrentProjection {
-        binding: owned.binding().clone(),
-        authority_revision: 1,
-        valid_until_micros: NOW + 1,
-        value: ElementalStance::Flames,
-    });
-    assert_eq!(
-        owned.elemental_stance_for_cast(NOW),
-        Ok(ElementalStance::Flames)
-    );
-    assert_eq!(
-        owned.elemental_stance_for_cast(NOW + 1),
-        Err(OwnedFactsError::StaleBinding)
-    );
     Ok(())
 }

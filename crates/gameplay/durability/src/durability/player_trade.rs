@@ -290,7 +290,7 @@ impl DurabilityRoot {
                     let result = snapshot::read_leaves(&mut tx, &[fence], [item])
                         .await?
                         .map(|[leaf]| leaf);
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -341,7 +341,7 @@ impl DurabilityRoot {
                     let result = snapshot::destinations(&mut tx, &fences, *content, &leaves)
                         .await?
                         .map(|_| leaves);
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })
@@ -380,7 +380,7 @@ impl DurabilityRoot {
                         return Ok(Err(Refusal::Rejected));
                     }
                     let leaves = snapshot::read_pair(&mut tx, &fences, items).await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(leaves)
                 })
             })
@@ -456,7 +456,7 @@ impl DurabilityRoot {
                     super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
                     storage::lock_occurrence(&mut tx, request.occurrence_id).await?;
                     let result = storage::lookup(&mut tx, &request, &request.binding()?).await?;
-                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    super::db::commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

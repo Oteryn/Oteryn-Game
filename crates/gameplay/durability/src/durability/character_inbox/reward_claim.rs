@@ -19,6 +19,7 @@
 //! this path. The existing CHEST backpack commit must never be followed by a
 //! separate Inbox commit and described as an atomic reward delivery.
 
+use crate::durability::db::commit_semantic_read;
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::super::db::{
     begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
@@ -466,7 +467,7 @@ impl DurabilityRoot {
                     lock_admission_relations(&mut tx).await?;
                     lock_reward_claim_cause(&mut tx, plan.command).await?;
                     let result = lookup_plan(&mut tx, &plan, &plan.binding()).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(result)
                 })
             })

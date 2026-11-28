@@ -36,6 +36,9 @@ def build(root):
         if name=='reward':
             row['storage'].append({'track':'oteryn:quest-progress/hero_rathleton/access_door','minimum':-1,'maximum':1,'set':1})
             row['completes']=True
+            row['achievements']=['oteryn:achievement/the_professor_s_nut']
+            row['sources']=[*sources,
+                'crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_reward.lua:2-12,18']
             row['item_reward']={'item':'oteryn:item.tibia.i21897','count':1,'contents':[],
                 'backpack_outputs':[{'item':'oteryn:item.tibia.i21203','count':1} for _ in range(4)]+[{'item':'oteryn:item.tibia.i3035','count':5}]}
         rows.append(row)

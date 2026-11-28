@@ -31,6 +31,28 @@ pub(super) async fn test_analyser_route(
     }
 }
 
+#[cfg(test)]
+pub(super) async fn test_use_frame(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    frame: &[u8],
+    items: &mut Option<SessionItemView>,
+) -> Option<UseOutcome> {
+    let command = crate::foundation::decode_wire_envelope(frame)
+        .ok()?
+        .client_command(admitted.continuity.connection_generation)
+        .ok()?;
+    if command.command_type != oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT {
+        return None;
+    }
+    let actor = admitted.runtime_actor?;
+    match routing::use_item::route(owner, actor, admitted, command, items, &mut None, &None).await?
+    {
+        routing::Dispatch::Use(outcome) => Some(outcome),
+        _ => None,
+    }
+}
+
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
@@ -334,6 +356,7 @@ pub struct SessionContinuity {
     pub overlay_revision: u64,
     /// Last complete own-actor vitals state actually transmitted.
     pub vitals_revision: u64,
+    pub cooldown_revision: u64,
     /// `ACCOUNT_ACHIEVEMENT_NOTICES` (domain 13, ACHIEVEMENT-0 §5): `None` when the session did
     /// not select capability 8, which production never does before capability negotiation is
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
@@ -342,6 +365,10 @@ pub struct SessionContinuity {
     /// CAP-NEG-1: the capabilities selected at this GameSession's fresh admission. A resume or
     /// channel transfer carries them unchanged and never widens them.
     pub selected_capabilities: SelectedCapabilities,
+    /// Whether this transport still owes the durable first-input receipt for
+    /// a House handoff. A replacement cannot clear the old transport's flag.
+    /// None preserves the admission authority's guard for other owners.
+    pub house_input_pending: Option<bool>,
     /// ITEM-VIEW-1b: the item handle counter, the domain 9 and 11 high-water revisions and the
     /// open corpse. Used only with capability 4; a resume or channel transfer carries it.
     pub item_view: ItemViewContinuity,
@@ -396,8 +423,10 @@ impl SessionContinuity {
         presentation_revision: 0,
         overlay_revision: 0,
         vitals_revision: 0,
+        cooldown_revision: 0,
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
+        house_input_pending: None,
         item_view: ItemViewContinuity {
             handle_counter: 0,
             inventory_revision: 0,

@@ -324,6 +324,18 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             },
         }),
     );
+    // Crystal register_actions.lua:441-447 opens Zirella's tutorial pile to 594.
+    bindings.push(TerrainToolBinding {
+        tool: TerrainTool::Shovel,
+        target: 7749,
+        required_action: None,
+        transformed: 594,
+        yield_item: None,
+        decay: vec![DecayStep {
+            state: 7749,
+            after: Duration::from_secs(30),
+        }],
+    });
     // Crystal their_masters_voice.lua:43,111-127. The encounter's one-hour reset is
     // shared, so these individual mutations must not invent independent regrowth clocks.
     bindings.extend((12059..=12063).map(|target| TerrainToolBinding {
@@ -429,6 +441,19 @@ pub fn voice_mage(draw: u64) -> VoiceSpawn {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn zirella_shovel_opens_the_tutorial_pile_for_thirty_seconds() -> Result<(), String> {
+        let catalogue = crystal_core_bindings();
+        let plan = dispatch(&catalogue, "oteryn:item.tibia.i3457", 7749, None, 1000)
+            .ok_or("Zirella shovel binding")?;
+        assert_eq!(plan.binding.transformed, 594);
+        assert_eq!(plan.first_deadline_unix_ms, Some(31_000));
+        assert_eq!(plan.binding.decay[0].state, 7749);
+        assert!(plan.binding.yield_item.is_none());
+        assert!(dispatch(&catalogue, "oteryn:item.tibia.i3456", 7749, None, 1000).is_none());
+        Ok(())
+    }
 
     #[test]
     fn source_decay_chains_follow_transformed_item_definitions() {

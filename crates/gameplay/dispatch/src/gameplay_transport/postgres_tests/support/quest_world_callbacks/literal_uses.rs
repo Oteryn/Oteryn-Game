@@ -12,9 +12,48 @@ pub(in super::super) fn exercise(
     stage: Option<i64>,
     main_era_save: bool,
 ) -> TestResult {
+    exercise_case(callback, appearance, ordinal, stage, main_era_save, None)
+}
+
+pub(in super::super) fn postman_mailbox(
+    callback: Callback,
+    stage: i64,
+    selected: &str,
+) -> TestResult {
+    let native = callback.selector.native.as_ref().ok_or("native mailbox")?;
+    let (appearance, ordinal) = (native.appearance, native.ordinal);
+    exercise_case(
+        callback,
+        appearance,
+        ordinal,
+        Some(stage),
+        false,
+        Some(selected),
+    )
+}
+
+fn exercise_case(
+    callback: Callback,
+    appearance: u16,
+    ordinal: u8,
+    stage: Option<i64>,
+    main_era_save: bool,
+    mailbox_selection: Option<&str>,
+) -> TestResult {
     let started = std::time::Instant::now();
-    let trigger = callback.selector.position.ok_or("position")?;
-    let world = world_ordinal(&callback, trigger, appearance, ordinal)?;
+    let trigger = callback
+        .selector
+        .position
+        .or_else(|| callback.selector.native.as_ref().map(|native| native.position))
+        .ok_or("position")?;
+    let world = if mailbox_selection.is_some() {
+        // The native mailbox in the bundle has no legacy startup action.
+        let mut base = callback.clone();
+        base.selector.action = None;
+        world_ordinal(&base, trigger, appearance, ordinal)?
+    } else {
+        world_ordinal(&callback, trigger, appearance, ordinal)?
+    };
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "quest_world_callbacks", false, false)
             .await?;
@@ -149,13 +188,20 @@ pub(in super::super) fn exercise(
                 QuestTransition,
             };
             let storage = callback.storage.first().ok_or("guard storage")?;
+            // Advance the fixture revision before loading a mailbox's persisted
+            // predecessor. The actual Postman tracks are owned by their callbacks.
+            let (quest, track) = if mailbox_selection.is_some() {
+                ("oteryn:quest.fixture_mailbox_setup", "oteryn:quest-progress/fixture/mailbox-setup")
+            } else {
+                (callback.quest.as_str(), storage.track.as_str())
+            };
             let seed = "oteryn:quest-transition/fixture/passage-stage";
             let catalogue = std::sync::Arc::new(
                 QuestStateCatalogue::new(
                     "content-1",
                     vec![QuestTrack {
-                        key: storage.track.clone(),
-                        quest: callback.quest.clone(),
+                        key: track.into(),
+                        quest: quest.into(),
                         initial: -1,
                         min: -1,
                         max: 13,
@@ -163,9 +209,9 @@ pub(in super::super) fn exercise(
                     vec![QuestTransition {
                         world_change: None,
                         key: seed.into(),
-                        quest: callback.quest.clone(),
+                        quest: quest.into(),
                         effects: vec![QuestEffect {
-                            track: storage.track.clone(),
+                            track: track.into(),
                             from: QuestComparison::Between(-1, 13),
                             effect: QuestEffectKind::Set(stage),
                         }],
@@ -194,7 +240,7 @@ pub(in super::super) fn exercise(
                     catalogue.clone(),
                 )
                 .await
-                .map_err(debug)?;
+                .map_err(|error| format!("seed {}: {error:?}", callback.key))?;
             assert!(matches!(
                 seeded,
                 crate::durability::quest_state::QuestTransitionOutcome::Committed(_)
@@ -246,7 +292,7 @@ pub(in super::super) fn exercise(
                 save.commit().await?;
                 historical_hash = Some(hash);
                 owner.quest_catalogue = Some(std::sync::Arc::new(active));
-            } else {
+            } else if mailbox_selection.is_none() {
                 owner.quest_catalogue = Some(catalogue);
             }
         }
@@ -269,6 +315,17 @@ pub(in super::super) fn exercise(
             placement,
             expected_revision: 0,
         };
+        if let Some(selected) = mailbox_selection {
+            let result = super::super::postman_mailbox_fixtures::exercise(
+                &h, &mut owner, admitted, &callback, target, stage.ok_or("mailbox stage")?, selected,
+            )
+            .await;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return result;
+        }
         let before = owner
             .root
             .read_character_quest_state(&authority, fence.character_id)
