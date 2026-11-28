@@ -32,7 +32,12 @@ pub(super) async fn current_tier(
     let fence = gameplay_fence(owner, admitted).await?;
     owner
         .root
-        .next_store_xp_boost_tier(owner.character, owner.holder, fence)
+        .next_store_xp_boost_tier(
+            owner.character,
+            owner.holder,
+            fence,
+            *admitted.channel_id.as_bytes(),
+        )
         .await
         .ok()?
 }
@@ -48,32 +53,32 @@ pub(super) async fn purchase(
     let character = admitted.item_fence?.character_id;
     let world = *admitted.world_id.as_bytes();
     let enabled = owner.store_purchases == StorePurchaseMode::Enabled;
-    let Some(platform) = owner.store.as_ref() else {
-        return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled));
-    };
+    let platform = owner.store.as_ref();
     let active = CATALOGUE.as_ref()?;
-    let catalogue = std::iter::once(active)
-        .chain(PREDECESSOR_CATALOGUES.iter().flatten())
-        .find(|catalogue| catalogue.rules.revision() == request.catalog_revision);
-    let Some(quote) = catalogue.and_then(|catalogue| {
-        rules::build_quote(
-            &catalogue.rules,
+    let is_new_quote = request.catalog_revision == active.rules.revision()
+        && rules::build_quote(
+            &active.rules,
             &request.offer_key,
             &rules::CharacterStoreView::default(),
         )
-        .ok()
-    }) else {
-        return Some(refusal(wire::StorePurchaseCode::StaleQuote));
-    };
-    if request.price != quote.price || request.currency != currency_text(quote.currency) {
+        .is_ok_and(|quote| {
+            quote.price == request.price && request.currency == currency_text(quote.currency)
+        });
+    if request.currency != currency_text(rules::CurrencyKind::TibiaCoin) {
         return Some(refusal(wire::StorePurchaseCode::StaleQuote));
     }
-    let binding = rules::PurchaseStoreOffer::from_quote(
-        rules::PurchaseRequestId::from_bytes(request.purchase_request_id).ok()?,
-        crate::domain::AccountId::from_bytes(account).ok()?,
-        character,
-        quote,
-    );
+    // The saved request validates the immutable quote on replay, including revisions
+    // that have since left the browse catalogue. Only a new debit needs an active quote.
+    let binding = rules::PurchaseStoreOffer {
+        purchase_request_id: rules::PurchaseRequestId::from_bytes(request.purchase_request_id)
+            .ok()?,
+        account_id: crate::domain::AccountId::from_bytes(account).ok()?,
+        character_id: character,
+        offer_key: request.offer_key.clone(),
+        catalog_revision: request.catalog_revision.clone(),
+        price: request.price,
+        currency: rules::CurrencyKind::TibiaCoin,
+    };
     let mut pending = PendingStoreHuntingPurchase {
         request: PurchaseRequest {
             purchase_request_id: request.purchase_request_id,
@@ -141,9 +146,9 @@ pub(super) async fn purchase(
                     .ok()?;
             }
             pending.request = original;
-        } else if !enabled {
+        } else if !enabled || platform.is_none() {
             return Some(refusal(wire::StorePurchaseCode::PurchaseDisabled));
-        } else if pending.catalog_revision != active.rules.revision() {
+        } else if !is_new_quote {
             return Some(refusal(wire::StorePurchaseCode::StaleQuote));
         }
     }
@@ -155,7 +160,7 @@ pub(super) async fn purchase(
         .ok()?;
     let saved = match state {
         PurchaseRequestState::Answered(answer) => answer,
-        PurchaseRequestState::Sent if !enabled => {
+        PurchaseRequestState::Sent if !enabled || platform.is_none() => {
             // Restore reconciliation owns unproven debits in this mode.
             return None;
         }
@@ -170,14 +175,15 @@ pub(super) async fn purchase(
                     StoreHuntingPurchase {
                         request: pending.request.clone(),
                         offer_key: pending.offer_key.clone(),
-                        allow_new: pending.catalog_revision == active.rules.revision(),
+                        allow_new: is_new_quote,
                         catalog_revision: pending.catalog_revision.clone(),
                         price: pending.price,
                     },
                     &crate::gameplay_transport::prey::Premium(owner.premium_coordinator),
+                    *admitted.channel_id.as_bytes(),
                 )
                 .await
-                .ok()?;
+                .ok()??;
             if !reserved {
                 if let Some(answer) = owner
                     .root
@@ -207,7 +213,7 @@ pub(super) async fn purchase(
                 .await
                 .ok()?
             {
-                let mut client = platform.lock().await;
+                let mut client = platform?.lock().await;
                 send(owner.root, &mut client, &pending).await?
             } else {
                 owner
@@ -232,6 +238,7 @@ pub(super) async fn purchase(
     {
         return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
     }
+    let platform = platform?;
     let source = platform
         .lock()
         .await
@@ -267,6 +274,7 @@ pub(super) async fn purchase(
                     purchase_request_id: pending.request.purchase_request_id,
                     offer_key: pending.offer_key,
                 },
+                *admitted.channel_id.as_bytes(),
             )
             .await
             .ok()?

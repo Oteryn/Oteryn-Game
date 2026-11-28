@@ -355,3 +355,20 @@ pub(super) async fn house_scenario(
     }
     Ok(())
 }
+
+pub(super) async fn house_hunting_checkout(h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '_>, mut admitted: AdmittedSession) -> TestResult {
+    super::daily_reward_fixtures::epoch(h, 1).await?;
+    for (seed, offer, price) in [
+        (54, "store:prey-wildcards:1", 10),
+        (55, "store:permanent-prey-slot", 900),
+        (56, "store:xp-boost:1", 30),
+    ] {
+        let request = super::store_fixtures::purchase_request(seed, offer, price)?;
+        let result = super::store_fixtures::purchase(owner, &mut admitted, request).await?;
+        assert_eq!(result.code, wire::StorePurchaseCode::Accepted, "House checkout for {offer}");
+    }
+    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM store_delivery_receipts")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(receipts, 3);
+    Ok(())
+}

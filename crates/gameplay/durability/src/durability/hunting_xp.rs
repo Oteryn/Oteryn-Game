@@ -21,7 +21,7 @@ pub struct HuntingXpModifiers {
 pub(super) struct HuntingActivity<'a> {
     pub death: &'a [u8],
     pub at_ms: i64,
-    pub elapsed_ms: u64,
+    pub spans_ms: &'a [[u64; 2]],
     pub earns_experience: bool,
 }
 
@@ -47,13 +47,24 @@ pub(super) async fn read_in_transaction(
     // OFFLINE-0 §3 defines this absent-build-row seed. Reading it never creates a build
     // row or invents a hunting tick; build/stamina writers own that lifecycle.
     if activity.earns_experience {
-        let elapsed = i64::try_from(activity.elapsed_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let (starts, ends): (Vec<i64>, Vec<i64>) = activity
+            .spans_ms
+            .iter()
+            .map(|[start, end]| {
+                let clip = |age| i64::try_from(age).unwrap_or(i64::MAX).min(activity.at_ms);
+                (activity.at_ms - clip(*start), activity.at_ms - clip(*end))
+            })
+            .unzip();
         sqlx::query(
-            "SELECT game_consume_store_hunting_time($1, encode($2,'hex')::uuid,
-                encode($3,'hex')::uuid, $4, $5, $6)",
-        ).bind(activity.death).bind(fence.character_id.as_bytes().as_slice())
-            .bind(fence.game_session_id.as_bytes().as_slice()).bind(activity.at_ms)
-            .bind(elapsed.min(activity.at_ms)).bind(stamina).execute(&mut **tx).await?;
+            "SELECT game_consume_store_hunting_time($1, encode($2,'hex')::uuid, $3, $4, $5)",
+        )
+        .bind(activity.death)
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(activity.at_ms)
+        .bind(&starts)
+        .bind(&ends)
+        .execute(&mut **tx)
+        .await?;
     }
     let mut result = HuntingXpModifiers {
         prey_slot: None,

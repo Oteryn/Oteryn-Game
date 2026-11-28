@@ -11,6 +11,8 @@ impl PlayLink {
         lock(&self.mailbox).store.clone()
     }
 }
+#[path = "confirmation.rs"]
+pub(super) mod confirmation;
 #[path = "native.rs"]
 pub(in crate::play) mod native;
 

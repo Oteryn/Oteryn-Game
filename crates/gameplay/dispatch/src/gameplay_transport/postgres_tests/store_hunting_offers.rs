@@ -24,6 +24,8 @@ enum Offer {
     AbandonedHold,
     RefusedHold,
     RestoredHold,
+    RestoredUnboundHold,
+    ExpiredDailyHold,
 }
 
 #[test]
@@ -88,6 +90,33 @@ fn store_hunting_restore_worker_releases_a_paid_hold_without_a_receipt() -> Test
         return Ok(());
     };
     scenario(admin, Offer::RestoredHold)
+}
+
+#[test]
+fn store_hunting_restore_releases_sent_hold_before_operation_binding() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, Offer::RestoredUnboundHold)
+}
+
+#[test]
+fn store_hunting_expired_unsent_hold_cannot_reduce_daily_reward() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, Offer::ExpiredDailyHold)
+}
+
+#[test]
+fn store_hunting_offers_checkout_from_named_house() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::hireling_lifecycle_fixtures::run_case_with_admin(
+        super::hireling_lifecycle_fixtures::Case::HuntingStore,
+        admin,
+    )
 }
 
 #[test]
@@ -187,14 +216,25 @@ fn scenario(admin: String, offer: Offer) -> TestResult {
         .ok_or("Store and potion capabilities")?;
         super::journal_inventory::runtime_role(owner.root).await?;
 
-        if matches!(offer, Offer::RestoredHold) {
-            fail_wildcard_grant(&h).await?;
+        if matches!(offer, Offer::RestoredHold | Offer::RestoredUnboundHold) {
+            let unbound = matches!(offer, Offer::RestoredUnboundHold);
+            if unbound {
+                ledger.lock().map_err(debug)?.lose_debit_answer_once = true;
+            } else {
+                fail_wildcard_grant(&h).await?;
+            }
             serve(
                 &owner,
                 &mut admitted,
                 &[purchase_request(80, "store:prey-wildcards:1", 10)?],
             )
             .await?;
+            let bound: bool = sqlx::query_scalar(
+                "SELECT operation_id IS NOT NULL FROM game_store_hunting_pending WHERE sent",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(bound, !unbound);
             drop(owner);
             drop(authority);
             let predecessor = seal.record().recovery_generation;
@@ -220,7 +260,8 @@ fn scenario(admin: String, offer: Offer) -> TestResult {
             }
             Offer::AbandonedHold => abandoned_hold(&h, &owner, &mut admitted).await?,
             Offer::RefusedHold => refused_hold(&h, &owner, &mut admitted, &ledger).await?,
-            Offer::RestoredHold => {
+            Offer::ExpiredDailyHold => expired_daily_hold(&h, &owner, &mut admitted).await?,
+            Offer::RestoredHold | Offer::RestoredUnboundHold => {
                 return Err("restore requires an unsealed recovery authority".into());
             }
         }
@@ -230,7 +271,8 @@ fn scenario(admin: String, offer: Offer) -> TestResult {
             Offer::Wildcards => [vec![10; 5], vec![50; 9]].concat(),
             Offer::LostDebit | Offer::UnavailableGrant | Offer::AbandonedHold => vec![10],
             Offer::RefusedHold => vec![50; 9],
-            Offer::RestoredHold => vec![10],
+            Offer::RestoredHold | Offer::RestoredUnboundHold => vec![10],
+            Offer::ExpiredDailyHold => [vec![50; 9], vec![10; 4]].concat(),
         };
         assert_eq!(ledger.lock().map_err(debug)?.debits, expected);
         let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_store_hunting_pending")
@@ -334,28 +376,38 @@ async fn xp_boost(
     sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT clock_timestamp() + interval '3 hours' $$")
         .execute(&h.pool).await?;
     assert_eq!(boost_remaining(owner, admitted).await?, Some(3_600_000));
-    for (seed, delta, stamina) in [
-        (201, 5_000, 840),
-        (202, 35_000, 840),
-        (203, 65_000, 839),
-        (204, 95_000, 840),
+    for (seed, delta, stamina, spans) in [
+        (201, 5_000, 840, &[][..]),
+        (202, 35_000, 840, &[[30_000, 0]][..]),
+        (203, 65_000, 839, &[[5_000, 0]][..]),
+        (204, 95_000, 840, &[][..]),
     ] {
-        let percent = settle_kill(h, owner, admitted, seed, started + delta, stamina).await?;
+        let percent =
+            settle_kill_with_activity(h, owner, admitted, (seed, started + delta, stamina, spans))
+                .await?;
         assert_eq!(percent, if stamina < 840 { 0 } else { 50 });
     }
-    assert_eq!(boost_remaining(owner, admitted).await?, Some(3_570_000));
+    assert_eq!(
+        boost_remaining(owner, admitted).await?,
+        Some(3_565_000),
+        "crossing below fourteen hours still consumes the five seconds hunted before the kill"
+    );
     settle_kill(h, owner, admitted, 204, started + 95_000, 840).await?;
-    assert_eq!(boost_remaining(owner, admitted).await?, Some(3_570_000));
+    assert_eq!(boost_remaining(owner, admitted).await?, Some(3_565_000));
 
     sqlx::query("UPDATE game_character_store_hunting_boosts SET remaining_ms=1000")
         .execute(&h.pool)
         .await?;
-    let expired =
-        settle_kill_with_activity(h, owner, admitted, (206, started + 175_000, 840, 80_000))
-            .await?;
+    let expired = settle_kill_with_activity(
+        h,
+        owner,
+        admitted,
+        (206, started + 250_000, 840, &[[155_000, 75_000]]),
+    )
+    .await?;
     assert_eq!(
         expired, 0,
-        "continuous hunting exhausted the purchased boost before this kill"
+        "the older combat span exhausted the boost before hunting resumed"
     );
     assert_eq!(boost_remaining(owner, admitted).await?, None);
     let results = serve(owner, admitted, &inputs).await?;
@@ -420,16 +472,16 @@ async fn settle_kill(
     at_ms: i64,
     stamina: u16,
 ) -> TestResult<i16> {
-    settle_kill_with_activity(h, owner, admitted, (seed, at_ms, stamina, 0)).await
+    settle_kill_with_activity(h, owner, admitted, (seed, at_ms, stamina, &[])).await
 }
 
 async fn settle_kill_with_activity(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
-    kill: (u8, i64, u16, u64),
+    kill: (u8, i64, u16, &[[u64; 2]]),
 ) -> TestResult<i16> {
-    let (seed, at_ms, stamina, elapsed_ms) = kill;
+    let (seed, at_ms, stamina, spans) = kill;
     let fence = crate::gameplay_transport::character_gameplay_fence::current(
         owner,
         admitted.game_session_id,
@@ -491,7 +543,7 @@ async fn settle_kill_with_activity(
                 premium: false,
                 forge_dust: None,
                 live_stamina: Some(stamina),
-                hunt_activity_ms: elapsed_ms,
+                hunt_spans_ms: spans.to_vec(),
                 shared: false,
                 party_id: None,
                 party_revision: None,
@@ -768,6 +820,22 @@ async fn heal_paid_purchase(
         balance, 1,
         "paid purchase recovers without the buyer's command or session"
     );
+    let (kind, payload) = &input[0];
+    let (status, result) = crate::gameplay_transport::store::execute_command(
+        owner,
+        *admitted,
+        admitted.continuity.next_command_id,
+        *kind,
+        payload,
+    )
+    .await
+    .ok_or("exact confirmation could not read its recovered grant")?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(
+        wire::decode_purchase_result(&result).map_err(debug)?.code,
+        wire::StorePurchaseCode::Accepted
+    );
+    assert_eq!(ledger.lock().map_err(debug)?.debits, [10]);
     Ok(())
 }
 
@@ -825,9 +893,11 @@ async fn reserve_unsent(
                     price: i64::try_from(price)?,
                 },
                 &crate::gameplay_transport::prey::Premium(None),
+                *admitted.channel_id.as_bytes(),
             )
             .await
             .map_err(debug)?
+            == Some(true)
     );
     Ok(())
 }
@@ -874,9 +944,6 @@ async fn refused_hold(
     admitted: &mut AdmittedSession,
     ledger: &Arc<Mutex<Ledger>>,
 ) -> TestResult {
-    use crate::durability::daily_reward_claim::DailyRewardClaimRequest;
-    use crate::durability::daily_reward_delivery::DailyRewardDeliveryPlan;
-    use crate::foundation::{CommandId, CommandRef};
     let key = "store:prey-wildcards:5";
     for seed in 80..89 {
         buy(
@@ -890,37 +957,8 @@ async fn refused_hold(
         .await?;
     }
     reserve_unsent(owner, admitted, 90, key, 50).await?;
-    let fence = admitted.item_fence.ok_or("daily fence")?;
-    let content =
-        crate::content::daily_reward::DailyRewardContent::catalogue().ok_or("daily content")?;
     for epoch in 1..=30_u8 {
-        if epoch > 1 {
-            super::daily_reward_fixtures::epoch(h, u64::from(epoch)).await?;
-        }
-        let command = CommandRef::new(
-            admitted.game_session_id,
-            CommandId::new(u64::from(epoch) + 1000).map_err(debug)?,
-        );
-        owner
-            .root
-            .commit_daily_reward_claim(
-                owner.character,
-                owner.holder,
-                fence,
-                DailyRewardClaimRequest {
-                    command,
-                    reset_epoch: u64::from(epoch),
-                    transaction_id: id(150 + epoch),
-                    request_binding: [epoch; 32],
-                },
-                DailyRewardDeliveryPlan {
-                    content_revision: content.revision.clone(),
-                    remote: false,
-                },
-                &PremiumDaily,
-            )
-            .await
-            .map_err(debug)?;
+        claim_daily(h, owner, admitted, epoch).await?;
         if summary(owner, admitted).await?.prey_wildcards == 47 {
             let credits: i64 = sqlx::query_scalar("SELECT coalesce(sum(requested),0) FROM game_account_prey_wildcard_entries WHERE kind='DAILY_REWARD'")
                 .fetch_one(&h.pool).await?;
@@ -943,6 +981,94 @@ async fn refused_hold(
         summary(owner, admitted).await?.prey_wildcards,
         52,
         "refusal restores the Daily Reward credits"
+    );
+    Ok(())
+}
+
+async fn claim_daily(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    epoch: u8,
+) -> TestResult {
+    use crate::durability::daily_reward_claim::DailyRewardClaimRequest;
+    use crate::durability::daily_reward_delivery::DailyRewardDeliveryPlan;
+    use crate::foundation::{CommandId, CommandRef};
+    let fence = admitted.item_fence.ok_or("daily fence")?;
+    let content =
+        crate::content::daily_reward::DailyRewardContent::catalogue().ok_or("daily content")?;
+    if epoch > 1 {
+        super::daily_reward_fixtures::epoch(h, u64::from(epoch)).await?;
+    }
+    let command = CommandRef::new(
+        admitted.game_session_id,
+        CommandId::new(u64::from(epoch) + 1000).map_err(debug)?,
+    );
+    owner
+        .root
+        .commit_daily_reward_claim(
+            owner.character,
+            owner.holder,
+            fence,
+            DailyRewardClaimRequest {
+                command,
+                reset_epoch: u64::from(epoch),
+                transaction_id: id(150 + epoch),
+                request_binding: [epoch; 32],
+            },
+            DailyRewardDeliveryPlan {
+                content_revision: content.revision.clone(),
+                remote: false,
+            },
+            &PremiumDaily,
+        )
+        .await
+        .map_err(debug)?;
+    Ok(())
+}
+
+async fn expired_daily_hold(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    use wire::StorePurchaseCode::Accepted;
+    for seed in 80..89 {
+        buy(
+            owner,
+            admitted,
+            seed,
+            "store:prey-wildcards:5",
+            50,
+            Accepted,
+        )
+        .await?;
+    }
+    for seed in 89..93 {
+        buy(
+            owner,
+            admitted,
+            seed,
+            "store:prey-wildcards:1",
+            10,
+            Accepted,
+        )
+        .await?;
+    }
+    assert_eq!(summary(owner, admitted).await?.prey_wildcards, 49);
+    reserve_unsent(owner, admitted, 93, "store:prey-wildcards:1", 10).await?;
+    sqlx::query(
+        "UPDATE game_store_hunting_pending SET reserved_at=clock_timestamp()-interval '1 minute'",
+    )
+    .execute(&h.pool)
+    .await?;
+    for epoch in 1..=6 {
+        claim_daily(h, owner, admitted, epoch).await?;
+    }
+    assert_eq!(
+        summary(owner, admitted).await?.prey_wildcards,
+        52,
+        "Daily Reward must see the full headroom before another checkout"
     );
     Ok(())
 }

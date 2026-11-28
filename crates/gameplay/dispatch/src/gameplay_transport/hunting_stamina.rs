@@ -21,23 +21,61 @@ pub(super) struct LiveStamina {
     minutes: u16,
     durable: u16,
     clock: HuntingClock,
-    store_hunt: Option<StoreHuntActivity>,
+    store_hunt: StoreHuntActivity,
     experience_started: bool,
     pending_gain: Option<(BuildOccurrence, u16, u16)>,
     pending_debit: Option<(BuildOccurrence, u16, u16)>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default)]
 struct StoreHuntActivity {
-    started: u64,
-    last: u64,
+    spans: Vec<std::ops::Range<u64>>,
 }
 
 impl StoreHuntActivity {
     const MAX_GAP_US: u64 = 60_000_000;
 
-    fn continuing_at(self, now: u64) -> bool {
-        now.checked_sub(self.last).is_some_and(|gap| gap <= Self::MAX_GAP_US)
+    fn observe(&mut self, now: u64) {
+        if let Some(span) = self.spans.last_mut() {
+            let Some(gap) = now.checked_sub(span.end) else {
+                return;
+            };
+            if gap <= Self::MAX_GAP_US {
+                span.end = now;
+                return;
+            }
+        }
+        self.spans.push(now..now);
+    }
+
+    fn spans_before_ms(&self, now: u64) -> Vec<[u64; 2]> {
+        self.spans
+            .iter()
+            .enumerate()
+            .map_while(|(index, span)| {
+                let start_age = now.checked_sub(span.start)? / 1000;
+                let end_age = now.saturating_sub(span.end);
+                let continues = index + 1 == self.spans.len() && end_age <= Self::MAX_GAP_US;
+                Some([start_age, if continues { 0 } else { end_age / 1000 }])
+            })
+            .filter(|[start, end]| start > end)
+            .collect()
+    }
+
+    fn settle(&mut self, now: u64) {
+        let latest = self.spans.len().saturating_sub(1);
+        let completed = self
+            .spans
+            .iter()
+            .enumerate()
+            .take_while(|(index, span)| {
+                span.end < now && (*index < latest || now - span.end > Self::MAX_GAP_US)
+            })
+            .count();
+        self.spans.drain(..completed);
+        if let Some(span) = self.spans.first_mut() {
+            span.start = span.start.max(now.min(span.end));
+        }
     }
 }
 
@@ -165,7 +203,7 @@ impl ChannelSpellStates {
                 minutes,
                 durable: minutes,
                 clock: HuntingClock::new(now),
-                store_hunt: None,
+                store_hunt: StoreHuntActivity::default(),
                 experience_started: false,
                 pending_gain: None,
                 pending_debit: None,
@@ -174,24 +212,31 @@ impl ChannelSpellStates {
     }
 
     pub(super) fn note_store_hunt(
-        &mut self, actor: ExactActorRef, session: GameSessionId, now: u64,
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
     ) {
-        if let Some(state) = self.hunting_stamina.iter_mut().find(|s| s.activity_matches(actor, session))
+        if let Some(state) = self
+            .hunting_stamina
+            .iter_mut()
+            .find(|s| s.activity_matches(actor, session))
             && state.minutes >= 840
-            && state.store_hunt.is_none_or(|activity| now >= activity.last)
         {
-            let started = state.store_hunt.filter(|activity| activity.continuing_at(now))
-                .map_or(now, |activity| activity.started);
-            state.store_hunt = Some(StoreHuntActivity { started, last: now });
+            state.store_hunt.observe(now);
         }
     }
 
-    pub(super) fn store_hunt_elapsed_ms(
-        &self, actor: ExactActorRef, session: GameSessionId, now: u64,
-    ) -> u64 {
-        self.hunting_stamina.iter().find(|s| s.activity_matches(actor, session))
-            .and_then(|s| s.store_hunt).filter(|activity| activity.continuing_at(now))
-            .map_or(0, |activity| (now - activity.started) / 1000)
+    pub(super) fn store_hunt_spans_ms(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+    ) -> Vec<[u64; 2]> {
+        self.hunting_stamina
+            .iter()
+            .find(|s| s.activity_matches(actor, session))
+            .map_or_else(Vec::new, |state| state.store_hunt.spans_before_ms(now))
     }
 
     /// Preview under the same runtime/state guards as the kill XP transaction.
@@ -227,7 +272,10 @@ impl ChannelSpellStates {
         {
             let (spent, next) = state.clock.activity(now, state.minutes);
             state.minutes -= spent;
-            if state.minutes < 840 { state.store_hunt = None; }
+            state.store_hunt.settle(now);
+            if state.minutes < 840 {
+                state.store_hunt.spans.clear();
+            }
             state.clock = next;
             state.experience_started |= spent > 0;
         }
@@ -805,8 +853,15 @@ mod tests {
                 },
             );
         }
-        assert_eq!(states.store_hunt_elapsed_ms(actor, session, 85_000_000), 80_000);
-        assert_eq!(states.store_hunt_elapsed_ms(actor, session, 146_000_000), 0);
+        assert_eq!(
+            states.store_hunt_spans_ms(actor, session, 85_000_000),
+            [[80_000, 0]]
+        );
+        states.note_store_hunt(actor, session, 146_000_000);
+        assert_eq!(
+            states.store_hunt_spans_ms(actor, session, 146_000_000),
+            [[141_000, 61_000]]
+        );
     }
 
     #[test]

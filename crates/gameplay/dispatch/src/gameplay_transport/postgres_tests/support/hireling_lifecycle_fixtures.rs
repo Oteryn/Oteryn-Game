@@ -105,6 +105,7 @@ pub(super) enum Case {
     LampPending,
     Store,
     StoreClaimAfterRecovery,
+    HuntingStore,
     PositionCapture,
     PositionRelog,
     PositionProcessLoss,
@@ -342,7 +343,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(generation);
-    let house_store = matches!(case, Case::Store | Case::StoreClaimAfterRecovery).then(|| {
+    let house_store = matches!(case, Case::Store | Case::StoreClaimAfterRecovery | Case::HuntingStore).then(|| {
         super::hireling_store_fixtures::install_house_store(&mut owner, deps.admitted.world_id.as_bytes())
     });
     // This fixture boots the bounded command set it will carry through the real handoff.
@@ -565,7 +566,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // As in the existing Store PostgreSQL fixture, capability154 is offered
     // only by this test producer. It is selected in the genuine source session
     // against the same boot offer already bound above, before the native handoff.
-    let offers = if matches!(case, Case::Store | Case::StoreClaimAfterRecovery | Case::BedRest) {
+    let offers = if matches!(case, Case::Store | Case::StoreClaimAfterRecovery | Case::HuntingStore | Case::BedRest) {
         boot_offers
     } else {
         owner.offered_capabilities()
@@ -637,6 +638,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     );
     if !matches!(case, Case::Wire) {
         wire::enter_interior(&owner, &mut admitted, deps.actor).await?;
+    }
+    if matches!(case, Case::HuntingStore) {
+        return super::hireling_store_fixtures::house_hunting_checkout(h, &owner, admitted).await;
     }
     if matches!(case, Case::Store | Case::StoreClaimAfterRecovery) {
         return super::hireling_store_fixtures::house_scenario(

@@ -283,8 +283,7 @@ pub use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 pub use staff::StaffReply;
 pub use store::{
     StorePurchaseMode, run_retained_store_reconciliation, run_store_receipt_outbox,
-    run_store_receipt_outbox_with_mode,
-    with_store_offer,
+    run_store_receipt_outbox_with_mode, with_store_offer,
 };
 
 use crate::achievement_catalogue::AccountAchievementsRequest;

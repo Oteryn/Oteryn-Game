@@ -118,6 +118,12 @@ impl PlayLink {
     }
 
     pub fn store_request(&self, command_type: u32, payload: Vec<u8>) {
+        // Hunting checkout goes through the persisted, explicitly confirmed quote.
+        if command_type == oteryn_client_runtime::cui3::store::COMMAND_TYPE_STORE_PURCHASE
+            && super::view::confirmation::is_hunting_request(&payload)
+        {
+            return;
+        }
         let mut mailbox = lock(&self.mailbox);
         if matches!(command_type, 6187 | 6188) && !mailbox.store.token_supported {
             return;
@@ -264,14 +270,49 @@ impl PlayLink {
         sex: &str,
         identity: &str,
     ) -> bool {
+        self.store_confirm_purchase_at(expected, name, sex, identity, None)
+    }
+
+    pub(in crate::play) fn store_confirm_purchase_at(
+        &self,
+        expected: &oteryn_client_runtime::cui3::store::StoreCataloguePage,
+        name: &str,
+        sex: &str,
+        identity: &str,
+        path: Option<&std::path::Path>,
+    ) -> bool {
+        use super::view::confirmation;
         let mut m = lock(&self.mailbox);
         if m.store.catalogue.as_ref() != Some(expected) || m.store.pending {
             return false;
         }
+        let previous = m.store.confirmed_purchase.clone();
         super::view::native::customization(&mut m.store, name, sex, identity);
         let Some(command) = super::view::native::purchase(&mut m.store, 0, true) else {
             return false;
         };
+        if confirmation::is_hunting_request(&command.payload) {
+            let configured = confirmation::path(&m.connection.channel_character);
+            let saved = path
+                .or(configured.as_deref())
+                .ok_or(std::io::ErrorKind::NotFound.into())
+                .and_then(|path| confirmation::retain(path, &command.payload));
+            match saved {
+                Ok(None) => {}
+                Ok(Some(earlier)) => {
+                    m.store.pending = false;
+                    m.store.confirmed_purchase = Some(earlier);
+                    m.store.feedback = Some(tr!("Retry the previously confirmed purchase with the same transaction identity?").into());
+                    return false;
+                }
+                Err(_) => {
+                    m.store.pending = false;
+                    m.store.confirmed_purchase = previous;
+                    m.store.feedback = Some(tr!("Store unavailable in this session").into());
+                    return false;
+                }
+            }
+        }
         if self
             .commands
             .send(PlayCommand::ServerMechanic(command))

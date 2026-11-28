@@ -25,8 +25,8 @@ pub struct PartyKillXpMember<const N: usize> {
     pub forge_dust: Option<u32>,
     /// Current runtime stamina; durable stamina remains the upper bound.
     pub live_stamina: Option<u16>,
-    /// Continuous committed combat observed by the session, through the kill.
-    pub hunt_activity_ms: u64,
+    /// Combat spans as [start age, end age] in milliseconds before the kill.
+    pub hunt_spans_ms: Vec<[u64; 2]>,
     pub shared: bool,
     pub party_id: Option<[u8; 16]>,
     pub party_revision: Option<u64>,
@@ -373,12 +373,19 @@ pub async fn commit_in_transaction<const N: usize>(
             }
         }
         let modifiers = hunting_xp::read_in_transaction(
-            tx, &member.fence, &input.creature, member.premium, member.live_stamina,
+            tx,
+            &member.fence,
+            &input.creature,
+            member.premium,
+            member.live_stamina,
             hunting_xp::HuntingActivity {
-                death: &input.death_key, at_ms: hunt_at_ms,
-                elapsed_ms: member.hunt_activity_ms, earns_experience: member.request.amount.get() > 0,
+                death: &input.death_key,
+                at_ms: hunt_at_ms,
+                spans_ms: &member.hunt_spans_ms,
+                earns_experience: member.request.amount.get() > 0,
             },
-        ).await?;
+        )
+        .await?;
         let raw = member.request.amount.get();
         // Crystal world_bonus.lua:5-9 rounds the bonus on the incoming share.
         // Player::addExperience invokes this callback before the hunting modifiers.

@@ -72,6 +72,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
+        origin_channel: [u8; 16],
     ) -> Result<Option<i16>, StoreDurabilityError> {
         let recovery = authority
             .record_for(self)
@@ -81,7 +82,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if !assert_store_fence(&mut tx, &fence, &node, None).await? {
+            if !assert_store_fence(&mut tx, &fence, &node, Some(origin_channel)).await? {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
             let tier = sqlx::query_scalar("SELECT tier FROM game_store_xp_boost_tier(encode($1,'hex')::uuid,encode($2,'hex')::uuid) WHERE tier <= 5")
@@ -100,7 +101,8 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         plan: StoreHuntingPurchase,
         gate: &G,
-    ) -> Result<bool, StoreDurabilityError> {
+        origin_channel: [u8; 16],
+    ) -> Result<Option<bool>, StoreDurabilityError> {
         plan.request.validate()?;
         let offer = StoreHuntingOffer::from_key(&plan.offer_key)
             .ok_or(StoreValidationError::InvalidText)?;
@@ -118,7 +120,7 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             let premium = offer == StoreHuntingOffer::PermanentPreySlot
                 && gate.allocation_permitted(&mut tx, plan.request.account_id).await?;
-            if !assert_store_fence(&mut tx, &fence, &node, None).await? {
+            if !assert_store_fence(&mut tx, &fence, &node, Some(origin_channel)).await? {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }
             let reserved = sqlx::query_scalar("SELECT game_store_reserve_hunting_purchase(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10,$11::text::numeric)")
@@ -271,6 +273,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         plan: StoreHuntingDelivery,
+        origin_channel: [u8; 16],
     ) -> Result<DeliveryReceipt, StoreDurabilityError> {
         plan.identity.validate()?;
         if StoreHuntingOffer::from_key(&plan.offer_key).is_none() {
@@ -293,7 +296,7 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_operation(&mut tx, plan.operation_id).await?;
             lock_admission_relations(&mut tx).await?;
-            if !assert_store_fence(&mut tx, &fence, &node, None).await?
+            if !assert_store_fence(&mut tx, &fence, &node, Some(origin_channel)).await?
                 || !account_matches(&mut tx, &fence, &plan.identity.account_id).await? {
                 return Ok(Err(StoreDurabilityError::AuthorityRejected));
             }

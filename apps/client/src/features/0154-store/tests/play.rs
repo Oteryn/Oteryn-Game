@@ -494,3 +494,73 @@ fn store_inbox_waits_for_pending_browse_before_requesting_claims()
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn restarted_hunting_checkout_reuses_the_confirmation_after_background_delivery()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{
+        cui3::store::*,
+        server_mechanic::{CommandStatus, ServerMechanicResponse},
+    };
+    let dir = tempfile::tempdir()?;
+    for (key, price) in [
+        ("store:prey-wildcards:1", 10),
+        ("store:permanent-prey-slot", 900),
+    ] {
+        let path = dir.path().join(format!("{price}.bin"));
+        let quote = StoreCataloguePage {
+            catalog_revision: "catalogue".into(),
+            offers: vec![StoreOffer {
+                offer_key: key.into(),
+                title: "Offer".into(),
+                price,
+                currency: "TIBIA_COIN".into(),
+            }],
+            next_page_cursor: String::new(),
+            total_coins: 2000,
+            transferable_coins: 0,
+        };
+        let bootstrap = || -> Result<_, Box<dyn std::error::Error>> {
+            let (link, mut commands, outbox) = play_channel();
+            outbox.store_initialize(true, false);
+            link.store_request(
+                COMMAND_TYPE_STORE_CATALOGUE_PAGE,
+                encode_catalogue_request(&StoreCatalogueRequest {
+                    category: "featured".into(),
+                    page_cursor: String::new(),
+                })
+                .map_err(|e| format!("{e:?}"))?,
+            );
+            commands.try_recv()?;
+            outbox.store_result(&ServerMechanicResponse {
+                command_id: 1,
+                status: CommandStatus::Accepted,
+                server_sequence: 1,
+                payload: encode_catalogue_page(&quote).map_err(|e| format!("{e:?}"))?,
+            });
+            Ok((link, commands, outbox))
+        };
+        let (link, mut commands, _) = bootstrap()?;
+        assert!(link.store_confirm_purchase_at(&quote, "", "", "", Some(&path)));
+        let PlayCommand::ServerMechanic(first) = commands.try_recv()? else {
+            return Err("missing first purchase".into());
+        };
+        drop(link);
+        let (restarted, mut commands, _) = bootstrap()?;
+        assert!(
+            !restarted.store_confirm_purchase_at(&quote, "", "", "", Some(&path)),
+            "a fresh mailbox must not send a second checkout"
+        );
+        assert!(commands.try_recv().is_err());
+        assert!(restarted.store_confirm_purchase_at(&quote, "", "", "", Some(&path)));
+        let PlayCommand::ServerMechanic(retry) = commands.try_recv()? else {
+            return Err("missing retried purchase".into());
+        };
+        assert_eq!(
+            retry.payload, first.payload,
+            "replay the same paid request and quote"
+        );
+    }
+    Ok(())
+}

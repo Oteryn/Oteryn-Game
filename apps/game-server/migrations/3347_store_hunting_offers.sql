@@ -55,10 +55,8 @@ CREATE TABLE IF NOT EXISTS game_character_store_hunting_boosts (
     started_at_ms BIGINT NOT NULL,
     remaining_ms BIGINT NOT NULL CHECK (remaining_ms BETWEEN 0 AND 3600000),
     last_hunt_ms BIGINT,
-    last_hunt_session UUID,
     FOREIGN KEY (world_id, reset_epoch) REFERENCES game_world_reset_history(world_id, reset_epoch),
     UNIQUE (character_id, world_id, reset_epoch, ordinal),
-    CHECK (last_hunt_session IS NULL OR last_hunt_ms IS NOT NULL),
     CHECK (last_hunt_ms >= started_at_ms)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS game_character_one_store_hunting_boost
@@ -102,6 +100,30 @@ $$;
 REVOKE ALL ON FUNCTION game_store_xp_boost_tier(UUID, UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_store_xp_boost_tier(UUID, UUID) TO oteryn_game_runtime;
 
+-- Close an unsent checkout before reading or using the capacity it reserved.
+CREATE OR REPLACE FUNCTION game_store_expire_hunting_purchases(p_account UUID, p_world UUID)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    PERFORM 1 FROM game_character_account_guards WHERE account_id = p_account FOR UPDATE;
+    UPDATE store_purchase_requests p
+    SET state = 2,
+        answer = convert_to('{"result":"OFFER_UNAVAILABLE","order_id":null,"operation_ids":[]}', 'UTF8')
+    WHERE p.state = 1 AND p.purchase_request_id IN (
+        SELECT r.purchase_id FROM game_store_hunting_pending r
+        WHERE r.account_id = p_account AND r.world_id = p_world AND NOT r.sent
+          AND r.reserved_at <= clock_timestamp() - interval '30 seconds'
+        FOR UPDATE
+    );
+END $$;
+REVOKE ALL ON FUNCTION game_store_expire_hunting_purchases(UUID, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_store_expire_hunting_purchases(UUID, UUID) TO oteryn_game_runtime;
+
+CREATE TABLE IF NOT EXISTS game_store_hunting_retired (
+    purchase_id UUID PRIMARY KEY REFERENCES store_purchase_requests(purchase_request_id)
+);
+REVOKE ALL ON game_store_hunting_retired FROM PUBLIC;
+GRANT SELECT ON game_store_hunting_retired TO oteryn_game_runtime;
+
 CREATE OR REPLACE FUNCTION game_store_reserve_hunting_purchase(
     p_purchase UUID, p_account UUID, p_character UUID, p_world UUID,
     p_binding BYTEA, p_offer TEXT, p_premium BOOLEAN, p_allow_new BOOLEAN,
@@ -123,15 +145,10 @@ BEGIN
     ) THEN
         RETURN FALSE;
     END IF;
-    UPDATE store_purchase_requests p
-    SET state = 2,
-        answer = convert_to('{"result":"OFFER_UNAVAILABLE","order_id":null,"operation_ids":[]}', 'UTF8')
-    WHERE p.state = 1 AND p.purchase_request_id IN (
-        SELECT r.purchase_id FROM game_store_hunting_pending r
-        WHERE r.account_id = p_account AND NOT r.sent
-          AND r.reserved_at <= clock_timestamp() - interval '30 seconds'
-        FOR UPDATE
-    );
+    IF EXISTS (SELECT 1 FROM game_store_hunting_retired WHERE purchase_id = p_purchase) THEN
+        RETURN NULL;
+    END IF;
+    PERFORM game_store_expire_hunting_purchases(p_account, p_world);
 
     IF EXISTS (SELECT 1 FROM game_store_hunting_pending WHERE purchase_id = p_purchase
         AND account_id = p_account AND character_id = p_character AND world_id = p_world AND offer_key = p_offer
@@ -172,15 +189,18 @@ GRANT EXECUTE ON FUNCTION game_store_reserve_hunting_purchase(UUID, UUID, UUID, 
 -- An unsent reservation may expire. Once marked sent, only authoritative
 -- Platform evidence can release it or bind the resulting operation.
 CREATE OR REPLACE FUNCTION game_store_mark_hunting_sent(p_purchase UUID, p_generation NUMERIC) RETURNS BOOLEAN
-LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
-    WITH marked AS (
-        UPDATE game_store_hunting_pending r SET sent = TRUE
-        FROM store_purchase_requests p
-        WHERE r.purchase_id = p_purchase AND p.purchase_request_id = r.purchase_id
-          AND r.recovery_generation = p_generation AND p.state = 1 AND (r.sent OR r.reserved_at > clock_timestamp() - interval '30 seconds')
-        RETURNING r.purchase_id
-    ) SELECT EXISTS (SELECT 1 FROM marked);
-$$;
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE buyer UUID;
+BEGIN
+    SELECT account_id INTO buyer FROM game_store_hunting_pending WHERE purchase_id = p_purchase;
+    PERFORM 1 FROM game_character_account_guards WHERE account_id = buyer FOR UPDATE;
+    UPDATE game_store_hunting_pending r SET sent = TRUE
+    FROM store_purchase_requests p
+    WHERE r.purchase_id = p_purchase AND p.purchase_request_id = r.purchase_id
+      AND r.recovery_generation = p_generation AND p.state = 1
+      AND (r.sent OR r.reserved_at > clock_timestamp() - interval '30 seconds');
+    RETURN FOUND;
+END $$;
 REVOKE ALL ON FUNCTION game_store_mark_hunting_sent(UUID, NUMERIC) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_store_mark_hunting_sent(UUID, NUMERIC) TO oteryn_game_runtime;
 
@@ -238,6 +258,30 @@ DROP TRIGGER IF EXISTS game_store_hunting_restore_conflict ON game_store_restore
 CREATE TRIGGER game_store_hunting_restore_conflict AFTER INSERT ON game_store_restore_conflicts
     FOR EACH ROW WHEN (NEW.delivery_operation_id IS NULL)
     EXECUTE FUNCTION game_store_hunting_restore_conflict();
+
+-- Recovery has fenced the previous generation before admitting its successor.
+-- Preserve sent request identities so replay cannot initiate a new Platform debit.
+CREATE OR REPLACE FUNCTION game_store_retire_hunting_purchases_on_recovery() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    WITH released AS (
+        DELETE FROM game_store_hunting_pending
+        WHERE recovery_generation < NEW.recovery_generation AND operation_id IS NULL
+        RETURNING purchase_id, sent
+    ), unsent AS (
+        UPDATE store_purchase_requests p SET state = 2,
+            answer = convert_to('{"result":"OFFER_UNAVAILABLE","order_id":null,"operation_ids":[]}', 'UTF8')
+        FROM released WHERE p.purchase_request_id = released.purchase_id AND NOT released.sent AND p.state = 1
+    )
+    INSERT INTO game_store_hunting_retired (purchase_id)
+    SELECT purchase_id FROM released WHERE sent;
+    RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION game_store_retire_hunting_purchases_on_recovery() FROM PUBLIC;
+DROP TRIGGER IF EXISTS game_store_retire_hunting_purchases_on_recovery ON game_character_recovery_admissions;
+CREATE TRIGGER game_store_retire_hunting_purchases_on_recovery AFTER INSERT ON game_character_recovery_admissions
+    FOR EACH ROW WHEN (NEW.predecessor_generation > 0)
+    EXECUTE FUNCTION game_store_retire_hunting_purchases_on_recovery();
 
 ALTER TABLE game_account_prey_wildcard_entries DROP CONSTRAINT IF EXISTS prey_wildcard_entry_values;
 ALTER TABLE game_account_prey_wildcard_entries ADD CONSTRAINT prey_wildcard_entry_values CHECK (
@@ -435,29 +479,29 @@ CREATE CONSTRAINT TRIGGER game_store_hunting_delivery_proven
     FOR EACH ROW WHEN (NEW.entitlement_key ~ '^store:(xp-boost:[1-5]|permanent-prey-slot|prey-wildcards:[15])$')
     EXECUTE FUNCTION game_store_hunting_delivery_proven();
 
--- The current kill transaction meters the active grant before reading its
--- modifier. The session observation can bridge a long sequence of actual hits.
+-- Debit every observed span, clipped to purchase time and the last settled kill.
+-- Spans were collected at the stamina in force during combat, before kill XP.
 CREATE OR REPLACE FUNCTION game_consume_store_hunting_time(
-    p_death BYTEA, p_character UUID, p_session UUID, p_at_ms BIGINT, p_activity_ms BIGINT, p_stamina INTEGER
+    p_death BYTEA, p_character UUID, p_at_ms BIGINT, p_starts BIGINT[], p_ends BIGINT[]
 ) RETURNS VOID
 LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
     UPDATE game_character_store_hunting_boosts b
-    SET remaining_ms = greatest(0, b.remaining_ms - CASE
-            WHEN p_stamina < 840 THEN 0
-            ELSE p_at_ms - greatest(b.started_at_ms, coalesce(b.last_hunt_ms, b.started_at_ms),
-                CASE WHEN b.last_hunt_session = p_session AND p_at_ms - b.last_hunt_ms <= 60000
-                    THEN least(b.last_hunt_ms, p_at_ms - p_activity_ms)
-                    ELSE p_at_ms - p_activity_ms END) END),
-        last_hunt_ms = p_at_ms,
-        last_hunt_session = CASE WHEN p_stamina >= 840 THEN p_session END
+    SET remaining_ms = greatest(0, b.remaining_ms - coalesce((
+            SELECT sum(upper(span) - lower(span))::bigint
+            FROM unnest((SELECT range_agg(int8range(start_ms, end_ms))
+                FROM (SELECT greatest(start_ms, b.started_at_ms, coalesce(b.last_hunt_ms, b.started_at_ms)) AS start_ms,
+                             least(end_ms, p_at_ms) AS end_ms
+                      FROM unnest(p_starts, p_ends) AS seen(start_ms, end_ms)) clipped
+                WHERE start_ms < end_ms)) AS span
+        ), 0)),
+        last_hunt_ms = p_at_ms
     FROM game_character_roots c
     WHERE b.character_id = p_character AND c.character_id = b.character_id
       AND b.world_id = c.world_id AND b.remaining_ms > 0 AND p_at_ms >= b.started_at_ms
       AND (b.last_hunt_ms IS NULL OR p_at_ms > b.last_hunt_ms)
-      AND p_activity_ms BETWEEN 0 AND p_at_ms
       AND EXISTS (SELECT 1 FROM game_party_kill_xp_receipts
           WHERE death_key = p_death AND xmin = pg_current_xact_id()::xid);
 $$;
-REVOKE ALL ON FUNCTION game_consume_store_hunting_time(BYTEA, UUID, UUID, BIGINT, BIGINT, INTEGER) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION game_consume_store_hunting_time(BYTEA, UUID, UUID, BIGINT, BIGINT, INTEGER)
+REVOKE ALL ON FUNCTION game_consume_store_hunting_time(BYTEA, UUID, BIGINT, BIGINT[], BIGINT[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_consume_store_hunting_time(BYTEA, UUID, BIGINT, BIGINT[], BIGINT[])
     TO oteryn_game_runtime;

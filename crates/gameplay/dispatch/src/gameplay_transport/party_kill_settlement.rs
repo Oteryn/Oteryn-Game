@@ -377,7 +377,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     policy: binding.policy.clone(),
                 },
                 // Filled from the current runtime under the final transaction's guards.
-                live_stamina: None, hunt_activity_ms: 0,
+                live_stamina: None,
+                hunt_spans_ms: Vec::new(),
                 premium: member.premium,
                 forge_dust: None,
                 shared: member.shared,
@@ -535,8 +536,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         } else {
                             states.live_stamina(current.actor, current.session)
                         };
-                        request.hunt_activity_ms = entry.activity_observed_at.map_or(0, |observed| {
-                            states.store_hunt_elapsed_ms(current.actor, current.session, observed.get())
+                        request.hunt_spans_ms = entry.activity_observed_at.map_or_else(Vec::new, |observed| {
+                            states.store_hunt_spans_ms(current.actor, current.session, observed.get())
                         });
                         // Use the same frozen, generation-qualified recipients as task credit.
                         // The XP plan also retains zero-damage members for ordinary forge dust.

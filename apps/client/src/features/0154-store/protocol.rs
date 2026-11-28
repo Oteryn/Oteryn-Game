@@ -1,3 +1,4 @@
+use super::view::confirmation;
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
     pub(in crate::play) fn store_modal_answered(
@@ -13,6 +14,18 @@ impl Outbox {
     }
     pub(in crate::play) fn store_initialize(&self, selected: bool, hireling_modal_selected: bool) {
         let mut mailbox = lock(&self.0);
+        if selected
+            && mailbox.store.confirmed_purchase.is_none()
+            && let Some(path) = confirmation::path(&mailbox.connection.channel_character)
+        {
+            match confirmation::load(&path) {
+                Ok(saved) => mailbox.store.confirmed_purchase = saved,
+                Err(_) => {
+                    mailbox.store.feedback =
+                        Some(tr!("Store unavailable in this session").into())
+                }
+            }
+        }
         mailbox.store.selected = selected;
         mailbox.store_inbox_query_queued = false;
         mailbox.store.inbox = Default::default();
@@ -58,7 +71,20 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         let action = mailbox.store.pending_action;
         let inbox_query = mailbox.store.inbox_query_pending.is_some();
+        let completed = mailbox.store.confirmed_purchase.clone();
         oteryn_client_ui::store::apply_result(&mut mailbox.store, response);
+        if action == oteryn_client_runtime::cui3::store::COMMAND_TYPE_STORE_PURCHASE
+            && mailbox.store.confirmed_purchase.is_none()
+            && let Some(payload) = completed.filter(|bytes| confirmation::is_hunting_request(bytes))
+            && let Some(path) = confirmation::path(&mailbox.connection.channel_character)
+            && confirmation::finish(&path, &payload).is_err()
+        {
+            mailbox.store.confirmed_purchase = Some(payload);
+            mailbox.store.feedback = Some(
+                tr!("Retry the previously confirmed purchase with the same transaction identity?")
+                    .into(),
+            );
+        }
         let text = if let Some(feedback) = &mailbox.store.feedback {
             feedback.clone()
         } else if matches!(action, 185 | 6188)

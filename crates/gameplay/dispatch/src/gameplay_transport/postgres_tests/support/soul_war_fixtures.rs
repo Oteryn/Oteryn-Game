@@ -159,7 +159,7 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
                     },
                     premium: false,
                     forge_dust: None,
-                    live_stamina: None, hunt_activity_ms: 0,
+                    live_stamina: None, hunt_spans_ms: Vec::new(),
                     shared: false,
                     party_id: None,
                     party_revision: None,

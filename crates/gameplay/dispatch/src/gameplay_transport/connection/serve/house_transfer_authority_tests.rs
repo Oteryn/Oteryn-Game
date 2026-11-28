@@ -486,9 +486,11 @@ impl FreshAdmissionAuthority for StoreRetryAuthority {
             wire::COMMAND_TYPE_STORE_HISTORY_PAGE => Ok(vec![1]),
             _ => return Some((CommandStatus::Rejected, Vec::new())),
         };
-        Some(reply.map_or((CommandStatus::Rejected, Vec::new()), |bytes| {
-            (CommandStatus::Accepted, bytes)
-        }))
+        Some(
+            reply.map_or((CommandStatus::Rejected, Vec::new()), |bytes| {
+                (CommandStatus::Accepted, bytes)
+            }),
+        )
     }
 }
 
