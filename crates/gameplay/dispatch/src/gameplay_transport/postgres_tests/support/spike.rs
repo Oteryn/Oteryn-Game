@@ -1,3 +1,4 @@
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::classic_quests_fixtures::progress;
 use super::fixture::{Harness, debug};
 use super::l6_world_pickups_fixtures::{ExpectedTile, NativeCrop, native_scene_with_appearances};
@@ -46,6 +47,14 @@ pub(super) async fn exercise(
 ) -> TestResult {
     const PHASE: &str = "oteryn:quest-progress/spike/release/progress";
     super::questpc6_fibula_route_fixtures::level(owner, session, 25).await?;
+    let mut capabilities = session.continuity.selected_capabilities.as_slice().to_vec();
+    capabilities.extend([3, 4, 6, 11, 15, 18]);
+    capabilities.sort_unstable();
+    capabilities.dedup();
+    session.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(owner.offered_capabilities(), &capabilities)
+            .ok_or("Spike item use capabilities")?;
+    assert_eq!(session.continuity.selected_capabilities.as_slice(), capabilities);
     let mut mint_id = 4000;
     mint(owner, session, 19203, 1, &mut mint_id).await?;
     seed_quest_prerequisites(h, owner, session, &[(PHASE.into(), 1)], 120).await?;

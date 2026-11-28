@@ -1384,7 +1384,7 @@ class QuestRewards(unittest.TestCase):
         }
         self.assertLessEqual(completion_variants, outfit_keys)
         self.assertEqual(sum(c["outfit"] is not None for c in callbacks), 109)
-        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 174)
+        self.assertEqual(sum(c["outfit"] is None for c in callbacks), 193)
         self.assertTrue(
             any(
                 len(c["take"]) > 1 and any(i["count"] == 100 for i in c["take"])

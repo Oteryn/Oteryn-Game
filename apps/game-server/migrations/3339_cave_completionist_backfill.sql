@@ -25,12 +25,13 @@ WITH purchases AS (
                FROM generate_series(0,15) n), s.cause_ordinal, s.transition_key)::text,
               ' ', ''), 'UTF8') || convert_to(u.unlock_key,'UTF8')
 )
-SELECT later.account_id, later.granting_character_id AS character_id
+SELECT later.account_id, later.granting_character_id AS character_id,
+       later.committed_at <> earlier.committed_at OR
+           later.granting_character_id = earlier.granting_character_id AS completion_known
 FROM purchases later JOIN purchases earlier USING (account_id)
 WHERE earlier.unlock_key <> later.unlock_key
   AND (later.committed_at > earlier.committed_at OR
        (later.committed_at = earlier.committed_at
-        AND later.granting_character_id = earlier.granting_character_id
         AND later.unlock_key > earlier.unlock_key));
 
 GRANT SELECT ON game_cave_completionist_purchasers TO oteryn_game_runtime;
@@ -62,7 +63,7 @@ END $migration$;
 -- Keep the locked lifecycle and ownership for the progress write as well.
 CREATE TEMP TABLE cave_completionist_backfill_eligible ON COMMIT DROP AS
     SELECT p.account_id, p.character_id,
-           holder.account_id = p.account_id AND holder.lifecycle <> 2 AS write_progress
+           p.completion_known AND holder.account_id = p.account_id AND holder.lifecycle <> 2 AS write_progress
     FROM game_cave_completionist_purchasers p
     JOIN game_character_roots holder USING (character_id)
     FOR SHARE OF holder;
