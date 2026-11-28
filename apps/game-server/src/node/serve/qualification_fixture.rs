@@ -16,6 +16,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
 
 fn spell_build(profile: &str) -> Option<(&str, u32, bool)> {
     match profile {
+        "c20a" => Some(("sorcerer", 10, true)),
         "explorer" => Some(("knight", 100, false)),
         "knight-underlevel" => Some(("knight", 66, false)),
         "levitate" => Some(("sorcerer", 12, true)),
