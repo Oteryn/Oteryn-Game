@@ -69,7 +69,6 @@ oteryn:creature.darklight_matter
 oteryn:creature.darklight_source
 oteryn:creature.darklight_striker
 oteryn:creature.dawnfire_asura
-oteryn:creature.day_night_harpy
 oteryn:creature.deathling_scout
 oteryn:creature.deathling_spellsinger
 oteryn:creature.deepling_tyrant

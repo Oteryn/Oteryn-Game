@@ -1116,8 +1116,8 @@ mod tests {
     #[test]
     fn p04_master_pool_rejects_an_ineligible_candidate_even_when_undrawn() -> TestResult {
         let expected = master_creature_keys(include_str!("p04_master_creature_oracle.txt"));
-        let valid = PRODUCTION_MASTER_CREATURES.replace("oteryn:creature.day_night_harpy\n", "");
-        verify_master_pool(&expected, &valid)?;
+        let valid = PRODUCTION_MASTER_CREATURES;
+        verify_master_pool(&expected, valid)?;
         assert!(verify_master_pool(&expected, &format!("{valid}oteryn:creature.day_night_harpy\n")).is_err());
         assert!(verify_master_pool(&expected, &valid.replace(
             "oteryn:creature.sabretooth",
