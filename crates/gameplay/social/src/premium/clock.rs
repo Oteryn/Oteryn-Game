@@ -6,13 +6,11 @@
 //! 5 s bound unchanged. Fail closed: an unsynchronized kernel clock, a failed read and a target
 //! other than Linux read `None`, which means Premium is not current.
 //!
-//! True time never runs backward, so the process keeps the highest bounds it has read. A later
-//! reading keeps its own lower bound, and its upper bound is raised to the highest upper bound
-//! already read, so a step back of the kernel clock never makes Premium current again after a
-//! cutoff the process has passed. A reading wholly before an earlier lower bound contradicts it
-//! and reads `None` until the clock catches up. The check and the update run under one lock, so
-//! concurrent readings cannot pass a stale check after a newer reading raised the high water.
-//! No reading itself is cached.
+//! True time never runs backward, so both returned bounds keep their high water. A wider reading
+//! cannot undo a start already proved, and a clock step back cannot reopen an elapsed cutoff.
+//! A reading wholly before an earlier lower bound contradicts it and reads `None` until the
+//! clock catches up. The check and the update run under one lock, so concurrent readings cannot
+//! pass a stale check after a newer reading raised the high water. No reading itself is cached.
 
 use super::TrustedNow;
 use std::sync::Mutex;
@@ -38,14 +36,21 @@ fn hold_monotonic(high_water: &mut Option<TrustedNow>, reading: TrustedNow) -> O
     if reading.upper_us < seen.lower_us {
         return None;
     }
-    *high_water = Some(TrustedNow {
+    let bounded = TrustedNow {
         lower_us: seen.lower_us.max(reading.lower_us),
         upper_us: seen.upper_us.max(reading.upper_us),
-    });
-    Some(TrustedNow {
-        lower_us: reading.lower_us,
-        upper_us: reading.upper_us.max(seen.upper_us),
-    })
+    };
+    *high_water = Some(bounded);
+    Some(bounded)
+}
+
+/// Feed a deterministic trusted reading through the system clock's window history.
+#[cfg(feature = "test-support")]
+pub fn observe_for_test(
+    high_water: &mut Option<TrustedNow>,
+    reading: TrustedNow,
+) -> Option<TrustedNow> {
+    hold_monotonic(high_water, reading)
 }
 
 #[cfg(test)]
@@ -84,13 +89,13 @@ mod tests {
     }
 
     #[test]
-    fn a_step_back_keeps_the_upper_bound_already_read() {
+    fn a_step_back_keeps_both_bounds_already_read() {
         let mut high_water = None;
         hold_monotonic(&mut high_water, at(2_000, 100));
         // Back by 150 us: inside the earlier window, so consistent, but the cutoff stays passed.
         assert_eq!(
             bounds(hold_monotonic(&mut high_water, at(1_850, 100))),
-            Some((1_750, 2_100))
+            Some((1_900, 2_100))
         );
         // A smaller maximum error does not lower the upper bound either.
         assert_eq!(
@@ -107,7 +112,7 @@ mod tests {
         // The high water is kept: the clock is trusted again once it passes it.
         assert_eq!(
             bounds(hold_monotonic(&mut high_water, at(999_995, 10))),
-            Some((999_985, 1_000_010))
+            Some((999_990, 1_000_010))
         );
     }
 
@@ -121,11 +126,10 @@ mod tests {
         );
         // Stepped back 60 s: wholly before the trusted lower bound.
         assert_eq!(hold_monotonic(&mut high_water, at(40_000_000)), None);
-        // A step back within the uncertainty overlaps the mark and stays admitted, its upper
-        // bound held at the highest one read.
+        // A step back within the uncertainty overlaps the mark and keeps both bounds.
         assert_eq!(
             bounds(hold_monotonic(&mut high_water, at(99_500_000))),
-            Some((98_500_000, 101_000_000))
+            Some((99_000_000, 101_000_000))
         );
         // Once the clock catches up, readings pass unchanged and the mark advances.
         assert_eq!(

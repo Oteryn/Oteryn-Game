@@ -62,21 +62,41 @@ fn t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases() -> Te
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
+    run_scenario(false)
+}
+
+#[test]
+fn s13c_premium_exact_30_day_grant_survives_a_wider_trusted_window() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run_scenario(true)
+}
+
+fn run_scenario(check_grant_boundary: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(check_grant_boundary).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Premium scenario panicked")??;
     Ok(())
 }
-fn scenario() -> TestResult {
-    run(async |admin| {
+fn scenario(check_grant_boundary: bool) -> TestResult {
+    run(async move |admin| {
         super::reset();
-        let h = Harness::create_with_admission_seed(admin, "t165_premium_observation", true, false)
-            .await?;
-        eprintln!(
-            "POSTGRES_STARTED t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases"
-        );
+        let (tag, case) = if check_grant_boundary {
+            (
+                "s13c_premium_boundary",
+                "s13c_premium_exact_30_day_grant_survives_a_wider_trusted_window",
+            )
+        } else {
+            (
+                "t165_premium_observation",
+                "t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases",
+            )
+        };
+        let h = Harness::create_with_admission_seed(admin, tag, true, false).await?;
+        eprintln!("POSTGRES_STARTED {case}");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -135,6 +155,19 @@ fn scenario() -> TestResult {
             .premium_overview_account(&authority, &h.node, fence)
             .await
             .map_err(debug)?;
+        if check_grant_boundary {
+            let mut paid = evidence(now, account);
+            paid.effective_from_us = now;
+            paid.effective_until_us = now + 30 * DAY_US;
+            paid.authority_valid_until_us = now + crate::premium::MAX_AUTHORITY_LEASE_US;
+            paid.refresh_after_us = now + 2_400_000_000;
+            h.root.accept_premium_evidence(&paid).await?;
+            consumer.prove_for_test(paid.clone());
+            check_30_day_boundary(&owner, &consumer, &clock, &mut session, &paid).await?;
+            eprintln!("POSTGRES_EXECUTED {case}");
+            h.pool.close().await;
+            return Ok(());
+        }
         // Another payer's paid state must not be used when this actor has no accepted evidence.
         let other = evidence(now, id(41));
         h.root.accept_premium_evidence(&other).await?;
@@ -188,10 +221,59 @@ fn scenario() -> TestResult {
         let (bad, _) =
             super::cyclopedia_fixtures::support::exchange(&owner, &mut session, 5, 113, &[5, 0]).await?;
         assert_eq!(bad, CommandStatus::Rejected);
-        eprintln!(
-            "POSTGRES_EXECUTED t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases"
-        );
+        eprintln!("POSTGRES_EXECUTED {case}");
         h.pool.close().await;
         Ok(())
     })
+}
+
+const DAY_US: i64 = 24 * 60 * 60 * 1_000_000;
+
+async fn check_30_day_boundary(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    consumer: &PremiumConsumer,
+    clock: &Clock,
+    session: &mut AdmittedSession,
+    paid: &PremiumEvidence,
+) -> TestResult {
+    use crate::premium::clock::observe_for_test;
+
+    let issued = paid.authority_issued_at_us;
+    let expiry = paid.effective_until_us;
+    let mut history = None;
+    let mut set_clock = |at, uncertainty| -> TestResult {
+        let reading = TrustedNow::new(at, uncertainty).ok_or("trusted reading")?;
+        let reading = observe_for_test(&mut history, reading).ok_or("trusted window")?;
+        *clock.0.lock().map_err(|_| "clock")? = Some(reading);
+        Ok(())
+    };
+
+    set_clock(issued, 0)?;
+    let fresh = wire(owner, session, 1).await?;
+    assert_eq!(fresh.state, State::Active);
+    assert_eq!(fresh.expires_at_us, Some(expiry));
+    assert_eq!(expiry - fresh.observed_at_us, 30 * DAY_US);
+    assert!(fresh.valid_for_us > 0);
+
+    // The next raw sample overlaps the proven start, with a wider uncertainty.
+    set_clock(issued + 2_000_000, 3_000_000)?;
+    let widened = wire(owner, session, 2).await?;
+    assert_eq!(widened.expires_at_us, Some(expiry));
+    let remaining_us = u64::try_from(expiry - widened.observed_at_us)?;
+    assert_eq!(remaining_us.div_ceil(u64::try_from(DAY_US)?), 30);
+    assert!(widened.valid_for_us > 0, "the grant is already current");
+    assert!(widened.features.iter().all(|feature| feature.enabled));
+
+    // The shorter authority lease has lapsed here, but the subscription itself
+    // ends only at its durable expiry.
+    set_clock(expiry - 1, 0)?;
+    assert!(!consumer.premium_entitlement_ended(paid.account_id, clock.read_current_window()));
+    set_clock(expiry, 0)?;
+    let ended = wire(owner, session, 3).await?;
+    assert_eq!(ended.expires_at_us, Some(expiry));
+    assert_eq!(ended.observed_at_us, expiry);
+    assert_eq!(ended.valid_for_us, 0);
+    assert!(ended.features.iter().all(|feature| !feature.enabled));
+    assert!(consumer.premium_entitlement_ended(paid.account_id, clock.read_current_window()));
+    Ok(())
 }
