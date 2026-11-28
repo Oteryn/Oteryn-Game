@@ -228,6 +228,7 @@ async fn report_entry_inputs(clients: &SeamClients<'_>, client: &DevClientSessio
                       ON g.scope_key=decode('02','hex') || uuid_send(a.world_id) || uuid_send(a.activity_instance_id)
                      AND g.ready AND g.ownership_generation=a.ownership_generation
                    WHERE a.world_id=encode($2,'hex')::uuid AND a.scope_kind=3 AND a.state=1
+                     AND a.activity_instance_id=$4::text::uuid
                      AND NOT EXISTS (SELECT 1 FROM game_activity_handoff_groups h
                                       WHERE h.world_id=a.world_id AND h.instance_id=a.activity_instance_id)
                      AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
@@ -237,6 +238,7 @@ async fn report_entry_inputs(clients: &SeamClients<'_>, client: &DevClientSessio
     .bind(clients.characters[0].as_slice())
     .bind(clients.world.as_slice())
     .bind(clients.channel.as_slice())
+    .bind(INSTANCE)
     .fetch_one(&mut database)
     .await?;
     database.close().await?;
@@ -245,6 +247,9 @@ async fn report_entry_inputs(clients: &SeamClients<'_>, client: &DevClientSessio
         "row=G36.full entry_inputs session={} position=32375,31158,8 core=47381 core_count=1 level={level:?} ready_instance={ready}",
         uuid_text(session.as_bytes())
     ));
+    if !ready {
+        return Err("step=entry-pre-state;observed=assigned-instance-not-ready".into());
+    }
     Ok(())
 }
 
@@ -391,12 +396,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .session_mut()
         .activity_scope()
         .ok_or("step=entry;observed=missing-activity-scope")?;
+    let expected_scope = oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance {
+        world: clients.world,
+        instance: crate::node::uuid_bytes(INSTANCE).ok_or("G36 Instance fixture identity")?,
+    };
     if scope.source_session != *channel.as_bytes()
         || scope.session != *instance.as_bytes()
-        || !matches!(
-            scope.scope,
-            oteryn_protocol_oteryn::activity_scope::ActivityScope::Instance { .. }
-        )
+        || scope.scope != expected_scope
         || position(&client)? != ARENA_ENTRY
     {
         return Err("step=entry;observed=wrong-instance-or-arrival".into());
