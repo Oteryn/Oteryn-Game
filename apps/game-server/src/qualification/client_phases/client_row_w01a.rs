@@ -1,16 +1,11 @@
-//! W01a client replay capture: monster AI as the client sees it. A rat chases the retreating
-//! player and, once attacked, loses health and flees. The session retains typed entity deltas
-//! only, so every captured delta is the server-delivered `WorldSpatialEntitiesDelta` encoded with
-//! the production encoder (the same convention as C09 and S04b), preceded by an entity snapshot of
-//! the view at the segment start. The consumer is `Session::apply_state_delta` and
-//! `Session::world_entities` in `crates/session`.
+//! W01a records the original inbound session frames while observing Rat chase,
+//! damage and flight on the live client.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity};
-use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
-use oteryn_protocol_oteryn::world_spatial_entities::{
-    WorldSpatialEntitiesSnapshot, encode_world_spatial_entities_delta,
-    encode_world_spatial_entities_snapshot,
+use oteryn_dev_client::{
+    DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity,
 };
+use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+use sha2::{Digest, Sha256};
 
 fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
@@ -40,7 +35,8 @@ fn text_of(entity: Option<&WorldSpatialEntity>) -> String {
         return "absent".into();
     };
     let health = match entity.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent.to_string(),
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent.to_string(),
         _ => "-".into(),
     };
     format!(
@@ -49,69 +45,36 @@ fn text_of(entity: Option<&WorldSpatialEntity>) -> String {
     )
 }
 
-fn plain(mut entity: WorldSpatialEntity) -> WorldSpatialEntity {
-    if let EntityDetail::Object {
-        item_definition_ref,
-        quantity,
-        ..
-    } = entity.detail
-    {
-        entity.detail = EntityDetail::Object {
-            item_definition_ref,
-            quantity,
-            item_handle: None,
-        };
-    }
-    entity
-}
-
-/// An entity snapshot of the view at the segment start plus the entity deltas applied after it.
 struct Segment {
     name: &'static str,
     target: EntityRef,
-    snapshot: Vec<u8>,
+    initial_sequence: u64,
     initial: String,
-    deltas: Vec<Vec<u8>>,
     trace: Vec<String>,
     target_position: Option<ActorPosition>,
     closing_step: Option<(ActorPosition, ActorPosition, ActorPosition)>,
 }
 
 impl Segment {
-    fn begin(
-        client: &DevClientSession,
-        name: &'static str,
-        target: EntityRef,
-    ) -> TestResult<Self> {
+    fn begin(client: &DevClientSession, name: &'static str, target: EntityRef) -> TestResult<Self> {
         let view = client.world_entities().ok_or("entity view absent")?;
-        let observation = client.world_spatial();
-        let snapshot = encode_world_spatial_entities_snapshot(&WorldSpatialEntitiesSnapshot {
-            content_generation: observation.content_generation,
-            actor_position: observation.actor_position,
-            own_identity: *view.own_identity(),
-            entities: view.iter().copied().map(plain).collect(),
-        })
-        .map_err(|error| format!("encode snapshot: {error:?}"))?;
         Ok(Self {
             name,
             target,
-            snapshot,
+            initial_sequence: client.last_server_sequence(),
             initial: text_of(view.get(&target)),
-            deltas: Vec::new(),
             trace: Vec::new(),
             target_position: view.get(&target).map(|entity| entity.position),
             closing_step: None,
         })
     }
 
-    fn record(&mut self, events: Vec<SessionEvent>) -> TestResult {
+    fn record(&mut self, events: Vec<SessionEvent>) {
         for event in events {
             let SessionEvent::WorldSpatialEntities(delta) = event else {
                 continue;
             };
-            let mut value = delta.value;
-            value.enter = value.enter.into_iter().map(plain).collect();
-            value.update = value.update.into_iter().map(plain).collect();
+            let value = delta.value;
             let line = if value.leave.contains(&self.target) {
                 self.target_position = None;
                 "absent".to_owned()
@@ -133,33 +96,20 @@ impl Segment {
             } else {
                 "same".to_owned()
             };
-            self.deltas.push(
-                encode_world_spatial_entities_delta(&value)
-                    .map_err(|error| format!("encode delta: {error:?}"))?,
-            );
-            self.trace.push(line);
+            self.trace.push(format!("{}:{line}", delta.server_sequence));
         }
-        Ok(())
     }
 
-    fn write(&self, root: &Path, expected: &mut String) -> TestResult {
-        capture(
-            root,
-            &format!("w01a-{}-snapshot.bin", self.name),
-            &self.snapshot,
-        )?;
-        for (index, bytes) in self.deltas.iter().enumerate() {
-            capture(root, &format!("w01a-{}-delta{index}.bin", self.name), bytes)?;
-        }
+    fn write_expectations(&self, expected: &mut String) {
         expected.push_str(&format!(
-            "{n}.target={}:{}\n{n}.initial={}\n{n}.trace={}\n",
+            "{n}.target={}:{}\n{n}.initial={}:{}\n{n}.trace={}\n",
             hex(&self.target.identity),
             self.target.generation,
+            self.initial_sequence,
             self.initial,
             self.trace.join(";"),
-            n = self.name
+            n = self.name,
         ));
-        Ok(())
     }
 }
 
@@ -171,8 +121,6 @@ fn target_state(client: &DevClientSession, target: EntityRef) -> Option<WorldSpa
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let capture_dir = required("E2E_ALL_CAPTURE_DIR")?;
-    let capture_dir = Path::new(&capture_dir);
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -190,7 +138,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let target_tile = tile(target.position)?;
     let retreat = route(world, tile(here)?, |at| {
         at.floor == target_tile.floor
-            && at.x.abs_diff(target_tile.x).max(at.y.abs_diff(target_tile.y)) >= 3
+            && at
+                .x
+                .abs_diff(target_tile.x)
+                .max(at.y.abs_diff(target_tile.y))
+                >= 3
     })
     .ok_or("W01a client capture: no retreat lane")?;
     client.take_events();
@@ -199,21 +151,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map(|entity| entity.position)
         .ok_or("W01a client capture: rat vanished before chase")?;
     for direction in retreat {
-        let from = tile(client.world_spatial().actor_position)?;
-        let expected = destination(world, from, direction).ok_or("W01a retreat has no landing")?;
-        let step = client.step(direction).await?;
-        let actual = tile(client.world_spatial().actor_position)?;
-        if step.disposition != StepDisposition::Moved
-            || step.world_spatial_delta.is_none()
-            || actual != expected
-        {
-            return Err(format!(
-                "W01a client retreat STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={step:?}"
-            )
-            .into());
-        }
-        verdict::Harness::global().progress("walk");
-        chase.record(client.take_events())?;
+        super::full_row_w01a::planned_step(&mut client, world, direction).await?;
+        chase.record(client.take_events());
     }
     let player = client.world_spatial().actor_position;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
@@ -234,14 +173,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
-        chase.record(client.take_events())?;
+        chase.record(client.take_events());
     };
 
     // Damage and flee: attack until the low-health boundary, stop, and record the retreat.
     let chased_tile = tile(chased)?;
     let approach = route(world, tile(client.world_spatial().actor_position)?, |at| {
         at.floor == chased_tile.floor
-            && at.x.abs_diff(chased_tile.x).max(at.y.abs_diff(chased_tile.y)) <= 1
+            && at
+                .x
+                .abs_diff(chased_tile.x)
+                .max(at.y.abs_diff(chased_tile.y))
+                <= 1
     })
     .ok_or("W01a client capture: rat unreachable")?;
     super::full_row_w01a::walk_once(&mut client, world, &approach).await?;
@@ -256,6 +199,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     client.take_events();
     let mut fight = Segment::begin(&client, "fight", target.entity)?;
+    if !matches!(
+        target_state(&client, target.entity).map(|entity| entity.detail),
+        Some(
+            EntityDetail::Actor {
+                health_percent: 26..=100,
+                ..
+            } | EntityDetail::ActorWithIcons {
+                health_percent: 26..=100,
+                ..
+            }
+        )
+    ) {
+        return Err("W01a client capture: rat was already at or below the flee boundary".into());
+    }
     let player_before_attack = client.world_spatial().actor_position;
     let mana_before_attack = client.actor_vitals().map(|vitals| vitals.mana);
     let attack = client
@@ -268,11 +225,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
     let (low, low_position) = loop {
         client.service_liveness(Duration::from_millis(50)).await?;
-        fight.record(client.take_events())?;
+        fight.record(client.take_events());
         let Some(entity) = target_state(&client, target.entity) else {
             return Err("W01a client capture: rat died before the flee window".into());
         };
-        if let EntityDetail::Actor { health_percent, .. } = entity.detail
+        if let EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } = entity.detail
             && health_percent <= 25
         {
             break (health_percent, entity.position);
@@ -296,7 +254,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     let fled = loop {
         client.service_liveness(Duration::from_millis(50)).await?;
-        fight.record(client.take_events())?;
+        fight.record(client.take_events());
         if let Some(entity) = target_state(&client, target.entity)
             && entity.position != low_position
             && distance(entity.position, player) > distance(low_position, player)
@@ -308,24 +266,48 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         }
     };
 
-    let mut expected = String::new();
-    chase.write(capture_dir, &mut expected)?;
-    fight.write(capture_dir, &mut expected)?;
+    let mut expected = format!(
+        "character={}\nsession={}\nlast_sequence={}\n",
+        hex(&clients.characters[1]),
+        hex(client.join_snapshot().game_session_id.as_bytes()),
+        client.last_server_sequence(),
+    );
+    chase.write_expectations(&mut expected);
+    fight.write_expectations(&mut expected);
     expected.push_str(&format!(
         "chase.final={},{},{}\nlow={low}\nflee.final={},{},{}\n",
         chased.x, chased.y, chased.floor, fled.x, fled.y, fled.floor
     ));
-    capture(capture_dir, "w01a-expected.txt", expected.as_bytes())?;
     Ok(expected)
 }
 
+async fn capture_journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    let directory = required("E2E_ALL_CAPTURE_DIR")?;
+    let directory = Path::new(&directory);
+    let (expected, wire) =
+        oteryn_dev_client::native_session::capture_inbound(journey(clients)).await;
+    let expected = expected?;
+    if wire.is_empty() {
+        return Err("W01a inbound capture is empty".into());
+    }
+    capture(directory, "w01a-inbound.bin", &wire)?;
+    capture(directory, "w01a-expected.txt", expected.as_bytes())?;
+    Ok(format!(
+        "{:x}:{:x}",
+        Sha256::digest(&wire),
+        Sha256::digest(expected.as_bytes())
+    ))
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients)))
-        .await
+    match verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(capture_journey(clients)),
+    )
+    .await
     {
-        Ok(Ok(expected)) => evidence(&format!(
-            "e2e_all scenario=W01a.client status=CAPTURED evidence={:?}",
-            expected.replace('\n', ";")
+        Ok(Ok(digests)) => evidence(&format!(
+            "e2e_all scenario=W01a.client status=CAPTURED evidence={digests}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W01a.client status=FAIL evidence={error}"
@@ -358,7 +340,10 @@ mod tests {
         assert!(!closes_distance(
             before,
             after,
-            ActorPosition { floor: 7, ..observed_player }
+            ActorPosition {
+                floor: 7,
+                ..observed_player
+            }
         ));
     }
 }

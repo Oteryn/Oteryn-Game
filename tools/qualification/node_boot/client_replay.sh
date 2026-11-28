@@ -1,14 +1,26 @@
 replay_client() {
   local log=$1 captures=$2 row=$3 package=$4 case_name=$5 started=$SECONDS
   local status=FAIL
+  local wire_digest expected_digest
+  local -a test_arguments=()
   # The journey owns its failure verdict. A second result would invalidate
   # the evidence consumed by e2e_all's duplicate-scenario check.
   if grep -qF "e2e_all scenario=$row status=FAIL " "$log"; then
     return 1
   fi
+  if [[ "$row" == W01a.client ]]; then
+    test_arguments=(-- --ignored)
+    if ! wire_digest=$(sha256sum < "$captures/w01a-inbound.bin") ||
+       ! expected_digest=$(sha256sum < "$captures/w01a-expected.txt") ||
+       ! grep -Fxq "SEAM_EVIDENCE e2e_capture scenario=$row status=CAPTURED evidence=${wire_digest%% *}:${expected_digest%% *}" "$log"; then
+      printf 'SEAM_EVIDENCE e2e_all scenario=%s status=FAIL seconds=%s.000 evidence=unbound-live-capture\n' \
+        "$row" "$((SECONDS - started))"
+      return 1
+    fi
+  fi
   # The live journey and the exact client replay must both reach their assertions.
   if [[ $(grep -cF "e2e_capture scenario=$row status=CAPTURED " "$log") == 1 ]] \
-    && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" \
+    && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" "${test_arguments[@]}" \
       > "$captures/$row.replay.log" 2>&1 \
     && grep -qE '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$captures/$row.replay.log"; then
     status=PASS

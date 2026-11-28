@@ -1,6 +1,22 @@
 //! Framing and exchange validation shared by session features.
 use super::*;
 
+tokio::task_local! {
+    static INBOUND_CAPTURE: std::cell::RefCell<Vec<u8>>;
+}
+
+/// Captures the length prefixes and original inbound envelopes read by one session
+/// journey on this task. Outbound commands and bootstrap credentials are excluded.
+pub async fn capture_inbound<T>(journey: impl std::future::Future<Output = T>) -> (T, Vec<u8>) {
+    INBOUND_CAPTURE
+        .scope(std::cell::RefCell::new(Vec::new()), async {
+            let result = journey.await;
+            let bytes = INBOUND_CAPTURE.with(std::cell::RefCell::take);
+            (result, bytes)
+        })
+        .await
+}
+
 /// A validated, correlated `CommandResult` with its typed payload still undecoded.
 pub(super) struct ReceivedResult {
     pub(super) command_id: u64,
@@ -125,6 +141,20 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    if let Ok(recorded) = INBOUND_CAPTURE.try_with(|capture| {
+        let mut bytes = capture.borrow_mut();
+        if bytes.len() + prefix.len() + body.len() > 32 * 1024 * 1024 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "inbound capture limit",
+            ));
+        }
+        bytes.extend_from_slice(&prefix);
+        bytes.extend_from_slice(&body);
+        Ok(())
+    }) {
+        recorded?;
+    }
     Ok(body)
 }
 

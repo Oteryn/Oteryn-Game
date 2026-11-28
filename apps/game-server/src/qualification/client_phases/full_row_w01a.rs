@@ -79,7 +79,11 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     row.finish(match result {
         Ok(result) => result,
         Err(_) => {
@@ -92,12 +96,11 @@ fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
     a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
 }
 
-fn adjacent_rat(
-    entry: &oteryn_dev_client::WorldSpatialEntity,
-    here: ActorPosition,
-) -> bool {
+fn adjacent_rat(entry: &oteryn_dev_client::WorldSpatialEntity, here: ActorPosition) -> bool {
     entry.kind == EntityKind::Creature
-        && entry.display_name.is_some_and(|name| name.as_str() == Ok("Rat"))
+        && entry
+            .display_name
+            .is_some_and(|name| name.as_str() == Ok("Rat"))
         && entry.position.floor == here.floor
         && distance(entry.position, here) <= 1
 }
@@ -108,13 +111,9 @@ fn visible_adjacent_rat(
     let here = client.world_spatial().actor_position;
     client
         .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| adjacent_rat(entry, here))
-        })
+        .and_then(|entities| entities.iter().find(|entry| adjacent_rat(entry, here)))
         .copied()
-        .ok_or_else(|| {
-            "step=authored-rat observed=no-adjacent-rat need=authored-rat-spawn".into()
-        })
+        .ok_or_else(|| "step=authored-rat observed=no-adjacent-rat need=authored-rat-spawn".into())
 }
 
 // The paired grate and ladder are authored in the Thais sewer map. STEP alone
@@ -142,24 +141,82 @@ const RAT_SPAWN: TilePos = TilePos {
     floor: -8,
 };
 
+pub(super) async fn planned_step(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    direction: StepDirection,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let expected =
+        destination(world, from, direction).ok_or("W01a step has no authored landing")?;
+    let mut result = client.step(direction).await?;
+    if result.disposition == StepDisposition::Blocked {
+        if tile(client.world_spatial().actor_position)? != from
+            || result.world_spatial_delta.is_some()
+        {
+            return Err(format!("W01a blocked STEP changed position: {result:?}").into());
+        }
+        let occupant = client.world_entities().and_then(|entities| {
+            entities.iter().find(|entity| {
+                entity.kind == EntityKind::Creature && tile(entity.position).ok() == Some(expected)
+            }).map(|entity| entity.entity)
+        }).ok_or_else(|| format!("BLOCKER-SERVER W01a STEP {direction:?} from={from:?} landing={expected:?} reported Blocked without a visible creature: {result:?}"))?;
+        evidence(&format!(
+            "W01A_OCCUPIED first={result:?} occupant={occupant:?} landing={expected:?}"
+        ));
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            client.service_liveness(Duration::from_millis(50)).await?;
+            let entities = client
+                .world_entities()
+                .ok_or("W01a live entity view missing")?;
+            let position = entities
+                .get(&occupant)
+                .map(|entity| tile(entity.position))
+                .transpose()?;
+            if position.is_some_and(|position| position != expected)
+                && !entities.iter().any(|entity| {
+                    matches!(
+                        entity.kind,
+                        EntityKind::Creature | EntityKind::Player | EntityKind::Npc
+                    ) && tile(entity.position).ok() == Some(expected)
+                })
+            {
+                evidence(&format!(
+                    "W01A_OCCUPANT_MOVED occupant={occupant:?} position={position:?}"
+                ));
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!(
+                    "W01a occupant {occupant:?} did not visibly leave {expected:?}: {position:?}"
+                )
+                .into());
+            }
+        }
+        if tile(client.world_spatial().actor_position)? != from {
+            return Err("W01a player moved while waiting for the tracked occupant".into());
+        }
+        result = client.step(direction).await?;
+    }
+    let actual = tile(client.world_spatial().actor_position)?;
+    if result.disposition != StepDisposition::Moved
+        || result.world_spatial_delta.is_none()
+        || actual != expected
+    {
+        return Err(format!("W01a STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={result:?}").into());
+    }
+    verdict::Harness::global().progress("walk");
+    Ok(())
+}
+
 pub(super) async fn walk_once(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
 ) -> TestResult {
     for &direction in path {
-        let from = tile(client.world_spatial().actor_position)?;
-        let expected =
-            destination(world, from, direction).ok_or("W01a step has no authored landing")?;
-        let result = client.step(direction).await?;
-        let actual = tile(client.world_spatial().actor_position)?;
-        if result.disposition != StepDisposition::Moved
-            || result.world_spatial_delta.is_none()
-            || actual != expected
-        {
-            return Err(format!("W01a STEP {direction:?} from={from:?} expected={expected:?} actual={actual:?} reply={result:?}").into());
-        }
-        verdict::Harness::global().progress("walk");
+        planned_step(client, world, direction).await?;
         client.take_events();
     }
     Ok(())
@@ -315,6 +372,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa1).await?;
+    let initial_position = client.world_spatial().actor_position;
 
     let target = approach_rat(&mut client, world, &metadata.spawns).await?;
     row.pass("authored-rat", (target.entity, target.position));
@@ -440,7 +498,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("clear-target", cleared);
 
     // The refused target is outside interest. Walk back into interest before
-    // checking the same generation's health, then return to the saved town cell.
+    // checking the same generation's health, then leave by the same ladder before logout.
     descend(&mut client, world).await?;
     let last_seen = tile(fled)?;
     let reobserve = route(world, tile(client.world_spatial().actor_position)?, |at| {
@@ -452,7 +510,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let health = loop {
         if let Some(health) = client.world_entities().and_then(|entities| {
-            entities.get(&target.entity).and_then(|entry| actor_health(entry.detail))
+            entities
+                .get(&target.entity)
+                .and_then(|entry| actor_health(entry.detail))
         }) {
             break health;
         }
@@ -462,17 +522,42 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    if health < low {
+    if health != low {
         return Err(format!(
-            "step=out-of-range-refusal observed=attack-reply-{refused:?},health-before={low},health-after={health} need=nondecreasing-health-after-refusal"
+            "step=out-of-range-refusal observed=attack-reply-{refused:?},health-before={low},health-after={health} need=unchanged-health-after-refusal"
         )
         .into());
     }
     row.pass("out-of-range-refusal", (refused, low, health));
 
     ascend(&mut client, world).await?;
-    walk_to(&mut client, world, TOWN).await?;
     let saved = client.world_spatial().actor_position;
+    if saved == initial_position || tile(saved)? != SURFACE_APPROACH || tile(saved)? == TOWN {
+        return Err(format!("step=logout-fresh-admission initial={initial_position:?} saved={saved:?} need=changed-surface-cell").into());
+    }
+    let lock_deadline = tokio::time::Instant::now()
+        + Duration::from_millis(u64::from(
+            oteryn_protocol_oteryn::logout::MAX_LOGOUT_RETRY_AFTER_MS,
+        ));
+    verdict::Harness::global().bounded_wait(lock_deadline, "W01a-combat-lock");
+    loop {
+        let combat = client
+            .session_mut()
+            .combat_state()
+            .ok_or("W01a combat state missing")?;
+        if !combat.in_fight && combat.target.is_none() {
+            break;
+        }
+        if tokio::time::Instant::now() >= lock_deadline {
+            return Err(format!(
+                "W01a combat lock did not clear after leaving {:?}: {combat:?}",
+                target.entity
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -507,10 +592,16 @@ mod tests {
     fn targeting_requires_the_named_rat() -> TestResult {
         use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 
-        let here = ActorPosition { x: 10, y: 20, floor: 7 };
+        let here = ActorPosition {
+            x: 10,
+            y: 20,
+            floor: 7,
+        };
         let cave_rat = oteryn_dev_client::WorldSpatialEntity {
             motion: None,
-            display_name: Some(EntityDisplayName::new("Cave Rat").map_err(|error| format!("{error:?}"))?),
+            display_name: Some(
+                EntityDisplayName::new("Cave Rat").map_err(|error| format!("{error:?}"))?,
+            ),
             kind: EntityKind::Creature,
             entity: oteryn_dev_client::EntityRef {
                 identity: v7(10, 1),
@@ -524,7 +615,9 @@ mod tests {
             },
         };
         let rat = oteryn_dev_client::WorldSpatialEntity {
-            display_name: Some(EntityDisplayName::new("Rat").map_err(|error| format!("{error:?}"))?),
+            display_name: Some(
+                EntityDisplayName::new("Rat").map_err(|error| format!("{error:?}"))?,
+            ),
             ..cave_rat
         };
         assert!(!adjacent_rat(&cave_rat, here));
