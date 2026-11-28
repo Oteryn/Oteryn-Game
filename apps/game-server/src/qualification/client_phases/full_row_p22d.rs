@@ -209,7 +209,7 @@ async fn walk_to_rat(
 async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
     character_prep::declare_seeded(
         "P22d.full",
-        "sorcerer-level-100,hand-axe-3276",
+        "sorcerer-level-100",
         "the authored rat route and combat-lock wait exceed the ordinary character budget",
     );
     let mut client = connect_world(clients, 0xd5).await?;
@@ -233,47 +233,6 @@ async fn prepare_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSessio
         "seeded-stats",
         (level, vitals.max_health, vitals.max_mana),
     )?;
-    let axe = provisioning::item_reference(&provisioning::item_index()?, 3276)?;
-    let inventory = fresh
-        .inventory()
-        .ok_or("step=axe;observed=missing-inventory")?;
-    let item = inventory
-        .entries
-        .iter()
-        .find(|item| item.item_definition_ref == axe && item.count.get() == 1)
-        .ok_or("step=axe;observed=not-carried")?
-        .handle;
-    expect(
-        !inventory
-            .equipment
-            .iter()
-            .any(|slot| slot.item.handle == item),
-        "axe-pre-state",
-        item,
-    )?;
-    let reply = fresh.session_mut().equip_item_definition(axe).await?;
-    expect(
-        reply.status == CommandStatus::Accepted
-            && reply.outcome == oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved,
-        "axe-equip",
-        reply,
-    )?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    verdict::Harness::global().bounded_wait(deadline, "p22d-axe-equip");
-    while !fresh.inventory().is_some_and(|inventory| {
-        inventory
-            .equipment
-            .iter()
-            .any(|slot| slot.item.handle == item)
-    }) {
-        expect(
-            tokio::time::Instant::now() < deadline,
-            "axe-equip",
-            "no-equipment-delta",
-        )?;
-        fresh.service_liveness(Duration::from_millis(50)).await?;
-        fresh.take_events();
-    }
     Ok(fresh)
 }
 
@@ -347,6 +306,31 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         attack.disposition == AttackIntentDisposition::Ok,
         "attack",
         attack.disposition,
+    )?;
+
+    let spell = client_spell_journey::spell_index(native_spell_book()?, "exori vis")?;
+    let mana = client
+        .actor_vitals()
+        .ok_or("step=energy-strike;observed=no-vitals")?
+        .mana;
+    let expected_mana = mana
+        .checked_sub(20)
+        .ok_or("step=energy-strike;observed=missing-mana")?;
+    let cast = client
+        .cast_spell(
+            spell,
+            oteryn_protocol_oteryn::actor_spell::SpellTarget::AttackTarget,
+            true,
+        )
+        .await?;
+    expect(
+        cast.disposition == oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::Cast
+            && cast
+                .actor_vitals_delta
+                .as_ref()
+                .is_some_and(|delta| delta.value.mana == expected_mana),
+        "energy-strike",
+        (expected_mana, cast),
     )?;
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(90);
