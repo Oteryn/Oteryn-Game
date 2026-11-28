@@ -140,6 +140,7 @@ async fn walk_to_rat(
             "walk",
             (expected, &outcome),
         )?;
+        verdict::Harness::global().progress("p22d-verified-step");
         client
             .service_liveness(Duration::from_millis(u64::from(outcome.step_wait_ms)))
             .await?;
@@ -235,6 +236,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
                 "live-refresh-count",
                 (expected, count),
             )?;
+            evidence(&format!(
+                "p22d live_tracker sequence={} revision={} before={before} after={expected}",
+                delta.server_sequence, delta.new_revision,
+            ));
+            verdict::Harness::global().progress("p22d-live-tracker");
             refreshed = true;
         }
         if refreshed
