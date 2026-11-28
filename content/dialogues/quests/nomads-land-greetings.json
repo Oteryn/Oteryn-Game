@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.muhad",
+      "greet": "Welcome to our camp. What brings you here?",
+      "farewell": "Safe travels through Darama.",
+      "walkaway": "Safe travels through Darama."
+    }
+  ]
+}

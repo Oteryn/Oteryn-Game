@@ -147,6 +147,7 @@ pub struct FreshAdmissionStore {
     house_release_node: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
+    explicit_logout: bool,
     journal_catalogue: Option<std::sync::Arc<super::journal::LogoutCatalogue>>,
     /// chsw: the release is the safe exit of a voluntary Channel switch; the Party membership is
     /// held for the fresh admission into the target Channel instead of removed.

@@ -128,7 +128,7 @@ where
             session,
             command,
             dispatch,
-            result,
+            (Vec::new(), result),
             CommandOutcome {
                 second_logout: false,
                 lost_while_logging_out: false,
@@ -151,7 +151,7 @@ where
         .enter_input(session.admitted.game_session_id)
         .await;
     let guard_deferred =
-        input_permit.is_some() && !guards(authority, session.admitted, command).await?;
+        input_permit.is_some() && !guards(authority, &mut session.admitted, command).await?;
     if guard_deferred && !session.reconcile_original_bank {
         drop(input_permit.take());
     }
@@ -408,6 +408,19 @@ where
     if matches!(dispatch, Dispatch::Vip(None)) {
         return Err(ServeEnd::Disconnected);
     }
+    let cast_revision = match &dispatch {
+        Dispatch::Spell(cast) | Dispatch::ParameterSpell(cast, _) => {
+            cast.vitals.map(|(revision, _)| revision)
+        }
+        _ => None,
+    };
+    let cooldown_frames = cooldowns::frames(
+        authority,
+        session.cooldowns.as_ref(),
+        &mut session.admitted.continuity,
+        cast_revision,
+    )?;
+    session.sequence = session.admitted.continuity.server_sequence;
     let Some(result_sequence) = session.sequence.checked_add(1) else {
         return Err(ServeEnd::Disconnected);
     };
@@ -431,6 +444,16 @@ where
                 },
                 None,
             ),
+            oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT => {
+                Dispatch::Attack(oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected)
+            }
+            oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
+            | oteryn_protocol_oteryn::party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY => {
+                Dispatch::Reply(
+                    crate::foundation::CommandStatus::Rejected,
+                    oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL.to_vec(),
+                )
+            }
             _ => Dispatch::Unregistered,
         };
         result::encode(session, command, &mut refusal)?
@@ -438,7 +461,13 @@ where
         result::encode(session, command, &mut dispatch)?
     };
     outbound::finish(
-        stream, authority, session, command, dispatch, result, outcome,
+        stream,
+        authority,
+        session,
+        command,
+        dispatch,
+        (cooldown_frames, result),
+        outcome,
     )
     .await?;
     if no_path {
@@ -496,13 +525,23 @@ where
 /// Keep holder contention distinct from lost authority in both command loops.
 pub(super) async fn guards<A: FreshAdmissionAuthority>(
     authority: &A,
-    admitted: AdmittedSession,
+    admitted: &mut AdmittedSession,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
 ) -> Result<bool, ServeEnd> {
-    let failure = match authority.house_transfer_input(admitted).await {
+    let house_input = match admitted.continuity.house_input_pending {
+        Some(false) => Ok(()),
+        pending => {
+            let result = authority.house_transfer_input(*admitted).await;
+            if pending == Some(true) && result.is_ok() {
+                admitted.continuity.house_input_pending = Some(false);
+            }
+            result
+        }
+    };
+    let failure = match house_input {
         Err(error) => Some(("house_transfer_input", error)),
         Ok(()) => authority
-            .activity_transfer_input(admitted)
+            .activity_transfer_input(*admitted)
             .await
             .err()
             .map(|error| ("activity_transfer_input", error)),

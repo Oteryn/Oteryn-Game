@@ -16,7 +16,7 @@ pub const ITEM_MARKET_CRYSTAL_PARITY_PACKET: &[u8] = include_bytes!(
 // Regenerate with `lower_client_market_crystal_parity_packet.py --donor <crystal checkout>`;
 // the generator prints this digest. The packet follows the pinned Crystal market list.
 pub const ITEM_MARKET_CRYSTAL_PARITY_PACKET_SHA256: &str =
-    "0ea1fbee37110cdf3fa81a8db8e1ff75167653055926cfc1b3b4ec4ff5b1114d";
+    "81e551114333cecd53b1b7088d7e0f6f14949011bb2a645174361429e82b99e7";
 const PROMOTIONS: usize = 205;
 const CRYSTAL_MARKET_ITEMS: usize = 5_095;
 const SUPERSEDES_WAVE1_FALSE: &str = "WAVE1_WIKI_MARKETABLE_FALSE";

@@ -70,14 +70,22 @@ impl DurabilityRoot {
             let previous: Option<(Vec<u8>, Vec<u8>, bool)> = sqlx::query_as("SELECT intent,uuid_send(character_id),tool_item_instance_id IS NULL FROM game_terrain_tool_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
                 .fetch_optional(&mut **tx).await?;
-            if let Some((intent, character, no_tool)) = previous {
+            let replay = previous.map(|(intent, character, no_tool)| {
                 let disposition = if intent == request.intent && character == fence.character_id.as_bytes() && no_tool {
                     UseDisposition::Committed
                 } else { UseDisposition::Rejected };
+                result(disposition, false)
+            });
+            let Some(operand) = &request.operand else {
+                // A receipt probe has no writes to commit. Release the command lock
+                // without taking the mutation's COMMIT acknowledgement path.
+                tx.into_inner().rollback().await?;
+                return Ok(replay);
+            };
+            if replay.is_some() {
                 tx.commit(deadline).await?;
-                return Ok(Some(result(disposition, false)));
+                return Ok(replay);
             }
-            let Some(operand) = &request.operand else { tx.commit(deadline).await?; return Ok(None); };
             if operand.scope.content_generation != context.0.source_digest()
                 || assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence,
                     Some(request.command), context.1.loop_content_digest()).await.is_err() {

@@ -150,7 +150,7 @@ macro_rules! composed_methods {
 }
 pub(super) use composed_methods;
 
-/// Both positions must belong to the qualified zone. Movement recomputes membership on use.
+/// Resolve current zone membership and source creature eligibility through the combat owner.
 pub(super) fn effects(
     runtime: &crate::foundation::ChannelRuntimeV1,
     actor: crate::foundation::ExactActorRef,

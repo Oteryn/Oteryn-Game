@@ -1,3 +1,6 @@
+#[path = "qengine_rewards/cq29_quest_contacts.rs"]
+pub(super) mod cq29_quest_contacts;
+
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::TestResult;
 
@@ -25,6 +28,10 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
 use std::sync::Arc;
 
+const SPIRIT_QUEST: &str = "oteryn:quest.the_spirit_will_get_you_quest";
+const SPIRIT_STAGE: &str = "oteryn:quest-progress/l6/spirit/stage";
+const SPIRIT_COMPLETED_STAGE: i64 = 2;
+
 pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -33,8 +40,20 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         super::quest_world_callbacks_fixtures::scenario(
             name,
-            if name.starts_with("qengine-rewards-qworld-phase-") {
+            if name == super::tower_defence_journey_fixtures::NAME {
+                super::tower_defence_journey_fixtures::START
+            } else if name.starts_with("qengine-rewards-qworld-phase-") {
                 super::qworld_phase_steps_fixtures::SOURCE
+            } else if name == cq29_quest_contacts::THIEVES {
+                cq29_quest_contacts::VASE
+            } else if name == super::newhaven_gustavo_fixtures::NAME {
+                super::newhaven_gustavo_fixtures::START
+            } else if matches!(name, "qengine-rewards-eroth-start" | "qengine-rewards-eroth-legacy") {
+                EROTH_CRYSTAL
+            } else if name == super::between_the_lines_fixtures::PHILLIP_SCENARIO {
+                super::between_the_lines_fixtures::PHILLIP
+            } else if name == "qengine-rewards-l10-documents-brotherhood-story" {
+                super::qengine_document_stories_fixtures::BONE_MASTER
             } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
@@ -91,6 +110,18 @@ pub(super) async fn talk(
     id: u64,
     text: &str,
 ) -> TestResult<NpcIntentDisposition> {
+    Ok(talk_outcome(owner, admitted, npc, id, text)
+        .await?
+        .disposition)
+}
+
+pub(super) async fn talk_outcome(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    id: u64,
+    text: &str,
+) -> TestResult<crate::gameplay_transport::npc_command::NpcTalkOutcome> {
     owner.clock_origin = owner
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
@@ -115,10 +146,11 @@ pub(super) async fn talk(
         )
         .await;
     assert!(!outcome.unknown, "NPC command must have a known outcome");
-    Ok(outcome.disposition)
+    Ok(outcome)
 }
 
 fn offer_words(key: &str) -> &'static [&'static str] {
+    let key = key.strip_suffix("-full-outfit").unwrap_or(key);
     if key.contains("/l2-efreet-") || key.contains("/l2-marid-") {
         return match key.rsplit('/').next().unwrap_or(key) {
             "l2-efreet-thief-report" => &["mission", "yes"],
@@ -195,10 +227,14 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l2-wizard-skull" => &["ring"],
         "l2-wizard-flowers-start" => &["addon", "yes"],
         "l2-wizard-flowers" => &["orchid"],
-        "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
+        "l2-battle-mage-book"
+        | "l2-battle-mage-book-complete"
+        | "l2-battle-mage-epaulettes"
+        | "l2-battle-mage-epaulettes-complete" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
-        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet" => &["outfit", "yes"],
+        "l3-demon-base" | "l3-demon-shield" | "l3-demon-helmet"
+        | "l3-demon-shield-complete" | "l3-demon-helmet-complete" => &["outfit", "yes"],
         "l4-nobleman-first-start" => &["addon", "yes", "dress", "yes", "yes"],
         "l4-nobleman-second-start" => &["addon", "yes", "hat", "yes", "yes"],
         "l4-nobleman-first" | "l4-nobleman-second" => &["addon"],
@@ -238,10 +274,14 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l7-assassin-white" => &["50 white cloth"],
         "l7-assassin-yarn" => &["10 spools of yarn"],
         "l11-makeshift-base" => &["salvage"],
-        "l11-dream-warrior-first" | "l11-dream-warrior-second" => &["addon", "yes", "yes"],
+        "l11-dream-warrior-task-base" | "l11-dream-warrior-undal-base" => &["talk"],
+        "l11-dream-warrior-first" | "l11-dream-warrior-second"
+        | "l11-dream-warrior-undal-first" | "l11-dream-warrior-undal-second" => &["addon", "yes", "yes"],
+        "between-the-lines-phillip-accept" => &["book"],
         "l10-brotherhood-join" | "l10-nightmare-join" => &["join", "yes"],
         "l10-brotherhood-officer"
         | "l10-nightmare-officer"
+        | "l10-brotherhood-dread-lord"
         | "l10-brotherhood-leader"
         | "l10-nightmare-leader" => &["advancement"],
         "l10-golden-base" => &["outfit", "yes", "armor"],
@@ -258,7 +298,11 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l8-hunter-leather" => &["leather"],
         "l8-hunter-wings" => &["chicken wing"],
         "l8-hunter-hat" => &["steel"],
-        "l8-hunter-gloves" => &["sniper gloves"],
+        "l8-hunter-gloves"
+        | "l8-hunter-elane-gloves"
+        | "l8-hunter-elane-gloves-sale"
+        | "elane-gloves"
+        | "elane-gloves-sale" => &["sniper gloves"],
         "l8-mage-male-wand-start" => &["angelina", "yes"],
         "l8-mage-male-wands" => &["wand"],
         "l8-mage-male-sulphur" => &["sulphur"],
@@ -293,7 +337,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l6-druid-rook-body" => &["paws"],
         "l5-norseman-first-shards" | "l5-norseman-second-shards" => &["shard"],
         "l5-oriental-female-first-start" => &["outfit", "yes"],
-        "l5-oriental-female-comb" => &["comb"],
+        "l5-oriental-female-comb" => &["mermaid's comb"],
         "l5-oriental-female-second-start" => &["task", "yes"],
         "l5-oriental-female-ape-fur" => &["ape fur"],
         "l5-oriental-female-fish-fins" => &["fish fins"],
@@ -302,7 +346,7 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "l4-pirate-sabre-start" => &["task", "yes"],
         "l4-pirate-eye-patches" => &["eye patches"],
         "l4-pirate-peg-legs" => &["peg legs"],
-        "l4-pirate-hooks" => &["hooks"],
+        "l4-pirate-hooks" => &["pirate hooks"],
         "l4-pirate-hat-start" => &["addon", "task", "yes"],
         "l4-pirate-hat" => &["task"],
         "hallowed-holy-water" => &["holy water"],
@@ -389,7 +433,13 @@ pub(super) async fn wire_reward_with_prefix_refusal(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
-    let words: Vec<_> = std::iter::once("hi")
+    let greeting = match callback.npc.as_str() {
+        "oteryn:npc.alesar" | "oteryn:npc.baa_leal" | "oteryn:npc.gabel" | "oteryn:npc.malor" => "djanni'hah",
+        "oteryn:npc.bo_ques" => "djanni'hah",
+        "oteryn:npc.rata_mari" => "piedpiper",
+        _ => "hi",
+    };
+    let words: Vec<_> = std::iter::once(greeting)
         .chain(offer_words(&callback.key).iter().copied())
         .chain(std::iter::once(callback.keywords[0].as_str()))
         .collect();
@@ -510,6 +560,7 @@ async fn wire_conversation_with_prefix_refusal(
     } else {
         vec![]
     };
+    let callback_key = callback.key.clone();
     let peer = tokio::spawn(async move {
         let mut catalogues = Vec::new();
         let mut result = None;
@@ -597,7 +648,8 @@ async fn wire_conversation_with_prefix_refusal(
                 })
             })
         };
-        let mut shut = has_outfit(&catalogues);
+        let mut shut = result.is_some_and(|disposition| disposition != NpcIntentDisposition::Ok)
+            || has_outfit(&catalogues);
         if shut {
             client.shutdown().await.map_err(|e| e.to_string())?;
         }
@@ -608,7 +660,7 @@ async fn wire_conversation_with_prefix_refusal(
             let mut prefix = [0; 4];
             match tokio::time::timeout_at(drain_deadline, client.read_exact(&mut prefix))
                 .await
-                .map_err(|_| "earned appearance catalogue did not arrive".to_owned())?
+                .map_err(|_| format!("earned appearance catalogue for {callback_key} did not arrive after {result:?}"))?
             {
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
@@ -663,10 +715,14 @@ pub(super) async fn seed(
     ordinal: u64,
 ) -> TestResult {
     let canonical = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
-    let tracks = callback
+    let mut tracks = callback
         .storage
         .iter()
-        .map(|s| canonical.track(&s.track).cloned().ok_or("track"))
+        .map(|state| state.track.as_str())
+        .chain(callback.requires.iter().map(|state| state.track.as_str()))
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .map(|key| canonical.track(key).cloned().ok_or("track"))
         .collect::<Result<Vec<_>, _>>()?;
     let setup = "oteryn:quest-transition/qengine-rewards-fixture-ready";
     let mut transitions = vec![QuestTransition {
@@ -691,6 +747,29 @@ pub(super) async fn seed(
             .cloned()
             .ok_or("reward transition")?,
     );
+    let spirit_completion = "oteryn:quest-transition/qengine-rewards-fixture-spirit";
+    let mut setup_steps = vec![setup];
+    if callback
+        .requires_completed_quests
+        .iter()
+        .any(|quest| quest == SPIRIT_QUEST)
+    {
+        // The hand-in cases start after the separately qualified Crone quest.
+        tracks.push(canonical.track(SPIRIT_STAGE).cloned().ok_or("Spirit stage")?);
+        transitions.push(QuestTransition {
+            world_change: None,
+            key: spirit_completion.into(),
+            quest: SPIRIT_QUEST.into(),
+            effects: vec![QuestEffect {
+                track: SPIRIT_STAGE.into(),
+                from: QuestComparison::Any,
+                effect: QuestEffectKind::Set(SPIRIT_COMPLETED_STAGE),
+            }],
+            completes: true,
+            experience: None,
+        });
+        setup_steps.push(spirit_completion);
+    }
     let catalogue = Arc::new(
         QuestStateCatalogue::new(canonical.content_revision(), tracks, transitions)
             .map_err(debug)?,
@@ -702,28 +781,106 @@ pub(super) async fn seed(
         .map_err(|_| "fence")?
         .ok_or("fence")?;
     let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-    let outcome = slot
-        .commit_quest_transition(
-            owner.root,
-            owner.character,
-            owner.holder,
-            fence,
-            QuestTransitionRequest {
-                transition_key: setup.into(),
-                cause: QuestCause::Command(CommandRef::new(
-                    admitted.game_session_id,
-                    CommandId::new(ordinal).map_err(debug)?,
-                )),
-            },
-            catalogue,
-        )
-        .await
-        .map_err(|e| format!("reward fixture seed: {e:?}"))?;
-    assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    for (step, ordinal) in setup_steps.into_iter().zip(ordinal..) {
+        let outcome = slot
+            .commit_quest_transition(
+                owner.root,
+                owner.character,
+                owner.holder,
+                fence,
+                QuestTransitionRequest {
+                    transition_key: step.into(),
+                    cause: QuestCause::Command(CommandRef::new(
+                        admitted.game_session_id,
+                        CommandId::new(ordinal).map_err(debug)?,
+                    )),
+                },
+                Arc::clone(&catalogue),
+            )
+            .await
+            .map_err(|e| format!("reward fixture seed: {e:?}"))?;
+        assert!(matches!(outcome, QuestTransitionOutcome::Committed(_)));
+    }
     drop(slot);
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
+    Ok(())
+}
+
+async fn drop_quoted_glove(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    h: &Harness,
+    command_id: u64,
+    glove: &str,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+    use crate::gameplay_transport::item_view::{ItemKey, ItemViewContinuity, SessionItemView};
+    use oteryn_protocol_oteryn::item_view::{
+        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
+        encode_item_move_intent_for,
+    };
+
+    let actor = admitted.runtime_actor.ok_or("glove seller")?;
+    let session = admitted.game_session_id;
+    let item: sqlx::types::Uuid = sqlx::query_scalar(
+        "SELECT item_instance_id FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1",
+    )
+    .bind(glove)
+    .fetch_one(&h.pool)
+    .await?;
+    let mut view = SessionItemView::resume(ItemViewContinuity::default())
+        .with_map_view()
+        .with_equip_drop();
+    let snapshot = owner
+        .observe_character_inventory(actor, session)
+        .await
+        .ok_or("inventory")?;
+    view.snapshot(snapshot, None).map_err(debug)?;
+    let source = view
+        .table()
+        .handle(&ItemKey::Instance(*item.as_bytes()))
+        .ok_or("carried glove")?;
+    let at = owner
+        .runtime
+        .lock()
+        .await
+        .read_actor_position(actor)
+        .map_err(debug)?
+        .position();
+    let selection = ItemMoveSelection {
+        equip_drop: true,
+        world_interaction: true,
+        ..Default::default()
+    };
+    let payload = encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Ground(WorldTilePosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            }),
+        },
+        selection,
+    )
+    .map_err(debug)?;
+    let fence = owner
+        .current_quest_fence(session)
+        .await
+        .map_err(|()| "glove fence")?
+        .ok_or("glove fence")?;
+    let command = UseCommand {
+        game_session_id: session,
+        command_id,
+        item_fence: Some(fence.item_fence()),
+    };
+    assert!(matches!(
+        item_move(owner, actor, command, &payload, selection, false, &mut view).await,
+        ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
+    ));
     Ok(())
 }
 
@@ -882,6 +1039,34 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == "qengine-rewards-black-bert-arthei" {
+        return Box::pin(questl2_djinn_journeys::black_bert(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-storkus-dust" {
+        return Box::pin(super::vampire_hunter_journey::dust(owner, admitted, h)).await;
+    }
+    if let Some(mission_stage) = match name {
+        "qengine-rewards-storkus-direct-dust" => Some(1),
+        "qengine-rewards-storkus-dust-without-referral" => Some(0),
+        _ => None,
+    } {
+        return Box::pin(super::vampire_hunter_journey::direct_dust(
+            owner, admitted, h, mission_stage,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-storkus-empty-dust" {
+        return Box::pin(super::vampire_hunter_journey::empty_dust(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-vampire-hunter" {
+        return Box::pin(super::vampire_hunter_journey::exercise(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-vampire-hunter-loot" {
+        return Box::pin(super::vampire_hunter_journey::loot(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-classic-prisoner" {
+        return Box::pin(super::classic_prisoner_fixtures::exercise(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-fibula-completion") {
         return Box::pin(super::questpc6_fibula_completion_fixtures::exercise(
             owner, admitted, h, name,
@@ -897,8 +1082,18 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == cq29_quest_contacts::THIEVES || name == cq29_quest_contacts::SENTRY {
+        return Box::pin(cq29_quest_contacts::exercise(owner, admitted, h, name)).await;
+    }
+    if name == super::newhaven_gustavo_fixtures::NAME {
+        return Box::pin(super::newhaven_gustavo_fixtures::exercise(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-l2-white-raven" {
         return Box::pin(questl2_passages::white_raven(owner, admitted, h)).await;
+    }
+    if name == super::classic_quest_parity_fixtures::NPC_CASE {
+        return Box::pin(super::classic_quest_parity_fixtures::npc_exercise(owner, admitted, h))
+            .await;
     }
     if name.starts_with("qengine-rewards-l2-djinn-") {
         return Box::pin(questl2_djinn_journeys::exercise(owner, admitted, h, name)).await;
@@ -909,9 +1104,9 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-m25-galthen-native-deaths" {
+    if name.starts_with("qengine-rewards-m25-galthen-native-deaths") {
         return Box::pin(super::m25_galthen_native_death_fixtures::exercise(
-            owner, admitted, h,
+            owner, admitted, h, name,
         ))
         .await;
     }
@@ -1026,11 +1221,8 @@ pub(super) async fn exercise(
         ))
         .await;
     }
-    if name == "qengine-rewards-qd-steal-from-thieves" {
-        return Box::pin(super::qd_steal_from_thieves_fixtures::exercise(
-            owner, admitted, h, authority,
-        ))
-        .await;
+    if name.starts_with("qengine-rewards-rookgaard-") {
+        return Box::pin(super::rookgaard_exchanges_fixtures::exercise(owner, admitted, h, name)).await;
     }
     if name.starts_with("qengine-rewards-qnpcfx-koshei") {
         return Box::pin(super::qnpcfx_koshei_fixtures::exercise(
@@ -1117,6 +1309,9 @@ pub(super) async fn exercise(
     if name == "qengine-rewards-authored-bindings" {
         return Box::pin(super::authored_quest_bindings_fixtures::exercise(owner, admitted, h)).await;
     }
+    if name == "qengine-rewards-forbidden-fruit" {
+        return Box::pin(forbidden_fruit(owner, admitted, h)).await;
+    }
     if name == "qengine-rewards-l13-rift-story" {
         return Box::pin(super::qengine_endgame_stories_fixtures::rift(
             owner, admitted, h, authority,
@@ -1134,6 +1329,9 @@ pub(super) async fn exercise(
             owner, admitted, h, authority, name,
         ))
         .await;
+    }
+    if name == super::between_the_lines_fixtures::PHILLIP_SCENARIO {
+        return Box::pin(super::between_the_lines_fixtures::phillip(owner, admitted, h, authority)).await;
     }
     if name.starts_with("qengine-rewards-l10-documents-") {
         return Box::pin(super::qengine_document_stories_fixtures::exercise(
@@ -1162,19 +1360,66 @@ pub(super) async fn exercise(
         ))
         .await;
     }
+    if name == "qengine-rewards-eroth-legacy" {
+        return Box::pin(eroth_legacy_save(owner, admitted, h, authority)).await;
+    }
+    if name == "qengine-rewards-eroth-start" || name == "qengine-rewards-joe-start" {
+        let (npc, words, track, value) = if name.ends_with("eroth-start") {
+            (
+                "oteryn:npc.eroth",
+                &["hi", "mission", "yes"][..],
+                "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+                1,
+            )
+        } else {
+            (
+                "oteryn:npc.one_eyed_joe",
+                &["hi", "mission", "yes", "yes"][..],
+                "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/questline",
+                0,
+            )
+        };
+        let [npc] = super::classic_quests_fixtures::install(owner, admitted, [npc]).await?;
+        let first = admitted.continuity.next_command_id;
+        for (offset, word) in words.iter().enumerate() {
+            assert_eq!(
+                talk(owner, admitted, npc, first + u64::try_from(offset)?, word).await?,
+                NpcIntentDisposition::Ok,
+                "{word}"
+            );
+        }
+        assert_eq!(
+            super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+            value,
+        );
+        if name.ends_with("eroth-start") {
+            eroth_crystal(owner, admitted, h, authority, track).await?;
+        }
+        return Ok(());
+    }
     if name == "qengine-rewards-l1-legacy-decaying" {
         return Box::pin(legacy_decaying(owner, admitted, h)).await;
     }
-    let key = match name {
-        "qengine-rewards-l1-warmaster-tribal" => "l1-warmaster-tribal",
+    let account_set = name.ends_with("-account-set");
+    let key = match name.trim_end_matches("-account-set") {
+        "qengine-rewards-l1-warmaster-tribal" | "qengine-rewards-l1-warmaster-tribal-owned" => {
+            "l1-warmaster-tribal"
+        }
         "qengine-rewards-l1-wayfarer-hat" => "l1-wayfarer-hat",
         "qengine-rewards-l1-yalaharian-base-palimuth"
         | "qengine-rewards-l1-yalaharian-base-palimuth-villain" => "l1-yalaharian-base-palimuth",
         "qengine-rewards-l1-yalaharian-base-yalahari" => "l1-yalaharian-base-yalahari",
         "qengine-rewards-l1-yalaharian-villain" => "l1-yalaharian-villain",
-        "qengine-rewards-l1-warmaster" => "l1-warmaster-crest",
-        "qengine-rewards-l1-wayfarer" => "l1-wayfarer-cape",
+        "qengine-rewards-l1-warmaster" | "qengine-rewards-l1-warmaster-owned" => {
+            "l1-warmaster-crest"
+        }
+        "qengine-rewards-l1-wayfarer"
+        | "qengine-rewards-l1-wayfarer-free"
+        | "qengine-rewards-l1-wayfarer-addon-only" => "l1-wayfarer-cape",
         "qengine-rewards-l1-yalaharian" => "l1-yalaharian-sage",
+        "qengine-rewards-elane-gloves-free" | "qengine-rewards-elane-gloves-completed" => {
+            "elane-gloves-sale"
+        }
         "qengine-rewards-pirate" => "pirate-sabre",
         "qengine-rewards-knight" => "knight-sword",
         "qengine-rewards-deepling" => "deepling-helmet",
@@ -1183,9 +1428,18 @@ pub(super) async fn exercise(
         "qengine-rewards-backpack" => "sam-backpack",
         _ => return Err("unknown reward scenario".into()),
     };
+    let elane_sale = match name {
+        "qengine-rewards-elane-gloves-free" => {
+            Some("oteryn:quest-reward/chosen/hunter-outfits/elane-gloves-sale")
+        }
+        "qengine-rewards-elane-gloves-completed" => {
+            Some("oteryn:quest-reward/l8-hunter-elane-gloves-sale")
+        }
+        _ => None,
+    };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
         .into_iter()
-        .find(|c| c.key.ends_with(key))
+        .find(|c| elane_sale.map_or_else(|| c.key.ends_with(key), |sale| c.key == sale))
         .ok_or("callback")?;
     let mut setup = callback.clone();
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
@@ -1215,8 +1469,58 @@ pub(super) async fn exercise(
                 preserve: true,
             });
     }
-    seed(owner, admitted, &setup, 9000).await?;
-    let [npc] = super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()]).await?;
+    if key.starts_with("l1-warmaster-")
+        || key.starts_with("l1-wayfarer-")
+        || key == "elane-gloves-sale"
+    {
+        // Keep the production catalogue so either addon and its completion branch
+        // can be reached after the first exchange.
+        let mut prerequisites = setup
+            .storage
+            .iter()
+            .map(|state| (state.track.clone(), state.minimum))
+            .collect::<Vec<_>>();
+        if setup
+            .requires_completed_quests
+            .iter()
+            .any(|quest| quest == SPIRIT_QUEST)
+        {
+            // The Crone's offer reads the stage written with the completion.
+            prerequisites.push((SPIRIT_STAGE.into(), SPIRIT_COMPLETED_STAGE));
+        }
+        if !prerequisites.is_empty() || !setup.requires_completed_quests.is_empty() {
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites_and_completions(
+                h,
+                owner,
+                admitted,
+                &prerequisites,
+                &setup.requires_completed_quests,
+                150,
+            )
+            .await?;
+            owner
+                .refresh_quest_session(admitted.game_session_id, false)
+                .await;
+        }
+    } else if !matches!(key, "outfox-helmet" | "hallowed-holy-water") {
+        seed(owner, admitted, &setup, 9000).await?;
+    }
+    let (npc, amanda) = if key == "hallowed-holy-water" {
+        // The grave callbacks protect this track against generic quest writes.
+        // Enter Costello's exchange through Amanda's actual acceptance.
+        let [costello, amanda] = super::classic_quests_fixtures::install(
+            owner,
+            admitted,
+            [callback.npc.as_str(), "oteryn:npc.amanda"],
+        )
+        .await?;
+        (costello, Some(amanda))
+    } else {
+        let [npc] =
+            super::classic_quests_fixtures::install(owner, admitted, [callback.npc.as_str()])
+                .await?;
+        (npc, None)
+    };
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -1235,18 +1539,103 @@ pub(super) async fn exercise(
     assert!(admitted.continuity.selected_capabilities.contains(3));
     assert!(admitted.continuity.selected_capabilities.contains(6));
     assert!(admitted.continuity.selected_capabilities.contains(25));
+    if let Some(amanda) = amanda {
+        let acceptance = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+            .into_iter()
+            .find(|row| row.key == "oteryn:quest-reward/tibia-tales/hallowed-accept")
+            .ok_or("Amanda's Hallowed Ground acceptance")?;
+        assert_eq!(
+            wire_conversation(
+                owner,
+                admitted,
+                amanda,
+                &acceptance,
+                false,
+                vec!["hi", "mission", "yes", "bye"],
+            )
+            .await?
+            .0,
+            NpcIntentDisposition::Ok,
+        );
+        for state in &callback.storage {
+            assert_eq!(
+                super::classic_quests_fixtures::progress(owner, admitted, authority, &state.track)
+                    .await?,
+                state.minimum,
+            );
+        }
+    }
     let first = admitted.continuity.next_command_id;
     assert_eq!(
         talk(owner, admitted, npc, first, "hi").await?,
         NpcIntentDisposition::Ok
     );
     let mut command = admitted.continuity.next_command_id;
+    if key == "outfox-helmet" {
+        for word in ["mission", "yes"] {
+            assert_eq!(talk(owner, admitted, npc, command, word).await?, NpcIntentDisposition::Ok);
+            command += 1;
+        }
+        let sessions = owner.states.quest_sessions.lock().map_err(|_| "quest sessions")?;
+        let copy = sessions.get(&admitted.game_session_id)
+            .and_then(|state| state.copy.as_ref()).ok_or("quest copy")?;
+        assert!(copy.meets_door_storage(41492), "Budrik opens the real Mining Helmet door");
+    }
     let offers = offer_words(key);
     for offer in offers {
         assert_eq!(
             talk(owner, admitted, npc, command, offer).await?,
             NpcIntentDisposition::Ok
         );
+        command += 1;
+    }
+    let at = Position {
+        x: 33293,
+        y: 31677,
+        floor: -15,
+    };
+    if elane_sale.is_some() {
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            0,
+            "Elane offers information without carried gloves"
+        );
+        let glove = callback.take.first().ok_or("glove sale input")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "glove fence")?
+            .ok_or("glove fence")?;
+        super::quest_world_callbacks_fixtures::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at,
+                item: glove.item.clone(),
+                count: glove.count,
+            },
+            199,
+            true,
+        )
+        .await?;
+        assert_eq!(
+            talk(owner, admitted, npc, command, "sniper gloves").await?,
+            NpcIntentDisposition::Ok,
+        );
+        command += 1;
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            callback.topic,
+            "carried gloves open a sale quote"
+        );
+        // Confirm after the quoted gloves leave carried custody.
+        drop_quoted_glove(owner, admitted, h, command, &glove.item).await?;
         command += 1;
     }
     let before = counts(h).await?;
@@ -1261,15 +1650,10 @@ pub(super) async fn exercise(
         for s in &callback.storage {
             assert_eq!(
                 super::classic_quests_fixtures::progress(owner, admitted, authority, &s.track).await?,
-                s.minimum
+                if key == "outfox-helmet" { 1 } else { s.minimum }
             );
         }
     }
-    let at = Position {
-        x: 33293,
-        y: 31677,
-        floor: -15,
-    };
     for (i, input) in callback.take.iter().chain(&callback.present).enumerate() {
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
@@ -1376,11 +1760,72 @@ pub(super) async fn exercise(
         into_bag(owner, admitted, *item.as_bytes(), *bag.as_bytes(), 8200).await?;
         held_evidence.push(item);
     }
+    let only = name.ends_with("-addon-only");
+    let free = name == "qengine-rewards-l1-wayfarer-free";
+    let owned = name.ends_with("-owned");
+    if key.starts_with("l1-warmaster-") || (key.starts_with("l1-wayfarer-") && !only && !free) {
+        let outfit = callback.outfit.as_ref().ok_or("outfit")?;
+        let mut keys = vec![outfit.grant_key(0)];
+        if owned {
+            keys.push(outfit.grant_key(outfit.addons));
+        }
+        if account_set {
+            // Pre-existing account entitlement with no local complementary quest track.
+            keys.push(outfit.grant_key(3 - outfit.addons));
+        }
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        for (index, key) in keys.iter().enumerate() {
+            let event = format!("qengine-l1-existing-grant-{index}");
+            sqlx::query(
+                "WITH receipt AS (
+                    INSERT INTO game_account_appearance_unlock_receipts
+                        (grant_occurrence_id,account_id,unlock_key,content_revision,
+                         granting_character_id,source_kind,source_event_id)
+                    SELECT gen_random_uuid(),account_id,$1,$2,character_id,'quest',$3
+                    FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid
+                    RETURNING account_id,unlock_key,grant_occurrence_id
+                 )
+                 INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id)
+                 SELECT account_id,unlock_key,grant_occurrence_id FROM receipt",
+            )
+            .bind(key)
+            .bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE)
+            .bind(event.as_bytes())
+            .bind(fence.character_id.as_bytes().as_slice())
+            .execute(&h.pool)
+            .await?;
+        }
+    }
     let original = counts(h).await?;
     let (disposition, catalogues, committed_command) =
-        wire_grant(owner, admitted, npc, &callback).await?;
+        wire_reward(owner, admitted, npc, &callback, !free && !only && !owned).await?;
     command = committed_command;
+    if free || owned {
+        assert_eq!(disposition, NpcIntentDisposition::Rejected);
+        assert_eq!(
+            counts(h).await?,
+            original,
+            "refusal keeps the carried input"
+        );
+        return Ok(());
+    }
     assert_eq!(disposition, NpcIntentDisposition::Ok);
+    if only {
+        let outfit = callback.outfit.as_ref().ok_or("outfit")?;
+        let unlocks: Vec<String> = sqlx::query_scalar(
+            "SELECT unlock_key FROM game_account_appearance_unlocks WHERE unlock_key = ANY($1)",
+        )
+        .bind([outfit.grant_key(0), outfit.grant_key(outfit.addons)].as_slice())
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(unlocks, vec![outfit.grant_key(outfit.addons)]);
+        assert_eq!(counts(h).await?.3, original.3 + 1);
+        return Ok(());
+    }
     if let Some(outfit) = &callback.outfit {
         assert!(
             catalogues.iter().any(|catalogue| catalogue
@@ -1440,7 +1885,17 @@ pub(super) async fn exercise(
         );
     }
     if let Some(reward) = &callback.give {
-        let minted:(String,i64)=sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) WHERE m.claim_production_key=$1").bind(&callback.key).fetch_one(&h.pool).await?;
+        let minted: (String, i64) = sqlx::query_as(
+            "SELECT i.definition_production_key, i.quantity
+             FROM game_quest_reward_sources s
+             JOIN game_reward_claim_mint_receipts m ON m.transaction_id = s.mint_transaction_id
+             JOIN game_item_instances i USING (item_instance_id)
+             WHERE s.transition_key = $1 AND s.cause_ordinal = $2::text::numeric",
+        )
+        .bind(&callback.key)
+        .bind(command.to_string())
+        .fetch_one(&h.pool)
+        .await?;
         assert_eq!(minted, (reward.item.clone(), i64::from(reward.count)));
     }
     if let Some(achievement) = &callback.achievement {
@@ -1451,8 +1906,21 @@ pub(super) async fn exercise(
             .bind(achievement)
             .fetch_one(&h.pool)
             .await?,
-            1
+            i64::from(!callback.achievement_requires_full_outfit || account_set)
         );
+    }
+    let yalahari_achievement = match key {
+        "l1-yalaharian-sage" => Some("oteryn:achievement/yalahari_of_wisdom"),
+        "l1-yalaharian-villain" => Some("oteryn:achievement/yalahari_of_power"),
+        _ => None,
+    };
+    if let Some(expected) = yalahari_achievement {
+        let granted: Vec<String> = sqlx::query_scalar(
+            "SELECT achievement_key FROM game_account_achievements WHERE achievement_key IN ('oteryn:achievement/yalahari_of_wisdom','oteryn:achievement/yalahari_of_power')",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(granted, [expected]);
     }
     // Literal transport replay cannot take items or repeat either value grant.
     assert_eq!(
@@ -1584,6 +2052,106 @@ pub(super) async fn exercise(
     let next = admitted.continuity.next_command_id;
     let _ = talk(owner, admitted, npc, next, &callback.keywords[0]).await?;
     assert_eq!(counts(h).await?, after);
+    if let Some((complement, achievement)) = match key {
+        "l1-warmaster-crest" => Some(("l1-warmaster-tribal", "master_of_war")),
+        "l1-warmaster-tribal" => Some(("l1-warmaster-crest", "master_of_war")),
+        "l1-wayfarer-cape" => Some(("l1-wayfarer-hat", "peazzekeeper")),
+        "l1-wayfarer-hat" => Some(("l1-wayfarer-cape", "peazzekeeper")),
+        _ => None,
+    } {
+        let earned = || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
+            )
+            .bind(format!("oteryn:achievement/{achievement}"))
+            .fetch_one(&h.pool)
+        };
+        if account_set {
+            assert_eq!(earned().await?, 1, "the other addon was already owned by the account");
+            let local_addon = callback.storage.iter().find(|state| !state.preserve)
+                .ok_or("local addon progress")?;
+            super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+                h, owner, admitted, &[(local_addon.track.clone(), local_addon.minimum)], 151,
+            ).await?;
+            owner.refresh_quest_session(admitted.game_session_id, false).await;
+            let input = callback.take.first().ok_or("addon hand-in item")?;
+            let fence = owner.current_quest_fence(admitted.game_session_id)
+                .await.map_err(|_| "fence")?.ok_or("fence")?;
+            super::quest_world_callbacks_fixtures::input_item(
+                owner,
+                fence.item_fence(),
+                &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                    position: at,
+                    item: input.item.clone(),
+                    count: input.count,
+                },
+                322,
+                true,
+            ).await?;
+            let before_retry = counts(h).await?;
+            let (duplicate, _, _) = wire_reward(owner, admitted, npc, &callback, false).await?;
+            assert_eq!(duplicate, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, before_retry, "an owned addon cannot charge again");
+            assert_eq!(earned().await?, 1);
+            return Ok(());
+        }
+        assert_eq!(
+            earned().await?,
+            0,
+            "a single addon does not complete the outfit"
+        );
+        let complement = oteryn_gameplay_quests::quest::reward_callbacks::load()?
+            .into_iter()
+            .find(|callback| callback.key.ends_with(complement))
+            .ok_or("complementary addon")?;
+        if key.starts_with("l1-wayfarer-") {
+            let (refused, _, _) = wire_reward(owner, admitted, npc, &complement, false).await?;
+            assert_eq!(refused, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, after, "the addon still needs its hand-in item");
+        }
+        let input = complement.take.first().ok_or("complementary trade item")?;
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|_| "fence")?
+            .ok_or("fence")?;
+        super::quest_world_callbacks_fixtures::input_item(
+            owner,
+            fence.item_fence(),
+            &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+                position: at,
+                item: input.item.clone(),
+                count: input.count,
+            },
+            320,
+            true,
+        )
+        .await?;
+        if key.starts_with("l1-wayfarer-") {
+            let premium = owner.premium_coordinator.take();
+            let (refused, _, _) = wire_reward(owner, admitted, npc, &complement, false).await?;
+            owner.premium_coordinator = premium;
+            assert_eq!(refused, NpcIntentDisposition::Rejected);
+            assert_eq!(counts(h).await?, after, "the hand-in needs current Premium");
+            assert_eq!(earned().await?, 0);
+        }
+        let (disposition, catalogues, _) = wire_grant(owner, admitted, npc, &complement).await?;
+        assert_eq!(disposition, NpcIntentDisposition::Ok);
+        assert_eq!(earned().await?, 1, "the second addon completes the outfit");
+        let completed = counts(h).await?;
+        assert_eq!(completed.0, after.0 + 1);
+        assert_eq!(completed.1, after.1 + 1);
+        let outfit = callback.outfit.as_ref().ok_or("addon outfit")?;
+        assert!(catalogues.iter().any(|catalogue| {
+            catalogue.outfits.iter().any(|option| {
+                option.key == outfit.outfit && option.permitted_addons == 3
+            })
+        }));
+        let command = admitted.continuity.next_command_id;
+        let _ = talk(owner, admitted, npc, command, "yes").await?;
+        assert_eq!(earned().await?, 1);
+        assert_eq!(counts(h).await?, completed);
+    }
     if key == "pirate-sabre" {
         // Arrange a prior account entitlement, as when a sibling Character
         // already finished this quest. Progress can still advance without
@@ -1601,6 +2169,99 @@ pub(super) async fn exercise(
             );
         }
     }
+    Ok(())
+}
+
+const EROTH_CRYSTAL: Position = Position {
+    x: 32592,
+    y: 31645,
+    floor: -2,
+};
+
+async fn eroth_legacy_save(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    let track = "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline";
+    for key in [
+        "oteryn:quest-callback/elvenbane-mirror-crystal",
+        "oteryn:quest-callback/to-blind-the-enemy/mirror",
+    ] {
+        assert!(owner.callback_content().iter().any(|callback| callback.key == key));
+    }
+    super::qengine_outfit_stories_fixtures::seed_quest_prerequisites(
+        h, owner, admitted, &[(track.into(), 1)], 0xa5,
+    )
+    .await?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(debug)?
+        .ok_or("Eroth item fence")?;
+    super::quest_world_callbacks_fixtures::input_item(
+        owner,
+        fence.item_fence(),
+        &oteryn_gameplay_quests::quest::world_callbacks::Offering {
+            position: EROTH_CRYSTAL,
+            item: "oteryn:item.tibia.i3463".into(),
+            count: 1,
+        },
+        7040,
+        true,
+    )
+    .await?;
+    eroth_crystal(owner, admitted, h, authority, track).await?;
+    assert_eq!(
+        super::classic_quests_fixtures::progress(
+            owner,
+            admitted,
+            authority,
+            "oteryn:quest-progress/to-blind-the-enemy/mission",
+        )
+        .await?,
+        0,
+        "the legacy crystal does not advance the authored mission"
+    );
+    Ok(())
+}
+
+async fn eroth_crystal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    track: &str,
+) -> TestResult {
+    use crate::map::view::MapFacts as _;
+
+    assert_eq!(questl2_journeys::quantity(h, 3463).await?, 1);
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            &[3, 4, 6, 11, 15, 18],
+        )
+        .ok_or("mirror USE capabilities")?;
+    assert_eq!(
+        super::tibia_tales_fixtures::use_tool_at(owner, admitted, EROTH_CRYSTAL, 2, 3463).await?,
+        oteryn_protocol_oteryn::world_object::UseDisposition::Committed,
+    );
+    assert_eq!(questl2_journeys::quantity(h, 3463).await?, 0);
+    assert_eq!(
+        super::classic_quests_fixtures::progress(owner, admitted, authority, track).await?,
+        2,
+    );
+    let map = owner.bundle_map().ok_or("Elvenbane map")?;
+    let key = oteryn_world_bundle::bundle::placement_key(
+        EROTH_CRYSTAL.floor, EROTH_CRYSTAL.x, EROTH_CRYSTAL.y, 2,
+    )
+    .ok_or("crystal placement")?;
+    assert!(map.facts.base_hidden(key));
+    let reset = map.facts.next_movement_decay_time().ok_or("crystal reset")?;
+    assert_eq!(map.facts.expire_movement_items(reset - 1), 0);
+    assert_eq!(map.facts.expire_movement_items(reset), 1);
+    assert!(!map.facts.base_hidden(key));
     Ok(())
 }
 
@@ -1733,3 +2394,50 @@ pub(super) mod m39_any_topic;
 
 #[path = "qengine_rewards/questl2_passages.rs"]
 pub(super) mod questl2_passages;
+
+async fn forbidden_fruit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use super::qengine_voucher_stories_fixtures::{mint, quantity, use_native};
+    use crate::gameplay_transport::capabilities::SelectedCapabilities;
+    use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+    use oteryn_protocol_oteryn::world_object::{CAPABILITY_ITEM_USE_V1, UseDisposition};
+    use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+
+    const FRUIT: u16 = 24966;
+    let required = [
+        CAPABILITY_ITEM_VIEW_MOVE_V1,
+        CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        CAPABILITY_ITEM_USE_V1,
+    ];
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &required)
+            .ok_or("carried item view and USE capabilities")?;
+    assert_eq!(admitted.continuity.selected_capabilities.as_slice(), required);
+    let mut ordinal = 99300;
+    for _ in 0..2 {
+        mint(owner, admitted, FRUIT, 1, &mut ordinal).await?;
+    }
+    use_native(owner, admitted, FRUIT, UseDisposition::Committed).await?;
+    assert_eq!(quantity(h, FRUIT).await?, 1, "exact replay consumes nothing");
+    use_native(owner, admitted, FRUIT, UseDisposition::Rejected).await?;
+    assert_eq!(quantity(h, FRUIT).await?, 1, "a second fruit is preserved");
+    let grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_account_achievement_grant_requests \
+         JOIN game_account_achievements USING (account_id, achievement_key) \
+         WHERE achievement_key = 'oteryn:achievement/forbidden_fruit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(grants, 1);
+    let eaten: i64 = sqlx::query_scalar(
+        "SELECT value FROM game_character_quest_tracks \
+         WHERE track_key = 'oteryn:quest-progress/crystalserver/quest/u11_02/forgotten_knowledge/forbidden_fruit'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(eaten, 1);
+    Ok(())
+}

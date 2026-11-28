@@ -107,22 +107,83 @@ async fn appearance(
         .ok_or_else(|| "current appearance observation".into())
 }
 
+pub(super) async fn production_mounts(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    seed_creation_sex(harness).await?;
+
+    let mut points = 4 * 145_000_u64;
+    fixture_track(harness, task_board::POINTS, i64::try_from(points)?).await?;
+    for (offer, mount) in [
+        (6, "oteryn:content.mount.tidal_seawater_predator"),
+        (7, "oteryn:content.mount.ashen_coast_predator"),
+        (8, "oteryn:content.mount.crimson_bay_predator"),
+        (9, "oteryn:content.mount.antelope"),
+    ] {
+        let before = appearance(owner, admitted).await?;
+        assert!(!before.catalogue.mounts.iter().any(|key| key == mount));
+        let command = admitted.continuity.next_command_id;
+        let purchase = full_board(owner, admitted, 16, offer, "").await?;
+        points -= 145_000;
+        assert_eq!(
+            (purchase.refusal, purchase.points),
+            (0, points),
+            "offer {offer}"
+        );
+        assert!(purchase.shop.iter().any(|entry| entry.index == offer && entry.bought));
+        let after = appearance(owner, admitted).await?;
+        assert!(after.catalogue.mounts.iter().any(|key| key == mount));
+        let replay = serve_from(owner, admitted, command, &[full_request(16, offer, "")]).await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(
+            wire::full::decode_reply(&replay[0].2).map_err(debug)?,
+            purchase
+        );
+        let duplicate = full_board(owner, admitted, 16, offer, "").await?;
+        assert_eq!((duplicate.refusal, duplicate.points), (7, points));
+    }
+    assert_eq!(receipt_count(harness).await?, 4);
+    eprintln!("PG_EXECUTED task_board_production_mount_offers purchases=4");
+    Ok(())
+}
+
+pub(super) async fn stock_outfit_purchases(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &mut AdmittedSession,
+    mut points: u64,
+) -> TestResult {
+    seed_creation_sex(harness).await?;
+    for (base, outfit, look) in [
+        (3, "oteryn:outfit.falconer", 1282),
+        (0, "oteryn:outfit.feral_trapper", 1907),
+    ] {
+        let refused = full_board(owner, admitted, 16, base + 1, "").await?;
+        assert_eq!((refused.refusal, refused.points), (8, points));
+        for (index, cost, addons) in [(base, 100_000, 0), (base + 2, 35_000, 2), (base + 1, 35_000, 3)] {
+            points -= cost;
+            let paid = full_board(owner, admitted, 16, index, "").await?;
+            assert_eq!((paid.refusal, paid.points), (0, points));
+            assert!(paid.shop.iter().any(|entry| entry.index == index && entry.bought));
+            let visible = appearance(owner, admitted).await?;
+            let earned = visible.catalogue.outfits.iter().find(|entry| entry.key == outfit)
+                .ok_or("purchased outfit missing from appearance catalogue")?;
+            assert_eq!((earned.look_type, earned.permitted_addons), (look, addons));
+        }
+    }
+    assert_eq!(receipt_count(harness).await?, 6);
+    Ok(())
+}
+
 pub(super) async fn cosmetics_case(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
     admitted: &mut AdmittedSession,
     inject_omission: bool,
 ) -> TestResult {
-    // Admission seed predates the appearance fixture. Supply its historical creation sex;
-    // every purchase and every earned-fact read below uses the production fences normally.
-    let mut fixture = harness.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *fixture)
-        .await?;
-    sqlx::query("UPDATE game_character_roots SET sex=2 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL")
-        .bind(id(41).as_slice()).execute(&mut *fixture).await?;
-    fixture.commit().await?;
-
+    seed_creation_sex(harness).await?;
     let original = full_board(owner, admitted, 4, 0, "").await?.points;
     fixture_track(harness, task_board::POINTS, 1_000_000).await?;
     let before = appearance(owner, admitted).await?;
@@ -284,5 +345,94 @@ async fn unavailable_catalogue_case(
     println!(
         "<TASK_BOARD> POSTGRES_CASE_COMPLETED: unavailable_cosmetic_catalogue_refuses_without_charge"
     );
+    Ok(())
+}
+
+async fn seed_creation_sex(harness: &Harness) -> TestResult {
+    // Admission seed predates the appearance fixture. Supply its historical creation sex;
+    // every purchase and every earned-fact read below uses the production fences normally.
+    let mut fixture = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *fixture)
+        .await?;
+    sqlx::query("UPDATE game_character_roots SET sex=2 WHERE character_id=encode($1,'hex')::uuid AND sex IS NULL")
+        .bind(id(41).as_slice()).execute(&mut *fixture).await?;
+    fixture.commit().await?;
+
+    Ok(())
+}
+
+pub(super) async fn production_case(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    seed_creation_sex(harness).await?;
+    progression_case::fixture_admitted_level(owner, harness, 8).await?;
+    let started = full_board(owner, admitted, 5, 0, "").await?;
+    assert_eq!(started.refusal, 0);
+    fixture_track(harness, task_board::POINTS, 1_000_000).await?;
+
+    let refused = full_board(owner, admitted, 16, 1, "").await?;
+    assert_eq!((refused.refusal, refused.points), (8, 1_000_000));
+    let mut remaining = 1_000_000;
+    for (id, price) in [100_000, 35_000, 35_000, 100_000, 35_000, 35_000,
+                         145_000, 145_000, 145_000, 145_000].into_iter().enumerate() {
+        let offer = u16::try_from(id)?;
+        let command = admitted.continuity.next_command_id;
+        let purchase = full_board(owner, admitted, 16, offer, "").await?;
+        remaining -= price;
+        assert_eq!((purchase.refusal, purchase.points), (0, remaining), "offer {offer}");
+        let replay = serve_from(owner, admitted, command, &[full_request(16, offer, "")]).await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(wire::full::decode_reply(&replay[0].2).map_err(debug)?, purchase);
+    }
+    assert_eq!(receipt_count(harness).await?, 10);
+    let catalogue = appearance(owner, admitted).await?.catalogue;
+    for key in ["oteryn:outfit.falconer", "oteryn:outfit.feral_trapper"] {
+        let outfit = catalogue.outfits.iter().find(|entry| entry.key == key).ok_or(key)?;
+        assert_eq!(outfit.permitted_addons, 3);
+    }
+    for key in ["oteryn:content.mount.tidal_seawater_predator",
+                "oteryn:content.mount.ashen_coast_predator",
+                "oteryn:content.mount.crimson_bay_predator", "oteryn:content.mount.antelope"] {
+        assert!(catalogue.mounts.iter().any(|entry| entry == key), "{key}");
+    }
+    Ok(())
+}
+
+pub(super) async fn stock_achievement_case(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    progression_case::fixture_admitted_level(owner, h, 8).await?;
+    assert_eq!(full_board(owner, admitted, 5, 0, "").await?.refusal, 0);
+    fixture_track(h, task_board::POINTS, 1_000_000).await?;
+    for (offer, key, earned) in [
+        (0, "oteryn:achievement/feral_trapper", false),
+        (2, "oteryn:achievement/feral_trapper", false),
+        (1, "oteryn:achievement/feral_trapper", true),
+        (3, "oteryn:achievement/falconer", false),
+        (4, "oteryn:achievement/falconer", false),
+        (5, "oteryn:achievement/falconer", true),
+        (9, "oteryn:achievement/steppe_elegance", true),
+    ] {
+        let first = admitted.continuity.next_command_id;
+        let reply = full_board(owner, admitted, 16, offer, "").await?;
+        assert_eq!(reply.refusal, 0, "stock offer {offer}");
+        assert!(reply.shop.iter().any(|row| row.index == offer && row.bought));
+        let replay = serve_from(owner, admitted, first, &[full_request(16, offer, "")]).await?;
+        assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        assert_eq!(wire::full::decode_reply(&replay[0].2).map_err(debug)?, reply);
+        let grants: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievement_grant_requests WHERE achievement_key=$1",
+        )
+        .bind(key)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(grants, i64::from(earned), "{key} after offer {offer}");
+    }
+    assert_eq!(receipt_count(h).await?, 7);
     Ok(())
 }

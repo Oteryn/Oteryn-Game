@@ -770,6 +770,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         access: &impl CurrentSpellAccessOwner,
         budget: Option<&AdmissionRetryBudget<'_>>,
+        generation: Option<u64>,
     ) -> Result<bool, AccessFactsError> {
         let current = self
             .current_premium_binding(actor, session, budget)
@@ -791,6 +792,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             budget
                 .check_deadline()
                 .map_err(AccessFactsError::Durability)?;
+        }
+        if generation.is_some_and(|generation| {
+            generation != current.fence.connection_generation.get()
+                || !states.current_cooldown_transport(actor, session, generation)
+        }) {
+            return Err(AccessFactsError::Unavailable(
+                "Premium transition transport changed",
+            ));
         }
         if states.has_pending_spell_commit(actor, session) {
             return Ok(false);
@@ -864,12 +873,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         budget: Option<&'a AdmissionRetryBudget<'_>>,
     ) -> Pin<Box<dyn Future<Output = Arc<RegisteredSpellAccessOwner>> + Send + 'a>> {
+        self.refresh_and_apply_spell_access_for_transport(actor, session, budget, None)
+    }
+
+    pub(super) fn refresh_and_apply_spell_access_for_transport<'a>(
+        &'a self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        budget: Option<&'a AdmissionRetryBudget<'_>>,
+        generation: Option<u64>,
+    ) -> Pin<Box<dyn Future<Output = Arc<RegisteredSpellAccessOwner>> + Send + 'a>> {
         Box::pin(async move {
             let view = self
                 .refresh_spell_access_with_budget(actor, session, budget)
                 .await;
             if self
-                .apply_refreshed_spell_access(actor, session, &view, budget)
+                .apply_refreshed_spell_access(actor, session, &view, budget, generation)
                 .await
                 .is_err()
             {
