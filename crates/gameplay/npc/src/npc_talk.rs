@@ -525,7 +525,7 @@ impl NpcTalkBook {
         let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1|ruprecht-exchange-v1|sinatuki-fish-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -678,6 +678,7 @@ impl NpcTalkBook {
                     | "oteryn:npc.lily"
                     | MORDECAI
                     | "oteryn:npc.obi"
+                    | "oteryn:npc.ruprecht"
                     | "oteryn:npc.sinatuki"
                     | "oteryn:npc.willie"
                     | "oteryn:npc.zethra"

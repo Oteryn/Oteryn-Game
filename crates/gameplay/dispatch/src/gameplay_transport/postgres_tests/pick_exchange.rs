@@ -79,6 +79,25 @@ const PRESENT_CASE: ExchangeCase = ExchangeCase {
     tag: "present_exchange",
 };
 
+const GRYNCH_CASE: ExchangeCase = ExchangeCase {
+    npc: "oteryn:npc.ruprecht",
+    keyword: "present bag",
+    output: "oteryn:item.tibia.i6526",
+    inputs: &[("oteryn:item.tibia.i6496", 1)],
+    before: 1,
+    after: 0,
+    expected_inputs: &[],
+    tag: "grynch_present_exchange",
+};
+
+#[test]
+fn grynch_ruprecht_exchanges_one_present_bag_for_one_token_and_replays() -> TestResult {
+    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    execute(&GRYNCH_CASE, false)
+}
+
 #[test]
 fn present_exchange_seymour_atomic_confirmation_refusal_and_replay() -> TestResult {
     execute(&PRESENT_CASE, false)
@@ -229,9 +248,7 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
         let book = NpcTalkBook::from_model(&model);
-        let _entry = book
-            .get(case.npc)
-            .ok_or("committed exchange NPC dialogue is not admitted")?;
+        let dialogue_admitted = book.get(case.npc).is_some();
         owner.states.chat.install_npc_talk(Arc::new(book));
         let session = deps.admitted.game_session_id;
         owner
@@ -319,6 +336,12 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
             ],
         )
         .await?;
+        assert_eq!(
+            decode_npc_intent_result(&replies[0].1).map_err(debug)?,
+            NpcIntentDisposition::Ok,
+            "the production NPC dialogue accepts the greeting"
+        );
+        assert!(dialogue_admitted, "the exchange NPC has a dialogue entry");
         assert!(replies.iter().all(|r| r.0 == CommandStatus::Accepted));
         assert_eq!(counts(&h, case).await?, (case.before, 0, 0, 0));
         owner.clock_origin = owner
@@ -372,7 +395,43 @@ fn scenario(case: &ExchangeCase, filled: bool) -> TestResult {
             replies[3],
             (CommandStatus::DuplicateReplay, replies[2].1.clone())
         );
-        assert_eq!(counts(&h, case).await?, (case.after, 1, 1, 1));
+        assert_eq!(
+            counts(&h, case).await?,
+            (case.after, 1, 1, 1),
+            "confirmation burns the input and commits one output, trade and audit"
+        );
+        let backpack = h
+            .root
+            .read_character_backpack(
+                &authority,
+                admitted.item_fence.ok_or("item fence")?.character_id,
+            )
+            .await?
+            .ok_or("backpack")?;
+        let output = backpack
+            .entries
+            .iter()
+            .find(|entry| entry.item.definition.production_key == case.output)
+            .ok_or("trade output in the carried projection")?;
+        assert_eq!(output.item.quantity, 1);
+        let envelope: Vec<u8> = sqlx::query_scalar(
+            "SELECT a.envelope FROM game_item_audit_outbox a \
+             JOIN game_npc_trades t USING(transaction_id) WHERE t.side=3 AND t.npc_key=$1",
+        )
+        .bind(case.npc)
+        .fetch_one(&h.pool)
+        .await?;
+        let (_, audit) = crate::durability::npc_trade_audit::decode_npc_trade_envelope(&envelope)
+            .map_err(debug)?;
+        let mint = audit
+            .lines
+            .last()
+            .and_then(|line| line.after.as_ref())
+            .ok_or("mint audit")?;
+        assert_eq!(
+            mint.item_instance_id.as_slice(),
+            output.item.item_instance_id.as_slice()
+        );
         assert_eq!(
             remaining_inputs(&h, case).await?,
             case.expected_inputs

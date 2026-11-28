@@ -17,6 +17,7 @@ pub(super) async fn permitted(
             return Ok(matches!(
                 request.cause.npc_key.as_str(),
                 "oteryn:npc.al_dee"
+                    | ruprecht_exchange::NPC
                     | "oteryn:npc.seymour"
                     | sinatuki_exchange::NPC
                     | "oteryn:npc.uzgod"

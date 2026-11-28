@@ -34,6 +34,7 @@ mod obsidian_knife;
 mod pick_exchange;
 mod present_exchange;
 mod quest_shop;
+pub mod ruprecht_exchange;
 pub mod sinatuki_exchange;
 pub mod yeo;
 pub use oteryn_gameplay_economy::npc_trade::{
@@ -351,6 +352,8 @@ fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u3
             obsidian_knife::validate(request, sell_all)?;
         } else if request.cause.npc_key == present_exchange::NPC {
             present_exchange::validate(request, sell_all)?;
+        } else if request.cause.npc_key == ruprecht_exchange::NPC {
+            ruprecht_exchange::validate(request, sell_all)?;
         } else if request.cause.npc_key == sinatuki_exchange::NPC {
             sinatuki_exchange::validate(request, sell_all)?;
         } else {
@@ -1182,6 +1185,8 @@ impl DurabilityRoot {
                             pick_exchange::fits(&mut tx, fence, *weights, &[(obsidian_knife::steel(), 1), (obsidian_knife::lance(), 1)], (obsidian_knife::knife(), 1)).await?
                         } else if request.cause.npc_key == present_exchange::NPC {
                             pick_exchange::fits(&mut tx, fence, *weights, &[(present_exchange::input(), 1)], (present_exchange::output(), 1)).await?
+                        } else if request.cause.npc_key == ruprecht_exchange::NPC {
+                            pick_exchange::fits(&mut tx, fence, *weights, &[(ruprecht_exchange::input(), 1)], (&request.item.definition, 1)).await?
                         } else { pick_exchange::fits(&mut tx, fence, *weights, &[(pick_exchange::input(), 1)], (pick_exchange::output(), 1)).await? };
                         if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
                     }
@@ -1200,6 +1205,7 @@ impl DurabilityRoot {
                         (Some(_), NpcTradeSide::Exchange) => {
                             if request.cause.npc_key == obsidian_knife::NPC { obsidian_knife::plan(&request, capacity, &entries) }
                             else if request.cause.npc_key == present_exchange::NPC { pick_exchange::plan_with_input(&request, capacity, &entries, present_exchange::input()) }
+                            else if request.cause.npc_key == ruprecht_exchange::NPC { pick_exchange::plan_with_input(&request, capacity, &entries, ruprecht_exchange::input()) }
                             else { pick_exchange::plan(&request, capacity, &entries) }
                         }.map(|plan| (plan, 0, 1)),
                     }};
@@ -1409,6 +1415,8 @@ fn trade_message(
                 obsidian_knife::input_for(line, &plan.lines)
             } else if request.cause.npc_key == present_exchange::NPC {
                 present_exchange::input()
+            } else if request.cause.npc_key == ruprecht_exchange::NPC {
+                ruprecht_exchange::input()
             } else {
                 pick_exchange::input()
             }

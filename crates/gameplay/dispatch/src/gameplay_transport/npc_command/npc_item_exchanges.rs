@@ -8,7 +8,7 @@ use super::*;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::npc_trade::{
     NpcTradeCause, NpcTradeCoins, NpcTradeError, NpcTradeLineKind, NpcTradeOutcome,
-    NpcTradeRequest, NpcTradeSide, sinatuki_exchange,
+    NpcTradeRequest, NpcTradeSide, ruprecht_exchange, sinatuki_exchange,
 };
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::npc_service::NpcTalkIntent;
@@ -60,6 +60,14 @@ const FISH_RECIPE: Recipe = Recipe {
     success: "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you and gives you five glimmering crystals>",
     cancel: None,
 };
+const GRYNCH_PRESENT_RECIPE: Recipe = Recipe {
+    npc: ruprecht_exchange::NPC,
+    keyword: "present bag",
+    output: ruprecht_exchange::TOKEN,
+    prompt: Some("Would you like to return a stolen present bag for one Christmas Token?"),
+    success: "Thank you for bringing the stolen presents back. Here is your Christmas Token.",
+    cancel: None,
+};
 const FISH_FALLBACK: &str =
     "Jinuma, suvituka siq chuqua!! Nguraka, nguraka! <happily takes the food from you>";
 const FISH_INSUFFICIENT: &str = "Kisavuta! <giggles>";
@@ -67,6 +75,7 @@ const FISH_INSUFFICIENT: &str = "Kisavuta! <giggles>";
 fn recipe(npc: &str) -> Option<&'static Recipe> {
     match npc {
         "oteryn:npc.al_dee" => Some(&PICK_RECIPE),
+        ruprecht_exchange::NPC => Some(&GRYNCH_PRESENT_RECIPE),
         "oteryn:npc.seymour" => Some(&PRESENT_RECIPE),
         sinatuki_exchange::NPC => Some(&FISH_RECIPE),
         "oteryn:npc.uzgod" => Some(&KNIFE_RECIPE),
@@ -346,6 +355,17 @@ pub(super) async fn talk(
         admission
             .root
             .exchange_sinatuki_fish(
+                admission.character,
+                admission.holder,
+                fence,
+                request,
+                &NativeItemWeights(native),
+            )
+            .await
+    } else if recipe.npc == ruprecht_exchange::NPC {
+        admission
+            .root
+            .exchange_ruprecht_present(
                 admission.character,
                 admission.holder,
                 fence,
