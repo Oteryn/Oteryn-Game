@@ -759,6 +759,33 @@ class E02ClientReplayTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), expected)
 
+    def test_e02_replay_selection_matches_numeric_ranges(self):
+        selector = section("e02_selected_rows() {", "e02_replays=")
+        for batch, expected in (
+            ("87:1", "full"), ("147:1", "client"), ("0147:1", "client"),
+            ("146:2", "client"), ("086:2", "full"), ("87:61", "full client"),
+            ("all", "full client"), ("147:0", ""), ("18446744073709551616:1", ""),
+        ):
+            with self.subTest(batch=batch):
+                result = bash(selector + 'e02_selected_rows "$BATCH"\n', {"BATCH": batch})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), expected)
+
+    def test_full_live_capture_requires_full_replay(self):
+        helper = section("e02_client_replay() {", "seam_stages() {")
+        with tempfile.TemporaryDirectory() as work:
+            log = Path(work, "stage-seam_stages.log")
+            log.write_text("SEAM_EVIDENCE e2e_capture scenario=E02.full status=CAPTURED seconds=1.000 session=01934f10-7c00-7000-8000-000000000001 sequence=8\n")
+            result = bash(helper + """
+                cargo() {
+                    [[ "$E02_LIVE_VARIANT" == full ]] || return 1
+                    printf '%s\\n' 'test tests::e2e_e02::e02_coin_inventory_replay ... ok'
+                }
+                e02_client_replay full
+            """, {"WORK": work})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("scenario=E02.full status=PASS", result.stdout)
+
     def test_pass_requires_one_live_capture_and_executed_replay(self):
         helper = section('e02_client_replay() {', 'seam_stages() {')
         capture = 'SEAM_EVIDENCE e2e_capture scenario=E02.client status=CAPTURED evidence=live session=01934f10-7c00-7000-8000-000000000001 sequence=8\n'

@@ -3,7 +3,7 @@
 //! replay consumes the incoming admission and inventory frames from this live session.
 use super::*;
 use oteryn_dev_client::client_runtime::npc_shop as runtime;
-use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
+use oteryn_dev_client::{CharacterInventory, DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::npc_service as wire;
 
@@ -13,16 +13,6 @@ const GOLD_ID: u32 = 3031;
 const PLATINUM_ID: u32 = 3035;
 const CRYSTAL_ID: u32 = 3043;
 const PROMPT: &str = "How many platinum coins would you like to get?";
-
-fn pairs(client: &DevClientSession) -> String {
-    client.inventory().map_or_else(String::new, |inventory| {
-        inventory
-            .entries
-            .iter()
-            .map(|item| format!("{}:{};", item.item_definition_ref, item.count))
-            .collect()
-    })
-}
 
 pub(super) fn encoded_backpack(client: &DevClientSession) -> TestResult<Vec<u8>> {
     // The coin replays negotiate the backpack-only inventory capability.
@@ -140,7 +130,9 @@ pub(super) async fn find_exchange_npc(
         .iter()
         .find(|npc| npc.key == BANKER)
         .filter(|npc| book.get(&npc.key).is_some_and(|entry| entry.bank()))
-        .ok_or_else(|| format!("step=find-exchange-npc observed=missing-authored-banker:{BANKER}"))?;
+        .ok_or_else(|| {
+            format!("step=find-exchange-npc observed=missing-authored-banker:{BANKER}")
+        })?;
     let path = npc_approach_path(client, world, banker)
         .await?
         .filter(|path| !path.is_empty())
@@ -158,56 +150,232 @@ pub(super) async fn find_exchange_npc(
         {
             return Err(format!(
                 "step=walk-npc observed={after:?} expected={expected:?} outcome={outcome:?}"
-            ).into());
+            )
+            .into());
         }
         verdict::Harness::global().progress("walk");
         client.take_events();
     }
     let actor = visible_npc(client, banker).ok_or("step=walk-npc observed=kepar-not-visible")?;
-    let greeting = talk(client, actor, "hi").await?;
-    let reply = talk(client, actor, "change gold").await?;
-    if !reply.lines.iter().any(|line| line == PROMPT) {
-        return Err(
-            format!(
-                "step=find-exchange-npc observed=wrong-live-prompt:{BANKER} hi={:?} change-gold={:?}",
-                greeting.lines, reply.lines
-            )
-            .into(),
-        );
-    }
     Ok((actor, banker.key.clone()))
 }
 
-async fn exchange(
-    client: &mut DevClientSession,
-    actor: EntityRef,
-    words: &[&str],
-) -> TestResult<wire::NpcConversation> {
-    let mut last = None;
-    for word in words {
-        last = Some(talk(client, actor, word).await?);
+pub(super) const GOLD_PROMPT: &str = PROMPT;
+pub(super) const COMPLETE: &str = "Here you are.";
+pub(super) const PLATINUM_DESTINATION: &str =
+    "Would you like to change your platinum coins into gold or crystal?";
+
+fn require_dialogue(reply: &wire::NpcConversation, actor: EntityRef, expected: &str) -> TestResult {
+    if reply.open != Some((actor, wire::NpcConversationState::Open)) || reply.lines != [expected] {
+        return Err(format!("E02 dialogue expected={expected:?} observed={reply:?}").into());
     }
-    last.ok_or_else(|| "step=exchange observed=empty-command-sequence".into())
+    Ok(())
 }
 
-pub(super) async fn coin_profile<'a>(
-    clients: &SeamClients<'a>,
-    row: &str,
-    name: &str,
-    tag: u8,
+fn unrelated_inventory(
+    mut inventory: CharacterInventory,
     refs: [std::num::NonZeroU32; 3],
-) -> TestResult<(Vec<[u8; 16]>, DevClientSession)> {
-    let characters = seed_coin_profile(clients, row, name, tag, refs).await?;
-    let dedicated = SeamClients {
-        characters: &characters,
-        ..*clients
-    };
-    let client = connect_world(&dedicated, tag).await?;
-    require_seeded_coins(&client, refs)?;
-    Ok((characters, client))
+    relog: bool,
+) -> CharacterInventory {
+    inventory
+        .entries
+        .retain(|item| !refs.contains(&item.item_definition_ref));
+    if relog {
+        // The wire contract assigns handles per session. Compare every other field across relog.
+        for item in inventory
+            .main_backpack
+            .iter_mut()
+            .chain(inventory.entries.iter_mut())
+            .chain(
+                inventory
+                    .equipment
+                    .iter_mut()
+                    .map(|equipment| &mut equipment.item),
+            )
+        {
+            item.handle = std::num::NonZeroU64::MIN;
+        }
+    }
+    inventory
 }
 
-async fn seed_coin_profile(
+fn require_custody(
+    expected_coins: [u64; 3],
+    expected_bank: u64,
+    coins: [u64; 3],
+    bank: u64,
+    collateral: bool,
+) -> TestResult {
+    if coins != expected_coins || bank != expected_bank || collateral {
+        return Err(format!(
+            "E02 custody expected_coins={expected_coins:?} observed_coins={coins:?} expected_bank={expected_bank} observed_bank={bank} collateral={collateral}"
+        ).into());
+    }
+    Ok(())
+}
+
+pub(super) struct ExchangeProof {
+    refs: [std::num::NonZeroU32; 3],
+    inventory: CharacterInventory,
+    pub(super) coins: [u64; 3],
+    pub(super) bank: u64,
+    checkpoints: String,
+}
+
+impl ExchangeProof {
+    pub(super) async fn start(
+        client: &DevClientSession,
+        clients: &SeamClients<'_>,
+        refs: [std::num::NonZeroU32; 3],
+        coins: [u64; 3],
+    ) -> TestResult<Self> {
+        let inventory = client
+            .inventory()
+            .cloned()
+            .ok_or("E02 initial inventory absent")?;
+        let rope = provisioning::item_reference(&provisioning::item_index()?, 3003)?;
+        if !inventory
+            .entries
+            .iter()
+            .any(|item| item.item_definition_ref == rope)
+        {
+            return Err("E02 unrelated rope fixture missing".into());
+        }
+        let bank = super::full_row_e06::bank_balance(clients, 1).await?;
+        let mut proof = Self {
+            refs,
+            inventory,
+            coins,
+            bank,
+            checkpoints: format!("refs={},{},{}\n", refs[0], refs[1], refs[2]),
+        };
+        proof.check(client, clients, false).await?;
+        proof.checkpoint(client, 0);
+        Ok(proof)
+    }
+
+    pub(super) async fn check(
+        &self,
+        client: &DevClientSession,
+        clients: &SeamClients<'_>,
+        relog: bool,
+    ) -> TestResult {
+        let coins = backpack_coins(client, self.refs)?;
+        let bank = super::full_row_e06::bank_balance(clients, 1).await?;
+        let inventory = client.inventory().cloned().ok_or("E02 inventory absent")?;
+        let collateral = unrelated_inventory(inventory, self.refs, relog)
+            != unrelated_inventory(self.inventory.clone(), self.refs, relog);
+        require_custody(self.coins, self.bank, coins, bank, collateral)
+    }
+
+    fn checkpoint(&mut self, client: &DevClientSession, confirmation: u64) {
+        use std::fmt::Write as _;
+        let [gold, platinum, crystal] = self.coins;
+        let _ = writeln!(
+            self.checkpoints,
+            "checkpoint={},{confirmation},{gold},{platinum},{crystal}",
+            client.last_server_sequence()
+        );
+    }
+
+    pub(super) async fn prompts(
+        &mut self,
+        client: &mut DevClientSession,
+        clients: &SeamClients<'_>,
+        actor: EntityRef,
+        words: &[(&str, &str)],
+    ) -> TestResult {
+        for &(word, expected) in words {
+            self.check(client, clients, false).await?;
+            let inventory = client.inventory().cloned();
+            let reply = talk(client, actor, word).await?;
+            require_dialogue(&reply, actor, expected)?;
+            client.service_liveness(Duration::from_millis(25)).await?;
+            self.check(client, clients, false).await?;
+            if client.inventory() != inventory.as_ref() {
+                return Err(
+                    format!("E02 inventory mutated before confirmation after {word:?}").into(),
+                );
+            }
+            self.checkpoint(client, 0);
+        }
+        Ok(())
+    }
+
+    pub(super) async fn confirm(
+        &mut self,
+        client: &mut DevClientSession,
+        clients: &SeamClients<'_>,
+        actor: EntityRef,
+        expected: &str,
+        coins: [u64; 3],
+        bank: u64,
+    ) -> TestResult {
+        self.check(client, clients, false).await?;
+        let inventory = client.inventory().cloned();
+        let unchanged_coins = self.coins == coins;
+        let confirmation = client.next_command_id();
+        let reply = talk(client, actor, "yes").await?;
+        require_dialogue(&reply, actor, expected)?;
+        wait_coins(client, self.refs, coins, "confirmed-exchange").await?;
+        self.coins = coins;
+        self.bank = bank;
+        self.check(client, clients, false).await?;
+        if unchanged_coins && client.inventory() != inventory.as_ref() {
+            return Err("E02 refused confirmation changed inventory".into());
+        }
+        self.checkpoint(client, confirmation);
+        Ok(())
+    }
+
+    pub(super) fn write_capture(
+        self,
+        variant: &str,
+        frames: Option<Vec<u8>>,
+        session_id: String,
+        sequence: u64,
+    ) -> TestResult<String> {
+        let root = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+            .ok_or("E02 replay capture directory missing")?;
+        let root = Path::new(&root);
+        std::fs::write(
+            root.join(format!("e02-{variant}.frames")),
+            frames.ok_or("E02 capture overflow")?,
+        )?;
+        std::fs::write(
+            root.join(format!("e02-{variant}.txt")),
+            format!(
+                "session={session_id}\nafter_sequence={sequence}\n{}",
+                self.checkpoints
+            ),
+        )?;
+        Ok(format!("session={session_id} sequence={sequence}"))
+    }
+}
+
+pub(super) fn gold_quote(amount: u64) -> String {
+    format!(
+        "So you would like me to change {} of your gold coins into {amount} platinum coins?",
+        amount * 100
+    )
+}
+
+pub(super) async fn greet(
+    proof: &mut ExchangeProof,
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    actor: EntityRef,
+    name: &str,
+) -> TestResult {
+    // Global Kepar opens a banking conversation on "hi". Also fence the exact
+    // authored live line so extra or contradictory dialogue fails this step.
+    let line = format!("Yes? What may I do for you, {name}? Bank business, perhaps?");
+    proof
+        .prompts(client, clients, actor, &[("hi", &line)])
+        .await
+}
+
+pub(super) async fn seed_coin_profile(
     clients: &SeamClients<'_>,
     row: &str,
     name: &str,
@@ -240,27 +408,21 @@ async fn seed_coin_profile(
     for count in [11, 19, 20] {
         character_prep::grant_item(&client, GOLD_ID, count).await?;
     }
+    character_prep::declare_seeded(row, "one rope", "witness unrelated backpack custody");
+    character_prep::grant_item(&client, 3003, 1).await?;
+    if row == "E02.full" {
+        character_prep::declare_seeded(
+            row,
+            "one crystal coin",
+            "exercise both crystal exchange directions",
+        );
+        character_prep::grant_item(&client, CRYSTAL_ID, 1).await?;
+    }
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("E02 setup logout refused: {:?}", logout.result).into());
     }
     Ok(characters)
-}
-
-fn require_seeded_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) -> TestResult {
-    let after = backpack_coins(client, refs)?;
-    if after != [100, 0, 0] {
-        return Err(format!("E02 seeded gold expected [100, 0, 0], observed {after:?}").into());
-    }
-    Ok(())
-}
-
-fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
-    before
-        .into_iter()
-        .zip(after)
-        .zip(delta)
-        .all(|((before, after), delta)| i128::from(after) - i128::from(before) == i128::from(delta))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -284,28 +446,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     };
     let (exchange_result, frames) = capture_server_frames(async {
         let mut client = connect_world(&dedicated, 0x33).await?;
-        require_seeded_coins(&client, refs)?;
+        let mut proof = ExchangeProof::start(&client, &dedicated, refs, [100, 0, 0]).await?;
         let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
-        let initial = backpack_coins(&client, refs)?;
-        let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
-        let before = pairs(&client);
-        let before_sequence = client.last_server_sequence();
-        let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
-        let platinum = [initial[0] - 100, initial[1] + 1, initial[2]];
-        wait_coins(&mut client, refs, platinum, "gold-to-platinum").await?;
-        if !exact_delta(initial, platinum, [-100, 1, 0]) || !reply.lines.iter().any(|line| line == "Here you are.") {
-            return Err(format!("step=gold-to-platinum observed=reply:{:?},coins:{platinum:?}", reply.lines).into());
-        }
-        let after = pairs(&client);
-        let after_sequence = client.last_server_sequence();
-        let proof = format!("before={before}\nafter={after}\nbefore_sequence={before_sequence}\nafter_sequence={after_sequence}\n");
-        TestResult::Ok((client, npc_key, initial, platinum, proof))
-    }).await;
-    let (mut client, npc_key, initial, platinum, proof) = exchange_result?;
+        let (actor, npc_key) =
+            find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
+        greet(
+            &mut proof,
+            &mut client,
+            &dedicated,
+            actor,
+            "Coin Exchange Capture",
+        )
+        .await?;
+        proof
+            .prompts(
+                &mut client,
+                &dedicated,
+                actor,
+                &[("change gold", GOLD_PROMPT), ("1 platinum", &gold_quote(1))],
+            )
+            .await?;
+        let bank = proof.bank;
+        proof
+            .confirm(&mut client, &dedicated, actor, COMPLETE, [0, 1, 0], bank)
+            .await?;
+        TestResult::Ok((client, npc_key, proof))
+    })
+    .await;
+    let (mut client, npc_key, proof) = exchange_result?;
     let old_session = client.join_snapshot().game_session_id;
     let session_id = uuid_text(old_session.as_bytes());
     let sequence = client.last_server_sequence();
-    let frames = frames.ok_or("E02 capture overflow")?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -314,29 +485,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     drop(client);
 
     let mut fresh = connect_world(&dedicated, 0x33).await?;
-    let persisted = backpack_coins(&fresh, refs)?;
-    let reused = fresh.join_snapshot().game_session_id == old_session;
-    if reused || persisted != platinum {
-        return Err(format!(
-            "step=client-capture-relogin observed=session-reused:{reused},coins:{persisted:?}"
-        )
-        .into());
+    proof.check(&fresh, &dedicated, true).await?;
+    if fresh.join_snapshot().game_session_id == old_session {
+        return Err("step=client-capture-relogin observed=session-reused".into());
     }
     if fresh.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("step=client-capture-final-logout observed=refused".into());
     }
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = Path::new(&root);
-        std::fs::write(root.join("e02-server.frames"), frames)?;
-        std::fs::write(
-            root.join("e02-expected.txt"),
-            format!("session={session_id}\n{proof}"),
-        )?;
-    }
+    let binding = proof.write_capture("client", frames, session_id, sequence)?;
     Ok(format!(
-        "npc={npc_key} before={initial:?} after={platinum:?} relog={persisted:?} session={session_id} sequence={sequence}"
+        "npc={npc_key} before=[100, 0, 0] after=[0, 1, 0] relog=[0, 1, 0] {binding}"
     ))
 }
 
@@ -352,5 +512,37 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E02.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exact_dialogue_rejects_contradictory_lines() {
+        let actor = EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        };
+        let mut reply = wire::NpcConversation {
+            open: Some((actor, wire::NpcConversationState::Open)),
+            lines: vec![COMPLETE.into()],
+        };
+        assert!(require_dialogue(&reply, actor, COMPLETE).is_ok());
+        reply.lines.push("I could not change your coins.".into());
+        assert!(require_dialogue(&reply, actor, COMPLETE).is_err());
+    }
+
+    #[test]
+    fn e02_custody_rejects_early_conversion_bank_credit_and_collateral() {
+        let gold = [100, 0, 0];
+        let platinum = [0, 1, 0];
+        assert!(require_custody(gold, 0, gold, 0, false).is_ok());
+        assert!(require_custody(gold, 0, platinum, 0, false).is_err());
+        assert!(require_custody(platinum, 0, platinum, 100, false).is_err());
+        assert!(require_custody(platinum, 0, platinum, 0, true).is_err());
+        assert!(require_custody([100, 100, 0], 0, [100, 1, 0], 0, false).is_err());
+        assert!(require_custody([100, 0, 1], 0, [100, 0, 0], 0, false).is_err());
     }
 }

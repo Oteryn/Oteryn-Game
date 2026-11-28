@@ -31,16 +31,6 @@ fn units(inventory: Option<&CharacterInventory>) -> Vec<(u32, u32)> {
     })
 }
 
-fn parse(line: &str) -> Result<Vec<(u32, u32)>, BoxError> {
-    line.split(';')
-        .filter(|pair| !pair.is_empty())
-        .map(|pair| {
-            let (reference, count) = pair.split_once(':').ok_or("E02 pair lacks ':'")?;
-            Ok((reference.parse()?, count.parse()?))
-        })
-        .collect()
-}
-
 fn entry(handle: u64, reference: u32, count: u32) -> Result<ItemEntry, BoxError> {
     Ok(ItemEntry {
         appearance_id: 0,
@@ -68,8 +58,56 @@ fn fixture() -> Result<Capture, BoxError> {
     })
 }
 
+fn coins(inventory: &CharacterInventory, refs: [u32; 3]) -> [u64; 3] {
+    refs.map(|reference| {
+        inventory
+            .entries
+            .iter()
+            .filter(|item| item.item_definition_ref.get() == reference)
+            .map(|item| u64::from(item.count.get()))
+            .sum()
+    })
+}
+
+fn check_transition(
+    before: &CharacterInventory,
+    after: &CharacterInventory,
+    refs: [u32; 3],
+    expected: [u64; 3],
+    authorized: bool,
+) -> Result<(), BoxError> {
+    if before == after {
+        return Ok(());
+    }
+    if !authorized || coins(after, refs) != expected || coins(before, refs) == expected {
+        return Err("E02 inventory changed outside its exact confirmed conversion".into());
+    }
+    let unrelated = |inventory: &CharacterInventory| {
+        let mut result = inventory.clone();
+        result
+            .entries
+            .retain(|item| !refs.contains(&item.item_definition_ref.get()));
+        result
+    };
+    if unrelated(before) != unrelated(after) {
+        return Err("E02 replay changed unrelated inventory".into());
+    }
+    Ok(())
+}
+
+fn check_replay_kind(kind: MessageType) -> Result<(), BoxError> {
+    match kind {
+        MessageType::CommandResult | MessageType::StateDelta | MessageType::LivenessProbe => Ok(()),
+        _ => Err(format!("E02 unexpected post-admission frame {kind:?}").into()),
+    }
+}
+
 async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
-    let expected = std::fs::read_to_string(path.join("e02-expected.txt"))?;
+    let variant = std::env::var("E02_LIVE_VARIANT").unwrap_or_else(|_| "client".to_owned());
+    if !matches!(variant.as_str(), "client" | "full") {
+        return Err("E02 unknown capture variant".into());
+    }
+    let expected = std::fs::read_to_string(path.join(format!("e02-{variant}.txt")))?;
     let value = |key: &str| -> Result<&str, BoxError> {
         expected
             .lines()
@@ -77,7 +115,6 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
             .ok_or_else(|| format!("E02 expected lacks {key}").into())
     };
     let session_id = value("session=")?;
-    let before_sequence: u64 = value("before_sequence=")?.parse()?;
     let after_sequence: u64 = value("after_sequence=")?.parse()?;
     let binding = format!("session={session_id} sequence={after_sequence}");
     if let Ok(live_binding) = std::env::var("E02_LIVE_CAPTURE_BINDING")
@@ -85,12 +122,13 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
     {
         return Err("E02 replay binding differs from live verdict".into());
     }
-    let before = parse(value("before=")?)?;
-    let after = parse(value("after=")?)?;
-    assert_ne!(before, after);
-    assert!(before_sequence < after_sequence);
-
-    let frames = std::fs::read(path.join("e02-server.frames"))?;
+    let refs: [u32; 3] = value("refs=")?
+        .split(',')
+        .map(str::parse)
+        .collect::<Result<Vec<_>, _>>()?
+        .try_into()
+        .map_err(|_| "E02 expected three coin refs")?;
+    let frames = std::fs::read(path.join(format!("e02-{variant}.frames")))?;
     let (client, mut server) = tokio::io::duplex(256 * 1024);
     let peer = tokio::spawn(async move {
         server.write_all(&frames).await?;
@@ -108,24 +146,104 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
         .map(|byte| format!("{byte:02x}"))
         .collect();
     assert_eq!(live_session, session_id.replace('-', ""));
-    assert!(session.last_server_sequence() <= before_sequence);
 
-    let mut inventory_changed = false;
-    while session.last_server_sequence() < after_sequence {
-        if session.last_server_sequence() == before_sequence {
-            assert_eq!(units(session.inventory()), before);
+    let mut first = true;
+    let mut conversions = 0;
+    for checkpoint in expected
+        .lines()
+        .filter_map(|line| line.strip_prefix("checkpoint="))
+    {
+        let [end, confirmation, gold, platinum, crystal]: [u64; 5] = checkpoint
+            .split(',')
+            .map(str::parse)
+            .collect::<Result<Vec<_>, _>>()?
+            .try_into()
+            .map_err(|_| "E02 malformed checkpoint")?;
+        let target = [gold, platinum, crystal];
+        let prior = session
+            .inventory()
+            .cloned()
+            .ok_or("E02 inventory missing")?;
+        if first {
+            assert_eq!(end, session.last_server_sequence());
+            assert_eq!(confirmation, 0);
+            assert_eq!(
+                coins(&prior, refs),
+                if variant == "client" {
+                    [100, 0, 0]
+                } else {
+                    [100, 0, 1]
+                }
+            );
+            first = false;
+        } else {
+            assert!(end > session.last_server_sequence());
         }
-        let (kind, sequence, payload) =
-            session.read_sequenced_push("E02 captured exchange").await?;
-        if kind == MessageType::StateDelta
-            && decode_state_delta(&payload)?.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY
-        {
-            session.apply_state_delta(sequence, &payload)?;
-            inventory_changed |= sequence > before_sequence;
+        let mut authorized = false;
+        while session.last_server_sequence() < end {
+            // read_post_admission would silently install a replacement snapshot.
+            let frame = bounded(
+                DEADLINE,
+                "E02 captured envelope",
+                read_frame(&mut session.stream),
+            )
+            .await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            envelope.validate(Direction::ServerToClient, true)?;
+            session.check_generation(&envelope)?;
+            let kind = envelope.message_type();
+            check_replay_kind(kind)?;
+            if kind == MessageType::LivenessProbe {
+                continue;
+            }
+            let sequence = session.next_sequence(&envelope)?;
+            if kind == MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                if confirmation != 0 && result.command_id == confirmation {
+                    assert!(!authorized);
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    authorized = true;
+                }
+            } else if decode_state_delta(envelope.payload())?.domain_id
+                == STATE_DOMAIN_CHARACTER_INVENTORY
+            {
+                let previous = session
+                    .inventory()
+                    .cloned()
+                    .ok_or("E02 inventory missing")?;
+                session.apply_state_delta(sequence, envelope.payload())?;
+                let current = session
+                    .inventory()
+                    .ok_or("E02 inventory missing after delta")?;
+                check_transition(&previous, current, refs, target, authorized)?;
+            }
         }
+        assert_eq!(session.last_server_sequence(), end);
+        assert_eq!(authorized, confirmation != 0);
+        assert_eq!(
+            coins(
+                session
+                    .inventory()
+                    .ok_or("E02 inventory missing at checkpoint")?,
+                refs
+            ),
+            target
+        );
+        conversions += usize::from(coins(&prior, refs) != target);
     }
-    assert!(inventory_changed);
-    assert_eq!(units(session.inventory()), after);
+    assert_eq!(conversions, if variant == "client" { 1 } else { 9 });
+    assert_eq!(session.last_server_sequence(), after_sequence);
+    assert_eq!(
+        coins(
+            session.inventory().ok_or("E02 final inventory missing")?,
+            refs
+        ),
+        if variant == "client" {
+            [0, 1, 0]
+        } else {
+            [0, 1, 1]
+        },
+    );
     let mut trailing = Vec::new();
     tokio::time::timeout(
         Duration::from_secs(2),
@@ -138,6 +256,27 @@ async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
     );
     drop(session);
     peer.await??;
+    Ok(())
+}
+
+#[test]
+fn e02_rejects_premature_collateral_and_snapshot_substitution() -> Result<(), BoxError> {
+    let refs = [31, 35, 37];
+    let before = CharacterInventory {
+        entries: vec![entry(1, 31, 100)?, entry(2, 99, 1)?],
+        ..CharacterInventory::default()
+    };
+    let after = CharacterInventory {
+        entries: vec![entry(3, 35, 1)?, entry(2, 99, 1)?],
+        ..CharacterInventory::default()
+    };
+    assert!(check_transition(&before, &after, refs, [0, 1, 0], true).is_ok());
+    assert!(check_transition(&before, &after, refs, [0, 1, 0], false).is_err());
+    let mut collateral = after.clone();
+    collateral.entries.pop();
+    assert!(check_transition(&before, &collateral, refs, [0, 1, 0], true).is_err());
+    assert!(check_replay_kind(MessageType::SnapshotBegin).is_err());
+    assert!(check_replay_kind(MessageType::SnapshotChunk).is_err());
     Ok(())
 }
 

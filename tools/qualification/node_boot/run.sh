@@ -163,6 +163,46 @@ case "$NODE_BOOT_D150_LEGACY" in
     ;;
   *) blocked invalid_d150_mode ;;
 esac
+# Match the Rust row selector for E02 capture and replay, including decimal aliases
+# and wider batches. q-replaywrap owns generic invalid-batch verdict handling.
+e02_selected_rows() {
+  python3 - "$1" <<'PY_E02_BATCH'
+import re
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    print("full client")
+elif re.fullmatch(r"[+]?[0-9]+:[+]?[0-9]+", batch):
+    parts = [part.lstrip("+").lstrip("0") or "0" for part in batch.split(":")]
+    if any(len(part) > 20 for part in parts):
+        sys.exit(0)
+    start, length = map(int, parts)
+    if max(start, length) <= (1 << 64) - 1:
+        print(" ".join(name for index, name in ((87, "full"), (147, "client"))
+                       if start <= index < start + length))
+PY_E02_BATCH
+}
+e02_replays=
+if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 ]]; then
+  selected_e02_groups="${NODE_BOOT_E2E_ONLY:-}"
+  case ",${selected_e02_groups//[[:space:]]/}," in
+    ,,|*,rows,*) e02_replays="$(e02_selected_rows "${OTERYN_E2E_ROW_BATCH:-}")" ;;
+  esac
+fi
+# The registered E02 topology is reserved for a single row, including decimal aliases.
+if [[ -n "$e02_replays" ]]; then
+  case "${OTERYN_E2E_ROW_BATCH:-}" in
+    *:*)
+      length="${OTERYN_E2E_ROW_BATCH#*:}"
+      if [[ "$length" =~ ^[+]?0*1$ ]]; then
+        case "$e02_replays" in
+          full) export OTERYN_E2E_ROW_BATCH=87:1 ;;
+          client) export OTERYN_E2E_ROW_BATCH=147:1 ;;
+        esac
+      fi ;;
+  esac
+fi
 if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && -z "${NODE_BOOT_WORLD_PROFILE:-}" ]]; then
   case "${OTERYN_E2E_ROW_BATCH:-}" in
     87:1|147:1) : "${NODE_BOOT_WORLD_PROFILE:=e02}" ;;
@@ -1543,32 +1583,33 @@ SQL
 }
 
 e02_client_replay() {
+  local variant="${1:-client}"
   local seam_log="$WORK/stage-seam_stages.log"
   local captured replay_output
-  captured="$(grep -cE '^SEAM_EVIDENCE e2e_capture scenario=E02\.client status=CAPTURED( |$)' "$seam_log" || true)"
+  captured="$(grep -cE "^SEAM_EVIDENCE e2e_capture scenario=E02\.$variant status=CAPTURED( |$)" "$seam_log" || true)"
   if [[ "$captured" != 1 ]]; then
-    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=expected-one-live-capture"
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.$variant status=FAIL evidence=expected-one-live-capture"
     return 1
   fi
 
   local binding
-  binding="$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=E02\.client status=CAPTURED .* (session=[0-9a-f-]{36} sequence=[0-9]+)$/\1/p' "$seam_log")"
+  binding="$(sed -nE "s/^SEAM_EVIDENCE e2e_capture scenario=E02\.$variant status=CAPTURED .* (session=[0-9a-f-]{36} sequence=[0-9]+)$/\1/p" "$seam_log")"
   if [[ -z "$binding" ]]; then
-    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=missing-live-capture-binding"
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.$variant status=FAIL evidence=missing-live-capture-binding"
     return 1
   fi
   local replay_test=tests::e2e_e02::e02_coin_inventory_replay
-  if ! replay_output="$(E02_LIVE_CAPTURE_BINDING="$binding" cargo +1.100.0 test --locked -p oteryn-session --lib "$replay_test" -- --exact)"; then
+  if ! replay_output="$(E02_LIVE_VARIANT="$variant" E02_LIVE_CAPTURE_BINDING="$binding" cargo +1.100.0 test --locked -p oteryn-session --lib "$replay_test" -- --exact)"; then
     printf '%s\n' "$replay_output"
-    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=replay-failed"
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.$variant status=FAIL evidence=replay-failed"
     return 1
   fi
   printf '%s\n' "$replay_output"
   if ! grep -Fxq "test $replay_test ... ok" <<< "$replay_output"; then
-    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=replay-did-not-run"
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.$variant status=FAIL evidence=replay-did-not-run"
     return 1
   fi
-  echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=PASS evidence=live-backpack-coin-replay"
+  echo "SEAM_EVIDENCE e2e_all scenario=E02.$variant status=PASS evidence=live-backpack-coin-replay"
 }
 
 seam_stages() { # §4.6 every #823 stage against the node's own port
@@ -1871,7 +1912,7 @@ fi
 
 seam_stage_name=seam_stages
 [[ "$NODE_BOOT_SPELLS" != 1 ]] || seam_stage_name=spell_scenarios
-if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 147:1 ]]; then
+if [[ -n "$e02_replays" ]]; then
   # The live row and replay share only files written by this invocation.
   E2E_ALL_CAPTURE_DIR="$(mktemp -d "$WORK/e02-captures.XXXXXX")"
   export E2E_ALL_CAPTURE_DIR
@@ -1901,9 +1942,9 @@ else
   stage "$seam_stage_name" character_bootstrap -- seam_stages
 fi
 fi
-if [[ "$NODE_BOOT_WORLD" == 1 && "${NODE_BOOT_E2E_ONLY:-}" == rows && "${OTERYN_E2E_ROW_BATCH:-}" == 147:1 ]]; then
-  stage e02_client_replay seam_stages -- e02_client_replay
-fi
+for e02_variant in $e02_replays; do
+  stage "e02_${e02_variant}_replay" seam_stages -- e02_client_replay "$e02_variant"
+done
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_D150_LEGACY" == 0 ]]; then
   stage pvp_world_shutdown pvp_world_ready -- pvp_world_shutdown
