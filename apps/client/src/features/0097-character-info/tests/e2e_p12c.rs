@@ -10,10 +10,12 @@ struct Captured {
     query: GatedCommandResult,
     paged: GatedCommandResult,
     refused: GatedCommandResult,
+    allowed: GatedCommandResult,
+    durable: GatedCommandResult,
     expected: String,
 }
 
-/// The documented CHARACTER-INFO-1 reply layout, used only when no capture is present.
+/// A CHARACTER-INFO-1 reply for the reducer unit tests.
 fn reply(values: [i64; 8], deaths: u16, kills: u16) -> Vec<u8> {
     let mut bytes = vec![0];
     for value in values {
@@ -27,17 +29,20 @@ fn reply(values: [i64; 8], deaths: u16, kills: u16) -> Vec<u8> {
 
 fn fixture() -> Captured {
     Captured {
-        query: result(CommandStatus::Accepted, &reply([37, 120_500, 4, 6, 12, 3, 1, 0], 3, 2)),
-        paged: result(CommandStatus::Accepted, &reply([37, 120_500, 4, 6, 12, 3, 1, 0], 1, 0)),
+        query: result(CommandStatus::Accepted, &reply([37, 120_500, 4, 6, 12, 3, 1, 0], 1, 0)),
+        paged: result(CommandStatus::Accepted, &reply([37, 120_500, 4, 6, 12, 3, 1, 0], 0, 0)),
         refused: result(CommandStatus::Rejected, &[]),
-        expected: "query=values=37,120500,4,6,12,3,1,0|deaths=3|kills=2\npaged=values=37,120500,4,6,12,3,1,0|deaths=1|kills=0\nvisible_target=0123456789abcdef0123456789abcdef\nrefused_status=Rejected\n".into(),
+        allowed: result(CommandStatus::Accepted, &reply([1, 0, 0, 0, 15, 0, 0, 0], 0, 0)),
+        durable: result(CommandStatus::Accepted, &reply([37, 120_500, 4, 6, 12, 3, 1, 0], 1, 0)),
+        expected: "query=values=37,120500,4,6,12,3,1,0|deaths=1|kills=0\npaged=values=37,120500,4,6,12,3,1,0|deaths=0|kills=0\nvisible_target=0123456789abcdef0123456789abcdef\nrefused_status=Rejected\nvisible=values=1,0,0,0,15,0,0,0|deaths=0|kills=0\n".into(),
     }
 }
 
 #[derive(serde::Deserialize)]
 struct LiveCapture {
     session: String,
-    frames: [LiveFrame; 3],
+    relog_session: String,
+    frames: [LiveFrame; 5],
     expected: String,
 }
 
@@ -65,24 +70,29 @@ impl LiveFrame {
 }
 
 fn captured() -> Result<Captured, Error> {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        if std::env::var_os("E2E_P12C_CAPTURE_SESSION").is_some() {
-            return Err("P12c live replay requires a capture directory".into());
-        }
-        return Ok(fixture());
-    };
+    let path = std::env::var_os("E2E_ALL_CAPTURE_DIR")
+        .ok_or("P12c live replay requires a capture directory")?;
+    let session = std::env::var("E2E_P12C_CAPTURE_SESSION")?;
     let input = std::fs::File::open(std::path::Path::new(&path).join("p12c-capture.json"))?;
     let capture: LiveCapture = serde_json::from_reader(input)?;
-    if capture.session.is_empty()
-        || std::env::var("E2E_P12C_CAPTURE_SESSION").is_ok_and(|session| session != capture.session)
+    validated_capture(capture, &session)
+}
+
+fn validated_capture(capture: LiveCapture, session: &str) -> Result<Captured, Error> {
+    if session.is_empty()
+        || session != capture.session
+        || capture.relog_session.is_empty()
+        || capture.relog_session == session
     {
         return Err("P12c capture session mismatch".into());
     }
-    let [query, paged, refused] = capture.frames;
+    let [query, paged, refused, allowed, durable] = capture.frames;
     if query.command_id.checked_add(1) != Some(paged.command_id)
         || paged.command_id.checked_add(1) != Some(refused.command_id)
+        || refused.command_id.checked_add(1) != Some(allowed.command_id)
         || !(query.server_sequence < paged.server_sequence
-            && paged.server_sequence < refused.server_sequence)
+            && paged.server_sequence < refused.server_sequence
+            && refused.server_sequence < allowed.server_sequence)
         || !refused.payload.is_empty()
     {
         return Err("P12c capture has invalid ordering or disclosed foreign data".into());
@@ -91,6 +101,8 @@ fn captured() -> Result<Captured, Error> {
         query: query.into_result(CommandStatus::Accepted)?,
         paged: paged.into_result(CommandStatus::Accepted)?,
         refused: refused.into_result(CommandStatus::Rejected)?,
+        allowed: allowed.into_result(CommandStatus::Accepted)?,
+        durable: durable.into_result(CommandStatus::Accepted)?,
         expected: capture.expected,
     })
 }
@@ -142,8 +154,57 @@ fn result(status: CommandStatus, payload: &[u8]) -> GatedCommandResult {
 }
 
 #[test]
+#[ignore = "requires a fresh wire capture from the live P12c row"]
 fn e2e_p12c_replays_paged_summary_and_refused_visible_query() -> Result<(), Error> {
-    let captured = captured()?;
+    replay(captured()?)
+}
+
+#[test]
+fn p12c_unit_fixture_exercises_the_reducer() -> Result<(), Error> {
+    replay(fixture())
+}
+
+#[test]
+fn p12c_replay_rejects_a_capture_from_another_session() {
+    let frame = |command_id| LiveFrame {
+        command_id,
+        server_sequence: command_id,
+        status: if command_id == 3 {
+            "Rejected"
+        } else {
+            "Accepted"
+        }
+        .into(),
+        payload: Vec::new(),
+    };
+    let capture = LiveCapture {
+        session: "old-session".into(),
+        relog_session: "later-session".into(),
+        frames: [frame(1), frame(2), frame(3), frame(4), frame(1)],
+        expected: fixture().expected,
+    };
+    assert!(validated_capture(capture, "current-session").is_err());
+}
+
+#[test]
+fn p12c_replay_rejects_a_page_that_leaves_the_previous_summary() {
+    let mut capture = fixture();
+    capture.paged.payload[0] = u8::MAX;
+    assert!(std::panic::catch_unwind(|| replay(capture)).is_err());
+}
+
+#[test]
+fn p12c_replay_rejects_repeated_first_page_and_blanket_foreign_denial() {
+    let mut repeated = fixture();
+    repeated.paged = repeated.query.clone();
+    assert!(std::panic::catch_unwind(|| replay(repeated)).is_err());
+
+    let mut denied = fixture();
+    denied.allowed = denied.refused.clone();
+    assert!(std::panic::catch_unwind(|| replay(denied)).is_err());
+}
+
+fn replay(captured: Captured) -> Result<(), Error> {
     let e = captured.expected.as_str();
     let mut panel = Panel {
         selected: true,
@@ -154,7 +215,8 @@ fn e2e_p12c_replays_paged_summary_and_refused_visible_query() -> Result<(), Erro
     assert_eq!(query.payload, [0, 0, 0, 50]);
     apply(&mut panel, &query, &captured.query);
     assert_eq!(panel.feedback, "Character information updated");
-    assert_eq!(panel.summary, visible(value(e, "query")?)?);
+    let full = visible(value(e, "query")?)?;
+    assert_eq!(panel.summary, full);
 
     panel.fields[0] = "1".into();
     panel.fields[1] = "1".into();
@@ -162,6 +224,8 @@ fn e2e_p12c_replays_paged_summary_and_refused_visible_query() -> Result<(), Erro
     assert_eq!(paged.payload, [0, 1, 0, 1]);
     apply(&mut panel, &paged, &captured.paged);
     let confirmed = visible(value(e, "paged")?)?;
+    assert_eq!(panel.feedback, "Character information updated");
+    assert_ne!(confirmed, full);
     assert_eq!(panel.summary, confirmed);
 
     // Another character's summary is refused without consent: no payload, summary unchanged.
@@ -182,6 +246,23 @@ fn e2e_p12c_replays_paged_summary_and_refused_visible_query() -> Result<(), Erro
     assert_eq!(panel.feedback, "The server refused the request");
     assert_eq!(panel.summary, confirmed);
 
+    let consented = pend(&mut panel, Intent::Visible)?;
+    assert_eq!(consented.payload, visible_query.payload);
+    apply(&mut panel, &consented, &captured.allowed);
+    assert_eq!(panel.feedback, "Character information updated");
+    let foreign = visible(value(e, "visible")?)?;
+    assert_ne!(foreign, full);
+    assert_eq!(panel.summary, foreign);
+
+    let mut fresh = Panel {
+        selected: true,
+        ..Panel::default()
+    };
+    let relogged = pend(&mut fresh, Intent::Query)?;
+    apply(&mut fresh, &relogged, &captured.durable);
+    assert_eq!(fresh.feedback, "Character information updated");
+    assert_eq!(fresh.summary, full);
+
     // A paged reply whose history count exceeds the requested limit is rejected as invalid.
     panel.fields[1] = "1".into();
     let paged = pend(&mut panel, Intent::Query)?;
@@ -189,6 +270,6 @@ fn e2e_p12c_replays_paged_summary_and_refused_visible_query() -> Result<(), Erro
     over_limit.payload[65..67].copy_from_slice(&2_u16.to_le_bytes());
     apply(&mut panel, &paged, &over_limit);
     assert_eq!(panel.feedback, "Invalid character information reply");
-    assert_eq!(panel.summary, confirmed);
+    assert_eq!(panel.summary, foreign);
     Ok(())
 }

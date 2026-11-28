@@ -112,7 +112,7 @@ async fn query(client: &mut DevClientSession, offset: u16, limit: u8) -> TestRes
     decode_page(&reply.payload, limit)
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now()
         + Duration::from_millis(oteryn_gameplay_combat_rules::pvp::KILL_BLOCK_MS);
     while client
@@ -446,6 +446,53 @@ async fn earn_pvp_kill(
     Ok(attacker)
 }
 
+pub(super) async fn die_to_spider(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult {
+    travel_to_spawn(client, world, spawns, "oteryn:creature.poison_spider")
+        .await
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!(
+                    "step 4 walk-to-combat: observed={error}; need reachable authored lethal spawn"
+                ),
+                error,
+            )
+        })?;
+    client.session_mut().attack_target(None).await?;
+    let encounter = client.world_spatial().actor_position;
+    let health = client
+        .actor_vitals()
+        .ok_or("step 4 combat: missing entry vitals")?
+        .health;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
+    let mut damaged = false;
+    loop {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        for event in client.take_events() {
+            if let SessionEvent::ActorVitals(delta) = event {
+                damaged |= delta.value.health < health;
+            }
+        }
+        if damaged
+            && client.world_spatial().actor_position != encounter
+            && client
+                .actor_vitals()
+                .is_some_and(|vitals| vitals.health == vitals.max_health)
+        {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step 4 combat: timeout damaged={damaged} position={:?}; need lethal damage and respawn deltas", client.world_spatial().actor_position).into());
+        }
+    }
+    Ok(())
+}
+
 async fn journey(core: &SeamClients<'_>) -> TestResult {
     let open = OpenWorld::read().await.map_err(|error| format!("step=open-pvp-admission need=bootstrapped-Open-PvP-World observed={error}; source:tools/qualification/node_boot/run.sh:1619"))?;
     let clients = &SeamClients {
@@ -507,50 +554,7 @@ async fn journey(core: &SeamClients<'_>) -> TestResult {
         .into());
     }
 
-    travel_to_spawn(
-        &mut client,
-        world,
-        &metadata.spawns,
-        "oteryn:creature.poison_spider",
-    )
-    .await
-    .map_err(|error| {
-        verdict::record_error(verdict::IndexedError::as_error(&error));
-        verdict::context(
-            format!(
-                "step 4 walk-to-combat: observed={error}; need reachable authored lethal spawn"
-            ),
-            error,
-        )
-    })?;
-    client.session_mut().attack_target(None).await?;
-    let encounter = client.world_spatial().actor_position;
-    let health = client
-        .actor_vitals()
-        .ok_or("step 4 combat: missing entry vitals")?
-        .health;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    let mut damaged = false;
-    loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event {
-                damaged |= delta.value.health < health;
-            }
-        }
-        if damaged
-            && client.world_spatial().actor_position != encounter
-            && client
-                .actor_vitals()
-                .is_some_and(|vitals| vitals.health == vitals.max_health)
-        {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step 4 combat: timeout damaged={damaged} position={:?}; need lethal damage and respawn deltas", client.world_spatial().actor_position).into());
-        }
-    }
+    die_to_spider(&mut client, world, &metadata.spawns).await?;
     let after = query(&mut client, 0, 50).await?;
     if !one_pve_death(baseline, after) {
         return Err(format!("step 4 history delta: before={baseline:?} after={after:?}; need one death and retained PvP kill").into());
