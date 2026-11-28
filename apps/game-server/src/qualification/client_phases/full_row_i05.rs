@@ -5,9 +5,8 @@
 //! 1. Admit the node-boot character and send TIMED_ITEM Inspect for an unknown
 //!    server handle; expect a Rejected command envelope carrying typed Stale
 //!    and no inventory delta (the refusal path must not mutate custody).
-//! 2. Earn 5,000 gold through ordinary rat combat/corpse looting, walk to a compiled
-//!    world NPC who sells energy ring 3051, say `hi` and `trade`, buy one, and require
-//!    the Ok trade reply plus the inventory delta that adds it.
+//! 2. Grant a dedicated Knight one inactive Energy Ring as fixture input, then
+//!    confirm its carried form and the empty ring slot on fresh admission.
 //! 3. Send ITEM_MOVE for that carried ring into the ring equipment slot; expect
 //!    Moved plus an inventory delta whose equipped view is transformed to active
 //!    energy ring 3088.
@@ -20,14 +19,12 @@
 //!    is positive and no greater than the pre-logout budget.
 //! 6. Unequip the ring, require its base item view and verify that its timer pauses.
 use super::*;
-use oteryn_dev_client::client_runtime::npc_shop as shop_runtime;
-use oteryn_protocol_oteryn::{item_view as items, npc_service as npc, timed_item as timed};
+use oteryn_protocol_oteryn::{item_view as items, timed_item as timed};
 use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 
 const ENERGY_RING: u32 = 3051;
 const ACTIVE_ENERGY_RING: u32 = 3088;
-const PRICE: u64 = 5_000;
 
 struct Journey {
     step: usize,
@@ -121,62 +118,6 @@ fn reference(id: u32) -> TestResult<NonZeroU32> {
     provisioning::item_reference(&index, id)
 }
 
-fn carried_gold(client: &oteryn_dev_client::DevClientSession) -> TestResult<u64> {
-    let coins = [
-        (reference(3031)?, 1),
-        (reference(3035)?, 100),
-        (reference(3043)?, 10_000),
-    ];
-    Ok(client
-        .inventory()
-        .ok_or("gold-inventory-missing")?
-        .entries
-        .iter()
-        .map(|entry| {
-            coins
-                .iter()
-                .find(|(key, _)| *key == entry.item_definition_ref)
-                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
-        })
-        .sum())
-}
-
-async fn earn_gold(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
-    let starting_gold = carried_gold(client)?;
-    if starting_gold >= PRICE {
-        return Err(format!(
-            "step-2-combat-required-but-skipped:starting-gold={starting_gold}:required={PRICE}"
-        )
-        .into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(300);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while carried_gold(client)? < PRICE {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "combat-loot-budget-exhausted:gold={}:required={PRICE}",
-                carried_gold(client)?
-            )
-            .into());
-        }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat")
-            .await
-            .map_err(|error| {
-                verdict::record_error(verdict::IndexedError::as_error(&error));
-                verdict::context(format!("rat-walk:{error}"), error)
-            })?;
-        client_hunt::hunt(client).await.map_err(|error| {
-            verdict::record_error(verdict::IndexedError::as_error(&error));
-            verdict::context(format!("rat-combat-loot:{error}"), error)
-        })?;
-    }
-    Ok(())
-}
-
 fn bag_handles(
     client: &oteryn_dev_client::DevClientSession,
     key: NonZeroU32,
@@ -229,116 +170,6 @@ async fn wait_for_item(
     }
 }
 
-async fn buy_energy_ring(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    npcs: &oteryn_world_bundle::npc::Table,
-) -> TestResult<items::ItemHandle> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let catalogue: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let key = format!("oteryn:item.tibia.i{ENERGY_RING}");
-    let sellers: BTreeSet<String> = catalogue["records"]
-        .as_array()
-        .ok_or("trade-records-missing")?
-        .iter()
-        .filter_map(|record| {
-            let declaration = &record["declaration"];
-            declaration["offers"]
-                .as_array()?
-                .iter()
-                .any(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
-                .then(|| declaration["identity"]["key"].as_str())
-                .flatten()
-                .and_then(|service| service.strip_prefix("oteryn:service.trade."))
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
-    let here = tile(client.world_spatial().actor_position)?;
-    let (seller, path) = npcs
-        .npcs
-        .iter()
-        .filter(|entry| sellers.contains(&entry.key))
-        .filter_map(|entry| {
-            route(world, here, |at| {
-                entry.placements.iter().any(|place| {
-                    place.floor == at.floor
-                        && at.x.abs_diff(place.x).max(at.y.abs_diff(place.y)) <= 3
-                })
-            })
-            .map(|path| (entry, path))
-        })
-        .min_by_key(|(_, path)| path.len())
-        .ok_or_else(|| format!("energy-ring-seller-unreachable:sellers={sellers:?}"))?;
-    walk(client, world, &path).await?;
-    let actor = client
-        .world_entities()
-        .and_then(|view| {
-            view.iter().find(|entry| {
-                entry.kind == oteryn_dev_client::EntityKind::Npc
-                    && seller.placements.iter().any(|place| {
-                        entry.position.x == i32::from(place.x)
-                            && entry.position.y == i32::from(place.y)
-                            && entry.position.floor == -i16::from(place.floor)
-                    })
-            })
-        })
-        .map(|entry| entry.entity)
-        .ok_or("energy-ring-seller-actor-missing")?;
-    for text in ["hi", "trade"] {
-        let reply = shop_runtime::talk(
-            client.session_mut(),
-            &npc::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != npc::NpcIntentDisposition::Ok {
-            return Err(format!("npc-talk-refused:text={text}:reply={reply:?}").into());
-        }
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window = npc::decode_npc_trade_window(&delta.payload)
-        .map_err(|error| format!("trade-window-decode:{error:?}"))?;
-    let wanted = reference(ENERGY_RING)?;
-    let (offer_index, offer) = window
-        .offers
-        .iter()
-        .enumerate()
-        .find(|(_, offer)| {
-            offer.side == npc::NpcTradeSide::Buy && offer.item_definition_ref == wanted.get()
-        })
-        .ok_or("energy-ring-live-offer-missing")?;
-    let previous_count = item_count(client, wanted)?;
-    let previous_handles = bag_handles(client, wanted)?;
-    let reply = shop_runtime::buy(
-        client.session_mut(),
-        &npc::NpcTradeIntent {
-            npc_actor: actor,
-            catalogue_revision: window.open.ok_or("energy-ring-trade-window-closed")?.1,
-            offer_index: u32::try_from(offer_index)?,
-            side: offer.side,
-            quantity: 1,
-            expected_unit_price: offer.unit_price,
-        },
-    )
-    .await?;
-    if reply != npc::NpcIntentDisposition::Ok {
-        return Err(format!(
-            "energy-ring-buy-refused:reply={reply:?}:gold={}:price={}",
-            carried_gold(client)?,
-            offer.unit_price
-        )
-        .into());
-    }
-    wait_for_item(client, wanted, previous_count, &previous_handles).await
-}
-
 fn equipped_ring(
     client: &oteryn_dev_client::DevClientSession,
     active: NonZeroU32,
@@ -369,17 +200,9 @@ fn has_paused_budget(
 }
 
 async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let pin: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
-        bytes,
-        &pin,
-        WorldId::decode(&clients.world)?,
-        ChannelId::decode(&clients.channel)?,
-    )?;
-    let mut client = connect_world(clients, 0xb0).await?;
+    let identity = character_prep::dedicated_character(clients, "NODE_BOOT_Q_I05_ACCOUNT").await?;
+    let clients = &identity.clients(clients);
+    let mut client = connect_character(clients, 0xb0, 0).await?;
     let result: TestResult = async {
         if !client
             .selected_capabilities()
@@ -400,9 +223,36 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         }
         row.passed(1, "rejected-envelope+typed-stale+inventory-unchanged");
 
-        earn_gold(&mut client, world, &metadata.spawns).await?;
-        let carried = buy_energy_ring(&mut client, world, &metadata.npcs).await?;
-        row.passed(2, "combat-loot+npc-talk+trade-ok+inventory-delta");
+        let base = reference(ENERGY_RING)?;
+        if item_count(&client, base)? != 0 {
+            return Err("i05-base-ring-preexists-fixture".into());
+        }
+        character_prep::declare_seeded(
+            "I05.full",
+            "one carried inactive Energy Ring",
+            "timed-item lifecycle",
+        );
+        character_prep::grant_item(&client, ENERGY_RING, 1).await?;
+        if client.session_mut().logout().await?.result
+            != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+        {
+            return Err("i05-fixture-logout-refused".into());
+        }
+        client = connect_character(clients, 0xaf, 0).await?;
+        let handles = bag_handles(&client, base)?;
+        if item_count(&client, base)? != 1
+            || client.inventory().is_none_or(|inventory| {
+                inventory
+                    .equipment
+                    .iter()
+                    .any(|entry| entry.slot == items::EquipmentSlot::Ring)
+            })
+        {
+            return Err("i05-fixture-durable-prestate-mismatch".into());
+        }
+        let carried = added_handle(handles.into_iter(), &BTreeSet::new())
+            .ok_or("i05-fixture-expected-one-handle")?;
+        row.passed(2, "fresh-admission+one-inactive-ring+empty-ring-slot");
 
         let delta = super::client_row_i05::move_ring(
             client.session_mut(),
@@ -466,7 +316,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         {
             return Err("logout-refused-before-persistence-check".into());
         }
-        client = connect_world(clients, 0xb1).await?;
+        client = connect_character(clients, 0xb1, 0).await?;
         if client.join_snapshot().game_session_id == old_session {
             return Err("fresh-admission-reused-session".into());
         }
@@ -528,6 +378,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     }
     .await;
+    result?;
     let release = async {
         if client.session_mut().logout().await?.result
             != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -537,7 +388,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         Ok(())
     }
     .await;
-    result.and(release)
+    release
 }
 
 fn added_handle(
@@ -589,7 +440,7 @@ mod tests {
     }
 
     #[test]
-    fn required_item_ids_and_price_are_fixed() {
+    fn required_item_ids_are_fixed() {
         assert_eq!(
             (ENERGY_RING, ACTIVE_ENERGY_RING, PRICE),
             (3051, 3088, 5_000)
