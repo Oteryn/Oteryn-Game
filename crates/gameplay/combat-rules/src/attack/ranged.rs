@@ -3,7 +3,7 @@
 //! the distance hit-chance table, the hit roll, the distance and throwing damage expression and the
 //! wand bounds. Pure: the swing variant, validity, ammunition and item consequences belong to the
 //! Channel owner. AUTOATK-1 pins Offensive raw damage bounds; hit chance, the damage
-//! distribution and other fight modes remain `PARITY_PENDING`.
+//! distribution remains `PARITY_PENDING`.
 
 use oteryn_gameplay_content::content::spell_data::formula::{
     Binary, Expression, Formula, Input, Unary,
@@ -92,8 +92,8 @@ pub fn shot_hits(chance: u32, draw: u64) -> bool {
 /// max = floor(L + 2 * v)
 /// ```
 ///
-/// `L` is the official level curve. The API fixtures bind Offensive (factor 1.0);
-/// other fight modes scale `v` and remain `PARITY_PENDING`.
+/// `L` is the official level curve. Live swings use Crystal's fixed attack factor.
+/// The saved calculator fixtures use 1.0.
 pub fn player_distance_formula() -> Formula {
     let level = || Expression::LevelBaseDamageHealing(Box::new(Expression::Var(Input::Level)));
     let binary = |op, left, right| Expression::Binary(op, Box::new(left), Box::new(right));
@@ -149,18 +149,16 @@ mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
 
     use super::*;
-    use crate::attack::{AttackConstants, FightMode};
     use oteryn_gameplay_content::content::spell_data::formula::FormulaInputs;
 
-    fn inputs(level: u32, skill: u32, attack: u32, mode: FightMode) -> FormulaInputs {
-        let table = AttackConstants::checked_in().expect("the checked-in constants table parses");
+    fn calculator_inputs(level: u32, skill: u32, attack: u32) -> FormulaInputs {
         FormulaInputs {
             level,
             magic_level: 0,
             base_power: None,
             attack_skill: skill,
             attack_value: attack,
-            attack_factor: table.fight_mode(mode).attack_factor,
+            attack_factor: 1.0,
             shielding_skill: 0,
             shield_defense: None,
         }
@@ -236,15 +234,12 @@ mod tests {
         // Level 100 / distance 80 / spear 25: v = 90 over L = 20.
         // Minimum changes 20 -> 65 because the calculator includes v / 2; max stays 200.
         assert_eq!(
-            formula.bounds(&inputs(100, 80, 25, FightMode::Offensive)),
+            formula.bounds(&calculator_inputs(100, 80, 25)),
             Ok((65, 200))
         );
         // Level 8 / distance 11 / spear 25: L = 1, v = 450 / 28.
         // (1, 26) -> (9, 33): include v / 2 in min and floor L + 2*v in max.
-        assert_eq!(
-            formula.bounds(&inputs(8, 11, 25, FightMode::Offensive)),
-            Ok((9, 33))
-        );
+        assert_eq!(formula.bounds(&calculator_inputs(8, 11, 25)), Ok((9, 33)));
     }
 
     #[test]
@@ -257,7 +252,7 @@ mod tests {
             (1000, 120, (249, 448), "paladin-bow-1000.response.json"),
         ] {
             assert_eq!(
-                formula.bounds(&inputs(level, skill, 25, FightMode::Offensive)),
+                formula.bounds(&calculator_inputs(level, skill, 25)),
                 Ok(expected),
                 "{response}"
             );
@@ -274,7 +269,7 @@ mod tests {
             (1000, 120, (276, 555), "paladin-spear-1000.response.json"),
         ] {
             assert_eq!(
-                formula.bounds(&inputs(level, skill, 35, FightMode::Offensive)),
+                formula.bounds(&calculator_inputs(level, skill, 35)),
                 Ok(expected),
                 "{response}"
             );
@@ -284,10 +279,7 @@ mod tests {
     #[test]
     fn a_wand_draws_within_its_own_bounds() {
         let formula = wand_formula(8, 18).unwrap();
-        assert_eq!(
-            formula.bounds(&inputs(1, 0, 0, FightMode::Defensive)),
-            Ok((8, 18))
-        );
+        assert_eq!(formula.bounds(&calculator_inputs(1, 0, 0)), Ok((8, 18)));
         assert!(wand_formula(9, 8).is_none());
     }
 }

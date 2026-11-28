@@ -1,4 +1,6 @@
-use super::TestResult;
+use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::{Harness, debug}};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::foundation::ExactActorRef;
 
 pub(super) async fn verify(
     owner: &super::ComposedFreshAdmission<'_, '_, '_>,
@@ -74,7 +76,7 @@ pub(super) async fn verify(
                 placement,
                 object_revision: revision.parse()?,
                 context: serde_json::from_value(context)?,
-                success_prepared: false,
+                success: None,
                 missing_prepared: false,
             },
         )
@@ -99,5 +101,72 @@ pub(super) async fn verify(
         balance,
         "same-XID physical debit or proven no Item mutation"
     );
+    Ok(())
+}
+
+pub(super) async fn control_loss(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    actor: ExactActorRef,
+    fence: CurrentCharacterGameplayFence,
+    destination: oteryn_gameplay_quests::quest::world_callbacks::Position,
+) -> TestResult {
+    use crate::gameplay_transport::connection::{ControlLossResult, GraceExpiryResult};
+    use crate::gameplay_transport::last_position::AdmissionPosition;
+    use oteryn_protocol_oteryn::world_spatial::{
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection, StepDisposition, decode_step_result,
+        encode_step_intent,
+    };
+    use super::quest_world_callbacks_fixtures::{local, wire};
+
+    let session = admitted.game_session_id;
+    let controller = admitted.controller.ok_or("carried STEP controller")?;
+    assert!(owner.track_restored(session, actor, &AdmissionPosition::FirstLogin, fence));
+    owner.states.quest_callbacks.interrupt_after_commit.store(
+        true, std::sync::atomic::Ordering::Release,
+    );
+    let reply = wire(
+        owner,
+        admitted,
+        1,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        encode_step_intent(StepDirection::East),
+    ).await?;
+    // STEP acknowledges entering the trigger cell. Its paid follow-up is still unresolved.
+    assert_eq!(decode_step_result(&reply).map_err(debug)?, StepDisposition::Moved);
+    let charges = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_carried_step_receipts WHERE input_before IS NOT NULL",
+        ).fetch_one(&h.pool).await
+    };
+    assert_eq!(charges().await?, 1);
+    assert!(owner.has_pending_quest_callback(session));
+    let loss = owner.commit_control_loss(session, actor, controller).await;
+    assert!(
+        !owner.has_pending_quest_callback(session),
+        "control loss must settle the charged STEP before releasing the actor ({loss:?})",
+    );
+    assert_eq!(
+        owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+        local(destination),
+    );
+    assert_eq!(loss, ControlLossResult::Recorded);
+    let maintain_readiness = async {
+        loop {
+            super::maintain_ready(&h.root).await?;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    };
+    let released = tokio::select! {
+        release = tokio::time::timeout(
+            std::time::Duration::from_secs(70),
+            owner.expire_session_control_loss(*admitted),
+        ) => release?,
+        ready = maintain_readiness => return ready,
+    };
+    assert_eq!(released, GraceExpiryResult::Released);
+    assert!(owner.runtime.lock().await.read_actor_position(actor).is_err());
+    assert_eq!(charges().await?, 1);
     Ok(())
 }

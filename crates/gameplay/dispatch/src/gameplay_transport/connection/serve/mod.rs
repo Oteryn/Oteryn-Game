@@ -35,8 +35,10 @@ mod spell_repair;
 mod target_move;
 mod turn;
 use command::CommandOutcome;
+mod cooldowns;
 mod effects;
 mod native_cues;
+#[cfg(test)]
 #[cfg(test)]
 pub(in crate::gameplay_transport) use native_cues::CooldownProjection;
 mod outbound;
@@ -78,7 +80,7 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
-    cooldowns: Option<native_cues::CooldownProjection>,
+    cooldowns: Option<cooldowns::CooldownFeed>,
     cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
     integrity: integrity::Integrity,

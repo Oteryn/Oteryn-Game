@@ -101,8 +101,14 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             .runtime_actor
             .ok_or_else(|| ServeEnd::server("scope_handoff_unavailable"))?;
         let selected = admitted.continuity.selected_capabilities;
-        let (mut services, item_domains) =
+        let (mut services, mut item_domains) =
             house_hireling::State::prepare(authority, actor, &mut admitted).await?;
+        super::cooldowns::snapshot(
+            authority,
+            &admitted,
+            services.cooldowns.as_mut(),
+            &mut item_domains,
+        )?;
         let mut domains = vec![DomainSnapshot {
             domain_id: STATE_DOMAIN_HOUSE_SCOPE,
             revision: 1,
@@ -490,6 +496,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 (None, Vec::new(), CommandStatus::Rejected)
             };
             drop(permit);
+            let cooldown_frames = if next.is_none() {
+                super::cooldowns::frames(
+                    authority,
+                    services.cooldowns.as_ref(),
+                    &mut admitted.continuity,
+                    None,
+                )?
+            } else {
+                Vec::new()
+            };
             let sequence = admitted
                 .continuity
                 .server_sequence
@@ -531,7 +547,9 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             ) {
                 // The native release already committed. A failed final write
                 // remains a logout, never a second control-loss transition.
-                if write_frame(stream, &result).await.is_ok()
+                if super::cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
+                    .await
+                    .is_ok()
                     && (!second_logout
                         || send_error(
                             stream,
@@ -549,9 +567,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 }
                 return Err(ServeEnd::LoggedOut);
             }
-            write_frame(stream, &result)
-                .await
-                .map_err(|_| ServeEnd::server("frame_write_refused"))?;
+            super::cooldowns::write_batch(stream, &cooldown_frames, Some(&result)).await?;
             if second_logout {
                 return Err(close(
                     stream,

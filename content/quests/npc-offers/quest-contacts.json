@@ -322,6 +322,30 @@
       ]
     },
     {
+      "npc": "oteryn:npc.king_tibianus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 8,
+      "next_topic": 0,
+      "storage": [],
+      "reply": [
+        "I don't think that's a very convincing argument. I have nothing more to say about {farmine}."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/questline",
+          "minimum": 14,
+          "maximum": 14
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_54/the_new_frontier/mission05/king_tibianus",
+          "minimum": 2,
+          "maximum": 2
+        }
+      ]
+    },
+    {
       "npc": "oteryn:npc.oswald",
       "keywords": [
         "invitation"
@@ -577,7 +601,8 @@
         "mission"
       ],
       "topic": 0,
-      "next_topic": 10,
+      "any_topic": true,
+      "next_topic": 9,
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
@@ -604,6 +629,7 @@
         "mission"
       ],
       "topic": 0,
+      "any_topic": true,
       "next_topic": 1,
       "storage": [
         {
@@ -622,41 +648,7 @@
         }
       ],
       "reply": [
-        "Have you brought any vampire dust?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.storkus",
-      "keywords": [
-        "vampire dust"
-      ],
-      "topic": 0,
-      "next_topic": 9,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 6,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 1,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/storkus_vampiredust",
-          "minimum": 0,
-          "maximum": 20,
-          "set": 0,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Shall I take the vampire dust you've brought?"
+        "Have you brought any vampire dust? You are carrying {carried_dust} of the 20 ounces I asked for."
       ]
     },
     {

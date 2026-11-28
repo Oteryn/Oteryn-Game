@@ -130,19 +130,26 @@ pub(super) async fn use_board(
         UseDisposition::Exhausted
     } else {
         drop(runtime);
-        if !query(owner, command)
-            .await
-            .is_some_and(|reply| reply.is_ok())
-        {
+        let Some(fence) = command.item_fence.filter(|fence| {
+            fence.game_session_id == command.game_session_id
+                && fence.runtime_scope
+                    == crate::foundation::RuntimeScopeRefV1::channel(
+                        owner.world_id,
+                        owner.channel_id,
+                    )
+                && fence.runtime_scope == actor.runtime_scope()
+                && fence.scope_ownership_generation == actor.scope_generation()
+        }) else {
             return Some(UseOutcome::rejected());
-        }
+        };
+        // Like the Towncryer, read the robbery directly. The Board does not
+        // display the separate, byte-limited V1 World Event payload.
         let Ok(announced) = owner
             .root
-            .bank_robbery_announcement(
+            .bank_robbery_board_announcement(
                 owner.character,
                 owner.holder,
-                actor.runtime_scope(),
-                actor.scope_generation(),
+                fence,
                 owner.reset_epoch,
             )
             .await

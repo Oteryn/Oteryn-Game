@@ -1268,6 +1268,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    fn destroy_map_bars(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: ItemKey,
+        target: house_destroy::wooden_bars::Target,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<UseOutcome>> + Send + '_>> {
+        Box::pin(self.destroy_map_bars_impl(actor, command, source, target))
+    }
+
     async fn observe_house_destroy(
         &self,
         actor: ExactActorRef,
@@ -1296,17 +1306,32 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Option<UseOutcome> {
+        // A durable item may cover the rope spot. Let its terrain owner
+        // claim the tile before the ground-item handlers claim the handle.
+        if matches!(target, Some(item_view::ItemKey::Instance(_))) {
+            match self
+                .use_rope_tool(actor, command, &intent, source, target)
+                .await
+            {
+                Ok(Some(outcome)) => return Some(outcome),
+                Ok(None) => {}
+                Err(_) => return None,
+            }
+        }
         if let Some(outcome) = self
             .use_machete_impl(actor, command, &intent, source, target)
             .await
         {
             return outcome;
         }
-        // Item-definition USE can select a carried rabbit knife. Delegate exact
-        // ground custody and replay to skinning before trying carried-stone refining.
+        // Ground skinning owns its replay even when a jam changed the carried tool.
+        use oteryn_protocol_oteryn::world_object::UseTarget;
         if matches!(
             intent.target,
-            oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+            UseTarget::ItemByDefinition(_) | UseTarget::Item(_)
+        ) && matches!(
+            target,
+            Some(item_view::ItemKey::Instance(_) | item_view::ItemKey::Entity(_))
         ) {
             match self
                 .use_skinning(actor, command, &intent, source, target)
@@ -1350,7 +1375,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
-        if let Some(outcome) = self.use_coin(actor, command, item).await {
+        if let Some(outcome) = self.use_coin(actor, command, item, false).await {
             return outcome;
         }
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
@@ -1708,6 +1733,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_actor_vitals(actor, game_session_id).await
     }
 
+    async fn observe_join_vitals(
+        &self,
+        actor: ExactActorRef,
+        admitted: AdmittedSession,
+        house: bool,
+    ) -> crate::gameplay_transport::spell_cooldowns::JoinVitals {
+        self.observe_actor_join(actor, admitted, house).await
+    }
+
+    fn cooldown_clock_us(&self) -> u64 {
+        self.owner_now().get()
+    }
+
     async fn observe_actor_cooldowns(
         &self,
         actor: ExactActorRef,
@@ -1790,12 +1828,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let runtime = self.runtime.lock().await;
-        self.states.spell_states.lock().await.house_vitals(
-            &runtime,
-            actor,
-            admitted.game_session_id,
-            fence,
-        )
+        let states = self.states.spell_states.lock().await;
+        let session = admitted.game_session_id;
+        if !states.current_cooldown_transport(actor, session, fence.connection_generation.get()) {
+            return None;
+        }
+        states.house_vitals(&runtime, actor, session, fence)
     }
 
     /// One cast as one Channel-owner work item (`SPELL-RL-01` = 1), under the same runtime lock
@@ -1932,7 +1970,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.expire_house_furniture_on_tick(actor, game_session_id)
+        self.expire_house_furniture_on_tick(actor, game_session_id, None)
             .await;
         self.tick_actor_vitals(actor, game_session_id).await
     }
@@ -1942,8 +1980,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         admitted: AdmittedSession,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
-        self.expire_house_furniture_on_tick(actor, admitted.game_session_id)
-            .await;
         self.tick_house_actor_vitals(actor, admitted).await
     }
 

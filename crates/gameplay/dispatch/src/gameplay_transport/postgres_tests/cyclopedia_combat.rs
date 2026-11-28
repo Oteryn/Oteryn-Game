@@ -15,6 +15,24 @@ use oteryn_protocol_oteryn::cyclopedia_character::{
 };
 use sqlx::Row;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ElementalMeleeCase {
+    BlockBudget,
+    ImmuneTraining,
+    SecondaryImmuneTraining,
+    DamageHealing,
+    WandDamageHealing,
+    AlphaProficiency,
+    SplitCritical,
+    ProficiencyAttackPoints,
+    PlainProficiencyAttackPoints,
+    ConvertedCritical,
+    AlphaCutoff,
+    AlphaPrey,
+    ResistedSecondaryTraining,
+    SplitLethalAttribution,
+}
+
 #[test]
 fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -22,7 +40,7 @@ fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false, None, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "P12c combat scenario panicked")??;
     Ok(())
@@ -35,7 +53,7 @@ fn self_defence_tab_reports_weapon_base_when_extra_defence_is_unauthored() -> Te
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, false).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, None, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Hand defence scenario panicked")??;
     Ok(())
@@ -48,14 +66,86 @@ fn self_defence_tab_retries_busy_combat_snapshot_holder() -> TestResult {
     };
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario(true, true).map_err(|error| error.to_string()))?
+        .spawn(|| scenario(true, None, true).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "Busy Defence scenario panicked")??;
     Ok(())
 }
 
-fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
+#[test]
+fn crystal_equipment_zero_primary_spends_creature_block_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::BlockBudget), false))
+}
+
+#[test]
+fn crystal_equipment_immune_melee_awards_no_training_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::ImmuneTraining), false))
+}
+
+#[test]
+fn crystal_equipment_secondary_immunity_preserves_damage_but_awards_no_tries_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::SecondaryImmuneTraining), false))
+}
+
+#[test]
+fn crystal_equipment_elemental_melee_heals_mounted_thorn_knight_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::DamageHealing), false))
+}
+
+#[test]
+fn crystal_equipment_wand_of_inferno_heals_lava_lurker_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::WandDamageHealing), false))
+}
+
+#[test]
+fn crystal_equipment_melee_alpha_proficiency_follows_defence_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::AlphaProficiency), false))
+}
+
+#[test]
+fn crystal_equipment_melee_critical_follows_intrinsic_split_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::SplitCritical), false))
+}
+
+#[test]
+fn crystal_equipment_amber_slayer_proficiency_adds_physical_attack_points_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::ProficiencyAttackPoints), false))
+}
+
+#[test]
+fn crystal_equipment_melee_converts_after_critical_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::ConvertedCritical), false))
+}
+
+#[test]
+fn crystal_equipment_melee_plain_proficiency_adds_attack_points_before_roll_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::PlainProficiencyAttackPoints), false))
+}
+
+#[test]
+fn crystal_equipment_alpha_proficiency_truncates_health_cutoff_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::AlphaCutoff), false))
+}
+
+#[test]
+fn crystal_equipment_alpha_proficiency_follows_prey_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::AlphaPrey), false))
+}
+
+#[test]
+fn crystal_equipment_resisted_secondary_refreshes_training_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::ResistedSecondaryTraining), false))
+}
+
+#[test]
+fn crystal_equipment_split_lethal_reports_primary_first_postgres() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(false, Some(ElementalMeleeCase::SplitLethalAttribution), false))
+}
+
+fn scenario(hand_defence_only: bool, elemental_melee: Option<ElementalMeleeCase>, busy_holder: bool) -> TestResult {
     use super::cyclopedia_fixtures::support::exchange;
+    use ElementalMeleeCase as Case;
+    let alpha = matches!(elemental_melee, Some(Case::AlphaProficiency | Case::AlphaCutoff | Case::AlphaPrey));
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(
@@ -119,9 +209,32 @@ fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
         native
             .install_companion_policies(&mut runtime)
             .map_err(debug)?;
+        let race = match elemental_melee {
+            Some(ElementalMeleeCase::ImmuneTraining) => "oteryn:creature.percht_minion",
+            Some(ElementalMeleeCase::SecondaryImmuneTraining | ElementalMeleeCase::SplitCritical
+                | ElementalMeleeCase::AlphaProficiency) => "oteryn:creature.elf_overseer",
+            Some(Case::AlphaCutoff | Case::AlphaPrey | Case::PlainProficiencyAttackPoints | Case::ConvertedCritical) => "oteryn:creature.lizard_chosen",
+            Some(Case::ResistedSecondaryTraining) => "oteryn:creature.mounted_thorn_knight",
+            Some(Case::SplitLethalAttribution) => "oteryn:creature.rat",
+            Some(ElementalMeleeCase::DamageHealing) => "oteryn:creature.mounted_thorn_knight",
+            Some(ElementalMeleeCase::WandDamageHealing) => "oteryn:creature.lava_lurker",
+            Some(ElementalMeleeCase::ProficiencyAttackPoints) => "oteryn:creature.magma_crystal",
+            _ => "oteryn:creature.rat",
+        };
+        let policy = runtime.companion_policy(race).map_err(debug)?;
+        if elemental_melee == Some(ElementalMeleeCase::DamageHealing) {
+            assert_eq!(policy.damage_healing("death", 1).map_err(debug)?, 1);
+        }
+        if elemental_melee == Some(ElementalMeleeCase::WandDamageHealing) {
+            assert!(policy.damage_healing("fire", 100).map_err(debug)? > 0);
+        }
+        if elemental_melee == Some(ElementalMeleeCase::ImmuneTraining) {
+            assert!(policy.damage_immunities.iter().any(|key| key == "physical"));
+            assert!(policy.damage_immunities.iter().any(|key| key == "death"));
+        }
         let maximum_health = u64::try_from(
             runtime
-                .companion_policy("oteryn:creature.rat")
+                .companion_policy(race)
                 .map_err(debug)?
                 .maximum_health,
         )?;
@@ -130,7 +243,7 @@ fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
                 vec![(1, 11, -7)],
                 60_000,
                 5_000,
-                "oteryn:creature.rat".into(),
+                race.into(),
                 maximum_health,
             )])
             .map_err(debug)?;
@@ -150,9 +263,15 @@ fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         deps.admitted.runtime_actor = Some(deps.actor);
-        seed(&h, hand_defence_only).await?;
+        seed(&h, hand_defence_only, elemental_melee).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
+        if alpha || matches!(elemental_melee, Some(Case::ProficiencyAttackPoints | Case::PlainProficiencyAttackPoints)) {
+            owner.proficiency_catalogue = Some(
+                crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue::embedded()
+                    .ok_or("proficiency catalogue")?,
+            );
+        }
         deps.initialize(&owner).await;
         let effects = owner
             .read_admission_effects(deps.admitted.game_session_id)
@@ -272,6 +391,222 @@ fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
             1,
             "the production weapon refresh persists statistics before the first tab query"
         );
+        if let Some(case) = elemental_melee {
+            let training_skill = match case {
+                ElementalMeleeCase::ImmuneTraining => Some(oteryn_gameplay_progression::hit_training::SkillFamily::Sword),
+                ElementalMeleeCase::SecondaryImmuneTraining => Some(oteryn_gameplay_progression::hit_training::SkillFamily::Axe),
+                Case::ResistedSecondaryTraining => Some(oteryn_gameplay_progression::hit_training::SkillFamily::Club),
+                _ => None,
+            };
+            use oteryn_gameplay_combat_rules::attack::AttackConstants;
+            use oteryn_gameplay_progression::hit_training::HitBlock;
+            let formula = native.training_formula().ok_or("training formula")?;
+            let now = owner.owner_now();
+            let starting_health = match case {
+                ElementalMeleeCase::DamageHealing | ElementalMeleeCase::WandDamageHealing => i64::try_from(maximum_health / 2)?,
+                ElementalMeleeCase::SecondaryImmuneTraining | ElementalMeleeCase::ProficiencyAttackPoints
+                | ElementalMeleeCase::SplitCritical | ElementalMeleeCase::AlphaProficiency => {
+                    i64::try_from(maximum_health)?
+                }
+                Case::AlphaCutoff => i64::try_from(maximum_health * 95 / 100)?,
+                Case::SplitLethalAttribution => 10,
+                _ => i64::try_from(maximum_health)?,
+            };
+            if alpha || matches!(case, Case::ProficiencyAttackPoints | Case::PlainProficiencyAttackPoints) {
+                use crate::domain::CharacterRevision;
+                use crate::durability::character_proficiency::{
+                    DurableProficiencyState, StoredProficiencyTrack,
+                };
+                let (key, definition, level, perk) = match case {
+                    Case::AlphaProficiency | Case::AlphaCutoff | Case::AlphaPrey => ("oteryn:item.tibia.i52338", "oteryn:proficiency.tibia.p457", 3, 0),
+                    Case::PlainProficiencyAttackPoints => ("oteryn:item.tibia.i52338", "oteryn:proficiency.tibia.p457", 4, 1),
+                    _ => ("oteryn:item.tibia.i47368", "oteryn:proficiency.tibia.p42", 5, 0),
+                };
+                let catalogue = owner.proficiency_catalogue.as_ref().ok_or("proficiency catalogue")?;
+                let shape = catalogue.empty_track(key).ok_or("Amber Slayer proficiency")?.shape.track_shape();
+                let mut selections = vec![None; usize::from(shape.perk_levels())];
+                selections[level] = Some(perk);
+                let stored = StoredProficiencyTrack {
+                    state: DurableProficiencyState::new(
+                        key, definition, "definition-r1",
+                        u64::from(shape.final_progress()), selections,
+                    )?,
+                    committed_character_revision: CharacterRevision::new(1).map_err(debug)?,
+                    last_proficiency_occurrence_id: [0; 16],
+                    modifications: [None, None],
+                };
+                let track = catalogue.live_track(&stored).ok_or("selected attack proficiency")?;
+                if alpha {
+                    assert_eq!(track.effects.alpha_numerator * 10, track.effects.denominator);
+                } else {
+                    assert_eq!(track.effects.flat_attack, 1);
+                }
+                owner.states.proficiencies.lock().map_err(|_| "proficiencies")?
+                    .entry(admitted.game_session_id).or_default().install_track(key, track);
+                owner.states.spell_states.lock().await.analyser.snapshot(
+                    deps.actor, admitted.game_session_id, 1, None,
+                ).ok_or("analyser subscription")?;
+            }
+            if case == Case::SplitLethalAttribution {
+                owner.states.spell_states.lock().await.analyser.snapshot(
+                    deps.actor, admitted.game_session_id, 1, None,
+                ).ok_or("analyser subscription")?;
+            }
+            let mut expected_damage = None;
+            let target_actor;
+            {
+                let mut runtime = deps.runtime.lock().await;
+                let creature = runtime.visible_entities().creatures.first().ok_or("target")?.actor;
+                target_actor = creature;
+                runtime.set_test_creature_health(creature, starting_health).map_err(debug)?;
+                let mut states = owner.states.spell_states.lock().await;
+                if case == Case::AlphaPrey {
+                    use oteryn_gameplay_progression::prey::difficulty::PreyDefenseMode;
+                    use oteryn_protocol_oteryn::prey as wire;
+                    states.load_prey(
+                        &runtime, deps.actor, admitted.game_session_id,
+                        wire::Reply {
+                            status: 0, wildcard_balance: 0,
+                            slots: vec![wire::Slot {
+                                slot: 1, state: 2, creatures: vec![race.into()], selected: race.into(),
+                                bonus: 1, grade: 10, percent: 25, hunting_seconds: 7200, option: 0,
+                                free_reroll_at: 0, chosen_tier: 1, allowed_tier: 5, selection_epoch: 1,
+                            }],
+                            list_size: 9, expansion_owned: false, offered_today: Vec::new(), offered_next: String::new(),
+                        },
+                        [true; 3], PreyDefenseMode::DealtOrAttacked,
+                    );
+                }
+                let state = states
+                    .get_mut(&runtime, deps.actor, admitted.game_session_id)
+                    .ok_or("player state")?;
+                state.facts.level = match case {
+                    Case::SecondaryImmuneTraining | Case::ProficiencyAttackPoints | Case::SplitLethalAttribution => 800,
+                    Case::ResistedSecondaryTraining => 1,
+                    Case::AlphaPrey | Case::PlainProficiencyAttackPoints => 20,
+                    _ => 330,
+                };
+                state.facts.vocation = if case == ElementalMeleeCase::WandDamageHealing {
+                    state.restore_saved_vitals(state.vitals().health, state.facts.max_mana);
+                    crate::spell::Vocation::Sorcerer
+                } else {
+                    crate::spell::Vocation::Knight
+                };
+                if case == Case::PlainProficiencyAttackPoints {
+                    state.load_owned_build(&crate::durability::character_build::DurableBuildState::new(
+                        "knight", (u16::try_from(state.facts.magic_level)?, 0), [(100, 0); 7],
+                    ).map_err(debug)?).map_err(debug)?;
+                }
+                if alpha || matches!(case, Case::SplitCritical | Case::ConvertedCritical | Case::PlainProficiencyAttackPoints) {
+                    use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+                    let mut offence = if matches!(case, Case::SplitCritical | Case::ConvertedCritical) {
+                        EquippedOffence::from_sums(10_000, 0, 0, 0)
+                    } else {
+                        EquippedOffence::default()
+                    };
+                    if case == Case::ConvertedCritical {
+                        offence.elemental_conversion = Some((crate::content::ProjectV2RangedElement::Fire, 50));
+                    }
+                    state.install_equipped_offence(offence);
+                    let (level, expected) = expected_creature_damage(
+                        &runtime, native, deps.actor, admitted.game_session_id, creature, state, now.get(), case,
+                    )?;
+                    state.facts.level = level;
+                    expected_damage = Some(expected);
+                }
+                if let Some(skill) = training_skill {
+                    let build = crate::durability::character_build::DurableBuildState::new(
+                        "knight", (u16::try_from(state.facts.magic_level)?, 0),
+                        [(if case == ElementalMeleeCase::SecondaryImmuneTraining { 100 } else { 50 }, 0); 7],
+                    ).map_err(debug)?;
+                    state.enable_owned_training(&build, formula).map_err(debug)?;
+                    state.train_skill(skill, now.get(), formula, |hits| {
+                        if case != Case::ResistedSecondaryTraining {
+                            hits.melee_hit(HitBlock::Unblocked);
+                        }
+                        if case == ElementalMeleeCase::SecondaryImmuneTraining {
+                            while hits.melee_hit(HitBlock::Armor) > 0 {}
+                        }
+                        0
+                    }).map_err(debug)?;
+                    assert!(!state.has_training_to_flush());
+                }
+            }
+            owner.drain_auto_attacks().await;
+            let runtime = deps.runtime.lock().await;
+            let creature = target_actor;
+            let health = runtime.companion_snapshot_including_dead(creature).map_err(debug)?.health;
+            if let Some(expected) = expected_damage {
+                assert_eq!(starting_health - health, expected, "rolled components settle through live creature defence");
+            }
+            if case == ElementalMeleeCase::SecondaryImmuneTraining {
+                assert!(health < starting_health, "the non-immune physical component lands");
+            }
+            if case == ElementalMeleeCase::DamageHealing {
+                assert!(health > starting_health, "the incoming death component heals the creature");
+            }
+            if case == ElementalMeleeCase::WandDamageHealing {
+                let states = owner.states.spell_states.lock().await;
+                let state = states.get(&runtime, deps.actor, admitted.game_session_id).ok_or("player state")?;
+                assert!(state.vitals().mana < state.facts.max_mana, "the wand shot committed its mana cost");
+                assert!(health > starting_health, "the fire shot heals the Lava Lurker");
+            } else {
+                owner.states.attack.lock().await.test_creature_blocks(creature).ok_or("melee swing reached block settlement")?;
+            }
+            if case == ElementalMeleeCase::ProficiencyAttackPoints {
+                use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+                use oteryn_protocol_oteryn::damage_element::DamageElement;
+                let states = owner.states.spell_states.lock().await;
+                let batch = states.analyser.next(deps.actor, admitted.game_session_id, 1)
+                    .ok_or("committed damage facts")?;
+                assert!(
+                    decode_analyser_facts(&batch).map_err(debug)?.iter().any(|fact| matches!(
+                        fact,
+                        AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Physical, value })
+                            if value.get() >= 3
+                    )),
+                    "the physical component starts at the level / 5 minimum",
+                );
+            }
+            if case == Case::SplitLethalAttribution {
+                use oteryn_protocol_oteryn::analyser::{AnalyserFact, AnalyserImpact, decode_analyser_facts};
+                use oteryn_protocol_oteryn::damage_element::DamageElement;
+                let states = owner.states.spell_states.lock().await;
+                let batch = states.analyser.next(deps.actor, admitted.game_session_id, 1)
+                    .ok_or("committed damage facts")?;
+                assert_eq!(health, 0);
+                assert!(decode_analyser_facts(&batch).map_err(debug)?.iter().any(|fact| matches!(
+                    fact, AnalyserFact::Impact(AnalyserImpact::Damage { element: DamageElement::Physical, value })
+                        if value.get() == 10
+                )), "primary damage consumes the creature's last 10 HP");
+            }
+            if training_skill.is_some() {
+                let states = owner.states.spell_states.lock().await;
+                let state = states.get(&runtime, deps.actor, admitted.game_session_id).ok_or("player state")?;
+                if case == Case::ResistedSecondaryTraining {
+                    assert_eq!(health, starting_health, "armour and resistance consume both components");
+                    assert!(state.has_training_to_flush(), "the secondary callback awards a melee try before resistance");
+                } else {
+                    assert!(!state.has_training_to_flush(), "a final immunity block awards no melee tries");
+                }
+                if case == ElementalMeleeCase::SecondaryImmuneTraining {
+                    let mut state = state.clone();
+                    state.train_skill(oteryn_gameplay_progression::hit_training::SkillFamily::Axe, now.get(), formula, |hits| {
+                        assert_eq!(hits.melee_hit(HitBlock::Armor), 1, "the landed primary refreshes the blood streak");
+                        0
+                    }).map_err(debug)?;
+                }
+            } else if case == ElementalMeleeCase::BlockBudget {
+                let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+                let budget = owner.states.attack.lock().await.test_creature_blocks(creature).ok_or("melee swing reached block settlement")?;
+                assert_eq!(budget, constants.block.max_blocks - 1);
+            }
+            drop(runtime);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         // The following connection exercises only the tab capability, so an independent
         // periodic attack observation cannot obscure the command-replay write count.
         admitted.continuity.selected_capabilities =
@@ -496,7 +831,130 @@ fn scenario(hand_defence_only: bool, busy_holder: bool) -> TestResult {
     })
 }
 
-async fn seed(h: &Harness, hand_defence_only: bool) -> TestResult {
+#[allow(clippy::too_many_arguments, reason = "predict the held lineage against the same live fixture")]
+fn expected_creature_damage(
+    runtime: &ChannelRuntimeV1,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+    target: crate::foundation::ExactActorRef,
+    state: &crate::spell::cast::PlayerSpellState,
+    now: u64,
+    case: ElementalMeleeCase,
+) -> Result<(u32, i64), Box<dyn std::error::Error>> {
+    use oteryn_gameplay_combat_rules::{
+        attack::{AttackConstants, FightMode},
+        resolution::{
+            self,
+            equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN},
+        },
+    };
+    let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+    let split_critical = case == ElementalMeleeCase::SplitCritical;
+    use ElementalMeleeCase as Case;
+    let key = if split_critical {
+        "oteryn:item.tibia.i49523"
+    } else {
+        "oteryn:item.tibia.i52338"
+    };
+    let weapon = resolution::swing_weapon(native, |slot| {
+        (slot == 5).then_some((key, "definition-r1"))
+    })
+    .ok_or("native weapon")?;
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+        runtime.content_pin().server_artifact_digest(),
+    );
+    let skill = state
+        .live_skill(if split_critical { 3 } else { 2 }, now)
+        .unwrap_or(constants.starting_skill);
+    let snapshot = runtime.companion_snapshot(target).map_err(debug)?;
+    let defense = runtime.effective_creature_defense(&snapshot).map_err(debug)?;
+    let policy = snapshot.state.policy;
+    let armor = policy.armor.ok_or("target armor")?;
+    let split = |amount| {
+        weapon.split_damage(amount).map(|parts| parts.0).ok_or("intrinsic split")
+    };
+    let attack = weapon.attack(constants.fist.attack);
+    // Choose a qualified skill/level fixture whose deterministic roll separates the two
+    // orderings, since one particular roll may happen to round to the same result.
+    let lineage = (*session.as_bytes(), 2);
+    let roll = |tag, key, low, high| {
+        resolution::swing_draw(
+            &root, actor.placement_identity(), lineage, 0, tag, key, low, high,
+        ).ok_or("held attack draw")
+    };
+    let critical_roll = u64::try_from(roll(
+        b"critical-hit", "attack.critical-hit", CRITICAL_ROLL_MIN as i64, CRITICAL_ROLL_MAX as i64,
+    )?)?;
+    let offence = state.equipped_offence();
+    let critical = |damage| -> Result<i64, std::num::TryFromIntError> {
+        Ok(i64::from(offence.critical(u32::try_from(damage)?, critical_roll)))
+    };
+    let settle = |physical| {
+        resolution::creature_mitigated(
+            &root, constants, actor.placement_identity(), lineage, 0, physical, true, defense, armor,
+        )
+        .and_then(|blocked| resolution::creature_physical_response(&policy, blocked))
+        .ok_or("mitigated swing")
+    };
+    for level in state.facts.level..state.facts.level + 300 {
+        let draw = |attack_value| -> Result<i64, Box<dyn std::error::Error>> {
+            let (low, high) = crate::combat_attack::player_melee_formula(constants)
+                .bounds(&crate::spell::formula::FormulaInputs {
+                    level,
+                    attack_skill: skill,
+                    attack_value,
+                    attack_factor: constants.fight_mode(FightMode::Balanced).attack_factor,
+                    magic_level: state.facts.magic_level,
+                    base_power: None,
+                    shielding_skill: 0,
+                    shield_defense: None,
+                }).map_err(debug)?;
+            Ok(roll(b"damage-draw", "attack.damage", low, high)?)
+        };
+        let raw = draw(attack)?;
+        let (expected, legacy) = match case {
+            Case::SplitCritical => (
+                settle(critical(split(raw)?)?)?,
+                settle(split(critical(raw)?)?)?,
+            ),
+            Case::ConvertedCritical => {
+                let total = |physical, elemental| -> Result<i64, Box<dyn std::error::Error>> {
+                    Ok(settle(physical)? + resolution::creature_damage_response(&policy, elemental, "fire").ok_or("fire")?)
+                };
+                let converted = |physical| offence.convert_physical(physical, 0, crate::content::ProjectV2RangedElement::Physical).ok_or("conversion");
+                let (primary, secondary, _) = converted(critical(raw)?)?;
+                let (old_primary, old_secondary, _) = converted(raw)?;
+                (total(primary, secondary)?, total(critical(old_primary)?, critical(old_secondary)?)?)
+            }
+            Case::PlainProficiencyAttackPoints => (settle(critical(draw(attack + 1)?)?)?, settle(critical(raw + 1)?)?),
+            Case::AlphaCutoff => {
+                let landed = settle(critical(raw)?)?;
+                (landed + landed / 10, landed)
+            }
+            Case::AlphaPrey => {
+                let landed = settle(critical(raw)?)?;
+                // PREY-0 rounds the 25% contribution up before proficiency applies.
+                let boost = |damage| damage + (damage + 3) / 4;
+                let boosted = boost(landed);
+                if landed % 4 == 0 {
+                    continue;
+                }
+                (boosted + boosted / 10, boost(landed + landed / 10))
+            }
+            _ => {
+                let landed = settle(critical(raw)?)?;
+                (landed + landed / 10, settle(critical(raw + raw / 10)?)?)
+            }
+        };
+        if expected != legacy {
+            return Ok((level, expected));
+        }
+    }
+    Err("no held swing distinguishes the reviewed combat orderings".into())
+}
+
+async fn seed(h: &Harness, hand_defence_only: bool, elemental: Option<ElementalMeleeCase>) -> TestResult {
     // Only custody/effect provisioning is fixture SQL. Every observed value passes through the
     // native content, equipment and combat owners before the new writer persists it.
     let mut tx = h.pool.begin().await?;
@@ -519,6 +977,9 @@ async fn seed(h: &Harness, hand_defence_only: bool) -> TestResult {
         ),
         (114, "oteryn:item.tibia.i6529", 4, 10),
     ] {
+        if elemental.is_some() && slot == 6 {
+            continue;
+        }
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
@@ -527,6 +988,23 @@ async fn seed(h: &Harness, hand_defence_only: bool) -> TestResult {
             sqlx::query("INSERT INTO game_item_tiers(item_instance_id,tier) VALUES(encode($1,'hex')::uuid,$2)")
                 .bind(id(seed).as_slice()).bind(tier).execute(&mut *tx).await?;
         }
+    }
+    if let Some(case) = elemental {
+        use ElementalMeleeCase as Case;
+        let weapon = match case {
+            ElementalMeleeCase::SecondaryImmuneTraining | ElementalMeleeCase::SplitCritical => "oteryn:item.tibia.i49523",
+            Case::AlphaProficiency | Case::AlphaCutoff | Case::AlphaPrey | Case::PlainProficiencyAttackPoints | Case::ConvertedCritical => "oteryn:item.tibia.i52338",
+            Case::SplitLethalAttribution => "oteryn:item.tibia.i49523",
+            // The Flail's physical attack floor guarantees a nonzero roll through the same
+            // healing path and leaves a physical component to settle after the source heal.
+            Case::DamageHealing | Case::ResistedSecondaryTraining => "oteryn:item.tibia.i49525",
+            ElementalMeleeCase::WandDamageHealing => "oteryn:item.tibia.i3071",
+            _ => "oteryn:item.tibia.i47368",
+        };
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(116).as_slice()).bind(id(42).as_slice()).bind(weapon).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,5,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(116).as_slice()).execute(&mut *tx).await?;
     }
     for key in [
         "oteryn:blessing.spiritual_shielding",

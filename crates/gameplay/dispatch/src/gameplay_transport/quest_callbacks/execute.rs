@@ -6,7 +6,6 @@ use crate::map::facts::QuestCallbackProjection;
 fn shared_projection_target(
     projection: Option<&QuestCallbackProjection>,
     source: u64,
-    selected_tool: bool,
 ) -> Result<Option<u64>, UseDisposition> {
     // An unknown acknowledgement keeps the affected placement reserved for replay.
     Ok(match projection {
@@ -20,7 +19,7 @@ fn shared_projection_target(
             QuestCallbackProjection::ReleaseMerchant { .. }
             | QuestCallbackProjection::TimedRemoval { .. },
         ) => Some(source),
-        Some(QuestCallbackProjection::TimedTransform { .. }) if selected_tool => Some(source),
+        Some(QuestCallbackProjection::TimedTransform { .. }) => Some(source),
         Some(QuestCallbackProjection::TimedTargetTransform { key, .. }) => Some(*key),
         Some(QuestCallbackProjection::TimedPassages { entries, .. }) if entries.len() == 1 => {
             entries.first().map(|entry| entry.key)
@@ -33,6 +32,11 @@ fn refresh_source_reset(projection: Option<&mut QuestCallbackProjection>, publis
     if let Some(
         QuestCallbackProjection::TimedTransform { due, .. }
         | QuestCallbackProjection::TimedRemoval { due, .. }
+        | QuestCallbackProjection::TimedAmphoras { due, .. }
+        | QuestCallbackProjection::Scene {
+            source_reset: Some((due, _)),
+            ..
+        }
         | QuestCallbackProjection::ReadsetTransforms {
             reset: Some((due, _)),
             ..
@@ -69,6 +73,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // receipt check. Only the original batch or its exact receipt can
         // release this placement for a new close.
         if self.scene_receipt_pending(map, key) {
+            return UseDisposition::Rejected;
+        }
+        if may_debit(callback)
+            && !self.paid_callback_can_start(session, session, |pending| {
+                pending.cause == cause && pending.callback == callback.key
+            })
+        {
             return UseDisposition::Rejected;
         }
         if callback.effects.encounter.is_none()
@@ -264,6 +275,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if callback.key == super::amphoras::GATE {
+            map.facts.expire_movement_items(self.owner_now().get());
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
@@ -313,23 +327,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(due) = lifecycle_now.checked_add(u64::from(delay) * 1_000) else {
                 return UseDisposition::Exhausted;
             };
-            projection = Some(
-                if callback
-                    .item_on_target
-                    .as_ref()
-                    .is_some_and(|tool| tool.target_remove)
-                {
-                    crate::map::facts::QuestCallbackProjection::TimedRemoval {
-                        due,
-                        restore: before,
-                    }
-                } else {
-                    crate::map::facts::QuestCallbackProjection::TimedTransform {
-                        due,
-                        restore: before,
-                    }
-                },
-            );
+            if let Some(crate::map::facts::QuestCallbackProjection::Scene {
+                source_reset, ..
+            }) = projection.as_mut()
+            {
+                *source_reset = Some((due, before));
+            } else {
+                projection = Some(
+                    if callback
+                        .item_on_target
+                        .as_ref()
+                        .is_some_and(|tool| tool.target_remove)
+                    {
+                        crate::map::facts::QuestCallbackProjection::TimedRemoval {
+                            due,
+                            restore: before,
+                        }
+                    } else {
+                        crate::map::facts::QuestCallbackProjection::TimedTransform {
+                            due,
+                            restore: before,
+                        }
+                    },
+                );
+            }
+        }
+        if super::amphoras::is_strike(callback) {
+            projection = match super::amphoras::prepare(
+                self.callback_content(),
+                map,
+                key,
+                before,
+                projection,
+            ) {
+                Ok(projection) => projection,
+                Err(refusal) => return refusal,
+            };
         }
         if callback.key == oteryn_gameplay_quests::quest::dreamer_fire_bug::IGNITE {
             let Some(crate::map::facts::QuestCallbackProjection::TimedTransform { due, restore }) =
@@ -591,22 +624,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(projection) => projection,
             Err(result) => return result,
         };
-        let selected_tool_instance = callback
-            .item_on_target
-            .as_ref()
-            .is_some_and(|tool| tool.selected_instance);
-        let projection_target = if matches!(
-            callback.key.as_str(),
-            super::serpentine_lever::JOURNEY | super::serpentine_lever::SOURCE
-        ) {
-            // Both routes share the lever while an authored opening receipt is pending.
-            Some(key)
-        } else {
-            match shared_projection_target(projection.as_ref(), key, selected_tool_instance) {
-                Ok(target) => target,
-                Err(refusal) => return refusal,
-            }
-        };
+        let projection_target =
+            if matches!(
+                callback.key.as_str(),
+                super::serpentine_lever::JOURNEY | super::serpentine_lever::SOURCE
+            ) || (matches!(&projection, Some(QuestCallbackProjection::Scene { .. }))
+                && callback.lever.is_some())
+                || super::amphoras::is_strike(callback)
+            {
+                Some(key)
+            } else {
+                match shared_projection_target(projection.as_ref(), key) {
+                    Ok(target) => target,
+                    Err(refusal) => return refusal,
+                }
+            };
         if let Some(target) = projection_target
             && !self
                 .states
@@ -724,6 +756,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
                     participants: Vec::new(),
@@ -762,7 +795,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         placement,
                         object_revision: expected_revision,
                         context,
-                        success_prepared: success.is_some(),
+                        success: success
+                            .as_ref()
+                            .and_then(|proof| self.paid_arrival(runtime, states, session, proof)),
                         missing_prepared: missing.is_some(),
                     },
                 )
@@ -840,7 +875,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 if source_flame {
                     3
-                } else if callback.effects.place_item.is_some() || callback.effects.loot_merchant {
+                } else if callback.effects.place_item.is_some()
+                    || callback.effects.loot_merchant
+                    || matches!(
+                        &projection,
+                        Some(crate::map::facts::QuestCallbackProjection::Scene {
+                            source_reset: Some(_),
+                            ..
+                        })
+                    )
+                {
                     8
                 } else {
                     callback.passages.len()
@@ -885,6 +929,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
                     participants: Vec::new(),
@@ -1158,11 +1203,64 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let coffin = VampireCoffinKind::for_callback(&callback.key);
         let mut recover_ordinary_coffin = false;
+        let paid_scene = if callback.key == super::paid_projection::DREAD_LORD_SCROLL {
+            let (QuestCause::Use(payment), Some(projection), Some(delay)) =
+                (cause, projection.as_mut(), callback.effects.reset_after_ms)
+            else {
+                return UseDisposition::Rejected;
+            };
+            if !durable
+                || close
+                || scene_moves.is_some()
+                || !passages.is_empty()
+                || !replacements.is_empty()
+            {
+                return UseDisposition::Rejected;
+            }
+            let QuestCallbackProjection::Scene { mutations, .. } = projection else {
+                return UseDisposition::Rejected;
+            };
+            let [
+                crate::map::facts::QuestSceneMutation::Create {
+                    payment: identity,
+                    passable: true,
+                    ..
+                },
+            ] = mutations.as_mut_slice()
+            else {
+                return UseDisposition::Rejected;
+            };
+            *identity = Some(payment);
+            let Some(scene) =
+                map.facts
+                    .stage_timed_scene_creation(key, expected_revision, after, projection)
+            else {
+                return UseDisposition::Rejected;
+            };
+            Some((scene, u64::from(delay) * 1_000))
+        } else {
+            None
+        };
         if durable {
             let (Some(fence), Some(slot), Some(catalogue)) =
                 (fence, slot, self.quest_catalogue.as_ref())
             else {
                 return UseDisposition::Rejected;
+            };
+            let paid_arrivals = if !may_debit(callback) {
+                Vec::new()
+            } else if let Some(plan) = &party {
+                let Some(arrivals) = plan.paid_arrivals(self, runtime, states) else {
+                    return UseDisposition::Rejected;
+                };
+                arrivals
+            } else if let Some(proof) = &teleport {
+                let Some(arrival) = self.paid_arrival(runtime, states, session, proof) else {
+                    return UseDisposition::Rejected;
+                };
+                vec![arrival]
+            } else {
+                Vec::new()
             };
             let context = QuestWorldContext {
                 map_revision: crate::map::overlay::map_revision(map.overlay.base()),
@@ -1187,6 +1285,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     origin: None,
                     context: None,
+                    paid_arrivals: Vec::new(),
                     flame: None,
                     ingress_settled: false,
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
@@ -1199,15 +1298,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // that exact binding instead of the replaying caller's tool.
                 if record.context.is_none() {
                     record.selected_tool = selected_tool.cloned();
+                    record.paid_arrivals = paid_arrivals;
                 }
                 (
                     record.context.get_or_insert(context).clone(),
                     record.selected_tool.clone(),
+                    record.paid_arrivals.clone(),
                 )
             } else {
                 return UseDisposition::Rejected;
             };
-            let (context, selected_tool) = context;
+            let (context, selected_tool, paid_arrivals) = context;
             let context = if let Some((source, intent)) = selected_tool {
                 let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
@@ -1216,6 +1317,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 context.into()
             };
+            let context = context.with_paid_arrivals(paid_arrivals);
             let reward_weights = self
                 .active_generation
                 .and_then(|g| g.native_gameplay())
@@ -1580,7 +1682,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // Durable admission may wait on PostgreSQL. Start source reset/regrowth
             // at publication, so commit latency cannot consume its visible lifetime.
             // Readset projections carry the same timer for the Children lever owner.
-            if !close && let Some(delay) = callback.effects.reset_after_ms {
+            if paid_scene.is_none()
+                && !close
+                && let Some(delay) = callback.effects.reset_after_ms
+            {
                 let Some(published_due) =
                     self.owner_now().get().checked_add(u64::from(delay) * 1_000)
                 else {
@@ -1669,7 +1774,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     projection.as_ref(),
                 )
             };
-            if let Some(proof) = scene_moves {
+            if let Some((scene, delay)) = paid_scene {
+                scene.publish(self.owner_now().get().saturating_add(delay));
+            } else if let Some(proof) = scene_moves {
                 if let Some(publication) = scene_publication {
                     // This stage validates the original census without storing
                     // a runtime guard or taking a stale carrier across custody I/O.
@@ -1897,7 +2004,7 @@ mod tests {
             },
         };
         assert_eq!(
-            shared_projection_target(Some(&projection), 42, true),
+            shared_projection_target(Some(&projection), 42),
             Ok(Some(42))
         );
         refresh_source_reset(Some(&mut projection), 200);

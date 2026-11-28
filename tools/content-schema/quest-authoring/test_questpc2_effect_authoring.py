@@ -28,17 +28,18 @@ class QuestPC2SourceEffects(unittest.TestCase):
             with self.assertRaises(ValueError, msg=change):
                 quest_batch4.validate_effects(row, row['key'])
 
-    def test_source_four_stations_and_return_phase_are_pinned(self):
+    def test_source_five_stations_and_return_phase_are_pinned(self):
         questpc2_access.verify_desert_source()
         row = next(row for row in qengine_access.document()['callbacks']
                    if row['key'].endswith('desert-dungeon-party-rite'))
         party = row['effects']['party_transfer']
         self.assertEqual(party['activation_appearance'], 2772)
         self.assertEqual([s['vocation'] for s in party['stations']],
-                         ['sorcerer', 'druid', 'paladin', 'knight'])
+                         ['sorcerer', 'druid', 'paladin', 'knight', 'monk'])
         self.assertEqual([o['item'] for o in row['offerings']],
                          ['oteryn:item.tibia.i3059', 'oteryn:item.tibia.i3585',
-                          'oteryn:item.tibia.i3349', 'oteryn:item.tibia.i3264'])
+                          'oteryn:item.tibia.i3349', 'oteryn:item.tibia.i3264',
+                          'oteryn:item.tibia.i50181'])
         self.assertTrue(row['reversible'])
         self.assertEqual(row['selector']['unique'], 30030)
 

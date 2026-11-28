@@ -276,8 +276,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             }
+            let poison_arrow =
+                crate::gameplay_transport::pvp_live::is_poison_arrow(&tick.provenance);
             if agony
-                || tick.provenance.source_kind
+                || !poison_arrow && tick.provenance.source_kind
                     != oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Field
             {
                 return Err(DurabilityError::Unavailable);
@@ -291,11 +293,12 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 || historical.source_catalog_digest
                     != runtime.content_pin().server_artifact_digest()
                 || historical.source_scope_generation != runtime.binding().scope_generation().get()
-                || !tick
-                    .provenance
-                    .source
-                    .as_deref()
-                    .is_some_and(|source| source.starts_with("player:field:"))
+                || !poison_arrow
+                    && !tick
+                        .provenance
+                        .source
+                        .as_deref()
+                        .is_some_and(|source| source.starts_with("player:field:"))
             {
                 return Err(DurabilityError::Unavailable);
             }
@@ -336,6 +339,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 None
             };
             let Some((source, source_session, fence)) = current_source else {
+                if poison_arrow {
+                    continue;
+                }
                 // A departed caster cannot grant PvP authority or attribution. The
                 // retained field is environmental damage under the current victim's
                 // own fence, current World policy and qualified tile instead.
@@ -387,6 +393,12 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             };
+            if poison_arrow
+                && tick.provenance.source.as_deref()
+                    != Some(crate::spell::combat_execution::actor_atom(source).as_str())
+            {
+                return Err(DurabilityError::Unavailable);
+            }
             let command = crate::foundation::CommandRef::new(
                 source_session,
                 crate::foundation::CommandId::new(historical.source_creation_command)
@@ -484,11 +496,16 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 continue;
             }
-            let magnitude =
-                oteryn_gameplay_combat_rules::pvp::pvp_damage(amount, facts.target_black);
-            let magnitude = self
-                .equipped_field_damage(tx, read, element, magnitude, initial, cycle)
-                .await?;
+            // Crystal ConditionDamage::doDamage applies the PvP split and field
+            // modifiers only to conditions created by a field.
+            let magnitude = if poison_arrow {
+                amount
+            } else {
+                let magnitude =
+                    oteryn_gameplay_combat_rules::pvp::pvp_damage(amount, facts.target_black);
+                self.equipped_field_damage(tx, read, element, magnitude, initial, cycle)
+                    .await?
+            };
             if initial && magnitude == 0 {
                 next.conditions = before.conditions.clone();
             }
@@ -497,15 +514,40 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 runtime, actor, &next, magnitude, hit_kind, now_us,
             )
             .map_err(|_| DurabilityError::Unavailable)?;
-            next = successor;
+            let mana_after_shield =
+                if successor.wheel_gift_activation() != next.wheel_gift_activation() {
+                    // Reuse hit staging to measure shield spend on the same input
+                    // with only the rescue disabled. This successor is never committed.
+                    let mut without_gift = next.clone();
+                    let mut effects = next
+                        .wheel_effects_at(now_us)
+                        .ok_or(DurabilityError::Unavailable)?
+                        .clone();
+                    effects.revelation_stages.remove("gift_of_life");
+                    without_gift.install_wheel_effects(effects);
+                    crate::spell::actor_conditions::stage_typed_hit_in_world(
+                        runtime,
+                        actor,
+                        &without_gift,
+                        magnitude,
+                        hit_kind,
+                        now_us,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .0
+                    .vitals()
+                    .mana
+                } else {
+                    successor.vitals().mana
+                };
+            let mana_spent = mana_before
+                .checked_sub(mana_after_shield)
+                .ok_or(DurabilityError::Unavailable)?;
             let damage = hit
                 .applied
-                .checked_add(
-                    mana_before
-                        .checked_sub(next.vitals().mana)
-                        .ok_or(DurabilityError::Unavailable)?,
-                )
+                .checked_add(mana_spent)
                 .ok_or(DurabilityError::Unavailable)?;
+            next = successor;
             next.stage_committed_player_hit_history(
                 source,
                 source_session,
@@ -746,10 +788,20 @@ impl PendingPlayerField {
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
     ) {
-        if let Some(current) = states.get(runtime, self.actor, self.session) {
-            self.before.cooldowns = current.cooldowns.clone();
-            self.next.cooldowns = current.cooldowns.clone();
-            self.condition_next.cooldowns = current.cooldowns.clone();
+        let key = oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY;
+        if let Some(deadline) = states
+            .get(runtime, self.actor, self.session)
+            .and_then(|current| current.cooldowns.group_ready_at(key))
+        {
+            // Rebase the live predecessor and the retained inputs used to retry the hit.
+            self.before.cooldowns.groups.insert(key.into(), deadline);
+            self.condition_next
+                .cooldowns
+                .groups
+                .insert(key.into(), deadline);
+            if self.death.is_none() {
+                self.next.cooldowns.groups.insert(key.into(), deadline);
+            }
         }
     }
     pub(super) fn matches_current(

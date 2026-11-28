@@ -94,6 +94,21 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             }
             let mut profile = item_ability_profile(semantics).map_err(|_| unavailable())?;
+            // Both general and field-only protection join the same element sum.
+            profile.abilities.retain_mut(|ability| match ability {
+                ItemAbility::Protection {
+                    element: kind,
+                    field_only,
+                    ..
+                } if *kind == element => {
+                    *field_only = false;
+                    true
+                }
+                _ => false,
+            });
+            if profile.abilities.is_empty() {
+                continue;
+            }
             let timed = if profile.timed {
                 let (facts, target) =
                     crate::gameplay_transport::timed_item_content::facts(content, &item.definition)
@@ -130,18 +145,6 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            // Both general and field-only protection join the same element sum.
-            profile.abilities.retain_mut(|ability| match ability {
-                ItemAbility::Protection {
-                    element: kind,
-                    field_only,
-                    ..
-                } if *kind == element => {
-                    *field_only = false;
-                    true
-                }
-                _ => false,
-            });
             if let Some((facts, target, revision)) = timed {
                 let own = derive_equipment_effects(vec![EquipmentEffectInput {
                     slot,

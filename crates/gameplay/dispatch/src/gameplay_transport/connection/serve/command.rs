@@ -129,7 +129,7 @@ where
             session,
             command,
             dispatch,
-            result,
+            (Vec::new(), result),
             CommandOutcome {
                 second_logout: false,
                 lost_while_logging_out: None,
@@ -413,6 +413,19 @@ where
         Dispatch::Vip(None) => route::command_unavailable(command, "vip_outcome_unavailable"),
         other => other,
     };
+    let cast_revision = match &dispatch {
+        Dispatch::Spell(cast) | Dispatch::ParameterSpell(cast, _) => {
+            cast.vitals.map(|(revision, _)| revision)
+        }
+        _ => None,
+    };
+    let cooldown_frames = cooldowns::frames(
+        authority,
+        session.cooldowns.as_ref(),
+        &mut session.admitted.continuity,
+        cast_revision,
+    )?;
+    session.sequence = session.admitted.continuity.server_sequence;
     if let Dispatch::Turn(turn) = dispatch {
         outcome.turn = super::turn::prepare(session, turn)?;
     }
@@ -462,7 +475,13 @@ where
         result::encode(session, command, &mut dispatch)?
     };
     outbound::finish(
-        stream, authority, session, command, dispatch, result, outcome,
+        stream,
+        authority,
+        session,
+        command,
+        dispatch,
+        (cooldown_frames, result),
+        outcome,
     )
     .await?;
     if no_path {

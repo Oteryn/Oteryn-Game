@@ -21,6 +21,314 @@ fn binding() -> CastFactsBinding {
     }
 }
 #[test]
+fn crystal_equipment_weapon_skill_cast_reads_intrinsic_attack() {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    use crate::durability::character_equipment::{CombatMode, EquippedItem};
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::spell::{Vocation, cast::CharacterCastFacts};
+
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))
+        .expect("committed native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(
+        crate::content::native_gameplay_test_world_id().expect("world identity"),
+    )
+    .expect("qualified room");
+    let content = decode(
+        &compile_native_gameplay(room.compiled(), &input)
+            .expect("compile native")
+            .server_artifact,
+    )
+    .expect("native artifact")
+    .state;
+    let state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Knight,
+            level: 330,
+            magic_level: 0,
+            max_health: 5000,
+            max_mana: 1000,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .expect("player state");
+    let mut binding = binding();
+    binding.player_revision = state.revision();
+    binding.content_digest = content.source_digest();
+    let weapon = content
+        .item_policy_for_source_id(47368)
+        .expect("Amber Slayer");
+    let definition = &weapon.record().production_definition;
+    let equipment = EquipmentSnapshot {
+        character: binding.character,
+        content_digest: binding.content_digest,
+        character_revision: binding.character_revision,
+        revision: binding.equipment_revision,
+        combat_mode: Some(CombatMode::Attack),
+        items: vec![EquippedItem {
+            slot: 5,
+            item_instance_id: [2; 16],
+            tier: 0,
+            quantity: 1,
+            state_revision: 1,
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: definition.production_key.clone(),
+                revision_ref: definition.revision_ref.clone(),
+            },
+        }],
+    };
+    let expected = oteryn_gameplay_combat_rules::resolution::swing_weapon(&content, |slot| {
+        (slot == 5).then_some((
+            definition.production_key.as_str(),
+            definition.revision_ref.as_str(),
+        ))
+    })
+    .expect("live melee weapon")
+    .attack(0);
+    assert!(expected > 0);
+    let owned = OwnedCastFacts::from_owner_reads(
+        binding,
+        DurableBuildState::new("knight", (0, 0), [(100, 0); 7]).expect("knight build"),
+        330,
+        equipment,
+        AccessProjections::default(),
+    )
+    .expect("fenced owner reads");
+    for name in ["fierce_berserk", "berserk"] {
+        let key = format!("candidate:spell/{name}");
+        let spell = content
+            .spell_book()
+            .spells
+            .iter()
+            .find(|spell| spell.key == key)
+            .expect("published weapon-skill cast");
+        let caster = owned
+            .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)
+            .expect("owned weapon-skill caster");
+        assert_eq!(caster.attack_value, expected, "{name}");
+    }
+}
+
+#[test]
+fn crystal_equipment_ethereal_cast_uses_qualified_projectile_element() {
+    use crate::content::native_gameplay::{NativeGameplayInput, compile_native_gameplay, decode};
+    use crate::content::{ProjectV2RangedElement, ProjectV2RangedWeapon};
+    use crate::durability::character_equipment::{CombatMode, EquippedItem};
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::spell::{Vocation, cast::CharacterCastFacts};
+
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let mut input = NativeGameplayInput::from_manifest(&root.join("content/spells.manifest.json"))
+        .expect("committed native inputs");
+    input.source_world = None;
+    let room = crate::content::qualify_native_entry_room(
+        crate::content::native_gameplay_test_world_id().expect("world identity"),
+    )
+    .expect("qualified room");
+    let content = decode(
+        &compile_native_gameplay(room.compiled(), &input)
+            .expect("compile native")
+            .server_artifact,
+    )
+    .expect("native artifact")
+    .state;
+    let state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Paladin,
+            level: 500,
+            magic_level: 0,
+            max_health: 5000,
+            max_mana: 1000,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .expect("player state");
+    let mut binding = binding();
+    binding.player_revision = state.revision();
+    binding.content_digest = content.source_digest();
+    let launcher = content
+        .item_policy_for_source_id(52332)
+        .expect("Crypt Spine");
+    let arrow = content
+        .item_policy_for_source_id(763)
+        .expect("Flaming Arrow");
+    let equip = |slot, key: &str, revision: &str| EquippedItem {
+        slot,
+        item_instance_id: [slot; 16],
+        tier: 0,
+        quantity: 1,
+        state_revision: 1,
+        definition: TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: revision.into(),
+        },
+    };
+    let bow_def = &launcher.record().production_definition;
+    let arrow_def = &arrow.record().production_definition;
+    let equipment = EquipmentSnapshot {
+        character: binding.character,
+        content_digest: binding.content_digest,
+        character_revision: binding.character_revision,
+        revision: binding.equipment_revision,
+        combat_mode: Some(CombatMode::Attack),
+        items: vec![
+            equip(5, &bow_def.production_key, &bow_def.revision_ref),
+            equip(10, &arrow_def.production_key, &arrow_def.revision_ref),
+        ],
+    };
+    let Some(ProjectV2RangedWeapon::Distance { attack: bow, .. }) =
+        launcher.record().authoring.ranged
+    else {
+        unreachable!();
+    };
+    let Some(ProjectV2RangedWeapon::Ammunition {
+        attack,
+        elemental_attack,
+        element: ProjectV2RangedElement::Fire,
+        ..
+    }) = arrow.record().authoring.ranged
+    else {
+        unreachable!();
+    };
+    let total = u32::from(bow) + u32::from(attack) + u32::from(elemental_attack);
+    let owned = |equipment| {
+        OwnedCastFacts::from_owner_reads(
+            binding.clone(),
+            DurableBuildState::new("paladin", (0, 0), [(100, 0); 7]).expect("paladin build"),
+            500,
+            equipment,
+            AccessProjections::default(),
+        )
+        .expect("fenced owner reads")
+    };
+    let direct = owned(equipment.clone());
+    let quiver = content.item_policy_for_source_id(35562).expect("Quiver");
+    let quiver_def = &quiver.record().production_definition;
+    let quiver_cast = |slot| {
+        let mut equipment = equipment.clone();
+        let mut projectile = equipment.items.remove(1);
+        projectile.slot = slot;
+        equipment.items.push(equip(
+            slot,
+            &quiver_def.production_key,
+            &quiver_def.revision_ref,
+        ));
+        // Equipped containers and their children have distinct item identities.
+        projectile.item_instance_id = [42; 16];
+        owned(equipment).with_quiver_ammunition(vec![projectile])
+    };
+    let loadouts = [direct, quiver_cast(10), quiver_cast(6)];
+    let mut empty_quiver = equipment.clone();
+    empty_quiver.items[1] = equip(10, &quiver_def.production_key, &quiver_def.revision_ref);
+    let bolt = content.item_policy_for_source_id(3446).expect("bolt");
+    let bolt_def = &bolt.record().production_definition;
+    let mut incompatible = equip(10, &bolt_def.production_key, &bolt_def.revision_ref);
+    incompatible.item_instance_id = [45; 16];
+    let no_projectile = [
+        ("empty", owned(empty_quiver.clone())),
+        (
+            "incompatible",
+            owned(empty_quiver).with_quiver_ammunition(vec![incompatible]),
+        ),
+    ];
+    let standard = content
+        .item_policy_for_source_id(3447)
+        .expect("standard arrow");
+    let standard_def = &standard.record().production_definition;
+    let Some(ProjectV2RangedWeapon::Ammunition {
+        attack: standard_attack,
+        ..
+    }) = standard.record().authoring.ranged
+    else {
+        unreachable!();
+    };
+    let mut low_level_equipment = equipment.clone();
+    let mut flaming = low_level_equipment.items.remove(1);
+    flaming.item_instance_id = [43; 16];
+    let mut standard = equip(10, &standard_def.production_key, &standard_def.revision_ref);
+    standard.item_instance_id = [44; 16];
+    let low_level = OwnedCastFacts::from_owner_reads(
+        binding.clone(),
+        DurableBuildState::new("paladin", (0, 0), [(100, 0); 7]).expect("paladin build"),
+        15,
+        low_level_equipment,
+        AccessProjections::default(),
+    )
+    .expect("fenced low-level owner reads")
+    .with_quiver_ammunition(vec![flaming, standard]);
+    let lesser = content
+        .spell_book()
+        .spells
+        .iter()
+        .find(|spell| spell.key == "candidate:spell/lesser_ethereal_spear")
+        .expect("Lesser Ethereal Spear");
+    let damage = low_level
+        .intrinsic_weapon_for_spell(lesser, &content)
+        .expect("eligible standard arrow");
+    assert_eq!(
+        damage.total_attack(),
+        u32::from(bow) + u32::from(standard_attack)
+    );
+    assert_eq!(damage.element, ProjectV2RangedElement::Physical);
+    assert_eq!(damage.elemental_attack, 0);
+
+    for name in [
+        "lesser_ethereal_spear",
+        "ethereal_spear",
+        "strong_ethereal_spear",
+        "ethereal_barrage",
+    ] {
+        let key = format!("candidate:spell/{name}");
+        let spell = content
+            .spell_book()
+            .spells
+            .iter()
+            .find(|spell| spell.key == key)
+            .expect("published weapon-skill cast");
+        for owned in &loadouts {
+            let weapon = owned
+                .intrinsic_weapon_for_spell(spell, &content)
+                .expect("weapon-skill callback must observe Flaming Arrow");
+            assert_eq!(weapon.total_attack(), total, "{name}");
+            assert_eq!(weapon.element, ProjectV2RangedElement::Fire, "{name}");
+            assert_eq!(
+                weapon.elemental_attack,
+                u32::from(elemental_attack),
+                "{name}"
+            );
+            let caster = owned
+                .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)
+                .expect("owned weapon-skill caster");
+            assert_eq!(caster.attack_value, total, "{name}");
+            assert!(!caster.melee_weapon, "{name}");
+        }
+        for (quiver, owned) in &no_projectile {
+            assert!(owned.intrinsic_weapon_for_spell(spell, &content).is_none());
+            let caster = owned
+                .numerical_caster(&state, spell, &content, HarmonyMultiplier::ONE, 1)
+                .expect("skill callback can run without a projectile");
+            assert_eq!(
+                (
+                    caster.attack_skill,
+                    caster.attack_value,
+                    caster.attack_factor
+                ),
+                (0, 7, 0.0),
+                "{name} with {quiver} quiver"
+            );
+            assert!(!caster.melee_weapon, "{name} with {quiver} quiver");
+        }
+    }
+}
+
+#[test]
 fn current_projection_requires_every_owner_revision_and_unexpired_authority() {
     let expected = binding();
     let mut projection = CurrentProjection {

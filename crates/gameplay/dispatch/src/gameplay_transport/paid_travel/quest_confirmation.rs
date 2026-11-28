@@ -3,6 +3,13 @@ use super::*;
 use oteryn_protocol_oteryn::npc_service::TRAVEL_CONFIRMATION_TIMEOUT_SECONDS;
 
 impl Prompt {
+    pub(super) fn matches_source_confirmation(&self, lowercase: &str) -> bool {
+        super::contains_whole_keyword(lowercase, "yes")
+            && (self.route.postman_tour_passage().is_some()
+                || (self.route.service == "oteryn:service.travel.eremo"
+                    && self.route.route.key == "cormaya"))
+    }
+
     pub(super) fn is_live(&self, now: u64) -> bool {
         now.checked_sub(self.opened)
             .is_some_and(|age| age <= u64::from(TRAVEL_CONFIRMATION_TIMEOUT_SECONDS) * 1_000_000)
@@ -27,9 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         context: &(u64, u64, String),
         received_at: SemanticTimeMicros,
     ) -> bool {
-        if !intent.text.trim().eq_ignore_ascii_case("yes") {
-            return false;
-        }
+        let text = intent.text.trim().to_ascii_lowercase();
         let Some(fence) = command.item_fence else {
             return false;
         };
@@ -39,7 +44,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .is_ok_and(|prompts| {
                 prompts.get(&command.game_session_id).is_some_and(|prompt| {
-                    prompt.matches_confirmation(intent.npc_actor, context, fence, received_at.get())
+                    (text == "yes" || prompt.matches_source_confirmation(&text))
+                        && prompt.matches_confirmation(
+                            intent.npc_actor,
+                            context,
+                            fence,
+                            received_at.get(),
+                        )
                 })
             })
     }

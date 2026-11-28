@@ -182,9 +182,16 @@ impl State {
                 window_revision,
             };
         }
+        let (vitals, cooldowns) = if enabled
+            || selected.contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
+        {
+            authority.observe_join_vitals(actor, *admitted, true).await
+        } else {
+            (None, None)
+        };
         if enabled
             && selected.domain_selected(STATE_DOMAIN_ACTOR_VITALS)
-            && let Some((revision, vitals)) = authority.observe_house_vitals(actor, *admitted).await
+            && let Some((revision, vitals)) = vitals
         {
             payloads.push(OwnedDomain {
                 domain_id: STATE_DOMAIN_ACTOR_VITALS,
@@ -206,6 +213,7 @@ impl State {
             .await?;
         Ok((
             Self {
+                cooldowns,
                 spell_catalog,
                 actor,
                 enabled,

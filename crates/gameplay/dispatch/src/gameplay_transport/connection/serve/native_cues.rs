@@ -1,16 +1,21 @@
 //! Existing map callback receipts delivered on the native connection cadence.
 use super::*;
 use oteryn_protocol_oteryn::presentation as cooldown_wire;
+#[cfg(test)]
 use std::collections::BTreeMap;
 
+#[cfg(test)]
 type CooldownDeadlines = BTreeMap<(cooldown_wire::ActorCooldownKind, u32), u64>;
 
 #[derive(Default)]
 pub(in crate::gameplay_transport) struct CooldownProjection {
+    #[cfg(test)]
     revision: u64,
+    #[cfg(test)]
     deadlines: CooldownDeadlines,
 }
 
+#[cfg(test)]
 fn deadlines(message: &cooldown_wire::ActorCooldowns) -> CooldownDeadlines {
     message
         .entries
@@ -47,11 +52,13 @@ pub(super) fn observation_snapshots(
         .iter()
         .find(|row| row.domain_id == wire::STATE_DOMAIN_ACTOR_COOLDOWNS)
     {
-        let cooldowns = wire::decode_actor_cooldowns(&row.payload)
+        let _cooldowns = wire::decode_actor_cooldowns(&row.payload)
             .map_err(|_| ServeEnd::server("cooldown_projection_unavailable"))?;
         return Ok(Some(CooldownProjection {
+            #[cfg(test)]
             revision: row.revision,
-            deadlines: deadlines(&cooldowns),
+            #[cfg(test)]
+            deadlines: deadlines(&_cooldowns),
         }));
     }
     let cooldowns = cooldowns.unwrap_or(wire::ActorCooldowns {
@@ -67,7 +74,9 @@ pub(super) fn observation_snapshots(
             .map_err(|_| ServeEnd::server("frame_encode_failed"))?,
     });
     Ok(Some(CooldownProjection {
+        #[cfg(test)]
         revision: 0,
+        #[cfg(test)]
         deadlines: deadlines(&cooldowns),
     }))
 }
@@ -120,26 +129,7 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
     Ok(projection)
 }
 
-/// Publish changes to the negotiated own-actor domain after a successful cast.
-pub(super) async fn refresh_cooldowns<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
-    stream: &mut S,
-    authority: &A,
-    session: &mut ServeState,
-) -> Result<(), ServeEnd> {
-    let Some(previous) = session.cooldowns.as_mut() else {
-        return Ok(());
-    };
-    previous
-        .emit(
-            stream,
-            authority,
-            session.actor,
-            &mut session.admitted,
-            &mut session.sequence,
-        )
-        .await
-}
-
+#[cfg(test)]
 impl CooldownProjection {
     async fn emit<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         &mut self,

@@ -50,7 +50,10 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[4, 6, 11, 15, 18],
+            &[
+                4, 6, 11, 15, 18,
+                oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+            ],
         )
         .ok_or("native map capabilities")?;
     if name.ends_with("-first") {
@@ -310,6 +313,7 @@ pub(super) async fn step(
         (1, 0) => StepDirection::East,
         (0, 1) => StepDirection::South,
         (-1, 0) => StepDirection::West,
+        (-1, -1) => StepDirection::NorthWest,
         _ => return Err("one source step".into()),
     };
     owner.clock_origin = owner
@@ -499,11 +503,18 @@ pub(super) async fn first(
     );
     assert_eq!(appearance(owner, position(32478, 31907, 7), 1)?, 1633);
     walk(owner, admitted, position(32478, 31907, 7)).await?;
+    cut_grass(owner, admitted, position(32478, 31906, 7)).await?;
+    walk(owner, admitted, position(32478, 31906, 7)).await?;
+    cut_grass(owner, admitted, position(32477, 31906, 7)).await?;
+    walk(owner, admitted, position(32477, 31906, 7)).await?;
+    // The two orthogonal carvings return the player to the entrance. Clear
+    // their grass for diagonal clearance, then step directly onto the corridor.
+    for (x, y) in [(32477, 31905), (32476, 31906), (32476, 31905)] {
+        cut_grass(owner, admitted, position(x, y, 7)).await?;
+    }
+    step(owner, admitted, -1, -1).await?;
+    assert_eq!(at(owner, admitted).await?, position(32476, 31905, 7));
     let entry = [
-        (32478, 31906),
-        (32478, 31905),
-        (32477, 31905),
-        (32476, 31905),
         (32476, 31904),
         (32476, 31903),
         (32476, 31902),

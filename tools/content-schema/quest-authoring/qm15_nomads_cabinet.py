@@ -13,6 +13,11 @@ SOURCE_PATH = "data-global/startup/tables/container_misc.lua"
 SOURCE_SHA256 = "da146858a7bfbef47f601e02fc2b621c5e639ec2d096a6831446800277129bca"
 SOURCE_URL = f"https://raw.githubusercontent.com/zimbadev/crystalserver/{REVISION}/{SOURCE_PATH}#L803-L822"
 SOURCE_REF = f"crystalserver:{REVISION}:{SOURCE_PATH}:803-822:sha256:{SOURCE_SHA256}"
+ARITO_COMPLETION_REF = (
+    "crystalserver:201189f871d23597b82caf88fd611454a2ddefb8:"
+    "data-global/npc/arito.lua:97-105:sha256:"
+    "72036db5c28bae5fabb54a43657cb83f57a550665def3fc01b33357a652d79f1"
+)
 OUTPUT = "content/quests/world-callbacks/questpc5-nomads-cabinet.json"
 KEY = "oteryn:quest-callback/nomads-land-sacred-casket-cabinet"
 CLAIMED = "oteryn:quest-progress/quest/u8_1/tibia_tales/nomads_land_cabinet"
@@ -68,7 +73,7 @@ def document() -> dict:
             "lever": None, "reversible": False, "passages": [], "teleport": None,
             "storage": [
                 {"track": CLAIMED, "minimum": 0, "maximum": 0, "set": 1},
-                {"track": ARITO, "minimum": 2, "maximum": 2, "set": 2, "preserve": True},
+                {"track": ARITO, "minimum": 2, "maximum": 3, "set": 2, "preserve": True},
             ],
             "offerings": [], "item_on_target": None,
             "return_on_failure": False, "failure_message": None,
@@ -80,7 +85,7 @@ def document() -> dict:
                 ],
                 "text": {"contents": [{"index": 1, "text": TEXT}]},
             }},
-            "sources": [SOURCE_REF, SOURCE_URL,
+            "sources": [SOURCE_REF, SOURCE_URL, ARITO_COMPLETION_REF,
                 "content/quests/definitions/quests-00300-00351.json#oteryn:quest.authored.nomads_land_quest/s5"],
         }],
     }

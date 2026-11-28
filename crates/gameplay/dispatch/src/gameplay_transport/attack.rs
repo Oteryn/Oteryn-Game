@@ -36,10 +36,12 @@ mod shared_experience;
 pub(super) mod skill_training;
 
 use crate::foundation::encode_state_delta;
+#[cfg(test)]
+use oteryn_protocol_oteryn::attack::FightMode as WireFightMode;
 use oteryn_protocol_oteryn::attack::{
     ActorCombatState, AttackIntentDisposition, ChaseMode, DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
-    FightMode as WireFightMode, FightModes, MAX_ATTACK_TARGET_CHANGES_PER_SECOND,
-    MAX_FIGHT_MODE_CHANGES_PER_SECOND, STATE_DOMAIN_ACTOR_COMBAT_STATE, encode_actor_combat_state,
+    FightModes, MAX_ATTACK_TARGET_CHANGES_PER_SECOND, MAX_FIGHT_MODE_CHANGES_PER_SECOND,
+    STATE_DOMAIN_ACTOR_COMBAT_STATE, encode_actor_combat_state,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use oteryn_simulation_determinism::{
@@ -279,6 +281,8 @@ enum StepClock {
 #[derive(Debug, Default)]
 pub struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// Drawn player impacts waiting for the spell lane to publish the exact swing.
+    pending_pvp: std::collections::VecDeque<drain::PvpSwing>,
     /// At most one source-qualified Bless selection per pending player death.
     death_charms: Vec<charm_combat::DeathCharmSnapshot>,
     /// The block budget of each live creature a player has hit (ATTACK-0 §5), created at its
@@ -297,6 +301,14 @@ pub struct ChannelAttackStates {
 }
 
 impl ChannelAttackStates {
+    #[cfg(test)]
+    pub(super) fn test_creature_blocks(&self, actor: ExactActorRef) -> Option<u8> {
+        self.blocks
+            .iter()
+            .find(|(target, _)| *target == actor)
+            .map(|(_, budget)| budget.blocks())
+    }
+
     pub const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
         &self.kills
     }
@@ -403,14 +415,6 @@ fn refusal_disposition(refusal: TargetRefusal) -> AttackIntentDisposition {
         TargetRefusal::ReentryProtected | TargetRefusal::TargetReentryProtected => {
             AttackIntentDisposition::ReentryProtected
         }
-    }
-}
-
-const fn fight_mode(mode: WireFightMode) -> FightMode {
-    match mode {
-        WireFightMode::Offensive => FightMode::Offensive,
-        WireFightMode::Balanced => FightMode::Balanced,
-        WireFightMode::Defensive => FightMode::Defensive,
     }
 }
 
@@ -737,8 +741,12 @@ impl ChannelAttackStates {
     ) -> bool {
         match self.entry(runtime, actor, session) {
             Some(entry) => {
-                // RANGED0-RL-08: any mode change clears the route and the refused cells.
-                if modes != entry.modes || modes.chase != ChaseMode::Chase {
+                // The legacy stance is echoed for wire compatibility. Chase and secure
+                // mode are the combat settings that can affect the current route.
+                if modes.chase != entry.modes.chase
+                    || modes.secure != entry.modes.secure
+                    || modes.chase != ChaseMode::Chase
+                {
                     entry.chase.reset();
                 }
                 entry.modes = modes;
@@ -1093,19 +1101,15 @@ fn swing_draw(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
 fn creature_mitigated(
     root: &GameplayDecisionRoot,
     constants: &AttackConstants,
-    attacker: ExactActorRef,
-    lineage: CommandRef,
-    ordinal: u16,
+    (attacker, lineage, ordinal): (ExactActorRef, CommandRef, u16),
     damage: i64,
-    blocked: bool,
-    defense: u32,
+    defence: Option<(u32, u32)>,
     armor: u32,
-) -> Option<i64> {
-    oteryn_gameplay_combat_rules::resolution::creature_mitigated(
+) -> Option<(i64, oteryn_gameplay_progression::hit_training::HitBlock)> {
+    oteryn_gameplay_combat_rules::resolution::swing_mitigated_with_block(
         root,
         constants,
         attacker.placement_identity(),
@@ -1115,8 +1119,7 @@ fn creature_mitigated(
         ),
         ordinal,
         damage,
-        blocked,
-        defense,
+        defence,
         armor,
     )
 }
@@ -1545,6 +1548,7 @@ mod weapon_tests {
             weapon_of(&[(5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             })
         );
@@ -1552,6 +1556,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3286)]),
             Some(SwingWeapon::Melee {
                 attack: 16,
+                elemental: None,
                 skill: MeleeSkill::Club
             })
         );
@@ -1559,6 +1564,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3289)]),
             Some(SwingWeapon::Melee {
                 attack: 22,
+                elemental: None,
                 skill: MeleeSkill::Fist
             })
         );
@@ -1566,6 +1572,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3412), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             }),
             "a shield is skipped for the other hand"
@@ -1574,6 +1581,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3286), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 16,
+                elemental: None,
                 skill: MeleeSkill::Club
             }),
             "the left hand is read first"
@@ -1590,6 +1598,7 @@ mod weapon_tests {
             weapon_of(&[(6, 3447), (5, 3264)]),
             Some(SwingWeapon::Melee {
                 attack: 14,
+                elemental: None,
                 skill: MeleeSkill::Sword
             }),
             "ammunition is skipped"

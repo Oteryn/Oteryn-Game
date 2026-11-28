@@ -66,13 +66,14 @@ pub(super) async fn finish<S, A>(
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: Dispatch,
-    result: Vec<u8>,
+    batch: (Vec<Vec<u8>>, Vec<u8>),
     outcome: CommandOutcome,
 ) -> Result<(), ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let (cooldown_frames, result) = batch;
     if session
         .commands
         .terminalize_with(command.command_id, &result, || {
@@ -105,7 +106,9 @@ where
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
         // committed release keeps this a logout end.
-        if write_frame(stream, &result).await.is_ok()
+        if cooldowns::write_batch(stream, &cooldown_frames, Some(&result))
+            .await
+            .is_ok()
             && (!outcome.second_logout
                 || send_error(
                     stream,
@@ -124,14 +127,15 @@ where
         return Err(ServeEnd::LoggedOut);
     }
     if let Some(turn) = outcome.turn {
+        cooldowns::write_batch(stream, &cooldown_frames, None).await?;
         // Retain the committed receipt for replay even if the direction write disconnects.
         let result_sequence = session.sequence;
         turn.write(stream, session).await?;
         session.sequence = result_sequence;
         session.admitted.continuity.server_sequence = result_sequence;
-    }
-    if let Err(error) = write_frame(stream, &result).await {
-        return Err(ServeEnd::Transport(TransportEnd::Write(error.kind())));
+        cooldowns::write_batch(stream, &[], Some(&result)).await?;
+    } else {
+        cooldowns::write_batch(stream, &cooldown_frames, Some(&result)).await?;
     }
     if matches!(dispatch, Dispatch::Unavailable) {
         return Ok(());

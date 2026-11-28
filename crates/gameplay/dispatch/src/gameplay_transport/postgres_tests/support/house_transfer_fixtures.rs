@@ -431,6 +431,16 @@ pub(super) async fn initialize_transfer_source(
     deps: &Dependencies,
     generation_digest: [u8; 32],
 ) -> TestResult<AdmittedSession> {
+    initialize_transfer_source_for_owner(h, owner, deps, generation_digest, id(41)).await
+}
+
+pub(super) async fn initialize_transfer_source_for_owner(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+    generation_digest: [u8; 32],
+    house_owner: [u8; 16],
+) -> TestResult<AdmittedSession> {
     use crate::durability::house_scope_handoff::{
         HouseId, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
     };
@@ -469,7 +479,7 @@ pub(super) async fn initialize_transfer_source(
     ))
     .bind(id(42).as_slice())
     .bind(TRANSFER_TEST_HOUSE)
-    .bind(id(41).as_slice())
+    .bind(house_owner.as_slice())
     .execute(&h.pool)
     .await?;
     sqlx::query("INSERT INTO game_control_house_scope_grants(control_role,world_id,house_key,operation) SELECT session_user,encode($1,'hex')::uuid,$2,1").bind(id(42).as_slice()).bind(TRANSFER_TEST_HOUSE).execute(&h.pool).await?;
