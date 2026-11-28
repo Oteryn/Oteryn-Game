@@ -65,6 +65,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut entry = connect_world(clients, 0xd9).await?;
     let entry_session = entry.join_snapshot().game_session_id;
     let title = CharacterTitle::Cyclopscamper.id();
+    character_prep::declare_seeded(
+        "G29.full",
+        "sorcerer-level-1-progression",
+        "initialize progression for the baseline title read",
+    );
+    // This existing build profile initializes progression without awarding XP or items.
+    request_fixture_control(
+        uuid_text(entry_session.as_bytes()),
+        "--profile",
+        "f5-c18a".into(),
+    )
+    .await?;
+    let baseline_level = full_e2ef7::player_level(&mut entry).await?;
+    if baseline_level != 1 {
+        return Err(format!("step=title-precondition observed=level-{baseline_level}").into());
+    }
     let (before, _) = title_state(&mut entry).await?;
     if before.contains(&title) {
         return Err("step=title-precondition observed=already-earned".into());
