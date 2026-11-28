@@ -261,13 +261,13 @@ pub(super) async fn prepare_caster(
         "s13-party".into(),
     )
     .await?;
+    character_prep::grant_premium(&initial).await?;
     logout(&mut initial).await?;
     drop(initial);
     let caster = connect_character(clients, tag, 1).await?;
     if caster.join_snapshot().game_session_id == session {
         return Err("seeded caster reused its previous session".into());
     }
-    character_prep::grant_premium(&caster).await?;
     Ok(caster)
 }
 
