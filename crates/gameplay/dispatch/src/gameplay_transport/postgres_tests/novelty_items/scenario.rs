@@ -373,6 +373,14 @@ pub(super) fn scenario(case: Case) -> TestResult {
             drop(seal);
             return harness.cleanup().await;
         }
+        let expiry = if case == Case::LiveTrumpet {
+            Some((
+                reference("oteryn:item.tibia.i6573").ok_or("played trumpet definition")?,
+                reference(key).ok_or("trumpet definition")?,
+            ))
+        } else {
+            None
+        };
         let (mut end, result, actual, wire_cues) =
             super::super::rust_lottery_fixtures::exchange_with_visuals(
                 &owner,
@@ -380,8 +388,23 @@ pub(super) fn scenario(case: Case) -> TestResult {
                 command_id,
                 &payload,
                 reference(key),
+                expiry,
             )
             .await?;
+        if case == Case::LiveTrumpet {
+            assert_eq!(result, UseDisposition::Committed);
+            let receipts: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_spell_item_temporal_receipts WHERE custody_kind=2",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(receipts, 1);
+            eprintln!("W19 POSTGRES_CASE_COMPLETED novelty_items case={case:?}");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let current: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
         if case.refused() {
             if case == Case::VoodooWithoutTarget {

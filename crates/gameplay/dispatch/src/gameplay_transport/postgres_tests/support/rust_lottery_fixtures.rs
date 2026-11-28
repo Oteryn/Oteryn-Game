@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::num::NonZeroU32;
+use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use super::fixture::debug;
 
@@ -81,20 +84,30 @@ pub(super) async fn exchange_latest_source(
     .await
 }
 
-/// Drain presentation deltas after the result, through the real production publisher.
+struct WireEffects {
+    visuals: RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
+    /// For an idle carried transform, the played definition followed by the restored definition.
+    expiry: Option<(NonZeroU32, NonZeroU32)>,
+}
+
+/// Drain deltas after the result, through the real production publisher.
 pub(super) async fn exchange_with_visuals(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     command_id: u64,
     payload: &[u8],
     current_source: Option<std::num::NonZeroU32>,
+    expiry: Option<(NonZeroU32, NonZeroU32)>,
 ) -> TestResult<(
     AdmittedSession,
     UseDisposition,
     Vec<u8>,
     Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
 )> {
-    let visuals = std::cell::RefCell::new(Vec::new());
+    let effects = WireEffects {
+        visuals: RefCell::default(),
+        expiry,
+    };
     let (end, result, actual) = exchange_selected_source(
         owner,
         admitted,
@@ -103,10 +116,10 @@ pub(super) async fn exchange_with_visuals(
         current_source,
         None,
         false,
-        Some(&visuals),
+        Some(&effects),
     )
     .await?;
-    Ok((end, result, actual, visuals.into_inner()))
+    Ok((end, result, actual, effects.visuals.into_inner()))
 }
 
 #[allow(
@@ -121,15 +134,14 @@ async fn exchange_selected_source(
     current_source: Option<std::num::NonZeroU32>,
     current_target: Option<std::num::NonZeroU32>,
     latest_source: bool,
-    visuals: Option<
-        &std::cell::RefCell<Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>>,
-    >,
+    effects: Option<&WireEffects>,
 ) -> TestResult<(AdmittedSession, UseDisposition, Vec<u8>)> {
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await.map_err(debug)?;
     }
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let client_task = async {
+    let expiry = effects.and_then(|effects| effects.expiry);
+    let client_task = async move {
         let mut source = None;
         let mut target = None;
         let mut container = None;
@@ -306,13 +318,27 @@ async fn exchange_selected_source(
         )?;
         client.write_u32(u32::try_from(frame.len())?).await?;
         client.write_all(&frame).await?;
-        client.shutdown().await?;
+        if expiry.is_none() {
+            client.shutdown().await?;
+        }
         let mut result = None;
+        let mut played = None;
+        let mut applied_sequence = 0;
+        let expiry_timeout = tokio::time::Instant::now() + Duration::from_secs(12);
         loop {
-            let raw = match super::item_look_fixtures::read_frame(&mut client).await {
+            let read = super::item_look_fixtures::read_frame(&mut client);
+            let frame = if expiry.is_some() {
+                tokio::time::timeout_at(expiry_timeout, read)
+                    .await
+                    .map_err(|_| "idle session received no restored trumpet inventory delta")?
+            } else {
+                read.await
+            };
+            let raw = match frame {
                 Ok(raw) => raw,
                 Err(error)
-                    if visuals.is_some()
+                    if effects.is_some()
+                        && expiry.is_none()
                         && result.is_some()
                         && error.downcast_ref::<std::io::Error>().is_some_and(|error| {
                             error.kind() == std::io::ErrorKind::UnexpectedEof
@@ -326,19 +352,45 @@ async fn exchange_selected_source(
                 Err(error) => return Err(error),
             };
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if expiry.is_some()
+                && envelope.message_type() == crate::foundation::MessageType::LivenessProbe
+            {
+                let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())?;
+                let ack = oteryn_protocol_oteryn::encode_liveness_ack(
+                    envelope.connection_generation(), probe, applied_sequence,
+                )?;
+                client.write_u32(u32::try_from(ack.len())?).await?;
+                client.write_all(&ack).await?;
+            }
+            applied_sequence = applied_sequence.max(envelope.server_sequence());
             if envelope.message_type() == crate::foundation::MessageType::StateDelta
-                && let Some(visuals) = visuals
+                && let Some(effects) = effects
             {
                 let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
                 if delta.domain_id
                     == oteryn_protocol_oteryn::presentation::STATE_DOMAIN_ITEM_EFFECTS
                 {
-                    visuals.borrow_mut().extend(
+                    effects.visuals.borrow_mut().extend(
                         oteryn_protocol_oteryn::presentation::decode_item_effect_batch(
                             delta.payload,
                         )
                         .map_err(debug)?,
                     );
+                }
+                if let Some((played_ref, restored_ref)) = expiry
+                    && delta.domain_id == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                {
+                    let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_equip_drop(
+                        delta.payload, admitted.continuity.selected_capabilities.contains(12),
+                    ).map_err(debug)?;
+                    if let Some(item) = inventory.entries.iter().find(|item| item.item_definition_ref == played_ref) {
+                        played = Some(item.handle);
+                    } else if let Some(handle) = played
+                        && inventory.entries.iter().any(|item| item.handle == handle && item.item_definition_ref == restored_ref)
+                    {
+                        client.shutdown().await?;
+                        return Ok((result.ok_or("USE result before restored trumpet")?, actual));
+                    }
                 }
             }
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
@@ -347,7 +399,7 @@ async fn exchange_selected_source(
                     let disposition =
                         oteryn_protocol_oteryn::world_object::decode_use_result(reply.payload)
                             .map_err(debug)?;
-                    if visuals.is_none() {
+                    if effects.is_none() {
                         return Ok::<_, Box<dyn std::error::Error>>((disposition, actual));
                     }
                     result = Some(disposition);
@@ -367,11 +419,25 @@ async fn exchange_selected_source(
     let mut end = None;
     let mut result = None;
     let mut maintenance = std::pin::pin!(super::item_craft_fixtures::maintain_ready(owner));
+    // The production node has its own deadline sweep. The connection fixture drives the
+    // same owner while the client remains idle and reads server-pushed frames.
+    let mut deadline_sweep = std::pin::pin!(async {
+        if expiry.is_some() {
+            let mut tick = tokio::time::interval(Duration::from_millis(250));
+            loop {
+                tick.tick().await;
+                owner.drain_source_item_deadlines().await;
+            }
+        }
+    });
     tokio::time::timeout(
         std::time::Duration::from_secs(30),
         std::future::poll_fn(|context| {
             if let Poll::Ready(result) = maintenance.as_mut().poll(context) {
                 return Poll::Ready(result);
+            }
+            if expiry.is_some() && end.is_none() {
+                let _ = deadline_sweep.as_mut().poll(context);
             }
             if end.is_none()
                 && let Poll::Ready(value) = serving.as_mut().poll(context)

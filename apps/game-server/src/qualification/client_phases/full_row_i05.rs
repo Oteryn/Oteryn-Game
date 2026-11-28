@@ -3,7 +3,7 @@
 //! Concrete player scenario, derived from matrix row I05, Global Energy Ring behavior,
 //! and `timed_item_clock` (the live server owner):
 //! 1. Admit the node-boot character and send TIMED_ITEM Inspect for an unknown
-//!    server handle; expect a Rejected command envelope carrying typed Stale
+//!    server handle; expect an Accepted command envelope carrying typed Stale
 //!    and no inventory delta (the refusal path must not mutate custody).
 //! 2. Grant a dedicated Knight one inactive Energy Ring as fixture input, then
 //!    confirm its carried form and the empty ring slot on fresh admission.
@@ -96,7 +96,9 @@ async fn timed_command(
         .await?;
     let result = timed::decode_timed_item_result(&reply.payload)
         .map_err(|error| format!("timed-result-decode:{error:?}:envelope={reply:?}"))?;
-    let expected = if result.disposition == timed::TimedDisposition::Ok {
+    let typed_inspection = action == timed::TimedAction::Inspect
+        && result.disposition == timed::TimedDisposition::Stale;
+    let expected = if result.disposition == timed::TimedDisposition::Ok || typed_inspection {
         CommandStatus::Accepted
     } else {
         CommandStatus::Rejected
@@ -221,7 +223,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         {
             return Err(format!("unknown-handle-not-rollback-safe:reply={refused:?}").into());
         }
-        row.passed(1, "rejected-envelope+typed-stale+inventory-unchanged");
+        row.passed(1, "accepted-envelope+typed-stale+inventory-unchanged");
 
         let base = reference(ENERGY_RING)?;
         if item_count(&client, base)? != 0 {

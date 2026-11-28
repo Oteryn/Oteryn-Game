@@ -606,6 +606,11 @@ pub trait FreshAdmissionAuthority {
         std::future::pending()
     }
 
+    /// Channel-local revision for deadline changes that may affect inventory.
+    fn item_deadline_epoch(&self) -> u64 {
+        0
+    }
+
     /// A durable Newhaven kit changed carried items; consume its bounded display notification.
     fn take_newhaven_inventory_changed(&self, _session: GameSessionId) -> bool {
         false
