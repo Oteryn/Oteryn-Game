@@ -87,16 +87,24 @@ pub(super) async fn recover_retiring(
     .await
     .map_err(|_| BootError::Readiness("World reset record"))?;
     if let Some(reset) = retiring {
-        // A full bundle still has Unknown House metadata (D1246). Never use
-        // the entry-room proof to authorize retirement of a bundle World.
-        if material.config.world_bundle.is_some() {
-            return Err(BootError::Readiness("World reset House qualification"));
-        }
         let source_manifest = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST");
         let target_manifest = std::env::var_os("OTERYN_WORLD_RESET_TARGET_MANIFEST")
             .or_else(|| source_manifest.clone());
         let source = qualify_room(material.world, source_manifest.as_deref())?;
         let target = qualify_room(material.world, target_manifest.as_deref())?;
+        if material.config.world_bundle.is_some() {
+            // The entry room cannot prove House absence for a bundle World.
+            let qualification = with_retries(
+                root,
+                "World reset House qualification",
+                material.config.boot_pass_deadline(),
+                boot_step_retryable,
+                root_busy,
+                || root.preflight_world_reset_content(&reset, &source, &target),
+            )
+            .await;
+            require_bundle_house_qualification(qualification.ok()).map_err(BootError::Readiness)?;
+        }
         let started = std::time::Instant::now();
         let wait_until = tokio::time::Instant::now()
             + Duration::from_millis(material.config.scope.assignment_wait_ms);
@@ -132,6 +140,15 @@ pub(super) async fn recover_retiring(
         .await
         .map_err(|_| BootError::Readiness("World reset active epoch"))?
         .unwrap_or(0))
+}
+
+const fn require_bundle_house_qualification(
+    qualified_houses: Option<bool>,
+) -> Result<(), &'static str> {
+    match qualified_houses {
+        Some(true) => Ok(()),
+        None | Some(false) => Err("World reset House qualification"),
+    }
 }
 
 fn qualify_room(

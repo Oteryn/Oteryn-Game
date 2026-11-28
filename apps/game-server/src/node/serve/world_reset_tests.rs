@@ -309,3 +309,20 @@ fn highscore_epoch_upgrade_replaces_unproven_cut_and_retains_history()
         }).map_err(debug)
     })?.join().map_err(|_| "upgrade snapshot thread failed")?.map_err(Into::into)
 }
+
+const fn assert_bundle_house_qualification() {
+    assert!(
+        require_bundle_house_qualification(Some(true)).is_ok(),
+        "reset boot refuses a fully qualified House payload"
+    );
+    assert!(require_bundle_house_qualification(None).is_err());
+    assert!(require_bundle_house_qualification(Some(false)).is_err());
+}
+
+// Exercise the same assertions in the Cloud's compile-only test lane.
+const _: () = assert_bundle_house_qualification();
+
+#[test]
+fn reset_boot_requires_qualified_house_metadata_for_bundle() {
+    assert_bundle_house_qualification();
+}
