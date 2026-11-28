@@ -136,6 +136,12 @@ async fn mode_attack(client: &mut DevClientSession, world: &BundleWorld, modes: 
     if state.target != Some(creature) {
         return Err(format!("step=attack observed={state:?} need=accepted-target-delta").into());
     }
+    let swing_hands = [EquipmentSlot::LeftHand, EquipmentSlot::RightHand].map(|slot| {
+        client.inventory().and_then(|inventory| {
+            inventory.equipment.iter().find(|entry| entry.slot == slot)
+                .map(|entry| (entry.item.item_definition_ref.get(), entry.item.count.get()))
+        })
+    });
     let own = own(client)?;
     let starting_hp = client.actor_vitals().ok_or("step=armor observed=no-vitals")?.health;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(35);
@@ -158,7 +164,7 @@ async fn mode_attack(client: &mut DevClientSession, world: &BundleWorld, modes: 
         }
         if target_damage && attributed.is_some() { break; }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=damage observed=target:{target_damage}/incoming:{attributed:?} need=both-damage-deltas").into());
+            return Err(format!("step=damage observed=target:{target_damage}/incoming:{attributed:?} left_hand_ref_and_count={:?} right_hand_ref_and_count={:?} need=both-damage-deltas", swing_hands[0], swing_hands[1]).into());
         }
     }
     let ending_hp = client.actor_vitals().ok_or("step=armor observed=post-vitals-absent")?.health;
