@@ -40,11 +40,16 @@ fn conversation(npc: EntityRef, lines: &[&str]) -> Result<Vec<u8>, Error> {
 fn load() -> Result<Replay, Error> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
+        let expected = std::fs::read_to_string(root.join("p16-expected.txt"))?;
+        let binding = std::env::var("OTERYN_P16_CAPTURE_BINDING")?;
+        if value(&expected, "binding")? != binding {
+            return Err("P16 replay capture/run binding mismatch".into());
+        }
         return Ok(Replay {
             greeting: std::fs::read(root.join("p16-greeting.bin"))?,
             quote: std::fs::read(root.join("p16-quote.bin"))?,
             answer: std::fs::read(root.join("p16-answer.bin"))?,
-            expected: std::fs::read_to_string(root.join("p16-expected.txt"))?,
+            expected,
         });
     }
     let npc = EntityRef {
@@ -76,7 +81,7 @@ fn p16_dialogue_replay() -> Result<(), Error> {
     };
     for (text, bytes, key) in [
         ("hi", &replay.greeting, "greeting"),
-        ("The Wisdom of Solitude", &replay.quote, "quote"),
+        ("solitude", &replay.quote, "quote"),
         ("no", &replay.answer, "answer"),
     ] {
         let intent = panel.request(npc, text).ok_or("talk request refused")?;

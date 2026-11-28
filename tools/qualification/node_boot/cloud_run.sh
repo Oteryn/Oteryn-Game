@@ -41,7 +41,7 @@ summarize() {
 
   rows=$(awk '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=([[:alnum:]_.-]+\.full|P13\.client|P16\.client)$/ && $4 ~ /^status=(PASS|FAIL)$/ {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
@@ -95,6 +95,44 @@ replay_loyalty_capture() {
   return 1
 }
 
+selected_eremo_replay() {
+  [[ "$1" == rows ]] || return 1
+  local batch=${OTERYN_E2E_ROW_BATCH:-} first length
+  [[ "$batch" != all ]] || return 0
+  [[ "$batch" =~ ^\+?([0-9]+):\+?([0-9]+)$ ]] || return 1
+  first=${BASH_REMATCH[1]}
+  length=${BASH_REMATCH[2]}
+  first=${first#"${first%%[!0]*}"}
+  length=${length#"${length%%[!0]*}"}
+  first=${first:-0}
+  length=${length:-0}
+  local eremo_row=172 # client_phases/world.rs, P16.client
+  (( ${#first} <= 3 && 10#$first <= eremo_row )) || return 1
+  if (( ${#length} >= 20 )); then
+    (( ${#length} == 20 )) && [[ "$length" < 18446744073709551616 ]]
+  else
+    (( ${#length} >= 4 || eremo_row - 10#$first < 10#$length ))
+  fi
+}
+
+replay_eremo_capture() {
+  local log=$1 capture_dir=$2 replay_log=$3 binding
+  local test=npc_dialogue::e2e_p16::p16_dialogue_replay started=$SECONDS
+  if grep -q '^SEAM_EVIDENCE e2e_all scenario=P16\.client status=FAIL ' "$log"; then
+    return 1
+  fi
+  binding=$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=P16\.client status=CAPTURED binding=([0-9a-f]{32}:[0-9]+:[0-9]+:[0-9]+)$/\1/p' "$log")
+  if [[ -n "$binding" && "$binding" != *$'\n'* ]] &&
+    E2E_ALL_CAPTURE_DIR="$capture_dir" OTERYN_P16_CAPTURE_BINDING="$binding" \
+      cargo +1.100.0 test --locked -p oteryn-client-ui --lib "$test" -- --exact >"$replay_log" 2>&1 &&
+    grep -Fqx "test $test ... ok" "$replay_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=P16.client status=PASS seconds=%s evidence=live-capture-replayed\n' "$((SECONDS - started))" >>"$log"
+    return 0
+  fi
+  printf 'SEAM_EVIDENCE e2e_all scenario=P16.client status=FAIL seconds=%s evidence=client-replay-failed\n' "$((SECONDS - started))" >>"$log"
+  return 1
+}
+
 if [[ ${1:-} == --summarize ]]; then
   [[ $# == 3 && -r "$2" && "$3" =~ ^[a-z0-9_]+$ ]] || blocked invalid_summary_arguments
   summarize "$2" "$3"
@@ -145,8 +183,15 @@ for group in "$@"; do
   started=$SECONDS
   status=0
   capture_dir=
+  eremo_replay=0
+  if selected_eremo_replay "$group"; then
+    eremo_replay=1
+  fi
   if selected_loyalty_replay "$group"; then
     capture_dir=$(mktemp -d "$work_dir/$index-loyalty.XXXXXX") || blocked work_dir_unavailable
+  fi
+  if (( eremo_replay )) && [[ -z "$capture_dir" ]]; then
+    capture_dir=$(mktemp -d "$work_dir/$index-eremo.XXXXXX") || blocked work_dir_unavailable
   fi
   (
     [[ -z "$capture_dir" ]] || export E2E_ALL_CAPTURE_DIR="$capture_dir"
@@ -156,7 +201,10 @@ for group in "$@"; do
   child_pid=$!
   wait "$child_pid" || status=$?
   child_pid=
-  if [[ -n "$capture_dir" ]] && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+  if selected_loyalty_replay "$group" && ! replay_loyalty_capture "$log" "$capture_dir" "$work_dir/$index-loyalty.log"; then
+    status=1
+  fi
+  if (( eremo_replay )) && ! replay_eremo_capture "$log" "$capture_dir" "$work_dir/$index-eremo.log"; then
     status=1
   fi
   summarize "$log" "$group" "$((SECONDS - started))" "$status" || failed=1

@@ -322,7 +322,7 @@ WORK=.
                       + 'printf "%s\\n" "${BOOTSTRAP_ACCOUNTS[@]}"\n')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         accounts = result.stdout.splitlines()
-        self.assertEqual(len(accounts), 28)
+        self.assertEqual(len(accounts), 29)
         self.assertEqual(len(set(accounts)), len(accounts))
         self.assertEqual(accounts[11], "01934f10-7c00-7000-8000-00000000000e")
 
@@ -766,6 +766,38 @@ class CloudRunSummaryTests(unittest.TestCase):
                 verdicts = [line for line in log.read_text().splitlines() if 'e2e_all scenario=P13.client' in line]
                 self.assertEqual(len(verdicts), 1)
                 self.assertIn('status=PASS' if passed else 'status=FAIL', verdicts[0])
+
+    def test_p16_replay_requires_one_bound_capture_and_executed_test(self):
+        cloud = (HERE / "cloud_run.sh").read_text()
+        helper = cloud[cloud.index("replay_eremo_capture()"):cloud.index('if [[ ${1:-} == --summarize ]]')]
+        binding = "a" * 32 + ":5:7:9"
+        capture = f"SEAM_EVIDENCE e2e_capture scenario=P16.client status=CAPTURED binding={binding}\n"
+        command = helper + textwrap.dedent(r'''
+            cargo() {
+                [[ "$OTERYN_P16_CAPTURE_BINDING" == "$EXPECTED_BINDING" ]] || return 1
+                [[ "$E2E_ALL_CAPTURE_DIR" == "$EXPECTED_CAPTURE_DIR" ]] || return 1
+                [[ "$REPLAY_RESULT" == pass ]] || return 0
+                printf 'test %s ... ok\n' "$7"
+            }
+            export EXPECTED_BINDING="$4" EXPECTED_CAPTURE_DIR="$2"
+            replay_eremo_capture "$1" "$2" "$3"
+            ''')
+        for node_log, replay_result, passed in (
+            (capture, "pass", True),
+            (capture, "unmatched", False),
+            (capture * 2, "pass", False),
+            ("", "pass", False),
+        ):
+            with self.subTest(node_log=node_log, replay_result=replay_result), tempfile.TemporaryDirectory() as temp:
+                log = Path(temp, "node.log")
+                log.write_text(node_log)
+                result = subprocess.run(
+                    ["bash", "-c", command, "test", str(log), temp, str(Path(temp, "client.log")), binding],
+                    env={**os.environ, "REPLAY_RESULT": replay_result},
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0 if passed else 1, result.stderr)
+                self.assertIn("status=PASS" if passed else "status=FAIL", log.read_text())
 
     def test_summary_uses_full_row_verdicts_and_limits_filtered_diagnostics(self):
         result = subprocess.run(
