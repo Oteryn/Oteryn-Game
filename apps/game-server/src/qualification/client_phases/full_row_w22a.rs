@@ -132,6 +132,53 @@ pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+pub(super) async fn prepare_rat_hunter(clients: &SeamClients<'_>) -> TestResult<DevClientSession> {
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+
+    const SWORD: u32 = 3270;
+    let index = provisioning::item_index()?;
+    let key = "oteryn:item.tibia.i3270";
+    let revision = index.revision(key).ok_or("Rat hunter sword revision missing")?;
+    let reference = index.definition_ref("Item", key, revision).ok_or("Rat hunter sword definition missing")?;
+    let mut client = connect_character(clients, 0xb1, 0).await?;
+    if quantity(&client, reference.get())? != 0 {
+        return Err("Rat hunter started with the fixture sword".into());
+    }
+    character_prep::grant_item(&client, SWORD, 1).await?;
+    evidence("W22A_FIXTURE account=q_w22a purpose=kill-input item=3270 count=1");
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    drop(client);
+
+    let mut client = connect_character(clients, 0xb2, 0).await?;
+    let equipped = |client: &DevClientSession| {
+        client.inventory().is_some_and(|inventory| {
+            inventory.equipment.iter().any(|entry| {
+                entry.slot == EquipmentSlot::RightHand && entry.item.item_definition_ref == reference
+            })
+        })
+    };
+    if client.join_snapshot().game_session_id == session
+        || quantity(&client, reference.get())? != 1
+        || equipped(&client)
+    {
+        return Err("Rat hunter fixture sword was not carried by fresh admission".into());
+    }
+    let reply = client.session_mut().equip_item_definition(reference).await?;
+    if reply.status != CommandStatus::Accepted || reply.outcome != ItemMoveOutcome::Moved {
+        return Err(format!("Rat hunter sword equip refused: {reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !equipped(&client) || quantity(&client, reference.get())? != 0 {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Rat hunter sword did not move from backpack to right hand".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    Ok(client)
+}
+
 pub(super) async fn prepare_rat_attack(client: &mut DevClientSession) -> TestResult {
     use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 
@@ -240,6 +287,11 @@ async fn kill_and_open_tracked(
             break *corpse;
         }
         if tokio::time::Instant::now() >= deadline {
+            if selected.is_some() {
+                let seen = client.world_entities().and_then(|entities| entities.get(&target.entity)).copied();
+                let combat = client.session_mut().combat_state();
+                evidence(&format!("W22A_DEATH_WAIT_DIAG target={:?} entity={seen:?} combat={combat:?} damaged={damaged}", target.entity));
+            }
             return Err("step-2-death-timeout-observed=no-corpse-frame".into());
         }
     };
@@ -370,7 +422,7 @@ async fn travel_to_spawn_with_steps(
     Err("could not approach a live creature within the route budget".into())
 }
 
-async fn walk_rat_route(
+pub(super) async fn walk_rat_route(
     client: &mut DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
@@ -456,7 +508,7 @@ async fn verify_rat_roll(
     let death = committed_hunt_death(
         client,
         clients,
-        Some(clients.characters[1]),
+        Some(clients.characters[0]),
         RAT,
         opened.target,
         tokio::time::Instant::now() + Duration::from_secs(5),
@@ -523,7 +575,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let world = &generation.bundle;
-    let mut client = connect_world(clients, 0xb2).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W22A_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = prepare_rat_hunter(clients).await?;
     let start = client.world_spatial().actor_position;
     let target = travel_to_rat(&mut client, world, &metadata.spawns).await?;
     let arrived = client.world_spatial().actor_position;
@@ -617,7 +671,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let saved_quantity = quantity(&client, definition)?;
     logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_world(clients, 0xb3).await?;
+    let mut fresh = connect_character(clients, 0xb3, 0).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || fresh.world_spatial().actor_position != saved_position
         || quantity(&fresh, definition)? != saved_quantity

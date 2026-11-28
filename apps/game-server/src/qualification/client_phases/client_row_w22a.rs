@@ -90,7 +90,9 @@ async fn kill_and_open(
             break *corpse;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("step=death no corpse frame".into());
+            let seen = client.world_entities().and_then(|entities| entities.get(&target.entity)).copied();
+            let combat = client.session_mut().combat_state();
+            return Err(format!("step=death no corpse frame target={:?} entity={seen:?} combat={combat:?}", target.entity).into());
         }
     };
     if client.world_entities().is_some_and(|entities| entities.get(&target.entity).is_some()) {
@@ -123,13 +125,54 @@ async fn kill_and_open(
     }
 }
 
+async fn spawn_capture_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let open = |at: TilePos| {
+        world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone())
+    };
+    let origin = tile(client.world_spatial().actor_position)?;
+    let path = route(world, origin, |at| {
+        open(at)
+            && [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
+                .into_iter()
+                .filter(|direction| destination(world, at, *direction).is_some_and(open))
+                .count() >= 3
+    }).ok_or("step=spawn no open non-protection clearing")?;
+    super::full_row_w22a::walk_rat_route(client, world, &path).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, "oteryn:creature.rat".into()).await?;
+    let rat = parse_spawned_entity(&answer)?;
+    evidence(&format!("W22A_FIXTURE account=q_w22a purpose=replay-setup rat={rat:?} placement=adjacent"));
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(entity) = client.world_entities().and_then(|entities| entities.get(&rat)) {
+            let here = client.world_spatial().actor_position;
+            if entity.kind == EntityKind::Creature
+                && entity.display_name.is_some_and(|name| name.as_str().is_ok_and(|name| name == "Rat"))
+                && entity.position.floor == here.floor
+                && entity.position.x.abs_diff(here.x).max(entity.position.y.abs_diff(here.y)) <= 1
+            {
+                return Ok(rat);
+            }
+            return Err(format!("step=spawn wrong Rat frame {entity:?}").into());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=spawn exact spawned Rat was not projected".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let ranges = rat_ranges()?;
-    let mut client = connect_character(clients, 0x98, 1).await?;
-    let target = super::full_row_w22a::travel_to_rat(&mut client, world, &metadata.spawns).await?;
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W22A_ACCOUNT").await?;
+    let clients = &dedicated.clients(clients);
+    let mut client = super::full_row_w22a::prepare_rat_hunter(clients).await?;
     super::full_row_w22a::prepare_rat_attack(&mut client).await?;
+    let target = spawn_capture_rat(&mut client, world).await?;
     let before = kill_and_open(&mut client, target).await?;
     let first = *before
         .entries
@@ -180,7 +223,7 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     let session = client.join_snapshot().game_session_id;
     super::full_row_w22a::logout(&mut client).await?;
     drop(client);
-    let mut fresh = connect_character(clients, 0x99, 1).await?;
+    let mut fresh = connect_character(clients, 0x99, 0).await?;
     if fresh.join_snapshot().game_session_id == session
         || super::full_row_w22a::quantity(&fresh, definition)? != expected_quantity
     {
