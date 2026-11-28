@@ -91,7 +91,7 @@ BEGIN
     AND game_world_reset_map_epoch_current(w,a.reset_epoch);
  IF NOT FOUND THEN RETURN FALSE; END IF;
 
- PERFORM pg_advisory_xact_lock(hashtextextended(w::text||':'||h,3337));
+ PERFORM pg_advisory_xact_lock(hashtextextended(w::text||':'||h,3356));
  SELECT * INTO prop FROM game_house_properties WHERE world_id=w AND house_key=h FOR UPDATE;
  IF FOUND AND (prop.kind<>q.kind OR prop.content_fence_operation IS NOT NULL
               OR prop.state NOT IN (1,2)) THEN RETURN FALSE; END IF;
