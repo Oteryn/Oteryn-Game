@@ -70,6 +70,13 @@
       "identity_source": "data/XML/mounts.xml:213"
     },
     {
+      "key": "oteryn:item-grant.mount.194",
+      "kind": "mount",
+      "mount_id": 194,
+      "look_type": 1459,
+      "donor": "https://tibia.fandom.com/wiki/Gloothomotive"
+    },
+    {
       "key": "oteryn:item-grant.mount.217",
       "kind": "mount",
       "mount_id": 217,
@@ -99,6 +106,13 @@
       "look_type": 1810,
       "donor": "data/scripts/actions/items/usable_mount_items.lua:6",
       "identity_source": "data/XML/mounts.xml:261"
+    },
+    {
+      "key": "oteryn:item-grant.mount.239",
+      "kind": "mount",
+      "mount_id": 239,
+      "look_type": 1827,
+      "donor": "https://tibia.fandom.com/wiki/Demon_in_a_Golden_Box"
     },
     {
       "key": "oteryn:item-grant.mount.24",
@@ -4479,6 +4493,32 @@
       "progress_key": "fiery-horseshoe"
     },
     {
+      "item_id": 37397,
+      "donor": "https://tibia.fandom.com/wiki/Gloothomotive",
+      "mode": "pieces",
+      "premium": false,
+      "target_item_id": 37398,
+      "required_items": [
+        37397,
+        37398
+      ],
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.194"
+          ],
+          "owned": "oteryn:item-grant.mount.194",
+          "required": [],
+          "cues": [],
+          "feedback": "You wind the small locomotive up. It starts to move ... and grows!",
+          "achievements": [
+            "oteryn:achievement/engine_driver",
+            "oteryn:achievement/natural_born_cowboy"
+          ]
+        }
+      ]
+    },
+    {
       "item_id": 37604,
       "donor": "data/scripts/actions/items/usable_outfit_items.lua:52",
       "mode": "direct",
@@ -5363,6 +5403,25 @@
           "complete_grants": [
             "oteryn:item-grant.outfit.1808-1809.addon1",
             "oteryn:item-grant.outfit.1808-1809.addon2"
+          ]
+        }
+      ]
+    },
+    {
+      "item_id": 50063,
+      "donor": "https://tibia.fandom.com/wiki/Demon_in_a_Golden_Box",
+      "mode": "direct",
+      "premium": false,
+      "choices": [
+        {
+          "grants": [
+            "oteryn:item-grant.mount.239"
+          ],
+          "owned": "oteryn:item-grant.mount.239",
+          "required": [],
+          "cues": [],
+          "achievements": [
+            "oteryn:achievement/alpha_rider"
           ]
         }
       ]

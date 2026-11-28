@@ -80,6 +80,9 @@ pub struct Rule {
     pub choices: Vec<Choice>,
     #[serde(default)]
     pub required_items: Vec<u32>,
+    /// An explicitly selected carried recipe part.
+    #[serde(default)]
+    pub target_item_id: Option<u32>,
     #[serde(default)]
     pub components: Vec<Component>,
     pub progress_key: Option<String>,
@@ -184,6 +187,9 @@ fn valid_rule(c: &Catalogue, r: &Rule) -> bool {
                     .chain(std::iter::once(&choice.owned))
                     .all(|key| c.grants.iter().any(|g| g.key == *key))
                 && choice.achievement_progress.iter().all(|p| p.target > 0)
+        })
+        && r.target_item_id.is_none_or(|target| {
+            r.mode == Mode::Pieces && target != r.item_id && r.required_items.contains(&target)
         })
         && match r.mode {
             Mode::Direct => {

@@ -248,8 +248,8 @@ fn mount_taming_postgres_construction_hotkeys_use_production_catalogue() -> Test
         4
     );
     run_pairs(Cases::Construction)?;
-    // The fourth construction row is a seven-piece recipe, owned by ordinary
-    // item actions. Exercise its complete atomic success, replay and refusal.
+    // Ordinary item actions own the Glider recipe, including its atomic success,
+    // replay and refusal. The separate S06 case exercises the key and loco.
     super::item_cosmetics_fixtures::run_stock_glider(false, false)?;
     super::item_cosmetics_fixtures::run_stock_glider(false, true)
 }

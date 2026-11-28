@@ -17,18 +17,11 @@ pub(in super::super) enum Case {
     ProductionOtOnly,
     ProductionMount,
     Pegasus,
+    AlphaBox,
+    Gloothomotive,
     RandomOutfit,
     Glider { missing: bool },
 }
-
-
-
-
-
-
-
-
-
 
 pub(in super::super) async fn appearance(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -150,9 +143,15 @@ pub(in super::super) async fn execute(
                 assert_eq!(grant_count(h).await?, i64::from(command == 4));
                 assert_eq!(receipt_count(h).await?, i64::try_from(command)?);
             }
-            let (end, result, _) =
-                super::super::rust_lottery_fixtures::exchange(owner, admitted, 4, &last_payload, None, None)
-                    .await?;
+            let (end, result, _) = super::super::rust_lottery_fixtures::exchange(
+                owner,
+                admitted,
+                4,
+                &last_payload,
+                None,
+                None,
+            )
+            .await?;
             admitted = end;
             assert_eq!(result, UseDisposition::Committed);
             assert_eq!(receipt_count(h).await?, 4);
@@ -361,11 +360,18 @@ pub(in super::super) async fn execute(
                 .ok_or("earned outfit")?;
             assert_eq!(outfit.permitted_addons, 3);
         }
+        Case::AlphaBox | Case::Gloothomotive => {
+            super::world_mount::execute(owner, h, admitted, case, reference).await?;
+        }
         Case::ProductionMount | Case::Pegasus => {
             let pegasus = matches!(case, Case::Pegasus);
             let (item, mount, source_id) = if pegasus {
                 // The publisher presents the last backpack placement first.
-                ("oteryn:item.tibia.i48424", "oteryn:content.mount.pegasus", 72)
+                (
+                    "oteryn:item.tibia.i48424",
+                    "oteryn:content.mount.pegasus",
+                    72,
+                )
             } else {
                 (
                     "oteryn:item.tibia.i23538",
@@ -393,7 +399,8 @@ pub(in super::super) async fn execute(
                     .any(|key| key == mount)
             );
             let (end, replayed, _) =
-                super::super::rust_lottery_fixtures::exchange(owner, end, 1, &actual, None, None).await?;
+                super::super::rust_lottery_fixtures::exchange(owner, end, 1, &actual, None, None)
+                    .await?;
             assert_eq!(replayed, UseDisposition::Committed);
             assert_eq!(receipt_count(h).await?, 1);
             if pegasus {
@@ -481,9 +488,10 @@ pub(in super::super) async fn execute(
                     .iter()
                     .any(|o| o.key == packet::AFFLICTED)
             );
-            let (_, result, _) =
-                super::super::rust_lottery_fixtures::exchange(owner, admitted, 1, &actual, None, None)
-                    .await?;
+            let (_, result, _) = super::super::rust_lottery_fixtures::exchange(
+                owner, admitted, 1, &actual, None, None,
+            )
+            .await?;
             assert_eq!(result, UseDisposition::Committed);
             assert_eq!(grant_count(h).await?, 1);
             assert_eq!(receipt_count(h).await?, 1);
@@ -502,8 +510,15 @@ pub(in super::super) async fn omission(
 ) -> TestResult {
     sqlx::raw_sql("CREATE SEQUENCE w19d_test_grant_hits; CREATE FUNCTION w19d_test_omit_grant() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('w19d_test_grant_hits'); RETURN NULL; END $$; CREATE TRIGGER w19d_test_omit_receipt BEFORE INSERT ON game_account_appearance_unlock_receipts FOR EACH ROW WHEN(NEW.source_kind='item_action') EXECUTE FUNCTION w19d_test_omit_grant(); CREATE TRIGGER w19d_test_omit_fact BEFORE INSERT ON game_account_appearance_unlocks FOR EACH ROW WHEN(NEW.unlock_key='oteryn:item-grant.mount.184') EXECUTE FUNCTION w19d_test_omit_grant();")
         .execute(&h.pool).await?;
-    let result =
-        super::super::rust_lottery_fixtures::exchange(owner, admitted, 4, payload, Some(source), None).await;
+    let result = super::super::rust_lottery_fixtures::exchange(
+        owner,
+        admitted,
+        4,
+        payload,
+        Some(source),
+        None,
+    )
+    .await;
     sqlx::raw_sql("DROP TRIGGER w19d_test_omit_receipt ON game_account_appearance_unlock_receipts; DROP TRIGGER w19d_test_omit_fact ON game_account_appearance_unlocks; DROP FUNCTION w19d_test_omit_grant();")
         .execute(&h.pool).await?;
     let hits = scalar(h, "SELECT last_value FROM w19d_test_grant_hits").await?;

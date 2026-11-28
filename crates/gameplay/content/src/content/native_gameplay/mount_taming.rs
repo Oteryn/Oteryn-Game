@@ -301,7 +301,7 @@ mod tests {
     }
     #[test]
     fn wind_up_loco_item_target_rule() {
-        assert_item_target(37397, 37397, "oteryn:content.mount.wind_up_loco");
+        assert_item_target(37397, 37398, "oteryn:content.mount.wind_up_loco");
     }
     #[test]
     fn glooth_glider_item_target_rule() {
@@ -318,7 +318,7 @@ mod tests {
         );
         assert_eq!(
             rules().iter().filter(|rule| rule.single_item_use()).count(),
-            50
+            49
         );
     }
 

@@ -29,7 +29,7 @@ fn s06_global_store_mounts_are_selectable_and_charge_once() -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run(admin, true)
+    run(admin, true, None)
 }
 
 #[test]
@@ -37,19 +37,54 @@ fn s06_global_store_outfits_and_addons_are_selectable_and_charge_once() -> TestR
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    run(admin, false)
+    run(admin, false, None)
 }
 
-fn run(admin: String, mounts: bool) -> TestResult {
+#[derive(Clone, serde::Deserialize)]
+struct ArchiveOffer {
+    offer_key: String,
+    price: u64,
+    addons: u8,
+}
+
+const ARCHIVE_BATCH: usize = 24;
+
+#[test]
+fn s06_archive_store_cohort_browse_purchase_select_and_replay() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    for mounts in [true, false] {
+        let prefix = if mounts {
+            "store:mount:"
+        } else {
+            "store:outfit:"
+        };
+        let cohort: Vec<ArchiveOffer> = serde_json::from_str(include_str!(
+            "../../../../../../rulesets/economy/store/s06-global-offers.json"
+        ))?;
+        let cohort: Vec<_> = cohort
+            .into_iter()
+            .filter(|row| row.offer_key.starts_with(prefix))
+            .collect();
+        assert!(!cohort.is_empty());
+        for chunk in cohort.chunks(ARCHIVE_BATCH) {
+            run(admin.clone(), mounts, Some(chunk.to_vec()))?;
+        }
+    }
+    Ok(())
+}
+
+fn run(admin: String, mounts: bool, cohort: Option<Vec<ArchiveOffer>>) -> TestResult {
     super::kill_reward_e2e_fixtures::scenario_thread::run("s06-store-cosmetics", move || {
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?
-            .block_on(scenario(admin, mounts))
+            .block_on(scenario(admin, mounts, cohort.as_deref()))
     })
 }
 
-async fn scenario(admin: String, mounts: bool) -> TestResult {
+async fn scenario(admin: String, mounts: bool, cohort: Option<&[ArchiveOffer]>) -> TestResult {
     let h = Harness::create_appearance(admin, "s06_store_mounts").await?;
     prepare_current_session(&h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -70,7 +105,7 @@ async fn scenario(admin: String, mounts: bool) -> TestResult {
     )?;
     let mut admitted = deps.admitted;
     let ledger = Arc::new(Mutex::new(Ledger {
-        balance: 10_000,
+        balance: 30_000,
         world: uuid(admitted.world_id.as_bytes()),
         enforce_active_import: true,
         ..Ledger::default()
@@ -125,6 +160,25 @@ async fn scenario(admin: String, mounts: bool) -> TestResult {
     } else {
         ("cosmetics.outfits", "outfit", OUTFITS)
     };
+    let archive_cases;
+    let cases = if let Some(cohort) = cohort {
+        let key_prefix = format!("store:{prefix}:");
+        archive_cases = cohort
+            .iter()
+            .map(|row| {
+                Ok((
+                    row.offer_key
+                        .strip_prefix(&key_prefix)
+                        .ok_or("archive Store offer kind")?,
+                    row.price,
+                    row.addons,
+                ))
+            })
+            .collect::<TestResult<Vec<_>>>()?;
+        archive_cases.as_slice()
+    } else {
+        cases
+    };
     let quotes = catalogue(&owner, &mut admitted, category).await?;
     if mounts {
         assert!(
@@ -132,6 +186,13 @@ async fn scenario(admin: String, mounts: bool) -> TestResult {
                 .iter()
                 .all(|offer| !offer.offer_key.starts_with("store:mount:benevolent-"))
         );
+        for retired in ["azudocus", "carpacosaurus", "platesaurian"] {
+            assert!(
+                quotes
+                    .iter()
+                    .all(|offer| offer.offer_key != format!("store:mount:{retired}"))
+            );
+        }
     }
 
     let before = super::item_cosmetics_fixtures::positive::appearance(&owner, &admitted).await?;
@@ -253,7 +314,7 @@ async fn catalogue(
         page_cursor: String::new(),
     };
     let mut offers = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..8 {
         let values = serve(
             owner,
             admitted,

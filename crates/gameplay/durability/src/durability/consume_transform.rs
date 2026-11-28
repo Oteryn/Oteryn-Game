@@ -18,6 +18,7 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 use super::consume_transform_audit as audit;
+use super::consume_transform_cosmetics::{self as cosmetics, Preparation};
 mod cake;
 pub use cake::CakeBakerContext;
 mod dispenser;
@@ -185,22 +186,42 @@ impl DurabilityRoot {
         content: &C,
     ) -> Result<Option<ConsumeTransformResult>, super::map_item_mint::MapItemMintError> {
         use super::map_item_mint::{FrozenMint, MAP_DISPENSER_KEY, MapItemMintError};
-        if mint.command != request.command || mint.item.definition.production_key != MAP_DISPENSER_KEY {
+        if mint.command != request.command
+            || mint.item.definition.production_key != MAP_DISPENSER_KEY
+        {
             return Err(MapItemMintError::InvalidInput);
         }
         permit.check_scope(fence.runtime_scope)?;
-        let record = recovery.record_for(self).map_err(|_| MapItemMintError::AuthorityRejected)?;
-        let mut candidate = self.freeze_map_item_mint(recovery, node, fence, mint).await?;
-        self.charge_map_item_mint_work_unit(record, &mut candidate).await?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let mut candidate = self
+            .freeze_map_item_mint(recovery, node, fence, mint)
+            .await?;
+        self.charge_map_item_mint_work_unit(record, &mut candidate)
+            .await?;
         let frozen = FrozenMint::of(&candidate);
-        Ok(self.consume_transform_inner(
-            permit, recovery, node, fence, request, native, content, false, None,
-            ActionContext::DispenserMapTarget(&frozen),
-        ).await?)
+        Ok(self
+            .consume_transform_inner(
+                permit,
+                recovery,
+                node,
+                fence,
+                request,
+                native,
+                content,
+                false,
+                None,
+                ActionContext::DispenserMapTarget(&frozen),
+            )
+            .await?)
     }
 
     /// Commit the source-selected Secret Agent jam through the carried Item timer owner.
-    #[allow(clippy::too_many_arguments, reason = "existing carried Item write fences")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing carried Item write fences"
+    )]
     pub async fn jam_secret_agent_tool<C: ItemLoopContent>(
         &self,
         permit: &super::spell_owner_commit::SpellLanePermit,
@@ -212,8 +233,16 @@ impl DurabilityRoot {
         content: &C,
     ) -> Result<Option<ConsumeTransformResult>, DurabilityError> {
         self.consume_transform_inner(
-            permit, recovery, node, fence, request, native, content, false,
-            None, ActionContext::SecretAgentJam,
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            false,
+            None,
+            ActionContext::SecretAgentJam,
         )
         .await
     }
@@ -381,22 +410,30 @@ async fn write<C: ItemLoopContent>(
     } else {
         None
     };
-    let planting_plan = if matches!(ground, ActionContext::SecretAgentJam) {
+    let targeted_plan = if matches!(ground, ActionContext::SecretAgentJam) {
         let session = *fence.game_session_id.as_bytes();
         let command = request.command.command_id().get();
-        let jammed = oteryn_gameplay_items::secret_agent::jammed_successor(&definition.production_key)
-            .filter(|_| {
-                request.target.is_none()
-                    && oteryn_gameplay_items::secret_agent::jams(session, command, request.source)
-            })
-            .and_then(|id| native.item_policy_for_source_id(id))
-            .and_then(|policy| {
-                super::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy).ok()
-            });
+        let jammed =
+            oteryn_gameplay_items::secret_agent::jammed_successor(&definition.production_key)
+                .filter(|_| {
+                    request.target.is_none()
+                        && oteryn_gameplay_items::secret_agent::jams(
+                            session,
+                            command,
+                            request.source,
+                        )
+                })
+                .and_then(|id| native.item_policy_for_source_id(id))
+                .and_then(|policy| {
+                    super::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy).ok()
+                });
         let Some(jammed) = jammed else {
             return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
         };
-        let Some(decay) = jammed.decay.filter(|decay| decay.target.as_ref() == Some(&definition)) else {
+        let Some(decay) = jammed
+            .decay
+            .filter(|decay| decay.target.as_ref() == Some(&definition))
+        else {
             return Ok(ConsumeTransformResult::refused(UseDisposition::NotPossible));
         };
         Some(ActionPlan {
@@ -412,6 +449,25 @@ async fn write<C: ItemLoopContent>(
         })
     } else if cake_plan.is_some() {
         cake_plan
+    } else if matches!(ground, ActionContext::Carried)
+        && request.target.is_some()
+        && oteryn_gameplay_items::item_cosmetics::rule(&definition.production_key)
+            .is_some_and(|rule| rule.target_item_id.is_some())
+    {
+        if source.try_get::<i32, _>("custody")? == 2 {
+            return Ok(ConsumeTransformResult::refused(
+                UseDisposition::NothingToUse,
+            ));
+        }
+        // Use the selected part as an extra input so nested custody and the receipt
+        // use the same checks as other multi-piece recipes.
+        match cosmetics::prepare(tx, fence, request, &definition, native, premium).await? {
+            Preparation::Ready(plan) => Some(plan),
+            Preparation::Refused(disposition) => {
+                return Ok(ConsumeTransformResult::refused(disposition));
+            }
+            Preparation::Unrelated => return Err(DurabilityError::InvalidStoredState),
+        }
     } else {
         match dispenser::prepare(
             tx,
@@ -428,7 +484,9 @@ async fn write<C: ItemLoopContent>(
             Some(plan) => Some(plan),
             None if matches!(
                 ground,
-                ActionContext::DispenserTarget(_) | ActionContext::DispenserMapTarget(_) | ActionContext::DispenserHouseTarget(_)
+                ActionContext::DispenserTarget(_)
+                    | ActionContext::DispenserMapTarget(_)
+                    | ActionContext::DispenserHouseTarget(_)
             ) =>
             {
                 return Ok(ConsumeTransformResult::refused(
@@ -438,12 +496,12 @@ async fn write<C: ItemLoopContent>(
             None => planting::prepare_carried(tx, fence, request, &definition, native).await?,
         }
     };
-    let mut planting_request = request.clone();
-    if planting_plan.is_some() {
-        planting_request.target = None;
+    let mut targeted_request = request.clone();
+    if targeted_plan.is_some() {
+        targeted_request.target = None;
     }
-    let request = if planting_plan.is_some() {
-        &planting_request
+    let request = if targeted_plan.is_some() {
+        &targeted_request
     } else {
         request
     };
@@ -492,8 +550,8 @@ async fn write<C: ItemLoopContent>(
             )
         })
     };
-    let mut conversion = if let Some(planting) = planting_plan {
-        planting
+    let mut conversion = if let Some(plan) = targeted_plan {
+        plan
     } else if let Some(conversion) = conversion {
         let effects = if conversion.recipe == "oteryn:planting.ice-flower" {
             oteryn_gameplay_items::event_planting::seed_effects(None)
@@ -537,7 +595,6 @@ async fn write<C: ItemLoopContent>(
                 extra_inputs: Vec::new(),
             }
         } else {
-            use super::consume_transform_cosmetics::{self as cosmetics, Preparation};
             match cosmetics::prepare(tx, fence, request, &definition, native, premium).await? {
                 Preparation::Ready(plan) => plan,
                 Preparation::Refused(disposition) => {
@@ -1019,9 +1076,14 @@ async fn persist_action(
     };
     if let Some(progress) = progress {
         super::account_achievement::add_progress(
-            tx, fence.character_id, progress.key, progress.total, TRANSFORM_SOURCE_KIND,
+            tx,
+            fence.character_id,
+            progress.key,
+            progress.total,
+            TRANSFORM_SOURCE_KIND,
             event.as_bytes(),
-        ).await?;
+        )
+        .await?;
     }
     // Keep the established rust-remover achievement. Seed use is another two-input
     // conversion, so source recipe rather than operand count qualifies this progress.
@@ -1264,7 +1326,11 @@ async fn apply_achievements(
             // Crystal data-global/scripts/actions/other/music.lua:65-66.
             Some("music") => Some(("oteryn:achievement/rockstar", 10000)),
             // TibiaWiki page 62811, revision 844405 excludes exhausted mirror uses.
-            Some("mirror") if effects.get("decoration_cooldown").is_some_and(Value::is_object) => {
+            Some("mirror")
+                if effects
+                    .get("decoration_cooldown")
+                    .is_some_and(Value::is_object) =>
+            {
                 Some(("oteryn:achievement/vanity", 300))
             }
             _ => None,

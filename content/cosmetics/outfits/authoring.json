@@ -992,12 +992,12 @@
         "key": "oteryn:outfit.beastmaster",
         "revision": "crystal-9f5a72c-r1",
         "female": {
-          "id": 636,
-          "source_record_sha256": "84b2cbb1d9a98ac8d756c30baee952f5ccfbea53981783b8b4c1e9af73fb8cdd"
-        },
-        "male": {
           "id": 637,
           "source_record_sha256": "1f10e783800db3d17ddf4d2a4924f439f0f822779c9686e5c852482843376c62"
+        },
+        "male": {
+          "id": 636,
+          "source_record_sha256": "84b2cbb1d9a98ac8d756c30baee952f5ccfbea53981783b8b4c1e9af73fb8cdd"
         },
         "addon_count": 2,
         "starter_female": false,
@@ -6169,8 +6169,8 @@
         "key": "oteryn:content.mount.dreadhare",
         "revision": "crystal-9f5a72c-r1",
         "look": {
-          "id": 906,
-          "source_record_sha256": "1ee87f377d6d1b13c9d793738347ae2a75a3f0a4f769175bb9f2011209274689"
+          "id": 907,
+          "source_record_sha256": "3d59fa35c6ac7edfa6e220462c4c62bcab1f1c23ee30880a3dc21cfa6a5ecea0"
         },
         "speed_bonus": 10,
         "premium": false,
@@ -8944,8 +8944,8 @@
         "key": "oteryn:content.mount.wolpertinger",
         "revision": "crystal-9f5a72c-r1",
         "look": {
-          "id": 907,
-          "source_record_sha256": "3d59fa35c6ac7edfa6e220462c4c62bcab1f1c23ee30880a3dc21cfa6a5ecea0"
+          "id": 906,
+          "source_record_sha256": "1ee87f377d6d1b13c9d793738347ae2a75a3f0a4f769175bb9f2011209274689"
         },
         "speed_bonus": 10,
         "premium": false,
@@ -24646,6 +24646,16 @@
         ]
       },
       {
+        "grant_key": "oteryn:item-grant.mount.194",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.wind_up_loco"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
         "grant_key": "oteryn:item-grant.mount.217",
         "target": {
           "kind": "Mount",
@@ -24680,6 +24690,16 @@
         "target": {
           "kind": "Mount",
           "mount_key": "oteryn:content.mount.primal_demonosaur"
+        },
+        "compatible_provenance": [
+          "crystal-item-cosmetics-201189f-v1"
+        ]
+      },
+      {
+        "grant_key": "oteryn:item-grant.mount.239",
+        "target": {
+          "kind": "Mount",
+          "mount_key": "oteryn:content.mount.ancient_demonosaur"
         },
         "compatible_provenance": [
           "crystal-item-cosmetics-201189f-v1"
@@ -25120,7 +25140,7 @@
       {
         "item_key": "oteryn:item.tibia.i6579",
         "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-        "catalogue_sha256": "e1370977e146c5f68c0aa3832c9ee0264ed4ce5e9a27a70fc590c9a76520b8bf",
+        "catalogue_sha256": "ca7d22f678aad2ac1fbd7b6769425aea39e83182639b20433a7343f316451a68",
         "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
         "source": {
           "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
@@ -40838,6 +40858,16 @@
           ]
         },
         {
+          "grant_key": "oteryn:item-grant.mount.194",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.wind_up_loco"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
           "grant_key": "oteryn:item-grant.mount.217",
           "target": {
             "kind": "Mount",
@@ -40872,6 +40902,16 @@
           "target": {
             "kind": "Mount",
             "mount_key": "oteryn:content.mount.primal_demonosaur"
+          },
+          "compatible_provenance": [
+            "crystal-item-cosmetics-201189f-v1"
+          ]
+        },
+        {
+          "grant_key": "oteryn:item-grant.mount.239",
+          "target": {
+            "kind": "Mount",
+            "mount_key": "oteryn:content.mount.ancient_demonosaur"
           },
           "compatible_provenance": [
             "crystal-item-cosmetics-201189f-v1"
@@ -41323,7 +41363,7 @@
         {
           "item_key": "oteryn:item.tibia.i6579",
           "donor": "data-crystal/scripts/special/addon_doll.lua:53-71",
-          "catalogue_sha256": "e1370977e146c5f68c0aa3832c9ee0264ed4ce5e9a27a70fc590c9a76520b8bf",
+          "catalogue_sha256": "ca7d22f678aad2ac1fbd7b6769425aea39e83182639b20433a7343f316451a68",
           "decision": "owner:S06:source-bound-native-item-acquisitions:2026-11-07",
           "source": {
             "reference": "crystal:data-crystal/scripts/special/addon_doll.lua",
@@ -54470,8 +54510,8 @@
     {
       "path": "/mounts/248/look",
       "value": {
-        "id": 907,
-        "source_record_sha256": "3d59fa35c6ac7edfa6e220462c4c62bcab1f1c23ee30880a3dc21cfa6a5ecea0"
+        "id": 906,
+        "source_record_sha256": "1ee87f377d6d1b13c9d793738347ae2a75a3f0a4f769175bb9f2011209274689"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -58104,8 +58144,8 @@
     {
       "path": "/mounts/63/look",
       "value": {
-        "id": 906,
-        "source_record_sha256": "1ee87f377d6d1b13c9d793738347ae2a75a3f0a4f769175bb9f2011209274689"
+        "id": 907,
+        "source_record_sha256": "3d59fa35c6ac7edfa6e220462c4c62bcab1f1c23ee30880a3dc21cfa6a5ecea0"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61584,8 +61624,8 @@
     {
       "path": "/outfits/10/female",
       "value": {
-        "id": 636,
-        "source_record_sha256": "84b2cbb1d9a98ac8d756c30baee952f5ccfbea53981783b8b4c1e9af73fb8cdd"
+        "id": 637,
+        "source_record_sha256": "1f10e783800db3d17ddf4d2a4924f439f0f822779c9686e5c852482843376c62"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",
@@ -61611,8 +61651,8 @@
     {
       "path": "/outfits/10/male",
       "value": {
-        "id": 637,
-        "source_record_sha256": "1f10e783800db3d17ddf4d2a4924f439f0f822779c9686e5c852482843376c62"
+        "id": 636,
+        "source_record_sha256": "84b2cbb1d9a98ac8d756c30baee952f5ccfbea53981783b8b4c1e9af73fb8cdd"
       },
       "state": "PROMOTED",
       "decision": "owner:QENGINE-2:canonical-donor-outfit-and-atomic-quest-grants:2026-11-06",

@@ -228,9 +228,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && intent.use_with_map_item.is_none()
                 && intent.use_with_position.is_none();
             if !rules().iter().any(|rule| {
-                rule.single_item_use()
-                    && rule.item_key == key
-                    && (!self_use || rule.target_item_key.as_deref() == Some(key))
+                rule.item_key == key
+                    && ((rule.single_item_use()
+                        && (!self_use || rule.target_item_key.as_deref() == Some(key)))
+                        // Preserve old self-USE receipts when a construction now
+                        // requires a distinct carried target. The fresh guard below
+                        // still sends the recipe to the two-item owner.
+                        || (self_use && rule.target_item_key.as_deref().is_some_and(|target| target != key)))
             }) {
                 return Ok(None);
             }

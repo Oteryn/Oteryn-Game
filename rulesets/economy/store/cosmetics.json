@@ -52,22 +52,165 @@
       "oteryn:content.mount.arctic_unicorn": 1018,
       "oteryn:content.mount.armoured_war_horse": 426,
       "oteryn:content.mount.batcat": 728,
+      "oteryn:content.mount.battle_badger": 1247,
       "oteryn:content.mount.battle_werewolf": 1873,
+      "oteryn:content.mount.black_stag": 686,
+      "oteryn:content.mount.blackpelt": 651,
+      "oteryn:content.mount.blazing_unicorn": 1017,
+      "oteryn:content.mount.bloodcurl": 869,
+      "oteryn:content.mount.bog_tyrant": 1743,
+      "oteryn:content.mount.bogwurm": 1447,
       "oteryn:content.mount.boisterous_bull": 1672,
+      "oteryn:content.mount.boreal_owl": 1106,
+      "oteryn:content.mount.brass_speckled_koi": 1609,
+      "oteryn:content.mount.bumblebee": 1778,
+      "oteryn:content.mount.bunny_dray": 1180,
+      "oteryn:content.mount.caped_snowman": 1169,
+      "oteryn:content.mount.cave_tarantula": 1026,
+      "oteryn:content.mount.cerberus_champion": 1209,
+      "oteryn:content.mount.cinderhoof": 851,
+      "oteryn:content.mount.cinnamon_ibex": 1528,
+      "oteryn:content.mount.cony_cart": 1181,
+      "oteryn:content.mount.copper_fly": 671,
+      "oteryn:content.mount.coral_rhea": 1325,
+      "oteryn:content.mount.coralripper": 735,
+      "oteryn:content.mount.corpse_phoenix": 1842,
+      "oteryn:content.mount.corpsefire_skull": 1687,
+      "oteryn:content.mount.cranium_spider": 1025,
+      "oteryn:content.mount.crimson_fang": 1744,
       "oteryn:content.mount.crimson_ray": 521,
+      "oteryn:content.mount.cunning_hyaena": 1334,
+      "oteryn:content.mount.dandelion": 1441,
+      "oteryn:content.mount.darkfire_devourer": 1677,
+      "oteryn:content.mount.dawn_strayer": 1286,
+      "oteryn:content.mount.dawnbringer_pegasus": 1727,
       "oteryn:content.mount.death_crawler": 624,
+      "oteryn:content.mount.death_phoenix": 1843,
       "oteryn:content.mount.desert_king": 572,
+      "oteryn:content.mount.doom_skull": 1685,
+      "oteryn:content.mount.doombringer": 644,
+      "oteryn:content.mount.dreadhare": 907,
+      "oteryn:content.mount.dusk_pryer": 1285,
+      "oteryn:content.mount.ebony_tiger": 1091,
+      "oteryn:content.mount.ember_saurian": 960,
+      "oteryn:content.mount.emerald_raven": 1453,
+      "oteryn:content.mount.emerald_sphinx": 951,
+      "oteryn:content.mount.emerald_waccoon": 693,
+      "oteryn:content.mount.emperor_deer": 687,
+      "oteryn:content.mount.ether_badger": 1248,
+      "oteryn:content.mount.eventide_nandu": 1326,
+      "oteryn:content.mount.feral_tiger": 1092,
+      "oteryn:content.mount.festive_mammoth": 1381,
+      "oteryn:content.mount.festive_snowman": 1167,
       "oteryn:content.mount.flamesteed": 626,
+      "oteryn:content.mount.flitterkatzen": 726,
+      "oteryn:content.mount.floating_augur": 1266,
+      "oteryn:content.mount.floating_kashmir": 690,
+      "oteryn:content.mount.floating_sage": 1264,
+      "oteryn:content.mount.floating_scholar": 1265,
+      "oteryn:content.mount.flying_divan": 688,
+      "oteryn:content.mount.frostbringer": 1615,
+      "oteryn:content.mount.frostflare": 850,
+      "oteryn:content.mount.glacier_vagabond": 674,
+      "oteryn:content.mount.glacier_wyrm": 1742,
+      "oteryn:content.mount.gloom_widow": 1027,
+      "oteryn:content.mount.gloomwurm": 1448,
+      "oteryn:content.mount.gold_sphinx": 950,
+      "oteryn:content.mount.golden_dragonfly": 669,
+      "oteryn:content.mount.gorgon_hydra": 1724,
+      "oteryn:content.mount.gorongra": 738,
+      "oteryn:content.mount.hailstorm_fury": 648,
+      "oteryn:content.mount.highland_yak": 673,
+      "oteryn:content.mount.holiday_mammoth": 1380,
+      "oteryn:content.mount.hyacinth": 1439,
+      "oteryn:content.mount.icebreacher": 1617,
+      "oteryn:content.mount.ink_spotted_koi": 1610,
+      "oteryn:content.mount.ivory_fang": 901,
+      "oteryn:content.mount.jackalope": 905,
       "oteryn:content.mount.jade_lion": 627,
       "oteryn:content.mount.jade_pincer": 628,
+      "oteryn:content.mount.jade_shrine": 1492,
+      "oteryn:content.mount.jousting_eagle": 1208,
+      "oteryn:content.mount.jousting_horse": 1579,
+      "oteryn:content.mount.jungle_saurian": 959,
       "oteryn:content.mount.jungle_tiger": 1093,
+      "oteryn:content.mount.lagoon_saurian": 961,
+      "oteryn:content.mount.leaf_locust": 1834,
+      "oteryn:content.mount.leafscuttler": 870,
+      "oteryn:content.mount.magic_carpet_mount": 689,
       "oteryn:content.mount.magma_skull": 1686,
+      "oteryn:content.mount.marsh_toad": 1052,
+      "oteryn:content.mount.merry_mammoth": 1379,
+      "oteryn:content.mount.mint_ibex": 1527,
+      "oteryn:content.mount.mould_shell": 887,
+      "oteryn:content.mount.mouldpincer": 868,
+      "oteryn:content.mount.muffled_snowman": 1168,
+      "oteryn:content.mount.mystic_raven": 1454,
       "oteryn:content.mount.nethersteed": 629,
+      "oteryn:content.mount.night_locust": 1833,
+      "oteryn:content.mount.night_waccoon": 692,
+      "oteryn:content.mount.nightdweller": 849,
+      "oteryn:content.mount.nightmarish_crocovile": 1185,
+      "oteryn:content.mount.nightstinger": 762,
+      "oteryn:content.mount.noctungra": 739,
+      "oteryn:content.mount.obsidian_shrine": 1493,
       "oteryn:content.mount.obstinate_ox": 1674,
+      "oteryn:content.mount.pallbearer": 1813,
+      "oteryn:content.mount.parade_horse": 1578,
+      "oteryn:content.mount.pearl_locust": 1835,
+      "oteryn:content.mount.peony": 1440,
+      "oteryn:content.mount.plumfish": 736,
+      "oteryn:content.mount.poisonbane": 650,
+      "oteryn:content.mount.poppy_ibex": 1526,
+      "oteryn:content.mount.prismatic_unicorn": 1019,
+      "oteryn:content.mount.rabbit_rickshaw": 1179,
+      "oteryn:content.mount.radiant_raven": 1455,
+      "oteryn:content.mount.razorcreep": 763,
+      "oteryn:content.mount.reed_lurker": 888,
+      "oteryn:content.mount.rift_watcher": 1391,
+      "oteryn:content.mount.ringtail_waccoon": 691,
+      "oteryn:content.mount.river_crocovile": 1183,
+      "oteryn:content.mount.rune_watcher": 1390,
+      "oteryn:content.mount.rustwurm": 1446,
+      "oteryn:content.mount.sanguine_frog": 1053,
+      "oteryn:content.mount.satin_moth": 1836,
+      "oteryn:content.mount.savanna_ostrich": 1324,
+      "oteryn:content.mount.scruffy_hyaena": 1335,
+      "oteryn:content.mount.sea_devil": 734,
+      "oteryn:content.mount.shadow_claw": 902,
       "oteryn:content.mount.shadow_draptor": 427,
+      "oteryn:content.mount.shadow_hart": 685,
+      "oteryn:content.mount.shadow_sphinx": 952,
+      "oteryn:content.mount.siegebreaker": 649,
+      "oteryn:content.mount.silverneck": 740,
+      "oteryn:content.mount.skybreaker_pegasus": 1729,
+      "oteryn:content.mount.slagsnare": 761,
+      "oteryn:content.mount.snow_pelt": 903,
+      "oteryn:content.mount.snow_strider": 1284,
+      "oteryn:content.mount.snowy_owl": 1105,
+      "oteryn:content.mount.soul_phoenix": 1844,
+      "oteryn:content.mount.steel_bee": 670,
       "oteryn:content.mount.steelbeak": 522,
       "oteryn:content.mount.surly_steer": 1673,
-      "oteryn:content.mount.tombstinger": 546
+      "oteryn:content.mount.swamp_crocovile": 1184,
+      "oteryn:content.mount.swamp_snapper": 886,
+      "oteryn:content.mount.tangerine_flecked_koi": 1608,
+      "oteryn:content.mount.tawny_owl": 1104,
+      "oteryn:content.mount.tempest": 630,
+      "oteryn:content.mount.tombstinger": 546,
+      "oteryn:content.mount.topaz_shrine": 1491,
+      "oteryn:content.mount.tourney_horse": 1580,
+      "oteryn:content.mount.toxic_toad": 1054,
+      "oteryn:content.mount.tundra_rambler": 672,
+      "oteryn:content.mount.venompaw": 727,
+      "oteryn:content.mount.void_watcher": 1389,
+      "oteryn:content.mount.voracious_hyaena": 1333,
+      "oteryn:content.mount.winter_king": 631,
+      "oteryn:content.mount.winterstride": 1616,
+      "oteryn:content.mount.wolpertinger": 906,
+      "oteryn:content.mount.woodland_prince": 647,
+      "oteryn:content.mount.wrathfire_pegasus": 1728,
+      "oteryn:content.mount.zaoan_badger": 1249
     },
     "outfit_looks": {
       "oteryn:outfit.aerial_disciple": [
@@ -90,6 +233,10 @@
         1874,
         1875
       ],
+      "oteryn:outfit.beastmaster": [
+        636,
+        637
+      ],
       "oteryn:outfit.beekeeper": [
         1776,
         1777
@@ -110,9 +257,25 @@
         695,
         694
       ],
+      "oteryn:outfit.champion": [
+        633,
+        632
+      ],
+      "oteryn:outfit.chaos_acolyte": [
+        665,
+        664
+      ],
+      "oteryn:outfit.conjurer": [
+        634,
+        635
+      ],
       "oteryn:outfit.darklight_evoker": [
         1675,
         1676
+      ],
+      "oteryn:outfit.death_herald": [
+        667,
+        666
       ],
       "oteryn:outfit.doom_knight": [
         1713,
@@ -125,6 +288,10 @@
       "oteryn:outfit.dragon_slayer": [
         1288,
         1289
+      ],
+      "oteryn:outfit.entrepreneur": [
+        472,
+        471
       ],
       "oteryn:outfit.evoker": [
         725,
@@ -229,6 +396,14 @@
       "oteryn:outfit.pumpkin_mummy": [
         1127,
         1128
+      ],
+      "oteryn:outfit.puppeteer": [
+        697,
+        696
+      ],
+      "oteryn:outfit.ranger": [
+        684,
+        683
       ],
       "oteryn:outfit.retro_citizen": [
         974,
@@ -388,47 +563,19 @@
       "offer_urls": {
         "store:mount:arctic-unicorn": "https://tibia.fandom.com/wiki/Arctic_Unicorn",
         "store:mount:batcat": "https://tibia.fandom.com/wiki/Batcat",
+        "store:mount:battle-werewolf": "https://tibia.fandom.com/wiki/Battle_Werewolf",
+        "store:mount:boisterous-bull": "https://tibia.fandom.com/wiki/Boisterous_Bull",
         "store:mount:jungle-tiger": "https://tibia.fandom.com/wiki/Jungle_Tiger",
+        "store:mount:magma-skull": "https://tibia.fandom.com/wiki/Magma_Skull",
+        "store:mount:obstinate-ox": "https://tibia.fandom.com/wiki/Obstinate_Ox",
+        "store:mount:surly-steer": "https://tibia.fandom.com/wiki/Surly_Steer",
         "store:outfit:ceremonial-garb": "https://tibia.fandom.com/wiki/Ceremonial_Garb_Outfits",
         "store:outfit:retro-citizen": "https://tibia.fandom.com/wiki/Retro_Citizen_Outfits",
         "store:outfit:retro-hunter": "https://tibia.fandom.com/wiki/Retro_Hunter_Outfits",
         "store:outfit:retro-knight": "https://tibia.fandom.com/wiki/Retro_Knight_Outfits",
         "store:outfit:retro-mage": "https://tibia.fandom.com/wiki/Retro_Mage_Outfits"
-      }
-    },
-    "tibiawiki_br": {
-      "offer_revisions": {
-        "store:mount:battle-werewolf": {
-          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=427794",
-          "page_id": 65665,
-          "selector": "Infobox_Mount / storevalue",
-          "crystal_mount_id": 245
-        },
-        "store:mount:boisterous-bull": {
-          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394898",
-          "page_id": 59766,
-          "selector": "Infobox_Mount / storevalue",
-          "crystal_mount_id": 213
-        },
-        "store:mount:magma-skull": {
-          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=405763",
-          "page_id": 61038,
-          "selector": "Infobox_Mount / storevalue",
-          "crystal_mount_id": 220
-        },
-        "store:mount:obstinate-ox": {
-          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394900",
-          "page_id": 59768,
-          "selector": "Infobox_Mount / storevalue",
-          "crystal_mount_id": 215
-        },
-        "store:mount:surly-steer": {
-          "revision_url": "https://www.tibiawiki.com.br/index.php?oldid=394899",
-          "page_id": 59767,
-          "selector": "Infobox_Mount / storevalue",
-          "crystal_mount_id": 214
-        }
-      }
+      },
+      "cohort": "rulesets/economy/store/s06-global-offers.json"
     }
   },
   "offers": [
@@ -472,6 +619,19 @@
       "source_line": 0
     },
     {
+      "key": "store:mount:battle-badger",
+      "category": "cosmetics.mounts",
+      "title": "Battle Badger",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.battle_badger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.battle_badger"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:mount:battle-werewolf",
       "category": "cosmetics.mounts",
       "title": "Battle Werewolf",
@@ -482,7 +642,85 @@
         "kind": 3,
         "key": "oteryn:content.mount.battle_werewolf"
       },
-      "source_line": 19
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:black-stag",
+      "category": "cosmetics.mounts",
+      "title": "Black Stag",
+      "price": 660,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.black_stag",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.black_stag"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:blackpelt",
+      "category": "cosmetics.mounts",
+      "title": "Blackpelt",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.blackpelt",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.blackpelt"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:blazing-unicorn",
+      "category": "cosmetics.mounts",
+      "title": "Blazing Unicorn",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.blazing_unicorn",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.blazing_unicorn"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:bloodcurl",
+      "category": "cosmetics.mounts",
+      "title": "Bloodcurl",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.bloodcurl",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.bloodcurl"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:bog-tyrant",
+      "category": "cosmetics.mounts",
+      "title": "Bog Tyrant",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.bog_tyrant",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.bog_tyrant"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:bogwurm",
+      "category": "cosmetics.mounts",
+      "title": "Bogwurm",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.bogwurm",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.bogwurm"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:boisterous-bull",
@@ -495,7 +733,228 @@
         "kind": 3,
         "key": "oteryn:content.mount.boisterous_bull"
       },
-      "source_line": 17
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:boreal-owl",
+      "category": "cosmetics.mounts",
+      "title": "Boreal Owl",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.boreal_owl",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.boreal_owl"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:brass-speckled-koi",
+      "category": "cosmetics.mounts",
+      "title": "Brass Speckled Koi",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.brass_speckled_koi",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.brass_speckled_koi"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:bumblebee",
+      "category": "cosmetics.mounts",
+      "title": "Bumblebee",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.bumblebee",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.bumblebee"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:bunny-dray",
+      "category": "cosmetics.mounts",
+      "title": "Bunny Dray",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.bunny_dray",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.bunny_dray"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:caped-snowman",
+      "category": "cosmetics.mounts",
+      "title": "Caped Snowman",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.caped_snowman",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.caped_snowman"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:cave-tarantula",
+      "category": "cosmetics.mounts",
+      "title": "Cave Tarantula",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cave_tarantula",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cave_tarantula"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:cerberus-champion",
+      "category": "cosmetics.mounts",
+      "title": "Cerberus Champion",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cerberus_champion",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cerberus_champion"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:cinderhoof",
+      "category": "cosmetics.mounts",
+      "title": "Cinderhoof",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cinderhoof",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cinderhoof"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:cinnamon-ibex",
+      "category": "cosmetics.mounts",
+      "title": "Cinnamon Ibex",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cinnamon_ibex",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cinnamon_ibex"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:cony-cart",
+      "category": "cosmetics.mounts",
+      "title": "Cony Cart",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cony_cart",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cony_cart"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:copper-fly",
+      "category": "cosmetics.mounts",
+      "title": "Copper Fly",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.copper_fly",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.copper_fly"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:coral-rhea",
+      "category": "cosmetics.mounts",
+      "title": "Coral Rhea",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.coral_rhea",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.coral_rhea"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:coralripper",
+      "category": "cosmetics.mounts",
+      "title": "Coralripper",
+      "price": 570,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.coralripper",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.coralripper"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:corpse-phoenix",
+      "category": "cosmetics.mounts",
+      "title": "Corpse Phoenix",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.corpse_phoenix",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.corpse_phoenix"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:corpsefire-skull",
+      "category": "cosmetics.mounts",
+      "title": "Corpsefire Skull",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.corpsefire_skull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.corpsefire_skull"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:cranium-spider",
+      "category": "cosmetics.mounts",
+      "title": "Cranium Spider",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cranium_spider",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cranium_spider"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:crimson-fang",
+      "category": "cosmetics.mounts",
+      "title": "Crimson Fang",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.crimson_fang",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.crimson_fang"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:crimson-ray",
@@ -511,6 +970,71 @@
       "source_line": 1324
     },
     {
+      "key": "store:mount:cunning-hyaena",
+      "category": "cosmetics.mounts",
+      "title": "Cunning Hyaena",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.cunning_hyaena",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.cunning_hyaena"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:dandelion",
+      "category": "cosmetics.mounts",
+      "title": "Dandelion",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.dandelion",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.dandelion"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:darkfire-devourer",
+      "category": "cosmetics.mounts",
+      "title": "Darkfire Devourer",
+      "price": 1500,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.darkfire_devourer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.darkfire_devourer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:dawn-strayer",
+      "category": "cosmetics.mounts",
+      "title": "Dawn Strayer",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.dawn_strayer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.dawn_strayer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:dawnbringer-pegasus",
+      "category": "cosmetics.mounts",
+      "title": "Dawnbringer Pegasus",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.dawnbringer_pegasus",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.dawnbringer_pegasus"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:mount:death-crawler",
       "category": "cosmetics.mounts",
       "title": "Death Crawler",
@@ -522,6 +1046,19 @@
         "key": "oteryn:content.mount.death_crawler"
       },
       "source_line": 1364
+    },
+    {
+      "key": "store:mount:death-phoenix",
+      "category": "cosmetics.mounts",
+      "title": "Death Phoenix",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.death_phoenix",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.death_phoenix"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:desert-king",
@@ -537,6 +1074,201 @@
       "source_line": 1372
     },
     {
+      "key": "store:mount:doom-skull",
+      "category": "cosmetics.mounts",
+      "title": "Doom Skull",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.doom_skull",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.doom_skull"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:doombringer",
+      "category": "cosmetics.mounts",
+      "title": "Doombringer",
+      "price": 780,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.doombringer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.doombringer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:dreadhare",
+      "category": "cosmetics.mounts",
+      "title": "Dreadhare",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.dreadhare",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.dreadhare"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:dusk-pryer",
+      "category": "cosmetics.mounts",
+      "title": "Dusk Pryer",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.dusk_pryer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.dusk_pryer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:ebony-tiger",
+      "category": "cosmetics.mounts",
+      "title": "Ebony Tiger",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.ebony_tiger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.ebony_tiger"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:ember-saurian",
+      "category": "cosmetics.mounts",
+      "title": "Ember Saurian",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.ember_saurian",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.ember_saurian"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:emerald-raven",
+      "category": "cosmetics.mounts",
+      "title": "Emerald Raven",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.emerald_raven",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.emerald_raven"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:emerald-sphinx",
+      "category": "cosmetics.mounts",
+      "title": "Emerald Sphinx",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.emerald_sphinx",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.emerald_sphinx"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:emerald-waccoon",
+      "category": "cosmetics.mounts",
+      "title": "Emerald Waccoon",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.emerald_waccoon",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.emerald_waccoon"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:emperor-deer",
+      "category": "cosmetics.mounts",
+      "title": "Emperor Deer",
+      "price": 660,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.emperor_deer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.emperor_deer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:ether-badger",
+      "category": "cosmetics.mounts",
+      "title": "Ether Badger",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.ether_badger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.ether_badger"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:eventide-nandu",
+      "category": "cosmetics.mounts",
+      "title": "Eventide Nandu",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.eventide_nandu",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.eventide_nandu"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:feral-tiger",
+      "category": "cosmetics.mounts",
+      "title": "Feral Tiger",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.feral_tiger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.feral_tiger"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:festive-mammoth",
+      "category": "cosmetics.mounts",
+      "title": "Festive Mammoth",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.festive_mammoth",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.festive_mammoth"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:festive-snowman",
+      "category": "cosmetics.mounts",
+      "title": "Festive Snowman",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.festive_snowman",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.festive_snowman"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:mount:flamesteed",
       "category": "cosmetics.mounts",
       "title": "Flamesteed",
@@ -548,6 +1280,318 @@
         "key": "oteryn:content.mount.flamesteed"
       },
       "source_line": 1502
+    },
+    {
+      "key": "store:mount:flitterkatzen",
+      "category": "cosmetics.mounts",
+      "title": "Flitterkatzen",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.flitterkatzen",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.flitterkatzen"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:floating-augur",
+      "category": "cosmetics.mounts",
+      "title": "Floating Augur",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.floating_augur",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.floating_augur"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:floating-kashmir",
+      "category": "cosmetics.mounts",
+      "title": "Floating Kashmir",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.floating_kashmir",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.floating_kashmir"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:floating-sage",
+      "category": "cosmetics.mounts",
+      "title": "Floating Sage",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.floating_sage",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.floating_sage"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:floating-scholar",
+      "category": "cosmetics.mounts",
+      "title": "Floating Scholar",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.floating_scholar",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.floating_scholar"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:flying-divan",
+      "category": "cosmetics.mounts",
+      "title": "Flying Divan",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.flying_divan",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.flying_divan"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:frostbringer",
+      "category": "cosmetics.mounts",
+      "title": "Frostbringer",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.frostbringer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.frostbringer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:frostflare",
+      "category": "cosmetics.mounts",
+      "title": "Frostflare",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.frostflare",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.frostflare"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:glacier-vagabond",
+      "category": "cosmetics.mounts",
+      "title": "Glacier Vagabond",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.glacier_vagabond",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.glacier_vagabond"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:glacier-wyrm",
+      "category": "cosmetics.mounts",
+      "title": "Glacier Wyrm",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.glacier_wyrm",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.glacier_wyrm"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:gloom-widow",
+      "category": "cosmetics.mounts",
+      "title": "Gloom Widow",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.gloom_widow",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.gloom_widow"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:gloomwurm",
+      "category": "cosmetics.mounts",
+      "title": "Gloomwurm",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.gloomwurm",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.gloomwurm"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:gold-sphinx",
+      "category": "cosmetics.mounts",
+      "title": "Gold Sphinx",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.gold_sphinx",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.gold_sphinx"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:golden-dragonfly",
+      "category": "cosmetics.mounts",
+      "title": "Golden Dragonfly",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.golden_dragonfly",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.golden_dragonfly"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:gorgon-hydra",
+      "category": "cosmetics.mounts",
+      "title": "Gorgon Hydra",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.gorgon_hydra",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.gorgon_hydra"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:gorongra",
+      "category": "cosmetics.mounts",
+      "title": "Gorongra",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.gorongra",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.gorongra"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:hailstorm-fury",
+      "category": "cosmetics.mounts",
+      "title": "Hailstorm Fury",
+      "price": 780,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.hailstorm_fury",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.hailstorm_fury"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:highland-yak",
+      "category": "cosmetics.mounts",
+      "title": "Highland Yak",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.highland_yak",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.highland_yak"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:holiday-mammoth",
+      "category": "cosmetics.mounts",
+      "title": "Holiday Mammoth",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.holiday_mammoth",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.holiday_mammoth"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:hyacinth",
+      "category": "cosmetics.mounts",
+      "title": "Hyacinth (Mount)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.hyacinth",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.hyacinth"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:icebreacher",
+      "category": "cosmetics.mounts",
+      "title": "Icebreacher",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.icebreacher",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.icebreacher"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:ink-spotted-koi",
+      "category": "cosmetics.mounts",
+      "title": "Ink Spotted Koi",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.ink_spotted_koi",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.ink_spotted_koi"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:ivory-fang",
+      "category": "cosmetics.mounts",
+      "title": "Ivory Fang",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.ivory_fang",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.ivory_fang"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:jackalope",
+      "category": "cosmetics.mounts",
+      "title": "Jackalope",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jackalope",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jackalope"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:jade-lion",
@@ -576,6 +1620,58 @@
       "source_line": 1694
     },
     {
+      "key": "store:mount:jade-shrine",
+      "category": "cosmetics.mounts",
+      "title": "Jade Shrine",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jade_shrine",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jade_shrine"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:jousting-eagle",
+      "category": "cosmetics.mounts",
+      "title": "Jousting Eagle",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jousting_eagle",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jousting_eagle"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:jousting-horse",
+      "category": "cosmetics.mounts",
+      "title": "Jousting Horse",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jousting_horse",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jousting_horse"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:jungle-saurian",
+      "category": "cosmetics.mounts",
+      "title": "Jungle Saurian",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.jungle_saurian",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.jungle_saurian"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:mount:jungle-tiger",
       "category": "cosmetics.mounts",
       "title": "Jungle Tiger",
@@ -585,6 +1681,58 @@
       "preview": {
         "kind": 3,
         "key": "oteryn:content.mount.jungle_tiger"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:lagoon-saurian",
+      "category": "cosmetics.mounts",
+      "title": "Lagoon Saurian",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.lagoon_saurian",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.lagoon_saurian"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:leaf-locust",
+      "category": "cosmetics.mounts",
+      "title": "Leaf Locust",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.leaf_locust",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.leaf_locust"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:leafscuttler",
+      "category": "cosmetics.mounts",
+      "title": "Leafscuttler",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.leafscuttler",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.leafscuttler"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:magic-carpet-mount",
+      "category": "cosmetics.mounts",
+      "title": "Magic Carpet (Mount)",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.magic_carpet_mount",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.magic_carpet_mount"
       },
       "source_line": 0
     },
@@ -599,7 +1747,98 @@
         "kind": 3,
         "key": "oteryn:content.mount.magma_skull"
       },
-      "source_line": 17
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:marsh-toad",
+      "category": "cosmetics.mounts",
+      "title": "Marsh Toad",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.marsh_toad",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.marsh_toad"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:merry-mammoth",
+      "category": "cosmetics.mounts",
+      "title": "Merry Mammoth",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.merry_mammoth",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.merry_mammoth"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:mint-ibex",
+      "category": "cosmetics.mounts",
+      "title": "Mint Ibex",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.mint_ibex",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.mint_ibex"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:mould-shell",
+      "category": "cosmetics.mounts",
+      "title": "Mould Shell",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.mould_shell",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.mould_shell"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:mouldpincer",
+      "category": "cosmetics.mounts",
+      "title": "Mouldpincer",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.mouldpincer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.mouldpincer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:muffled-snowman",
+      "category": "cosmetics.mounts",
+      "title": "Muffled Snowman",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.muffled_snowman",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.muffled_snowman"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:mystic-raven",
+      "category": "cosmetics.mounts",
+      "title": "Mystic Raven",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.mystic_raven",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.mystic_raven"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:nethersteed",
@@ -615,6 +1854,97 @@
       "source_line": 1824
     },
     {
+      "key": "store:mount:night-locust",
+      "category": "cosmetics.mounts",
+      "title": "Night Locust",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.night_locust",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.night_locust"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:night-waccoon",
+      "category": "cosmetics.mounts",
+      "title": "Night Waccoon",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.night_waccoon",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.night_waccoon"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:nightdweller",
+      "category": "cosmetics.mounts",
+      "title": "Nightdweller",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.nightdweller",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.nightdweller"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:nightmarish-crocovile",
+      "category": "cosmetics.mounts",
+      "title": "Nightmarish Crocovile",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.nightmarish_crocovile",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.nightmarish_crocovile"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:nightstinger",
+      "category": "cosmetics.mounts",
+      "title": "Nightstinger",
+      "price": 780,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.nightstinger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.nightstinger"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:noctungra",
+      "category": "cosmetics.mounts",
+      "title": "Noctungra",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.noctungra",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.noctungra"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:obsidian-shrine",
+      "category": "cosmetics.mounts",
+      "title": "Obsidian Shrine",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.obsidian_shrine",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.obsidian_shrine"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:mount:obstinate-ox",
       "category": "cosmetics.mounts",
       "title": "Obstinate Ox",
@@ -625,7 +1955,306 @@
         "kind": 3,
         "key": "oteryn:content.mount.obstinate_ox"
       },
-      "source_line": 17
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:pallbearer",
+      "category": "cosmetics.mounts",
+      "title": "Pallbearer",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.pallbearer",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.pallbearer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:parade-horse",
+      "category": "cosmetics.mounts",
+      "title": "Parade Horse",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.parade_horse",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.parade_horse"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:pearl-locust",
+      "category": "cosmetics.mounts",
+      "title": "Pearl Locust",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.pearl_locust",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.pearl_locust"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:peony",
+      "category": "cosmetics.mounts",
+      "title": "Peony",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.peony",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.peony"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:plumfish",
+      "category": "cosmetics.mounts",
+      "title": "Plumfish",
+      "price": 570,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.plumfish",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.plumfish"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:poisonbane",
+      "category": "cosmetics.mounts",
+      "title": "Poisonbane",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.poisonbane",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.poisonbane"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:poppy-ibex",
+      "category": "cosmetics.mounts",
+      "title": "Poppy Ibex",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.poppy_ibex",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.poppy_ibex"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:prismatic-unicorn",
+      "category": "cosmetics.mounts",
+      "title": "Prismatic Unicorn",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.prismatic_unicorn",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.prismatic_unicorn"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:rabbit-rickshaw",
+      "category": "cosmetics.mounts",
+      "title": "Rabbit Rickshaw",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.rabbit_rickshaw",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.rabbit_rickshaw"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:radiant-raven",
+      "category": "cosmetics.mounts",
+      "title": "Radiant Raven",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.radiant_raven",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.radiant_raven"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:razorcreep",
+      "category": "cosmetics.mounts",
+      "title": "Razorcreep",
+      "price": 780,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.razorcreep",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.razorcreep"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:reed-lurker",
+      "category": "cosmetics.mounts",
+      "title": "Reed Lurker",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.reed_lurker",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.reed_lurker"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:rift-watcher",
+      "category": "cosmetics.mounts",
+      "title": "Rift Watcher",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.rift_watcher",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.rift_watcher"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:ringtail-waccoon",
+      "category": "cosmetics.mounts",
+      "title": "Ringtail Waccoon",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.ringtail_waccoon",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.ringtail_waccoon"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:river-crocovile",
+      "category": "cosmetics.mounts",
+      "title": "River Crocovile",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.river_crocovile",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.river_crocovile"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:rune-watcher",
+      "category": "cosmetics.mounts",
+      "title": "Rune Watcher",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.rune_watcher",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.rune_watcher"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:rustwurm",
+      "category": "cosmetics.mounts",
+      "title": "Rustwurm",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.rustwurm",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.rustwurm"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:sanguine-frog",
+      "category": "cosmetics.mounts",
+      "title": "Sanguine Frog",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.sanguine_frog",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.sanguine_frog"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:satin-moth",
+      "category": "cosmetics.mounts",
+      "title": "Satin Moth",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.satin_moth",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.satin_moth"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:savanna-ostrich",
+      "category": "cosmetics.mounts",
+      "title": "Savanna Ostrich",
+      "price": 500,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.savanna_ostrich",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.savanna_ostrich"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:scruffy-hyaena",
+      "category": "cosmetics.mounts",
+      "title": "Scruffy Hyaena",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.scruffy_hyaena",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.scruffy_hyaena"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:sea-devil",
+      "category": "cosmetics.mounts",
+      "title": "Sea Devil",
+      "price": 570,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.sea_devil",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.sea_devil"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:shadow-claw",
+      "category": "cosmetics.mounts",
+      "title": "Shadow Claw",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.shadow_claw",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.shadow_claw"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:shadow-draptor",
@@ -639,6 +2268,149 @@
         "key": "oteryn:content.mount.shadow_draptor"
       },
       "source_line": 2040
+    },
+    {
+      "key": "store:mount:shadow-hart",
+      "category": "cosmetics.mounts",
+      "title": "Shadow Hart",
+      "price": 660,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.shadow_hart",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.shadow_hart"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:shadow-sphinx",
+      "category": "cosmetics.mounts",
+      "title": "Shadow Sphinx",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.shadow_sphinx",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.shadow_sphinx"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:siegebreaker",
+      "category": "cosmetics.mounts",
+      "title": "Siegebreaker",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.siegebreaker",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.siegebreaker"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:silverneck",
+      "category": "cosmetics.mounts",
+      "title": "Silverneck",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.silverneck",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.silverneck"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:skybreaker-pegasus",
+      "category": "cosmetics.mounts",
+      "title": "Skybreaker Pegasus",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.skybreaker_pegasus",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.skybreaker_pegasus"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:slagsnare",
+      "category": "cosmetics.mounts",
+      "title": "Slagsnare",
+      "price": 780,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.slagsnare",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.slagsnare"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:snow-pelt",
+      "category": "cosmetics.mounts",
+      "title": "Snow Pelt",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.snow_pelt",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.snow_pelt"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:snow-strider",
+      "category": "cosmetics.mounts",
+      "title": "Snow Strider",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.snow_strider",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.snow_strider"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:snowy-owl",
+      "category": "cosmetics.mounts",
+      "title": "Snowy Owl",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.snowy_owl",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.snowy_owl"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:soul-phoenix",
+      "category": "cosmetics.mounts",
+      "title": "Soul Phoenix",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.soul_phoenix",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.soul_phoenix"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:steel-bee",
+      "category": "cosmetics.mounts",
+      "title": "Steel Bee",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.steel_bee",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.steel_bee"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:steelbeak",
@@ -664,7 +2436,72 @@
         "kind": 3,
         "key": "oteryn:content.mount.surly_steer"
       },
-      "source_line": 17
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:swamp-crocovile",
+      "category": "cosmetics.mounts",
+      "title": "Swamp Crocovile",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.swamp_crocovile",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.swamp_crocovile"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:swamp-snapper",
+      "category": "cosmetics.mounts",
+      "title": "Swamp Snapper",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.swamp_snapper",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.swamp_snapper"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:tangerine-flecked-koi",
+      "category": "cosmetics.mounts",
+      "title": "Tangerine Flecked Koi",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tangerine_flecked_koi",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tangerine_flecked_koi"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:tawny-owl",
+      "category": "cosmetics.mounts",
+      "title": "Tawny Owl",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tawny_owl",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tawny_owl"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:tempest",
+      "category": "cosmetics.mounts",
+      "title": "Tempest",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tempest",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tempest"
+      },
+      "source_line": 0
     },
     {
       "key": "store:mount:tombstinger",
@@ -678,6 +2515,175 @@
         "key": "oteryn:content.mount.tombstinger"
       },
       "source_line": 2168
+    },
+    {
+      "key": "store:mount:topaz-shrine",
+      "category": "cosmetics.mounts",
+      "title": "Topaz Shrine",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.topaz_shrine",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.topaz_shrine"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:tourney-horse",
+      "category": "cosmetics.mounts",
+      "title": "Tourney Horse",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tourney_horse",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tourney_horse"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:toxic-toad",
+      "category": "cosmetics.mounts",
+      "title": "Toxic Toad",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.toxic_toad",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.toxic_toad"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:tundra-rambler",
+      "category": "cosmetics.mounts",
+      "title": "Tundra Rambler",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.tundra_rambler",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.tundra_rambler"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:venompaw",
+      "category": "cosmetics.mounts",
+      "title": "Venompaw",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.venompaw",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.venompaw"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:void-watcher",
+      "category": "cosmetics.mounts",
+      "title": "Void Watcher",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.void_watcher",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.void_watcher"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:voracious-hyaena",
+      "category": "cosmetics.mounts",
+      "title": "Voracious Hyaena",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.voracious_hyaena",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.voracious_hyaena"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:winter-king",
+      "category": "cosmetics.mounts",
+      "title": "Winter King",
+      "price": 450,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.winter_king",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.winter_king"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:winterstride",
+      "category": "cosmetics.mounts",
+      "title": "Winterstride",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.winterstride",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.winterstride"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:wolpertinger",
+      "category": "cosmetics.mounts",
+      "title": "Wolpertinger",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.wolpertinger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.wolpertinger"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:woodland-prince",
+      "category": "cosmetics.mounts",
+      "title": "Woodland Prince",
+      "price": 780,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.woodland_prince",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.woodland_prince"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:wrathfire-pegasus",
+      "category": "cosmetics.mounts",
+      "title": "Wrathfire Pegasus",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.wrathfire_pegasus",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.wrathfire_pegasus"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:mount:zaoan-badger",
+      "category": "cosmetics.mounts",
+      "title": "Zaoan Badger",
+      "price": 690,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:content.mount.zaoan_badger",
+      "preview": {
+        "kind": 3,
+        "key": "oteryn:content.mount.zaoan_badger"
+      },
+      "source_line": 0
     },
     {
       "key": "store:outfit:aerial-disciple",
@@ -745,6 +2751,19 @@
       "source_line": 1437
     },
     {
+      "key": "store:outfit:beastmaster",
+      "category": "cosmetics.outfits",
+      "title": "Beastmaster (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.beastmaster",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.beastmaster"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:outfit:beekeeper",
       "category": "cosmetics.outfits",
       "title": "Beekeeper (full outfit)",
@@ -810,6 +2829,45 @@
       "source_line": 0
     },
     {
+      "key": "store:outfit:champion",
+      "category": "cosmetics.outfits",
+      "title": "Champion (full outfit)",
+      "price": 570,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.champion",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.champion"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:outfit:chaos-acolyte",
+      "category": "cosmetics.outfits",
+      "title": "Chaos Acolyte (full outfit)",
+      "price": 900,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.chaos_acolyte",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.chaos_acolyte"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:outfit:conjurer",
+      "category": "cosmetics.outfits",
+      "title": "Conjurer (full outfit)",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.conjurer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.conjurer"
+      },
+      "source_line": 0
+    },
+    {
       "key": "store:outfit:darklight-evoker",
       "category": "cosmetics.outfits",
       "title": "Darklight Evoker (full outfit)",
@@ -821,6 +2879,19 @@
         "key": "oteryn:outfit.darklight_evoker"
       },
       "source_line": 4570
+    },
+    {
+      "key": "store:outfit:death-herald",
+      "category": "cosmetics.outfits",
+      "title": "Death Herald (full outfit)",
+      "price": 600,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.death_herald",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.death_herald"
+      },
+      "source_line": 0
     },
     {
       "key": "store:outfit:doom-knight",
@@ -860,6 +2931,19 @@
         "key": "oteryn:outfit.dragon_slayer"
       },
       "source_line": 6759
+    },
+    {
+      "key": "store:outfit:entrepreneur",
+      "category": "cosmetics.outfits",
+      "title": "Entrepreneur (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.entrepreneur",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.entrepreneur"
+      },
+      "source_line": 0
     },
     {
       "key": "store:outfit:evoker",
@@ -1198,6 +3282,32 @@
         "key": "oteryn:outfit.pumpkin_mummy"
       },
       "source_line": 2690
+    },
+    {
+      "key": "store:outfit:puppeteer",
+      "category": "cosmetics.outfits",
+      "title": "Puppeteer (full outfit)",
+      "price": 870,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.puppeteer",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.puppeteer"
+      },
+      "source_line": 0
+    },
+    {
+      "key": "store:outfit:ranger",
+      "category": "cosmetics.outfits",
+      "title": "Ranger (full outfit)",
+      "price": 750,
+      "currency": "TIBIA_COIN",
+      "unlock_key": "oteryn:outfit.ranger",
+      "preview": {
+        "kind": 2,
+        "key": "oteryn:outfit.ranger"
+      },
+      "source_line": 0
     },
     {
       "key": "store:outfit:retro-citizen",

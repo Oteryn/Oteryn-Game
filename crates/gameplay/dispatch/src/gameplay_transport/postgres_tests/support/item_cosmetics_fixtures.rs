@@ -36,6 +36,10 @@ pub(super) fn run_stock_named_outfit(name: &'static str) -> TestResult {
     )
 }
 
+pub(super) fn run_world_mount(case: positive::Case) -> TestResult {
+    run_configuration(false, false, Some(case), true, None)
+}
+
 pub(super) fn run_stock_glider(ground: bool, missing: bool) -> TestResult {
     run_configuration(
         ground,
@@ -77,6 +81,8 @@ pub(super) fn scenario(
     ot_only: Option<u32>,
 ) -> TestResult {
     let key = match case {
+        Some(positive::Case::AlphaBox) => "oteryn:item.tibia.i50063",
+        Some(positive::Case::Gloothomotive) => "oteryn:item.tibia.i37397",
         Some(positive::Case::Glider { .. }) => "oteryn:item.tibia.i21897",
         Some(
             positive::Case::Parts
@@ -183,15 +189,23 @@ pub(super) fn scenario(
             let rule = oteryn_gameplay_items::item_cosmetics::rule(key).ok_or("doll rule")?;
             let cosmetics = native.cosmetics().ok_or("complete production cosmetics")?;
             assert!(
-                oteryn_gameplay_items::item_cosmetics::qualify_rule(catalogue, rule, cosmetics).is_ok(),
+                oteryn_gameplay_items::item_cosmetics::qualify_rule(catalogue, rule, cosmetics)
+                    .is_ok(),
                 "the refusal must not come from a missing random outcome"
             );
             assert!(
-                !oteryn_gameplay_items::item_cosmetics::source_policy_allows(rule, Some(cosmetics), key),
+                !oteryn_gameplay_items::item_cosmetics::source_policy_allows(
+                    rule,
+                    Some(cosmetics),
+                    key
+                ),
                 "this case deliberately has no acquisition admission"
             );
         }
-        if !matches!(case, Some(positive::Case::Glider { .. } | positive::Case::Pegasus)) {
+        if !matches!(
+            case,
+            Some(positive::Case::Glider { .. } | positive::Case::Pegasus)
+        ) {
             assert!(oteryn_gameplay_items::item_cosmetics::rule(key).is_some());
         }
         if ot_only.is_some() {
@@ -304,7 +318,12 @@ pub(super) fn scenario(
             Some(harness.root.clone()),
         );
         let mut owner = deps.owner(&harness, &authority);
-        if case.is_some_and(|case| !matches!(case, positive::Case::Pegasus)) {
+        if case.is_some_and(|case| {
+            !matches!(
+                case,
+                positive::Case::Pegasus | positive::Case::AlphaBox | positive::Case::Gloothomotive
+            )
+        }) {
             owner.premium_coordinator = Some(&coordinator);
             owner.admit_premium(id(40), deps.admitted.game_session_id);
             assert!(
@@ -366,6 +385,14 @@ pub(super) fn scenario(
                 (key, 1),
             ],
             Some(positive::Case::Pegasus) => vec![(key, 1); 2],
+            Some(positive::Case::AlphaBox) => vec![(key, 2)],
+            Some(positive::Case::Gloothomotive) => {
+                vec![
+                    (key, 1),
+                    ("oteryn:item.tibia.i37398", 1),
+                    ("oteryn:item.tibia.i37398", 1),
+                ]
+            }
             _ => vec![(key, 1)],
         };
         if afflicted {
@@ -485,9 +512,15 @@ pub(super) fn scenario(
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
-        let (_end, result, _actual) =
-            super::rust_lottery_fixtures::exchange(&owner, admitted, 1, &payload, reference(key), None)
-                .await?;
+        let (_end, result, _actual) = super::rust_lottery_fixtures::exchange(
+            &owner,
+            admitted,
+            1,
+            &payload,
+            reference(key),
+            None,
+        )
+        .await?;
         assert_eq!(result, UseDisposition::NotPossible);
         let after: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(source.as_slice()).fetch_one(&harness.pool).await?;
@@ -554,3 +587,6 @@ pub(super) mod ot_only;
 
 #[path = "item_cosmetics/glider.rs"]
 pub(super) mod glider;
+
+#[path = "item_cosmetics/world_mount.rs"]
+mod world_mount;

@@ -65,15 +65,15 @@ pub(super) async fn run(
     assert_eq!(
         rules.len(),
         51,
-        "47 creature rules, three one-item targets, and the complete Glider recipe"
+        "47 creature rules, two one-item targets, and two complete construction recipes"
     );
     assert_eq!(
         rules.iter().filter(|rule| rule.single_item_use()).count(),
-        50
+        49
     );
     assert_eq!(
         rules.iter().filter(|rule| !rule.single_item_use()).count(),
-        1
+        2
     );
     let mut retained = admitted(owner, actor, session)?;
     owner

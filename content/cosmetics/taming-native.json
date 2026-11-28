@@ -852,7 +852,7 @@
   },
   {
     "item_key": "oteryn:item.tibia.i37397",
-    "target_item_key": "oteryn:item.tibia.i37397",
+    "target_item_key": "oteryn:item.tibia.i37398",
     "creature_key": "",
     "mount_key": "oteryn:content.mount.wind_up_loco",
     "grant_key": "oteryn:taming.wind_up_loco",
@@ -861,7 +861,11 @@
     "failures": [],
     "success_text": "You have assembled the wind-up loco.",
     "achievement_key": "oteryn:achievement/engine_driver",
-    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/mounts/mounts.lua:70"
+    "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/mounts/mounts.lua:70",
+    "required_items": [
+      "oteryn:item.tibia.i37397",
+      "oteryn:item.tibia.i37398"
+    ]
   },
   {
     "item_key": "oteryn:item.tibia.i39548",

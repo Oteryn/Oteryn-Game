@@ -131,6 +131,8 @@ IDS |= {21504, 21505}
 IDS |= {21466, 21389}
 # M07 retained Realm key and source bricklayers kit for the assigned repair stages.
 IDS |= {14682, 7785}
+# Wind-Up Key portable custody, matching the Global item definition and client flags.
+IDS |= {37397}
 # M07 deterministic siege burning uses the existing Fire Bug as a retained tool.
 IDS |= {5467}
 # Tower Defence delivers the Watchtower parcel; Troll Sabotage exchanges Jerom's
@@ -713,6 +715,10 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         canonical,
         packet["records"] + packet["custody_promotions"],
     )
+
+    import s06_golden_box_profile
+
+    s06_golden_box_profile.admit(root, generated, profile_path, manifest_path, order, canonical)
 
 
 def admit_records(root, generated, profile_path, manifest_path, order, canonical, records):

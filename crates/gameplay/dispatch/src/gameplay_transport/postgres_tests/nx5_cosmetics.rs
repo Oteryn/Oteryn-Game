@@ -50,23 +50,39 @@ fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetic
                 count += 1;
             }
             // The merged native producer retains all 46 global rules and adds
-            // the Glooth Glider, Pegasus Feather and five Wiki-qualified outfit item actions.
+            // the complete constructions, direct mount items and five outfit item actions.
             let global: serde_json::Value = serde_json::from_str(include_str!(
                 "../../../../../../tools/content-schema/native-gameplay/item-cosmetic-actions.json"
-            )).map_err(|error| error.to_string())?;
-            let mut expected = global["rules"].as_array().ok_or("global rules")?
+            ))
+            .map_err(|error| error.to_string())?;
+            let mut expected = global["rules"]
+                .as_array()
+                .ok_or("global rules")?
                 .iter()
-                .filter(|rule| !matches!(rule["mode"].as_str(), Some("random_outfit" | "random_mount")))
+                .filter(|rule| {
+                    !matches!(
+                        rule["mode"].as_str(),
+                        Some("random_outfit" | "random_mount")
+                    )
+                })
                 .map(|rule| rule["item_id"].as_u64().ok_or("global item identity"))
                 .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
             assert_eq!(expected.len(), 46);
-            for item in [21897, 40578, 44753, 44754, 48424, 48514, 48515] {
+            for item in [
+                21897, 37397, 40578, 44753, 44754, 48424, 48514, 48515, 50063,
+            ] {
                 assert!(expected.insert(item), "separate source cohort for {item}");
             }
-            let actual = catalogue.rules.iter()
-                .filter(|rule| !matches!(rule.mode,
-                    oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit
-                    | oteryn_gameplay_items::item_cosmetics::Mode::RandomMount))
+            let actual = catalogue
+                .rules
+                .iter()
+                .filter(|rule| {
+                    !matches!(
+                        rule.mode,
+                        oteryn_gameplay_items::item_cosmetics::Mode::RandomOutfit
+                            | oteryn_gameplay_items::item_cosmetics::Mode::RandomMount
+                    )
+                })
                 .map(|rule| u64::from(rule.item_id))
                 .collect::<std::collections::BTreeSet<_>>();
             assert_eq!(actual, expected);
@@ -78,15 +94,21 @@ fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetic
             let grant_key = "oteryn:item-grant.outfit.512-513.base";
             // Raw looks remain ambiguous; only the authored mapping selects a primary.
             assert!(cosmetics.outfit_pair(&[512, 513]).is_none());
-            let resolved = oteryn_gameplay_items::item_cosmetics::resolve(
-                catalogue, &cosmetics, grant_key,
-            ).map_err(|e| format!("source-bound alias resolution: {e:?}"))?;
+            let resolved =
+                oteryn_gameplay_items::item_cosmetics::resolve(catalogue, &cosmetics, grant_key)
+                    .map_err(|e| format!("source-bound alias resolution: {e:?}"))?;
             assert_eq!(resolved.cosmetic_key, "oteryn:outfit.crystal_warlord");
             assert!(cosmetics.outfit_for_grant(&[514, 516], grant_key).is_none());
             assert!(cosmetics.outfit_for_grant(&[512, 513], "unknown").is_none());
             let legacy = EarnedCosmetic::Outfit("oteryn:content.outfit.crystal_warlord_outfits");
-            assert_eq!(cosmetics.earned_unlock(grant_key, PROVENANCE, legacy), UnlockFact::Compatible);
-            assert_eq!(cosmetics.earned_unlock(grant_key, "wrong", legacy), UnlockFact::Incompatible);
+            assert_eq!(
+                cosmetics.earned_unlock(grant_key, PROVENANCE, legacy),
+                UnlockFact::Compatible
+            );
+            assert_eq!(
+                cosmetics.earned_unlock(grant_key, "wrong", legacy),
+                UnlockFact::Incompatible
+            );
             let facts = vec![
                 (
                     "oteryn:appearance-grant/quest/soul-war/revenant-base".to_owned(),

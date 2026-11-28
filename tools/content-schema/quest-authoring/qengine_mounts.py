@@ -26,6 +26,34 @@ def append_pegasus_feather(packet):
     packet['rules'].sort(key=lambda row: row['item_id'])
 
 
+def append_world_items(packet):
+    # Global names the exact Key and Loco. Crystal (Global silent) mounts.lua:240-250
+    # consumes both, while the source config at line 70 supplies the success message.
+    donor = 'https://tibia.fandom.com/wiki/Gloothomotive'
+    grant = 'oteryn:item-grant.mount.194'
+    packet['grants'].append({'key': grant, 'kind': 'mount', 'mount_id': 194,
+                             'look_type': 1459, 'donor': donor})
+    packet['rules'].append({'item_id': 37397, 'donor': donor, 'mode': 'pieces',
+                            'premium': False, 'target_item_id': 37398,
+                            'required_items': [37397, 37398], 'choices': [{
+                                'grants': [grant], 'owned': grant, 'required': [], 'cues': [],
+                                'feedback': 'You wind the small locomotive up. It starts to move ... and grows!',
+                                'achievements': ['oteryn:achievement/engine_driver',
+                                                 'oteryn:achievement/natural_born_cowboy'],
+                            }]})
+    donor = 'https://tibia.fandom.com/wiki/Demon_in_a_Golden_Box'
+    grant = 'oteryn:item-grant.mount.239'
+    packet['grants'].append({'key': grant, 'kind': 'mount', 'mount_id': 239,
+                             'look_type': 1827, 'donor': donor})
+    packet['rules'].append({'item_id': 50063, 'donor': donor, 'mode': 'direct',
+                            'premium': False, 'choices': [{
+                                'grants': [grant], 'owned': grant, 'required': [], 'cues': [],
+                                'achievements': ['oteryn:achievement/alpha_rider'],
+                            }]})
+    packet['grants'].sort(key=lambda row: row['key'])
+    packet['rules'].sort(key=lambda row: row['item_id'])
+
+
 def read_catalogue_xml(corpus, manifest):
     # The 201189f8 Git tree names the same blob as the retained Crystal Summer XML.
     row = next(row for row in manifest['files'] if row['path'] == MOUNTS_XML
@@ -60,6 +88,9 @@ def populate(root, inputs, looks, source, item_packet):
             raise ValueError('conflicting retained mount identities')
     def definition(row, key, citation):
         look = int(row['clientid'])
+        # Global's Dreadhare and Wolpertinger pages name opposite looks to the
+        # Crystal XML. Keep the production identities and correct the visuals.
+        look = {'Dreadhare': 907, 'Wolpertinger': 906}.get(row['name'], look)
         if look not in looks:
             raise ValueError('mount appearance not admitted: ' + row['name'])
         if key is None:

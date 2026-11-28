@@ -458,7 +458,11 @@ def build():
         if set(sexes) != {"0", "1"}:
             raise ValueError("unpaired donor outfit: " + name)
         female, male = sexes["0"], sexes["1"]
-        if any(int(s["looktype"]) not in looks for s in (female, male)):
+        female_look, male_look = int(female["looktype"]), int(male["looktype"])
+        if name == "Beastmaster":
+            # Global Beastmaster Outfits gives female 637 and male 636.
+            female_look, male_look = 637, 636
+        if female_look not in looks or male_look not in looks:
             continue  # Newer looks need a later admitted appearance corpus; never fabricate one.
         key = "oteryn:outfit." + name.lower().replace(" ", "_").replace("-", "_")
         # Monk is explicitly addon-unavailable; all other admitted quest looks use bits 1/2.
@@ -467,8 +471,8 @@ def build():
             if name == "Monk"
             else min(
                 2,
-                addon_patterns[int(female["looktype"])],
-                addon_patterns[int(male["looktype"])],
+                addon_patterns[female_look],
+                addon_patterns[male_look],
             )
         )
         outfits.append(
@@ -476,12 +480,12 @@ def build():
                 "key": key,
                 "revision": "crystal-9f5a72c-r1",
                 "female": {
-                    "id": int(female["looktype"]),
-                    "source_record_sha256": looks[int(female["looktype"])],
+                    "id": female_look,
+                    "source_record_sha256": looks[female_look],
                 },
                 "male": {
-                    "id": int(male["looktype"]),
-                    "source_record_sha256": looks[int(male["looktype"])],
+                    "id": male_look,
+                    "source_record_sha256": looks[male_look],
                 },
                 "addon_count": addons,
                 "starter_female": female["unlocked"] == "yes",
@@ -534,6 +538,7 @@ def build():
         },
     )
     qengine_mounts.append_pegasus_feather(item_packet)
+    qengine_mounts.append_world_items(item_packet)
     earned_outfit_catalogue.append_consumptive_outfit_grants(item_packet, outfits)
     # Retain every source row, but bind construction costs to the existing atomic
     # pieces owner. The ordinary one-item taming path cannot execute these rows.

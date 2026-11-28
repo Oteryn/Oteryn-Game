@@ -82,9 +82,13 @@ async fn prepare_with_custody(
     if !rules::source_policy_allows(rule, native.cosmetics(), &definition.production_key) {
         return Ok(Preparation::Refused(UseDisposition::NotPossible));
     }
-    if request.target.is_some() {
-        return Ok(Preparation::Refused(UseDisposition::NothingToUse));
-    }
+    let selected = match (rule.target_item_id, request.target) {
+        (None, None) => None,
+        (Some(_), Some(target)) if source_is_carried && target != request.source => {
+            Some(sqlx::types::Uuid::from_bytes(target))
+        }
+        _ => return Ok(Preparation::Refused(UseDisposition::NothingToUse)),
+    };
     // W19_CANONICAL_COSMETICS_SOURCE_MISSING. The source table does not promote a
     // canonical catalogue; this is the current READY_UNPOPULATED production case.
     let Some(content) = native
@@ -131,7 +135,8 @@ async fn prepare_with_custody(
     let owned = EarnedCosmetics {
         content,
         facts: &facts,
-    }.with_sex(sex);
+    }
+    .with_sex(sex);
     let component_keys: Vec<_> = rule.components.iter().map(|p| p.key.as_str()).collect();
     let rows: Vec<(String, i64)> = sqlx::query_as(
         "SELECT component_key,contributions FROM game_character_item_cosmetic_progress WHERE character_id=encode($1,'hex')::uuid AND component_key=ANY($2::text[]) FOR UPDATE",
@@ -190,10 +195,11 @@ async fn prepare_with_custody(
         // Crystal getItemCount/removeItem include nested carried bags. Use the same
         // bounded root proof as ordinary item USE; neither depot nor Ground is eligible.
         let row = sqlx::query(
-            "SELECT uuid_send(i.item_instance_id) AS item,to_jsonb(i) AS before_item,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal)::text AS ordinal,CASE WHEN n.item_instance_id IS NULL THEN 1 ELSE 4 END AS source_kind FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($1,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL WHERE i.world_id=encode($4,'hex')::uuid AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR (n.world_id=i.world_id AND owner.owner_character=encode($1,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) AND i.definition_family='Item' AND i.definition_production_key=$2 AND i.definition_revision_ref=$3 AND i.lifecycle=1 AND i.quantity>0 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
+            "SELECT uuid_send(i.item_instance_id) AS item,to_jsonb(i) AS before_item,uuid_send(coalesce(e.parent_item_instance_id,n.parent_item_instance_id)) AS parent,coalesce(e.placement_ordinal,n.placement_ordinal)::text AS ordinal,CASE WHEN n.item_instance_id IS NULL THEN 1 ELSE 4 END AS source_kind FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($1,'hex')::uuid LEFT JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id LEFT JOIN game_item_nested_entries n ON n.item_instance_id=i.item_instance_id LEFT JOIN LATERAL game_item_loop_owner(n.parent_item_instance_id) owner ON n.item_instance_id IS NOT NULL WHERE i.world_id=encode($4,'hex')::uuid AND ((e.world_id=i.world_id AND b.world_id=i.world_id) OR (n.world_id=i.world_id AND owner.owner_character=encode($1,'hex')::uuid AND owner.depth BETWEEN 0 AND 7)) AND i.definition_family='Item' AND i.definition_production_key=$2 AND i.definition_revision_ref=$3 AND i.lifecycle=1 AND i.quantity>0 AND ($5::uuid IS NULL OR i.item_instance_id=$5) ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i",
         ).bind(fence.character_id.as_bytes().as_slice()).bind(&key)
             .bind(&policy.record().production_definition.revision_ref)
             .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+            .bind(rule.target_item_id.filter(|target| *target == *item).and(selected))
             .fetch_optional(&mut ***tx).await?;
         let Some(row) = row else {
             return Ok(Preparation::Refused(UseDisposition::RequirementNotMet));

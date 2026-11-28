@@ -1,4 +1,4 @@
-//! W19F production USE routes for rust remover and lottery tickets.
+//! Production USE routes for carried conversions and lottery tickets.
 use super::connection::{UseCommand, UseOutcome};
 use super::item_ref_admission::NativeItemWeights;
 use super::{ComposedFreshAdmission, item_view::ItemKey};
@@ -56,19 +56,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return None;
         };
-        let backpack = self
+        let inventory = self
             .root
-            .read_character_backpack(self.character, fence.character_id)
+            .read_item_use_inventory(self.character, self.holder, fence)
             .await
-            .ok()??;
-        if !backpack.entries.iter().any(|entry| {
-            entry.item.item_instance_id == source_id
-                && entry.item.definition.production_key == RUST_REMOVER
-        }) {
+            .ok()?;
+        let backpack = inventory.backpack.as_ref()?;
+        let direct = backpack
+            .entries
+            .iter()
+            .find(|entry| entry.item.item_instance_id == source_id);
+        let source_entry = direct.or_else(|| {
+            inventory
+                .nested
+                .iter()
+                .find_map(|(_, entry)| (entry.item.item_instance_id == source_id).then_some(entry))
+        })?;
+        let key = &source_entry.item.definition.production_key;
+        if oteryn_gameplay_items::item_cosmetics::rule(key)
+            .is_some_and(|rule| rule.target_item_id.is_some())
+        {
+            request.source = source_id;
+            request.target = Some(target_id);
+        } else if key == RUST_REMOVER && direct.is_some() {
+            request.source = target_id;
+            request.target = Some(source_id);
+        } else {
             return None;
         }
-        request.source = target_id;
-        request.target = Some(source_id);
         {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
@@ -88,8 +103,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(outcome(UseDisposition::Rejected));
         }
-        self.root
-            .consume_transform(
+        let result = self
+            .root
+            .consume_transform_detailed(
                 &permit,
                 self.character,
                 self.holder,
@@ -100,9 +116,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false,
             )
             .await
-            .ok()
-            .flatten()
-            .map(outcome)
+            .ok()??;
+        if result.fresh
+            && result.disposition == UseDisposition::Committed
+            && let Some(feedback) = result
+                .effects
+                .get("cosmetic")
+                .and_then(|effect| effect.get("feedback"))
+                .and_then(serde_json::Value::as_str)
+        {
+            self.states
+                .chat
+                .push_quest_feedback(command.game_session_id, feedback);
+        }
+        Some(outcome(result.disposition))
     }
 
     pub(super) async fn use_lottery_ticket(

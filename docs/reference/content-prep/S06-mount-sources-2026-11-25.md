@@ -67,14 +67,14 @@ acquisition owner.
 | Lady Bug | “Use a Four-Leaf Clover on a Ladybug.” Look 447. [Lady Bug](https://tibia.fandom.com/wiki/Lady_Bug) · [Four-Leaf Clover](https://tibia.fandom.com/wiki/Four-Leaf_Clover) | Existing taming route uses `lady_bug` and item 14143. |
 | Phant | “Trade 8000 Drome points with a Tibiadrome NPC.” Look 1417. [Phant](https://tibia.fandom.com/wiki/Phant) | Native Tibiadrome selector 17 admits `phant_mount`. [Binding](../../../crates/gameplay/content/src/content/native_gameplay/cosmetics_view.rs#L145) |
 | Pegasus | “Use this item to receive the Pegasus mount.” Item 48424. [Pegasus Feather](https://tibia.fandom.com/wiki/Pegasus_Feather) | Existing ordinary USE and appearance grant. [PG](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs#L20) |
-| Gloothomotive | “Use a Wind-Up Key on a Wind-Up Loco.” Key 37397, separate loco 37398, look 1459. The key currently comes from Retros Treasure. [Gloothomotive](https://tibia.fandom.com/wiki/Gloothomotive) · [Key](https://tibia.fandom.com/wiki/Wind-Up_Key) · [Loco](https://tibia.fandom.com/wiki/Wind-Up_Loco) | Current `wind_up_loco` route self-targets item 37397. Needs distinct carried-item custody and an atomic action regression. |
-| Alpha Demonosaur | “Use this item to receive the Alpha Demonosaur mount.” Item 50063, dropped by Rotrender. Look 1827. [Box](https://tibia.fandom.com/?curid=107913) · [Mount](https://tibia.fandom.com/?curid=108459) | Look 1827 is under `ancient_demonosaur`. Item 50063 needs custody and a production acquisition action. |
+| Gloothomotive | “Use a Wind-Up Key on a Wind-Up Loco.” Key 37397, separate loco 37398, look 1459. The key currently comes from Retros Treasure. [Gloothomotive](https://tibia.fandom.com/wiki/Gloothomotive) · [Key](https://tibia.fandom.com/wiki/Wind-Up_Key) · [Loco](https://tibia.fandom.com/wiki/Wind-Up_Loco) | Targeted USE and atomic acquisition are bound. The key's source needs its drop probability. |
+| Alpha Demonosaur | “Use this item to receive the Alpha Demonosaur mount.” Item 50063, dropped by Rotrender. Look 1827. [Box](https://tibia.fandom.com/?curid=107913) · [Mount](https://tibia.fandom.com/?curid=108459) | Portable custody and ordinary USE grant `ancient_demonosaur`. Rotrender's box drop probability remains open. |
 | Blue, Green and Red Rolling Barrels | Beer Tap on a Super Cask with the corresponding Decorative Sheet in inventory. Looks 1257, 1259 and 1258. [Blue](https://tibia.fandom.com/?curid=90023) · [Green](https://tibia.fandom.com/?curid=90024) · [Red](https://tibia.fandom.com/?curid=90025) | Needs targeted cask action with the carried sheet predicate. |
 | Bright, Cold and Dark Percht Sleighs | “Deliver a Percht Skull to Frosty.” Looks 1164, 1163 and 1165. [Frosty](https://tibia.fandom.com/wiki/Frosty) · [Bright](https://tibia.fandom.com/wiki/Bright_Percht_Sleigh) · [Cold](https://tibia.fandom.com/wiki/Cold_Percht_Sleigh) · [Dark](https://tibia.fandom.com/wiki/Dark_Percht_Sleigh) | Needs the seasonal NPC exchange and Global selection rules for the colour. |
 | Krakoloss | “Defeat Tentugly's Head during A Pirate's Tail Quest.” Look 1363. [Krakoloss](https://tibia.fandom.com/wiki/Krakoloss) | Needs an active Tentugly completion and mount grant. |
 | Mutated Abomination | “Use the lever in the room south of Geoffray in Doctor Marrow's laboratory after defeating The Monster.” Also requires quest completion. Look 1599. [Mutated Abomination](https://tibia.fandom.com/?curid=101339) | Existing Cradle item work does not supply the lever grant. |
 | Mystic Jaguar | “Use a Polished Idol of Tukh on a Mystic Jaguar.” Item 44437 can break. Look 1721. [Mount](https://tibia.fandom.com/?curid=104411) · [Idol](https://tibia.fandom.com/wiki/Polished_Idol_of_Tukh) | Needs the source creature and taming rule. The exact draw and failure distribution need Global evidence. |
-| Rented Horse | “Rent from Appaloosa (Venore) or Palomino (Thais).” 500 gold for 24 hours after the horse-station world change. [Rented Horse](https://tibia.fandom.com/wiki/Rented_Horse) | Global lists four looks. The dark-brown row and its expiry need explicit binding evidence. |
+| Rented Horse | “Rent from Appaloosa (Venore) or Palomino (Thais).” 500 gold for 24 hours after the horse-station world change. [Rented Horse](https://tibia.fandom.com/wiki/Rented_Horse) | Global lists 421, 437, 438 and 747 without names. Crystal (Global silent) identifies Brown as look 438 and draws uniformly from IDs 22, 25 and 26. The fourth Global look's rental trigger and frequency are unknown. [Crystal mounts.xml:51–55](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L51-L55) · [Crystal appaloosa.lua:206–220](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/appaloosa.lua#L206-L220) |
 | Rift Runner | “Using a Mysterious Scroll” after completing Ferumbras' Ascension. Look 848. [Rift Runner](https://tibia.fandom.com/wiki/Rift_Runner) | Needs the completion-gated item action. |
 | Ripptor | “Unlock hazard level 6 in Gnomprona and request the mount to Gnomadness.” Look 1577. [Ripptor](https://tibia.fandom.com/wiki/Ripptor) | Needs NPC grant with the hazard predicate. |
 | Shellodon | “Deliver an Eldritch Crystal to Gnomevisor” after Too Hot to Handle. Look 1430. [Shellodon](https://tibia.fandom.com/?curid=94808) | Needs completion-gated NPC exchange. |
@@ -115,6 +115,43 @@ Revenant and identify the Bloodshade placement gap for Decaying Defender.
 [Revenant](https://tibia.fandom.com/wiki/Revenant_Outfits) ·
 [Decaying Defender](https://tibia.fandom.com/wiki/Decaying_Defender_Outfits) ·
 [Placement evidence](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qb_outfit_placements.rs#L117)
+
+### S06 continuation
+
+The Wind-Up Key on a selected Wind-Up Loco uses the existing targeted USE
+route. The transaction consumes the key (37397) and the selected loco
+(37398) together, admits look 1459, and grants Engine Driver. Crystal
+(Global silent) consumes both operands and supplies the acquisition message.
+The Retros Treasure drop table lists the key, and its rate is unpublished.
+[Global Gloothomotive](https://tibia.fandom.com/wiki/Gloothomotive) ·
+[Global Retros Treasure](https://tibia.fandom.com/wiki/Retros_Treasure) ·
+[Crystal mounts.lua:70,234–251](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/mounts/mounts.lua#L234-L251) ·
+[Crystal Lord Retro loot:80–95](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/bosses/lord_retro.lua#L80-L95)
+
+The Demon in a Golden Box (50063) is a portable, stackable 2.00 oz item.
+Using one grants Alpha Demonosaur look 1827 under the existing
+`ancient_demonosaur` identity and awards Alpha Rider. Rotrender's loot
+includes the box. Its probability is unpublished and no Rotrender loot
+script was found in the pinned Crystal tree.
+[Global Golden Box](https://tibia.fandom.com/?curid=107913) ·
+[Global Alpha Demonosaur](https://tibia.fandom.com/?curid=108459) ·
+[Global Rotrender loot](https://tibia.fandom.com/wiki/Rotrender#Loot) ·
+[Crystal mounts.xml:268](https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/mounts.xml#L268)
+
+The Store continuation adds 143 mounts and eight full outfits with exact
+native look matches. The archive manifest records each quoted price, look
+and revision. The Fandom archive reports that the Azudocus, Carpacosaurus
+and Platesaurian sales ran from July 22 to October 8, 2014. Dreadhare's
+Global look is 907 and Wolpertinger's is 906. Beastmaster's male and female
+looks are 636 and 637. The native appearance generator corrects those three
+reversed identities while preserving the ownership keys.
+[Store source manifest](../../../rulesets/economy/store/s06-global-offers.json) ·
+[Azudocus](https://tibia.fandom.com/wiki/Azudocus) ·
+[Carpacosaurus](https://tibia.fandom.com/wiki/Carpacosaurus) ·
+[Platesaurian](https://tibia.fandom.com/wiki/Platesaurian) ·
+[Dreadhare](https://tibia.fandom.com/wiki/Dreadhare) ·
+[Wolpertinger](https://tibia.fandom.com/wiki/Wolpertinger) ·
+[Beastmaster](https://tibia.fandom.com/wiki/Beastmaster_Outfits)
 
 ## Previously unmatched by key
 

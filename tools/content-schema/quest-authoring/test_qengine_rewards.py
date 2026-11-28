@@ -141,7 +141,7 @@ class QuestRewards(unittest.TestCase):
         for row in nx5['outfits']:
             self.assertEqual(outfits[row['key']],row)
         packet=json.loads(self.outputs['tools/content-schema/native-gameplay/item-cosmetic-actions-native.json'])
-        self.assertEqual(len(packet['grants']),210)
+        self.assertEqual(len(packet['grants']),212)
         for grant in packet['grants']:
             mapping=mappings[grant['key']]
             self.assertEqual(mapping['compatible_provenance'],[packet['provenance']])
@@ -160,7 +160,7 @@ class QuestRewards(unittest.TestCase):
         capture=(q.ROOT/'tools/content-schema/native-gameplay/item-cosmetic-actions.json').read_bytes()
         self.assertEqual(admission['source_packet_sha256'],q.sha(capture))
         original=json.loads(capture)
-        additions = [21897, 40578, 44753, 44754, 48424, 48514, 48515]
+        additions = [21897, 37397, 40578, 44753, 44754, 48424, 48514, 48515, 50063]
         self.assertEqual([r['item_id'] for r in packet['rules']],
                          sorted([r['item_id'] for r in original['rules']] + additions))
         self.assertEqual(sum(r['item_id']==21897 for r in packet['rules']),1)
@@ -200,7 +200,7 @@ class QuestRewards(unittest.TestCase):
         native = json.loads(self.outputs["content/cosmetics/taming-native.json"])
         self.assertEqual(len(original), 51)
         self.assertEqual(len(native), 51)
-        others = lambda rows: [r for r in rows if r["item_key"] != "oteryn:item.tibia.i21897"]
+        others = lambda rows: [r for r in rows if r["item_key"] not in {"oteryn:item.tibia.i21897", "oteryn:item.tibia.i37397"}]
         self.assertEqual(others(native), others(original))
         expected = copy.deepcopy(
             next(r for r in original if r["item_key"] == "oteryn:item.tibia.i21897")

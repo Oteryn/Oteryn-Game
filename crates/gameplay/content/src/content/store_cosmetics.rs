@@ -33,7 +33,7 @@ struct Source {
 static CATALOGUE: LazyLock<Option<Document>> = LazyLock::new(|| {
     let document: Document = serde_json::from_slice(DOCUMENT).ok()?;
     // Catalogue size is independent of the existing 32-offer wire page.
-    (document.offers.len() <= 128 && document.offers.iter().all(|o| o.price > 0))
+    (document.offers.len() <= 256 && document.offers.iter().all(|o| o.price > 0))
         .then_some(document)
 });
 pub fn offers() -> Option<&'static [StoreCosmeticOffer]> {
@@ -241,22 +241,45 @@ mod tests {
             assert_eq!(cosmetics.outfit_addon_count(&outfit_key), Some(0));
             assert!(compatible(&cosmetics, offer));
         }
+        let cohort: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+            "../../../../../rulesets/economy/store/s06-global-offers.json"
+        ))?;
+        let mut mount_count = 0;
+        let mut outfit_count = 0;
+        for source in &cohort {
+            let offer = offer(source["offer_key"].as_str().ok_or("cohort offer key")?)
+                .ok_or("cohort offer")?;
+            assert_eq!(Some(offer.price), source["price"].as_u64());
+            assert_eq!(
+                Some(offer.unlock_key.as_str()),
+                source["cosmetic_key"].as_str()
+            );
+            assert!(compatible(&cosmetics, offer), "{}", offer.key);
+            if offer.preview.kind == 3 {
+                mount_count += 1;
+            } else {
+                outfit_count += 1;
+            }
+        }
         let offers = offers().ok_or("catalogue")?;
         assert_eq!(
             offers
                 .iter()
                 .filter(|offer| offer.category == "cosmetics.outfits")
                 .count(),
-            expected.len() + 7
+            expected.len() + 7 + outfit_count
         );
         assert_eq!(
             offers
                 .iter()
                 .filter(|offer| offer.category == "cosmetics.mounts")
                 .count(),
-            19
+            19 + mount_count
         );
-        assert_eq!(offers.len(), expected.len() + 7 + 19);
+        assert_eq!(
+            offers.len(),
+            expected.len() + 7 + outfit_count + 19 + mount_count
+        );
         Ok(())
     }
 
