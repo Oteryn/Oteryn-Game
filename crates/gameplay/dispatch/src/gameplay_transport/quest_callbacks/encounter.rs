@@ -3,7 +3,7 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    DetachedQuestEncounter, EncounterDefenders,
+    EncounterDefenders, EncounterSpawnReservation,
 };
 
 struct PreparedPhase {
@@ -12,16 +12,20 @@ struct PreparedPhase {
     roster: Option<EncounterDefenders>,
 }
 
-struct EncounterCreditPublication {
-    cache: std::sync::Arc<std::sync::Mutex<super::super::grizzly_kills::GrizzlyCaptureCache>>,
-    prepared: super::super::grizzly_kills::PreparedEncounter,
+type EncounterPlayer = (ExactActorRef, GameSessionId, MovementPositionSnapshot);
+
+pub(super) struct ReservedEncounter {
+    pub(super) slots: EncounterSpawnReservation,
+    players: Vec<EncounterPlayer>,
 }
 
-pub(super) struct StagedSourceBoss {
-    native: DetachedQuestEncounter<PreparedPhase>,
-    players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
-    capture: Option<EncounterCreditPublication>,
-    visit: Option<EncounterVisit>,
+enum PaidEncounter<'a> {
+    Reserve(&'a mut Option<ReservedEncounter>),
+    Publish {
+        players: &'a [EncounterPlayer],
+        actors: &'a [ExactActorRef],
+        lever: crate::map::facts::SourceBossLeverProjection,
+    },
 }
 
 pub(in crate::gameplay_transport) fn room_contains(
@@ -123,7 +127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
         source: &super::court_warlock::SourceBossUse<'_>,
-    ) -> Result<StagedSourceBoss, UseDisposition> {
+    ) -> Result<ReservedEncounter, UseDisposition> {
         let mut staged = None;
         let disposition = self.quest_encounter(
             runtime,
@@ -139,64 +143,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source.cause,
             None,
             None,
-            Some(&mut staged),
+            Some(PaidEncounter::Reserve(&mut staged)),
         );
         staged.ok_or(disposition)
     }
 
-    pub(super) fn publish_source_boss(
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn publish_reserved_encounter(
         &self,
-        staged: StagedSourceBoss,
+        reserved: ReservedEncounter,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
         map: &BundleMap,
+        callback: &Callback,
+        key: u64,
+        revision: u64,
+        after: EntryFacts,
+        cause: QuestCause,
         lever: crate::map::facts::SourceBossLeverProjection,
+        personal: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
-        self.publish_staged_encounter(staged, runtime, states, map, lever, None)
-    }
-
-    fn publish_staged_encounter(
-        &self,
-        staged: StagedSourceBoss,
-        runtime: &mut ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
-        map: &BundleMap,
-        lever: crate::map::facts::SourceBossLeverProjection,
-        reservation: Option<&mut personal_encounter::Reservation<'_>>,
-    ) -> UseDisposition {
-        let Ok((snapshots, prepared)) = staged.native.publish(runtime) else {
-            return UseDisposition::StaleState;
-        };
-        if let (Some(capture), Some(roster)) = (staged.capture, prepared.roster) {
-            capture
-                .cache
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .publish_encounter(capture.prepared, roster);
-        }
-        if let Some(phase) = prepared.phase {
-            states
-                .encounter_phases
-                .active
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(phase);
-        }
-        if let Some(mut visit) = staged.visit {
-            visit.creatures.clone_from(&prepared.actors);
-            self.states
-                .quest_callbacks
-                .encounters
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(visit);
-        }
-        if let Some(reservation) = reservation {
-            reservation.publish_staged(runtime, prepared.actors);
-        }
-        lever.publish();
-        self.project_encounter_movements(runtime, states, map, staged.players, snapshots);
-        UseDisposition::Committed
+        reserved
+            .slots
+            .publish(runtime, |runtime, actors| {
+                self.quest_encounter(
+                    runtime,
+                    states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    revision,
+                    after,
+                    false,
+                    cause,
+                    personal,
+                    None,
+                    Some(PaidEncounter::Publish {
+                        players: &reserved.players,
+                        actors,
+                        lever,
+                    }),
+                )
+            })
+            .unwrap_or(UseDisposition::StaleState)
     }
 
     #[allow(
@@ -245,17 +238,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             cause,
             Some(reservation),
             None,
-            Some(&mut staged),
+            Some(PaidEncounter::Reserve(&mut staged)),
         );
-        let Some(staged) = staged else {
+        let Some(reserved) = staged else {
             return disposition;
         };
-        let [count] = staged.native.prepared().actors.as_slice() else {
+        let [count] = reserved.slots.actors() else {
             return UseDisposition::Rejected;
         };
         let count = *count;
         drop(states_guard);
         drop(runtime_guard);
+        #[cfg(test)]
+        if let Ok(barrier) = super::PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
         let delivery = self
             .root
             .deliver_vampire_coffin(
@@ -291,17 +289,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let (mut runtime, mut states) = self.callback_guards().await;
             if !states.current_cooldown_transport(actor, session, fence.connection_generation.get())
             {
+                reserved.slots.cancel(&mut runtime);
                 return UseDisposition::StaleState;
             }
-            self.publish_staged_encounter(
-                staged,
+            self.publish_reserved_encounter(
+                reserved,
                 &mut runtime,
                 &mut states,
+                actor,
+                session,
                 map,
+                callback,
+                key,
+                expected,
+                after,
+                cause,
                 coffin,
                 Some(reservation),
             )
         } else {
+            reserved.slots.cancel(&mut *self.runtime.lock().await);
             // The payment is durable. A fresh use may recover it after an
             // abandoned delivery, including when its identity write committed.
             if matches!(
@@ -364,7 +371,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
         projection: Option<&QuestCallbackProjection>,
-        staged_source_boss: Option<&mut Option<StagedSourceBoss>>,
+        staged_source_boss: Option<PaidEncounter<'_>>,
     ) -> UseDisposition {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
@@ -601,14 +608,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             None
         };
-        let prepared = if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
-            match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
-                Ok(prepared) => Some(prepared),
-                Err(_) => return UseDisposition::Rejected,
-            }
-        } else {
-            None
-        };
+        let prepared: Option<super::super::grizzly_kills::PreparedEncounter> =
+            if let (Some(capture), Some(hash)) = (capture.as_mut(), scoped_hash) {
+                match capture.prepare_encounter(runtime, &callback.key, hash, &party) {
+                    Ok(prepared) => Some(prepared),
+                    Err(_) => return UseDisposition::Rejected,
+                }
+            } else {
+                None
+            };
         let credits = if encounter.phase.is_some() {
             let Ok(credits) =
                 super::super::grizzly_kills::capture_encounter_admission(self, runtime, &party)
@@ -674,37 +682,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     roster,
                 })
         };
-        if let Some(staged) = staged_source_boss {
-            let Ok(mut native) = runtime.stage_quest_encounter_with_phase(proofs, &monsters, bind)
+        let paid = staged_source_boss.is_some();
+        let result = if let Some(action) = staged_source_boss {
+            let Ok(native) = runtime.stage_quest_encounter_with_phase(proofs, &monsters, bind)
             else {
                 return UseDisposition::Rejected;
             };
-            let capture = prepared.zip(attack.as_ref()).map(|(prepared, attack)| {
-                EncounterCreditPublication {
-                    cache: attack.kills().1.clone(),
-                    prepared,
+            match action {
+                PaidEncounter::Reserve(out) => {
+                    let actors = native.prepared().actors.clone();
+                    let Ok(slots) = native.reserve_spawns(
+                        actor,
+                        session,
+                        actors,
+                        party.iter().map(|(member, _)| *member).collect(),
+                        local(encounter.room_min),
+                        local(encounter.room_max),
+                    ) else {
+                        return UseDisposition::Rejected;
+                    };
+                    *out = Some(ReservedEncounter { slots, players });
+                    return UseDisposition::Committed;
                 }
-            });
-            if VampireCoffinKind::for_callback(&callback.key).is_some() {
-                let [count] = native.prepared().actors.as_slice() else {
-                    return UseDisposition::Rejected;
-                };
-                if native.retain_spawn_generation(*count).is_err() {
-                    return UseDisposition::Rejected;
+                PaidEncounter::Publish {
+                    players: expected,
+                    actors,
+                    lever,
+                } => {
+                    if players != expected || native.prepared().actors != actors {
+                        return UseDisposition::StaleState;
+                    }
+                    let (_, result) = native.publish();
+                    lever.publish();
+                    Ok(result)
                 }
             }
-            *staged = Some(StagedSourceBoss {
-                native: native.detach(),
-                players,
-                capture,
-                visit: visits.as_ref().map(|_| EncounterVisit {
-                    room: encounter.clone(),
-                    participants: party,
-                    creatures: Vec::new(),
-                }),
-            });
-            return UseDisposition::Committed;
-        }
+        } else {
+            runtime.commit_quest_encounter_with_phase(proofs, &monsters, bind, || {
+                map.facts
+                    .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
+            })
+        };
         let Ok((
             snapshots,
             PreparedPhase {
@@ -712,10 +730,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actors,
                 roster,
             },
-        )) = runtime.commit_quest_encounter_with_phase(proofs, &monsters, bind, || {
-            map.facts
-                .apply_quest_callback(key, expected_revision, after, &[], &[], false, None)
-        })
+        )) = result
         else {
             return UseDisposition::Rejected;
         };
@@ -735,10 +750,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             });
         }
         drop(visits);
-        if let Some(reservation) = reservation
-            && let Err(disposition) = reservation.publish(runtime, actors)
-        {
-            return disposition;
+        if let Some(reservation) = reservation {
+            if paid {
+                reservation.publish_staged(runtime, actors);
+            } else if let Err(disposition) = reservation.publish(runtime, actors) {
+                return disposition;
+            }
         }
         self.project_encounter_movements(runtime, states, map, players, snapshots);
         UseDisposition::Committed

@@ -15,29 +15,215 @@ pub struct StagedQuestEncounter<'owner, T> {
     output: (Vec<MovementPositionSnapshot>, T),
 }
 
-/// Compare the original carrier before installing a batch prepared in an earlier turn.
-pub struct DetachedQuestEncounter<T> {
-    binding: ScopeRuntimeAssignmentBinding,
-    before: ChannelActorCarrier,
-    after: ChannelActorCarrier,
-    output: (Vec<MovementPositionSnapshot>, T),
+#[derive(Debug)]
+struct EncounterArea {
+    participants: Vec<ExactActorRef>,
+    low: MovementLocalPosition,
+    high: MovementLocalPosition,
 }
 
-impl<T> DetachedQuestEncounter<T> {
-    pub fn prepared(&self) -> &T {
-        &self.output.1
+impl EncounterArea {
+    fn overlaps(&self, other: &Self) -> bool {
+        self.participants
+            .iter()
+            .any(|actor| other.participants.contains(actor))
+            || (self.low.floor == other.low.floor
+                && self.low.x <= other.high.x
+                && other.low.x <= self.high.x
+                && self.low.y <= other.high.y
+                && other.low.y <= self.high.y)
+    }
+}
+
+/// The runtime retains the identities to retire even if the delivery is cancelled.
+#[derive(Debug, Clone)]
+pub(super) struct EncounterSpawnClaim {
+    lifetime: std::sync::Weak<EncounterArea>,
+    actors: Vec<ExactActorRef>,
+}
+impl PartialEq for EncounterSpawnClaim {
+    fn eq(&self, other: &Self) -> bool {
+        self.actors == other.actors && self.lifetime.ptr_eq(&other.lifetime)
+    }
+}
+impl Eq for EncounterSpawnClaim {}
+
+pub struct EncounterSpawnReservation {
+    area: Arc<EncounterArea>,
+    actors: Vec<ExactActorRef>,
+    binding: ScopeRuntimeAssignmentBinding,
+}
+
+impl ChannelActorCarrier {
+    pub(super) fn release_abandoned_encounter_spawns(&mut self) {
+        let mut index = 0;
+        while index < self.encounter_spawn_claims.len() {
+            if self.encounter_spawn_claims[index].lifetime.strong_count() == 0 {
+                let claim = self.encounter_spawn_claims.swap_remove(index);
+                for actor in claim.actors {
+                    self.return_encounter_slot(actor, false);
+                }
+            } else {
+                index += 1;
+            }
+        }
     }
 
-    pub fn publish(
+    fn return_encounter_slot(&mut self, actor: ExactActorRef, for_replay: bool) {
+        let raw = actor.actor_local_id() - 1;
+        if matches!(self.slots[raw as usize], Slot::CreatureReserved {generation, ..}
+            if generation == actor.actor_local_generation())
+        {
+            self.slots[raw as usize] = Slot::VacantReusable {
+                generation: actor.actor_local_generation() - u64::from(for_replay),
+                next_free: self.free_head,
+            };
+            self.free_head = Some(raw);
+            self.unindex_occupied(raw);
+        }
+    }
+}
+
+impl EncounterSpawnReservation {
+    pub fn actors(&self) -> &[ExactActorRef] {
+        &self.actors
+    }
+
+    pub fn cancel(self, runtime: &mut ChannelRuntimeV1) {
+        drop(self);
+        runtime.carrier.release_abandoned_encounter_spawns();
+    }
+
+    /// Replay the encounter against the current owner. Only this synchronous turn
+    /// may allocate the reserved identities. On refusal their generations retire.
+    pub fn publish<R>(
         self,
         runtime: &mut ChannelRuntimeV1,
-    ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
+        install: impl FnOnce(&mut ChannelRuntimeV1, &[ExactActorRef]) -> R,
+    ) -> Result<R, CarrierError> {
         runtime.owner_fence()?;
-        if runtime.binding() != self.binding || runtime.carrier != self.before {
+        if runtime.binding() != self.binding {
             return Err(CarrierError::PlanConflict);
         }
-        runtime.carrier = self.after;
-        Ok(self.output)
+        let token = Arc::downgrade(&self.area);
+        let claims = &runtime.carrier.encounter_spawn_claims;
+        if !claims.iter().any(|claim| claim.lifetime.ptr_eq(&token)) {
+            return Err(CarrierError::PlanConflict);
+        }
+        for actor in &self.actors {
+            let index = (actor.actor_local_id() - 1) as usize;
+            if !matches!(runtime.carrier.slots[index], Slot::CreatureReserved { generation, .. }
+                if generation == actor.actor_local_generation())
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        // Dropping a different USE can release other slots. Keep its reservation
+        // alive for this turn so the allocator takes our replay slots in order.
+        let _live_claims: Vec<_> = claims
+            .iter()
+            .filter_map(|claim| claim.lifetime.upgrade())
+            .collect();
+        runtime.carrier.release_abandoned_encounter_spawns();
+        runtime
+            .carrier
+            .encounter_spawn_claims
+            .retain(|claim| !claim.lifetime.ptr_eq(&token));
+        for actor in self.actors.iter().rev() {
+            runtime.carrier.return_encounter_slot(*actor, true);
+        }
+        let replay = ReplaySlots {
+            runtime,
+            actors: &self.actors,
+        };
+        Ok(install(replay.runtime, replay.actors))
+    }
+}
+
+/// A refused or unwound replay must still retire every exposed identity.
+struct ReplaySlots<'a> {
+    runtime: &'a mut ChannelRuntimeV1,
+    actors: &'a [ExactActorRef],
+}
+impl Drop for ReplaySlots<'_> {
+    fn drop(&mut self) {
+        for actor in self.actors {
+            let index = (actor.actor_local_id() - 1) as usize;
+            if let Slot::VacantReusable { generation, .. } = &mut self.runtime.carrier.slots[index]
+            {
+                *generation = (*generation).max(actor.actor_local_generation());
+            }
+        }
+    }
+}
+
+impl<T> StagedQuestEncounter<'_, T> {
+    pub fn reserve_spawns(
+        self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        actors: Vec<ExactActorRef>,
+        participants: Vec<ExactActorRef>,
+        low: MovementLocalPosition,
+        high: MovementLocalPosition,
+    ) -> Result<EncounterSpawnReservation, CarrierError> {
+        let runtime = self.runtime;
+        runtime.owner_fence()?;
+        let area = Arc::new(EncounterArea {
+            participants,
+            low,
+            high,
+        });
+        if runtime
+            .carrier
+            .encounter_spawn_claims
+            .iter()
+            .filter_map(|claim| claim.lifetime.upgrade())
+            .any(|held| area.overlaps(&held))
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        runtime
+            .carrier
+            .encounter_spawn_claims
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut claimed = Vec::new();
+        claimed
+            .try_reserve(actors.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let reserved = actors.iter().try_for_each(|actor| {
+            let index = runtime.carrier.validate_ref(&runtime.continuity, actor.0)?;
+            let slot = &self.carrier.slots[index];
+            if !matches!(slot, Slot::CreatureOccupied { generation, .. } if *generation == actor.actor_local_generation())
+                || !matches!(runtime.carrier.slots[index], Slot::VacantReusable { .. })
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            runtime.carrier.reserve_planned_creature_slot(
+                &runtime.continuity, *actor, owner, session, &mut Some(Box::new(slot.clone())),
+            )?;
+            claimed.push(*actor);
+            Ok(())
+        });
+        if let Err(error) = reserved {
+            for actor in claimed {
+                runtime.carrier.return_encounter_slot(actor, false);
+            }
+            return Err(error);
+        }
+        runtime
+            .carrier
+            .encounter_spawn_claims
+            .push(EncounterSpawnClaim {
+                lifetime: Arc::downgrade(&area),
+                actors: claimed,
+            });
+        Ok(EncounterSpawnReservation {
+            area,
+            actors,
+            binding: runtime.binding(),
+        })
     }
 }
 
@@ -61,32 +247,6 @@ impl<'owner, T> StagedQuestEncounter<'owner, T> {
     /// Observe the original owner, before any staged replacement is published.
     pub fn retains_creature(&self, actor: ExactActorRef) -> bool {
         self.runtime.contains_live_creature(actor) || self.runtime.corpse_projection_pinned(actor)
-    }
-
-    /// Keep an identity used by a durable write retired even if staging is dropped.
-    /// Only the generation advances in the live carrier; the slot remains vacant.
-    pub fn retain_spawn_generation(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
-        let index = self
-            .carrier
-            .validate_ref(&self.runtime.continuity, actor.0)?;
-        let Slot::VacantReusable { generation, .. } = &mut self.runtime.carrier.slots[index] else {
-            return Err(CarrierError::PlanConflict);
-        };
-        let staged_generation = actor.actor_local_generation();
-        if generation.checked_add(1) != Some(staged_generation) {
-            return Err(CarrierError::PlanConflict);
-        }
-        *generation = staged_generation;
-        Ok(())
-    }
-
-    pub fn detach(self) -> DetachedQuestEncounter<T> {
-        DetachedQuestEncounter {
-            binding: self.runtime.binding(),
-            before: self.runtime.carrier.clone(),
-            after: self.carrier,
-            output: self.output,
-        }
     }
 
     pub fn publish(
@@ -458,6 +618,7 @@ impl ChannelRuntimeV1 {
             .map_err(|_| CarrierError::AllocationFailed)?;
         // Only the carrier changes below; policy registry/content/owner binding stay borrowed.
         // The exclusive runtime owner prevents an observer from seeing these staged slots.
+        self.carrier.release_abandoned_encounter_spawns();
         let before = self.carrier.clone();
         let result = (|| {
             let mut actors = Vec::new();

@@ -16,6 +16,17 @@ pub(super) struct SourceBossUse<'a> {
     pub(super) lever: SourceBossLever,
 }
 
+/// The SQL receipt remains the authority for payment. Keep the command identity
+/// for a fresh USE by the same party if publication was interrupted.
+pub(super) type PendingBossAdmissions = std::collections::HashMap<
+    (u64, Vec<[u8; 16]>),
+    (
+        oteryn_gameplay_entities::ScopeRuntimeAssignmentBinding,
+        std::time::Instant,
+        [u8; 16],
+    ),
+>;
+
 #[cfg(test)]
 tokio::task_local! {
     pub(in crate::gameplay_transport) static PRE_SOURCE_BOSS_CHARGE:
@@ -54,24 +65,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
-        let Ok(census) = runtime.positioned_melee_census() else {
+        let staging = |runtime: &ChannelRuntimeV1| {
+            let mut census = runtime.positioned_melee_census()?;
+            census.retain(|(_, at, _)| {
+                encounter
+                    .players
+                    .iter()
+                    .any(|p| local(p.from) == at.position())
+            });
+            Ok::<_, crate::domain::carrier_values::CarrierError>(census)
+        };
+        let Ok(census) = staging(runtime) else {
             return UseDisposition::Rejected;
         };
         drop(states_guard);
         drop(runtime_guard);
         let mut observed = Vec::new();
         let mut party = Vec::new();
-        for &(member, at, member_session) in &census {
+        for &(member, _, member_session) in &census {
             let Some(member_session) = member_session else {
                 continue;
             };
-            if !encounter
-                .players
-                .iter()
-                .any(|p| local(p.from) == at.position())
-            {
-                continue;
-            }
             let Ok(Some(fence)) = self.current_quest_fence(member_session).await else {
                 return UseDisposition::Rejected;
             };
@@ -79,7 +93,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (mut runtime_guard, mut states_guard) = self.callback_guards().await;
         let (runtime, states) = (&mut *runtime_guard, &mut *states_guard);
-        if runtime.positioned_melee_census().ok().as_ref() != Some(&census) {
+        if staging(runtime).ok().as_ref() != Some(&census) {
             return UseDisposition::StaleState;
         }
         for &(member, member_session, fence) in &observed {
@@ -106,7 +120,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         identity.extend_from_slice(&key.to_be_bytes());
         identity.extend_from_slice(&revision.to_be_bytes());
-        let admission = SourceBossReservation {
+        let mut admission = SourceBossReservation {
             id: super::super::npc_trade_command::derived(
                 &identity,
                 command.game_session_id(),
@@ -119,9 +133,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return UseDisposition::Rejected;
         };
-        let staged = match self.stage_source_boss(runtime, states, actor, session, &source_use) {
-            Ok(staged) => staged,
+        let reserved = match self.stage_source_boss(runtime, states, actor, session, &source_use) {
+            Ok(reserved) => reserved,
             Err(disposition) => return disposition,
+        };
+        let mut characters: Vec<_> = admission
+            .party
+            .iter()
+            .map(|member| *member.character_id.as_bytes())
+            .collect();
+        characters.sort_unstable();
+        let party_key = (key, characters);
+        let pending = &self.states.quest_callbacks.boss_admissions;
+        let recovering = {
+            let mut pending = pending
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let binding = runtime.binding();
+            pending.retain(|_, (owner, since, _)| {
+                *owner == binding && since.elapsed() < std::time::Duration::from_secs(20 * 60 * 60)
+            });
+            let recovering = pending.contains_key(&party_key);
+            admission.id = pending
+                .entry(party_key.clone())
+                .or_insert((binding, std::time::Instant::now(), admission.id))
+                .2;
+            recovering
         };
         drop(states_guard);
         drop(runtime_guard);
@@ -131,11 +168,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             barrier.1.notified().await;
         }
         let retry = super::super::AdmissionRetryBudget::for_command(self.root);
-        let paid = retry
-            .retry_durability("source_boss_admission", || {
-                self.source_boss_admission(&admission, SourceBossAdmission::Commit)
-            })
-            .await;
+        let receipt = if recovering {
+            retry
+                .retry_durability("source_boss_admission_reconcile", || {
+                    self.source_boss_admission(&admission, SourceBossAdmission::Reconcile)
+                })
+                .await
+        } else {
+            Ok(false)
+        };
+        let paid = if matches!(receipt, Ok(false)) {
+            retry
+                .retry_durability("source_boss_admission", || {
+                    self.source_boss_admission(&admission, SourceBossAdmission::Commit)
+                })
+                .await
+        } else {
+            receipt
+        };
         #[cfg(test)]
         let paid = if matches!(paid, Ok(true))
             && self
@@ -148,10 +198,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             paid
         };
-        let paid = if matches!(
+        let ambiguous = matches!(
             paid,
             Err(DurabilityError::CommitOutcomeUnknown | DurabilityError::RootPassDeadlineExceeded)
-        ) {
+        );
+        let paid = if ambiguous {
             retry
                 .retry_durability("source_boss_admission_reconcile", || {
                     self.source_boss_admission(&admission, SourceBossAdmission::Reconcile)
@@ -160,6 +211,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             paid
         };
+        let (mut runtime, mut states) = self.callback_guards().await;
         match paid {
             Ok(true) => {
                 #[cfg(test)]
@@ -169,22 +221,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .interrupt_source_boss_before_projection
                     .swap(false, std::sync::atomic::Ordering::AcqRel)
                 {
+                    reserved.slots.cancel(&mut runtime);
                     return UseDisposition::Rejected;
                 }
-                let (mut runtime, mut states) = self.callback_guards().await;
                 if observed.iter().any(|(member, session, fence)| {
                     !states.current_cooldown_transport(
                         *member,
                         *session,
                         fence.connection_generation.get(),
-                    )
+                    ) || !runtime
+                        .bound_attacker_lease(*member, *session)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
                 }) {
+                    reserved.slots.cancel(&mut runtime);
                     return UseDisposition::StaleState;
                 }
-                self.publish_source_boss(staged, &mut runtime, &mut states, map, lever_projection)
+                let disposition = self.publish_reserved_encounter(
+                    reserved,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    revision,
+                    after,
+                    cause,
+                    lever_projection,
+                    None,
+                );
+                if disposition == UseDisposition::Committed {
+                    pending
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .remove(&party_key);
+                }
+                disposition
             }
-            Ok(false) => UseDisposition::Rejected,
+            Ok(false) => {
+                reserved.slots.cancel(&mut runtime);
+                if !recovering && !ambiguous {
+                    pending
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .remove(&party_key);
+                }
+                UseDisposition::Rejected
+            }
             Err(error) => {
+                reserved.slots.cancel(&mut runtime);
                 super::super::operator_event(&format!(
                     "source_boss_admission_deferred reason={error:?}"
                 ));

@@ -110,6 +110,7 @@ struct ObservedWorldCallback {
 pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
+    boss_admissions: std::sync::Mutex<court_warlock::PendingBossAdmissions>,
     scene_item_receipts: scene_items::SceneItemReceipts,
     #[cfg(test)]
     pub(super) mound_draw: std::sync::atomic::AtomicU8,

@@ -993,6 +993,7 @@ pub struct ChannelActorCarrier {
     scope_generation: ScopeOwnershipGeneration,
     pub slots: Box<[Slot]>,
     free_head: Option<u32>,
+    encounter_spawn_claims: Vec<encounter_access::EncounterSpawnClaim>,
     /// Canonical physical tile insertion ordinal; boxed actor state retains membership order.
     tile_entry_counter: u64,
     /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ...
@@ -1590,6 +1591,7 @@ impl ChannelRuntimeV1 {
     ) -> Result<SpawnDriveReport, CarrierError> {
         use spawn::{RespawnOutcome, RespawnStep};
         self.owner_fence()?;
+        self.carrier.release_abandoned_encounter_spawns();
         let mut report = SpawnDriveReport::default();
         if self.carrier.spawns.is_empty() || self.spawn_activation.is_some() {
             return Ok(report);
@@ -1825,6 +1827,7 @@ impl ChannelActorCarrier {
             scope_generation: continuity.current_generation,
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
+            encounter_spawn_claims: Vec::new(),
             tile_entry_counter: 0,
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
@@ -1881,6 +1884,7 @@ impl ChannelActorCarrier {
             }
             self.validate_current_continuity(continuity)?;
             // `CREATUREAI0-RL-04`, before anything is selected or written.
+            self.release_abandoned_encounter_spawns();
             if self.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX {
                 return Err(CarrierError::CapacityExceeded);
             }
@@ -1908,6 +1912,7 @@ impl ChannelActorCarrier {
         // Current outer authority must be proven before slot selection or any
         // mutation, including terminal generation-exhaustion bookkeeping.
         self.validate_current_continuity(continuity)?;
+        self.release_abandoned_encounter_spawns();
         let Some(free_head) = self.free_head else {
             return Err(CarrierError::CapacityExceeded);
         };

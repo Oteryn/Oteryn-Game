@@ -251,7 +251,10 @@ pub(super) async fn exercise(
     assert_eq!(
         super::quest_world_callbacks_fixtures::while_blocked(owner, h,
             "LOCK game_pending_vampire_coffin_payments IN SHARE MODE",
-            use_coffin(owner, admitted, weakened, if lost_ack { 63 } else { 62 })).await?,
+            async {
+                super::source_boss_handoff_fixtures::with_unrelated_login(owner,
+                    use_coffin(owner, admitted, weakened, if lost_ack { 63 } else { 62 })).await?
+            }).await?,
         UseDisposition::Committed
     );
     let expected = if foreign_generation || ordinary_restart {

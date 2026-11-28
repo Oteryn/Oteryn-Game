@@ -594,6 +594,8 @@ async fn two_player_encounter(
         assert_eq!(changed.rows_affected(), 1);
         barrier.1.notify_one();
         using_lever.await
+    } else if matches!(case, Scenario::AdmissionAckLost) {
+        super::source_boss_handoff_fixtures::with_unrelated_login(owner, use_lever).await?
     } else {
         use_lever.await
     };

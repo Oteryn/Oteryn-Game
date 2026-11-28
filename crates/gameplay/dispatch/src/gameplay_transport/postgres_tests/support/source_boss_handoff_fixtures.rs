@@ -18,6 +18,56 @@ use crate::gameplay_transport::{
 use std::sync::Arc;
 use std::time::Duration;
 
+pub(super) async fn with_unrelated_login<T>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    operation: impl std::future::Future<Output = T>,
+) -> TestResult<T> {
+    use crate::foundation::{GameSessionId, MovementFacing, MovementLocalPosition};
+    use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CHARGE;
+    let moving_session = GameSessionId::decode(&id(245)).map_err(debug)?;
+    let leaving_session = GameSessionId::decode(&id(246)).map_err(debug)?;
+    let outside = MovementLocalPosition { x: 100, y: 100, floor: 0 };
+    let (moving, start, leaving) = {
+        let mut runtime = owner.runtime.lock().await;
+        let slot = runtime.reserve_fresh_session(moving_session).map_err(debug)?;
+        let moving = runtime.commit_fresh_session(slot).map_err(debug)?;
+        let start = runtime.initialize_pinned_test_position(moving, outside).map_err(debug)?;
+        let slot = runtime.reserve_fresh_session(leaving_session).map_err(debug)?;
+        let leaving = runtime.commit_fresh_session(slot).map_err(debug)?;
+        runtime.initialize_pinned_test_position(leaving, outside).map_err(debug)?;
+        (moving, start, leaving)
+    };
+    let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let operation = PRE_SOURCE_BOSS_CHARGE.scope(barrier.clone(), operation);
+    tokio::pin!(operation);
+    tokio::select! {
+        _ = &mut operation => return Err("encounter ended before durable write".into()),
+        () = barrier.0.notified() => {}
+    }
+    let session = GameSessionId::decode(&id(247)).map_err(debug)?;
+    let (newcomer, expected, logout_fence) = {
+        let mut runtime = owner.runtime.lock().await;
+        let next = MovementLocalPosition { x: outside.x + 1, ..outside };
+        let mut movement = runtime.borrow_movement_position();
+        let moved = movement.commit_cardinal(start, next).map_err(debug)?;
+        let expected = movement.commit_turn(moved, MovementFacing::North).map_err(debug)?;
+        let newcomer = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let logout_fence = runtime.mint_transition_fence().map_err(debug)?;
+        runtime.remove_terminal_session(leaving_session, leaving).map_err(debug)?;
+        (newcomer, expected, logout_fence)
+    };
+    barrier.1.notify_one();
+    let outcome = operation.await;
+    let mut runtime = owner.runtime.lock().await;
+    assert_eq!(runtime.read_actor_position(moving).map_err(debug)?, expected);
+    assert!(runtime.read_actor_position(leaving).is_err());
+    assert!(runtime.mint_transition_fence().map_err(debug)? > logout_fence);
+    runtime.remove_terminal_session(moving_session, moving).map_err(debug)?;
+    let actor = runtime.commit_fresh_session(newcomer).map_err(debug)?;
+    runtime.remove_terminal_session(session, actor).map_err(debug)?;
+    Ok(outcome)
+}
+
 pub(super) async fn assert_paid_handoff(
     h: &Harness,
     deps: &Dependencies,
