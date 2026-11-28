@@ -10,6 +10,7 @@ import uuid
 PROFILES = (
     "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "knight-underlevel",
     "levitate", "magic-rope",
+    "monk-120", "sorcerer-120",
 )
 CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
