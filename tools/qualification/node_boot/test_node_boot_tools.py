@@ -871,6 +871,24 @@ class CloudRunSummaryTests(unittest.TestCase):
                             'e2e_s18_say_and_whisper_echo_replay -- --nocapture',
                         ])
 
+    def test_rows_summary_keeps_every_full_row_verdict(self):
+        statuses = ('PASS', 'FAIL', 'SKIPPED', 'MISSING-SERVER', 'MISSING-CLIENT')
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp, 'node.log')
+            log.write_text(''.join(
+                f'SEAM_EVIDENCE e2e_all scenario=ROW-{index}.full status={status} seconds=0\n'
+                for index, status in enumerate(statuses)
+            ) + 'NODE_BOOT_RESULT=NODE_BOOT_FAIL\n')
+            result = subprocess.run(
+                ['bash', str(HERE / 'cloud_run.sh'), '--summarize', str(log), 'rows'],
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(result.stdout.splitlines(), [
+                'CLOUD_RUN group=rows result=NODE_BOOT_FAIL seconds=0', 'ROWS-BEGIN',
+                *(f'ROW-{index}|{status}|' for index, status in enumerate(statuses)),
+                'ROWS-END',
+            ])
+
     def test_summary_counts_client_replay_verdict_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'node.log'

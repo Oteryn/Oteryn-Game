@@ -39,9 +39,11 @@ summarize() {
     result=NODE_BOOT_FAIL
   fi
 
-  rows=$(awk '
+  rows=$(awk -v group="$group" '
     $1 == "SEAM_EVIDENCE" && $2 == "e2e_all" &&
-      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ && $4 ~ /^status=(PASS|FAIL)$/ {
+      $3 ~ /^scenario=[[:alnum:]_.-]+\.full$/ &&
+      ($4 ~ /^status=(PASS|FAIL)$/ ||
+       (group == "rows" && $4 ~ /^status=(SKIPPED|MISSING-SERVER|MISSING-CLIENT)$/)) {
       row = $3
       sub(/^scenario=/, "", row)
       sub(/\.full$/, "", row)
