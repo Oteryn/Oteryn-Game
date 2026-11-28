@@ -244,7 +244,7 @@ async fn place_hunter(
     wait_character_released(clients, 1).await?;
     let mut database = sqlx::PgConnection::connect(clients.url).await?;
     let placement = sqlx::query(
-        "UPDATE game_character_last_positions SET tile_x=$1, tile_y=$2
+        "UPDATE game_character_last_positions SET tile_x=$1, tile_y=$2, write_sequence=write_sequence+1
          WHERE character_id=encode($3,'hex')::uuid AND world_id=encode($4,'hex')::uuid
            AND tile_x=$5 AND tile_y=$6",
     )
