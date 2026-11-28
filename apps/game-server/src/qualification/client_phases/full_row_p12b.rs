@@ -110,7 +110,48 @@ async fn expect_account_levels(clients: &SeamClients<'_>, expected: &[i64]) -> T
     )
 }
 
+// The original packet account exercises Global Fledgeling Hero (badge 1).
+// The dedicated fresh account remains the independent level-sum fixture.
+async fn age_award(scope: &SeamClients<'_>) -> TestResult {
+    let clients = &SeamClients {
+        accounts: &scope.accounts[1..2],
+        characters: &scope.characters[1..2],
+        ..*scope
+    };
+    let before = stored_badges(clients).await?;
+    expect(before.is_empty(), "age-badge-pre-admission", &before)?;
+
+    let mut client = connect_character(clients, 0xc4, 0).await?;
+    let session = client.join_snapshot().game_session_id;
+    let reply = reply_badges(&mut client).await?;
+    expect(reply == [1], "fledgeling-hero-wire", &reply)?;
+    let awarded = stored_badges(clients).await?;
+    expect(
+        awarded.iter().map(|&(badge, _)| badge).eq([1]),
+        "fledgeling-hero-storage",
+        &awarded,
+    )?;
+    logout(clients, &mut client).await?;
+    let offline = stored_badges(clients).await?;
+    expect(offline == awarded, "age-badge-after-logout", &offline)?;
+
+    let mut fresh = connect_character(clients, 0xc5, 0).await?;
+    expect(
+        fresh.join_snapshot().game_session_id != session,
+        "age-badge-fresh-session",
+        fresh.join_snapshot().game_session_id,
+    )?;
+    let admitted = stored_badges(clients).await?;
+    expect(admitted == awarded, "age-badge-before-refresh", &admitted)?;
+    let again = reply_badges(&mut fresh).await?;
+    expect(again == [1], "fledgeling-hero-relog-wire", &again)?;
+    let retained = stored_badges(clients).await?;
+    expect(retained == awarded, "fledgeling-hero-relog-storage", &retained)?;
+    logout(clients, &mut fresh).await
+}
+
 async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
+    age_award(scope).await?;
     let fixture = character_prep::dedicated_named_character(
         scope, "NODE_BOOT_P12B_ACCOUNT", Some("Badge Knight"),
     ).await?;
@@ -225,7 +266,7 @@ async fn journey(scope: &SeamClients<'_>) -> TestResult<Verdict> {
     )?;
     Ok((
         "PASS",
-        format!("badges={reply:?};account-levels=499+2;level-sum-500-empty;pre-state-empty;original-awards-survive-relog"),
+        format!("fledgeling-hero=1;badges={reply:?};account-levels=499+2;level-sum-500-empty;pre-state-empty;original-awards-survive-relog"),
     ))
 }
 
