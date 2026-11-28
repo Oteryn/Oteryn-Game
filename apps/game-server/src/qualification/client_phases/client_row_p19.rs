@@ -409,7 +409,8 @@ async fn move_first_attempt(
     world: &BundleWorld,
     path: Vec<StepDirection>,
 ) -> TestResult {
-    for direction in path {
+    let total_steps = path.len();
+    for (index, direction) in path.into_iter().enumerate() {
         let origin = tile(client.world_spatial().actor_position)?;
         let expected = destination(world, origin, direction).ok_or("P19 route has no landing")?;
         let movement = client.step(direction).await?;
@@ -424,6 +425,11 @@ async fn move_first_attempt(
                 "P19 FIXTURE_PLACEMENT first movement {direction:?} from {origin:?}: disposition={:?} expected={expected:?} actual={actual:?}",
                 movement.disposition,
             ).into());
+        }
+        verdict::Harness::global().progress("walk");
+        let completed = index + 1;
+        if completed % 32 == 0 || completed == total_steps {
+            evidence(&format!("P19 walk confirmed={completed}/{total_steps} position={actual:?}"));
         }
         if movement.step_wait_ms != 0 {
             let wait = Duration::from_millis(u64::from(movement.step_wait_ms));
