@@ -116,6 +116,33 @@ for group in "$@"; do
   index=$((index + 1))
   log="$work_dir/$index-$group.log"
   started=$SECONDS
+  if [[ "$group" == rows && ${OTERYN_E2E_ROW_BATCH:-} == 164:1 ]]; then
+    # Build outside the live row deadline, including on a cold Cargo target.
+    artifacts="$work_dir/$index-p09-build.json"
+    CARGO_BUILD_JOBS=2 cargo +1.100.0 test --locked -p oteryn-client --features bevy-shell --lib \
+      --no-run --message-format=json > "$artifacts" || blocked p09_client_build_failed
+    P09_REPLAY_BINARY=$(python3 - "$artifacts" <<'PYTHON'
+import json
+import sys
+
+with open(sys.argv[1]) as stream:
+    artifacts = [json.loads(line) for line in stream]
+executables = [
+    artifact["executable"]
+    for artifact in artifacts
+    if artifact.get("reason") == "compiler-artifact"
+    and artifact.get("target", {}).get("name") == "oteryn_client"
+    and artifact.get("profile", {}).get("test")
+    and artifact.get("executable")
+]
+if len(executables) != 1:
+    sys.exit("expected exactly one P09 client test executable")
+print(executables[0])
+PYTHON
+    ) || blocked p09_client_binary_missing
+    [[ -x "$P09_REPLAY_BINARY" ]] || blocked p09_client_binary_missing
+    export P09_REPLAY_BINARY
+  fi
   status=0
   NODE_BOOT_UNPRIVILEGED=1 NODE_BOOT_E2E_ONLY="$group" \
     bash tools/qualification/node_boot/run.sh > "$log" 2>&1 &

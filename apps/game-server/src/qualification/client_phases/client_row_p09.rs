@@ -55,9 +55,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err("daily refusal needs a character with no prior claims".into());
     }
     let query = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
+    let details = daily_command(&mut client, wire::details::COMMAND_TYPE).await?;
+    if details.status != CommandStatus::Accepted || details.server_sequence <= query.server_sequence
+    {
+        return Err("daily catalogue did not arrive as an accepted live reply".into());
+    }
     let claim = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_CLAIM).await?;
     let after = daily_command(&mut client, wire::COMMAND_TYPE_DAILY_REWARD_QUERY).await?;
-    if query.server_sequence >= claim.server_sequence
+    if details.server_sequence >= claim.server_sequence
         || claim.server_sequence >= after.server_sequence
     {
         return Err("daily capture sequences did not advance".into());
@@ -117,13 +122,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let dir = CaptureDirectory(String::from_utf8(output.stdout)?.trim_end().into());
     let binding = format!(
-        "{session:?}:{}:{}:{}\n",
-        query.server_sequence, claim.server_sequence, ready.server_sequence
+        "{session:?}:{}:{}:{}:{}\n",
+        query.server_sequence,
+        details.server_sequence,
+        claim.server_sequence,
+        ready.server_sequence
     );
     std::fs::write(dir.0.join("binding"), &binding)?;
     std::fs::write(dir.0.join("p09-wall.bin"), &query.payload)?;
     std::fs::write(dir.0.join("p09-claim.bin"), &claim.payload)?;
     std::fs::write(dir.0.join("p09-ready.bin"), &ready.payload)?;
+    std::fs::write(dir.0.join("p09-details.bin"), &details.payload)?;
     if std::fs::read_to_string(dir.0.join("binding"))? != binding {
         return Err("daily capture belongs to a different session or sequence".into());
     }
@@ -132,31 +141,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if wall != query.payload
         || refusal != claim.payload
         || std::fs::read(dir.0.join("p09-ready.bin"))? != ready.payload
+        || std::fs::read(dir.0.join("p09-details.bin"))? != details.payload
     {
         return Err("daily capture does not match the bound live replies".into());
     }
     let expected = replay(query.status, &wall, claim.status, &refusal)?;
     let capture_path = dir.0.clone();
+    let replay_binary = required("P09_REPLAY_BINARY")?;
     let replay_output = tokio::task::spawn_blocking(move || {
         std::process::Command::new("timeout")
             .args([
                 "60",
-                "cargo",
-                "+1.100.0",
-                "test",
-                "--locked",
-                "-p",
-                "oteryn-client",
-                "--features",
-                "bevy-shell",
-                "--lib",
+                &replay_binary,
                 "bevy_shell::game_ui::reward_wall::tests::p09_live_reward_wall_replay",
-                "--",
                 "--ignored",
                 "--exact",
             ])
-            .current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../.."))
             .env("P09_LIVE_CAPTURE_DIR", capture_path)
+            .env("P09_DETAILS_COMMAND_ID", details.command_id.to_string())
+            .env(
+                "P09_DETAILS_SERVER_SEQUENCE",
+                details.server_sequence.to_string(),
+            )
             .output()
     })
     .await??;

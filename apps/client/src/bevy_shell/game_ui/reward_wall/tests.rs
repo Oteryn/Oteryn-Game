@@ -426,40 +426,76 @@ fn reward_store_send_refusal_keeps_the_wall_open() -> TestResult {
 fn p09_live_reward_wall_replay() -> TestResult {
     use bevy::ui::InteractionDisabled;
     use oteryn_client_ui::daily_reward::{
-        CommandStatus, DailyRewardCommand, DailyRewardResponse, apply_result, decode_reply,
+        CommandStatus, DailyRewardCommand, DailyRewardResponse, decode_reply,
     };
 
     let directory = std::path::PathBuf::from(
         std::env::var_os("P09_LIVE_CAPTURE_DIR").ok_or("missing live P09 capture directory")?,
     );
     let (mut app, mut commands, outbox) = fixture()?;
-    let mut panel = DailyRewardPanel {
-        selected: true,
-        open: true,
-        details_attempted: true,
-        ..Default::default()
-    };
-    outbox.bevy_reward_wall(panel.clone());
-    app.update();
-    click(&mut app, Kind::Refresh)?;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    outbox.daily_reward_initialize(true);
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .daily_reward_input(&[NormalizedInputEvent::Key {
+                code: KeyCode::new(7)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control),
+                repeat: false,
+            }])
+    );
     assert!(matches!(
         commands.try_recv()?,
         PlayCommand::DailyReward(DailyRewardCommand::Query)
     ));
-    assert!(commands.try_recv().is_err());
+    app.update();
 
     let wall = decode_reply(
         DailyRewardCommand::Query,
         &std::fs::read(directory.join("p09-wall.bin"))?,
     )?;
-    assert!(apply_result(
-        &mut panel,
-        &DailyRewardResponse {
-            status: CommandStatus::Accepted,
-            reply: Some(wall)
-        }
+    outbox.daily_reward_result(&DailyRewardResponse {
+        status: CommandStatus::Accepted,
+        reply: Some(wall),
+    });
+    app.update();
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("opening the playable wall did not request the reward catalogue".into());
+    };
+    assert_eq!(
+        (command.capability, command.kind),
+        (182, daily_reward::details::COMMAND_TYPE)
+    );
+    assert!(command.payload.is_empty());
+    let details = oteryn_session::GatedCommandResult {
+        command_id: std::env::var("P09_DETAILS_COMMAND_ID")?.parse()?,
+        server_sequence: std::env::var("P09_DETAILS_SERVER_SEQUENCE")?.parse()?,
+        status: CommandStatus::Accepted,
+        payload: std::fs::read(directory.join("p09-details.bin"))?,
+    };
+    outbox.daily_reward_details_result(&details);
+    app.update();
+    require_p09_reward_cards(&mut app)?;
+    click(&mut app, Kind::Refresh)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::DailyReward(DailyRewardCommand::Query)
     ));
-    outbox.bevy_reward_wall(panel.clone());
+    outbox.daily_reward_result(&DailyRewardResponse {
+        status: CommandStatus::Accepted,
+        reply: Some(wall),
+    });
+    app.update();
+    let PlayCommand::Feature(reloaded) = commands.try_recv()? else {
+        return Err("refresh did not request the reward catalogue".into());
+    };
+    assert_eq!(reloaded, command);
+    outbox.daily_reward_details_result(&details);
     app.update();
     assert!(
         texts(&mut app)
@@ -483,14 +519,10 @@ fn p09_live_reward_wall_replay() -> TestResult {
         DailyRewardCommand::Claim,
         &std::fs::read(directory.join("p09-claim.bin"))?,
     )?;
-    assert!(!apply_result(
-        &mut panel,
-        &DailyRewardResponse {
-            status: CommandStatus::Rejected,
-            reply: Some(refusal)
-        }
-    ));
-    outbox.bevy_reward_wall(panel.clone());
+    outbox.daily_reward_result(&DailyRewardResponse {
+        status: CommandStatus::Rejected,
+        reply: Some(refusal),
+    });
     app.update();
     assert!(
         texts(&mut app)
@@ -501,14 +533,10 @@ fn p09_live_reward_wall_replay() -> TestResult {
         DailyRewardCommand::Query,
         &std::fs::read(directory.join("p09-ready.bin"))?,
     )?;
-    assert!(apply_result(
-        &mut panel,
-        &DailyRewardResponse {
-            status: CommandStatus::Accepted,
-            reply: Some(ready),
-        }
-    ));
-    outbox.bevy_reward_wall(panel);
+    outbox.daily_reward_result(&DailyRewardResponse {
+        status: CommandStatus::Accepted,
+        reply: Some(ready),
+    });
     app.update();
     click(&mut app, Kind::Collect)?;
     assert!(matches!(
@@ -516,5 +544,65 @@ fn p09_live_reward_wall_replay() -> TestResult {
         PlayCommand::DailyReward(DailyRewardCommand::Claim)
     ));
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+fn require_p09_reward_cards(app: &mut App) -> TestResult {
+    let world = app.world_mut();
+    let mut cells: Vec<Vec<String>> = world
+        .query_filtered::<&Children, With<DayCell>>()
+        .iter(world)
+        .map(|children| {
+            children
+                .iter()
+                .filter_map(|child| world.get::<Text>(child).map(|text| text.0.clone()))
+                .collect()
+        })
+        .collect();
+    cells.sort();
+    let rewards = [
+        ("2 Cosmetic Tokens", "4 Cosmetic Tokens"),
+        ("1 Prey Wildcards", "2 Prey Wildcards"),
+        ("1 Temple Teleport Scroll", "1 Temple Teleport Scroll"),
+        ("30 minutes XP Boost 10%", "30 minutes XP Boost 25%"),
+        ("3 Cosmetic Tokens", "6 Cosmetic Tokens"),
+        ("1 Prey Wildcards", "2 Prey Wildcards"),
+        ("30 minutes XP Boost 20%", "30 minutes XP Boost 50%"),
+    ];
+    let expected: Vec<Vec<String>> = rewards
+        .into_iter()
+        .enumerate()
+        .map(|(index, (free, premium))| {
+            let today = if index == 0 { " — today" } else { "" };
+            let tier = |reward: &str| {
+                if reward.contains("XP Boost") {
+                    format!("1 Bounty Reroll Token\n{reward}")
+                } else {
+                    format!("{reward}\n1 Bounty Reroll Token")
+                }
+            };
+            vec![
+                format!("Day {}{today}", index + 1),
+                tier(free),
+                tier(premium),
+            ]
+        })
+        .collect();
+    if cells != expected {
+        return Err(
+            format!("playable reward cards: expected {expected:?}, observed {cells:?}").into(),
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn p09_reward_cards_reject_missing_catalogue() -> TestResult {
+    let (mut app, _, outbox) = fixture()?;
+    let mut wall = panel();
+    wall.details = None;
+    outbox.bevy_reward_wall(wall);
+    app.update();
+    assert!(require_p09_reward_cards(&mut app).is_err());
     Ok(())
 }
