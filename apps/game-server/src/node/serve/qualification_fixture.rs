@@ -83,6 +83,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let allowed = allowed
         || spell_build(profile).is_some()
         || named_item(profile).is_some()
+        || profile == "g36-instance"
         || profile == "premium";
     allowed.then_some((session, profile))
 }
@@ -743,6 +744,47 @@ async fn prepare_build(
             != super::super::uuid_bytes(&config.scope.channel_id)
     {
         return Err("qualification scope mismatch".into());
+    }
+    #[cfg(feature = "qualification-spawn")]
+    if profile == "g36-instance" {
+        use crate::durability::runtime_scope_assignment::AssignmentState;
+        let instance = super::super::uuid_bytes("01934f10-7c05-7020-805b-3b1122334420")
+            .ok_or("qualification G36 instance identity")?;
+        let instance = crate::foundation::RuntimeScopeRefV1::instance(scope.world_id(), instance)
+            .map_err(|error| format!("qualification G36 scope: {error:?}"))?;
+        let assignment = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::runtime_scope_assignment::AssignmentError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )
+                )
+            },
+            async || root.read_runtime_scope_assignment(instance).await,
+        )
+        .await
+        .map_err(|error| format!("qualification G36 assignment: {error:?}"))?
+        .ok_or("qualification G36 instance is unassigned")?;
+        if assignment.state != AssignmentState::Assigned
+            || assignment.holder != Some(proof.fact())
+            || assignment.ownership_generation != 1
+        {
+            return Err("qualification G36 assignment mismatch".into());
+        }
+        super::Readiness {
+            root,
+            proof,
+            scope: instance,
+            generation: assignment.ownership_generation,
+            config,
+        }
+        .publish(true, Some(deadline))
+        .await
+        .map_err(|error| format!("qualification G36 readiness: {error:?}"))?;
+        return Ok(());
     }
     #[cfg(feature = "qualification-spawn")]
     if let Some(item) = named_item(profile) {
@@ -2015,6 +2057,7 @@ mod tests {
             "c11-knight",
             "c12-monk",
             "c06-sorcerer",
+            "g36-instance",
             "premium",
             "item-43895-1",
             "item-6506-2",
