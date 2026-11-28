@@ -152,8 +152,8 @@ where
     // connection here, and the rest waits for the next tick.
     let mut owner_reads = EGRESS_MAX_LINES;
     for _ in 0..EGRESS_MAX_LINES {
-        let Some(line) = authority
-            .chat_next_bound(session.admitted, &mut owner_reads)
+        let Some((line, war_notice)) = authority
+            .chat_next_delivery(session.admitted, &mut owner_reads)
             .await
         else {
             break;
@@ -183,8 +183,12 @@ where
         if session.selected_capabilities.contains(290) {
             authority.cast_heard(session.admitted, &line).await;
         }
-        // A marker takes no slot, so only a real line frees one.
-        if !matches!(line, ChatLine::Dropped) {
+        // An escrow notice is acknowledged only after the socket write, and did not use a queue slot.
+        if let Some(notice) = war_notice {
+            authority
+                .guild_war_notice_written(session.admitted, notice)
+                .await;
+        } else if !matches!(line, ChatLine::Dropped) {
             authority
                 .chat_delivered(session.admitted.game_session_id)
                 .await;

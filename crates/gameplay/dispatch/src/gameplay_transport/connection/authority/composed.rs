@@ -543,6 +543,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.guild_chat_next(admitted, remaining).await
     }
 
+    async fn chat_next_delivery(
+        &self,
+        admitted: AdmittedSession,
+        remaining: &mut usize,
+    ) -> Option<(oteryn_protocol_oteryn::chat::ChatLine, Option<i64>)> {
+        if let Some(line) = self.chat_next_bound(admitted, remaining).await {
+            return Some((line, None));
+        }
+        if *remaining == 0 {
+            return None;
+        }
+        *remaining -= 1;
+        self.guild_war_chat_notice(admitted)
+            .await
+            .map(|(line, id)| (line, Some(id)))
+    }
+
+    async fn guild_war_notice_written(&self, admitted: AdmittedSession, notice: i64) {
+        self.ack_guild_war_chat_notice(admitted, notice).await;
+    }
+
     async fn chat_delivered(&self, session: GameSessionId) {
         self.states.chat.delivered(session);
     }

@@ -82,6 +82,12 @@ pub fn encode_guild_war_intent(value: &GuildWarIntent) -> WireResult<Vec<u8>> {
             push_message_field(&mut out, 2, war);
         }
     }
+    if let Some(stake) = value.stake() {
+        if stake > MAX_GUILD_WAR_STAKE {
+            return Err(CyclopediaWireError::Malformed);
+        }
+        push_varint_field(&mut out, 5, u64::from(stake));
+    }
     Ok(out)
 }
 pub fn decode_guild_war_intent(bytes: &[u8]) -> WireResult<GuildWarIntent> {

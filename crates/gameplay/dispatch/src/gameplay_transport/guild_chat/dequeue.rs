@@ -10,10 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         remaining: &mut usize,
     ) -> Option<ChatLine> {
         while *remaining > 0 {
-            let Some(candidate) = self.states.chat.peek_line(admitted.game_session_id) else {
-                *remaining -= 1;
-                return self.guild_war_chat_notice(admitted).await;
-            };
+            let candidate = self.states.chat.peek_line(admitted.game_session_id)?;
             if let ChatLine::Room { .. } = &candidate {
                 *remaining -= 1;
                 if let Some(line) = self
@@ -97,7 +94,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         None
     }
 
-    async fn guild_war_chat_notice(&self, admitted: AdmittedSession) -> Option<ChatLine> {
+    pub(in super::super) async fn guild_war_chat_notice(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<(ChatLine, i64)> {
         if !self.states.chat.guild.poll_war_notices(&admitted) {
             return None;
         }
@@ -105,18 +105,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             qualified_fence(&admitted, &runtime)?
         };
-        let (guild_id, text) = self
+        let notice = self
             .root
-            .take_guild_war_notice(self.character, self.holder, fence)
+            .guild_war_notice(self.character, self.holder, fence, None)
             .await
             .ok()??;
-        Some(ChatLine::Guild(
-            oteryn_protocol_oteryn::chat::guild_room::GuildChatLine {
-                guild_id,
-                rank: 1,
-                speaker_name: "[Guild War]".into(),
-                text,
-            },
-        ))
+        let line = ChatLine::Guild(oteryn_protocol_oteryn::chat::guild_room::GuildChatLine {
+            guild_id: notice.guild,
+            rank: 1,
+            speaker_name: "[Guild War]".into(),
+            text: notice.message,
+        });
+        Some((line, notice.id))
+    }
+
+    pub(in super::super) async fn ack_guild_war_chat_notice(
+        &self,
+        admitted: AdmittedSession,
+        notice: i64,
+    ) {
+        let fence = {
+            let runtime = self.runtime.lock().await;
+            qualified_fence(&admitted, &runtime)
+        };
+        if let Some(fence) = fence {
+            // If writing the cursor fails, the next connection can replay the notice.
+            let _ = self
+                .root
+                .guild_war_notice(self.character, self.holder, fence, Some(notice))
+                .await;
+        }
     }
 }

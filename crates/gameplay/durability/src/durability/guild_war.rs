@@ -1,7 +1,8 @@
 use crate::durability::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use crate::durability::character_progression::{assert_session_fence, uuid_text};
 use crate::durability::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, commit_semantic_read, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use crate::durability::guild::GuildError;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -10,7 +11,7 @@ use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_social_rules::guild::{GuildWarEnd, guild_war_end, validate_guild_war_terms};
 use oteryn_protocol_oteryn::guild_war::{GuildWarIntent, GuildWarResult};
-use sqlx::Row;
+use sqlx::{Acquire, Row};
 
 const GUILD_WAR_PASS_MAX: i64 = 100;
 
@@ -22,6 +23,26 @@ macro_rules! active_war_predicate {
     };
 }
 pub(super) use active_war_predicate;
+
+/// A connection-local delivery candidate. Only the fenced recipient may mark it written.
+pub struct GuildWarNotice {
+    pub id: i64,
+    pub guild: [u8; 16],
+    pub message: String,
+}
+
+const NOTICE_RECIPIENTS: &str = "WITH memberships AS (
+    SELECT guild_id, joined_at FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid
+    UNION ALL
+    SELECT guild_id, joined_at FROM game_guild_war_disband_members WHERE character_id=encode($1,'hex')::uuid
+), eligible AS (
+    SELECT n.notice_id,n.guild_id,n.message FROM memberships m
+    JOIN game_guilds g USING(guild_id)
+    JOIN game_guild_war_notices n ON n.guild_id=g.guild_id AND n.occurred_at>=m.joined_at
+    LEFT JOIN game_guild_war_notice_cursors c ON c.guild_id=g.guild_id AND c.character_id=encode($1,'hex')::uuid
+    WHERE g.world_id=encode($2,'hex')::uuid AND n.notice_id>coalesce(c.notice_id,0)
+    ORDER BY n.notice_id LIMIT 1
+) ";
 
 impl DurabilityRoot {
     #[allow(
@@ -90,7 +111,7 @@ impl DurabilityRoot {
                                 encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4)")
                                 .bind(war.as_slice()).bind(actor.as_slice()).bind(session).bind(cid)
                                 .fetch_one(&mut *tx).await?;
-                            if !funded { return Err(GuildError::InvalidInput); }
+                            if !funded { return Ok(GuildWarResult { code: 2, war }); }
                         }
                         sqlx::query("UPDATE game_guild_wars SET state=2,started_at=$1,ends_at=$1+duration_days::bigint*86400000 WHERE war_id=encode($2,'hex')::uuid")
                             .bind(now).bind(war.as_slice()).execute(&mut *tx).await?;
@@ -104,45 +125,48 @@ impl DurabilityRoot {
         })).await?
     }
 
-    /// Claim one committed war notice for this live guild-chat recipient.
-    pub async fn take_guild_war_notice(
+    /// Read the next notice or acknowledge that exact notice after a successful frame write.
+    pub async fn guild_war_notice(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-    ) -> Result<Option<([u8; 16], String)>, GuildError> {
+        written: Option<i64>,
+    ) -> Result<Option<GuildWarNotice>, GuildError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| GuildError::NotCurrent)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let member = match super::guild::read_current_guild_chat_data(&mut tx, &recovery, &node, &fence, None).await {
-                Ok(member) => member,
-                Err(GuildError::Unavailable(error)) => return Err(error),
-                Err(error) => return Ok(Err(error)),
-            };
-            let Some(member) = member else { return Ok(Ok(None)); };
-            let guild = *member.guild_id.as_bytes();
-            let message = sqlx::query_scalar::<_, String>(
-                "WITH next_notice AS (
-                     SELECT n.notice_id,n.message,m.character_id,m.guild_id
-                     FROM game_guild_members m
-                     JOIN game_guild_war_notices n ON n.guild_id=m.guild_id AND n.occurred_at>=m.joined_at
-                     LEFT JOIN game_guild_war_notice_cursors c ON c.character_id=m.character_id AND c.guild_id=m.guild_id
-                     WHERE m.character_id=encode($1,'hex')::uuid AND m.guild_id=encode($2,'hex')::uuid
-                       AND n.notice_id>coalesce(c.notice_id,0)
-                     ORDER BY n.notice_id LIMIT 1
-                 ), advanced AS (
-                     INSERT INTO game_guild_war_notice_cursors(character_id,guild_id,notice_id)
-                     SELECT character_id,guild_id,notice_id FROM next_notice
-                     ON CONFLICT (character_id,guild_id) DO UPDATE SET notice_id=excluded.notice_id
-                     WHERE game_guild_war_notice_cursors.notice_id<excluded.notice_id
-                     RETURNING notice_id
-                 ) SELECT n.message FROM next_notice n JOIN advanced a USING(notice_id)"
-            ).bind(fence.character_id.as_bytes().as_slice()).bind(guild.as_slice()).fetch_optional(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(message.map(|text| (guild, text))))
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Ok(Err(GuildError::NotCurrent));
+            }
+            let character = fence.character_id.as_bytes();
+            let world = fence.runtime_scope.world_id();
+            let world = world.as_bytes();
+            if let Some(notice) = written {
+                let query = format!("{NOTICE_RECIPIENTS}
+                    INSERT INTO game_guild_war_notice_cursors(character_id,guild_id,notice_id)
+                    SELECT encode($1,'hex')::uuid,guild_id,notice_id FROM eligible WHERE notice_id=$3
+                    ON CONFLICT (character_id,guild_id) DO UPDATE SET notice_id=excluded.notice_id
+                    WHERE game_guild_war_notice_cursors.notice_id<excluded.notice_id");
+                sqlx::query(sqlx::AssertSqlSafe(query))
+                    .bind(character.as_slice()).bind(world.as_slice()).bind(notice)
+                    .execute(&mut *tx).await?;
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok(Ok(None));
+            }
+            let query = format!("{NOTICE_RECIPIENTS} SELECT notice_id,guild_id::text,message FROM eligible");
+            let row: Option<(i64, String, String)> = sqlx::query_as(sqlx::AssertSqlSafe(query))
+                .bind(character.as_slice()).bind(world.as_slice())
+                .fetch_optional(&mut *tx).await?;
+            commit_semantic_read(tx, deadline).await?;
+            Ok(Ok(row.map(|(id, guild, message)| {
+                Ok::<_, DurabilityError>(GuildWarNotice { id, guild: uuid_text(&guild)?, message })
+            }).transpose()?))
         })).await?
     }
 
@@ -172,14 +196,18 @@ impl DurabilityRoot {
             let rows = sqlx::query(
                 "SELECT w.war_id::text,w.frag_limit,w.declaring_frags,w.opposing_frags,w.ends_at,w.stake_gold,
                         w.declaring_guild::text,w.opposing_guild::text,d.name AS declaring_name,o.name AS opposing_name,
-                        d.state>=3 OR o.state>=3 OR w.state=1 AS cancelled,
+                        d.state>=3 OR o.state>=3 OR w.state=1 OR closure.pending AS cancelled,
                         floor(extract(epoch FROM transaction_timestamp())*1000)::bigint AS now
                    FROM game_guild_wars w
                    JOIN game_guilds d ON d.guild_id=w.declaring_guild
                    JOIN game_guilds o ON o.guild_id=w.opposing_guild
+                   CROSS JOIN LATERAL (SELECT EXISTS(
+                     SELECT 1 FROM game_guild_war_escrow e WHERE e.war_id=w.war_id
+                     AND e.settled_xact IS NULL AND game_account_closure_closed(e.account_id)
+                   ) AS pending) closure
                   WHERE w.world_id=encode($1,'hex')::uuid AND (
                       (w.state=2 AND (w.ends_at<=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint
-                       OR greatest(w.declaring_frags,w.opposing_frags)>=w.frag_limit OR d.state>=3 OR o.state>=3))
+                       OR greatest(w.declaring_frags,w.opposing_frags)>=w.frag_limit OR d.state>=3 OR o.state>=3 OR closure.pending))
                       OR (w.state=1 AND w.stake_gold IS NOT NULL AND (d.state>=3 OR o.state>=3
                           OR NOT EXISTS (SELECT 1 FROM game_guild_members m WHERE m.character_id=w.stake_declarer
                               AND m.guild_id=w.declaring_guild AND m.rank_level=1))))
@@ -197,11 +225,27 @@ impl DurabilityRoot {
                     ORDER BY guild_id FOR KEY SHARE")
                     .bind(guilds).fetch_all(&mut *tx).await?;
             }
+            let mut finished = 0;
             for row in &rows {
-                finish_one(&mut tx, row).await?;
+                let mut war = tx.begin().await?;
+                // Check deferred bank and custody proofs inside this war's boundary.
+                sqlx::query("SET CONSTRAINTS ALL DEFERRED").execute(&mut *war).await?;
+                let result = async {
+                    finish_one(&mut war, row).await?;
+                    sqlx::query("SET CONSTRAINTS ALL IMMEDIATE").execute(&mut *war).await?;
+                    Ok::<_, DurabilityError>(())
+                }.await;
+                match result {
+                    Ok(()) => {
+                        war.commit().await?;
+                        finished += 1;
+                    }
+                    Err(DurabilityError::Database(_) | DurabilityError::InvalidStoredState) => war.rollback().await?,
+                    Err(error) => return Err(error),
+                }
             }
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(rows.len())
+            Ok(finished)
         })).await.map_err(GuildError::from)
     }
 }
@@ -234,13 +278,13 @@ async fn finish_one(
     let opposing = score("opposing_frags")?;
     let now: i64 = row.try_get("now")?;
     let ends_at: Option<i64> = row.try_get("ends_at")?;
-    let reason: i16 =
-        match ends_at.and_then(|end| guild_war_end(limit, [declaring, opposing], end, now)) {
-            Some(GuildWarEnd::FragLimit) => 1,
-            Some(GuildWarEnd::Duration) => 2,
-            None if row.try_get::<bool, _>("cancelled")? => 3,
-            None => return Err(DurabilityError::InvalidStoredState),
-        };
+    let scored_end = ends_at.and_then(|end| guild_war_end(limit, [declaring, opposing], end, now));
+    let reason: i16 = match scored_end {
+        Some(GuildWarEnd::FragLimit) => 1,
+        Some(GuildWarEnd::Duration) => 2,
+        None if row.try_get::<bool, _>("cancelled")? => 3,
+        None => return Err(DurabilityError::InvalidStoredState),
+    };
     let war: String = row.try_get("war_id")?;
     sqlx::query("UPDATE game_guild_wars SET state=3,ended_reason=$2 WHERE war_id=$1::text::uuid")
         .bind(&war)

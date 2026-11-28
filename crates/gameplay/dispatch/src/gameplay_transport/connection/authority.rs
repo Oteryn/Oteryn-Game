@@ -1523,6 +1523,27 @@ pub trait FreshAdmissionAuthority {
         self.chat_next(admitted.game_session_id)
     }
 
+    /// Retain the durable notice identifier alongside its line until the frame is written.
+    fn chat_next_delivery(
+        &self,
+        admitted: AdmittedSession,
+        remaining: &mut usize,
+    ) -> impl Future<Output = Option<(ChatLine, Option<i64>)>> {
+        async move {
+            self.chat_next_bound(admitted, remaining)
+                .await
+                .map(|line| (line, None))
+        }
+    }
+
+    fn guild_war_notice_written(
+        &self,
+        _admitted: AdmittedSession,
+        _notice: i64,
+    ) -> impl Future<Output = ()> {
+        async {}
+    }
+
     /// CHAT-WIRE-1: the oldest line queued for the session, if any.
     fn chat_next(&self, _session: GameSessionId) -> impl Future<Output = Option<ChatLine>> {
         async { None }

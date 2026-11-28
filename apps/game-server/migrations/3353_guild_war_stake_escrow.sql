@@ -65,6 +65,31 @@ REVOKE ALL ON game_guild_war_notice_cursors FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON game_guild_war_notice_cursors TO oteryn_game_runtime;
 GRANT SELECT ON game_guild_war_notice_cursors TO oteryn_game_control;
 
+-- Guild disband removes its roster in bounded batches. Retain the exact membership
+-- window so an offline recipient can still read the terminal war notice after cleanup.
+CREATE TABLE game_guild_war_disband_members (
+ character_id UUID NOT NULL REFERENCES game_character_roots,
+ guild_id UUID NOT NULL REFERENCES game_guilds,
+ joined_at BIGINT NOT NULL,
+ PRIMARY KEY(character_id,guild_id)
+);
+CREATE INDEX game_guild_war_disband_members_guild ON game_guild_war_disband_members(guild_id);
+REVOKE ALL ON game_guild_war_disband_members FROM PUBLIC;
+GRANT SELECT ON game_guild_war_disband_members TO oteryn_game_runtime,oteryn_game_control;
+CREATE FUNCTION game_guild_war_keep_disband_member() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=OLD.guild_id AND state=3)
+ AND (EXISTS(SELECT 1 FROM game_guild_wars WHERE state IN(1,2) AND OLD.guild_id IN(declaring_guild,opposing_guild))
+      OR EXISTS(SELECT 1 FROM game_guild_war_notices WHERE guild_id=OLD.guild_id AND occurred_at>=OLD.joined_at))
+ THEN
+  INSERT INTO game_guild_war_disband_members(character_id,guild_id,joined_at)
+  VALUES(OLD.character_id,OLD.guild_id,OLD.joined_at);
+ END IF;
+ RETURN OLD;
+END $$;
+CREATE TRIGGER game_guild_war_keep_disband_member AFTER DELETE ON game_guild_members
+ FOR EACH ROW EXECUTE FUNCTION game_guild_war_keep_disband_member();
+
 ALTER TABLE game_account_bank_entries
  ADD COLUMN war_escrow_id UUID,
  ADD COLUMN war_escrow_guild UUID,
@@ -98,17 +123,54 @@ CREATE FUNCTION game_guild_war_liability(a UUID,w UUID) RETURNS BIGINT LANGUAGE 
  WHERE account_id=a AND world_id=w AND settled_xact IS NULL
 $$;
 ALTER FUNCTION game_account_bank_credit_headroom(UUID,UUID) RENAME TO game_account_bank_credit_headroom_before_war;
+-- 0994's soft ceiling applies to accounts on either side of a Bazaar hold.
+CREATE FUNCTION game_guild_war_bazaar_ceiling(a UUID,w UUID) RETURNS BIGINT
+LANGUAGE sql STABLE SECURITY DEFINER AS $$
+ SELECT 999999999999-coalesce(sum(incoming_net) FILTER(WHERE seller_account_id=a),0)::bigint
+ FROM game_bazaar_gold_holds WHERE world_id=w
+ AND ((buyer_account_id=a AND amount>0) OR (seller_account_id=a AND incoming_net>0))
+ HAVING count(*)>0
+$$;
+CREATE FUNCTION game_guild_war_credit_room(a UUID,w UUID,liquid BIGINT) RETURNS BIGINT
+LANGUAGE sql STABLE SECURITY DEFINER AS $$
+ SELECT greatest(0,least(game_account_bank_credit_headroom_before_war(a,w),
+     coalesce(game_guild_war_bazaar_ceiling(a,w)-liquid,9000000000000000)))
+$$;
 CREATE FUNCTION game_account_bank_credit_headroom(a UUID,w UUID) RETURNS BIGINT LANGUAGE sql STABLE SECURITY DEFINER AS $$
- SELECT greatest(0,game_account_bank_credit_headroom_before_war(a,w)-game_guild_war_liability(a,w))
+ SELECT greatest(0,game_guild_war_credit_room(a,w,coalesce(
+     (SELECT balance FROM game_account_bank_balances WHERE account_id=a AND world_id=w),0))
+     -game_guild_war_liability(a,w))
 $$;
 CREATE FUNCTION game_guild_war_headroom_guard() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE liquid BIGINT;
 BEGIN
- IF game_guild_war_liability(NEW.account_id,NEW.world_id)>game_account_bank_credit_headroom_before_war(NEW.account_id,NEW.world_id)
+ SELECT balance INTO STRICT liquid FROM game_account_bank_balances
+  WHERE account_id=NEW.account_id AND world_id=NEW.world_id;
+ IF game_guild_war_liability(NEW.account_id,NEW.world_id)>game_guild_war_credit_room(NEW.account_id,NEW.world_id,liquid)
  THEN RAISE EXCEPTION 'guild war settlement headroom is reserved' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;
 CREATE CONSTRAINT TRIGGER game_guild_war_bank_headroom AFTER INSERT OR UPDATE ON game_account_bank_balances
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_war_headroom_guard();
+
+-- Both domains serialize on the account bank rows. Bazaar adds reservations without
+-- changing the balance, so its own hold write must enforce the same shared ceiling.
+CREATE FUNCTION game_guild_war_bazaar_hold_guard() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ PERFORM 1 FROM game_account_bank_balances WHERE world_id=NEW.world_id
+  AND account_id IN(NEW.buyer_account_id,NEW.seller_account_id) ORDER BY account_id FOR UPDATE;
+ IF EXISTS(SELECT 1 FROM game_account_bank_balances b WHERE b.world_id=NEW.world_id
+   AND b.account_id IN(NEW.buyer_account_id,NEW.seller_account_id)
+   AND game_guild_war_liability(b.account_id,b.world_id)>game_guild_war_credit_room(b.account_id,b.world_id,b.balance))
+ OR (NEW.incoming_net>0 AND game_guild_war_liability(NEW.seller_account_id,NEW.world_id)>0
+   AND 9000000000000000-game_account_bank_credit_headroom_before_bazaar(NEW.seller_account_id,NEW.world_id)
+       +game_guild_war_liability(NEW.seller_account_id,NEW.world_id)
+       >game_guild_war_bazaar_ceiling(NEW.seller_account_id,NEW.world_id))
+ THEN RAISE EXCEPTION 'Bazaar hold would consume guild war settlement headroom' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER game_guild_war_bazaar_hold_guard AFTER INSERT OR UPDATE ON game_bazaar_gold_holds
+ FOR EACH ROW EXECUTE FUNCTION game_guild_war_bazaar_hold_guard();
 
 CREATE FUNCTION game_guild_war_bank_write(e game_guild_war_escrow,phase TEXT,delta BIGINT) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -130,7 +192,7 @@ END $$;
 -- These entry points use the war row already locked by the fenced Guild transaction.
 CREATE FUNCTION game_guild_war_fund(id UUID,accepter UUID,session_id UUID,command BIGINT) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE w game_guild_wars; e game_guild_war_escrow; g UUID; accounts UUID[]:=ARRAY[]::uuid[];
-        a UUID; debit BIGINT; liquid BIGINT;
+        a UUID; debit BIGINT; liquid BIGINT; held BIGINT; liability BIGINT; ceiling BIGINT;
 BEGIN
  SELECT * INTO STRICT w FROM game_guild_wars WHERE war_id=id AND state=1 AND stake_gold IS NOT NULL FOR UPDATE;
  debit:=w.stake_gold+1000;
@@ -144,9 +206,19 @@ BEGIN
   accounts:=array_append(accounts,a);
  END LOOP;
  IF cardinality(accounts)<>2 THEN RETURN FALSE; END IF;
+ PERFORM 1 FROM game_character_account_guards WHERE account_id=ANY(accounts) ORDER BY account_id FOR UPDATE;
  FOR a IN SELECT unnest(accounts) ORDER BY 1 LOOP
+  IF game_account_closure_closed(a) THEN RETURN FALSE; END IF;
   SELECT balance INTO liquid FROM game_account_bank_balances WHERE account_id=a AND world_id=w.world_id FOR UPDATE;
-  IF liquid IS NULL OR liquid<debit OR game_account_bank_credit_headroom(a,w.world_id)+debit<2*w.stake_gold
+  SELECT coalesce(sum(amount),0)::bigint INTO held FROM game_bazaar_gold_holds
+   WHERE buyer_account_id=a AND world_id=w.world_id AND amount>0;
+  liability:=game_guild_war_liability(a,w.world_id)+2*w.stake_gold;
+  ceiling:=game_guild_war_bazaar_ceiling(a,w.world_id);
+  IF liquid IS NULL OR liquid-debit<held
+   OR game_account_bank_credit_headroom_before_war(a,w.world_id)+debit<liability
+   OR liquid-debit+liability>ceiling
+   OR (EXISTS(SELECT 1 FROM game_bazaar_gold_holds WHERE seller_account_id=a AND world_id=w.world_id AND incoming_net>0)
+       AND 9000000000000000-game_account_bank_credit_headroom_before_bazaar(a,w.world_id)-debit+liability>ceiling)
   THEN RETURN FALSE; END IF;
  END LOOP;
  FOR e IN INSERT INTO game_guild_war_escrow(war_id,guild_id,world_id,account_id,leader,stake_gold,accept_session,accept_command)
@@ -168,6 +240,8 @@ BEGIN
   transfer:=CASE WHEN w.ended_reason=1 THEN w.stake_gold
    ELSE w.stake_gold*abs(w.declaring_frags::bigint-w.opposing_frags)/w.frag_limit END;
  END IF;
+ PERFORM 1 FROM game_character_account_guards a JOIN game_guild_war_escrow escrow USING(account_id)
+  WHERE escrow.war_id=id AND escrow.settled_xact IS NULL ORDER BY a.account_id FOR UPDATE OF a;
  FOR e IN SELECT * FROM game_guild_war_escrow WHERE war_id=id AND settled_xact IS NULL ORDER BY account_id FOR UPDATE LOOP
   PERFORM 1 FROM game_account_bank_balances WHERE account_id=e.account_id AND world_id=e.world_id FOR UPDATE;
   credit:=e.stake_gold+CASE WHEN winner=e.guild_id THEN transfer ELSE -transfer END;
@@ -240,6 +314,22 @@ CREATE CONSTRAINT TRIGGER game_guild_war_activation_and_end AFTER UPDATE ON game
 CREATE CONSTRAINT TRIGGER game_guild_war_escrow_proven AFTER INSERT OR UPDATE ON game_guild_war_escrow
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_war_escrow_proven();
 
+-- Preserve the Market branch in the existing closure guard. The only additional
+-- admitted write is a credit from an already funded war ending in this transaction.
+DO $$ DECLARE body TEXT; anchor TEXT:=' -- Market remains SELECT-only to runtime.'; BEGIN
+ SELECT pg_get_functiondef('game_account_closure_bank_guard()'::regprocedure) INTO STRICT body;
+ IF strpos(body,anchor)=0 THEN RAISE EXCEPTION 'missing closing bank settlement seam'; END IF;
+ EXECUTE replace(body,anchor,$war$
+ IF e.account_id=a AND e.world_id=(j->>'world_id')::uuid AND e.created_xact_id=pg_current_xact_id()
+ AND e.war_escrow_phase='SETTLE' AND e.amount>0 AND e.balance_after=e.balance_before+e.amount
+ AND EXISTS(SELECT 1 FROM public.game_guild_war_escrow h JOIN public.game_guild_wars w USING(war_id)
+  WHERE h.war_id=e.war_escrow_id AND h.guild_id=e.war_escrow_guild AND h.account_id=a
+   AND h.world_id=e.world_id AND h.leader=e.acting_character_id AND h.funded_xact<>pg_current_xact_id()
+   AND h.settled_xact=pg_current_xact_id() AND h.settled_gold=e.amount AND w.state=3)
+ THEN RETURN NEW; END IF;
+$war$||anchor);
+END $$;
+
 DO $$ DECLARE f REGPROCEDURE; BEGIN
  FOR f IN SELECT oid::regprocedure FROM pg_proc WHERE pronamespace=current_schema()::regnamespace
   AND (proname LIKE 'game_guild_war_%' OR proname IN('game_account_bank_credit_headroom','game_account_bank_credit_headroom_before_war')) LOOP
@@ -249,3 +339,4 @@ DO $$ DECLARE f REGPROCEDURE; BEGIN
 END $$;
 GRANT EXECUTE ON FUNCTION game_account_bank_credit_headroom(UUID,UUID),game_guild_war_fund(UUID,UUID,UUID,BIGINT),game_guild_war_settle(UUID)
  TO oteryn_game_runtime;
+GRANT EXECUTE ON FUNCTION game_guild_war_liability(UUID,UUID) TO oteryn_game_runtime;

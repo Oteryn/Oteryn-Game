@@ -141,15 +141,19 @@ async fn hold(tx: &mut Tx<'_>, v: &Value) -> Result<Effect, DurabilityError> {
             (mint_id(tx).await?, 0, 0, 1)
         }
     };
-    let (balance, held, _) = totals(tx, buyer, world).await?;
+    let (balance, held, buyer_incoming) = totals(tx, buyer, world).await?;
     let (seller_balance, _, reserved) = totals(tx, seller, world).await?;
-    let native_headroom: i64 = sqlx::query_scalar(
-        "SELECT game_account_bank_credit_headroom_before_bazaar($1::uuid,$2::uuid)",
+    let (native_headroom, buyer_war, seller_war): (i64, i64, i64) = sqlx::query_as(
+        "SELECT game_account_bank_credit_headroom_before_bazaar($1::uuid,$2::uuid),
+                game_guild_war_liability($3::uuid,$2::uuid), game_guild_war_liability($1::uuid,$2::uuid)",
     )
     .bind(seller)
     .bind(world)
+    .bind(buyer)
     .fetch_one(&mut **tx)
     .await?;
+    let buyer_war = u64::try_from(buyer_war).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let seller_war = u64::try_from(seller_war).map_err(|_| DurabilityError::InvalidStoredState)?;
     // Existing native custody can return to this bank. Preserve its already
     // reserved value before promising any new incoming Bazaar proceeds.
     let native_reserved_total = 9_000_000_000_000_000_u64
@@ -158,11 +162,17 @@ async fn hold(tx: &mut Tx<'_>, v: &Value) -> Result<Effect, DurabilityError> {
         )
         .ok_or(DurabilityError::InvalidStoredState)?;
     if balance > CEILING
+        || (buyer_war > 0
+            && balance
+                .saturating_add(buyer_incoming)
+                .saturating_add(buyer_war)
+                > CEILING)
         || held > balance
         || amount - old_amount > balance - held
         || seller_balance
             .max(native_reserved_total)
-            .checked_add(reserved)
+            .checked_add(seller_war)
+            .and_then(|n| n.checked_add(reserved))
             .and_then(|n| n.checked_sub(old_incoming))
             .and_then(|n| n.checked_add(incoming))
             .is_none_or(|n| n > CEILING)
