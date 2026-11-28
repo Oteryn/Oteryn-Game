@@ -5,7 +5,11 @@ use super::movement::PlacementCheck;
 use super::*;
 use crate::durability::character_last_position::ScopedLastPosition;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{ExactActorRef, GameSessionState};
+use crate::gameplay_transport::connection::join_recovery::{
+    HouseJoinStage, retain_house_join, retain_house_stage,
+};
 use crate::gameplay_transport::connection::{
     AdmissionRefusal, ControllerBinding, FreshAdmissionAttempt,
 };
@@ -14,6 +18,8 @@ use oteryn_gameplay_entities::carrier::house_custody::HouseActorState;
 mod source;
 #[path = "admission/source_progression.rs"]
 mod source_progression;
+#[path = "admission/unpublished.rs"]
+mod unpublished;
 
 struct RestoreCheck<'a, 'r, 'c, 's> {
     owner: &'a ComposedFreshAdmission<'r, 'c, 's>,
@@ -196,9 +202,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.ensure_source_map_initialized().await {
             return Err(Unavailable);
         }
-        let _lane = self.spell_lane_permit().await.ok_or(Unavailable)?;
-        self.reserve_precondition().await?;
-        let mut runtime = self.runtime.lock().await;
         let destination = SecureIdentifiers.game_session_id().ok_or(Unavailable)?;
         let transfer = *SecureIdentifiers
             .game_session_id()
@@ -252,64 +255,85 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             lease,
             origin_position: origin,
         };
-        let doors = self.door.lock().await.blocking_cells().clone();
-        let mut check = RestoreCheck {
-            owner: self,
-            runtime: &runtime,
-            candidate,
-            saved: &saved,
-            doors: &doors,
-            actor,
-        };
-        let (ack, _) = self
-            .root
-            .commit_saved_house_admission(
-                self.character,
-                self.holder,
-                request,
-                saved.clone(),
-                capabilities.current_check(),
-                &mut check,
-                |read, check| {
-                    let Ok(generation) =
-                        ScopeOwnershipGeneration::new(read.interior.ownership_generation)
-                    else {
-                        return false;
-                    };
-                    check.candidate.generation = generation;
-                    PlacementCheck {
-                        owner: check.owner,
-                        runtime: check.runtime,
-                        candidate: &check.candidate,
-                        record: &check.saved.position.record,
-                        doors: check.doors,
-                        except: Some(check.actor),
-                        retain_hireling_overlap: false,
-                        valid: false,
+        retain_house_join(pending_source, &request, &candidate);
+        let (ack, mut runtime, lane, mut house) = loop {
+            retry
+                .retry_unavailable(async || self.reserve_precondition().await)
+                .await?;
+            let lane = self.spell_lane_permit().await.ok_or(Unavailable)?;
+            let runtime = self.runtime.lock().await;
+            let doors = self.door.lock().await.blocking_cells().clone();
+            let mut check = RestoreCheck {
+                owner: self,
+                runtime: &runtime,
+                candidate: candidate.clone(),
+                saved: &saved,
+                doors: &doors,
+                actor,
+            };
+            retain_house_stage(HouseJoinStage::Issuing);
+            let result = self
+                .root
+                .commit_saved_house_admission(
+                    self.character,
+                    self.holder,
+                    request.clone(),
+                    saved.clone(),
+                    capabilities.current_check(),
+                    &mut check,
+                    |read, check| {
+                        let Ok(generation) =
+                            ScopeOwnershipGeneration::new(read.interior.ownership_generation)
+                        else {
+                            return false;
+                        };
+                        check.candidate.generation = generation;
+                        PlacementCheck {
+                            owner: check.owner,
+                            runtime: check.runtime,
+                            candidate: &check.candidate,
+                            record: &check.saved.position.record,
+                            doors: check.doors,
+                            except: Some(check.actor),
+                            retain_hireling_overlap: false,
+                            valid: false,
+                        }
+                        .validates(read)
+                    },
+                )
+                .await;
+            match result {
+                Ok((ack, _)) => {
+                    let house = check.candidate;
+                    break (ack, runtime, lane, house);
+                }
+                Err(crate::durability::DurabilityError::RootUnavailable) => {
+                    retain_house_stage(HouseJoinStage::Prepared);
+                    drop(runtime);
+                    drop(lane);
+                    if !retry.retries_unavailable(Unavailable).await {
+                        return Err(Unavailable);
                     }
-                    .validates(read)
-                },
-            )
-            .await
-            .map_err(|_| Unavailable)?;
-        let mut house = check.candidate;
+                }
+                // The exact operation already belongs to recovery. Only a
+                // checkout failure is eligible to repeat this native writer.
+                Err(_) => return Err(Unavailable),
+            }
+        };
         house.generation =
             ScopeOwnershipGeneration::new(ack.scope_generation).map_err(|_| Unavailable)?;
-        runtime
-            .restore_admitted_house_actor(
-                actor,
-                attempt.game_session_id,
-                destination,
-                source.current_character_lease(),
-                house,
+        let committed_fence = CurrentCharacterItemFence {
+            character_id: fence.character_id,
+            game_session_id: destination,
+            connection_generation: crate::foundation::ConnectionGeneration::new(
+                ack.connection_generation,
             )
-            .map_err(|_| Unavailable)?;
-        drop(runtime);
-        let (current, _) = store
-            .current_session_at(destination)
-            .await
-            .map_err(|_| Unavailable)?;
-        let admitted = AdmittedSession {
+            .map_err(|_| Unavailable)?,
+            character_lease_generation: ack.lease_generation,
+            runtime_scope: house.scope,
+            scope_ownership_generation: house.generation,
+        };
+        let mut admitted = AdmittedSession {
             game_session_id: destination,
             world_id: self.world_id,
             channel_id: self.channel_id,
@@ -324,8 +348,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 house_input_pending: Some(true),
                 ..SessionContinuity::FRESH
             },
-            item_fence: crate::gameplay_transport::item_fence_of(current),
+            item_fence: Some(committed_fence),
         };
+        retain_house_stage(HouseJoinStage::Committed(admitted));
+        runtime
+            .restore_admitted_house_actor(
+                actor,
+                attempt.game_session_id,
+                destination,
+                source.current_character_lease(),
+                house,
+            )
+            .map_err(|_| Unavailable)?;
+        drop(runtime);
+        drop(lane);
+        let (current, _) = retry
+            .retry_unavailable(async || {
+                store
+                    .current_session_at(destination)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
+            .await?;
+        admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
         crate::gameplay_transport::item_use::gourmet::restore_house(
             self,
             &admitted,
@@ -403,8 +448,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        let _lane = self.spell_lane_permit().await?;
         self.reserve_precondition().await.ok()?;
+        let _lane = self.spell_lane_permit().await?;
         // This also proves the exact committed slot/session. It adds only the
         // authenticated source lease, never a fallback position or House grant.
         self.runtime

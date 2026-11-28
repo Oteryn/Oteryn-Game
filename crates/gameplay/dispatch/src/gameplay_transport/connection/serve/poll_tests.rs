@@ -167,7 +167,8 @@ async fn live_clock() -> TestResult {
     let initial_clock_revision = admitted.continuity.world_clock_revision;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let served = async {
-        let end = serve_admitted_actor(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+        let end =
+            serve_admitted_actor(&mut server, admitted, &authority, IDLE_LIVENESS, None).await;
         drop(server);
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>(end)
     };

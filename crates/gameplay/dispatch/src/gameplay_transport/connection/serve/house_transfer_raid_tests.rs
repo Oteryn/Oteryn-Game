@@ -161,6 +161,7 @@ async fn house_connection(selected: bool, fresh: bool, already_joined: bool) -> 
             },
             &mut integrity,
             false,
+            None,
         )
         .await;
         drop(server_messages);

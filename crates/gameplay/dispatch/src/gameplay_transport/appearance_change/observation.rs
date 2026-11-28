@@ -64,6 +64,9 @@ pub(in crate::gameplay_transport) async fn observe_result(
         );
         return Err(ObservationError::Unavailable);
     }
+    if crate::durability::holder_deadline().is_some() && admission.root.holder_contended() {
+        return Err(ObservationError::HolderBusy);
+    }
     let _foreground = admission.root.foreground_demand().map_err(|_| {
         operator_event("event=appearance_observation_failed class=fence");
         ObservationError::Unavailable
@@ -100,7 +103,7 @@ pub(in crate::gameplay_transport) async fn observe_result(
         })
         .await
         .map_err(|error| match error {
-            crate::durability::DurabilityError::RootUnavailable => ObservationError::HolderBusy,
+            crate::durability::DurabilityError::RootUnavailable if admission.root.holder_contended() => ObservationError::HolderBusy,
             _ => ObservationError::Unavailable,
         })?
 }

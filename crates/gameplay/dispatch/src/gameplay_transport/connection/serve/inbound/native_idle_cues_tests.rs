@@ -190,7 +190,7 @@ fn srx3_idle_native_map_cue_reaches_wire_without_player_movement() -> TestResult
                 drop(client);
                 Ok::<(),Box<dyn std::error::Error+Send+Sync>>(())
             };
-            let mut serving=Some(Box::pin(serve_admitted_actor(&mut server,admitted,&authority,IDLE_LIVENESS)));
+            let mut serving=Some(Box::pin(serve_admitted_actor(&mut server,admitted,&authority,IDLE_LIVENESS, None)));
             let mut observing=Some(Box::pin(observing));
             let mut observed=None;
             std::future::poll_fn(|cx| {

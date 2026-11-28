@@ -268,6 +268,8 @@ use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
 pub use coin_market::reconcile_coin_market;
+#[doc(hidden)]
+pub use connection::join_recovery::UnpublishedJoin;
 pub use connection::{GameplayIdlePolicy, IDLE_LIVENESS, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_command::validate_quest_reward_offers;
@@ -325,7 +327,6 @@ use connection::{
     AccountAchievementsReply, AdmissionRefusal, AdmittedSession, ConnectionIdentifiers,
     ControlLossResult, ControllerBinding, FirstEntryOutcome, FreshAdmissionAttempt,
     FreshAdmissionAuthority, GraceExpiryResult, SessionContinuity, StepOutcome, UseOutcome,
-    admit_frame, serve_admitted,
 };
 pub use fresh_evidence::{EvidenceUnavailable, FreshEvidenceSource};
 use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};
@@ -1522,7 +1523,10 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
     fn for_command(root: &'r DurabilityRoot) -> Self {
         Self {
-            deadline: tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW,
+            deadline: {
+                let ordinary = tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW;
+                crate::durability::holder_deadline().unwrap_or(ordinary)
+            },
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
@@ -1534,9 +1538,12 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
     /// (NODEBOOT-1).
     fn for_root(game_session_id: &GameSessionId, root: &'r DurabilityRoot) -> Self {
+        let budget = Self::new(game_session_id);
         Self {
             root: Some(root),
-            ..Self::new(game_session_id)
+            deadline: crate::durability::holder_deadline()
+                .map_or(budget.deadline, |deadline| deadline.min(budget.deadline)),
+            ..budget
         }
     }
 
@@ -1568,7 +1575,9 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// which may itself have waited for a Familiar restore.
     fn for_post_entry(mut self) -> Self {
         drop(self.waiter.take());
-        self.deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+        self.deadline = crate::durability::holder_deadline().unwrap_or_else(|| {
+            tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW
+        });
         self
     }
 
@@ -1590,7 +1599,11 @@ impl<'r> AdmissionRetryBudget<'r> {
     /// [`HOLDER_RETRY_FLOOR`].
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
         let now = tokio::time::Instant::now();
-        if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
+        let join_budget = crate::durability::holder_deadline().is_some();
+        if refusal != AdmissionRefusal::Unavailable
+            || now >= self.deadline
+            || (!join_budget && now + self.backoff >= self.deadline)
+        {
             // A given-up owner holds no later owner back.
             if let Some(Some(waiter)) = self.waiter.get() {
                 waiter.stop_waiting();
@@ -1601,7 +1614,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             Some(root) => {
                 let _ = self.waiter.get_or_init(|| root.holder_waiter());
                 let earliest = now + HOLDER_RETRY_FLOOR;
-                let latest = now + self.backoff;
+                let latest = (now + self.backoff).min(self.deadline);
                 if !root.wait_holder_turn(earliest, latest).await {
                     // A retired holder cannot emit a return notification. Service
                     // real readiness within this same retry window, then retry on
@@ -1615,9 +1628,9 @@ impl<'r> AdmissionRetryBudget<'r> {
                     tokio::time::sleep_until(retry_at).await;
                 }
             }
-            None => tokio::time::sleep(self.backoff).await,
+            None => tokio::time::sleep_until((now + self.backoff).min(self.deadline)).await,
         }
-        true
+        tokio::time::Instant::now() < self.deadline
     }
 
     /// Runs one durable `step` of the attempt, retrying an unavailable outcome (such as a

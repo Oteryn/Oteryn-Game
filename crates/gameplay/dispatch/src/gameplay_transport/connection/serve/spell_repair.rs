@@ -13,6 +13,7 @@ pub(super) async fn wait<S, A>(
     admitted: &mut AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
+    join_deadline: Option<tokio::time::Instant>,
 ) -> Result<(FrameReader, Liveness, tokio::time::Interval), ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -27,8 +28,9 @@ where
     );
     cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     // Retain the existing refused-actor bound, including retries and wire writes.
-    let deadline =
+    let liveness_deadline =
         tokio::time::Instant::now() + policy.interval.saturating_mul(policy.missed_limit);
+    let deadline = join_deadline.map_or(liveness_deadline, |join| join.min(liveness_deadline));
     let waiting = async {
         let repair = authority.repair_pending_spells(*admitted);
         let mut repair = std::pin::pin!(repair);
@@ -82,7 +84,23 @@ where
             }
         }
     };
-    match tokio::time::timeout_at(deadline, waiting).await {
+    let result = match join_deadline {
+        Some(join) => {
+            tokio::time::timeout_at(
+                deadline,
+                crate::durability::with_holder_deadline(join, waiting),
+            )
+            .await
+        }
+        None => tokio::time::timeout_at(deadline, waiting).await,
+    };
+    if join_deadline
+        .is_some_and(|join| join <= liveness_deadline && tokio::time::Instant::now() >= join)
+    {
+        send_join_unavailable(stream, generation).await;
+        return Err(ServeEnd::Disconnected);
+    }
+    match result {
         Ok(Ok(())) => {
             admitted.first_entry = FirstEntryOutcome::Reconciled;
             // Preserve outstanding probe IDs and partial frame bytes across promotion.

@@ -1438,3 +1438,68 @@ async fn c08_logout_case(h: &Harness) -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn busy_holder_native_house_bootstrap_expires_after_acceptance_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("busy-holder-native-house", move || {
+        crate::bestiary_postgres_harness::runtime()?.block_on(async {
+            let h = Harness::create_with_admission_seed(admin, "busy_native_house", true, false).await?;
+            let result = native_house_deadline(&h).await;
+            h.cleanup().await?;
+            result
+        })
+    })
+}
+
+async fn native_house_deadline(h: &Harness) -> TestResult {
+    use crate::gameplay_transport::connection::{
+        AdmissionRefusal, FreshAdmissionAttempt, serve_admitted_by,
+    };
+    let evidence = RecoverySource::start(h).await?;
+    prepare_owned_session(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+    let (controller, cells, deps) = prepare_transfer_scene(h).await?;
+    let mut owner = deps.owner(h, &authority);
+    owner.movement_cells = (&cells).into();
+    owner.evidence = &evidence.evidence;
+    let source = initialize_transfer_source(h, &owner, &deps, cells.scope().generation_digest).await?;
+    let (inside, status, _) = drive(&owner, source, false).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    owner.active_generation = controller.active();
+
+    // Start the real native House bootstrap at its first mandatory read. Other
+    // phases are held constant so an earlier phase cannot decide the result.
+    struct Bootstrap<'a, 'r, 'c, 's>(&'a ComposedFreshAdmission<'r, 'c, 's>);
+    impl FreshAdmissionAuthority for Bootstrap<'_, '_, '_, '_> {
+        async fn admit(&self, _: FreshAdmissionAttempt<'_>) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+        async fn house_scope_ack(&self, admitted: AdmittedSession) -> Result<Option<(u64, Vec<u8>)>, ()> {
+            self.0.house_scope_ack(admitted).await
+        }
+    }
+    let held = h.root.try_acquire_ready()?;
+    let (mut server, mut peer) = tokio::io::duplex(1 << 20);
+    let budget = crate::durability::ROOT_RECOVERY_WINDOW;
+    let deadline = tokio::time::Instant::now() + budget;
+    let end = tokio::time::timeout(budget + std::time::Duration::from_secs(1), serve_admitted_by(
+        &mut server, inside, &Bootstrap(&owner), IDLE_LIVENESS, Some(deadline),
+    )).await?;
+    drop(server);
+    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(session) if session.game_session_id == inside.game_session_id));
+    let frame = crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await?;
+    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+    assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+    assert_eq!(envelope.connection_generation(), inside.continuity.connection_generation);
+    assert_eq!(oteryn_protocol_oteryn::decode_protocol_error(envelope.payload()).map_err(debug)?.error_code, 1051);
+    assert_eq!(crate::gameplay_transport::tcp_tls::read_frame(&mut peer).await.unwrap_err().kind(), std::io::ErrorKind::UnexpectedEof);
+    drop(held);
+    h.root.await_ready().await?;
+    let receipt = h.root.house_transfer_recovery(inside.game_session_id).await?.ok_or("retained House receipt")?;
+    assert_eq!(receipt.ack.session, *inside.game_session_id.as_bytes());
+    assert_eq!(receipt.source, source.game_session_id);
+    assert_eq!(inside.runtime_actor, source.runtime_actor);
+    Ok(())
+}

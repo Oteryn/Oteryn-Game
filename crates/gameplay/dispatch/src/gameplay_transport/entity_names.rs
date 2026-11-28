@@ -38,21 +38,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (mut channel, sources) = Box::pin(self.named_entity_sources(observer, forecasts))
             .await
             .ok_or(AdmissionRefusal::Rejected)?;
-        // Durable reads run after dropping the runtime guard. Exhausting this shared budget is
-        // contention during periodic observation, even when the cached name is still absent.
-        let retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
+        // Carry the authenticated observer's actual name through initial
+        // publication. Unnamed peers can wait for the next visibility batch.
+        let join_name = super::connection::join_recovery::join_name(observer);
+        let mut retry = super::AdmissionRetryBudget::for_foreground_command(self.root)
             .map_err(|_| AdmissionRefusal::Rejected)?;
+        if join_name.is_some() {
+            retry.deadline = tokio::time::Instant::now();
+        }
+        let mut deferred = Vec::new();
         for (entity, source) in sources {
+            let own = entity.identity == channel.observer;
             let name = match source {
                 Source::Name(name) => name,
+                Source::Player(_) if own && join_name.is_some() => {
+                    join_name.ok_or(AdmissionRefusal::Rejected)?
+                }
                 Source::Player(session) => {
                     let name = match self.states.chat.speaker_name(session) {
                         Some(name) => name,
-                        None => {
-                            Box::pin(self.chat_speaker_name_with_budget(session, &retry))
-                                .await?
-                                .0
-                        }
+                        None => match Box::pin(self.chat_speaker_name_with_budget(session, &retry))
+                            .await
+                        {
+                            Ok((name, _, _)) => name,
+                            Err(AdmissionRefusal::Unavailable)
+                                if join_name.is_some() && !own && self.root.holder_contended() =>
+                            {
+                                deferred.push(entity);
+                                continue;
+                            }
+                            Err(error) => return Err(error),
+                        },
                     };
                     EntityDisplayName::new(&name).map_err(|_| AdmissionRefusal::Rejected)?
                 }
@@ -69,6 +85,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .ok_or(AdmissionRefusal::Rejected)?;
             entry.display_name = Some(name);
         }
+        channel.entities.retain(|entry| {
+            !deferred.contains(&EntityRef {
+                identity: entry.identity,
+                generation: entry.generation,
+            })
+        });
         Ok(channel)
     }
 

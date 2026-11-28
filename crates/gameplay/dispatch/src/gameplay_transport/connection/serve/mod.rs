@@ -247,6 +247,7 @@ pub(super) async fn serve_admitted_actor<S, A>(
     mut admitted: AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
+    mut join_deadline: Option<tokio::time::Instant>,
 ) -> ConnectionEnd
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -266,7 +267,12 @@ where
     let mut handoff_effect_start = None;
     loop {
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
-        match authority.resolve_native_scope(admitted).await {
+        let generation = admitted.continuity.connection_generation;
+        let Some(scope) = join_stage(join_deadline, authority.resolve_native_scope(admitted)).await
+        else {
+            return join_unavailable(stream, admitted, generation).await;
+        };
+        match scope {
             Ok(Some(next)) => scoped_authority = Some(next),
             Ok(None) => {}
             Err(()) => return ServeEnd::Disconnected.finish(admitted),
@@ -274,13 +280,26 @@ where
         let authority = scoped_authority.as_ref().unwrap_or(root_authority);
         // Resolve the admitted scope before checking its actor, including a
         // reconnect whose actor already belongs to an activity Instance.
-        if !Box::pin(authority.staff_refresh(admitted)).await {
+        let Some(staff_ready) =
+            join_stage(join_deadline, Box::pin(authority.staff_refresh(admitted))).await
+        else {
+            return join_unavailable(stream, admitted, generation).await;
+        };
+        if !staff_ready {
             return ServeEnd::Disconnected.finish(admitted);
         }
         if !authority.remember_activity_connection(admitted) {
             return ServeEnd::Disconnected.finish(admitted);
         }
-        if !authority.prepare_quest_callback_resume(&mut admitted).await {
+        let Some(callbacks_ready) = join_stage(
+            join_deadline,
+            authority.prepare_quest_callback_resume(&mut admitted),
+        )
+        .await
+        else {
+            return join_unavailable(stream, admitted, generation).await;
+        };
+        if !callbacks_ready {
             return ServeEnd::Disconnected.finish(admitted);
         }
         if admitted.item_fence.is_some_and(|fence| {
@@ -302,6 +321,7 @@ where
                 policy,
                 &mut integrity,
                 require_session_binding,
+                join_deadline.take(),
             ))
             .await
             {
@@ -312,7 +332,8 @@ where
         let repaired_io = if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
             && admitted.runtime_actor.is_some()
         {
-            match spell_repair::wait(stream, &mut admitted, authority, policy).await {
+            match spell_repair::wait(stream, &mut admitted, authority, policy, join_deadline).await
+            {
                 Ok(io) => Some(io),
                 Err(end) => return end.finish(admitted),
             }
@@ -328,13 +349,16 @@ where
             return hold_refused(stream, admitted, policy).await;
         };
         record_join_progress("baseline", admitted.first_entry);
-        let Some(baseline) = authority.observe(actor).await else {
+        let Some(baseline) = join_stage(join_deadline, authority.observe(actor)).await else {
+            return join_unavailable(stream, admitted, generation).await;
+        };
+        let Some(baseline) = baseline else {
             record_join_progress("held_no_baseline", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
         // Keep the join snapshot and its temporary session state out of the
         // connection coroutine, which also carries the live command path.
-        let mut session = match Box::pin(setup::prepare(
+        let setup = Box::pin(setup::prepare(
             stream,
             &mut admitted,
             authority,
@@ -342,9 +366,12 @@ where
             actor,
             baseline,
             integrity,
-        ))
-        .await
-        {
+        ));
+        let prepared = match join_deadline.take() {
+            Some(deadline) => crate::durability::with_holder_deadline(deadline, setup).await,
+            None => setup.await,
+        };
+        let mut session = match prepared {
             Ok(session) => session,
             Err(end) => return end.finish(admitted),
         };

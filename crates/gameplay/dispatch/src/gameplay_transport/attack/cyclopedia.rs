@@ -22,7 +22,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         expected_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
     ) -> Result<CombatSnapshotReceipt, ()> {
-        let _permit = self.spell_lane_permit().await.ok_or(())?;
+        if self.root.holder_contended() {
+            return Err(());
+        }
         let content = self
             .active_generation
             .and_then(|g| g.native_gameplay())
@@ -95,6 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| ())?,
             equipment,
         };
+        let _permit = self.spell_lane_permit().await.ok_or(())?;
         let augments;
         {
             // Stats are best-effort. Never await another lock while holding the runtime lock.

@@ -38,6 +38,8 @@ pub(crate) enum SpawnRefusal {
     IneligibleForgeCreature,
     SessionUnknown,
     NoFreeTile(String),
+    #[cfg(any(test, feature = "qualification-spawn"))]
+    HolderBusy(String),
     Fence(String),
 }
 
@@ -50,6 +52,8 @@ impl SpawnRefusal {
             Self::IneligibleForgeCreature => "ineligible_forge_creature",
             Self::SessionUnknown => "session_unknown",
             Self::NoFreeTile(_) => "no_free_tile",
+            #[cfg(any(test, feature = "qualification-spawn"))]
+            Self::HolderBusy(_) => "holder_busy",
             Self::Fence(_) => "fence",
         }
     }
@@ -57,6 +61,8 @@ impl SpawnRefusal {
     /// The refused rule, for the node's diagnostic line.
     pub(crate) fn detail(&self) -> Option<&str> {
         match self {
+            #[cfg(any(test, feature = "qualification-spawn"))]
+            Self::HolderBusy(owner) => Some(owner),
             Self::NoFreeTile(message) | Self::Fence(message) => Some(message),
             _ => None,
         }
@@ -71,6 +77,7 @@ impl SpawnRefusal {
                 "qualification spawn creature is not Forge eligible".into()
             }
             Self::SessionUnknown => "qualification spawn session has no positioned actor".into(),
+            Self::HolderBusy(owner) => owner,
             Self::NoFreeTile(message) | Self::Fence(message) => message,
         }
     }

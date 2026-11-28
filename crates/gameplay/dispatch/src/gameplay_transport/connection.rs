@@ -6,7 +6,9 @@ pub(super) mod appearance_change;
 mod authority;
 pub use authority::{AchievementNoticeObservation, DepotObservation, FreshAdmissionAuthority};
 mod gameplay_idle;
+pub(super) mod join_recovery;
 pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
+use join_recovery::{UnpublishedJoin, join_published, join_requires_recovery};
 mod moved_step;
 mod routing;
 #[cfg(test)]
@@ -816,11 +818,46 @@ pub use test_support::serve_connection;
     clippy::result_large_err,
     reason = "one terminal end per connection; boxing would only add an allocation"
 )]
+#[cfg(test)]
 pub async fn admit_frame<S, A, I>(
     stream: &mut S,
     frame: &[u8],
     authority: &A,
     identifiers: &I,
+) -> Result<AdmittedSession, ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    let deadline = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+    admit_frame_inner(stream, frame, authority, identifiers, deadline).await
+}
+
+pub(super) async fn admit_frame_by<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+    deadline: tokio::time::Instant,
+) -> Result<AdmittedSession, ConnectionEnd>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+{
+    crate::durability::with_holder_deadline(deadline, async {
+        admit_frame_inner(stream, frame, authority, identifiers, deadline).await
+    })
+    .await
+}
+
+async fn admit_frame_inner<S, A, I>(
+    stream: &mut S,
+    frame: &[u8],
+    authority: &A,
+    identifiers: &I,
+    deadline: tokio::time::Instant,
 ) -> Result<AdmittedSession, ConnectionEnd>
 where
     S: AsyncWrite + Unpin,
@@ -875,6 +912,9 @@ where
                     return Err(ConnectionEnd::ResumeUnavailable);
                 }
             };
+            if tokio::time::Instant::now() >= deadline {
+                return Err(join_unavailable(stream, resumed, 0).await);
+            }
             let continuity = resumed.continuity;
             // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
             // refuses a resume that cannot keep it before committing; this never acknowledges one.
@@ -886,7 +926,9 @@ where
             }
             // A real activity receipt/current owner supplies the exact scope;
             // no House acknowledgement or unsolicited command result is used.
-            let Ok(activity_scope) = authority.activity_scope_snapshot(resumed).await else {
+            let Ok(Ok(activity_scope)) =
+                tokio::time::timeout_at(deadline, authority.activity_scope_snapshot(resumed)).await
+            else {
                 super::operator_event(&format!(
                     "event=resume_bootstrap_failed phase=activity_scope code={}",
                     FoundationProtocolError::SessionJoinUnavailable.code()
@@ -903,11 +945,11 @@ where
             }) else {
                 return Err(join_unavailable(stream, resumed, 0).await);
             };
-            write_frame(stream, &accepted)
-                .await
-                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            write_join_frame(stream, &accepted, resumed, 0, deadline).await?;
             let generation = continuity.connection_generation;
-            let Ok(house_ack) = authority.house_scope_ack(resumed).await else {
+            let Ok(Ok(house_ack)) =
+                tokio::time::timeout_at(deadline, authority.house_scope_ack(resumed)).await
+            else {
                 return Err(join_unavailable(stream, resumed, generation).await);
             };
             if let Some((command, payload)) = house_ack {
@@ -929,9 +971,7 @@ where
                 }) else {
                     return Err(join_unavailable(stream, resumed, generation).await);
                 };
-                write_frame(stream, &ack)
-                    .await
-                    .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                write_join_frame(stream, &ack, resumed, generation, deadline).await?;
                 let mut resumed = resumed;
                 resumed.continuity.server_sequence += 1;
                 return Ok(resumed);
@@ -1019,6 +1059,9 @@ where
             return Err(ConnectionEnd::AdmissionRefused(refusal));
         }
     };
+    if join_requires_recovery() {
+        return Err(join_unavailable(stream, admitted, 0).await);
+    }
     admitted.continuity.selected_capabilities = selected;
     // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
     admitted.continuity.achievement_notice_revision = selected
@@ -1042,15 +1085,15 @@ where
     }) else {
         return Err(join_unavailable(stream, admitted, 0).await);
     };
-    let accepted = if let Some(document) = authority.client_bulletin().await {
+    let accepted = if let Ok(Some(document)) =
+        tokio::time::timeout_at(deadline, authority.client_bulletin()).await
+    {
         oteryn_protocol_oteryn::bulletin::append_to_acceptance(&accepted, &document)
             .unwrap_or(accepted)
     } else {
         accepted
     };
-    write_frame(stream, &accepted)
-        .await
-        .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(admitted))?;
+    write_join_frame(stream, &accepted, admitted, 0, deadline).await?;
     Ok(admitted)
 }
 
@@ -1282,6 +1325,7 @@ fn world_weather_delta(
     Some((delta_sequence, frame, new_revision))
 }
 
+#[cfg(test)]
 pub async fn serve_admitted<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
@@ -1292,9 +1336,33 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    serve_admitted_by(stream, admitted, authority, policy, None).await
+}
+
+pub(super) async fn serve_admitted_by<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+    policy: LivenessPolicy,
+    deadline: Option<tokio::time::Instant>,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     #[cfg(test)]
     super::monk_save::postgres_tests::maintain_authority_ready(authority).await;
-    let end = Box::pin(serve_admitted_actor(stream, admitted, authority, policy)).await;
+    let end = Box::pin(serve_admitted_actor(
+        stream, admitted, authority, policy, deadline,
+    ))
+    .await;
+    if deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline)
+        && join_recovery::JOIN_RECOVERY
+            .try_with(|join| !join.published())
+            .unwrap_or(false)
+    {
+        return end;
+    }
     let ended = match end {
         ConnectionEnd::AdmittedThenClosed(current, _)
         | ConnectionEnd::AdmittedThenDisconnected(current)
@@ -1653,6 +1721,42 @@ async fn close_admitted<S: AsyncWrite + Unpin>(
 ) -> ConnectionEnd {
     let _ = send_error(stream, error, admitted.continuity.connection_generation).await;
     ConnectionEnd::AdmittedThenClosed(admitted, error)
+}
+
+async fn write_join_frame<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    frame: &[u8],
+    admitted: AdmittedSession,
+    generation: u64,
+    deadline: tokio::time::Instant,
+) -> Result<(), ConnectionEnd> {
+    if tokio::time::Instant::now() >= deadline {
+        return Err(join_unavailable(stream, admitted, generation).await);
+    }
+    match tokio::time::timeout_at(deadline, write_frame(stream, frame)).await {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(_)) => Err(ConnectionEnd::AdmittedThenDisconnected(admitted)),
+        Err(_) => Err(join_unavailable(stream, admitted, generation).await),
+    }
+}
+
+async fn join_stage<T>(
+    deadline: Option<tokio::time::Instant>,
+    stage: impl Future<Output = T>,
+) -> Option<T> {
+    if let Some(deadline) = deadline {
+        if tokio::time::Instant::now() >= deadline {
+            return None;
+        }
+        tokio::time::timeout_at(
+            deadline,
+            crate::durability::with_holder_deadline(deadline, stage),
+        )
+        .await
+        .ok()
+    } else {
+        Some(stage.await)
+    }
 }
 
 /// FND-04C §4.1 (owner 2026-11-10): an admitted or resumed session whose join could not be

@@ -111,25 +111,28 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     policy: LivenessPolicy,
     integrity: &mut integrity::Integrity,
     require_session_binding: bool,
+    join_deadline: Option<tokio::time::Instant>,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
-    let run = async {
+    let generation = admitted.continuity.connection_generation;
+    let selected = admitted.continuity.selected_capabilities;
+    let mut staged = admitted;
+    let bootstrap = async {
         let (_, projection) = authority
-            .house_scope_ack(admitted)
+            .house_scope_ack(staged)
             .await
             .map_err(|_| ServeEnd::Disconnected)?
             .ok_or(ServeEnd::Disconnected)?;
-        let sequence = admitted
+        let sequence = staged
             .continuity
             .server_sequence
             .checked_add(1)
             .ok_or(ServeEnd::Disconnected)?;
-        let actor = admitted.runtime_actor.ok_or(ServeEnd::Disconnected)?;
-        let selected = admitted.continuity.selected_capabilities;
+        let actor = staged.runtime_actor.ok_or(ServeEnd::Disconnected)?;
         let (mut services, mut item_domains) =
-            house_hireling::State::prepare(authority, actor, &mut admitted).await?;
+            house_hireling::State::prepare(authority, actor, &mut staged).await?;
         super::cooldowns::snapshot(
             authority,
-            &admitted,
+            &staged,
             services.cooldowns.as_mut(),
             &mut item_domains,
         )?;
@@ -142,7 +145,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         if selected.contains(CAPABILITY_ZONES_NOLOGOUT_V1) {
             domains.push(DomainSnapshot {
                 domain_id: STATE_DOMAIN_SERVER_MESSAGES,
-                revision: admitted.continuity.server_message_revision,
+                revision: staged.continuity.server_message_revision,
                 snapshot_type: 1,
                 payload: SERVER_MESSAGES_EMPTY_SNAPSHOT,
             });
@@ -155,7 +158,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
         }));
         services.appearance_domain(&mut domains);
         let snapshot = encode_single_chunk_snapshot(
-            admitted.continuity.connection_generation,
+            staged.continuity.connection_generation,
             sequence,
             sequence,
             &domains,
@@ -166,29 +169,51 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 .await
                 .map_err(|_| ServeEnd::Disconnected)?;
         }
-        admitted.continuity.server_sequence = sequence;
-        zones_nologout_transport::delivered(&mut admitted);
+        join_published();
+        staged.continuity.server_sequence = sequence;
+        zones_nologout_transport::delivered(&mut staged);
         // A retained idle owner survives a House handoff or transport retry.
         // Only a genuinely fresh recovered actor needs its initial clock value.
-        if admitted.continuity.gameplay_idle.last_activity().is_none() {
-            admitted
+        if staged.continuity.gameplay_idle.last_activity().is_none() {
+            staged
                 .continuity
                 .gameplay_idle
                 .activity(authority.gameplay_idle_now());
         }
-        authority.observe_gameplay_idle(admitted);
+        authority.observe_gameplay_idle(staged);
         if server_messages.is_none() {
             *server_messages = Some(
-                ServerMessageConnection::join(root_authority, admitted)
+                ServerMessageConnection::join(root_authority, staged)
                     .ok_or(ServeEnd::Disconnected)?,
             );
         }
-        let mut commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
+        let commands = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
             authority.session_commands(),
-            &admitted,
+            &staged,
         )
         .ok_or(ServeEnd::Disconnected)?;
-        let generation = admitted.continuity.connection_generation;
+        Ok::<_, ServeEnd>((services, commands))
+    };
+    let (mut services, mut commands) = match join_stage(join_deadline, bootstrap).await {
+        Some(Ok(ready)) => {
+            admitted = staged;
+            ready
+        }
+        Some(Err(_))
+            if join_deadline.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) =>
+        {
+            return Err(Box::new(
+                join_unavailable(stream, admitted, generation).await,
+            ));
+        }
+        Some(Err(end)) => return Err(Box::new(end.finish(admitted))),
+        None => {
+            return Err(Box::new(
+                join_unavailable(stream, admitted, generation).await,
+            ));
+        }
+    };
+    let run = async {
         let mut queue = house_hireling::step::Queue::default();
         let mut podium = None::<PodiumWalk>;
         let mut liveness = Liveness::new(policy);

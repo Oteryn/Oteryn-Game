@@ -5,6 +5,7 @@ use super::*;
 use crate::gameplay_transport::item_view::ItemViewSnapshotDomain as OwnedDomain;
 
 pub(super) struct InitialSnapshot {
+    pub(super) tracker_revision: u64,
     pub(super) cooldowns: Option<super::cooldowns::CooldownFeed>,
     pub(super) spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     pub(super) overlay_served: bool,
@@ -152,16 +153,18 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     }
     // P22c: both stored trackers on every join, as Crystal refreshes them at login
     // (player.cpp:11560-11563).
+    let mut tracker_revision = 0;
     if admitted.continuity.selected_capabilities.domain_selected(
         oteryn_protocol_oteryn::cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
-    ) {
-        let payload = authority
-            .cyclopedia_tracker_snapshot(*admitted)
-            .await
-            .ok_or(ServeEnd::Disconnected)?;
+    ) && let Some(payload) = authority
+        .cyclopedia_tracker_join(*admitted)
+        .await
+        .map_err(|()| ServeEnd::Disconnected)?
+    {
+        tracker_revision = 1;
         domains.push(OwnedDomain {
             domain_id: oteryn_protocol_oteryn::cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
-            revision: 1,
+            revision: tracker_revision,
             snapshot_type:
                 oteryn_protocol_oteryn::cyclopedia_tracker::SNAPSHOT_TYPE_CYCLOPEDIA_TRACKER_V1,
             payload,
@@ -170,6 +173,7 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     let spell_catalog =
         super::spell_catalog::SessionCatalog::initial(authority, actor, admitted, domains).await?;
     Ok(InitialSnapshot {
+        tracker_revision,
         cooldowns,
         spell_catalog,
         overlay_served,

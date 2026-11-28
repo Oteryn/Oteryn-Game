@@ -1088,6 +1088,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<(String, [u8; 16], u32)> {
+        if self.root.holder_contended() {
+            return None;
+        }
         let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
         Box::pin(self.chat_speaker_name_with_budget(session, &retry))
             .await

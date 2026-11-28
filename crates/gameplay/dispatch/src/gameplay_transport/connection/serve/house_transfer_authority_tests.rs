@@ -64,7 +64,7 @@ fn house_idle_rechecks_staff_and_account_closure() -> Result<(), String> {
                         let mut integrity = integrity::Integrity::default();
                         let result = tokio::time::timeout(Duration::from_secs(6), serve(
                             &mut server, admitted, &authority, &authority, &mut messages,
-                            IDLE_LIVENESS, &mut integrity, false,
+                            IDLE_LIVENESS, &mut integrity, false, None,
                         )).await;
                         assert!(result.is_ok(), "House failed to recheck authority: staff={staff}");
                         assert!(matches!(result, Ok(Err(end)) if matches!(*end, ConnectionEnd::AdmittedThenDisconnected(_))));
@@ -522,6 +522,7 @@ fn house_store_claim_retry_keeps_serving_during_map_read_failure() -> Result<(),
                 IDLE_LIVENESS,
                 &mut integrity::Integrity::default(),
                 false,
+                None,
             )
             .await;
             drop(server);

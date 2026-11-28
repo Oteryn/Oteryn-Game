@@ -100,7 +100,9 @@ tokio::task_local! {
 
 /// Limit every holder operation of this owner to its remaining budget.
 pub async fn with_holder_deadline<F: Future>(deadline: TokioInstant, future: F) -> F::Output {
-    HOLDER_DEADLINE.scope(Some(holder_deadline().map_or(deadline, |outer| outer.min(deadline))), future).await
+    HOLDER_DEADLINE
+        .scope(Some(holder_deadline().map_or(deadline, |outer| outer.min(deadline))), future)
+        .await
 }
 
 pub fn holder_deadline() -> Option<TokioInstant> {
@@ -1303,7 +1305,7 @@ pub struct DurabilityRoot {
     holder_priority: Arc<HolderPriority>,
     /// Refused owners in arrival order; an idle holder is kept for the oldest waiting one.
     holder_queue: Arc<StdMutex<HolderQueue>>,
-    /// Which semantic pass has the holder checked out (NBDIAG-4).
+    /// Which owner has the holder checked out, including cleanup (NBDIAG-4).
     holder_owner: Arc<StdMutex<Option<HolderOwner>>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
     /// `DB_PASS_DEADLINE` except while a [`BootPassDeadline`] guard lives.
@@ -1574,10 +1576,9 @@ impl DurabilityRoot {
         F::Output: Send + 'static,
     {
         // Work spawned on an owner's behalf keeps that owner's place for the holder.
-        self.spawn_on_runtime(HOLDER_DEADLINE.scope(holder_deadline(), foreground::inherit_operation(holder_queue::spawned_for(
-            holder_queue::current_owner(),
-            future,
-        ))))
+        let owner = holder_queue::spawned_for(holder_queue::current_owner(), future);
+        let operation = foreground::inherit_operation(owner);
+        self.spawn_on_runtime(HOLDER_DEADLINE.scope(holder_deadline(), operation))
     }
 
     fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
@@ -1646,7 +1647,10 @@ impl DurabilityRoot {
     /// A scheduled owner instead observes the bounded background preference policy.
     #[track_caller]
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
-        let site = std::panic::Location::caller();
+        self.try_acquire_ready_at(std::panic::Location::caller())
+    }
+
+    fn try_acquire_ready_at(&self, site: Site) -> Result<PoolConnection<Postgres>, DurabilityError> {
         if holder_queue::is_background() {
             return self.try_acquire_background_ready(site);
         }
@@ -1708,13 +1712,25 @@ impl DurabilityRoot {
     /// Current checkout or idle reservation proves contention at an unissued checkout.
     pub fn holder_contended(&self) -> bool {
         !self.pool.is_closed()
-            && (self.holder_owner.lock().is_ok_and(|owner| owner.is_some())
-                || (self.is_ready() && self.holder_turn() == Turn::Kept))
+            && if self.is_ready() {
+                if holder_queue::is_background() {
+                    !self.holder_priority.background_can_attempt(Instant::now())
+                } else {
+                    self.holder_turn() == Turn::Kept
+                }
+            } else {
+                self.holder_owner.lock().is_ok_and(|owner| owner.is_some())
+            }
     }
 
     pub fn holder_owner_description(&self) -> Option<String> {
         let owner = self.holder_owner.lock().ok()?.as_ref().copied()?;
-        Some(format!("{:?} caller={} held_ms={}", owner.key, owner.site, owner.since.elapsed().as_millis()))
+        Some(format!(
+            "{:?} caller={} held_ms={}",
+            owner.key,
+            owner.site,
+            owner.since.elapsed().as_millis()
+        ))
     }
 
     /// Takes the current owner's place in the holder queue after a refused checkout that it
@@ -2032,9 +2048,12 @@ impl DurabilityRoot {
 
     #[track_caller]
     pub fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
-        let caller = std::panic::Location::caller();
+        self.try_issue_semantic_pass_at(std::panic::Location::caller())
+    }
+
+    fn try_issue_semantic_pass_at(&self, caller: Site) -> Result<IssuedSemanticPass, DurabilityError> {
         let deadline = self.semantic_deadline()?;
-        let holder = self.try_acquire_ready()?;
+        let holder = self.try_acquire_ready_at(caller)?;
         let issued = Instant::now();
         Ok(IssuedSemanticPass {
             root: self.clone(),

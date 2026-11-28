@@ -627,6 +627,7 @@ fn slow_refresh_session(delay: std::time::Duration) -> TestResult {
                             admitted(false)?,
                             &authority,
                             IDLE_LIVENESS,
+                            None,
                         )
                         .await;
                         drop(server);
@@ -954,6 +955,7 @@ fn activity_noninitiator_serve_barrier_fences_two_already_queued_frames() -> Tes
                         source,
                         &authority,
                         IDLE_LIVENESS,
+                        None,
                     ));
                     let driving = async move {
                         let mut commits = 0;

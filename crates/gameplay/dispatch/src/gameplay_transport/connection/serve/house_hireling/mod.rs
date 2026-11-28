@@ -491,13 +491,17 @@ impl State {
         periodic: bool,
     ) -> Result<(), ServeEnd> {
         if let Some(view) = self.visibility.as_mut() {
-            let entities = crate::gameplay_transport::entity_names::observe(
+            let entities = match crate::gameplay_transport::entity_names::observe_result(
                 authority,
                 self.actor,
                 admitted.continuity.selected_capabilities,
             )
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            {
+                Ok(entities) => entities,
+                Err(super::AdmissionRefusal::Unavailable) => return Ok(()),
+                Err(_) => return Err(ServeEnd::Disconnected),
+            };
             let sequence = admitted.continuity.server_sequence;
             let projection = self
                 .appearances
@@ -515,9 +519,8 @@ impl State {
                 .await;
             let (_, revision) = match projection {
                 Ok(published) => published,
-                Err(ObservationError::HolderBusy | ObservationError::RespawnPending)
-                    if periodic =>
-                {
+                Err(ObservationError::HolderBusy) => return Ok(()),
+                Err(ObservationError::RespawnPending) if periodic => {
                     return Ok(());
                 }
                 Err(_) => return Err(ServeEnd::Disconnected),

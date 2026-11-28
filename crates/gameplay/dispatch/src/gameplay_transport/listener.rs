@@ -318,15 +318,27 @@ where
         return None;
     }
     let admit_started = tokio::time::Instant::now();
+    use connection::join_recovery::{JOIN_RECOVERY, JoinRecovery};
+    let (end, served, pending_join, published) = JOIN_RECOVERY.scope(JoinRecovery::default(), async {
+    let join_deadline = admit_started + crate::durability::ROOT_RECOVERY_WINDOW;
     let admitted = match trace {
         Some(trace) => {
             connection::with_connection_trace(
                 trace,
-                admit_frame(&mut stream, &frame, authority, identifiers),
+                connection::admit_frame_by(
+                    &mut stream,
+                    &frame,
+                    authority,
+                    identifiers,
+                    join_deadline,
+                ),
             )
             .await
         }
-        None => admit_frame(&mut stream, &frame, authority, identifiers).await,
+        None => {
+            connection::admit_frame_by(&mut stream, &frame, authority, identifiers, join_deadline)
+                .await
+        }
     };
     drop(unit);
     match &admitted {
@@ -359,11 +371,11 @@ where
                             oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1,
                         ) => connection::with_selected_connection_trace(
                             trace,
-                            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+                            connection::serve_admitted_by(&mut stream, admitted, authority, IDLE_LIVENESS, Some(join_deadline)),
                         )
                         .await,
                     Some(_) | None => {
-                        serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS).await
+                        connection::serve_admitted_by(&mut stream, admitted, authority, IDLE_LIVENESS, Some(join_deadline)).await
                     }
                 }
             },
@@ -388,7 +400,11 @@ where
             ),
         },
     };
+        let (pending_join, published) = JOIN_RECOVERY.with(|join| (join.take_pending(), join.published()));
+        (end, served, pending_join, published)
+    }).await;
     report_transport_close(&end, served, admit_started.elapsed(), trace);
+    drop(stream);
     if let ConnectionEnd::AdmittedThenClosed(session, _)
     | ConnectionEnd::AdmittedThenDisconnected(session)
     | ConnectionEnd::AdmittedThenControlLost(session)
@@ -406,13 +422,16 @@ where
             true,
         ) => Some((
             *session,
-            IDLE_LIVENESS
-                .interval
-                .saturating_mul(IDLE_LIVENESS.missed_limit),
+            if published {
+                IDLE_LIVENESS
+                    .interval
+                    .saturating_mul(IDLE_LIVENESS.missed_limit)
+            } else {
+                Duration::ZERO
+            },
         )),
         _ => None,
     };
-    drop(stream);
     // This physical socket has no subsequent loss/grace owner. Keep its
     // root through the whole serve future (including shutdown), then drop
     // only local aliases after the listener has selected the final result.
@@ -428,6 +447,7 @@ where
     lost.map(|(session, wait)| {
         let reset = drain.and_then(|drain| drain.reset());
         LostControl {
+            pending_join,
             session,
             wait: if reset.is_some() {
                 Duration::ZERO
@@ -441,6 +461,7 @@ where
 
 /// An ended admitted connection whose control is lost after `wait` without restored control.
 pub(super) struct LostControl {
+    pub(super) pending_join: Option<Box<connection::join_recovery::UnpublishedJoin>>,
     pub(super) session: AdmittedSession,
     pub(super) wait: Duration,
     pub(super) reset: Option<crate::durability::world_reset::RetiringWorldReset>,
@@ -458,7 +479,19 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     let settle = async {
         let mut backoff = RECONCILE_BACKOFF;
         loop {
-            match authority.settle_activity_connection(lost.session).await {
+            let session = match lost.pending_join.as_deref() {
+                Some(pending) => {
+                    authority
+                        .settle_unpublished_join(pending, lost.session)
+                        .await
+                }
+                None => Ok(lost.session),
+            };
+            let settled = match session {
+                Ok(session) => authority.settle_activity_connection(session).await,
+                Err(()) => Err(()),
+            };
+            match settled {
                 Ok(session) => break session,
                 Err(()) => {
                     tokio::time::sleep(backoff).await;

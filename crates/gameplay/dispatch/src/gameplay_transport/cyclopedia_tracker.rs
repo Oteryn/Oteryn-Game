@@ -43,6 +43,14 @@ macro_rules! authority_methods {
             async { None }
         }
 
+        /// Join can defer the advisory domain when a live holder blocks its read.
+        fn cyclopedia_tracker_join(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+        ) -> impl std::future::Future<Output = Result<Option<Vec<u8>>, ()>> {
+            async move { self.cyclopedia_tracker_snapshot(admitted).await.map(Some).ok_or(()) }
+        }
+
         /// The trackers to push after settled kills; consumes the session's kill marks even
         /// when domain 98 is not `selected`.
         fn cyclopedia_tracker_refresh(
@@ -80,6 +88,20 @@ macro_rules! composed_methods {
                 })
                 .await
                 .ok()
+        }
+
+        async fn cyclopedia_tracker_join(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+        ) -> Result<Option<Vec<u8>>, ()> {
+            if self.root.holder_contended() {
+                return Ok(None);
+            }
+            match self.cyclopedia_tracker_snapshot(admitted).await {
+                Some(payload) => Ok(Some(payload)),
+                None if self.root.holder_contended() => Ok(None),
+                None => Err(()),
+            }
         }
 
         async fn cyclopedia_tracker_refresh(
