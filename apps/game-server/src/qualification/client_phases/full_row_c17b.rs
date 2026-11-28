@@ -850,6 +850,19 @@ fn verify_relog_timer(
     Ok(())
 }
 
+fn live_rat_tile(
+    caster: &DevClientSession,
+    rat: oteryn_dev_client::EntityRef,
+    phase: &str,
+) -> TestResult<TilePos> {
+    let sequence = caster.last_server_sequence();
+    let entity = caster.world_entities().and_then(|view| view.get(&rat))
+        .ok_or_else(|| format!("C17b exact Rat absent phase={phase} rat={rat:?} sequence={sequence}"))?;
+    let position = tile(entity.position)?;
+    evidence(&format!("C17B_RAT_TARGET phase={phase} rat={rat:?} position={position:?} sequence={sequence}"));
+    Ok(position)
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -957,6 +970,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if invisibility_remaining(&mut caster).await?.is_none_or(|time| time <= 0) {
         return Err("C17b caster lost Invisible before attacking the Rat".into());
     }
+    let current_rat_tile = live_rat_tile(&caster, rat, "attack")?;
+    let caster_tile = tile(caster.world_spatial().actor_position)?;
+    if current_rat_tile.floor != caster_tile.floor
+        || current_rat_tile.x.abs_diff(caster_tile.x).max(current_rat_tile.y.abs_diff(caster_tile.y)) != 1
+    {
+        return Err(format!("C17b exact Rat moved out of melee reach: caster={caster_tile:?} rat={current_rat_tile:?}").into());
+    }
     caster.take_events();
     let selected = caster.session_mut().attack_target(Some(&rat)).await?;
     if selected.disposition != AttackIntentDisposition::Ok {
@@ -977,18 +997,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             caster.service_liveness(Duration::from_millis(100)).await?;
         }
     }).await?;
-    if invisibility_remaining(&mut caster).await?.is_none_or(|time| time <= 0) {
-        return Err("C17b caster lost Invisible by the attributed hit".into());
-    }
-    row.pass("caster-damages-rat", damage)?;
-    if caster
-        .session_mut()
-        .combat_state()
-        .is_none_or(|state| state.target != Some(rat))
-    {
-        return Err("C17b exact Rat target absent before clear".into());
-    }
     full_e2ef5::with_observer_liveness(&mut observer, async {
+        if caster.session_mut().combat_state().is_none_or(|state| state.target != Some(rat)) {
+            live_rat_tile(&caster, rat, "reselect-before-clear")?;
+            let selected = caster.session_mut().attack_target(Some(&rat)).await?;
+            require_mechanic_acceptance(selected.status, "C17b exact Rat reselection")?;
+            if selected.disposition != AttackIntentDisposition::Ok {
+                return Err(format!("C17b exact Rat reselection refused: {selected:?}").into());
+            }
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+            while caster.session_mut().combat_state().is_none_or(|state| state.target != Some(rat)) {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err("C17b exact Rat reselection did not project the target".into());
+                }
+                caster.service_liveness(Duration::from_millis(50)).await?;
+            }
+        }
         let clear = caster.session_mut().attack_target(None).await?;
         require_mechanic_acceptance(clear.status, "C17b Rat target clear")?;
         if clear.disposition != AttackIntentDisposition::Ok {
@@ -1014,6 +1038,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     })
     .await?;
+    if invisibility_remaining(&mut caster).await?.is_none_or(|time| time <= 0) {
+        return Err("C17b caster lost Invisible by the attributed hit and target clear".into());
+    }
+    row.pass("caster-damages-rat", damage)?;
     let session = caster.join_snapshot().game_session_id;
     let position = caster.world_spatial().actor_position;
     let durable_vitals = full_e2ef5::with_observer_liveness(
