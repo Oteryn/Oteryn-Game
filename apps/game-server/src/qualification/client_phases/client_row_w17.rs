@@ -10,8 +10,9 @@ use oteryn_protocol_oteryn::arena::{
 };
 
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    use std::io::Write;
     let root = required("E2E_ALL_CAPTURE_DIR")?;
-    std::fs::write(Path::new(&root).join(name), bytes)?;
+    std::fs::File::create_new(Path::new(&root).join(name))?.write_all(bytes)?;
     Ok(())
 }
 
@@ -28,6 +29,13 @@ async fn request(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step={step} status={:?} payload={:?}", reply.status, reply.payload).into());
     }
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(client.join_snapshot().game_session_id.as_bytes());
+    bytes.extend_from_slice(&reply.command_id.to_be_bytes());
+    bytes.extend_from_slice(&reply.server_sequence.to_be_bytes());
+    bytes.extend_from_slice(&(reply.status as u32).to_be_bytes());
+    bytes.extend_from_slice(&reply.payload);
+    capture(&format!("w17-{step}.bin"), &bytes)?;
     Ok(reply.payload)
 }
 
@@ -116,18 +124,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         drome_text(&before),
         drome_text(&entered)
     ));
+    let session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("step=logout observed={logout:?}").into());
     }
-    capture("w17-catalogue.bin", &catalogue)?;
-    capture("w17-status.bin", &status)?;
-    capture("w17-advance.bin", &advance)?;
-    capture("w17-drome-status.bin", &drome_status)?;
-    capture("w17-drome-enter.bin", &drome_enter)?;
     capture("w17-expected.txt", expected.as_bytes())?;
     Ok(format!(
-        "advance={:?} drome_enter={}",
+        "session={} advance={:?} drome_enter={}",
+        uuid_text(session.as_bytes()),
         refused.disposition, entered.disposition
     ))
 }

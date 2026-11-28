@@ -1579,6 +1579,28 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
+  local w17_capture="" w17_seam_log=/dev/null
+  local row_batch="${OTERYN_E2E_ROW_BATCH-0:15}"
+  if [[ "$NODE_BOOT_WORLD" == 1 && "$NODE_BOOT_SPELLS" == 0 &&
+        ",${NODE_BOOT_E2E_ONLY:-}," =~ ^,,$|,rows, ]] &&
+     python3 - "$row_batch" <<'PY_W17_BATCH'
+import sys
+
+batch = sys.argv[1]
+if batch == "all":
+    sys.exit(0)
+start, sep, count = batch.partition(":")
+if not sep or not all(p.removeprefix("+").isascii() and p.removeprefix("+").isdecimal()
+                      and len(p.removeprefix("+").lstrip("0")) <= 20 for p in (start, count)):
+    sys.exit(1)
+start, count = (int(p.removeprefix("+").lstrip("0") or "0") for p in (start, count))
+sys.exit(not (start <= 215 < start + count and count < 2**64))
+PY_W17_BATCH
+  then
+    w17_capture="$(mktemp -d "$WORK/w17-capture.XXXXXX")"
+    w17_seam_log="$WORK/w17-seam.log"
+    test_env+=("E2E_ALL_CAPTURE_DIR=$w17_capture")
+  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
@@ -1606,7 +1628,24 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
-  )
+  ) | tee "$w17_seam_log"
+  if [[ -n "$w17_capture" ]]; then
+    local captured_session
+    captured_session="$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=W17\.client status=CAPTURED evidence=session=([0-9a-f-]{36}) .*/\1/p' "$w17_seam_log")"
+    if [[ "$captured_session" =~ ^[0-9a-f-]{36}$ ]] &&
+       E2E_ALL_CAPTURE_DIR="$w17_capture" OTERYN_W17_CAPTURE_SESSION="$captured_session" \
+         cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
+           arena::e2e_w17::e2e_w17_arena_replies_replay_into_the_arena_panel -- --exact --nocapture \
+           >"$WORK/w17-replay.log" 2>&1 &&
+       grep -q '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$WORK/w17-replay.log"; then
+      cat "$WORK/w17-replay.log"
+      printf 'SEAM_EVIDENCE e2e_all scenario=W17.client status=PASS evidence=fresh-replay session=%s\n' "$captured_session"
+    else
+      [[ ! -f "$WORK/w17-replay.log" ]] || cat "$WORK/w17-replay.log"
+      printf 'SEAM_EVIDENCE e2e_all scenario=W17.client status=FAIL evidence=capture-or-replay-failed\n'
+      return 1
+    fi
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed

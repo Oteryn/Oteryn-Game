@@ -12,25 +12,58 @@ use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
 type BoxError = Box<dyn std::error::Error>;
 
 struct Capture {
-    catalogue: Vec<u8>,
-    status: Vec<u8>,
-    advance: Vec<u8>,
-    drome_status: Vec<u8>,
-    drome_enter: Vec<u8>,
+    catalogue: GatedCommandResult,
+    status: GatedCommandResult,
+    advance: GatedCommandResult,
+    drome_status: GatedCommandResult,
+    drome_enter: GatedCommandResult,
     expected: String,
 }
 
 fn capture() -> Result<Capture, BoxError> {
     if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let root = std::path::Path::new(&root);
-        return Ok(Capture {
-            catalogue: std::fs::read(root.join("w17-catalogue.bin"))?,
-            status: std::fs::read(root.join("w17-status.bin"))?,
-            advance: std::fs::read(root.join("w17-advance.bin"))?,
-            drome_status: std::fs::read(root.join("w17-drome-status.bin"))?,
-            drome_enter: std::fs::read(root.join("w17-drome-enter.bin"))?,
+        let expected_session = std::env::var("OTERYN_W17_CAPTURE_SESSION")?.replace('-', "");
+        let mut previous = None;
+        let mut read = |step| -> Result<GatedCommandResult, BoxError> {
+            let bytes = std::fs::read(root.join(format!("w17-{step}.bin")))?;
+            let (header, payload) = bytes
+                .split_first_chunk::<36>()
+                .ok_or("truncated W17 result")?;
+            let session: [u8; 16] = header[..16].try_into()?;
+            let command_id = u64::from_be_bytes(header[16..24].try_into()?);
+            let server_sequence = u64::from_be_bytes(header[24..32].try_into()?);
+            let status = u32::from_be_bytes(header[32..].try_into()?);
+            let session_hex = u128::from_be_bytes(session);
+            if format!("{session_hex:032x}") != expected_session
+                || command_id == 0
+                || server_sequence == 0
+                || status != CommandStatus::Accepted as u32
+                || previous.is_some_and(|(id, command, sequence)| {
+                    session != id || command_id <= command || server_sequence <= sequence
+                })
+            {
+                return Err(format!("invalid W17 result identity: {step}").into());
+            }
+            previous = Some((session, command_id, server_sequence));
+            Ok(GatedCommandResult {
+                command_id,
+                status: CommandStatus::Accepted,
+                server_sequence,
+                payload: payload.to_vec(),
+            })
+        };
+        let capture = Capture {
+            catalogue: read("catalogue")?,
+            status: read("status")?,
+            advance: read("advance")?,
+            drome_status: read("drome-status")?,
+            drome_enter: read("drome-enter")?,
             expected: std::fs::read_to_string(root.join("w17-expected.txt"))?,
-        });
+        };
+        let after = read("drome-after-refusal")?;
+        assert_eq!(after.payload, capture.drome_status.payload);
+        return Ok(capture);
     }
     let state = ArenaState {
         completed_rank: 1,
@@ -48,11 +81,11 @@ fn capture() -> Result<Capture, BoxError> {
             .map_err(|error| format!("{error:?}"))
     };
     Ok(Capture {
-        catalogue: arena::encode_catalogue().map_err(|error| format!("{error:?}"))?,
-        status: result(ArenaDisposition::Applied)?,
-        advance: result(ArenaDisposition::WrongState)?,
-        drome_status: drome.encode(),
-        drome_enter: drome.encode(),
+        catalogue: accepted(&arena::encode_catalogue().map_err(|error| format!("{error:?}"))?),
+        status: accepted(&result(ArenaDisposition::Applied)?),
+        advance: accepted(&result(ArenaDisposition::WrongState)?),
+        drome_status: accepted(&drome.encode()),
+        drome_enter: accepted(&drome.encode()),
         expected: "challenge=Greenhorn|1000|10|600\nchallenge=Scrapper|5000|10|600\nchallenge=Warlord|10000|10|600\n\
                    status=Applied|1|0|0|0|0|0,0,0\nadvance=WrongState|1|0|0|0|0|0,0,0\n\
                    drome_status=3|50|50|0|0|0|0|0|0|0|1900000000\ndrome_enter=3|50|50|0|0|0|0|0|0|0|1900000000\n"
@@ -157,7 +190,7 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
     let command = request(&mut panel, Intent::Catalogue).ok_or("catalogue request refused")?;
     assert_eq!((command.capability, command.kind), (170, 240));
     assert!(command.payload.is_empty());
-    assert!(apply_result(&mut panel, &accepted(&capture.catalogue)));
+    assert!(apply_result(&mut panel, &capture.catalogue));
     let want_challenges = lines(expected, "challenge")
         .into_iter()
         .map(|row| {
@@ -183,12 +216,12 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
     let status =
         request(&mut panel, Intent::Action(ArenaAction::Status)).ok_or("status request refused")?;
     assert_eq!((status.capability, status.kind), (170, 436));
-    assert!(apply_result(&mut panel, &accepted(&capture.status)));
+    assert!(apply_result(&mut panel, &capture.status));
     let want_status = want_result(one(expected, "status")?)?;
     assert_eq!(panel.result, Some(want_status));
 
     request(&mut panel, Intent::Action(ArenaAction::Advance)).ok_or("advance request refused")?;
-    assert!(apply_result(&mut panel, &accepted(&capture.advance)));
+    assert!(apply_result(&mut panel, &capture.advance));
     let want_refusal = want_result(one(expected, "advance")?)?;
     assert_eq!(want_refusal.disposition, ArenaDisposition::WrongState);
     assert_eq!(panel.result, Some(want_refusal));
@@ -200,7 +233,7 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
         Intent::Action(ArenaAction::Drome(arena::DromeAction::Status)),
     )
     .ok_or("drome status request refused")?;
-    assert!(apply_result(&mut panel, &accepted(&capture.drome_status)));
+    assert!(apply_result(&mut panel, &capture.drome_status));
     assert_eq!(
         panel.drome,
         Some(want_drome(one(expected, "drome_status")?)?)
@@ -210,10 +243,13 @@ fn e2e_w17_arena_replies_replay_into_the_arena_panel() -> Result<(), BoxError> {
         Intent::Action(ArenaAction::Drome(arena::DromeAction::Enter)),
     )
     .ok_or("drome enter request refused")?;
-    assert!(apply_result(&mut panel, &accepted(&capture.drome_enter)));
+    assert!(apply_result(&mut panel, &capture.drome_enter));
     let want_enter = want_drome(one(expected, "drome_enter")?)?;
     assert_eq!(panel.drome, Some(want_enter));
 
+    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_some() {
+        return Ok(());
+    }
     // A refused command result and a malformed payload leave the stored replies unchanged.
     let kept = panel.clone();
     request(&mut panel, Intent::Action(ArenaAction::Status)).ok_or("status request refused")?;
