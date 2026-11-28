@@ -8,6 +8,7 @@
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::boss_encounter;
+use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 use oteryn_protocol_oteryn::bosstiary_slots::{
     BossSlotReply, BossSlotRequest, COMMAND_TYPE_BOSSTIARY_SLOTS,
 };
@@ -249,7 +250,9 @@ async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
         c.take_events();
     }
     let r = c.session_mut().attack_target(Some(&target)).await?;
-    if r.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
+    if r.disposition != AttackIntentDisposition::Ok
+        || c.session_mut().combat_state().is_none_or(|state| state.target != Some(target))
+    {
         return Err(format!("step boss-kill {key}: ATTACK reply={r:?}").into());
     }
     let until = tokio::time::Instant::now() + Duration::from_secs(90);
@@ -269,14 +272,19 @@ async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
                 if vitals.is_none_or(|vitals| vitals.health == 0) {
                     return Err(format!("step boss-kill {key}: player not alive when boss left visibility").into());
                 }
-                c.session_mut().attack_target(None).await?;
+                let clear = c.session_mut().attack_target(None).await?;
+                if clear.disposition != AttackIntentDisposition::Ok
+                    || c.session_mut().combat_state().is_none_or(|state| state.target.is_some())
+                {
+                    return Err(format!("step boss-kill {key}: target clear reply={clear:?}").into());
+                }
                 return Ok(());
             }
         }
         if tokio::time::Instant::now() >= until {
             c.session_mut().attack_target(None).await?;
             return Err(
-                format!("step boss-kill {key}: ATTACK accepted, death frame timeout").into(),
+                format!("step boss-kill {key}: death frame timeout target={target:?} last_seen={last_seen:?}").into(),
             );
         }
     }
@@ -358,6 +366,22 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .find(|entry| entry.key == boss && entry.category.eq_ignore_ascii_case("nemesis"))
         .ok_or("P02 Global ordinary boss absent from Nemesis catalogue")?;
     prepare_boss_ground(&mut c, world).await?;
+    // Ekatrix keeps her distance. Use the player's automatic chase before selecting a target.
+    let modes = FightModes {
+        fight_mode: FightMode::Offensive,
+        chase: ChaseMode::Chase,
+        ..FightModes::DEFAULT
+    };
+    if c.session_mut().combat_state().is_none_or(|state| state.modes == modes) {
+        return Err("P02 needs a different combat mode before enabling offensive chase".into());
+    }
+    let mode_reply = c.session_mut().set_fight_modes(&modes).await?;
+    if mode_reply.disposition != AttackIntentDisposition::Ok
+        || c.session_mut().combat_state().is_none_or(|state| state.modes != modes)
+    {
+        return Err(format!("P02 offensive chase did not take effect: {mode_reply:?}").into());
+    }
+    evidence("P02_COMBAT modes=offensive,chase change=confirmed");
     let previous = counts(&before).get(&boss).copied().unwrap_or(0);
     kill(&mut c, &boss).await?;
     let credited = snapshot(&mut c).await?;
