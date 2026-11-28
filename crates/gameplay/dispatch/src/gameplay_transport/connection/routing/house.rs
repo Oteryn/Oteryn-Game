@@ -76,6 +76,7 @@ pub(in super::super) async fn auction_list<A: FreshAdmissionAuthority>(
                 .selected_capabilities
                 .contains(wire::CAPABILITY_GUILDHALL_V1),
             true,
+            false,
         )
         .await,
     )

@@ -21,7 +21,7 @@ pub(super) async fn dispatch(
     include_guild_acl: bool,
 ) -> Option<Vec<u8>> {
     if query {
-        return super::house_query::dispatch(authority, actor, command, body, include_kind, false)
+        return super::house_query::dispatch(authority, actor, command, body, include_kind, false, include_guild_acl)
             .await;
     }
     let Ok(intent) = wire::decode_house_intent_selected(body, include_guild_acl) else {
@@ -142,6 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 subowners,
                 revision,
                 rules,
+                ordered,
             } => HouseManagementAction::ReplaceGuildAcl {
                 list: if subowners {
                     HouseManagementList::Subowner
@@ -150,6 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 expected_revision: revision,
                 rules,
+                ordered,
             },
             wire::HouseAction::Acl {
                 subowners,
@@ -164,6 +166,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision: revision,
                 members,
                 guild_selectors: None,
+                ordered: false,
             },
             wire::HouseAction::Door {
                 x,
@@ -172,6 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 revision,
                 members,
                 guild_selectors,
+                ordered,
             } => {
                 let floor = floor.checked_neg()?;
                 let cell = crate::content::LogicalCell {
@@ -211,6 +215,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     expected_revision: revision,
                     members,
                     guild_selectors,
+                    ordered,
                 }
             }
             wire::HouseAction::MoveOut(due_at_unix_ms) => {

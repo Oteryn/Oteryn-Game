@@ -28,11 +28,13 @@ pub enum HouseManagementAction {
         expected_revision: u64,
         members: Vec<[u8; 16]>,
         guild_selectors: Option<Vec<String>>,
+        ordered: bool,
     },
     ReplaceGuildAcl {
         list: HouseManagementList,
         expected_revision: u64,
         rules: Vec<String>,
+        ordered: bool,
     },
     MoveOut {
         due_at_unix_ms: u64,

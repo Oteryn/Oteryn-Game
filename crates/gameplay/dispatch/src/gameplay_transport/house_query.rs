@@ -136,11 +136,12 @@ pub(super) async fn dispatch(
     body: &[u8],
     include_kind: bool,
     auction_order: bool,
+    include_guild_acl: bool,
 ) -> Option<Vec<u8>> {
     let Ok(query) = wire::decode_house_query(body) else {
         return Some(wire::encode_house_result(D::Rejected, 0));
     };
-    if auction_order && query.acl.is_some() {
+    if (auction_order && query.acl.is_some()) || (query.acl_rules && !include_guild_acl) {
         return Some(wire::encode_house_result(D::Rejected, 0));
     }
     authority
@@ -184,7 +185,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some(read) = query.acl {
             return self
-                .query_house_acl(fence, &query.town, read, content_digest, include_kind)
+                .query_house_acl(
+                    fence,
+                    &query.town,
+                    read,
+                    content_digest,
+                    include_kind,
+                    query.acl_rules,
+                )
                 .await;
         }
         let houses = catalogue()?
@@ -351,19 +359,20 @@ mod tests {
                     query.extend([18, town.len() as u8]);
                     query.extend(town);
                     let authority = Authority(std::cell::Cell::new(false));
-                    let legacy = dispatch(&authority, actor, command, &query, false, false)
+                    let legacy = dispatch(&authority, actor, command, &query, false, false, false)
                         .await
                         .ok_or("missing legacy reply")?;
                     assert!(!authority.0.get());
                     query.extend([32, 1]);
-                    let detailed = dispatch(&authority, actor, command, &query, false, false)
-                        .await
-                        .ok_or("missing detailed reply")?;
+                    let detailed =
+                        dispatch(&authority, actor, command, &query, false, false, false)
+                            .await
+                            .ok_or("missing detailed reply")?;
                     assert!(authority.0.get());
                     assert!(detailed.len() > legacy.len());
                     query.extend([32, 1]);
                     assert_eq!(
-                        dispatch(&authority, actor, command, &query, false, false).await,
+                        dispatch(&authority, actor, command, &query, false, false, false).await,
                         Some(wire::encode_house_result(D::Rejected, 0))
                     );
                     Ok(())

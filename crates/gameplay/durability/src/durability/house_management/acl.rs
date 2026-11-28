@@ -74,6 +74,7 @@ pub(super) async fn qualify_guild_selectors(
     tx: &mut Tx<'_>,
     request: &HouseManagementRequest,
     rules: &[String],
+    ordered: bool,
 ) -> Result<serde_json::Value> {
     const MAX_LINES: usize = 100;
     const MAX_CHARACTERS: usize = 1999;
@@ -87,15 +88,24 @@ pub(super) async fn qualify_guild_selectors(
 
     let mut selectors = Vec::with_capacity(rules.len());
     for line in rules {
-        if line.contains(['\0', '\n', '\r']) {
+        if line.contains('\0') || (ordered && line.contains(['\n', '\r'])) {
+            return Err(HouseManagementError::Rejected);
+        }
+        if !ordered && (line.is_empty() || line.len() > 100) {
             return Err(HouseManagementError::Rejected);
         }
         let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
+        if ordered && (line.is_empty() || line.starts_with('#')) {
             continue;
         }
-        let pattern = line.strip_prefix('!').unwrap_or(line).trim();
-        let deny = line.starts_with('!');
+        let (pattern, deny) = if ordered {
+            (
+                line.strip_prefix('!').unwrap_or(line).trim(),
+                line.starts_with('!'),
+            )
+        } else {
+            (line, false)
+        };
         if pattern.is_empty() {
             return Err(HouseManagementError::Rejected);
         }
@@ -105,34 +115,42 @@ pub(super) async fn qualify_guild_selectors(
                 return Err(HouseManagementError::Rejected);
             }
             selectors.push(serde_json::json!({
-                "guild": guild, "rank": (!(rank.is_empty() || rank == "*")).then_some(rank),
+                "guild": guild, "rank": (!(rank.is_empty() || (ordered && rank == "*"))).then_some(rank),
                 "deny": deny,
             }));
-        } else {
+        } else if ordered {
             selectors.push(serde_json::json!({ "name": pattern, "deny": deny }));
+        } else {
+            return Err(HouseManagementError::Rejected);
         }
     }
     let expected = selectors.len();
     let world = request.house.world_id();
     let qualified: serde_json::Value = sqlx::query_scalar(
-        "SELECT COALESCE(jsonb_agg(
+        "WITH qualified AS (
+         SELECT rule.position,
             CASE WHEN rule.selector ? 'name' THEN rule.selector ELSE
                 jsonb_build_object('guild', g.guild_id, 'rank', r.level,
                     'identity', r.house_acl_identity, 'deny', rule.selector->'deny')
-            END ORDER BY rule.position), '[]'::jsonb)
+            END AS rule
          FROM jsonb_array_elements($2::jsonb) WITH ORDINALITY AS rule(selector, position)
          LEFT JOIN game_guilds g ON g.world_id=encode($1,'hex')::uuid
            AND g.name_key=game_character_name_key(rule.selector->>'guild') AND g.state IN(1,2)
          LEFT JOIN game_guild_ranks r ON r.guild_id=g.guild_id AND r.name_key=game_character_name_key(rule.selector->>'rank')
          WHERE rule.selector ? 'name'
-            OR (g.guild_id IS NOT NULL AND (rule.selector->>'rank' IS NULL OR r.level IS NOT NULL))",
+            OR (g.guild_id IS NOT NULL AND (rule.selector->>'rank' IS NULL OR r.level IS NOT NULL))
+         )
+         SELECT CASE WHEN $3 OR count(*) = count(DISTINCT rule)
+                 THEN COALESCE(jsonb_agg(rule ORDER BY position), '[]'::jsonb)
+                 ELSE '[]'::jsonb END FROM qualified",
     )
     .bind(world.as_bytes().as_slice())
     .bind(serde_json::Value::Array(selectors))
+    .bind(ordered)
     .fetch_one(&mut **tx)
     .await?;
     if qualified.as_array().map(Vec::len) != Some(expected) {
         return Err(HouseManagementError::Rejected);
     }
-    Ok(qualified)
+    Ok(serde_json::json!({ "rules": qualified, "lines": rules, "ordered": ordered }))
 }

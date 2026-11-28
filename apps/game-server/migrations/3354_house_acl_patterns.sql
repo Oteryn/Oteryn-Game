@@ -1,3 +1,6 @@
+ALTER TABLE game_house_acl_guild_ranks ADD COLUMN IF NOT EXISTS raw_lines TEXT[],
+ ADD COLUMN IF NOT EXISTS ordered_rules BOOLEAN NOT NULL DEFAULT false;
+
 -- Keep the existing receipt and tenure proof for the ordered selector array.
 -- Old guild-only entries have no deny field and remain grants.
 CREATE OR REPLACE FUNCTION game_house_acl_guild_ranks_proven() RETURNS TRIGGER LANGUAGE plpgsql AS $$
@@ -15,13 +18,23 @@ BEGIN
    AND r.result_revision=NEW.acl_revision AND p.acl_revision=NEW.acl_revision
    AND p.ownership_generation=NEW.ownership_generation
    AND game_house_acl_session_current(r.game_session_id,r.character_id,r.world_id,NEW.connection_generation)
- ) OR EXISTS(
+ ) OR NEW.raw_lines IS NULL OR cardinality(NEW.raw_lines)>100
+ OR EXISTS (
+  SELECT 1 FROM unnest(NEW.raw_lines) AS line
+  WHERE line IS NULL OR (NEW.ordered_rules AND (strpos(line,chr(13))>0 OR strpos(line,chr(10))>0))
+ )
+ OR (SELECT coalesce(sum(char_length(line)),0) FROM unnest(NEW.raw_lines) AS line)
+      + greatest(cardinality(NEW.raw_lines)-1,0)>1999
+ OR (SELECT coalesce(sum(char_length(rule.name)),0) + greatest(count(rule.name)-1,0)
+     FROM jsonb_to_recordset(NEW.rules) AS rule(name TEXT))>1999
+ OR EXISTS(
   SELECT 1 FROM jsonb_to_recordset(NEW.rules) AS rule(guild UUID,rank SMALLINT,identity BIGINT,name TEXT,deny BOOLEAN)
   WHERE CASE WHEN rule.name IS NOT NULL THEN
-     rule.name='' OR char_length(rule.name)>1999 OR rule.deny IS NULL
+     NOT NEW.ordered_rules OR rule.name='' OR strpos(rule.name,chr(13))>0 OR strpos(rule.name,chr(10))>0 OR rule.deny IS NULL
      OR rule.guild IS NOT NULL OR rule.rank IS NOT NULL OR rule.identity IS NOT NULL
    ELSE
-     NOT EXISTS(SELECT 1 FROM game_guilds g WHERE g.guild_id=rule.guild AND g.world_id=NEW.world_id AND g.state IN(1,2))
+     (NOT NEW.ordered_rules AND coalesce(rule.deny,false))
+     OR NOT EXISTS(SELECT 1 FROM game_guilds g WHERE g.guild_id=rule.guild AND g.world_id=NEW.world_id AND g.state IN(1,2))
      OR (rule.rank IS NULL)<>(rule.identity IS NULL)
      OR (rule.rank IS NOT NULL AND NOT EXISTS(
       SELECT 1 FROM game_guild_ranks gr WHERE gr.guild_id=rule.guild AND gr.level=rule.rank AND gr.house_acl_identity=rule.identity
@@ -33,8 +46,30 @@ BEGIN
  RETURN NULL;
 END $$;
 
+CREATE OR REPLACE FUNCTION game_house_management_guild_acl_advance(s UUID,c NUMERIC,generation NUMERIC,rules JSONB)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE r game_house_management_receipts%ROWTYPE; p game_house_properties%ROWTYPE;
+BEGIN
+ SELECT * INTO r FROM game_house_management_receipts WHERE game_session_id=s AND command_id=c;
+ IF NOT FOUND OR NOT game_house_acl_session_current(s,r.character_id,r.world_id,generation) THEN
+  RAISE EXCEPTION 'House guild ACL needs its original current session' USING ERRCODE='23514';
+ END IF;
+ SELECT * INTO p FROM game_house_properties WHERE world_id=r.world_id AND house_key=r.house_key FOR UPDATE;
+ PERFORM game_house_management_acl_advance(s,c);
+ INSERT INTO game_house_acl_guild_ranks(world_id,house_key,list_key,ownership_generation,
+  acl_revision,previous_acl_revision,connection_generation,rules,raw_lines,ordered_rules,last_session_id,last_command_id)
+ VALUES(r.world_id,r.house_key,r.list_key,p.ownership_generation,r.result_revision,p.acl_revision,generation,rules->'rules',
+  CASE WHEN jsonb_typeof(rules->'lines')='array' THEN
+   ARRAY(SELECT line FROM jsonb_array_elements_text(rules->'lines') WITH ORDINALITY AS lines(line,n) ORDER BY n)
+  END,coalesce((rules->>'ordered')::boolean,false),s,c)
+ ON CONFLICT(world_id,house_key,list_key) DO UPDATE SET
+  ownership_generation=excluded.ownership_generation,acl_revision=excluded.acl_revision,
+  previous_acl_revision=excluded.previous_acl_revision,connection_generation=excluded.connection_generation,
+  rules=excluded.rules,raw_lines=excluded.raw_lines,ordered_rules=excluded.ordered_rules,last_session_id=excluded.last_session_id,last_command_id=excluded.last_command_id;
+END $$;
+
 -- Retry only the most recent star. One rule cannot cause exponential backtracking.
-CREATE FUNCTION game_house_acl_name_matches(subject TEXT, pattern TEXT)
+CREATE OR REPLACE FUNCTION game_house_acl_name_matches(subject TEXT, pattern TEXT)
 RETURNS BOOLEAN LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog,pg_temp AS $$
 DECLARE
  subject_at INTEGER := 1;
@@ -107,7 +142,28 @@ RETURNS TABLE(list_key TEXT) LANGUAGE sql STABLE SECURITY DEFINER AS $$
    AND NOT EXISTS(SELECT 1 FROM decisions d WHERE d.list_key=e.list_key)
 $$;
 
-CREATE FUNCTION game_house_door_access(w UUID,h TEXT,actor UUID,door TEXT,digest BYTEA)
+-- Older rows have qualified identities only. Render the live names, and keep
+-- stale identities inert when no current selector could represent them.
+CREATE OR REPLACE FUNCTION game_house_acl_text(w UUID,h TEXT,list TEXT)
+RETURNS TABLE(lines TEXT[], ordered BOOLEAN) LANGUAGE sql STABLE AS $$
+ SELECT coalesce(a.raw_lines, ARRAY(
+  SELECT CASE
+   WHEN g.name IS NULL OR (rule.rank IS NOT NULL AND gr.name IS NULL)
+    THEN '# Unavailable guild selector'
+   ELSE coalesce(gr.name,'') || '@' || g.name
+   END
+  FROM ROWS FROM (jsonb_to_recordset(a.rules) AS (guild UUID,rank SMALLINT,identity BIGINT))
+    WITH ORDINALITY AS rule(guild,rank,identity,position)
+  LEFT JOIN game_guilds g ON g.guild_id=rule.guild AND g.world_id=w AND g.state IN(1,2)
+  LEFT JOIN game_guild_ranks gr ON gr.guild_id=g.guild_id AND gr.level=rule.rank AND gr.house_acl_identity=rule.identity
+  ORDER BY rule.position
+ )), a.ordered_rules
+ FROM game_house_acl_guild_ranks a
+ JOIN game_house_properties p USING(world_id,house_key)
+ WHERE a.world_id=w AND a.house_key=h AND a.list_key=list AND a.ownership_generation=p.ownership_generation
+$$;
+
+CREATE OR REPLACE FUNCTION game_house_door_access(w UUID,h TEXT,actor UUID,door TEXT,digest BYTEA)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
  SELECT EXISTS (
   SELECT 1 FROM game_house_properties p
@@ -122,8 +178,10 @@ $$;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_house_acl_guild_ranks_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema());
  EXECUTE format('ALTER FUNCTION game_house_acl_member_lists(UUID,TEXT,UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_house_management_guild_acl_advance(UUID,NUMERIC,NUMERIC,JSONB) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_house_acl_text(UUID,TEXT,TEXT) SET search_path=pg_catalog,%I,pg_temp',current_schema());
  EXECUTE format('ALTER FUNCTION game_house_door_access(UUID,TEXT,UUID,TEXT,BYTEA) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 REVOKE ALL ON FUNCTION game_house_acl_name_matches(TEXT,TEXT),
- game_house_door_access(UUID,TEXT,UUID,TEXT,BYTEA) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION game_house_door_access(UUID,TEXT,UUID,TEXT,BYTEA) TO oteryn_game_runtime;
+ game_house_acl_text(UUID,TEXT,TEXT), game_house_door_access(UUID,TEXT,UUID,TEXT,BYTEA) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_house_acl_text(UUID,TEXT,TEXT), game_house_door_access(UUID,TEXT,UUID,TEXT,BYTEA) TO oteryn_game_runtime;

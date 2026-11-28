@@ -17,6 +17,12 @@ pub struct HouseAclSnapshot {
     pub members: Vec<[u8; 16]>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseAclRules {
+    pub lines: Vec<String>,
+    pub ordered: bool,
+}
+
 pub fn encode_house_acl_read_query(
     world: [u8; 16],
     town: &str,
@@ -47,6 +53,17 @@ pub fn encode_house_acl_read_query(
     bytes(&mut out, 1, &world);
     bytes(&mut out, 2, town.as_bytes());
     bytes(&mut out, 5, &nested);
+    decode_house_query(&out)?;
+    Ok(out)
+}
+
+pub fn encode_house_acl_rules_query(
+    world: [u8; 16],
+    town: &str,
+    read: &HouseAclRead,
+) -> Result<Vec<u8>> {
+    let mut out = encode_house_acl_read_query(world, town, read)?;
+    scalar(&mut out, 6, 1);
     decode_house_query(&out)?;
     Ok(out)
 }
@@ -98,11 +115,47 @@ pub fn encode_house_acl_snapshot(snapshot: &HouseAclSnapshot) -> Result<Vec<u8>>
     Ok(out)
 }
 
+pub fn encode_house_acl_rules_snapshot(
+    snapshot: &HouseAclSnapshot,
+    rules: &HouseAclRules,
+) -> Result<Vec<u8>> {
+    if rules.lines.len() > 100 {
+        return Err(Error::LimitExceeded);
+    }
+    let mut out = encode_house_acl_snapshot(snapshot)?;
+    let mut text = Vec::new();
+    for line in &rules.lines {
+        bytes(&mut text, 1, line.as_bytes());
+    }
+    if rules.ordered {
+        scalar(&mut text, 2, 1);
+    }
+    bytes(&mut out, 6, &text);
+    if out.len() > MAX_RESULT_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    Ok(out)
+}
+
 pub fn decode_house_acl_snapshot(body: &[u8]) -> Result<HouseAclSnapshot> {
+    let (snapshot, rules) = decode_snapshot(body)?;
+    if rules.is_some() {
+        return Err(Error::Malformed);
+    }
+    Ok(snapshot)
+}
+
+pub fn decode_house_acl_rules_snapshot(body: &[u8]) -> Result<(HouseAclSnapshot, HouseAclRules)> {
+    let (snapshot, rules) = decode_snapshot(body)?;
+    Ok((snapshot, rules.ok_or(Error::Malformed)?))
+}
+
+fn decode_snapshot(body: &[u8]) -> Result<(HouseAclSnapshot, Option<HouseAclRules>)> {
     if body.len() > MAX_RESULT_BYTES {
         return Err(Error::LimitExceeded);
     }
     let (mut at, mut disposition, mut revision, mut members) = (0, None, None, None);
+    let mut rules = None;
     while at < body.len() {
         match read_varint(body, &mut at)? {
             8 => set_once(&mut disposition, read_varint(body, &mut at)?)?,
@@ -125,14 +178,37 @@ pub fn decode_house_acl_snapshot(body: &[u8]) -> Result<HouseAclSnapshot> {
                 }
                 set_once(&mut members, decoded)?;
             }
+            50 => {
+                let nested = read_bytes(body, &mut at)?;
+                let mut at = 0;
+                let mut lines = Vec::new();
+                let mut ordered = None;
+                while at < nested.len() {
+                    match read_varint(nested, &mut at)? {
+                        10 => guild_selector(&mut lines, read_bytes(nested, &mut at)?)?,
+                        16 if read_varint(nested, &mut at)? == 1 => set_once(&mut ordered, true)?,
+                        _ => return Err(Error::Malformed),
+                    }
+                }
+                set_once(
+                    &mut rules,
+                    HouseAclRules {
+                        lines,
+                        ordered: ordered.unwrap_or(false),
+                    },
+                )?;
+            }
             _ => return Err(Error::Malformed),
         }
     }
     if disposition != Some(HouseDisposition::Ok as u64) {
         return Err(Error::Malformed);
     }
-    Ok(HouseAclSnapshot {
-        revision: revision.ok_or(Error::Malformed)?,
-        members: members.ok_or(Error::Malformed)?,
-    })
+    Ok((
+        HouseAclSnapshot {
+            revision: revision.ok_or(Error::Malformed)?,
+            members: members.ok_or(Error::Malformed)?,
+        },
+        rules,
+    ))
 }

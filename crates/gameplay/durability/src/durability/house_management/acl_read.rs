@@ -5,6 +5,8 @@ use oteryn_gameplay_housing::house_management::{HOUSE_ACL_MEMBERS_MAX, HouseMana
 pub struct HouseAclView {
     pub revision: u64,
     pub members: Vec<[u8; 16]>,
+    pub rules: Vec<String>,
+    pub ordered: bool,
 }
 impl DurabilityRoot {
     pub async fn read_house_acl(
@@ -54,7 +56,11 @@ impl DurabilityRoot {
             let Ok(members) = ids.into_iter().map(|id| id.try_into()).collect::<std::result::Result<Vec<[u8;16]>,_>>() else {
                 return Ok(Err(HouseManagementError::Rejected));
             };
-            Ok(Ok(HouseAclView { revision: numeric_u64(&property,"acl_revision")?, members }))
+            let (rules, ordered) = sqlx::query_as(
+                "SELECT lines,ordered FROM game_house_acl_text(encode($1,'hex')::uuid,$2,$3)",
+            ).bind(&world).bind(key).bind(&list_key).fetch_optional(&mut *tx).await?
+             .unwrap_or_default();
+            Ok(Ok(HouseAclView { revision: numeric_u64(&property,"acl_revision")?, members, rules, ordered }))
         })).await?
     }
 }

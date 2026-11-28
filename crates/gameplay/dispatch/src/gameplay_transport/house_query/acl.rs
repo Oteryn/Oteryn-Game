@@ -11,6 +11,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read: wire::HouseAclRead,
         content_digest: [u8; 32],
         guildhalls: bool,
+        include_rules: bool,
     ) -> Option<Vec<u8>> {
         let refuse = || Some(wire::encode_house_result(D::Rejected, 0));
         let Some(record) = catalogue()?
@@ -77,11 +78,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .await
         {
-            Ok(view) => wire::encode_house_acl_snapshot(&wire::HouseAclSnapshot {
-                revision: view.revision,
-                members: view.members,
-            })
-            .ok(),
+            Ok(view) => {
+                let snapshot = wire::HouseAclSnapshot {
+                    revision: view.revision,
+                    members: view.members,
+                };
+                if include_rules {
+                    wire::encode_house_acl_rules_snapshot(
+                        &snapshot,
+                        &wire::HouseAclRules {
+                            lines: view.rules,
+                            ordered: view.ordered,
+                        },
+                    )
+                    .ok()
+                } else {
+                    wire::encode_house_acl_snapshot(&snapshot).ok()
+                }
+            }
             Err(error) => super::super::house_intent::reply(Err(error)),
         }
     }

@@ -163,15 +163,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !map.facts.doors().contains(key) {
             return None;
         }
-        let (tile, _) = crate::map::view::placement_of(key)?;
-        let id = map.facts.house_id(tile)?;
-        map.facts.house_door(tile, id)?;
-        let (digest, client_digest) = {
-            let runtime = self.runtime.lock().await;
-            let pin = runtime.content_pin();
-            (pin.server_artifact_digest(), pin.client_artifact_digest())
-        };
-        let house = super::super::house_query::source_house_key(id)
+        let (tile, id) = map.facts.numbered_house_door(key)?;
+        let digest = self
+            .runtime
+            .lock()
+            .await
+            .content_pin()
+            .server_artifact_digest();
+        let house = map
+            .facts
+            .house_door(tile, id)
+            .and_then(|_| super::super::house_query::source_house_key(id))
             .and_then(|key| HouseId::new(self.world_id, key));
         let fence = command
             .item_fence
@@ -179,7 +181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(house), Some(fence)) = (house, fence) else {
             return Some((digest, false));
         };
-        if placement[..32] != client_digest {
+        if placement[..32] != map.overlay.base().digest() {
             return Some((digest, false));
         }
         let list = HouseManagementList::Door {

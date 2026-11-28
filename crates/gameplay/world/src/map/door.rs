@@ -11,7 +11,7 @@
 //! Key doors also admit their source action binding. Direct USE refuses locked appearances
 //! and the reserved bindings 101/1001; matching key USE-WITH can unlock or lock them.
 //! Level and quest doors retain their own predicates. Registered open counterparts retain
-//! their authored pose; house doors stay outside this book.
+//! their authored pose. Numbered House doors additionally require the House ACL at USE ingress.
 
 #[path = "door/key_use_observation.rs"]
 mod key_use_observation;

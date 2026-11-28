@@ -568,12 +568,12 @@ impl BundleFacts {
                     .and(action)
                     .map(|action| u32::from(action).saturating_sub(1000));
                 let required_storage = quest.and(action);
-                // Preserve the source House and door numbers before ordinary Channel door
-                // classification deliberately seals House doors.
-                if tile.house != 0
-                    && door != PaletteDoor::No
-                    && let Some(number) = item.attrs.door.filter(|number| *number != 0)
-                {
+                let house_number = item
+                    .attrs
+                    .door
+                    .filter(|number| *number != 0)
+                    .filter(|_| tile.house != 0 && door != PaletteDoor::No);
+                if let Some(number) = house_number {
                     self.house_doors.push((pos, tile.house, number));
                 }
                 let key = u8::try_from(ordinal)
@@ -585,22 +585,30 @@ impl BundleFacts {
                     key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
                 // Key and level door actions are interpreted by this owner. Quest and other
                 // bindings retain their existing owner and remain sealed here.
-                let key_action = matches!(door, PaletteDoor::Pair { key_door: true, .. })
-                    && !bound_without_action(&item.attrs);
-                let level_action = required_level.is_some()
-                    && item.attrs.unique.is_none()
-                    && item.attrs.door.is_none();
-                let quest_action = required_storage.is_some()
-                    && item.attrs.unique.is_none()
-                    && item.attrs.door.is_none();
+                // For a numbered House door the number selects its ACL. Other authored
+                // bindings still participate in the normal door classification.
+                let bound_door = item.attrs.door.is_some() && house_number.is_none();
+                let bound_placement = bound_without_action_or_door(&item.attrs) || bound_door;
+                let key_action =
+                    matches!(door, PaletteDoor::Pair { key_door: true, .. }) && !bound_placement;
+                let level_action =
+                    required_level.is_some() && item.attrs.unique.is_none() && !bound_door;
+                let quest_action =
+                    required_storage.is_some() && item.attrs.unique.is_none() && !bound_door;
                 let missing_predicate = (level.is_some() || quest.is_some()) && action.is_none();
                 let door = if dropped
                     || missing_predicate
-                    || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
+                    || ((bound_placement || item.attrs.action.is_some())
+                        && !key_action
+                        && !level_action
+                        && !quest_action)
                 {
                     PaletteDoor::No
-                } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
-                    // A house door belongs to the house runtime, never to the channel DoorBook.
+                } else if tile.house != 0
+                    && house_number.is_none()
+                    && matches!(door, PaletteDoor::Pair { .. })
+                {
+                    // Only numbered House doors can qualify a list for the USE route.
                     PaletteDoor::Sealed
                 } else {
                     door
@@ -798,6 +806,25 @@ impl BundleFacts {
             return None;
         }
         Some(u32::from(number))
+    }
+
+    /// A numbered source door at this exact placement, including ambiguous tiles.
+    pub fn numbered_house_door(&self, key: u64) -> Option<(TilePos, u32)> {
+        let (tile, _) = view::placement_of(key)?;
+        let house = self.house_id(tile)?;
+        let at = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()?;
+        let number = self.placements[at]
+            .1
+            .attrs
+            .door
+            .filter(|number| *number != 0)?;
+        self.house_doors
+            .binary_search(&(tile, house, number))
+            .ok()?;
+        Some((tile, house))
     }
 
     /// The doors of the bundle and their current state.
@@ -1128,8 +1155,11 @@ fn bound(attrs: &Attrs) -> bool {
 }
 
 fn bound_without_action(attrs: &Attrs) -> bool {
+    attrs.door.is_some() || bound_without_action_or_door(attrs)
+}
+
+fn bound_without_action_or_door(attrs: &Attrs) -> bool {
     attrs.unique.is_some()
-        || attrs.door.is_some()
         || attrs.depot.is_some()
         || attrs.teleport.is_some()
         || attrs.text.is_some()

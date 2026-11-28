@@ -106,8 +106,9 @@ fn binding(
             expected_revision,
             members,
             guild_selectors,
+            ordered,
         } => {
-            hash.update([1]);
+            hash.update([if *ordered { 5 } else { 1 }]);
             hash.update(list.key().ok_or(HouseManagementError::Rejected)?.as_bytes());
             hash.update(expected_revision.to_be_bytes());
             for member in members {
@@ -122,8 +123,9 @@ fn binding(
             list,
             expected_revision,
             rules,
+            ordered,
         } => {
-            hash.update([4]);
+            hash.update([if *ordered { 6 } else { 4 }]);
             hash.update(list.key().ok_or(HouseManagementError::Rejected)?.as_bytes());
             hash.update(expected_revision.to_be_bytes());
             hash_guild_rules(&mut hash, rules)?;
@@ -194,6 +196,7 @@ async fn apply(
             expected_revision,
             members,
             guild_selectors,
+            ordered,
         } => {
             let current = numeric_u64(&property, "acl_revision")?;
             if let Some(rules) = guild_selectors {
@@ -203,7 +206,8 @@ async fn apply(
                 ) {
                     return Err(HouseManagementError::Rejected);
                 }
-                qualified_guild = Some(acl::qualify_guild_selectors(tx, request, rules).await?);
+                qualified_guild =
+                    Some(acl::qualify_guild_selectors(tx, request, rules, *ordered).await?);
             }
             acl::replace(
                 tx,
@@ -219,6 +223,7 @@ async fn apply(
             list,
             expected_revision,
             rules,
+            ordered,
         } => {
             let current = numeric_u64(&property, "acl_revision")?;
             let next = acl::next_revision(
@@ -231,7 +236,8 @@ async fn apply(
                 current,
             )
             .await?;
-            qualified_guild = Some(acl::qualify_guild_selectors(tx, request, rules).await?);
+            qualified_guild =
+                Some(acl::qualify_guild_selectors(tx, request, rules, *ordered).await?);
             next
         }
         HouseManagementAction::MoveOut { .. } | HouseManagementAction::CancelMoveOut => {

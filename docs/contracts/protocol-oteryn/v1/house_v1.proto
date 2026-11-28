@@ -14,7 +14,7 @@ message HouseAclV1 {
   repeated bytes character_ids = 3;
 }
 message HouseDoorPositionV1 { optional uint32 x = 1; optional uint32 y = 2; optional sint32 floor = 3; } // x/y <=65535, Global z 0..15
-message HouseGuildSelectorsV1 { repeated string selectors = 1; }
+message HouseGuildSelectorsV1 { repeated string selectors = 1; optional bool ordered = 2; }
 message HouseDoorV1 {
   HouseDoorPositionV1 position = 1;
   optional uint64 expected_revision = 2;
@@ -39,7 +39,8 @@ message HouseIntentV1 {
 // and the real door binding are checked by the same server owner as writes.
 message HouseAclReadV1 { string house_key = 1; uint32 role = 2; HouseDoorPositionV1 door = 3; } // role 1 Guest, 2 Subowner, 3 Door
 message HouseAclSnapshotV1 { repeated bytes character_ids = 1; } // <=200 unique UUIDv7, canonical order
-message HouseQueryV1 { bytes world_id = 1; string town = 2; optional string cursor = 3; optional bool details = 4; HouseAclReadV1 acl = 5; }
+message HouseQueryV1 { bytes world_id = 1; string town = 2; optional string cursor = 3; optional bool details = 4; HouseAclReadV1 acl = 5; optional bool acl_rules = 6; }
+message HouseAclTextRulesV1 { repeated string lines = 1; optional bool ordered = 2; }
 message HouseSummaryV1 {
   string house_key = 1;
   // All six metadata fields are emitted together only when details=true.
@@ -63,6 +64,7 @@ message HouseSummaryV1 {
 message HouseResultV1 {
   uint32 disposition = 1; // 1 OK, 2 REJECTED, 3 CONFLICT; capability 99 adds 4 NOT_GUILD_LEADER, 5 GUILD_INACTIVE, 6 GUILD_ALREADY_HAS_HALL, 7 GUILD_ALREADY_BIDDING, 8 INSUFFICIENT_FUNDS, 9 BALANCE_LIMIT, 10 STALE_LEADER, 11 NO_CHANGE; no result on ambiguous commit
   uint64 revision = 2; // ACL/notice revision; 0 on refusal
+  HouseAclTextRulesV1 acl_rules = 6; // only for an opted-in ACL read with selected capability 515
   HouseAclSnapshotV1 acl = 5; // only in reply to ACL read, including an explicitly empty list
   repeated HouseSummaryV1 houses = 3; // <=20, sorted by native House key
   optional string cursor = 4; // exclusive keyset cursor only when more results exist

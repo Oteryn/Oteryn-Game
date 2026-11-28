@@ -10,7 +10,7 @@ use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
-    UseCommand, serve_admitted,
+    serve_admitted,
 };
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::house as wire;
@@ -567,8 +567,10 @@ fn scenario(patterns: bool) -> TestResult {
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
         verify_guild_acl(&h, &restarted, &mut admitted).await?;
         if patterns {
+            verify_door_target(&restarted, &mut admitted).await?;
+            verify_legacy_acl_bound(&h, &restarted, &mut admitted).await?;
             verify_ordered_acl(&h, &restarted, &mut admitted, id(91)).await?;
-            verify_pattern_door(&h, &restarted, &mut admitted, deps.actor).await?;
+            verify_pattern_door(&h, &restarted, &mut admitted).await?;
         }
         drop(replayed);
         drop(restarted);
@@ -669,6 +671,100 @@ async fn verify_guild_acl(
     verify_guild_acl_write_fence(h, admitted).await
 }
 
+async fn verify_legacy_acl_bound(
+    h: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    // This used to be an exact rank selector. The pattern grammar may not
+    // turn old bytes into a grant to all guild members.
+    let mut old = Vec::new();
+    scalar(&mut old, 1, 1);
+    scalar(&mut old, 2, 9);
+    bytes(&mut old, 3, b"*@House Guild");
+    assert_eq!(
+        send(owner, admitted, 6252, &intent(4, &old)).await?.1,
+        wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
+    );
+
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let guilds: Vec<String> = sqlx::query_scalar(
+        "INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at)
+         SELECT game_character_uuid_v7(),encode($1,'hex')::uuid,
+          repeat('a',23) || chr(97 + n / 26) || chr(97 + n % 26),2,9999999999999,1,1
+         FROM generate_series(0,79) n RETURNING name",
+    ).bind(id(42).as_slice()).fetch_all(&mut *tx).await?;
+    let mut lines: Vec<_> = guilds.iter().map(|guild| format!("@{guild}")).collect();
+    lines.push("@House Guild".to_owned());
+    lines.sort_unstable();
+    // These records have the pre-3354 identity-only shape and a valid existing
+    // receipt. An upgrade must leave their active grants and list revision intact.
+    sqlx::query(
+        "UPDATE game_house_acl_guild_ranks a SET raw_lines=NULL, rules=(
+          SELECT jsonb_agg(jsonb_build_object('guild',g.guild_id,'rank',NULL,'identity',NULL) ORDER BY g.name COLLATE \"C\")
+          FROM game_guilds g WHERE g.world_id=a.world_id AND g.name=ANY($2))
+         WHERE a.house_key=$1 AND a.list_key='guest'",
+    ).bind(HOUSE).bind(guilds.iter().map(String::as_str).chain(["House Guild"]).collect::<Vec<_>>())
+     .execute(&mut *tx).await?;
+    tx.commit().await?;
+    assert!(lines.join("\n").chars().count() > 1999);
+    assert_eq!(guild_house_role(h, id(91)).await?.as_deref(), Some("GUEST"));
+    assert_eq!(
+        read_acl_rules(owner, admitted, wire::HouseAclSelector::Guest).await?,
+        (9, lines.clone(), false)
+    );
+
+    let mut old = Vec::new();
+    scalar(&mut old, 1, 1);
+    scalar(&mut old, 2, 9);
+    for line in &lines {
+        bytes(&mut old, 3, line.as_bytes());
+    }
+    assert_eq!(
+        send(owner, admitted, 6252, &intent(4, &old)).await?.1,
+        wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
+    );
+    assert_eq!(
+        read_acl_rules(owner, admitted, wire::HouseAclSelector::Guest).await?,
+        (9, lines, false)
+    );
+
+    let selected = admitted.continuity.selected_capabilities;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 49])
+            .ok_or("House without guild ACL capability")?;
+    let body = textual_acl(1, 9, &["*"]);
+    assert_eq!(
+        send(owner, admitted, 6252, &body).await?,
+        (CommandStatus::Rejected, vec![])
+    );
+    admitted.continuity.selected_capabilities = selected;
+    Ok(())
+}
+
+async fn read_acl_rules(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    selector: wire::HouseAclSelector,
+) -> TestResult<(u64, Vec<String>, bool)> {
+    let query = wire::encode_house_acl_rules_query(
+        id(42),
+        "oteryn:content.area.city.liberty_bay",
+        &wire::HouseAclRead {
+            house: HOUSE.to_owned(),
+            selector,
+        },
+    )
+    .map_err(debug)?;
+    let (status, reply) = send(owner, admitted, 57, &query).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let (snapshot, rules) = wire::decode_house_acl_rules_snapshot(&reply).map_err(debug)?;
+    Ok((snapshot.revision, rules.lines, rules.ordered))
+}
+
 async fn verify_ordered_acl(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -694,6 +790,9 @@ async fn verify_ordered_acl(
         (20, &too_many, None, false),
         (20, &[&overlong], None, false),
         (20, &[&comment, "#"], None, false),
+        (20, &["# embedded\nLF"], None, false),
+        (20, &["# embedded\rCR"], None, false),
+        (20, &["# embedded\0NUL"], None, false),
         (20, &[&comment], None, true),
         (21, &[""], None, true),
     ];
@@ -708,6 +807,14 @@ async fn verify_ordered_acl(
                     wire::encode_house_result(wire::HouseDisposition::Ok, revision + 1)
                 ),
                 "House list {lines:?}"
+            );
+            assert_eq!(
+                read_acl_rules(owner, admitted, wire::HouseAclSelector::Guest).await?,
+                (
+                    revision + 1,
+                    lines.iter().map(|line| (*line).to_owned()).collect(),
+                    true
+                )
             );
         } else {
             assert_ne!(
@@ -727,17 +834,71 @@ async fn verify_ordered_acl(
         guild_house_role(h, actor).await?.as_deref(),
         Some("SUBOWNER")
     );
+    assert_eq!(
+        read_acl_rules(owner, admitted, wire::HouseAclSelector::Subowner).await?,
+        (23, vec!["House M*".to_owned()], true)
+    );
     Ok(())
+}
+
+async fn verify_door_target(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let bundle = owner.bundle_map().ok_or("House door bundle")?;
+    let bundle_digest = bundle.overlay.base().digest();
+    let artifact_digest = owner
+        .runtime
+        .lock()
+        .await
+        .content_pin()
+        .client_artifact_digest();
+    assert_ne!(bundle_digest, artifact_digest);
+    assert_eq!(
+        use_house_door(owner, admitted, artifact_digest, 0).await?,
+        UseDisposition::StaleState
+    );
+    assert_eq!(
+        use_house_door(owner, admitted, bundle_digest, 0).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(
+        use_house_door(owner, admitted, bundle_digest, 1).await?,
+        UseDisposition::Committed
+    );
+    Ok(())
+}
+
+async fn use_house_door(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    digest: [u8; 32],
+    revision: u64,
+) -> TestResult<oteryn_protocol_oteryn::world_object::UseDisposition> {
+    use crate::map::boot::tests::door_key;
+    use oteryn_protocol_oteryn::world_object::{
+        COMMAND_TYPE_USE_INTENT, WorldObjectTarget, decode_use_result, encode_use_intent,
+    };
+    let mut placement = digest.to_vec();
+    placement.extend_from_slice(&door_key().to_be_bytes());
+    let target = encode_use_intent(&WorldObjectTarget {
+        placement,
+        expected_revision: revision,
+    })
+    .map_err(debug)?;
+    tokio::time::sleep(crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN).await;
+    let (_, reply) = send(owner, admitted, COMMAND_TYPE_USE_INTENT, &target).await?;
+    decode_use_result(&reply).map_err(|error| format!("{error:?}").into())
 }
 
 async fn verify_pattern_door(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    actor: crate::foundation::ExactActorRef,
 ) -> TestResult {
-    use crate::map::boot::tests::door_key;
-    use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
 
     let name: String = sqlx::query_scalar(
         "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
@@ -746,18 +907,14 @@ async fn verify_pattern_door(
     .fetch_one(&h.pool)
     .await?;
     let exclude = format!("!{name}");
-    let pin = owner
-        .runtime
-        .lock()
-        .await
-        .content_pin()
-        .client_artifact_digest();
-    let mut placement = pin.to_vec();
-    placement.extend_from_slice(&door_key().to_be_bytes());
-    for (revision, rules, disposition) in [
-        (23, ["*", exclude.as_str()], UseDisposition::Committed),
-        (24, [exclude.as_str(), "*"], UseDisposition::Locked),
-    ] {
+    let bundle = owner.bundle_map().ok_or("House door bundle")?;
+    let digest = bundle.overlay.base().digest();
+    let cases: &[(u64, u64, &[&str], UseDisposition)] = &[
+        (23, 2, &["*", exclude.as_str()], UseDisposition::Committed),
+        (24, 3, &[exclude.as_str(), "*"], UseDisposition::Locked),
+        (25, 3, &["No Matching Name"], UseDisposition::Committed),
+    ];
+    for &(revision, door_revision, rules, disposition) in cases {
         let mut position = Vec::new();
         scalar(&mut position, 1, 6);
         scalar(&mut position, 2, 0);
@@ -767,6 +924,7 @@ async fn verify_pattern_door(
         scalar(&mut door, 2, revision);
         bytes(&mut door, 3, &id(41));
         let mut selectors = Vec::new();
+        scalar(&mut selectors, 2, 1);
         for rule in rules {
             bytes(&mut selectors, 1, rule.as_bytes());
         }
@@ -776,25 +934,30 @@ async fn verify_pattern_door(
             wire::encode_house_result(wire::HouseDisposition::Ok, revision + 1)
         );
 
+        assert_eq!(
+            read_acl_rules(
+                owner,
+                admitted,
+                wire::HouseAclSelector::Door {
+                    x: 6,
+                    y: 0,
+                    floor: 7
+                }
+            )
+            .await?,
+            (
+                revision + 1,
+                rules.iter().map(|rule| (*rule).to_owned()).collect(),
+                true
+            )
+        );
         // Use the admitted test character as a visitor, so ownership does not
         // bypass the door rules. Both fixture owners have the same account.
         set_fixture_owner(h, id(91)).await?;
-        tokio::time::sleep(crate::gameplay_transport::map_door::WORLD_ACTION_COOLDOWN).await;
-        let result = owner
-            .use_object(
-                actor,
-                UseCommand {
-                    game_session_id: admitted.game_session_id,
-                    command_id: admitted.continuity.next_command_id,
-                    item_fence: admitted.item_fence,
-                },
-                WorldObjectTarget {
-                    placement: placement.clone(),
-                    expected_revision: revision - 23,
-                },
-            )
-            .await;
-        assert_eq!(result.disposition, disposition);
+        assert_eq!(
+            use_house_door(owner, admitted, digest, door_revision).await?,
+            disposition
+        );
         set_fixture_owner(h, id(41)).await?;
     }
     Ok(())
@@ -823,6 +986,7 @@ fn textual_acl(kind: u64, revision: u64, lines: &[&str]) -> Vec<u8> {
     let mut replacement = Vec::new();
     scalar(&mut replacement, 1, kind);
     scalar(&mut replacement, 2, revision);
+    scalar(&mut replacement, 4, 1);
     for line in lines {
         bytes(&mut replacement, 3, line.as_bytes());
     }

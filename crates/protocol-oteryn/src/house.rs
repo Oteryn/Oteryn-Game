@@ -7,8 +7,9 @@ use crate::charm_wire::{
 #[path = "house/acl_read.rs"]
 mod acl_read;
 pub use acl_read::{
-    HouseAclRead, HouseAclSelector, HouseAclSnapshot, decode_house_acl_snapshot,
-    encode_house_acl_read_query, encode_house_acl_snapshot,
+    HouseAclRead, HouseAclRules, HouseAclSelector, HouseAclSnapshot,
+    decode_house_acl_rules_snapshot, decode_house_acl_snapshot, encode_house_acl_read_query,
+    encode_house_acl_rules_query, encode_house_acl_rules_snapshot, encode_house_acl_snapshot,
 };
 
 pub const CAPABILITY_HOUSE_V1: u32 = 49;
@@ -92,11 +93,13 @@ pub enum HouseAction {
         revision: u64,
         members: Vec<[u8; 16]>,
         guild_selectors: Option<Vec<String>>,
+        ordered: bool,
     },
     GuildAcl {
         subowners: bool,
         revision: u64,
         rules: Vec<String>,
+        ordered: bool,
     },
     Kick([u8; 16]),
     Leave,
@@ -104,6 +107,7 @@ pub enum HouseAction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseQuery {
     pub acl: Option<HouseAclRead>,
+    pub acl_rules: bool,
     /// Opt-in metadata extension; absent on legacy queries.
     pub details: bool,
     pub world: [u8; 16],
@@ -213,6 +217,7 @@ fn list_selected(body: &[u8], door: bool, allow_guild: bool) -> Result<HouseActi
     let (mut c, mut kind, mut revision, mut position) = (0, None, None, None);
     let mut members = Vec::new();
     let mut guild_selectors = None;
+    let mut ordered = None;
     while c < body.len() {
         match read_varint(body, &mut c)? {
             8 if !door => set_once(&mut kind, read_varint(body, &mut c)?)?,
@@ -258,10 +263,13 @@ fn list_selected(body: &[u8], door: bool, allow_guild: bool) -> Result<HouseActi
                 let mut cursor = 0;
                 let mut rules = Vec::new();
                 while cursor < selectors.len() {
-                    if read_varint(selectors, &mut cursor)? != 10 {
-                        return Err(Error::Malformed);
+                    match read_varint(selectors, &mut cursor)? {
+                        10 => guild_selector(&mut rules, read_bytes(selectors, &mut cursor)?)?,
+                        16 if read_varint(selectors, &mut cursor)? == 1 => {
+                            set_once(&mut ordered, true)?
+                        }
+                        _ => return Err(Error::Malformed),
                     }
-                    guild_selector(&mut rules, read_bytes(selectors, &mut cursor)?)?;
                 }
                 set_once(&mut guild_selectors, rules)?;
             }
@@ -278,6 +286,7 @@ fn list_selected(body: &[u8], door: bool, allow_guild: bool) -> Result<HouseActi
             revision,
             members,
             guild_selectors,
+            ordered: ordered.unwrap_or(false),
         })
     } else {
         let subowners = match kind {
@@ -351,11 +360,13 @@ pub fn decode_house_guild_acl(body: &[u8]) -> Result<HouseIntent> {
         } else if key == 34 {
             let (mut cursor, mut kind, mut revision) = (0, None, None);
             let mut rules = Vec::new();
+            let mut ordered = None;
             while cursor < nested.len() {
                 match read_varint(nested, &mut cursor)? {
                     8 => set_once(&mut kind, read_varint(nested, &mut cursor)?)?,
                     16 => set_once(&mut revision, read_varint(nested, &mut cursor)?)?,
                     26 => guild_selector(&mut rules, read_bytes(nested, &mut cursor)?)?,
+                    32 if read_varint(nested, &mut cursor)? == 1 => set_once(&mut ordered, true)?,
                     _ => return Err(Error::Malformed),
                 }
             }
@@ -370,6 +381,7 @@ pub fn decode_house_guild_acl(body: &[u8]) -> Result<HouseIntent> {
                     subowners,
                     revision: revision.ok_or(Error::Malformed)?,
                     rules,
+                    ordered: ordered.unwrap_or(false),
                 },
             )?;
         } else {
@@ -390,6 +402,7 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
     }
     let (mut c, mut world, mut town, mut cursor, mut acl) = (0, None, None, None, None);
     let mut details = None;
+    let mut acl_rules = None;
     while c < body.len() {
         match read_varint(body, &mut c)? {
             10 => set_once(&mut world, uuid(read_bytes(body, &mut c)?)?)?,
@@ -413,6 +426,7 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
                 )?;
             }
             42 => set_once(&mut acl, acl_read::decode_read(read_bytes(body, &mut c)?)?)?,
+            48 if read_varint(body, &mut c)? == 1 => set_once(&mut acl_rules, true)?,
             _ => return Err(Error::Malformed),
         }
     }
@@ -428,11 +442,12 @@ pub fn decode_house_query(body: &[u8]) -> Result<HouseQuery> {
         return Err(Error::Malformed);
     }
     let cursor = cursor.flatten();
-    if acl.is_some() && cursor.is_some() {
+    if (acl.is_some() && cursor.is_some()) || (acl_rules.is_some() && acl.is_none()) {
         return Err(Error::Malformed);
     }
     Ok(HouseQuery {
         acl,
+        acl_rules: acl_rules.unwrap_or(false),
         details: details.unwrap_or(false),
         world: world.ok_or(Error::Malformed)?,
         town,
