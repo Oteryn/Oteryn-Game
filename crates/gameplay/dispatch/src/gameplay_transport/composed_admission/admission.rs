@@ -2,6 +2,9 @@ use super::*;
 use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 use oteryn_protocol_oteryn::channel_switch::{SwitchLock, SwitchStatus};
 
+const FRESH_JOIN_EXPIRED: AdmissionRefusal =
+    AdmissionRefusal::Classified(FoundationProtocolError::SessionJoinUnavailable);
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_fresh_session(
         &self,
@@ -37,14 +40,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let record = loop {
             match self
                 .root
-                .read_current_character(self.character, character_id)
+                .read_current_character_until(self.character, character_id, Some(budget.deadline))
                 .await
             {
                 Ok(record) => break record,
+                Err(CharacterAuthorityError::Unavailable(
+                    crate::durability::DurabilityError::HolderBusy,
+                )) => return Err(FRESH_JOIN_EXPIRED),
                 Err(CharacterAuthorityError::Unavailable(_)) => {
-                    if !budget.retries_unavailable(Unavailable).await {
-                        return Err(Unavailable);
-                    }
+                    budget.retry_fresh_precommit(Unavailable).await?;
                 }
                 Err(_) => return Err(Rejected),
             }
@@ -58,8 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Resolve the ban from current truth within the same admission budget;
         // transient holder absence is not an authenticated grant verdict.
         if budget
-            .retry_unavailable(async || {
-                self.root.await_ready().await.map_err(|_| Unavailable)?;
+            .during_fresh_precommit(async || {
                 self.root
                     .staff_account_banned(self.character, record.account_id)
                     .await
@@ -95,9 +98,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .is_err()
             {
-                if !budget.retries_unavailable(Unavailable).await {
-                    return Err(Unavailable);
-                }
+                budget.retry_fresh_precommit(Unavailable).await?;
                 continue;
             }
             let now = unix_seconds().ok_or(Unavailable)?;
@@ -116,9 +117,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 Err(_) => {
-                    if !budget.retries_unavailable(Unavailable).await {
-                        return Err(Unavailable);
-                    }
+                    budget.retry_fresh_precommit(Unavailable).await?;
                     continue;
                 }
             }
@@ -127,9 +126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .compose_fresh_admission(self.character, self.holder, &subject)
                 .await
             else {
-                if !budget.retries_unavailable(Unavailable).await {
-                    return Err(Unavailable);
-                }
+                budget.retry_fresh_precommit(Unavailable).await?;
                 continue;
             };
             let facts = verify_fresh_grant_durability_v1(
@@ -185,7 +182,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // LOOP-MAP-1: initialize selection and home-spawn factors before a player is admitted.
             // Its epoch pass takes the shared holder too, so a busy holder is retried (DEFLAKE-3).
             budget
-                .retry_unavailable(async || {
+                .during_fresh_precommit(async || {
                     self.initialize_cyclopedia_respawn()
                         .await
                         .map_err(|()| Unavailable)
@@ -208,7 +205,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(AdmissionRefusal::PremiumRequired);
             }
             if budget
-                .retry_unavailable(async || {
+                .during_fresh_precommit(async || {
                     self.root
                         .read_channel_full(
                             *attempt.character_id.as_bytes(),
@@ -229,6 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
             // A busy holder on the assignment read reserves nothing: retry the round.
+            budget.check_deadline().map_err(|_| FRESH_JOIN_EXPIRED)?;
             let reservation = match self
                 .reserve_runtime_player(
                     attempt.game_session_id,
@@ -238,15 +236,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 Ok(reservation) => reservation,
                 Err(refusal) => {
-                    if budget.retries_unavailable(refusal).await {
+                    if budget.retry_fresh_precommit(refusal).await? {
                         continue;
                     }
                     return Err(refusal);
                 }
             };
+            if budget.check_deadline().is_err() {
+                self.rollback_runtime_player(reservation).await?;
+                return Err(FRESH_JOIN_EXPIRED);
+            }
+            #[cfg(test)]
+            if let Ok(barrier) = FRESH_CHECKOUT_BARRIER.try_with(std::sync::Arc::clone) {
+                barrier.0.notify_one();
+                barrier.1.notified().await;
+            }
             let outcome = self
                 .root
-                .commit_composed_fresh_admission(
+                .commit_composed_fresh_admission_until(
                     self.character,
                     self.holder,
                     &composition,
@@ -255,6 +262,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         *record.account_id.as_bytes(),
                         capabilities.current_check(),
                     ),
+                    Some(budget.deadline),
                 )
                 .await;
             if matches!(
@@ -271,6 +279,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Err(AdmissionRefusal::PremiumRequired);
             }
             match outcome {
+                Err(crate::durability::DurabilityError::HolderBusy) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    return Err(FRESH_JOIN_EXPIRED);
+                }
                 Ok(
                     FreshAdmissionDurableOutcomeV1::Committed(_)
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
@@ -719,6 +731,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     tokio::time::sleep(RECONCILE_BACKOFF).await;
                 }
+            }
+        }
+    }
+}
+
+impl AdmissionRetryBudget<'_> {
+    // The last slice belongs to fresh admission only. These callers have issued
+    // no grant-consuming transaction, so exhaustion can send E1051 safely.
+    async fn retry_fresh_precommit(
+        &self,
+        refusal: AdmissionRefusal,
+    ) -> Result<bool, AdmissionRefusal> {
+        if refusal != AdmissionRefusal::Unavailable {
+            return Ok(false);
+        }
+        if self.retries_unavailable_with_minimum(refusal, Duration::ZERO).await {
+            return Ok(true);
+        }
+        Err(FRESH_JOIN_EXPIRED)
+    }
+
+    async fn during_fresh_precommit<T>(
+        &self,
+        mut step: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, AdmissionRefusal> {
+        loop {
+            self.check_deadline().map_err(|_| FRESH_JOIN_EXPIRED)?;
+            match step().await {
+                Err(refusal) if self.retry_fresh_precommit(refusal).await? => {}
+                result => return result,
             }
         }
     }
