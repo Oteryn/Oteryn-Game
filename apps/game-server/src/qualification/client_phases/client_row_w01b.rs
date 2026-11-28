@@ -171,10 +171,14 @@ async fn observe_nearby_respawn(
                 }));
             }
         }
-        let replacement = creature_at(client, SPAWN);
+        let occupant = creature_at(client, SPAWN);
+        let replacement = occupant.filter(is_rat).map(|rat| rat.entity);
         if replacement.is_some() || tokio::time::Instant::now() >= deadline {
+            let occupant_name = occupant
+                .and_then(|entity| entity.display_name)
+                .and_then(|name| name.as_str().ok().map(str::to_owned));
             return Err(format!(
-                "BLOCKER-SERVER W01b nearby respawn spawn={SPAWN:?} observer={observer:?} killed={:?} authored_ms={respawn_ms} replacement={replacement:?} effects={effects:?} server_timestamps=absent",
+                "BLOCKER-SERVER W01b nearby respawn spawn={SPAWN:?} observer={observer:?} killed={:?} authored_ms={respawn_ms} rat={replacement:?} occupant={occupant_name:?} effects={effects:?} server_timestamps=absent",
                 target.entity
             ).into());
         }
