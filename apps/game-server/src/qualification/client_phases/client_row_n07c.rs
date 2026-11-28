@@ -7,6 +7,16 @@
 use super::*;
 use oteryn_dev_client::client_runtime::analyser::{AnalyserFact, AnalyserImpact};
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
+use oteryn_protocol_oteryn::world_map::{CAPABILITY_WORLD_MAP_VIEW_V1, MapOrigin, WorldMapViewSnapshot};
+
+fn rat_corpse_handles(map: &WorldMapViewSnapshot) -> impl Iterator<Item = (ActorPosition, std::num::NonZeroU64)> + '_ {
+    map.tiles.iter().flat_map(|tile| {
+        tile.items.iter().filter_map(|item| match item.origin {
+            MapOrigin::Handle(handle) if item.appearance_id == 4255 => Some((tile.position, handle)),
+            _ => None,
+        })
+    })
+}
 
 fn capture(bytes: &[u8]) -> TestResult {
     use std::io::Write;
@@ -386,13 +396,13 @@ async fn fight(
     {
         return Err("Rat attack requires an observed clear combat target".into());
     }
-    let existing_corpses: Vec<_> = client
-        .world_entities()
-        .ok_or("Rat fight has no entity view")?
-        .iter()
-        .filter(|entry| entry.kind == EntityKind::Corpse)
-        .map(|entry| entry.entity)
-        .collect();
+    let map = client.session_mut().world_map_snapshot().ok_or("Rat fight has no native map")?;
+    let existing_corpses: Vec<_> = rat_corpse_handles(&map).map(|(_, handle)| handle).collect();
+    let new_corpse = |map: &WorldMapViewSnapshot, target_position| {
+        rat_corpse_handles(map).find_map(|(position, handle)| {
+            (position == target_position && !existing_corpses.contains(&handle)).then_some(handle)
+        })
+    };
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -417,20 +427,16 @@ async fn fight(
             view.get(&target.entity)
                 .is_none_or(|entry| entry.kind != EntityKind::Creature)
         });
-        let corpse_visible = client.world_entities().is_some_and(|view| {
-            view.iter().any(|entry| {
-                entry.kind == EntityKind::Corpse
-                    && entry.position == target_state.last_position
-                    && !existing_corpses.contains(&entry.entity)
-            })
+        let corpse_visible = client.session_mut().world_map_snapshot().is_some_and(|map| {
+            new_corpse(&map, target_state.last_position).is_some()
         });
         if target_state.target_selected && kill && xp && target_removed && corpse_visible {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "Rat analyser settlement deadline target={} kill={kill} xp={xp} target_removed={target_removed} corpse_visible={corpse_visible}",
-                target_state.target_selected
+                "Rat analyser settlement deadline target={} kill={kill} xp={xp} target_removed={target_removed} corpse_visible={corpse_visible} target_id={:?} initial={:?} last={:?} facts={facts:?}",
+                target_state.target_selected, target.entity, target.position, target_state.last_position
             )
             .into());
         }
@@ -467,21 +473,9 @@ async fn fight(
     {
         return Err("Rat kill fact left the attacked Rat alive".into());
     }
-    let corpse = entities
-        .iter()
-        .find(|entry| {
-            entry.kind == EntityKind::Corpse
-                && entry.position == target_state.last_position
-                && !existing_corpses.contains(&entry.entity)
-        })
+    let map = client.session_mut().world_map_snapshot().ok_or("Rat settlement has no native map")?;
+    let handle = new_corpse(&map, target_state.last_position)
         .ok_or("Rat settlement has no new corpse at the target's last position")?;
-    let oteryn_dev_client::EntityDetail::Object {
-        item_handle: Some(handle),
-        ..
-    } = corpse.detail
-    else {
-        return Err("Rat corpse has no server item handle".into());
-    };
     let used = client.use_item(handle).await?;
     if used.status != CommandStatus::Accepted
         || used.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
@@ -623,6 +617,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x35).await?;
     if !client.selected_capabilities().contains(&10) {
         return Err("analyser capability 10 not selected".into());
+    }
+    if !client.selected_capabilities().contains(&CAPABILITY_WORLD_MAP_VIEW_V1) {
+        return Err("Rat corpse proof requires the native map capability".into());
     }
     let mut aggressors = Vec::new();
     travel_to_rat(&mut client, world, &metadata.spawns, &mut aggressors).await?;
