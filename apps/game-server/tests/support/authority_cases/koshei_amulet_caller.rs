@@ -753,8 +753,8 @@ async fn exercise(
     ).fetch_one(&h.pool).await?;
     assert_eq!(
         remaining,
-        (1, 2),
-        "superseded terminal remains release Ground custody"
+        (3, 0),
+        "all terminal Koshei remains retain Ground custody"
     );
     Ok(())
 }

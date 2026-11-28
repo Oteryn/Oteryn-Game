@@ -678,7 +678,7 @@ mod tests {
                 (outbound.price, outbound.x, outbound.y, outbound.floor),
                 (0, *x, *y, *floor)
             );
-            assert_eq!(outbound.ticket.as_ref(), Some(&ticket));
+            assert!(outbound.ticket.is_none());
             assert_eq!(
                 outbound.return_origin.as_ref(),
                 Some(&super::TravelReturnRequirement {

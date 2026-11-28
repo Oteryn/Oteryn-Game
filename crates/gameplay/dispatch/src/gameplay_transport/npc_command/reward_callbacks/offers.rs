@@ -158,3 +158,42 @@ fn pirate_and_oriental_offers_accept_the_named_source_materials()
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[test]
+fn twenty_miles_assist_is_offered_only_at_the_confirmation_stage()
+-> Result<(), Box<dyn std::error::Error>> {
+    let offers = embedded().ok_or("embedded quest reward offers")?;
+    let state = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+        .map_err(|error| format!("{error:?}"))?;
+    let mut tracks = std::collections::BTreeMap::new();
+    for (stage, brandon, guardian) in [
+        (None, true, false),
+        (Some(1), false, true),
+        (Some(2), false, false),
+    ] {
+        if let Some(stage) = stage {
+            tracks.insert(
+                "oteryn:quest-progress/qc/twenty_miles/stage".to_owned(),
+                stage,
+            );
+        }
+        for (npc, expected) in [
+            ("oteryn:npc.mr_brandon", brandon),
+            ("oteryn:npc.guardian_of_the_deep_seas", guardian),
+        ] {
+            assert_eq!(
+                offers.offers.iter().any(|offer| offer.admits(
+                    npc,
+                    0,
+                    "assist",
+                    state.catalogue(),
+                    &tracks
+                )),
+                expected,
+                "{npc} at stage {stage:?}"
+            );
+        }
+    }
+    Ok(())
+}
