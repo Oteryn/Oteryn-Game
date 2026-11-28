@@ -1,5 +1,5 @@
 use crate::play::{Outbox, Stepper, mailbox::lock};
-use oteryn_client_runtime::world_interaction::Command;
+use oteryn_client_runtime::world_interaction::{Command, Response};
 impl Outbox {
     pub(in crate::play) fn targeting_initialize(&self, enabled: bool) {
         lock(&self.0).world_context.use_with = enabled;
@@ -29,14 +29,14 @@ impl Outbox {
         // Selections stay native (map tiles); only creature checks and the position target
         // are taken to the wire frame, inside the runtime send.
         let raw_wire = lock(&self.0).wire_frame() == crate::play::wire_frame::WireFrame::Raw;
-        let result = session.world_context(command, raw_wire).await;
+        let result = session.world_context_response(command, raw_wire).await;
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
         mailbox.use_with_pending = false;
         // The ordinary use owns the result; refresh advisory multiaction data afterwards.
         mailbox.bar_actions.item_cooldowns.clear();
         match result {
-            Ok(text) => {
+            Ok(Response::Feedback(text)) => {
                 #[cfg(bevy_shell)]
                 crate::play::feature_local_text_messages::view::record_look(
                     &mut mailbox,
@@ -46,6 +46,24 @@ impl Outbox {
                 mailbox
                     .world_context
                     .set_feedback(text, std::time::Instant::now());
+                Ok(())
+            }
+            Ok(Response::Imbuement(response)) => {
+                if mailbox.imbue.selected
+                    && !mailbox.imbue_shutdown
+                    && !mailbox.world_input_blocked()
+                {
+                    let panel = &mut mailbox.imbue;
+                    let pending = panel.pending;
+                    panel.item = None;
+                    panel.refresh_required = false;
+                    panel.open = true;
+                    oteryn_client_ui::imbue::apply_result(panel, &response);
+                    // A separately queued item command still owns its pending flag.
+                    panel.pending = pending;
+                    mailbox.world_context.feedback = None;
+                    mailbox.world_context.feedback_at = None;
+                }
                 Ok(())
             }
             Err(error) => {
@@ -79,6 +97,16 @@ macro_rules! session_trait {
                     Err(oteryn_session::SessionError::CapabilityNotSelected { capability: 28 })
                 }
             }
+            fn world_context_response(
+                &mut self,
+                command: &oteryn_client_runtime::world_interaction::Command,
+                raw_wire: bool,
+            ) -> impl std::future::Future<
+                Output = Result<oteryn_client_runtime::world_interaction::Response, oteryn_session::SessionError>,
+            > + Send {
+                let result = self.world_context(command, raw_wire);
+                async { result.await.map(oteryn_client_runtime::world_interaction::Response::Feedback) }
+            }
         }
     };
 }
@@ -109,3 +137,7 @@ impl Outbox {
         self.world_context_initialize(true, false);
     }
 }
+
+#[cfg(test)]
+#[path = "tests/shrine_handoff_tests.rs"]
+mod shrine_handoff_tests;

@@ -1,4 +1,4 @@
-"""Source-qualified corpses needed by active authored deaths and death-loot rules.
+"""Source-qualified corpses needed by active authored deaths and corpse actions.
 
 Existing native Item, temporal decay, corpse MINT and loot-table owners remain
 unchanged. Select the finite rule/objective/Creature corpse join, then qualify its
@@ -17,6 +17,7 @@ import grizzly_shop_profiles as grizzly
 import quest_reward_item_semantics as custody
 from native_profile_composition import encode_native_profile
 import quest_shared_boss_corpses
+from encounter_corpse_items import RAT_STAGES
 
 ROOT = Path(__file__).resolve().parents[2]
 XML = "imports/canary/items-xml/items.xml"
@@ -33,6 +34,13 @@ BUTTERFLY_REMAINS = 4378
 GROUPS = ("physical", "stack", "container", "temporal", "classification")
 # The Dwarf Letter bodies share root 6007, and Koshei adds root 7535.
 MAX_RULES, MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 74, 8, 256
+RAT_DEATH_BODY = 5964
+# Global Dead Rat documents the movable appearances in order. Animate Dead
+# Rune documents the initial ten-second window. The pinned XML binds the IDs
+# and edges, and the client appearance flags bind movement and pickup.
+# https://tibia.fandom.com/wiki/Dead_Rat
+# https://tibia.fandom.com/wiki/Animate_Dead_Rune
+RAT_MOVABLE_STAGES = {3994: (300, 6300), 3995: (300, 4400), 3996: (60, 3000)}
 
 
 def item_id(reference):
@@ -332,6 +340,15 @@ def qualify(
         if canonical_weight != grizzly.source.K(10000) or source_weight != grizzly.source.K(60000):
             raise ValueError("QUEST_CORPSE_TERMINAL_BONES_WEIGHT")
         expected["physical"]["value"]["weight"] = copy.deepcopy(canonical_weight)
+    # The Global Dead Rat archive gives the visible stages' weight and
+    # container facts. The visible stages can only move between floor tiles.
+    if number in RAT_STAGES:
+        capacity, _, _, weight = RAT_STAGES[number]
+        expected['physical']['value']['weight'] = grizzly.source.K(weight)
+        expected['physical']['value']['pickupable'] = grizzly.source.K(False)
+        source['admission']['legal_destinations'] = ['Ground']
+        expected['container'] = (grizzly.source.NA if capacity is None else
+                                 grizzly.source.K({'capacity': grizzly.source.K(capacity)}))
     for group in GROUPS:
         accepted = definition.get("semantics", {}).get(group, grizzly.source.U)
         if grizzly.known_conflict(accepted, expected[group]):
@@ -411,7 +428,33 @@ def projection_limits(root, roots, xml):
     return limits, source_capacities
 
 
-def qualifications(root=ROOT, creatures=None):
+def rat_stage_inputs(number, node, definition):
+    """Project Global timings and physical facts through the pinned corpse chain."""
+    node = copy.deepcopy(node)
+    fields = {a.get('key').lower(): a for a in node.findall('attribute')}
+    if number == RAT_DEATH_BODY:
+        # Keep the existing death-loot capacity. Its original lifetime was a
+        # single 60-second retirement with no decay successor.
+        definition = copy.deepcopy(definition)
+        semantics = definition['semantics']
+        capacity = semantics['container']['value']['capacity']['value']
+        fields['containersize'].set('value', str(capacity))
+        fields['duration'].set('value', '10')
+        semantics['temporal'] = grizzly.source.U
+    else:
+        duration, weight = RAT_MOVABLE_STAGES[number]
+        fields['duration'].set('value', str(duration))
+        fields['weight'].set('value', str(weight))
+        if number == 3994:
+            fields['containersize'].set('value', '5')
+        elif number == 3995:
+            # Global gives the container volume for 3994 only. This stage
+            # has no container appearance flag, so discard the XML capacity.
+            node.remove(fields['containersize'])
+    return node, definition
+
+
+def qualifications(root=ROOT, creatures=None, *, include_rat=False):
     roots, ordinary_loot_roots = required_with_loot_scope(root, creatures)
     raw = (root / XML).read_bytes()
     if hashlib.sha256(raw).hexdigest() != XML_SHA:
@@ -422,6 +465,14 @@ def qualifications(root=ROOT, creatures=None):
     limits, source_capacities = projection_limits(root, roots, xml)
     selected = decay_closure(roots, xml)
     ordinary_loot_only = selected - decay_closure(roots - ordinary_loot_roots, xml)
+    if include_rat:
+        rat = next(r['profile'] for r in creatures['records']
+                   if r['profile']['target']['key'] == 'oteryn:creature.rat')
+        if (item_id(rat['data']['profile']['details']['corpse_item']) != RAT_DEATH_BODY
+                or decay_closure({RAT_DEATH_BODY}, xml) != {RAT_DEATH_BODY, *RAT_MOVABLE_STAGES}):
+            raise ValueError('ANIMATE_DEAD_RAT_CORPSE_CHAIN')
+        roots.add(RAT_DEATH_BODY)
+        selected.update({RAT_DEATH_BODY, *RAT_MOVABLE_STAGES})
     if not selected:
         return Qualification(roots, {})
     client = (root / custody.CLIENT).read_bytes()
@@ -444,11 +495,14 @@ def qualifications(root=ROOT, creatures=None):
         key = f"oteryn:item.tibia.i{number}"
         if number not in appearances or number not in policies:
             raise ValueError("QUEST_CORPSE_CLIENT_ITEM_ABSENT")
+        node, definition = xml[number], accepted[key]
+        if number == RAT_DEATH_BODY or number in RAT_MOVABLE_STAGES:
+            node, definition = rat_stage_inputs(number, node, definition)
         records[key] = qualify(
             number,
-            accepted[key],
+            definition,
             objects.get(number),
-            xml[number],
+            node,
             appearances[number],
             policies[number],
             bindings,
@@ -462,7 +516,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     creatures = json.loads(
         generated[CREATURES] if CREATURES in generated else (root / CREATURES).read_bytes()
     )
-    qualified = qualifications(root, creatures)
+    qualified = qualifications(root, creatures, include_rat=True)
     document = json.loads(generated[profile_path])
     existing = {row["production_definition"]["production_key"]: row for row in document["records"]}
     if len(existing) != len(document["records"]):

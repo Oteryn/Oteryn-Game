@@ -1,8 +1,11 @@
 //! Context actions use the existing session commands and codecs.
+use crate::imbue::{ImbueResponse, imbuement};
 use item_look::{ItemLookIntent, ItemLookSelection, ItemLookTarget};
 pub use oteryn_session::EntityRef;
 pub use oteryn_session::world_context::{item_look, world_object};
-use oteryn_session::{ItemHandle, Session, SessionError, SessionStream};
+use oteryn_session::{
+    CommandStatus, GatedCommandResult, ItemHandle, Session, SessionError, SessionStream,
+};
 use world_object::WorldObjectTarget;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,6 +38,12 @@ pub struct Command {
     pub target: Target,
     pub action: Action,
     pub selection: Option<Selection>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Response {
+    Feedback(String),
+    Imbuement(ImbueResponse),
 }
 
 pub fn look_payload(target: &Target) -> Result<Vec<u8>, SessionError> {
@@ -89,21 +98,34 @@ pub async fn send<S: SessionStream>(
     send_framed(session, command, false).await
 }
 
-/// `command` is selected on the native map. With `raw_wire` the session's domain-1 frame
-/// negates floors: spatial entities are compared there and a position target is encoded
-/// there, while map tiles stay native.
 pub async fn send_framed<S: SessionStream>(
     session: &mut Session<S>,
     command: &Command,
     raw_wire: bool,
 ) -> Result<String, SessionError> {
+    Ok(
+        match send_framed_response(session, command, raw_wire).await? {
+            Response::Feedback(text) => text,
+            Response::Imbuement(_) => "Imbuement shrine opened".into(),
+        },
+    )
+}
+
+/// Send a context action and retain any view data returned with its response.
+/// With `raw_wire`, the session's domain-1 frame negates floors: spatial entities
+/// and position targets use that frame, while map tiles stay native.
+pub async fn send_framed_response<S: SessionStream>(
+    session: &mut Session<S>,
+    command: &Command,
+    raw_wire: bool,
+) -> Result<Response, SessionError> {
     // The session task continues receiving while the native popup owns the UI loop.
     // Drain already-readable pushes before consulting the session's current stores.
     session
         .service_liveness(std::time::Duration::from_millis(1))
         .await?;
     if !state::current(session, command, raw_wire) {
-        return Ok("Target changed".into());
+        return Ok(Response::Feedback("Target changed".into()));
     }
     let label = match command.action {
         Action::UseWith | Action::UseRune | Action::UseOn(_) | Action::UseDefinitionOn(_) => {
@@ -121,7 +143,7 @@ pub async fn send_framed<S: SessionStream>(
                 || matches!(command.target, Target::Item(_) | Target::Object(_))
                     && !session.is_selected(11)
             {
-                return Ok("Use with unavailable".into());
+                return Ok(Response::Feedback("Use with unavailable".into()));
             }
             let target = match command.target {
                 Target::Position(position) if raw_wire => Target::Position(wire_floor(position)),
@@ -132,16 +154,16 @@ pub async fn send_framed<S: SessionStream>(
                 Action::UseDefinitionOn(definition) => {
                     world_object::UseTarget::ItemByDefinition(definition)
                 }
-                _ => return Ok("Use with unavailable".into()),
+                _ => return Ok(Response::Feedback("Use with unavailable".into())),
             };
             let Ok(payload) = crate::item_use::shortcut_payload(source, Some(&target)) else {
-                return Ok("Use with: invalid target".into());
+                return Ok(Response::Feedback("Use with: invalid target".into()));
             };
             session.world_context_use(&payload).await?
         }
         (_, Action::Look) => {
             let Ok(payload) = look_payload(&command.target) else {
-                return Ok("Look unavailable".into());
+                return Ok(Response::Feedback("Look unavailable".into()));
             };
             session.gated_command(28, 30, &payload).await?
         }
@@ -153,7 +175,7 @@ pub async fn send_framed<S: SessionStream>(
         }
         (Target::Item(handle), Action::Use | Action::Open | Action::BedInteract) => {
             if !session.is_selected(4) {
-                return Ok(format!("{label} unavailable"));
+                return Ok(Response::Feedback(format!("{label} unavailable")));
             }
             session
                 .world_context_use(&world_object::encode_use_item_intent(*handle))
@@ -161,37 +183,49 @@ pub async fn send_framed<S: SessionStream>(
         }
         (Target::Object(object), Action::Use | Action::Open | Action::BedInteract) => {
             let Ok(payload) = world_object::encode_use_intent(object) else {
-                return Ok(format!("{label} unavailable"));
+                return Ok(Response::Feedback(format!("{label} unavailable")));
             };
             session.world_context_use(&payload).await?
         }
         (Target::Item(handle), Action::Bed(skill @ 1..=6)) => {
             let Ok(payload) = bed_payload(*handle, skill) else {
-                return Ok("Bed unavailable".into());
+                return Ok(Response::Feedback("Bed unavailable".into()));
             };
             session.gated_command(11, 31, &payload).await?
         }
-        _ => return Ok(format!("{label} unavailable")),
+        _ => return Ok(Response::Feedback(format!("{label} unavailable"))),
     };
+    Ok(decode_response(
+        command,
+        label,
+        &result,
+        session.selected_capabilities(),
+    ))
+}
+
+fn decode_response(
+    command: &Command,
+    label: &str,
+    result: &GatedCommandResult,
+    selected_capabilities: &[u32],
+) -> Response {
     if command.action != Action::Look
         && matches!(
             result.status,
-            oteryn_session::CommandStatus::Accepted
-                | oteryn_session::CommandStatus::Rejected
-                | oteryn_session::CommandStatus::DuplicateReplay
+            CommandStatus::Accepted | CommandStatus::Rejected | CommandStatus::DuplicateReplay
         )
-        && let Some(message) = refusal_message(&result.payload, session.is_selected(66))
+        && let Some(message) = refusal_message(&result.payload, selected_capabilities.contains(&66))
     {
-        return Ok(message.into());
+        return Response::Feedback(message.into());
     }
     if !matches!(
         result.status,
-        oteryn_session::CommandStatus::Accepted | oteryn_session::CommandStatus::DuplicateReplay
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        return Ok(format!("{label} refused"));
+        return Response::Feedback(format!("{label} refused"));
     }
     if command.action == Action::Look {
-        return Ok(
+        return Response::Feedback(
             match item_look::decode_item_look_result_for(
                 &result.payload,
                 ItemLookSelection { extended: true },
@@ -204,7 +238,31 @@ pub async fn send_framed<S: SessionStream>(
     }
     use world_object::UseDisposition;
     let Ok((disposition, _)) = world_object::decode_use_result_with_gate(&result.payload) else {
-        return Ok(format!("{label}: unknown result"));
+        if matches!(command.target, Target::Object(_))
+            && matches!(
+                command.action,
+                Action::Use | Action::Open | Action::BedInteract
+            )
+            && selected_capabilities.contains(&imbuement::CAPABILITY_IMBUE_V1)
+        {
+            let decoded = if selected_capabilities
+                .contains(&imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1)
+            {
+                imbuement::decode_imbuement_reply_with_success(&result.payload)
+            } else {
+                imbuement::decode_imbuement_reply(&result.payload).map(|reply| (reply, Vec::new()))
+            };
+            if let Ok((reply, success)) = decoded
+                && reply.window.is_some()
+            {
+                return Response::Imbuement(ImbueResponse {
+                    status: result.status,
+                    reply: Some(reply),
+                    success,
+                });
+            }
+        }
+        return Response::Feedback(format!("{label}: unknown result"));
     };
     let text = match disposition {
         UseDisposition::Committed => "completed",
@@ -230,7 +288,7 @@ pub async fn send_framed<S: SessionStream>(
         UseDisposition::Occupied => "occupied",
         UseDisposition::Rejected => "refused",
     };
-    Ok(format!("{label}: {text}"))
+    Response::Feedback(format!("{label}: {text}"))
 }
 
 #[cfg(test)]
@@ -240,6 +298,10 @@ mod e2e_i03;
 #[cfg(test)]
 #[path = "tests/e2e_s07.rs"]
 mod e2e_s07;
+
+#[cfg(test)]
+#[path = "tests/shrine_use_tests.rs"]
+mod shrine_use_tests;
 
 #[cfg(test)]
 mod tests {

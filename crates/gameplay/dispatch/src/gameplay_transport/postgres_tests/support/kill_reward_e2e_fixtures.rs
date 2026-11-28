@@ -121,7 +121,7 @@ pub(super) fn scenario_with_creature_charmed(
     settings: KillScenarioSettings<'_>,
 ) -> TestResult {
     scenario_with_creature_observed(
-        reconcile,
+        reconcile.map(CorpseDecayCheck::Retirement),
         capacity,
         radiant,
         settle_radiant,
@@ -161,12 +161,44 @@ pub(super) fn dwarf_letter_scenario(creature: &str) -> TestResult {
     )
 }
 
+#[derive(Clone, Copy)]
+enum CorpseDecayCheck {
+    RatTransform { drag: bool, successor: bool },
+    Retirement(bool),
+}
+
+pub(super) fn scenario_with_rat_transform() -> TestResult {
+    scenario_with_rat_decay(false, false)
+}
+
+pub(super) fn scenario_with_rat_drag() -> TestResult {
+    scenario_with_rat_decay(true, false)
+}
+
+pub(super) fn scenario_with_rat_successor() -> TestResult {
+    scenario_with_rat_decay(true, true)
+}
+
+fn scenario_with_rat_decay(drag: bool, successor: bool) -> TestResult {
+    scenario_with_creature_observed(
+        Some(CorpseDecayCheck::RatTransform { drag, successor }),
+        false,
+        None,
+        false,
+        false,
+        false,
+        (None, None, None),
+        false,
+        None,
+    )
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "existing composed scenario options plus analyser observation"
 )]
 fn scenario_with_creature_observed(
-    reconcile: Option<bool>,
+    decay_check: Option<CorpseDecayCheck>,
     capacity: bool,
     radiant: Option<&str>,
     settle_radiant: bool,
@@ -176,6 +208,13 @@ fn scenario_with_creature_observed(
     analyser: bool,
     letter_creature: Option<&str>,
 ) -> TestResult {
+    let rat_bundle = matches!(decay_check, Some(CorpseDecayCheck::RatTransform { .. }));
+    let in_fixture_frame = |position: MovementLocalPosition| MovementLocalPosition {
+        floor: if rat_bundle { -position.floor } else { position.floor },
+        ..position
+    };
+    let open_player = in_fixture_frame(OPEN_PLAYER);
+    let open_rat = in_fixture_frame(OPEN_RAT);
     let (charm, boss_policy, daily_target) = settings;
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
@@ -210,7 +249,25 @@ fn scenario_with_creature_observed(
 
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
-        let room = pin.qualified_room().clone();
+        let entry_room = pin.qualified_room();
+        let room = if rat_bundle {
+            // ITEM_MOVE needs the same bundle-backed coordinates as the corpse mint.
+            let map = crate::map::spell_tiles::tests::movement_arena::world();
+            entry_room
+                .bundle_view(
+                    map.movement_cells(entry_room.movement_cells()).map_err(debug)?,
+                    map.frame_binding_digest(world),
+                    map.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: open_player.x,
+                        y: open_player.y,
+                        floor: open_player.floor,
+                    },
+                )
+                .ok_or("Rat floor move bundle room")?
+        } else {
+            entry_room.clone()
+        };
         // The Thalom entry start is a protection-zone cell, where no swing is legal: enter the
         // Channel on the open cell beside it instead (as the owner auto-attack tests do).
         let channel_pin = ChannelContentPin::from_activation(
@@ -218,9 +275,9 @@ fn scenario_with_creature_observed(
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
+            room.frame_binding().digest(),
             room.map_revision_digest(),
-            (OPEN_PLAYER.x, OPEN_PLAYER.y, OPEN_PLAYER.floor),
+            (open_player.x, open_player.y, open_player.floor),
         );
 
         // ATTACK-2: the swing weapon is read from the equipment owner, which checks the
@@ -236,7 +293,7 @@ fn scenario_with_creature_observed(
             .bind(pin.activation_sequence().to_string())
             .bind(pin.identity().server_artifact_digest().as_slice())
             .bind(pin.identity().client_artifact_digest().as_slice())
-            .bind(pin.frame_binding().digest().as_slice())
+            .bind(room.frame_binding().digest().as_slice())
             .execute(&harness.pool)
             .await?;
 
@@ -428,7 +485,7 @@ fn scenario_with_creature_observed(
             let before = runtime.read_actor_position(actor).map_err(debug)?;
             runtime
                 .borrow_movement_position()
-                .commit_cardinal(before, OPEN_RAT)
+                .commit_cardinal(before, open_rat)
                 .map_err(debug)?;
             assert!(
                 runtime
@@ -441,7 +498,7 @@ fn scenario_with_creature_observed(
             let before = runtime.read_actor_position(actor).map_err(debug)?;
             runtime
                 .borrow_movement_position()
-                .commit_cardinal(before, OPEN_PLAYER)
+                .commit_cardinal(before, open_player)
                 .map_err(debug)?;
             assert!(
                 runtime
@@ -456,7 +513,7 @@ fn scenario_with_creature_observed(
             );
         } else {
             runtime
-                .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
+                .realize_native_qualification_spawn(channel_pin, &creature_key, open_rat)
                 .map_err(debug)?;
         }
         if ranged_spell {
@@ -477,7 +534,7 @@ fn scenario_with_creature_observed(
             let boss = runtime.boss_spawns()[0].actor.ok_or("boss actor")?;
             assert_eq!(
                 runtime.creature_spawn_cell(boss),
-                Some(OPEN_RAT),
+                Some(open_rat),
                 "boss AI retains its authored home without an ordinary respawn source"
             );
         }
@@ -678,14 +735,14 @@ fn scenario_with_creature_observed(
                     100,
                     MovementLocalPosition {
                         x: if holy_target { 3 } else { 1 },
-                        ..OPEN_PLAYER
+                        ..open_player
                     },
                 ),
                 (
                     101,
                     MovementLocalPosition {
                         x: 5,
-                        ..OPEN_PLAYER
+                        ..open_player
                     },
                 ),
             ] {
@@ -809,7 +866,7 @@ fn scenario_with_creature_observed(
                         .commit_creature_relocation(
                             caster,
                             before,
-                            MovementLocalPosition { x: 0, ..OPEN_RAT },
+                            MovementLocalPosition { x: 0, ..open_rat },
                         )
                         .map_err(debug)?;
                 }
@@ -940,7 +997,7 @@ fn scenario_with_creature_observed(
                         .commit_creature_relocation(
                             target,
                             before,
-                            MovementLocalPosition { x: -2, ..OPEN_RAT },
+                            MovementLocalPosition { x: -2, ..open_rat },
                         )
                         .map_err(debug)?;
                 }
@@ -1120,7 +1177,7 @@ fn scenario_with_creature_observed(
         // ARCH-PROGRESSION-SOURCE-0 §1.5: the session's progression binding, formed by the
         // production admission step from the Character root's stored revisions.
         owner.admit_progression_session(&mut admitted).await;
-        if letter_creature.is_some() {
+        if letter_creature.is_some() || matches!(decay_check, Some(CorpseDecayCheck::RatTransform { successor: true, .. })) {
             super::item_look_fixtures::seed_main_backpack(&harness, &[]).await?;
         }
         if analyser {
@@ -1624,7 +1681,7 @@ fn scenario_with_creature_observed(
                 &creature_key,
                 expected_xp,
                 children,
-                reconcile == Some(true),
+                matches!(decay_check, Some(CorpseDecayCheck::Retirement(true))),
                 replay
                     .map(|(_, target, _)| target)
                     .ok_or("real captured kill")?,
@@ -1661,8 +1718,27 @@ fn scenario_with_creature_observed(
         } else {
             children
         };
-        let decay = match reconcile.filter(|_| !settle_radiant) {
-            Some(reconcile) => {
+        let decay = match decay_check.filter(|_| !settle_radiant) {
+            Some(CorpseDecayCheck::RatTransform { drag, successor }) => {
+                let (current, _) = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    harness.root.clone(),
+                )
+                .current_session_at(session)
+                .await?;
+                let item_fence = crate::gameplay_transport::item_fence_of(current)
+                    .ok_or("Rat floor move item fence")?;
+                super::corpse_decay_fixtures::qualify_first_transform(
+                    &mut owner, &harness, actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: session,
+                        command_id: 1000,
+                        item_fence: Some(item_fence),
+                    },
+                    if drag { Some(open_player) } else { None },
+                    successor,
+                ).await
+            }
+            Some(CorpseDecayCheck::Retirement(reconcile)) => {
                 super::corpse_decay_fixtures::qualify(&mut owner, &harness, children, reconcile)
                     .await
                     .map_err(|error| format!("corpse decay qualification: {error}").into())

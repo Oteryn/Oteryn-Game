@@ -501,7 +501,8 @@ impl DurabilityRoot {
                         + usize::try_from(super::super::item_mint::KOSHEI_REMAINS_HEADROOM)
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let rows = sqlx::query(
-                        "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref \
+                        "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref, \
+                                CASE WHEN game_item_loop_drop_ref(g.corpse_ref) THEN g.spatial_position END AS relocated_position \
                            FROM game_item_ground_locations g \
                            JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
                            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
@@ -530,14 +531,28 @@ impl DurabilityRoot {
                             row.try_get("materialized_at")?;
                         let materialized_at_unix_ms =
                             materialized_at_unix_ms.ok_or(DurabilityError::InvalidStoredState)?;
+                        let key: String = row.try_get("definition_production_key")?;
+                        let relocated_position = if crate::durability::item_loop_move::rat_drag_stage(&key) {
+                            row.try_get::<Option<Vec<u8>>, _>("relocated_position")?
+                                .map(|bytes| {
+                                    let cell = crate::durability::spell_items_abi::decode_ground_cell(&bytes)
+                                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                                    let floor = i16::try_from(cell.z).map_err(|_| DurabilityError::InvalidStoredState)?;
+                                    Ok::<_, DurabilityError>(crate::foundation::MovementLocalPosition { x: cell.x, y: cell.y, floor })
+                                })
+                                .transpose()?
+                        } else {
+                            None
+                        };
                         corpses.push(CorpseDecayDeadline {
                             corpse_item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
                             definition: super::super::item_mint::TypedDefinitionRef {
                                 family: row.try_get("definition_family")?,
-                                production_key: row.try_get("definition_production_key")?,
+                                production_key: key,
                                 revision_ref: row.try_get("definition_revision_ref")?,
                             },
                             materialized_at_unix_ms,
+                            relocated_position,
                             decay_at_unix_ms: row.try_get("deadline")?,
                         });
                     }

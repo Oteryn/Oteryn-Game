@@ -105,6 +105,15 @@ fn recovery_preserves_identity_sequences_and_selection() -> Result<(), BoxError>
                         assert_eq!(resumed.last_server_sequence(), 42);
                         assert_eq!(resumed.world_spatial().actor_position.x, 1);
                         assert_eq!(
+                            resumed.admission_snapshot(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY),
+                            Some(&GatedSnapshot {
+                                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                                revision: 6,
+                                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                                payload: spatial(1),
+                            })
+                        );
+                        assert_eq!(
                             resumed.step(StepDirection::East).await?.disposition,
                             StepDisposition::Blocked
                         );

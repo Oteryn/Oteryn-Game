@@ -644,3 +644,46 @@ fn review_scope_preserves_admission_identity() -> Result<(), Box<dyn std::error:
     assert_eq!(query.world[15], 1);
     Ok(())
 }
+
+#[test]
+fn party_notice_refresh_survives_activity_scope_handoff() -> Result<(), String> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::party::{PartyCommand, party};
+
+    for during_handoff in [false, true] {
+        let (link, mut commands, outbox) = play_channel();
+        let mut view = view().map_err(|error| error.to_string())?;
+        let push_notice = || {
+            outbox.push(vec![SessionEvent::PartyMembershipNotice(AppliedDelta {
+                server_sequence: 3,
+                base_revision: 0,
+                new_revision: 1,
+                value: party::PartyMembershipNotice {
+                    member_handle: 9,
+                    change: party::PartyMembershipChange::Left,
+                },
+            })]);
+        };
+        outbox.party_initialize(true, false);
+        if !during_handoff {
+            push_notice();
+        }
+        publish_activity_handoff(&outbox);
+        if during_handoff {
+            push_notice();
+        }
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        assert!(commands.try_recv().is_err());
+        assert!(outbox.scope_needs_initialize());
+        // Even after the session task claims initialization, Party is still uninitialized.
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        assert!(commands.try_recv().is_err());
+        outbox.party_initialize(true, false);
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            commands.try_recv().map_err(|error| error.to_string())?,
+            PlayCommand::Party(PartyCommand::query())
+        );
+    }
+    Ok(())
+}

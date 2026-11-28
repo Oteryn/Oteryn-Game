@@ -154,7 +154,7 @@
         32802,
         11
       ],
-      "connected_tiles": 292,
+      "connected_tiles": 287,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:68"
     },
@@ -462,7 +462,7 @@
         32450,
         11
       ],
-      "connected_tiles": 202,
+      "connected_tiles": 183,
       "reason": null,
       "source": "data-global/scripts/quests/killing_in_the_name_of/movements_boss.lua:222"
     },
@@ -666,7 +666,7 @@
     }
   ],
   "inputs_sha256": {
-    "content/items/definitions/spell-native-profiles.json": "70fc376a98184784397fe016b1b22a8db5a8de34e25791eae8f4223dcb4b46d4",
+    "content/items/definitions/spell-native-profiles.json": "55e1e888b3a30a2ced54a7dfe14ae55361af6272fd4e73a62e9402e4235143e5",
     "content/quests/killing-in-the-name-of.json": "954cd1b9feba72e3c01f03ed97d68ff08fcd78ab0bf8f1ae779c6abff9ce8309",
     "content/world/objects/objects-00000-00499.json": "76b4489d66b2affaa0929dc449e9a5f21c7f454d2fb66453e3a6757861f8fd9f",
     "content/world/objects/objects-00500-00999.json": "2ebd31bd6ba0bb6cd3f1561258b61893954891e9b907ef918444ddbb4206c1fb",
@@ -698,8 +698,7 @@
     "content/world/objects/objects-12877-12916.json": "2c190feb8bf04817077ffe9126360e1aac81652221ccd232d7436616ad9ddcaa",
     "content/world/objects/objects-12917-12931.json": "f261d0a2cc18309b9fb76b1b5f3970ef800586ae5d3562e885fb1a908b4cfb69",
     "content/world/objects/objects-12932-13108.json": "1e960f7a61eccfddbf2428c40924598e4641bbb9790b0cb35305b65a8c2b4877",
-    "content/world/objects/objects-13109-13114.json": "17233fbd76cd7aada02d4bd1a8c72e265fa89afea153c3a48632bbd785796159",
-    "content/world/placements/index.json": "5a5aeffe0cc2ef68f13456b91da1b4753d2624d8609dadbc5616519d22a55f7f",
+    "content/world/placements/index.json": "e414fa9257ca4470a71567a3e0f1feda5f793620a3fd9e777e7b13bad2ad87c5",
     "content/world/placements/region-z01-x129-y121.b3": "c11e0e3ea456fbee69b320b8f4e8cacf2240e142045dacec81c91c679560d2be",
     "content/world/placements/region-z02-x125-y121.b3": "5d704484eadabaad8beca02502b161149daee492591a3369b30a0866c311a520",
     "content/world/placements/region-z02-x129-y121.b3": "203006f5b15052cb12493a3b1e52047f3859b2e5bb186a58295f4868ea1da1bf",
@@ -763,7 +762,6 @@
     "content/world/terrain/terrain-08751-08793.json": "64440856cd3fa9b982b654838b492a63841c0b55317c7ac4be3b31a89244f291",
     "content/world/terrain/terrain-08794-08845.json": "09ecab191e410f8631b9ccbe3ee5e3b6f4aadf2b2f723743659559a7dc0d85e5",
     "content/world/terrain/terrain-08846-08885.json": "c9efa0d2c1e277891e12b6c85887a58f7300421ca1cd42f7fdb9b8499df43467",
-    "content/world/terrain/terrain-08886-08886.json": "4be9500cd76eafa7a4806c0b40a34739b6ec6574dc8d88929209c6e5590f34fd",
     "content/world/terrain/terrain-08886-08887.json": "1741e4d4b71b6ea1032e9b176afe64c9f0441f73dad934fa395eddaf2aca4c31",
     "imports/crystalserver/spawn-reconciliation/slice-2.json": "597ec988d0df562aafe26d6d2e1a6e3315ac62f2ef0f993ee17eb9bc794999c3",
     "tools/content-schema/native-gameplay/grizzly-debris-item-profiles.json": "eba5dc88620ca0d911e58dd0ff40c5c90e6cce3078e2211d44ff8a74d86b311d"

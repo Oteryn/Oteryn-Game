@@ -878,50 +878,62 @@ async fn scenario(
             .await
             .map_err(debug)?;
     }
+    let foreign_case = matches!(case, Case::Foreign | Case::ForgeForeign);
+    let staged_ally = case.staged_ally() || matches!(case, Case::ForgeForeign);
     let staged_contributors: &[usize] = match case {
         Case::Foreign => &[2, 0],
-        Case::ForgeForeign => &[2],
+        Case::ForgeForeign => &[2, 1],
         Case::Pz | Case::Concurrent => &[0],
         _ if case.staged_ally() => &[1],
         _ => &[],
     };
-    // These cases test settlement, not competing content-seeded swing draws.
-    // Bank real damage per staged contributor: five, or four for the foreign Character.
-    // When sharing is required, the leader stops at its first landed hit and lab damage
-    // then leaves one HP, so the leader's committed activity is recent at death.
-    //
-    // No staged swing can kill the rat (20 HP, armor 1, mitigation 3/25 in
-    // spell-native-profiles.json), whatever the draws. A level-1 fist hit draws at most
-    // floor(2 * 8 * (fist + 4) / 28 * factor), the factor doubled for a monk
-    // (formulas.rs:42-118; the level term is 0, formula.rs:17). Armor takes exactly 1 and
-    // the 0.12% mitigation truncates 1 more (formulas.rs:225-233, resolution.rs:240-272).
-    // A pass is at most one swing and one fist try; fist 15 needs 304 tries, so within
-    // 256 passes fist <= 14. A Balanced knight then lands <= 5 per hit, a Defensive monk
-    // <= 8 and a Balanced monk <= 13. Foreign banks 4..=8, its leader 1..=8: the rat keeps
-    // >= 4 HP, and both 4 * foreign >= leader + 1 and 4 * (leader + 1) >= foreign hold,
-    // so each damage group earns XP. Concurrent's one leader hit leaves >= 7 HP.
+    // Bank comparable damage on both sides so each earns XP from the ordinary rat.
+    // Two hits at the upper bound still leave it alive. Forge needs a recent hit
+    // from the outside contributor and the party member before the leader kills.
+    let foreign_hit = 4..=9;
+    let finishing_health = if matches!(case, Case::ForgeForeign) {
+        // Keep the leader the top damager even though the other two swing first.
+        foreign_hit.end() + 1
+    } else {
+        1
+    };
     for &index in staged_contributors {
         let (actor, session) = players[index];
         {
             let runtime = owner.runtime.lock().await;
-            let staged_mode = match case {
-                _ if case.forge() => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
-                Case::Foreign if index == 0 => {
-                    Some(oteryn_protocol_oteryn::attack::FightMode::Defensive)
-                }
-                _ => None,
-            };
-            if let Some(fight_mode) = staged_mode {
-                assert!(owner.states.attack.lock().await.set_modes(
+            let command = if foreign_case {
+                let states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get(&runtime, actor, session)
+                    .ok_or("staged attacker")?;
+                let damage = fixture_fist_damage(
                     &runtime,
-                    actor,
-                    session,
-                    oteryn_protocol_oteryn::attack::FightModes {
-                        fight_mode,
-                        ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
-                    }
-                ));
-            }
+                    (actor, session),
+                    state,
+                    creature.actor,
+                    owner.owner_now(),
+                )?;
+                (1..1000)
+                    .find(|&command| {
+                        damage(command).is_some_and(|(blocked, unblocked)| {
+                            foreign_hit.contains(&blocked) && foreign_hit.contains(&unblocked)
+                        })
+                    })
+                    .ok_or("bounded contributor swing")?
+            } else {
+                if case.forge() {
+                    assert!(owner.states.attack.lock().await.set_modes(
+                        &runtime,
+                        actor,
+                        session,
+                        oteryn_protocol_oteryn::attack::FightModes {
+                            fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+                            ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
+                        }
+                    ));
+                }
+                30
+            };
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
                     &runtime,
@@ -930,7 +942,7 @@ async fn scenario(
                     session,
                     owner.owner_now(),
                     Some(rat),
-                    30
+                    command
                 ),
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
@@ -954,12 +966,12 @@ async fn scenario(
                 .and_then(|c| runtime.companion_snapshot(c.actor).ok())
                 .ok_or("living rat")?
                 .health;
-            let contributed = if matches!(case, Case::ForgeForeign) {
-                health <= 15
-            } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
+            let contributed = if foreign_case {
+                let damage = initial_health - health;
+                assert!(foreign_hit.contains(&damage), "staged damage: {damage}");
+                true
+            } else if index == 0 && matches!(case, Case::Concurrent) {
                 health < initial_health
-            } else if index == 2 && matches!(case, Case::Foreign) {
-                initial_health - health >= 4
             } else {
                 initial_health - health >= 5
             };
@@ -1035,16 +1047,19 @@ async fn scenario(
             .commit_monster_lab_damage(creature.actor, b"party-xp-concurrent-fixture", health - 1)
             .map_err(debug)?;
     }
-    if case.staged_ally() {
-        // The ally's activity is recent; leave one HP so the leader's next landed swing is
-        // lethal well inside the shared-experience activity window.
+    if staged_ally {
+        // Leave a lethal swing for the leader inside the ally's activity window.
         let mut runtime = owner.runtime.lock().await;
         let health = runtime
             .companion_snapshot(creature.actor)
             .map_err(debug)?
             .health;
         runtime
-            .commit_monster_lab_damage(creature.actor, b"party-xp-staged-ally-fixture", health - 1)
+            .commit_monster_lab_damage(
+                creature.actor,
+                b"party-xp-staged-ally-fixture",
+                health - finishing_health,
+            )
             .map_err(debug)?;
     }
     if matches!(case, Case::OneHit) {
@@ -1120,7 +1135,7 @@ async fn scenario(
         if index == 2
             || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
             || (index == 1
-                && (case.staged_ally()
+                && (staged_ally
                     || matches!(
                         case,
                         Case::Inactive | Case::OneHit | Case::ForgeIdle | Case::EliteNoShared
@@ -1129,22 +1144,39 @@ async fn scenario(
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if case.forge() || matches!(case, Case::Concurrent | Case::Inactive | Case::Foreign) {
-            // The staged contributor's activity must still be current at the lethal hit.
-            // Balanced content draws can take 66 three-second passes even at one HP.
-            // Content-pinned draws can also leave the 72-HP Fiendish rat alive after
-            // 256 Balanced passes. Real Offensive swings exercise reward settlement
-            // while keeping the authored HP, damage rolls and activity rules.
-            assert!(owner.states.attack.lock().await.set_modes(
+        let command = if foreign_case {
+            let states = owner.states.spell_states.lock().await;
+            let state = states
+                .get(&runtime, actor, session)
+                .ok_or("finishing attacker")?;
+            let damage = fixture_fist_damage(
                 &runtime,
-                actor,
-                session,
-                oteryn_protocol_oteryn::attack::FightModes {
-                    fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
-                    ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
-                },
-            ));
-        }
+                (actor, session),
+                state,
+                creature.actor,
+                owner.owner_now(),
+            )?;
+            (1..1000)
+                .find(|&command| {
+                    damage(command).is_some_and(|(blocked, unblocked)| {
+                        blocked >= finishing_health && unblocked >= finishing_health
+                    })
+                })
+                .ok_or("finishing swing")?
+        } else {
+            if case.forge() || matches!(case, Case::Concurrent | Case::Inactive) {
+                assert!(owner.states.attack.lock().await.set_modes(
+                    &runtime,
+                    actor,
+                    session,
+                    oteryn_protocol_oteryn::attack::FightModes {
+                        fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+                        ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
+                    },
+                ));
+            }
+            30
+        };
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
@@ -1153,7 +1185,7 @@ async fn scenario(
                 session,
                 owner.owner_now(),
                 Some(rat),
-                30
+                command
             ),
             oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
         );
@@ -1739,7 +1771,7 @@ async fn scenario(
 #[path = "party_xp/support.rs"]
 mod support;
 
-pub(super) use support::initialize_build;
+pub(super) use support::{fixture_fist_damage, initialize_build};
 
 use support::join_two;
 

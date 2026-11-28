@@ -539,8 +539,11 @@ async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
     let (_, status, payload) = drive(&owner, unsupported, false)
         .await
         .map_err(|error| format!("House unsupported selection: {error}"))?;
-    assert_ne!(status, CommandStatus::Accepted);
-    assert!(payload.is_empty());
+    assert_eq!(status, CommandStatus::Rejected);
+    assert_eq!(
+        wire::decode_house_transfer_refusal(&payload),
+        Some(wire::HouseTransferRefusal::CapabilityRequired)
+    );
     // Each stale value changes just one expected generation and leaves native facts live.
     for field in 0..3 {
         let mut fresh = deps.owner(h, &authority);
@@ -563,7 +566,10 @@ async fn case(h: &Harness, check_imbuements: bool) -> TestResult {
             .await
             .map_err(|error| format!("House stale fence field {field}: {error}"))?;
         assert_eq!(status, CommandStatus::Rejected);
-        assert!(payload.is_empty());
+        assert_eq!(
+            wire::decode_house_transfer_refusal(&payload),
+            Some(wire::HouseTransferRefusal::Unavailable)
+        );
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_house_transfer_receipts")
             .fetch_one(&h.pool)
             .await?;

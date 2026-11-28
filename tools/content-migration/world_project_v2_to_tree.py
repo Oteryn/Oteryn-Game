@@ -339,6 +339,7 @@ def apply_encounter_corpse_admissions(definitions, root=ROOT):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.apply_admissions(definitions, root)
+    module.apply_rat_admissions(definitions, root)
     spec = importlib.util.spec_from_file_location(
         "native_goal_corpse_items",
         root / "tools/content-schema/native-gameplay/native_goal_corpse_items.py",
@@ -1446,7 +1447,6 @@ def main(*, items_only: bool = False) -> int:
     # the exact pre-change base; ordinary source-capture validation stays strict.
     import questpc2_soul_loot_items
 
-    questpc2_soul_loot_items.refresh_input_pins(ROOT)
     from grizzly_shop_profiles import refresh_canonical_input_pins
 
     # The merge regenerator seeds derived profiles from the incoming package.
@@ -1458,6 +1458,8 @@ def main(*, items_only: bool = False) -> int:
         text=True,
         check=False,
     ).stdout.strip()
+    if not incoming:
+        questpc2_soul_loot_items.refresh_input_pins(ROOT)
     profile_baseline = incoming or "ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb"
     refresh_canonical_input_pins(ROOT, profile_baseline)
     import condition_potion_profiles

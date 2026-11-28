@@ -169,6 +169,18 @@ pub(super) async fn join_peer_with(
     spatial_snapshot: (u32, Vec<u8>),
     raw: &[(u32, u64, u32, Vec<u8>)],
 ) -> Result<(), BoxError> {
+    join_peer_with_spatial_baseline(stream, advertised, selected, extra, spatial_snapshot, raw, (5, 40)).await
+}
+
+pub(super) async fn join_peer_with_spatial_baseline(
+    stream: &mut DuplexStream,
+    advertised: &[u32],
+    selected: &[u32],
+    extra: &[(u32, u64)],
+    spatial_snapshot: (u32, Vec<u8>),
+    raw: &[(u32, u64, u32, Vec<u8>)],
+    (spatial_revision, snapshot_sequence): (u64, u64),
+) -> Result<(), BoxError> {
     let bootstrap = read_frame(stream).await?;
     assert_eq!(
         decode_wire_envelope(&bootstrap)?
@@ -195,7 +207,7 @@ pub(super) async fn join_peer_with(
         .map_err(|error| format!("overlay snapshot: {error:?}"))?;
     let mut domains = vec![DomainSnapshot {
         domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-        revision: 5,
+        revision: spatial_revision,
         snapshot_type: spatial_type,
         payload: &spatial_payload,
     }];
@@ -224,7 +236,7 @@ pub(super) async fn join_peer_with(
             payload,
         });
     }
-    for frame in encode_single_chunk_snapshot(1, 1, 40, &domains)? {
+    for frame in encode_single_chunk_snapshot(1, 1, snapshot_sequence, &domains)? {
         write_frame(stream, &frame).await?;
     }
     Ok(())

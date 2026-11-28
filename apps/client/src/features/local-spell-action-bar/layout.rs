@@ -1,4 +1,8 @@
 //! Nine independently docked rows; layout edits are local and never predict a cast.
+#[cfg(bevy_shell)]
+use super::assignments::BarActions;
+#[cfg(bevy_shell)]
+use crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings;
 use crate::play::{PlayLink, mailbox::lock};
 use serde::{Deserialize, Serialize};
 
@@ -118,6 +122,26 @@ impl PlayLink {
     pub fn bar_layout(&self) -> BarLayout {
         lock(&self.mailbox).bar_actions.layout.clone()
     }
+    /// Read the action bar and its persisted spell identities under one mailbox lock.
+    #[cfg(bevy_shell)]
+    pub(crate) fn read_action_bar<R>(
+        &self,
+        read: impl FnOnce(
+            &BarLayout,
+            &BarActions,
+            &oteryn_client_runtime::spell::ActionBar,
+            &ArchiveBindings,
+        ) -> R,
+    ) -> R {
+        let mailbox = lock(&self.mailbox);
+        read(
+            &mailbox.bar_actions.layout,
+            &mailbox.bar_actions.saved,
+            &mailbox.spell_bar.bar,
+            &mailbox.spellbook_details.archive,
+        )
+    }
+
     pub fn bar_gesture(&self, gesture: BarGesture) -> bool {
         if let BarGesture::Cast { slot } = gesture {
             let allowed = {

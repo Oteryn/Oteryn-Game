@@ -89,3 +89,68 @@ fn raids_global_server_message_decode_and_revision_failures_do_not_advance() -> 
         Ok(())
     })?
 }
+
+#[test]
+fn party_membership_notices_share_the_domain_57_revision_only_when_selected() -> Result<(), BoxError> {
+    use oteryn_protocol_oteryn::party::{
+        CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1, PartyMembershipChange, PartyMembershipNotice,
+        encode_party_membership_notice,
+    };
+    use oteryn_protocol_oteryn::zones_nologout::{ServerMessage, encode_server_message};
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1));
+    const WITH: &[u32] = &[42, 92, 576];
+    const WITHOUT: &[u32] = &[42, 92];
+    for (advertised, selected) in [(WITH, WITH), (WITHOUT, WITHOUT), (WITH, WITHOUT)] {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(&mut server, advertised, selected, &[],
+                    (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, spatial(0)), &[(57, 0, 1, vec![8, 1])]).await
+            });
+            let mut session = Session::admit(client, admission_with(advertised)?).await?;
+            peer.await??;
+            let payload = |base, new, kind, bytes: &[u8]| -> Result<Vec<u8>, BoxError> {
+                let frame = encode_state_delta(1, 41, 57, base, new, kind, bytes)?;
+                Ok(decode_wire_envelope(&frame)?.payload().to_vec())
+            };
+            let joined = PartyMembershipNotice { member_handle: 7, change: PartyMembershipChange::Joined };
+            let notice = encode_party_membership_notice(joined).map_err(|error| format!("{error:?}"))?;
+            let revision = |session: &Session<_>| {
+                session.gated_revisions.iter().find(|(id, _)| *id == 57).map(|(_, revision)| *revision)
+            };
+            if selected == WITHOUT {
+                assert!(matches!(session.apply_state_delta(41, &payload(0, 1, 2, &notice)?),
+                    Err(SessionError::CapabilityNotSelected { capability: 576 })));
+                assert_eq!(revision(&session), Some(0));
+                return Ok::<(), BoxError>(());
+            }
+            // A change the client does not know (3) and a truncated notice are clean refusals.
+            for malformed in [vec![8, 7, 16, 3], vec![8, 7]] {
+                assert!(matches!(session.apply_state_delta(41, &payload(0, 1, 2, &malformed)?),
+                    Err(SessionError::Protocol(FoundationProtocolError::MalformedFrame))));
+            }
+            assert!(matches!(session.apply_state_delta(41, &payload(0, 1, 3, &notice)?),
+                Err(SessionError::UnregisteredDeltaType { domain_id: 57, delta_type: 3 })));
+            assert!(session.apply_state_delta(41, &payload(1, 2, 2, &notice)?).is_err());
+            assert_eq!(revision(&session), Some(0));
+            let event = session.apply_state_delta(41, &payload(0, 1, 2, &notice)?)?;
+            assert!(matches!(&event, SessionEvent::PartyMembershipNotice(delta)
+                if delta.new_revision == 1 && delta.value == joined));
+            assert_eq!(event.domain_id(), 57);
+            // The server's next message of either type continues the shared revision.
+            let status = encode_server_message(&ServerMessage::StatusText("Status".into()))
+                .map_err(|error| format!("{error:?}"))?;
+            assert!(matches!(session.apply_state_delta(42, &payload(1, 2, 1, &status)?)?,
+                SessionEvent::ServerMessage(delta) if delta.base_revision == 1));
+            let left = encode_party_membership_notice(PartyMembershipNotice {
+                member_handle: 7, change: PartyMembershipChange::Left,
+            }).map_err(|error| format!("{error:?}"))?;
+            assert!(matches!(session.apply_state_delta(43, &payload(2, 3, 2, &left)?)?,
+                SessionEvent::PartyMembershipNotice(delta)
+                    if delta.value.change == PartyMembershipChange::Left));
+            assert_eq!(revision(&session), Some(3));
+            Ok(())
+        })??;
+    }
+    Ok(())
+}
