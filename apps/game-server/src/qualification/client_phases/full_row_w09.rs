@@ -279,10 +279,38 @@ async fn wait_inventory(
     Ok(())
 }
 
+async fn cast_with_busy_retry(
+    client: &mut DevClientSession,
+    spell: NonZeroU32,
+) -> TestResult<(u64, u64, oteryn_dev_client::CastOutcome)> {
+    for attempt in 1..=3 {
+        let command = client.next_command_id();
+        let sequence = client.last_server_sequence();
+        let vitals = client.actor_vitals().copied();
+        let inventory = quantities(client)?;
+        let result = client.cast_spell(spell, SpellTarget::None, false).await?;
+        if result.disposition != SpellCastDisposition::Busy {
+            return Ok((command, sequence, result));
+        }
+        if result.status != CommandStatus::Rejected
+            || result.command_id != command
+            || result.result_server_sequence <= sequence
+            || command.checked_add(1) != Some(client.next_command_id())
+            || result.actor_vitals_delta.is_some()
+            || client.actor_vitals().copied() != vitals
+            || quantities(client)? != inventory
+        {
+            return Err(format!("W09 typed Busy changed cast state: {result:?}").into());
+        }
+        evidence(&format!("W09_CAST_BUSY spell={spell} command={command} sequence={} attempt={attempt}/3", result.result_server_sequence));
+    }
+    Err("W09 typed cast Busy exhausted three attempts".into())
+}
+
 async fn cast_paid(client: &mut DevClientSession, spell: NonZeroU32, mana_cost: u32) -> TestResult<Vec<SessionEvent>> {
     let before_sequence = client.last_server_sequence();
     let mut before = client.actor_vitals().copied().ok_or("W09 caster vitals missing")?;
-    let cast = client.cast_spell(spell, SpellTarget::None, false).await?;
+    let (_, _, cast) = cast_with_busy_retry(client, spell).await?;
     let events = client.take_events();
     // The transport can deliver a regeneration frame before the cast result.
     // Use that exact wire state when it is the immediate predecessor of the debit.
@@ -476,9 +504,7 @@ async fn assert_cooling_down(
         .actor_vitals()
         .copied()
         .ok_or("W09 caster vitals missing")?;
-    let command_id = client.next_command_id();
-    let sequence = client.last_server_sequence();
-    let blocked = client.cast_spell(spell, SpellTarget::None, false).await?;
+    let (command_id, sequence, blocked) = cast_with_busy_retry(client, spell).await?;
     if blocked.status != CommandStatus::Accepted
         || blocked.disposition != SpellCastDisposition::CoolingDown
         || blocked.command_id != command_id
