@@ -539,6 +539,9 @@ async fn capture(clients: &SeamClients<'_>, scenario: &str) -> TestResult {
             .ok_or("C18a Scorch decision has no matching caster and origin")?;
             let loss = u64::from(health_before).checked_sub(u64::from(remaining));
             if remaining == 0 || loss != value.checked_mul(100).map(|percent| percent / RAT_MAX_HP) {
+                evidence(&format!(
+                    "c18a_damage_mismatch session={cast_session} command={command_id} reply={result_server_sequence} damage_frame={damage_sequence} health_frame={sequence} target={target:?} hit_position={rat_position:?} presentation={events:?}"
+                ));
                 return Err(format!("C18a fire damage {value} disagrees with Rat health {health_before} -> {remaining}").into());
             }
             break (sequence, remaining, rat_position, *damage_sequence, value);
@@ -977,6 +980,7 @@ async fn place_exact_rat(
 ) -> TestResult<oteryn_dev_client::EntityRef> {
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let request = format!("{},{},{}:oteryn:creature.rat", RAT_TILE.x, RAT_TILE.y, -RAT_TILE.floor);
+    let before_spawn = client.last_server_sequence();
     let receipt = request_fixture_control(session, "--spawn-at", request)
         .await
         .map_err(RatPlacementRefusal::Fixture)?;
@@ -986,42 +990,38 @@ async fn place_exact_rat(
     );
     let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     loop {
-        let at_fixed_tile = client
-            .world_entities()
-            .and_then(|view| view.get(&target))
-            .is_some_and(|entity| {
-                entity.kind == oteryn_dev_client::EntityKind::Creature
-                    && tile(entity.position).ok() == Some(RAT_TILE)
-                    && entity.display_name.is_some_and(|name| {
-                        name.as_str()
-                            .is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
+        use oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar;
+        let frame = client
+            .session_mut()
+            .raw_world_entity_deltas()
+            .iter()
+            .filter(|frame| frame.server_sequence > before_spawn)
+            .find(|frame| {
+                decode_world_spatial_entities_delta_with_sidecar(&frame.payload, fields)
+                    .is_ok_and(|(delta, _, _)| {
+                        delta.enter.iter().chain(&delta.update).any(|entity| {
+                            entity.entity == target
+                                && entity.kind == oteryn_dev_client::EntityKind::Creature
+                                && tile(entity.position).ok() == Some(RAT_TILE)
+                                && entity.display_name.is_some_and(|name| {
+                                    name.as_str().is_ok_and(|name| name.eq_ignore_ascii_case("rat"))
+                                })
+                        })
                     })
             });
-        if at_fixed_tile {
-            use oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_sidecar;
-            let frame = client
-                .session_mut()
-                .raw_world_entity_deltas()
-                .iter()
-                .rev()
-                .find(|frame| {
-                    decode_world_spatial_entities_delta_with_sidecar(&frame.payload, fields)
-                        .is_ok_and(|(delta, _, _)| {
-                            delta.enter.iter().chain(&delta.update).any(|entity| {
-                                entity.entity == target
-                                    && tile(entity.position).ok() == Some(RAT_TILE)
-                            })
-                        })
-                });
-            if let Some(frame) = frame {
-                evidence(&format!(
-                    "SEAM_EVIDENCE c18a_rat_placement target={target:?} frame_sequence={}",
-                    frame.server_sequence
-                ));
-                return Ok(target);
-            }
+        if let Some(frame) = frame {
+            evidence(&format!(
+                "SEAM_EVIDENCE c18a_rat_placement target={target:?} frame_sequence={}",
+                frame.server_sequence
+            ));
+            return Ok(target);
         }
         if tokio::time::Instant::now() >= deadline {
+            let current = client.world_entities().and_then(|view| view.get(&target));
+            evidence(&format!(
+                "c18a_rat_placement_timeout target={target:?} tile={RAT_TILE:?} before={before_spawn} last={} current={current:?}",
+                client.last_server_sequence()
+            ));
             return Err(RatPlacementRefusal::ProjectionDeadline.into());
         }
         client.service_liveness(Duration::from_millis(20)).await?;
