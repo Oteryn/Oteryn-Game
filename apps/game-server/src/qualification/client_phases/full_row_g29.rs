@@ -307,8 +307,36 @@ async fn start_inquisition(clients: &SeamClients<'_>, client: &mut DevClientSess
     let world = full_e2ef7::qualification_world(clients)?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let actor =
-        full_row_p20::approach_npc(client, world, &metadata.npcs, "oteryn:npc.henricus").await?;
+    let [placement] = metadata
+        .npcs
+        .npcs
+        .iter()
+        .find(|record| record.key == "oteryn:npc.henricus")
+        .ok_or("step=henricus observed=missing-from-bundle")?
+        .placements
+        .as_slice()
+    else {
+        return Err("step=henricus observed=ambiguous-placement".into());
+    };
+    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+        at.floor == placement.floor
+            && u32::from(at.x.abs_diff(placement.x).max(at.y.abs_diff(placement.y)))
+                <= npc::TALK_RANGE_TILES
+    })
+    .ok_or("step=henricus observed=no-walking-route")?;
+    walk_to_henricus(world, client, &path).await?;
+    let actor = client
+        .world_entities()
+        .and_then(|view| {
+            view.iter().find(|e| {
+                e.kind == oteryn_dev_client::EntityKind::Npc
+                    && e.position.x == i32::from(placement.x)
+                    && e.position.y == i32::from(placement.y)
+                    && e.position.floor == -i16::from(placement.floor)
+            })
+        })
+        .map(|e| e.entity)
+        .ok_or("step=henricus observed=actor-not-visible")?;
     for (text, prefix) in [
         ("hi", ""),
         ("mission", "Do you want to join the inquisition?"),
@@ -349,6 +377,64 @@ async fn start_inquisition(clients: &SeamClients<'_>, client: &mut DevClientSess
         {
             return Err(format!("step=inquisition text={text} observed={conversation:?}").into());
         }
+    }
+    Ok(())
+}
+
+async fn walk_to_henricus(
+    world: &BundleWorld,
+    client: &mut DevClientSession,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let before = client.world_spatial().actor_position;
+        let expected = destination(world, tile(before)?, direction)
+            .ok_or("step=henricus observed=planned-landing-disappeared")?;
+        let mut outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Blocked
+            && client.world_spatial().actor_position == before
+        {
+            let blocker = client.world_entities().and_then(|view| view.iter().find(|e| {
+                matches!(e.kind, oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Npc | oteryn_dev_client::EntityKind::Player)
+                    && tile(e.position).ok() == Some(expected)
+            })).map(|e| e.entity).ok_or_else(|| {
+                format!("BLOCKER-SERVER step=henricus blocked={expected:?} occupant=none frame={outcome:?}")
+            })?;
+            evidence(&format!(
+                "G29 movement blocked tile={expected:?} actor={blocker:?} frame={outcome:?}"
+            ));
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+            loop {
+                let position = client
+                    .world_entities()
+                    .and_then(|view| view.iter().find(|e| e.entity == blocker))
+                    .map(|e| e.position);
+                if position.is_some_and(|position| tile(position).ok() != Some(expected)) {
+                    evidence(&format!(
+                        "G29 movement blocker-cleared actor={blocker:?} position={position:?}"
+                    ));
+                    break;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(
+                        format!("step=henricus blocker={blocker:?} observed={position:?}").into(),
+                    );
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+            }
+            outcome = client.step(direction).await?;
+        }
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || before == client.world_spatial().actor_position
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!(
+                "step=henricus from={before:?} expected={expected:?} frame={outcome:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
     }
     Ok(())
 }
