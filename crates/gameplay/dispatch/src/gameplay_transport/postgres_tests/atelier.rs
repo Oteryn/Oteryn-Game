@@ -195,7 +195,7 @@ fn scenario() -> TestResult {
                 .fetch_one(&h.pool)
                 .await?,
             0,
-            "query does not own initialization"
+            "an ineligible refresh does not initialize Atelier"
         );
         fixture::eligible(&h.pool).await?;
         let request = fixture::prepare(&h).await?;

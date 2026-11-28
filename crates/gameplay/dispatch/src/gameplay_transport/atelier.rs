@@ -52,7 +52,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         {
             self.atelier_v2_wire(admitted, kind, payload).await
         } else {
-            self.atelier_v1_wire(admitted, kind, payload).await
+            self.atelier_v1_wire(
+                admitted,
+                kind,
+                payload,
+                kind == oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY,
+            )
+            .await
         }
     }
 
@@ -61,6 +67,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         admitted: super::connection::AdmittedSession,
         kind: u32,
         payload: &[u8],
+        refresh: bool,
     ) -> AtelierWireReply {
         use oteryn_protocol_oteryn::atelier as wire;
         if !admitted
@@ -128,7 +135,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return AtelierWireReply::Rejected,
         };
-        self.atelier_v1_apply(admitted, expected, kind, request, refused)
+        self.atelier_v1_apply(admitted, expected, kind, request, refused, refresh)
             .await
     }
 
@@ -165,6 +172,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         kind: u32,
         request: Option<crate::durability::character_atelier::AtelierRequest<'static>>,
         mut refused: bool,
+        refresh: bool,
     ) -> AtelierWireReply {
         use oteryn_protocol_oteryn::atelier as wire;
         let mut recorded = None;
@@ -340,29 +348,32 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|states| states.get(&admitted.game_session_id).cloned().flatten())
         });
         let state = match state {
-            Some(state) => state,
+            Some(state) => Some(state),
             None => match self
                 .root
                 .read_character_atelier(self.character, expected.character_id)
                 .await
             {
-                Ok(Some(state)) => state,
-                // Admission intentionally creates no Atelier row below eligibility. A
-                // selected client may still query the panel; this is a rule refusal,
-                // not a failed storage read or an indeterminate committed mutation.
-                Ok(None) => {
-                    return wire::encode_reply(&wire::AtelierReply {
-                        refused: true,
-                        revision: 0,
-                        gems: Vec::new(),
-                        grades: Vec::new(),
-                        quality_quotes: Vec::new(),
-                        grade_quotes: Vec::new(),
-                    })
-                    .map_or(AtelierWireReply::Unavailable, AtelierWireReply::Payload);
-                }
+                Ok(None) if refresh => match self.initialize_atelier_session(expected).await {
+                    Ok(state) => state,
+                    Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected) =>
+                        return AtelierWireReply::Rejected,
+                    Err(_) => return AtelierWireReply::Unavailable,
+                },
+                Ok(state) => state,
                 Err(_) => return AtelierWireReply::Unavailable,
             },
+        };
+        let Some(state) = state else {
+            return wire::encode_reply(&wire::AtelierReply {
+                refused: true,
+                revision: 0,
+                gems: Vec::new(),
+                grades: Vec::new(),
+                quality_quotes: Vec::new(),
+                grade_quotes: Vec::new(),
+            })
+            .map_or(AtelierWireReply::Unavailable, AtelierWireReply::Payload);
         };
         let (quality_quotes, grade_quotes) = if kind == wire::COMMAND_TYPE_ATELIER_QUERY {
             let Some(quotes) = atelier_price_quotes() else {
@@ -432,6 +443,40 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         })
         .map_or(AtelierWireReply::Unavailable, AtelierWireReply::Payload)
     }
+    /// Admission and the first eligible refresh use the same fenced GEM_INIT occurrence.
+    pub(super) async fn initialize_atelier_session(
+        &self,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<
+        Option<AtelierState>,
+        crate::durability::character_progression::CharacterProgressionError,
+    > {
+        use crate::durability::character_atelier::{AtelierOutcome, AtelierRequest};
+        use crate::durability::character_progression::CharacterProgressionError as Error;
+        let result = self
+            .commit_wheel_client(
+                fence.game_session_id,
+                GemBuildCommand::Atelier(AtelierRequest::initialize(fence.character_id)),
+                false,
+                Some(fence),
+            )
+            .await;
+        match result {
+            Ok(GemBuildOutcome::Atelier(AtelierOutcome::Committed { state, .. })) => {
+                Ok(Some(state))
+            }
+            Ok(GemBuildOutcome::Atelier(AtelierOutcome::AlreadyCommitted { .. })) => {
+                self.root
+                    .read_character_atelier(self.character, fence.character_id)
+                    .await
+            }
+            Ok(GemBuildOutcome::Atelier(AtelierOutcome::Refused))
+            | Err(Error::MissingProgressionState) => Ok(None),
+            Ok(GemBuildOutcome::Wheel(_)) => Err(Error::InvalidInput),
+            Err(error) => Err(error),
+        }
+    }
+
     /// Runtime Gem Atelier entry point.
     ///
     /// All player-facing Atelier and vessel commands must enter here rather than calling a
