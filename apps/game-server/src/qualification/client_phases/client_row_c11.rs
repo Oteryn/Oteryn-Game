@@ -358,7 +358,13 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if wheel_command(&mut client, &read).await? != saved {
         return Err("C11 exact Wheel allocation failed to survive relog".into());
     }
-    query(&mut client, eligible).await?;
+    // Fixture Premium is session-local against the disposable Platform account.
+    // Check persisted points before refreshing this independent input.
+    character_prep::grant_premium(&client).await?;
+    evidence("C11_FIXTURE premium=combat-session wheel_allocation=verified_after_relog");
+    query(&mut client, eligible)
+        .await
+        .map_err(|error| format!("C11 post-relog eligibility: {error}"))?;
     let mut creatures = adjacent_creatures(&client)?;
     if !creatures.is_empty() {
         return Err(
