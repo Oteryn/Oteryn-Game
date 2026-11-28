@@ -105,14 +105,6 @@ async fn logout(mut client: DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn close_catalogue_observer(mut client: DevClientSession) -> TestResult {
-    let (result, detail, _, _) = fixture_logout_retrying_busy(&mut client).await?;
-    if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=catalogue-observer-logout observed={detail}").into());
-    }
-    Ok(())
-}
-
 async fn verify_male_catalogue(
     clients: &SeamClients<'_>,
     previous_session: crate::foundation::GameSessionId,
@@ -127,7 +119,7 @@ async fn verify_male_catalogue(
     {
         return Err("step=male-outfit-catalogue observed=wrong-outfit-or-mounts".into());
     }
-    close_catalogue_observer(witness).await?;
+    logout(witness).await?;
     Ok(session)
 }
 
@@ -247,20 +239,51 @@ fn expected_doll_choice(
     let rule =
         item_cosmetics::rule("oteryn:item.tibia.i6579").ok_or("step=doll observed=no-rule")?;
     let session = *client.join_snapshot().game_session_id.as_bytes();
-    let draw = |domain, upper| {
-        oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw(
-            session, command, source, domain, upper,
-        )
-        .ok_or("step=doll observed=invalid-draw-bound")
+    use sha2::{Digest, Sha256};
+
+    // Crystal 201189f8 addon_doll.lua fixes the slot order. Native look
+    // corrections are explicit here. Global Wedding has no addons.
+    const SLOTS: [&str; 44] = [
+        "128-136", "129-137", "130-138", "131-139", "132-140", "133-141",
+        "134-142", "143-147", "144-148", "145-149", "146-150", "151-155",
+        "152-156", "153-157", "154-158", "251-252", "268-269", "270-273",
+        "278-279", "288-289", "324-325", "335-336", "366-367", "328-329",
+        "430-431", "432-433", "463-464", "465-466", "471-472", "512-513",
+        "514-516", "541-542", "574-575", "577-578", "610-618", "620-621",
+        "632-633", "634-635", "636-637", "664-665", "666-667", "683-684",
+        "694-695", "696-697",
+    ];
+    let draw = |domain: u8, upper: u64| {
+        (0_u32..=u32::MAX).find_map(|counter| {
+            let mut hash = Sha256::new();
+            hash.update(b"oteryn:reward-bag-draw:v1");
+            hash.update(session);
+            hash.update(command.to_be_bytes());
+            hash.update(source);
+            hash.update([domain]);
+            hash.update(counter.to_be_bytes());
+            let bytes: [u8; 8] = hash.finalize()[..8].try_into().ok()?;
+            let value = u64::from_be_bytes(bytes);
+            (value < u64::MAX - u64::MAX % upper).then_some(value % upper)
+        }).ok_or("step=doll observed=draw-exhausted")
     };
-    // Crystal draws an outfit and an addon once each, in two independent domains.
-    // Calculate the expected choice separately from the server's item selector.
-    let outfit = draw(224, u64::try_from(rule.choices.len() / 2)?)?;
+    let outfit = draw(224, 44)?;
     let addon = draw(225, 2)?;
-    let choice = usize::try_from(outfit * 2 + addon)?;
+    let pair = SLOTS[usize::try_from(outfit)?];
+    let base = format!("oteryn:item-grant.outfit.{pair}.base");
+    let mut grants = vec![base.clone()];
+    let owned = if matches!(pair, "328-329" | "620-621") {
+        base
+    } else {
+        let owned = format!("oteryn:item-grant.outfit.{pair}.addon{}", addon + 1);
+        grants.push(owned.clone());
+        owned
+    };
     rule.choices
-        .get(choice)
-        .ok_or_else(|| "step=doll observed=invalid-draw".into())
+        .iter()
+        .find(|choice| choice.owned == owned && choice.grants == grants)
+        .ok_or_else(|| format!("step=doll observed=missing-or-mismapped-grant expected={owned}").into())
+
 }
 
 async fn plan_owned_doll_use(
@@ -308,12 +331,46 @@ async fn plan_owned_doll_use(
     Ok(())
 }
 
+fn verify_draw_delta(
+    choice: &item_cosmetics::Choice,
+    before: &BTreeMap<String, (u32, u8)>,
+    after: &BTreeMap<String, (u32, u8)>,
+) -> TestResult {
+    let (_, suffix) = choice.owned.rsplit_once('.').ok_or("invalid draw key")?;
+    let mask = match suffix {
+        "base" => 0,
+        "addon1" => 1,
+        "addon2" => 2,
+        _ => return Err("invalid draw addon".into()),
+    };
+    let mut changed = false;
+    for (key, &(look, addons)) in after {
+        let previous = before.get(key).copied();
+        if previous == Some((look, addons)) {
+            continue;
+        }
+        let prior_mask = previous.map_or(0, |(_, mask)| mask);
+        if previous.is_some_and(|(prior_look, _)| prior_look != look)
+            || (mask != 0 && prior_mask & mask != 0)
+            || addons != prior_mask | mask
+        {
+            return Err(format!("step=doll observed=wrong-addon-delta key={key}").into());
+        }
+        changed = true;
+    }
+    if !changed {
+        return Err("step=doll observed=no-draw-delta".into());
+    }
+    Ok(())
+}
+
 fn verify_doll(
     content: &NativeCosmeticsView,
     choice: &item_cosmetics::Choice,
     before: &BTreeMap<String, (u32, u8)>,
     after: &BTreeMap<String, (u32, u8)>,
 ) -> TestResult {
+    verify_draw_delta(choice, before, after)?;
     let expected = outfit_grant_projection(content, before, &choice.grants, Sex::Female);
     if &expected == before || &expected != after {
         return Err(format!(
@@ -327,6 +384,43 @@ fn verify_doll(
         choice.owned
     ));
     Ok(())
+}
+
+async fn require_feedback(
+    client: &mut DevClientSession,
+    before: u64,
+    step: &str,
+    matches_message: impl Fn(&oteryn_dev_client::ChatLine) -> bool,
+) -> TestResult {
+    tokio::time::timeout(Duration::from_secs(3), async {
+        loop {
+            let events = client.wait_for_events(Duration::from_secs(3)).await?;
+            if events.into_iter().any(|event| {
+                matches!(event, oteryn_dev_client::SessionEvent::ChatLine(delta)
+                    if delta.server_sequence > before
+                        && matches_message(&delta.value))
+            }) {
+                return Ok::<(), oteryn_dev_client::DevClientError>(());
+            }
+        }
+    })
+    .await
+    .map_err(|_| format!("step={step} observed=missing-exact-feedback after_sequence={before}"))??;
+    Ok(())
+}
+
+async fn vortex_progress(clients: &SeamClients<'_>) -> TestResult<i64> {
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT progress FROM game_character_achievement_progress
+         WHERE character_id = encode($1, 'hex')::uuid
+           AND achievement_key = 'oteryn:achievement/vortex_tamer'",
+    )
+    .bind(clients.characters[0].as_slice())
+    .fetch_optional(&mut connection)
+    .await?;
+    Ok(count.unwrap_or(0))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -352,7 +446,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let male_mounts = appearance_snapshot(&mut witness)?.catalogue.mounts;
     let male_initial_session = witness.join_snapshot().game_session_id;
-    close_catalogue_observer(witness).await?;
+    logout(witness).await?;
     let mut client = connect_character(&clients, 0xd4, 0).await?;
     let initial_inventory = quantities(&client)?;
     let initial_outfits = outfits(&mut client)?;
@@ -421,6 +515,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=afflicted-incomplete observed=complete-set-already-carried".into());
     }
     character_prep::grant_premium(&client).await?;
+    evidence("FIXTURE row=W19d.full input=Premium");
     expect_item_use(
         &mut client,
         afflicted_reference,
@@ -460,12 +555,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     evidence("W19D_PREMIUM_REFUSAL_ASSERT disposition=PremiumRequired persisted=unchanged");
     // Current Premium proof is released on logout. Prepare it on the session that uses the pieces.
     character_prep::grant_premium(&client).await?;
+    evidence("FIXTURE row=W19d.full input=Premium");
+    let before_feedback = client.last_server_sequence();
     expect_item_use(
         &mut client,
         afflicted_reference,
         use_wire::UseDisposition::Committed,
     )
     .await?;
+    require_feedback(&mut client, before_feedback, "afflicted", |line| {
+        matches!(line, oteryn_dev_client::ChatLine::Local { text, .. } if text == "You have restored an outfit.")
+    }).await?;
     let mut client = relog(client, &clients).await?;
     for id in AFFLICTED_PIECES {
         funded.remove(&reference(id)?.get());
@@ -489,7 +589,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         );
     }
     evidence("W19D_AFFLICTED_ASSERT consumed=12551,12552,12553,12554,12555,12556 outfit=afflicted");
-    close_catalogue_observer(client).await?;
+    logout(client).await?;
     let male_afflicted_session =
         verify_male_catalogue(&male_clients, male_initial_session, &male_expected, &male_mounts)
             .await?;
@@ -511,11 +611,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if appearance_snapshot(&mut client)?.catalogue.mounts != initial_mounts {
         return Err("step=outfit-use observed=unexpected-mount-grant".into());
     }
-    close_catalogue_observer(client).await?;
+    logout(client).await?;
     let male_after = outfit_grant_projection(&cosmetics, &male_expected, &doll_choice.grants, Sex::Male);
-    if male_after == male_expected {
-        return Err("step=male-doll-catalogue observed=non-discriminating-expectation".into());
-    }
+    verify_draw_delta(doll_choice, &male_expected, &male_after)?;
     verify_male_catalogue(&male_clients, male_afflicted_session, &male_after, &male_mounts).await?;
     evidence("W19D_MALE_DOLL_ASSERT addon=expected mounts=unchanged");
     let client = connect_character(&clients, 0xd4, 0).await?;
@@ -537,7 +635,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("step=doll-duplicate-sequence observed=state-changed".into());
     }
-    let owned_feedback = "You already have this outfit with this addon.";
+    // Global Wedding outfits have no addons. Both native draw slots grant the base.
+    let owned_feedback = if doll_choice.owned.ends_with(".base") {
+        "You already have this outfit."
+    } else {
+        "You already have this outfit with this addon."
+    };
     let expected_feedback = if client.selected_capabilities().contains(
         &oteryn_protocol_oteryn::chat::CAPABILITY_CHAT_SYSTEM_MESSAGE_V1,
     ) {
@@ -547,20 +650,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     };
     let before_duplicate = client.last_server_sequence();
     expect_item_use(&mut client, doll_reference, use_wire::UseDisposition::Committed).await?;
-    tokio::time::timeout(Duration::from_secs(3), async {
-        loop {
-            let events = client.wait_for_events(Duration::from_secs(3)).await?;
-            if events.into_iter().any(|event| {
-                matches!(event, oteryn_dev_client::SessionEvent::ChatLine(delta)
-                    if delta.server_sequence > before_duplicate
-                        && delta.value == expected_feedback)
-            }) {
-                return Ok::<(), oteryn_dev_client::DevClientError>(());
-            }
-        }
-    })
-    .await
-    .map_err(|_| "step=doll-duplicate observed=missing-owned-feedback")??;
+    require_feedback(&mut client, before_duplicate, "doll-duplicate", |line| line == &expected_feedback).await?;
     let mut client = relog(client, &clients).await?;
     if quantities(&client)? != with_duplicate_doll
         || outfits(&mut client)? != after_doll
@@ -582,6 +672,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=afflicted-duplicate-fund observed=unexpected-state".into());
     }
     character_prep::grant_premium(&client).await?;
+    evidence("FIXTURE row=W19d.full input=Premium");
     expect_item_use(
         &mut client,
         afflicted_reference,
@@ -617,12 +708,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("step=mount-fund observed=unexpected-input-or-appearance".into());
     }
     character_prep::grant_premium(&client).await?;
+    evidence("FIXTURE row=W19d.full input=Premium");
+    if vortex_progress(&clients).await? != 0 { return Err("step=sparkion observed=preexisting-vortex-progress".into()); }
+    let before_feedback = client.last_server_sequence();
     expect_item_use(
         &mut client,
         mount_reference,
         use_wire::UseDisposition::Committed,
     )
     .await?;
+    require_feedback(&mut client, before_feedback, "sparkion", |line| {
+        matches!(line, oteryn_dev_client::ChatLine::Local { text, .. } if text == "You receive the permission to ride a sparkion.")
+    }).await?;
     let mut client = relog(client, &clients).await?;
     let mut observed_mounts = appearance_snapshot(&mut client)?.catalogue.mounts;
     observed_mounts.sort();
@@ -631,6 +728,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         || observed_mounts != mounted
     {
         return Err("step=mount observed=unexpected-persisted-outcome".into());
+    }
+    if vortex_progress(&clients).await? != 1 {
+        return Err("step=sparkion observed=wrong-persisted-vortex-progress".into());
     }
     evidence("W19D_MOUNT_ASSERT grant=sparkion_mount consumed=23538");
     logout(client).await
