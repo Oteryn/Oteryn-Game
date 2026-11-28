@@ -11,7 +11,7 @@
 
 use super::{
     ActorLocalGeneration, ActorLocalId, ActorRef, CarrierError, ChannelRuntimeV1, ExactActorRef,
-    LocalPosition, MovementFacing, Slot, VersionedPosition,
+    LocalPosition, MovementFacing, MovementLocalPosition, Slot, VersionedPosition,
 };
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -188,9 +188,15 @@ impl ChannelRuntimeV1 {
         {
             return Err(NpcPlacementError::CellOccupied);
         }
-        let Slot::NpcOccupied { position, .. } = &mut self.carrier.slots[index] else {
+        let Slot::NpcOccupied {
+            placement_cell,
+            position,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
             return Ok(false);
         };
+        *placement_cell = next;
         position.position = next;
         position.revision = revision;
         position.last_translation_revision = revision;
@@ -457,6 +463,7 @@ impl ChannelRuntimeV1 {
         carrier.slots[index] = Slot::NpcOccupied {
             generation,
             key,
+            placement_cell: position,
             hireling: None,
             tile_entry_order: order,
             position: VersionedPosition {
@@ -487,6 +494,48 @@ impl ChannelRuntimeV1 {
             } if *generation == actor.0.actor_local_generation.0 => Some(key),
             _ => None,
         }
+    }
+
+    /// Correlate a public NPC's catalogue key and placement cell with its current actor.
+    /// Walking preserves the placement. Schedule reassignment replaces it.
+    /// Ambiguous placements have no exact answer.
+    pub fn npc_placement_actor(
+        &self,
+        key: &str,
+        home: MovementLocalPosition,
+    ) -> Option<ExactActorRef> {
+        self.owner_fence().ok()?;
+        let carrier = &self.carrier;
+        let context = self.pinned_position_context();
+        let home = LocalPosition {
+            x: home.x,
+            y: home.y,
+            floor: home.floor,
+        };
+        let mut matches = carrier.occupied.iter().filter_map(|index| {
+            match carrier.slots.get(*index as usize)? {
+                Slot::NpcOccupied {
+                    key: held,
+                    placement_cell,
+                    position,
+                    hireling: None,
+                    ..
+                } if held.as_ref() == key
+                    && *placement_cell == home
+                    && position.context == context =>
+                {
+                    Some(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                        carrier.runtime_scope,
+                        carrier.scope_generation,
+                        position.actor_local_id,
+                        position.actor_local_generation,
+                    )))
+                }
+                _ => None,
+            }
+        });
+        let actor = matches.next()?;
+        matches.next().is_none().then_some(actor)
     }
 }
 

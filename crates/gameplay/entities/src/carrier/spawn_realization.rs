@@ -689,6 +689,40 @@ impl ChannelRuntimeV1 {
         debug_assert!(points.windows(2).all(|pair| pair[0].0 < pair[1].0));
         points
     }
+
+    /// Correlate a catalogue creature key and home cell with the current spawn incarnation.
+    /// A duplicate point, a missing actor or an active replacement species has no exact answer.
+    pub fn creature_spawn_actor(
+        &self,
+        key: &str,
+        home: MovementLocalPosition,
+    ) -> Option<ExactActorRef> {
+        self.owner_fence().ok()?;
+        let home = LocalPosition {
+            x: home.x,
+            y: home.y,
+            floor: home.floor,
+        };
+        let mut matches = self.carrier.spawns.iter().flat_map(|spawn| {
+            spawn
+                .definition
+                .placement_cells
+                .iter()
+                .zip(&spawn.definition.points)
+                .zip(&spawn.cells)
+                .filter_map(move |((cell, point), state)| {
+                    (*cell == home && point.base_creature == key).then_some((point, state))
+                })
+        });
+        let (point, state) = matches.next()?;
+        if matches.next().is_some() || !point.enabled || point.creature_target_identity != key {
+            return None;
+        }
+        state
+            .live
+            .filter(|actor| self.carrier.creature_alive(&self.continuity, *actor))
+    }
+
     /// The pending respawn occurrence of `point`, if any.
     pub fn pending_respawn(&self, point: spawn::SpawnPoint) -> Option<spawn::PendingRespawn> {
         self.spawn_schedule.pending(point)
