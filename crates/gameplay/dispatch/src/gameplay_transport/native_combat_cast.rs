@@ -977,6 +977,19 @@ impl PreparedNativeCombatCast {
             && let Some(magnitude) = self.magnitude.as_deref()
         {
             let command = self.batch.command;
+            if let Some(at) = self.batch.now_us {
+                let session_id = command
+                    .game_session_id()
+                    .as_bytes()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                eprintln!(
+                    "SEAM_EVIDENCE c12_cast_clock session={session_id} command={} cast_at_us={}",
+                    command.command_id().get(),
+                    at.get()
+                );
+            }
             let losses = result.effects.iter().filter_map(|effect| {
                 Some((effect.target, effect.health?.committed_health_loss()?))
             });

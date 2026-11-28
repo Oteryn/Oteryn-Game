@@ -455,7 +455,16 @@ impl Hunt {
         // attributed hit before advancing to the next action, including late batches.
         let mut hits = Vec::new();
         super::client_row_c12::collect_hits(&in_flight, own, victim, spell, &mut hits);
-        let mut timers = validate_full_timers(client.session_mut(), &in_flight, spell)?;
+        let session = hex_bytes(client.join_snapshot().game_session_id.as_bytes());
+        let cast_at_us = committed_cast_clock(
+            &self.cast_evidence_log,
+            evidence_start,
+            &format!(
+                "SEAM_EVIDENCE c12_cast_clock session={session} command={} cast_at_us=",
+                outcome.command_id
+            ),
+        )?;
+        let mut timers = validate_full_timers(client.session_mut(), &in_flight, spell, cast_at_us)?;
         // Swift Jab has no personal deadline at this point. Its refusal proves the
         // shared attack-group gate independently of Greater Tiger Clash's timer.
         let builder = spell_by_words(client, "exori infir pug")?;
@@ -468,7 +477,7 @@ impl Hunt {
                 .service_liveness(remaining.min(Duration::from_millis(250)))
                 .await?;
             let trailing = client.take_events();
-            timers |= validate_full_timers(client.session_mut(), &trailing, spell)?;
+            timers |= validate_full_timers(client.session_mut(), &trailing, spell, cast_at_us)?;
             super::client_row_c12::collect_hits(&trailing, own, victim, spell, &mut hits);
         }
         if !timers {
@@ -526,45 +535,75 @@ pub(super) struct CommittedDamage {
     pub(super) committed: u64,
 }
 
-fn near_full_group_duration(remaining_ms: u64) -> bool {
-    // The projection clock is sampled after commit. Allow bounded publication latency.
-    (1_750..=2_000).contains(&remaining_ms)
+fn committed_cast_clock(path: &Path, offset: u64, marker: &str) -> TestResult<u64> {
+    use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
+    let mut file = std::fs::File::open(path)?;
+    file.seek(SeekFrom::Start(offset))?;
+    let mut clock = None;
+    for line in BufReader::new(file.take(512 * 1024)).lines() {
+        if let Some(value) = line?.strip_prefix(marker) {
+            if clock.replace(value.parse()?).is_some() {
+                return Err("duplicate C12 applied cast clock".into());
+            }
+        }
+    }
+    clock.ok_or_else(|| format!("missing C12 applied cast clock for {marker}").into())
+}
+
+fn authored_cooldown(
+    expires_at_ms: u64,
+    read_at_ms: u64,
+    cast_at_us: u64,
+    duration_ms: u64,
+) -> bool {
+    // The view floors its sample time and rounds deadlines up to milliseconds.
+    let cast_at_ms = cast_at_us / 1_000;
+    let elapsed = read_at_ms.checked_sub(cast_at_ms);
+    let remaining = expires_at_ms.checked_sub(read_at_ms);
+    elapsed
+        .zip(remaining)
+        .and_then(|(elapsed, remaining)| elapsed.checked_add(remaining))
+        .is_some_and(|duration| (duration_ms..=duration_ms + 1).contains(&duration))
 }
 
 fn validate_full_timers<S: oteryn_dev_client::native_session::SessionStream>(
     session: &oteryn_dev_client::native_session::Session<S>,
     events: &[SessionEvent],
     spell: NonZeroU32,
+    cast_at_us: u64,
 ) -> TestResult<bool> {
     if !super::client_row_c12::validate_cast_timers(session, events, spell, 8_000)? {
         return Ok(false);
     }
     use oteryn_protocol_oteryn::presentation::ActorCooldownKind;
-    let near_full = events.iter().any(|event| match event {
+    let exact = events.iter().any(|event| match event {
         SessionEvent::ActorCooldowns(update) => update.value.entries.iter().any(|entry| {
             entry.kind == ActorCooldownKind::Spell
                 && entry.id == spell.get()
-                && entry
-                    .expires_at_ms
-                    .checked_sub(update.value.server_now_ms)
-                    .and_then(|remaining| remaining.checked_sub(6_000))
-                    .is_some_and(near_full_group_duration)
+                && authored_cooldown(
+                    entry.expires_at_ms,
+                    update.value.server_now_ms,
+                    cast_at_us,
+                    8_000,
+                )
         }),
         _ => false,
     });
-    if !near_full {
-        return Err(
-            "C12 full cooldown projection arrived too short to establish the authored duration"
-                .into(),
-        );
+    if !exact {
+        return Err(format!(
+            "C12 full cooldown deadline is inconsistent with applied cast clock {cast_at_us}us"
+        )
+        .into());
     }
     Ok(true)
 }
 
 #[test]
-fn c12_rejects_both_deadlines_shortened_by_half_a_second() {
-    assert!(near_full_group_duration(2_000));
-    assert!(!near_full_group_duration(1_500));
+fn c12_cooldown_accounts_for_projection_delay_without_accepting_shortened_duration() {
+    assert!(authored_cooldown(9_000, 1_500, 1_000_000, 8_000));
+    assert!(authored_cooldown(9_001, 1_500, 1_000_001, 8_000));
+    assert!(!authored_cooldown(8_500, 1_500, 1_000_000, 8_000));
+    assert!(!authored_cooldown(9_000, 999, 1_000_000, 8_000));
 }
 
 pub(super) fn committed_base_damage(
@@ -2010,11 +2049,172 @@ fn client_cast_route(
         .map_err(Into::into)
 }
 
-// Relog with the weapon equipped before approaching the hostile spawn.
+fn return_occupant(
+    kind: EntityKind,
+    entity: oteryn_dev_client::EntityRef,
+    position: TilePos,
+    at: TilePos,
+) -> Option<oteryn_dev_client::EntityRef> {
+    (position == at
+        && matches!(
+            kind,
+            EntityKind::Creature | EntityKind::Npc | EntityKind::Player
+        ))
+    .then_some(entity)
+}
+
+fn return_occupants(
+    client: &mut DevClientSession,
+    at: TilePos,
+) -> TestResult<Vec<oteryn_dev_client::EntityRef>> {
+    let entities = client
+        .world_entities()
+        .ok_or("C12 return entity view absent")?;
+    Ok(entities
+        .others()
+        .filter_map(|entity| {
+            return_occupant(entity.kind, entity.entity, tile(entity.position).ok()?, at)
+        })
+        .collect())
+}
+
+#[test]
+fn c12_return_occupant_matches_tile_and_preserves_generation() {
+    let at = TilePos {
+        x: 32293,
+        y: 32334,
+        floor: -7,
+    };
+    let entity = oteryn_dev_client::EntityRef {
+        identity: [9; 16],
+        generation: 4,
+    };
+    let successor = oteryn_dev_client::EntityRef {
+        generation: 5,
+        ..entity
+    };
+    assert_eq!(
+        return_occupant(EntityKind::Creature, entity, at, at),
+        Some(entity)
+    );
+    assert_eq!(
+        return_occupant(EntityKind::Creature, successor, at, at),
+        Some(successor)
+    );
+    assert_eq!(
+        return_occupant(
+            EntityKind::Creature,
+            entity,
+            TilePos { floor: -8, ..at },
+            at
+        ),
+        None
+    );
+}
+
+fn require_return_ground(client: &mut DevClientSession, at: TilePos) -> TestResult {
+    let map = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("C12 return map frame absent")?;
+    if !map
+        .tiles
+        .iter()
+        .any(|map_tile| tile(map_tile.position).ok() == Some(at) && map_tile.ground_speed > 0)
+    {
+        return Err(
+            format!("C12 authored return tile {at:?} missing ground in latest map frame").into(),
+        );
+    }
+    Ok(())
+}
+
+async fn wait_for_return_clear(
+    client: &mut DevClientSession,
+    at: TilePos,
+    initial: Vec<oteryn_dev_client::EntityRef>,
+) -> TestResult {
+    let mut occupants = initial;
+    let deadline = tokio::time::Instant::now() + COMMAND_BUDGET;
+    while !occupants.is_empty() {
+        evidence(&format!(
+            "C12_RETURN_OCCUPIED tile={at:?} occupants={occupants:?}"
+        ));
+        loop {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("C12 return occupants stayed on {at:?}: {occupants:?}").into());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            let latest = return_occupants(client, at)?;
+            if latest != occupants {
+                occupants = latest;
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn walk_authored_return(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    for &direction in path {
+        let from = tile(client.world_spatial().actor_position)?;
+        let at = destination(world, from, direction).ok_or("C12 return STEP has no landing")?;
+        require_return_ground(client, at)?;
+        let occupants = return_occupants(client, at)?;
+        wait_for_return_clear(client, at, occupants).await?;
+        let mut step = tokio::time::timeout(COMMAND_BUDGET, client.step(direction)).await??;
+        if step.disposition == StepDisposition::Blocked
+            && tile(client.world_spatial().actor_position)? == from
+        {
+            let original = step.command_id;
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+            let occupants = loop {
+                require_return_ground(client, at)?;
+                let occupants = return_occupants(client, at)?;
+                if !occupants.is_empty() {
+                    break occupants;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(format!("BLOCKER-SERVER C12 return STEP blocked with no visible occupant command={original} sequence={} from={from:?} target={at:?}", step.result_server_sequence).into());
+                }
+                client.service_liveness(Duration::from_millis(50)).await?;
+            };
+            evidence(&format!(
+                "C12_RETURN_BLOCKED command={original} target={at:?} occupants={occupants:?}"
+            ));
+            wait_for_return_clear(client, at, occupants).await?;
+            require_return_ground(client, at)?;
+            step = tokio::time::timeout(COMMAND_BUDGET, client.step(direction)).await??;
+        }
+        require_mechanic_acceptance(step.status, "C12 authored return STEP")?;
+        let actual = tile(client.world_spatial().actor_position)?;
+        if step.disposition != StepDisposition::Moved
+            || step.world_spatial_delta.is_none()
+            || actual != at
+        {
+            return Err(format!(
+                "C12 authored return STEP from={from:?} target={at:?} actual={actual:?}: {step:?}"
+            )
+            .into());
+        }
+        verdict::Harness::global().progress("walk");
+        client
+            .session_mut()
+            .service_liveness_discarding_events(Duration::from_millis(u64::from(step.step_wait_ms)))
+            .await?;
+    }
+    Ok(())
+}
+
 async fn prove_authored_hunt(
     client: &mut DevClientSession,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    observe_return_occupants: bool,
 ) -> TestResult {
     let home = tile(client.world_spatial().actor_position)?;
     let authored = authored_client_cast_route(world, spawns, home)?;
@@ -2078,7 +2278,11 @@ async fn prove_authored_hunt(
     evidence("C12_AUTHORED_RETURN rope=32296,32334,-8 landing=32296,32335,-7");
     let back = route(world, upstairs, |at| at == home)
         .ok_or("C12 no surface return route from the authored rope exit")?;
-    walk_exact_route(client, world, &back).await?;
+    if observe_return_occupants {
+        walk_authored_return(client, world, &back).await?;
+    } else {
+        walk_exact_route(client, world, &back).await?;
+    }
     Ok(())
 }
 
@@ -2131,7 +2335,7 @@ pub(super) async fn prepare_client_capture(
     select_fists_damage_perks(&mut client, dedicated_clients, definition).await?;
     equip_right(&mut client, definition).await?;
 
-    prove_authored_hunt(&mut client, world, &metadata.spawns).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, false).await?;
     let previous = client.join_snapshot().game_session_id;
     let position = tile(client.world_spatial().actor_position)?;
     let route = client_cast_route(world, position)?;
@@ -2265,7 +2469,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let offset = std::fs::metadata(&use_log)?.len();
     select_fists_damage_perks(&mut client, clients, definition).await?;
     require_no_use_holder_wait(&use_log, offset, "catalyst_")?;
-    prove_authored_hunt(&mut client, world, &metadata.spawns).await?;
+    prove_authored_hunt(&mut client, world, &metadata.spawns, true).await?;
     row.pass("acquire-50271", (acquired, purchase_balance));
 
     require_current_premium(client.session_mut()).await?;
