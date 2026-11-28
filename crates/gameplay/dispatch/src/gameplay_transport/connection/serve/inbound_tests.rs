@@ -46,6 +46,8 @@ struct SlowOwner {
     slow_browse: Cell<bool>,
     named_refusal: Cell<Option<AdmissionRefusal>>,
     refuse_browse: Cell<bool>,
+    refuse_world_map: Cell<bool>,
+    refresh_world_map: Cell<bool>,
     visibility_delay: Cell<std::time::Duration>,
     vitals_delay: Cell<std::time::Duration>,
     browse_reads: Cell<usize>,
@@ -278,7 +280,10 @@ impl FreshAdmissionAuthority for SlowOwner {
         view: &mut SessionMapView,
         _items: &mut SessionItemView,
     ) -> Option<Result<Option<MapUpdate>, MapViewError>> {
-        if view.revision() != 0 {
+        if self.refuse_world_map.get() {
+            return None;
+        }
+        if view.revision() != 0 && !self.refresh_world_map.replace(false) {
             return Some(Ok(None));
         }
         // This fixed map owner serves a valid empty snapshot, then no changes. The test
@@ -298,10 +303,11 @@ impl FreshAdmissionAuthority for SlowOwner {
             tiles: Vec::new(),
         })
         .ok()?;
-        *view = SessionMapView::starting_after(1);
+        let revision = view.revision() + 1;
+        *view = SessionMapView::starting_after(revision);
         Some(Ok(Some(MapUpdate::Snapshot(ItemViewSnapshotDomain {
             domain_id: STATE_DOMAIN_WORLD_MAP_VIEW,
-            revision: 1,
+            revision,
             snapshot_type: 1,
             payload,
         }))))
@@ -800,6 +806,84 @@ fn background_visibility_refusal_keeps_container_open_and_retries_next_tick() ->
         })?
         .join()
         .map_err(|_| "visibility refusal test thread panicked")?
+}
+
+#[test]
+fn periodic_world_map_refusal_keeps_peer_live_and_retries() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> TestResult {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(async {
+                    let authority = SlowOwner::default();
+                    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(true)?;
+                    let actor = admitted.runtime_actor.ok_or("fixture actor")?;
+                    let mut session = setup::prepare(
+                        &mut server,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "prepare map connection")?;
+                    let before = session.admitted.continuity;
+                    assert!(before.world_map_revision > 0);
+                    authority.refuse_world_map.set(true);
+                    authority.refresh_world_map.set(true);
+
+                    let next = poll::next(&mut server, &authority, &mut session).await;
+                    assert!(matches!(next, Next::Visibility));
+                    assert!(
+                        receive(&mut server, &authority, &mut session, next)
+                            .await
+                            .map_err(|_| "world map refusal closed the session")?
+                            .is_none()
+                    );
+                    assert_eq!(session.sequence, before.server_sequence);
+                    assert_eq!(
+                        session.admitted.continuity.world_map_revision,
+                        before.world_map_revision
+                    );
+                    assert_eq!(session.admitted.continuity.item_view, before.item_view);
+
+                    let close =
+                        encode_container_view_intent(&ContainerViewIntent::Close { view_id: 15 })
+                            .map_err(|error| format!("{error:?}"))?;
+                    write_frame(
+                        &mut client,
+                        &command_frame(1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, &close)?,
+                    )
+                    .await?;
+                    execute_ready_frame(&mut server, &authority, &mut session).await?;
+                    assert_eq!(session.admitted.continuity.next_command_id, 2);
+
+                    authority.refuse_world_map.set(false);
+                    let after_command = session.sequence;
+                    let next = poll::next(&mut server, &authority, &mut session).await;
+                    assert!(matches!(next, Next::Visibility));
+                    assert!(
+                        receive(&mut server, &authority, &mut session, next)
+                            .await
+                            .map_err(|_| "map refresh did not recover")?
+                            .is_none()
+                    );
+                    assert!(session.sequence > after_command);
+                    assert_eq!(
+                        session.admitted.continuity.world_map_revision,
+                        before.world_map_revision + 1
+                    );
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "map refusal test thread panicked")?
 }
 
 #[path = "background_regression_tests.rs"]

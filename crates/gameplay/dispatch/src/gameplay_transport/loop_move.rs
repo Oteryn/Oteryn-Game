@@ -710,9 +710,15 @@ impl LoopGroundCache {
 /// deadline; stored-state and authority errors still close the view.
 pub(super) async fn projection_read<T, E>(
     root: &super::DurabilityRoot,
-    read: impl AsyncFnMut() -> Result<T, E>,
+    mut read: impl AsyncFnMut() -> Result<T, E>,
     busy: impl Fn(&E) -> bool,
 ) -> Option<T> {
+    // The map's background observer borrows the spell lane. Waiting for the
+    // holder here can block a foreground owner which needs that lane and has
+    // precedence at checkout. Yield the lane on a miss and observe next tick.
+    if super::DurabilityRoot::in_background_holder_scope() {
+        return read().await.ok();
+    }
     let budget =
         super::AdmissionRetryBudget::for_holder_window(root, std::time::Duration::from_secs(10));
     projection_read_with_budget(&budget, read, busy).await

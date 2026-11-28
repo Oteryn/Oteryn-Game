@@ -587,10 +587,12 @@ where
             Box::pin(visibility_inner(stream, authority, session, &mut step)),
         ))
         .await;
-    // A return can retire the source during its map read. Release the
-    // background grant before settling that handoff and let the serve loop
-    // write the barrier for the exact pending successor.
-    if matches!(&result, Err(ServeEnd::Server { .. })) && step == "world_map" {
+    let Err(error) = result else {
+        return Ok(());
+    };
+    if matches!(&error, ServeEnd::Server { .. }) && step == "world_map" {
+        // A return can retire the source during its map read. Release the
+        // background grant before settling the exact pending successor.
         let source = session.admitted;
         if Box::pin(authority.settle_activity_connection(source))
             .await
@@ -602,11 +604,12 @@ where
         {
             return Ok(());
         }
-    }
-    if result.is_err() {
+        // Keep the published cursor and retry the optional map next tick.
         operator_event(&format!("event=visibility_refresh_refused step={step}"));
+        return Ok(());
     }
-    result
+    operator_event(&format!("event=visibility_refresh_refused step={step}"));
+    Err(error)
 }
 
 async fn visibility_inner<S, A>(
@@ -733,21 +736,18 @@ where
             if let (Some(view), Some(items)) =
                 (session.world_map.as_mut(), session.item_view.as_mut())
             {
-                let update = world_map_frames(
-                    authority,
-                    session.actor,
-                    session.generation,
-                    session.sequence,
-                    view,
-                    items,
-                )
-                .await;
-                session.admitted.continuity.item_view = items.continuity();
-                let Some(update) = update else {
+                let Some(Ok(observed)) = authority
+                    .observe_world_map(session.actor, view, items)
+                    .await
+                else {
                     return Err(ServeEnd::server("state_projection_unavailable"));
                 };
-                if let Some((next_sequence, frames)) = update {
+                session.admitted.continuity.item_view = items.continuity();
+                if let Some(update) = observed {
                     *step = "world_map_write";
+                    let (next_sequence, frames) =
+                        encode_world_map_frames(session.generation, session.sequence, update)
+                            .ok_or_else(|| ServeEnd::server("state_projection_unavailable"))?;
                     session.sequence = next_sequence;
                     session.admitted.continuity.server_sequence = session.sequence;
                     session.admitted.continuity.world_map_revision = view.revision();

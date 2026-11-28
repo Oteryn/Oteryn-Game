@@ -1,5 +1,6 @@
 // MP01 fixture: named visibility and party invites when the shared holder is busy.
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug};
+use crate::durability::DurabilityRoot;
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     connection::{AdmissionRefusal, AdmittedSession, FreshAdmissionAuthority},
@@ -35,6 +36,24 @@ pub(super) async fn check(
         "the next projection must publish the already-admitted peer's name"
     );
 
+    // A periodic map cache miss must yield the spell lane on a checkout miss.
+    // The party command needs that lane before it can take its durability turn.
+    let held = owner.root.try_issue_semantic_pass()?;
+    let scope = owner.spell_lane.runtime_scope();
+    let projection = DurabilityRoot::with_background_holder(async {
+        let _permit = owner.spell_lane_permit().await.ok_or("map spell lane")?;
+        let observed = crate::gameplay_transport::loop_move::projection_read(
+            owner.root,
+            async || owner.root.read_item_loop_ground_for_scope(scope).await,
+            crate::gameplay_transport::root_holder_busy,
+        )
+        .await;
+        assert!(observed.is_none());
+        TestResult::Ok(())
+    });
+    tokio::time::timeout(crate::gameplay_transport::COMMAND_HOLDER_WINDOW, projection).await??;
+    held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+
     let mut view = SessionPartyView::default();
     let payload = encode_party_intent(PartyIntent::Invite(targets[1])).map_err(debug)?;
     let held = owner.root.try_issue_semantic_pass()?;
@@ -66,11 +85,13 @@ pub(super) async fn check(
         &[
             super::party_membership_fixtures::Step::Query,
             super::party_membership_fixtures::Step::Accept,
+            super::party_membership_fixtures::Step::Query,
         ],
     )
     .await?;
     assert_eq!(result[0].invitations.len(), 1);
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
+    assert_eq!(result[2].members.len(), 2);
     let members: i64 = sqlx::query_scalar("SELECT count(*) FROM game_party_members")
         .fetch_one(&h.pool)
         .await?;

@@ -158,29 +158,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         view: &mut SessionPartyView,
     ) -> Option<Vec<u8>> {
         let retry = super::AdmissionRetryBudget::for_command(self.root);
-        loop {
-            let mut busy = false;
-            let reply = Box::pin(self.party_wire_attempt(
-                admitted,
-                command_id,
-                command_type,
-                payload,
-                view,
-                &mut busy,
-            ))
-            .await;
-            // The attempt owns all runtime/spell guards. They are dropped before
-            // waiting; no SQL ran when holder checkout returned RootUnavailable.
-            if !busy {
-                return reply;
-            }
-            if !retry
-                .retries_unavailable(super::AdmissionRefusal::Unavailable)
-                .await
-            {
-                return unavailable("holder_busy_deadline");
-            }
-        }
+        retry
+            .retry_logged_holder(
+                "party_command",
+                async || {
+                    let mut busy = false;
+                    let reply = Box::pin(self.party_wire_attempt(
+                        admitted,
+                        command_id,
+                        command_type,
+                        payload,
+                        view,
+                        &mut busy,
+                    ))
+                    .await;
+                    // The attempt drops all runtime/spell guards before waiting.
+                    if busy { Err(()) } else { Ok(reply) }
+                },
+                |_| true,
+            )
+            .await
+            .unwrap_or_else(|()| unavailable("holder_busy_deadline"))
     }
 
     async fn party_wire_attempt(
