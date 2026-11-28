@@ -112,7 +112,10 @@ pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     body: &[u8],
 ) -> io::Result<()> {
     #[cfg(test)]
-    if FAIL_FRAME_WRITE.try_with(|fail| fail(body)).unwrap_or(false) {
+    if FAIL_FRAME_WRITE
+        .try_with(|fail| fail(body))
+        .unwrap_or(false)
+    {
         return Err(io::ErrorKind::BrokenPipe.into());
     }
     let length = u32::try_from(body.len()).map_err(|_| {
