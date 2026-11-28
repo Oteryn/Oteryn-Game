@@ -6,7 +6,7 @@
 //! 3. Send `GroupAdd`, then `Edit(entry, comment, icon, notify, [group])`, `GroupRename`, and
 //!    `Query`; expect each accepted code-1 reply and the queried entry/group metadata changes.
 //! 4. Send duplicate `Add(target name)` as the refusal path; expect code 3 (ALREADY_LISTED),
-//!    no revision change, and a following query identical to the pre-refusal view.
+//!    one receipt revision, and a following query identical to the pre-refusal view.
 //! 5. While the target is admitted, consume the native VIP-presence delta and expect ONLINE;
 //!    logout the target and expect OFFLINE, freshly admit it and expect ONLINE plus the login
 //!    notification bit. These are server-pushed deltas, not inferred socket state.
@@ -275,9 +275,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let initial_view = view(&initial, "query")?;
-    if !initial_view["entries"].is_array() || !initial_view["groups"].is_array() {
+    if initial_view["entries"] != serde_json::json!([])
+        || initial_view["groups"] != serde_json::json!([])
+        || initial_view["next_entry"].as_u64() != Some(0)
+    {
         return Err(
-            "step=query observed=view-missing-entries-or-groups need=complete-list-view".into(),
+            "step=query observed=view-not-empty need=fresh-vip-list".into(),
         );
     }
     row.pass("query", (initial.revision, &initial_view));
@@ -330,6 +333,25 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             group.number
         )
     })?;
+    let group_readback = ok(
+        &mut watcher, &request(wire::Operation::Query, 0, ""), "query-after-group-add",
+    ).await?;
+    let group_view = view(&group_readback, "query-after-group-add")?;
+    if group_view["groups"] != serde_json::json!([{"group": group.number, "name": "Raid Friends"}])
+        || group_view["entries"] != after_add_view["entries"]
+        || group_readback.revision != group.revision
+    {
+        return Err("step=group-add need=exact-new-group-and-unchanged-entry".into());
+    }
+    let expected_groups = serde_json::json!([group.number]);
+    let entry_before = &group_view["entries"][0];
+    if entry_before["description"].as_str() != Some("")
+        || entry_before["icon"].as_u64() != Some(0)
+        || entry_before["notify"].as_bool() != Some(false)
+        || entry_before["groups"] != serde_json::json!([])
+    {
+        return Err("step=edit-entry need=unedited-entry-without-membership".into());
+    }
     let edited = ok(
         &mut watcher,
         &wire::Request {
@@ -343,6 +365,21 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "edit-entry",
     )
     .await?;
+    let edit_readback = ok(
+        &mut watcher, &request(wire::Operation::Query, 0, ""), "query-after-edit",
+    ).await?;
+    let edit_view = view(&edit_readback, "query-after-edit")?;
+    let edited_entry = &edit_view["entries"][0];
+    if entry_number(edited_entry) != Some(entry)
+        || edited_entry["description"].as_str() != Some("node-boot friend")
+        || edited_entry["icon"].as_u64() != Some(7)
+        || edited_entry["notify"].as_bool() != Some(true)
+        || edited_entry["groups"] != expected_groups
+        || edit_view["groups"] != group_view["groups"]
+        || edit_readback.revision != edited.revision
+    {
+        return Err("step=edit-entry need=exact-metadata-and-group-membership".into());
+    }
     let renamed = ok(
         &mut watcher,
         &request(wire::Operation::GroupRename, group.number, "Raid Team"),
@@ -390,9 +427,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "duplicate-add-refusal",
     )
     .await?;
-    if duplicate.code != 3 || duplicate.revision != retained.revision {
+    if duplicate.code != 3 || retained.revision.checked_add(1) != Some(duplicate.revision) {
         return Err(format!(
-            "step=duplicate-refusal observed=reply:{duplicate:?} need=code-3-no-revision-delta"
+            "step=duplicate-refusal observed=reply:{duplicate:?} need=code-3-one-receipt-revision"
         )
         .into());
     }
@@ -402,7 +439,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "query-after-refusal",
     )
     .await?;
-    if view(&unchanged, "query-after-refusal")? != retained_view {
+    if unchanged.revision != duplicate.revision || view(&unchanged, "query-after-refusal")? != retained_view {
         return Err("step=duplicate-refusal observed=view-changed need=atomic-refusal".into());
     }
     row.pass("duplicate-refusal", duplicate.code);
@@ -454,7 +491,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "fresh-query",
     )
     .await?;
-    if fresh.revision != retained.revision || view(&fresh, "fresh-query")? != retained_view {
+    if fresh.revision != unchanged.revision || view(&fresh, "fresh-query")? != retained_view {
         return Err(format!(
             "step=fresh-admission-durability observed=reply:{fresh:?} need=identical-durable-view"
         )
