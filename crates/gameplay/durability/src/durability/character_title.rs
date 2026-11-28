@@ -99,12 +99,15 @@ async fn read_title_facts(
     character: CharacterId,
     now_unix_ms: i64,
     sources: &Sources,
+    requalify_self: bool,
 ) -> Result<TitleFacts, super::DurabilityError> {
     // Bestiary/Charm writes serialize on this root through assert_gameplay_fence. Hold a
     // shared lock until the caller's grant commits, so spending cannot invalidate Beastly's
     // observed available balance between qualification and insertion.
-    sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
-        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if requalify_self {
+        sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+            .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    }
     let row = sqlx::query(TITLE_FACTS_SQL)
         .bind(character.as_bytes().as_slice())
         .bind(TRACKED_CREATURES.as_slice())
@@ -149,12 +152,14 @@ async fn read_title_facts(
         None => 0,
     };
     let rotation = now_unix_ms / 1000 / i64::from(super::tibiadrome::ROTATION_SECONDS);
-    super::tibiadrome::publish(
-        tx,
-        character,
-        u32::try_from(rotation).map_err(|_| super::DurabilityError::InvalidStoredState)?,
-    )
-    .await?;
+    if requalify_self {
+        super::tibiadrome::publish(
+            tx,
+            character,
+            u32::try_from(rotation).map_err(|_| super::DurabilityError::InvalidStoredState)?,
+        )
+        .await?;
+    }
     let drome_champion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2 AND rank<=5)")
         .bind(character.as_bytes().as_slice()).bind(rotation-1).fetch_one(&mut **tx).await?;
     Ok(TitleFacts {
@@ -227,6 +232,8 @@ const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_
  COALESCE((SELECT to_timestamp(min(occurred_at)/1000.0)+interval '10 years'<=to_timestamp($3/1000.0) FROM game_character_creation_receipts r WHERE r.character_id=me.character_id),false) AS character_decade \
  FROM me";
 
+const CHARACTER_INFO_VISIBLE_SQL: &str = "SELECT $1=$2 OR EXISTS(SELECT 1 FROM game_vip_consents c JOIN game_character_roots v ON v.account_id=c.account_id AND v.world_id=c.world_id WHERE v.character_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid AND c.consent=2)";
+
 impl DurabilityRoot {
     /// PAR-P12a automatic unlock (Crystal `PlayerTitle::checkAndUpdateNewTitles`,
     /// `player_title.cpp:123`): in one fenced transaction, grant every newly eligible title
@@ -252,7 +259,7 @@ impl DurabilityRoot {
             if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
-            let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources).await?;
+            let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources, true).await?;
             let rows: Vec<(i16, Option<i64>)> = sqlx::query_as("SELECT title,expires_at_unix_ms FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid ORDER BY title FOR UPDATE")
                 .bind(character.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
             let mut earned = Vec::with_capacity(rows.len());
@@ -305,13 +312,24 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let allowed: bool = sqlx::query_scalar("SELECT $1=$2 OR EXISTS(SELECT 1 FROM game_vip_consents c JOIN game_character_roots v ON v.account_id=c.account_id AND v.world_id=c.world_id WHERE v.character_id=encode($1,'hex')::uuid AND c.character_id=encode($2,'hex')::uuid AND c.consent=2)")
+            let allowed: bool = sqlx::query_scalar(CHARACTER_INFO_VISIBLE_SQL)
                 .bind(viewer.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if !allowed { return Ok(Err(CharacterAuthorityError::Rejected)); }
             let row = read_info_summary(&mut tx, target, catalogue).await?;
             let deaths = sqlx::query("SELECT committed_at FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND committed_at BETWEEN $2 AND $3 ORDER BY committed_at DESC OFFSET $4 LIMIT $5")
                 .bind(target.as_bytes().as_slice()).bind(now_unix_ms.saturating_sub(oteryn_protocol_oteryn::character_info::HISTORY_WINDOW_MS)).bind(now_unix_ms).bind(i64::from(page.offset)).bind(i64::from(page.limit)).fetch_all(&mut *tx).await?;
-            let kills = sqlx::query("SELECT floor(extract(epoch FROM committed_at)*1000)::bigint AS committed_at FROM game_character_unjustified_points WHERE character_id=encode($1,'hex')::uuid AND committed_at BETWEEN to_timestamp($2::double precision/1000) AND to_timestamp($3::double precision/1000) ORDER BY committed_at DESC OFFSET $4 LIMIT $5")
+            // Include native credits and retained legacy evidence, once per death.
+            let kills = sqlx::query("SELECT max(at) AS committed_at FROM (
+                SELECT death_occurrence_id, committed_at AS at FROM game_character_player_kill_credits
+                WHERE character_id=encode($1,'hex')::uuid AND committed_at BETWEEN $2 AND $3
+                UNION ALL
+                SELECT death_occurrence_id, floor(extract(epoch FROM committed_at)*1000)::bigint
+                FROM game_character_unjustified_points WHERE character_id=encode($1,'hex')::uuid
+                AND committed_at BETWEEN to_timestamp($2::double precision/1000) AND to_timestamp($3::double precision/1000)
+                UNION ALL
+                SELECT death_occurrence_id, occurred_at FROM game_guild_war_frags
+                WHERE killer_character_id=encode($1,'hex')::uuid AND occurred_at BETWEEN $2 AND $3
+            ) history GROUP BY death_occurrence_id ORDER BY committed_at DESC, death_occurrence_id DESC OFFSET $4 LIMIT $5")
                 .bind(target.as_bytes().as_slice()).bind(now_unix_ms.saturating_sub(oteryn_protocol_oteryn::character_info::HISTORY_WINDOW_MS)).bind(now_unix_ms).bind(i64::from(page.offset)).bind(i64::from(page.limit)).fetch_all(&mut *tx).await?;
             use oteryn_protocol_oteryn::character_info::{CharacterInfoPage, CharacterSummary, HistoryEntry, ItemSummary};
             let count = |field: &str| -> Result<u32, sqlx::Error> {
@@ -354,7 +372,8 @@ impl DurabilityRoot {
         })).await?
     }
     /// Reads native qualification and earned state in the same fenced transaction,
-    /// then clears a selection and conditional award which no longer qualify.
+    /// then clears a selection and conditional award under the owner's session fence.
+    /// A consented foreign view only filters the returned title state.
     /// A page read cannot revoke a newer grant using an earlier facts snapshot.
     // Keep current authority, character/time and independently admitted world/cosmetic facts explicit.
     #[allow(clippy::too_many_arguments)]
@@ -368,6 +387,7 @@ impl DurabilityRoot {
         cosmetics: Option<NativeCosmeticsView>,
         discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<CharacterTitleState, CharacterAuthorityError> {
+        let requalify_self = character == fence.character_id;
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let sources = Sources::new(cosmetics, discovery);
@@ -375,11 +395,24 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             super::db::lock_admission_relations(&mut tx).await?;
-            if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+            let session = if requalify_self {
+                super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?
+            } else {
+                super::character_progression::observe_session_fence(&mut tx, &fence, &node).await?
+            };
+            if session.is_err() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
-            let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources).await?;
-            let rows = sqlx::query("SELECT title,expires_at_unix_ms FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$2) ORDER BY title FOR UPDATE")
+            if !requalify_self {
+                let visible: bool = sqlx::query_scalar(CHARACTER_INFO_VISIBLE_SQL)
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(character.as_bytes().as_slice())
+                    .fetch_one(&mut *tx).await?;
+                if !visible { return Ok(Err(CharacterAuthorityError::Rejected)); }
+            }
+            let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources, requalify_self).await?;
+            let rows_sql = "SELECT title,expires_at_unix_ms FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$2) ORDER BY title FOR UPDATE";
+            let rows = sqlx::query(if requalify_self { rows_sql } else { rows_sql.trim_end_matches(" FOR UPDATE") })
                 .bind(character.as_bytes().as_slice()).bind(now_unix_ms).fetch_all(&mut *tx).await?;
             let revoked = revoked_conditional_titles(facts);
             let mut earned = Vec::with_capacity(rows.len());
@@ -389,7 +422,8 @@ impl DurabilityRoot {
                     earned.push((title, row.try_get("expires_at_unix_ms")?));
                 }
             }
-            let selection = sqlx::query("SELECT title,revision FROM game_character_title_selection WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+            let selection_sql = "SELECT title,revision FROM game_character_title_selection WHERE character_id=encode($1,'hex')::uuid FOR UPDATE";
+            let selection = sqlx::query(if requalify_self { selection_sql } else { selection_sql.trim_end_matches(" FOR UPDATE") })
                 .bind(character.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let (selected, mut revision) = match selection {
                 Some(row) => {
@@ -401,6 +435,10 @@ impl DurabilityRoot {
             };
             let qualified = qualified_selection(selected, facts, now_unix_ms)
                 .filter(|title| earned.iter().any(|(earned, _)| earned == title));
+            if !requalify_self {
+                commit_semantic_read(tx, deadline).await?;
+                return Ok(Ok(CharacterTitleState { earned, selected: qualified, revision }));
+            }
             if selected.is_some() && qualified.is_none() {
                 let next: i64 = sqlx::query_scalar("UPDATE game_character_title_selection SET title=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid RETURNING revision")
                     .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -445,7 +483,7 @@ impl DurabilityRoot {
             if super::character_progression::assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
-            let facts = read_title_facts(&mut tx, fence.character_id, now_unix_ms, &sources).await?;
+            let facts = read_title_facts(&mut tx, fence.character_id, now_unix_ms, &sources, true).await?;
             let qualification = qualify(title, facts);
             if !valid_at(qualification, now_unix_ms) {
                 return Ok(Err(CharacterAuthorityError::Rejected));
