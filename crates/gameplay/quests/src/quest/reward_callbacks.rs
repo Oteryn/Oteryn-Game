@@ -2846,7 +2846,7 @@ mod tests {
         }
         let readings = rows.iter().filter(|row| row.survey.is_some()).collect::<Vec<_>>();
         assert_eq!(readings.len(), 4);
-        let thermometer = readings.iter().find(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19206")).unwrap().survey.as_ref().unwrap();
+        let thermometer = readings.iter().find(|row| row.carried_item.as_deref() == Some("oteryn:item.tibia.i19206")).and_then(|row| row.survey.as_ref()).ok_or("thermometer survey")?;
         for player in [[0; 16], [1; 16]] {
             assert_eq!(thermometer.clue(&player, 0, 32263, 32481, 13), None);
             assert!(thermometer.clue(&player, 1, 32263, 32481, 13).is_some());

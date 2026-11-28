@@ -10,7 +10,7 @@ fn merged_registry_keeps_document_and_runtime_bounds() -> Result<(), String> {
         .count();
     assert_eq!(coffin_variants, 2);
     let spike = spike_mound::published_count(&callbacks)?;
-    assert_eq!(spike, 28 * 5 + 29 + 2);
+    assert_eq!(spike, 29 * 5 + 29 + 2);
     assert!(callbacks.len() - coffin_variants - spike <= MAX_RUNTIME_CALLBACKS);
     let smith = callbacks
         .iter()

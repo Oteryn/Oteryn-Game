@@ -62,8 +62,8 @@ impl Survey {
                 "The detector points above you."
             });
         }
-        let east = 2 * x < i32::from(area.minimum.x) + i32::from(area.maximum.x);
-        let south = 2 * y < i32::from(area.minimum.y) + i32::from(area.maximum.y);
+        let east = i64::from(x) * 2 < i64::from(area.minimum.x) + i64::from(area.maximum.x);
+        let south = i64::from(y) * 2 < i64::from(area.minimum.y) + i64::from(area.maximum.y);
         Some(match (east, south) {
             (true, true) => "The detector points southeast.",
             (true, false) => "The detector points northeast.",

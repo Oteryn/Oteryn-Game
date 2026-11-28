@@ -38,3 +38,41 @@ fn m39_legacy_offers_keep_exact_topic_matching() -> Result<(), Box<dyn std::erro
     }
     Ok(())
 }
+
+#[test]
+fn quest_transcripts_match_the_published_offer_and_settlement_topics() -> Result<(), String> {
+    let offers = offers::embedded().ok_or("quest offers")?;
+    let callbacks = reward_callbacks::load()?;
+    for (npc, word, next_topic) in [
+        ("gnomilly", "report", 1),
+        ("gnombold", "report", 1),
+        ("a_sweaty_cyclops", "bast skirt", 4),
+        ("cael", "tomes of knowledge", 1),
+        ("sven", "barbarians", 1),
+    ] {
+        let name = format!("oteryn:npc.{npc}");
+        assert!(
+            offers.offers.iter().any(|offer| offer.npc == name
+                && offer.matches_topic(0)
+                && offer.matches_keyword(word)
+                && offer.next_topic == next_topic),
+            "{npc} {word}"
+        );
+    }
+    for (npc, topic, word) in [
+        ("gnomilly", 1, "kill"),
+        ("gnombold", 1, "kill"),
+        ("dedoras", 3, "epaulette"),
+        ("vanys", 8, "pomegranate"),
+        ("undal", 8, "shield"),
+    ] {
+        let name = format!("oteryn:npc.{npc}");
+        assert!(
+            callbacks.iter().any(|row| row.npc == name
+                && row.topic == topic
+                && matches_reward_keyword(row, word)),
+            "{npc} {word}"
+        );
+    }
+    Ok(())
+}

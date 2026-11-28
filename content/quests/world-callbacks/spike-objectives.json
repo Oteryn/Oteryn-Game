@@ -9074,6 +9074,384 @@
       }
     },
     {
+      "key": "oteryn:quest-callback/spike/mound-32067-32715-10/empty",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32067,
+          "y": 32715,
+          "floor": -10
+        },
+        "ordinal": 1,
+        "appearance": 19211
+      },
+      "lever": [
+        19211,
+        19212
+      ],
+      "requires_world_admission": true,
+      "reversible": false,
+      "passages": [],
+      "return_on_failure": false,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "selected_instance": true,
+        "reusable": true
+      },
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
+        "content/world/placements/region-z10-x125-y127.b3"
+      ],
+      "success_message": "You've found nothing special.",
+      "effects": {
+        "reset_after_ms": 120000
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/spike/mound-32067-32715-10/zombie",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32067,
+          "y": 32715,
+          "floor": -10
+        },
+        "ordinal": 1,
+        "appearance": 19211
+      },
+      "lever": [
+        19211,
+        19212
+      ],
+      "requires_world_admission": true,
+      "reversible": false,
+      "passages": [],
+      "return_on_failure": false,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "selected_instance": true,
+        "reusable": true
+      },
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
+        "content/world/placements/region-z10-x125-y127.b3"
+      ],
+      "success_message": "You have disturbed the dead.",
+      "effects": {
+        "encounter": {
+          "minimum_level": 25,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 32067,
+                "y": 32715,
+                "floor": -10
+              },
+              "creature": "oteryn:creature.zombie"
+            }
+          ],
+          "room_min": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "room_max": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "timing": {
+            "spawn_after_ms": 1,
+            "reset_after_ms": 120000
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/spike/mound-32067-32715-10/demon_skeleton",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32067,
+          "y": 32715,
+          "floor": -10
+        },
+        "ordinal": 1,
+        "appearance": 19211
+      },
+      "lever": [
+        19211,
+        19212
+      ],
+      "requires_world_admission": true,
+      "reversible": false,
+      "passages": [],
+      "return_on_failure": false,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "selected_instance": true,
+        "reusable": true
+      },
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
+        "content/world/placements/region-z10-x125-y127.b3"
+      ],
+      "success_message": "You have disturbed the dead.",
+      "effects": {
+        "encounter": {
+          "minimum_level": 25,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 32067,
+                "y": 32715,
+                "floor": -10
+              },
+              "creature": "oteryn:creature.demon_skeleton"
+            }
+          ],
+          "room_min": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "room_max": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "timing": {
+            "spawn_after_ms": 1,
+            "reset_after_ms": 120000
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/spike/mound-32067-32715-10/ghost",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32067,
+          "y": 32715,
+          "floor": -10
+        },
+        "ordinal": 1,
+        "appearance": 19211
+      },
+      "lever": [
+        19211,
+        19212
+      ],
+      "requires_world_admission": true,
+      "reversible": false,
+      "passages": [],
+      "return_on_failure": false,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "selected_instance": true,
+        "reusable": true
+      },
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
+        "content/world/placements/region-z10-x125-y127.b3"
+      ],
+      "success_message": "You have disturbed the dead.",
+      "effects": {
+        "encounter": {
+          "minimum_level": 25,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 32067,
+                "y": 32715,
+                "floor": -10
+              },
+              "creature": "oteryn:creature.ghost"
+            }
+          ],
+          "room_min": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "room_max": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "timing": {
+            "spawn_after_ms": 1,
+            "reset_after_ms": 120000
+          }
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/spike/mound-32067-32715-10/enraged_soul",
+      "quest": "oteryn:quest.spike_task",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32067,
+          "y": 32715,
+          "floor": -10
+        },
+        "ordinal": 1,
+        "appearance": 19211
+      },
+      "lever": [
+        19211,
+        19212
+      ],
+      "requires_world_admission": true,
+      "reversible": false,
+      "passages": [],
+      "return_on_failure": false,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/spike/release/progress",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2,
+          "preserve": false
+        },
+        {
+          "track": "oteryn:quest-progress/spike/release/digs",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i19203",
+        "count": 1,
+        "selected_instance": true,
+        "reusable": false
+      },
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Spike_Tasks",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/actions_spirit_shovel.lua",
+        "content/world/placements/region-z10-x125-y127.b3"
+      ],
+      "success_message": "You unearthed a spirit's anger!",
+      "effects": {
+        "encounter": {
+          "minimum_level": 25,
+          "players": [],
+          "monsters": [
+            {
+              "position": {
+                "x": 32067,
+                "y": 32715,
+                "floor": -10
+              },
+              "creature": "oteryn:creature.enraged_soul"
+            }
+          ],
+          "room_min": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "room_max": {
+            "x": 32067,
+            "y": 32715,
+            "floor": -10
+          },
+          "timing": {
+            "spawn_after_ms": 1,
+            "reset_after_ms": 120000
+          }
+        }
+      }
+    },
+    {
       "key": "oteryn:quest-callback/spike/mound-32170-32706-10/empty",
       "quest": "oteryn:quest.spike_task",
       "trigger": "use",

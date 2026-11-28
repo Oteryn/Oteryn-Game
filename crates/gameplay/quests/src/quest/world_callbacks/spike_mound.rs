@@ -72,7 +72,7 @@ pub fn chances(callback: &Callback) -> Option<RangeInclusive<u8>> {
 
 pub(super) const DOCUMENT: &str =
     include_str!("../../../../../../content/quests/world-callbacks/spike-objectives.json");
-pub(super) const MAX_PUBLISHED: usize = 28 * 5 + 29 + 2;
+pub(super) const MAX_PUBLISHED: usize = 29 * 5 + 29 + 2;
 
 pub(super) fn published_count(callbacks: &[Callback]) -> Result<usize, String> {
     static ROWS: super::OnceLock<Result<super::BTreeMap<String, Callback>, String>> =
@@ -102,7 +102,7 @@ mod tests {
         let mut pads = 0;
         for row in &callbacks {
             if let Some(range) = chances(row) {
-                let p = row.selector.position.unwrap();
+                let p = row.selector.position.ok_or("mound position")?;
                 let draws = mounds.entry((p.x, p.y, p.floor)).or_insert([0u8; 100]);
                 for draw in range {
                     draws[usize::from(draw - 1)] += 1;
@@ -110,9 +110,12 @@ mod tests {
                         .storage
                         .iter()
                         .find(|s| s.track.ends_with("/release/progress"))
-                        .unwrap();
+                        .ok_or("release phase")?;
                     assert_eq!(phase.set == 2, draw >= 90);
-                    assert_eq!(row.item_on_target.as_ref().unwrap().reusable, draw < 90);
+                    assert_eq!(
+                        row.item_on_target.as_ref().ok_or("spirit shovel")?.reusable,
+                        draw < 90
+                    );
                 }
             } else if row.key.starts_with("oteryn:quest-callback/spike/nest-") {
                 assert_eq!(row.lever, Some([19209, 19210]));
@@ -137,7 +140,8 @@ mod tests {
                 pads += 1;
             }
         }
-        assert_eq!((mounds.len(), nests, pads), (28, 29, 2));
+        assert_eq!((mounds.len(), nests, pads), (29, 29, 2));
+        assert!(mounds.contains_key(&(32067, 32715, -10)));
         assert!(mounds.values().all(|draws| *draws == [1; 100]));
         Ok(())
     }

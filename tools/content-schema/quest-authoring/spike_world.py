@@ -194,8 +194,6 @@ def world(root):
                     continue
                 for _, sector in codec.decode_region(shard.read_bytes())[3]:
                     for x, y, _, _, _, stack in sector:
-                        if not (32100 <= x <= 32400 and 32450 <= y <= 32720):
-                            continue
                         pos = {"x": x, "y": y, "floor": -depth}
                         pad = (x, y, depth) in PADS
                         for ordinal, (index, nested, _) in enumerate(stack):

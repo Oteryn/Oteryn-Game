@@ -139,8 +139,8 @@ mod tests {
                 .is_none()
         );
         let bat = stage_quest_disguise_for(&original, Some(307), Some(120_000), 1)
-            .unwrap()
-            .unwrap();
+            .expect("stage timed bat disguise")
+            .expect("new disguise");
         assert_eq!(bat.conditions.outfit_at(120_000_999), Some(307));
         assert_eq!(bat.conditions.outfit_at(120_001_000), None);
         let clear = stage_quest_disguise(&disguised, None, 2)
