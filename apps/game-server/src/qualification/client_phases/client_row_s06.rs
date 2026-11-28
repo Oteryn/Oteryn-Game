@@ -255,6 +255,51 @@ async fn commit_observed(
     Ok(Observed { files, expected })
 }
 
+// The read-only observer's cleanup is the only logout that may retry.
+async fn close_observer(
+    observer: &mut DevClientSession,
+    actor: appearance::EntityRef,
+    expected: &appearance::Look,
+) -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+
+    let session = observer.join_snapshot().game_session_id;
+    let position = observer.world_spatial().actor_position;
+    let own_look = visible_look(observer)?;
+    for attempt in 1..=3 {
+        let reply = observer.session_mut().logout().await?;
+        evidence(&format!(
+            "S06_CLIENT_CHECK step=peer-logout attempt={attempt} reply={reply:?}"
+        ));
+        match (reply.status, reply.result) {
+            (CommandStatus::Accepted, Some(LogoutResult::Accepted)) => return Ok(()),
+            (CommandStatus::Rejected, Some(LogoutResult::Busy)) if attempt < 3 => {
+                observer
+                    .service_liveness(Duration::from_millis(250))
+                    .await?;
+                if observer.join_snapshot().game_session_id != session
+                    || observer.world_spatial().actor_position != position
+                    || visible_look(observer)? != own_look
+                    || peer_look(observer, actor).as_ref() != Some(expected)
+                {
+                    return Err(format!(
+                        "step=peer-logout attempt={attempt} Busy changed observed state"
+                    )
+                    .into());
+                }
+                evidence(&format!(
+                    "S06_CLIENT_CHECK step=peer-logout substep=Retry after_attempt={attempt} next_attempt={} state=unchanged",
+                    attempt + 1
+                ));
+            }
+            _ => {
+                return Err(format!("step=peer-logout attempt={attempt} observed={reply:?}").into());
+            }
+        }
+    }
+    Err("step=peer-logout attempt bound exhausted".into())
+}
+
 async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     let mut observer = connect_character(clients, 0x68, 0).await?;
     let mut client = connect_world(clients, 0x69).await?;
@@ -405,10 +450,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         .revision;
     // The second session has finished observing. Close it before the actor's relog
     // sequence, which needs only the actor's character holder.
-    let observer_logout = observer.session_mut().logout().await?;
-    if observer_logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("step=peer-logout observed={observer_logout:?}").into());
-    }
+    close_observer(&mut observer, actor, &control_look).await?;
     drop(observer);
     wait_character_released(clients, 0).await?;
     let session = client.join_snapshot().game_session_id;
