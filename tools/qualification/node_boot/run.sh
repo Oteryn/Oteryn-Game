@@ -1462,25 +1462,31 @@ import sys
 import time
 
 deadline = time.monotonic() + 25
-while True:
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
-        control.settimeout(3)
-        control.connect(sys.argv[1])
-        control.sendall(b"health\n")
-        control.shutdown(socket.SHUT_WR)
-        with control.makefile("rb") as response:
-            line = response.readline(65537)
-    if len(line) > 65536 or not line.endswith(b"\n"):
-        sys.exit("Qualification peer received an incomplete health response")
-    health = json.loads(line)
-    if not isinstance(health, dict) or type(health.get("readiness")) is not bool:
-        sys.exit("Qualification peer received invalid readiness")
-    if health["readiness"]:
-        break
+last_timeout = None
+while (remaining := deadline - time.monotonic()) > 0:
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+            control.settimeout(min(3, remaining))
+            control.connect(sys.argv[1])
+            control.sendall(b"health\n")
+            control.shutdown(socket.SHUT_WR)
+            with control.makefile("rb") as response:
+                line = response.readline(65537)
+    except TimeoutError as error:
+        last_timeout = error
+    else:
+        if len(line) > 65536 or not line.endswith(b"\n"):
+            sys.exit("Qualification peer received an incomplete health response")
+        health = json.loads(line)
+        if not isinstance(health, dict) or type(health.get("readiness")) is not bool:
+            sys.exit("Qualification peer received invalid readiness")
+        if health["readiness"]:
+            break
     # Health reflects the pool's current idle count, which can dip during work.
-    if time.monotonic() >= deadline:
-        sys.exit("Qualification peer did not receive ready health")
-    time.sleep(0.05)
+    time.sleep(min(0.05, max(0, deadline - time.monotonic())))
+else:
+    suffix = f": {last_timeout}" if last_timeout is not None else ""
+    sys.exit(f"Qualification peer did not receive ready health{suffix}")
 PY
     then
       fail "qualification control socket peer health"
