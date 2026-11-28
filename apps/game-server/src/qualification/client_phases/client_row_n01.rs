@@ -135,14 +135,46 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let from = tile(client.world_spatial().actor_position)?;
     let mut chosen = None;
-    for row in initial.rows.iter().rev().filter(|row| row.kind == 1) {
-        let at = entrance(&row.house)?;
-        if let Some(path) = route(world, from, |candidate| candidate == at) {
-            chosen = Some((row.clone(), path));
+    // The wire decoder bounds this page to 20 rows. Choose once, before walking
+    // or bidding. A closed entrance is approached from an adjacent tile.
+    for row in initial.rows {
+        if row.kind != wire::HouseKind::PrivateHouse as u64 || row.state != 1 || row.owned {
+            evidence(&format!(
+                "N01_CANDIDATE house={} status=rejected reason=not_vacant_private kind={} state={} owned={}",
+                row.house, row.kind, row.state, row.owned
+            ));
+            continue;
+        }
+        let at = match entrance(&row.house) {
+            Ok(at) => at,
+            Err(error) => {
+                evidence(&format!(
+                    "N01_CANDIDATE house={} status=rejected reason=entrance_lookup error={error}",
+                    row.house
+                ));
+                continue;
+            }
+        };
+        let approach = |candidate: TilePos| {
+            candidate.floor == at.floor
+                && u32::from(candidate.x.abs_diff(at.x)) + u32::from(candidate.y.abs_diff(at.y))
+                    == 1
+        };
+        if let Some(path) = route(world, from, approach) {
+            evidence(&format!(
+                "N01_CANDIDATE house={} status=selected entrance={at:?} steps={}",
+                row.house,
+                path.len()
+            ));
+            chosen = Some((row, path));
             break;
         }
+        evidence(&format!(
+            "N01_CANDIDATE house={} status=rejected reason=no_walkable_approach from={from:?} entrance={at:?}",
+            row.house
+        ));
     }
-    let (private, path) = chosen.ok_or("no reachable private house on the first page")?;
+    let (private, path) = chosen.ok_or("no reachable vacant private house on the first page")?;
     walk(&mut client, world, &path).await?;
     let maximum = private.price.max(private.rent).max(1);
     let bid = house::mutation(
@@ -173,6 +205,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .find(|row| row.house == private.house)
         .ok_or("owned house missing from the first page")?;
+    if !current.owned {
+        return Err("bid has not settled into house ownership".into());
+    }
     let guest = clients.characters[1];
     let acl = house::mutation(
         world_bytes,
