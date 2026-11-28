@@ -130,7 +130,7 @@ for group in "$@"; do
   if (( ${#capture_env[@]} )); then
     replay_started=$SECONDS
     if [[ "$status" == 0 ]] &&
-      [[ "$(grep -c '^SEAM_EVIDENCE e2e_all scenario=P03.client status=CAPTURED ' "$log")" == 1 ]] &&
+      [[ "$(grep -c '^SEAM_EVIDENCE e2e_capture scenario=P03.client status=CAPTURED ' "$log")" == 1 ]] &&
       env "${capture_env[@]}" cargo +1.100.0 test --locked -p oteryn-client-ui --lib \
         prey::e2e_p03::e2e_p03_replays_query_reroll_and_refusal -- --exact > "$work_dir/$index-replay.log" 2>&1 &&
       grep -q '^test result: ok\. 1 passed; 0 failed;' "$work_dir/$index-replay.log"; then
