@@ -14,7 +14,19 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
-    let mut client = connect_world(clients, 0xb4).await?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_I14_ACCOUNT").await?;
+    let scope = fixture.clients(clients);
+    let mut client = connect_character(&scope, 0xb4, 0).await?;
+    let seed_session = client.join_snapshot().game_session_id;
+    character_prep::declare_seeded("I14.client", "meat (3577) x2", "food-use input");
+    character_prep::grant_item(&client, 3577, 2).await?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(&scope, 0xb4, 0).await?;
+    let use_session = client.join_snapshot().game_session_id;
+    if use_session == seed_session {
+        return Err("I14 seed relog reused the session".into());
+    }
     let index = provisioning::item_index()?;
     let meat = provisioning::item_reference(&index, 3577)?;
     let before = client
@@ -32,14 +44,23 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
         return Err(format!("I14 replay action reply={:?}", reply.disposition).into());
     }
-    let delta = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::Inventory(delta) => Some(delta),
-            _ => None,
-        })
-        .ok_or("I14 committed food use sent no inventory delta")?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let delta = loop {
+        let remaining = deadline
+            .checked_duration_since(tokio::time::Instant::now())
+            .ok_or("I14 committed food use sent no inventory delta")?;
+        if let Some(delta) = client
+            .wait_for_events(remaining)
+            .await?
+            .into_iter()
+            .find_map(|event| match event {
+                SessionEvent::Inventory(delta) => Some(delta),
+                _ => None,
+            })
+        {
+            break delta;
+        }
+    };
     let after = client.inventory().ok_or("I14 inventory absent after use")?;
     let visible = |inventory: &oteryn_protocol_oteryn::item_view::CharacterInventory| {
         inventory
@@ -49,7 +70,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             .map(|entry| u64::from(entry.count.get()))
             .sum::<u64>()
     };
-    if visible(&before).checked_sub(1) != Some(visible(after)) || after != &delta.value {
+    if visible(&before) != 2 || visible(after) != 1 || after != &delta.value {
         return Err("I14 food use must remove exactly one meat in the captured inventory".into());
     }
     let expected = format!(
@@ -87,10 +108,23 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
             std::fs::File::create_new(path.join(name))?.write_all(&bytes)?;
         }
     }
-    evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=I14.client status=CAPTURED evidence=inventory-before-{}-after-{}",
-        visible(&before),
-        visible(after)
-    ));
+    logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(&scope, 0xb4, 0).await?;
+    if fresh.join_snapshot().game_session_id == use_session
+        || fresh.inventory().map(visible) != Some(1)
+    {
+        return Err("I14 meat debit did not survive fresh admission".into());
+    }
+    logout(&mut fresh).await?;
+    evidence("e2e_all scenario=I14.client status=CAPTURED evidence=inventory-2-to-1-and-relog");
+    Ok(())
+}
+
+async fn logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("I14 logout refused: {reply:?}").into());
+    }
     Ok(())
 }
