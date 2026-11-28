@@ -19,6 +19,7 @@ pub(crate) use house_read::{HouseEquipmentAccess, assert_house_equipment_content
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::equipment_policy_abi::{EquipmentPolicyLookup, claims};
+use super::item_mint::TypedDefinitionRef;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -219,6 +220,8 @@ pub struct EquipmentReceipt {
     pub event_id: [u8; 16],
     pub revision_after: u64,
     pub replayed: bool,
+    /// Destination slot and qualified definition, present only on a fresh equip.
+    pub newly_equipped: Option<(u8, TypedDefinitionRef)>,
 }
 /// Private current proof, issued only after recovery, node/session/lease/scope and independently
 /// issued active Content have been checked against actual durable owners in this transaction.
@@ -614,6 +617,7 @@ async fn apply_resolved_equipment_in_transaction(
             event_id: uuid(row.try_get("event_id")?)?,
             revision_after: number(row.try_get("revision_after")?)?,
             replayed: true,
+            newly_equipped: None,
         });
     }
     let actual = read_equipment_in_transaction(tx, authority).await?;
@@ -628,6 +632,7 @@ async fn apply_resolved_equipment_in_transaction(
     let mut item = None;
     let mut from = None;
     let mut to = None;
+    let mut newly_equipped = None;
     let mut parent = None;
     let mut ordinal = None;
     let mut item_revision = None;
@@ -653,16 +658,16 @@ async fn apply_resolved_equipment_in_transaction(
             }
             let row=sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref,state_revision::text,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE")
                 .bind(identity.as_slice()).bind(authority.world.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment actual live item"))?;
+            let key: String = row.try_get("definition_production_key")?;
+            let revision: String = row.try_get("definition_revision_ref")?;
+            let family: String = row.try_get("definition_family")?;
             let policy = content
-                .equipment_policy(
-                    &row.try_get::<String, _>("definition_production_key")?,
-                    &row.try_get::<String, _>("definition_revision_ref")?,
-                )
+                .equipment_policy(&key, &revision)
                 .ok_or(rejected("equipment active item definition"))?;
             if policy.source_digest() != authority.content_digest {
                 return Err(rejected("equipment member profile pin"));
             }
-            if row.try_get::<String, _>("definition_family")? != "Item" {
+            if family != "Item" {
                 return Err(rejected("equipment item family"));
             }
             // The Character root and backpack item serialize this immutable slot.
@@ -816,8 +821,6 @@ async fn apply_resolved_equipment_in_transaction(
                     if nested_source_parent.is_some() {
                         hotkey::main_vacancy(tx, authority, content, backpack_id).await?;
                     }
-                    let key: String = row.try_get("definition_production_key")?;
-                    let revision: String = row.try_get("definition_revision_ref")?;
                     if !content.is_quiver_item(&key, &revision)
                         && (policy.container_capacity().is_some()
                             || !content.is_plain_item(&key, &revision))
@@ -884,6 +887,14 @@ async fn apply_resolved_equipment_in_transaction(
                     ]);
                     swap = Some((old.clone(), replacement));
                 }
+                newly_equipped = Some((
+                    *slot,
+                    TypedDefinitionRef {
+                        family,
+                        production_key: key,
+                        revision_ref: revision,
+                    },
+                ));
             } else {
                 if !actual
                     .items
@@ -1029,6 +1040,7 @@ async fn apply_resolved_equipment_in_transaction(
         event_id,
         revision_after: next,
         replayed: false,
+        newly_equipped,
     })
 }
 
@@ -1691,6 +1703,7 @@ async fn committed_move(
         event_id: uuid(row.try_get("event_id")?)?,
         revision_after: number(row.try_get("revision_after")?)?,
         replayed: true,
+        newly_equipped: None,
     })))
 }
 

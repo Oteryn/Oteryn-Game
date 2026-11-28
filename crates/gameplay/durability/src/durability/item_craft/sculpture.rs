@@ -7,14 +7,14 @@ use super::super::spell_item_transaction::SpellItemError;
 use super::super::spell_owner_commit::SpellLanePermit;
 
 /// Current map custody for an on-ground sculpture material.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SculptureGroundTarget {
     pub position: Vec<u8>,
     pub ordinal: u64,
 }
 
 /// Actor tile for a marble yield that cannot be carried, and an optional dropped target.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct GroundSculpture {
     pub actor: GroundPlacement,
     pub target: Option<SculptureGroundTarget>,

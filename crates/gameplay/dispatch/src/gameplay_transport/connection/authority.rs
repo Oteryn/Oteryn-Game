@@ -808,6 +808,16 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
+    fn destroy_map_bars(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: ItemKey,
+        _target: super::super::house_destroy::wooden_bars::Target,
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<UseOutcome>> + Send + '_>> {
+        Box::pin(async { None })
+    }
+
     fn observe_house_destroy(
         &self,
         _actor: ExactActorRef,

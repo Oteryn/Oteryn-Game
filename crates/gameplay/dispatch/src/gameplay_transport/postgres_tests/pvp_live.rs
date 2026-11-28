@@ -1,5 +1,5 @@
 //! Existing admitted-session transport -> PvP rules -> PostgreSQL -> result bytes and reload.
-use super::pvp_live_fixtures::{scenario};
+use super::pvp_live_fixtures::{ENERGY_BEAM_WITHOUT_STANCE, TARGET_SELECTION_WITH_BUSY_HOLDER, scenario};
 
 use super::TestResult;
 
@@ -57,11 +57,21 @@ fn pvp_expert_white_hand_reads_party_and_guild_aggressors() -> TestResult {
 }
 
 #[test]
+fn pvp_poison_arrow_joins_the_reconciled_hit() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(15))
+}
+
+#[test]
+fn pvp_paid_splash_survives_a_later_unknown_shot() -> TestResult {
+    super::item_look_fixtures::large_stack(|| scenario(16))
+}
+
+#[test]
 fn pvp_live_target_selection_retries_held_holder() -> TestResult {
-    super::item_look_fixtures::large_stack(|| scenario(14))
+    super::item_look_fixtures::large_stack(|| scenario(TARGET_SELECTION_WITH_BUSY_HOLDER))
 }
 
 #[test]
 fn pvp_live_energy_beam_casts_outside_protection_without_a_stance() -> TestResult {
-    super::item_look_fixtures::large_stack(|| scenario(15))
+    super::item_look_fixtures::large_stack(|| scenario(ENERGY_BEAM_WITHOUT_STANCE))
 }

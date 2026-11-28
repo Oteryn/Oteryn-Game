@@ -23,8 +23,8 @@ use crate::world_runtime::LocalObjectRuntime;
 use oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
-    creature_physical_response, creature_physically_immune,
-    equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN},
+    creature_melee_mitigation, creature_physical_resistance, creature_physically_immune,
+    equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN, EquippedOffence},
     swing_mitigated,
 };
 use oteryn_gameplay_items::equipment_effects::apply_protection;
@@ -46,11 +46,13 @@ pub(super) struct SelectedSwing {
 
 /// A PvP swing the attacker's pass drew for a player target; its defence is met after
 /// the pass (PVP-DEFENCE-1).
+#[derive(Debug)]
 pub(super) struct PvpSwing {
     pub(super) actor: ExactActorRef,
     pub(super) session: GameSessionId,
     pub(super) modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     pub(super) extension: bool,
+    pub(super) train: bool,
     pub(super) target: ExactActorRef,
     pub(super) lineage: CommandRef,
     pub(super) ordinal: u16,
@@ -80,6 +82,9 @@ fn native_health_swing_targets(
         return Ok(Vec::new());
     };
     let mut targets = equipped_offence::cleave_targets(&preview, &selected, runtime, room, now);
+    targets.extend(ranged::possible_area_targets(
+        &preview, &selected, runtime, room, now,
+    ));
     targets.push(selected.target);
     targets.retain(|target| runtime.contains_live_creature(*target));
     let mut required = Vec::new();
@@ -246,6 +251,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let objects = self.door.lock().await;
         let mut attack = self.states.attack.lock().await;
         attack.prune(&runtime);
+        let root = GameplayDecisionRoot::from_bytes(digest);
+        let mut trained = TrainingDue::new();
+        if !attack.pending_pvp.is_empty() {
+            self.drain_pvp_impacts(
+                &mut pvp_permit,
+                &mut runtime,
+                &mut states,
+                &mut attack,
+                room,
+                &objects,
+                content,
+                (&root, &digest, constants, now),
+                &mut trained,
+            )
+            .await;
+            drop(attack);
+            drop(objects);
+            drop(states);
+            drop(runtime);
+            drop(pvp_permit);
+            self.save_trained_levels(trained).await;
+            return;
+        }
         // Only lineages already held by the real attack owner are read. The
         // snapshot grants neither a swing nor payment; those are selected below.
         let source_players: Vec<_> = attack
@@ -320,6 +348,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let ChannelAttackStates {
             entries,
+            pending_pvp,
             blocks,
             kills,
             ..
@@ -329,8 +358,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter_map(|e| e.shared_experience_activity)
             .collect();
-        let root = GameplayDecisionRoot::from_bytes(digest);
-        let mut trained = TrainingDue::new();
         for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
             crate::gameplay_transport::kill_reward::record_creature_kill(
                 &mut runtime,
@@ -347,7 +374,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(SemanticTimeMicros::from_micros(at)),
             );
         }
-        let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
             if runtime
                 .actor_staff_visibility(entry.actor)
@@ -477,8 +503,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
-            if selected.weapon.ranged.is_some()
-                && !self
+            let impact = if selected.weapon.ranged.is_some() {
+                let Some(impact) = self
                     .pay_ranged_shot(
                         &mut pvp_permit,
                         &mut runtime,
@@ -490,14 +516,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &selected,
                     )
                     .await
-            {
-                if pvp_permit.has_unresolved() {
-                    return;
-                }
-                entry.state = state_before;
-                entry.next_ordinal = ordinal_before;
-                continue;
-            }
+                else {
+                    if pvp_permit.has_unresolved() {
+                        break;
+                    }
+                    entry.state = state_before;
+                    entry.next_ordinal = ordinal_before;
+                    continue;
+                };
+                impact
+            } else {
+                ranged::ShotImpact::Ordinary
+            };
             if selected.weapon.ranged.is_some()
                 && content.training_formula().is_some_and(|formula| {
                     states
@@ -530,10 +560,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     offence.critical_damage = offence.critical_damage.saturating_add(1_000);
                 }
             }
-            let cleaves = if offence.cleave > 0 {
-                equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
+            let primary = selected.target;
+            let has_area = matches!(impact, ranged::ShotImpact::Area(_));
+            let targets = match impact {
+                ranged::ShotImpact::Refused => {
+                    ranged::train_distance(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry,
+                        None,
+                        now,
+                        &mut trained,
+                    );
+                    continue;
+                }
+                ranged::ShotImpact::Area(mut targets) => {
+                    // A shot provides one distance-training event even when it hits several actors.
+                    if let Some(index) = targets.iter().position(|target| *target == primary) {
+                        targets.swap(0, index);
+                    }
+                    if targets.is_empty() {
+                        ranged::train_distance(
+                            &mut states,
+                            &runtime,
+                            content,
+                            entry,
+                            None,
+                            now,
+                            &mut trained,
+                        );
+                        continue;
+                    }
+                    targets
+                }
+                ranged::ShotImpact::Ordinary => {
+                    let mut targets = if offence.cleave > 0 {
+                        equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
+                    } else {
+                        Vec::new()
+                    };
+                    targets.push(primary);
+                    targets
+                }
+            };
+            let area_damage = if has_area {
+                draw_swing_damage(
+                    entry,
+                    &runtime,
+                    &selected,
+                    constants,
+                    SwingDamageContext {
+                        root: &root,
+                        offence: &offence,
+                        pure_elemental_with_attack_points,
+                        area: true,
+                    },
+                )
             } else {
-                Vec::new()
+                None
             };
             // D186: one uniform critical draw for the attack, compared with each
             // species' own augmented threshold. Damage/armor retain their target roots.
@@ -550,12 +635,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|roll| u64::try_from(roll).ok()) else {
                 continue;
             };
-            let primary = selected.target;
-            for (target, extension) in cleaves
-                .into_iter()
-                .map(|target| (target, true))
-                .chain(std::iter::once((primary, false)))
-            {
+            for (index, target) in targets.into_iter().enumerate() {
+                let extension = target != primary;
+                let train = !has_area || index == 0;
                 selected.target = target;
                 // Independent tagged draws for each cleave target; the primary draw is unchanged.
                 let root = if extension {
@@ -613,15 +695,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let charm_critical =
                     base_critical != (offence.critical_chance, offence.critical_damage);
-                let Some((mut damage, revision)) = draw_swing_damage(
-                    entry,
-                    &runtime,
-                    &selected,
-                    constants,
-                    &root,
-                    &offence,
-                    pure_elemental_with_attack_points,
-                ) else {
+                let Some((mut damage, revision)) = (if has_area {
+                    area_damage
+                } else {
+                    draw_swing_damage(
+                        entry,
+                        &runtime,
+                        &selected,
+                        constants,
+                        SwingDamageContext {
+                            root: &root,
+                            offence: &offence,
+                            pure_elemental_with_attack_points,
+                            area: false,
+                        },
+                    )
+                }) else {
                     continue;
                 };
                 // The drawn primary auto-attack receives one additive shrine multiplier
@@ -672,7 +761,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                     continue;
                 }
-                if extension {
+                if extension && !has_area {
                     damage =
                         i64::try_from(i128::from(damage) * i128::from(offence.cleave) / 10_000)
                             .unwrap_or(i64::MAX);
@@ -777,7 +866,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     else {
                         continue;
                     };
-                    pvp_hits.push(PvpSwing {
+                    // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
+                    // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
+                    // budget is reachable.
+                    pending_pvp.push_back(PvpSwing {
                         actor: entry.actor,
                         session: entry.session,
                         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
@@ -785,6 +877,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             expert: entry.expert_mode,
                         },
                         extension,
+                        train,
                         target,
                         lineage: swing.lineage,
                         ordinal,
@@ -888,7 +981,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(ranged) = &selected.weapon.ranged
                     && ranged::immune(ranged, &snapshot.state.policy, &offence)
                 {
-                    if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
+                    if train && matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
                         ranged::train_distance(
                             &mut states,
                             &runtime,
@@ -943,36 +1036,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .any(|key| key == ranged::element_key(element))
                 });
                 if physical_immune && secondary_immune {
-                    train_swing(
-                        &mut states,
-                        &runtime,
-                        content,
-                        entry,
-                        &selected.weapon,
-                        (None, HitBlock::Immunity),
-                        now,
-                        &mut trained,
-                    );
+                    if train {
+                        train_swing(
+                            &mut states,
+                            &runtime,
+                            content,
+                            entry,
+                            &selected.weapon,
+                            (None, HitBlock::Immunity),
+                            now,
+                            &mut trained,
+                        );
+                    }
                     continue;
                 }
                 // The physical primary meets defence even when its split was zero.
                 let blocked = selected.weapon.ranged.is_none()
                     && !physical_immune
                     && blocks[index].1.try_block(&constants.block, swing.at);
+                let melee_damage = |physical| {
+                    creature_melee_damage(
+                        &snapshot.state.policy,
+                        physical,
+                        blocked,
+                        armor,
+                        |damage, blocked, armor| {
+                            creature_mitigated(
+                                &root,
+                                constants,
+                                (entry.actor, swing.lineage, ordinal),
+                                damage,
+                                blocked.then_some((defense / 2, defense)),
+                                armor,
+                            )
+                        },
+                    )
+                };
                 if let Some((physical, elemental, element)) = melee_components {
                     ranged_magnitude = (|| {
                         let (physical, primary_block) = if physical_immune {
                             (0, HitBlock::Immunity)
                         } else {
-                            let (physical, primary_block) = oteryn_gameplay_combat_rules::resolution::swing_mitigated_with_block(
-                                &root, constants, entry.actor.placement_identity(),
-                                (*swing.lineage.game_session_id().as_bytes(), swing.lineage.command_id().get()),
-                                ordinal, physical, blocked.then_some((defense / 2, defense)), armor,
-                            )?;
-                            (
-                                creature_physical_response(&snapshot.state.policy, physical)?,
-                                primary_block,
-                            )
+                            let (block, landed) = melee_damage(physical)?;
+                            (landed, block)
                         };
                         let elemental =
                             oteryn_gameplay_combat_rules::resolution::creature_damage_response(
@@ -992,34 +1098,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Some([physical, elemental])
                     })();
                 }
-                let Some(magnitude) = (if selected.weapon.ranged.is_some() || split_melee {
-                    ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
+                let damage_parts = if selected.weapon.ranged.is_some() || split_melee {
+                    let Some(parts) = ranged_magnitude else {
+                        continue;
+                    };
+                    if parts[0].checked_add(parts[1]).is_none() {
+                        continue;
+                    }
+                    parts
                 } else {
-                    creature_mitigated(
-                        &root,
-                        constants,
-                        entry.actor,
-                        swing.lineage,
-                        ordinal,
-                        damage,
-                        blocked,
-                        defense,
-                        armor,
-                    )
-                }) else {
-                    continue;
-                };
-                if selected.weapon.ranged.is_none() && !split_melee {
-                    training_block = (None, swing_block(magnitude));
-                }
-                // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
-                // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
-                let Some(landed) = (if selected.weapon.ranged.is_some() || split_melee {
-                    Some(magnitude)
-                } else {
-                    creature_physical_response(&snapshot.state.policy, magnitude)
-                }) else {
-                    continue;
+                    let Some((block, landed)) = melee_damage(damage) else {
+                        continue;
+                    };
+                    training_block = (None, block);
+                    [landed, 0]
                 };
                 let prey = states.prey_percent(
                     &runtime,
@@ -1029,7 +1121,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     1,
                     now.get(),
                 );
-                let damage_parts = ranged_magnitude.unwrap_or([landed, 0]);
                 let perfect =
                     if !extension
                         && selected.weapon.ranged.as_ref().is_some_and(|r| {
@@ -1114,16 +1205,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .unwrap_or(u32::MAX);
                 let landed = final_parts[0].saturating_add(final_parts[1]);
                 if landed <= 0 {
-                    train_swing(
-                        &mut states,
-                        &runtime,
-                        content,
-                        entry,
-                        &selected.weapon,
-                        training_block,
-                        now,
-                        &mut trained,
-                    );
+                    if train {
+                        train_swing(
+                            &mut states,
+                            &runtime,
+                            content,
+                            entry,
+                            &selected.weapon,
+                            training_block,
+                            now,
+                            &mut trained,
+                        );
+                    }
                     continue;
                 }
                 let Some(plan) = swing_plan(
@@ -1201,6 +1294,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
+                if result.applied
+                    && result.health_after > 0
+                    && selected
+                        .weapon
+                        .ranged
+                        .as_ref()
+                        .and_then(|r| r.scripted_arrow())
+                        == Some(ranged::ScriptedArrow::Poison)
+                {
+                    ranged::apply_creature_poison(
+                        &mut runtime,
+                        target,
+                        entry.actor,
+                        &root,
+                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"poison-arrow"),
+                        now,
+                    );
+                }
                 if !extension && result.applied {
                     publish_hit_sound(
                         &mut states,
@@ -1242,16 +1353,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Some(element),
                     );
                 }
-                train_swing(
-                    &mut states,
-                    &runtime,
-                    content,
-                    entry,
-                    &selected.weapon,
-                    training_block,
-                    now,
-                    &mut trained,
-                );
+                if train {
+                    train_swing(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry,
+                        &selected.weapon,
+                        training_block,
+                        now,
+                        &mut trained,
+                    );
+                }
                 let outcomes = {
                     let source = if extension {
                         CharmHitSource::CharacterAutoAttackOffTarget
@@ -1603,21 +1716,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 break;
             }
         }
-        for hit in pvp_hits {
-            self.land_pvp_swing(
-                &mut pvp_permit,
-                &mut runtime,
-                &mut states,
-                &mut attack,
-                room,
-                &objects,
-                content,
-                (&root, &digest, constants, now),
-                hit,
-                &mut trained,
-            )
-            .await;
-        }
+        self.drain_pvp_impacts(
+            &mut pvp_permit,
+            &mut runtime,
+            &mut states,
+            &mut attack,
+            room,
+            &objects,
+            content,
+            (&root, &digest, constants, now),
+            &mut trained,
+        )
+        .await;
         drop(attack);
         drop(objects);
         drop(states);
@@ -1678,6 +1788,38 @@ fn battle_instinct_for_actor(
 
 /// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(clippy::too_many_arguments)]
+    async fn drain_pvp_impacts(
+        &self,
+        permit: &mut SpellLanePermit,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        attack: &mut ChannelAttackStates,
+        room: &QualifiedNativeEntryRoom,
+        objects: &LocalObjectRuntime,
+        content: &NativeGameplayState,
+        facts: (
+            &GameplayDecisionRoot,
+            &[u8; 32],
+            &AttackConstants,
+            SemanticTimeMicros,
+        ),
+        trained: &mut TrainingDue,
+    ) {
+        while !permit.has_unresolved() {
+            let Some(hit) = attack.pending_pvp.pop_front() else {
+                break;
+            };
+            self.land_pvp_swing(
+                permit, runtime, states, attack, room, objects, content, facts, hit, trained,
+            )
+            .await;
+        }
+        if !attack.pending_pvp.is_empty() {
+            states.owner_wake.notify_one();
+        }
+    }
+
     /// PVP-DEFENCE-1 (`Creature::blockHit`, `Player::getDefense`): a PvP swing spends one of the
     /// target's blocks and meets the defence of what the target's hands hold, then the target's
     /// worn armor. A block trains the target's shielding (SKILL-TRAIN-1), and the attacker trains
@@ -1701,6 +1843,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         hit: PvpSwing,
         trained: &mut TrainingDue,
     ) {
+        if hit.weapon.content_digest != *digest {
+            return;
+        }
         let Some(target_session) = states
             .actors
             .iter()
@@ -1762,19 +1907,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .map(i64::from)
         } else {
-            swing_mitigated(
-                root,
-                constants,
-                hit.actor.placement_identity(),
-                (
-                    *hit.lineage.game_session_id().as_bytes(),
-                    hit.lineage.command_id().get(),
-                ),
-                hit.ordinal,
-                physical_raw,
-                defence,
-                armor,
-            )
+            let reduce = |damage, defence, armor| {
+                swing_mitigated(
+                    root,
+                    constants,
+                    hit.actor.placement_identity(),
+                    (
+                        *hit.lineage.game_session_id().as_bytes(),
+                        hit.lineage.command_id().get(),
+                    ),
+                    hit.ordinal,
+                    damage,
+                    defence,
+                    armor,
+                )
+            };
+            reduce(physical_raw, defence, 0).and_then(|damage| {
+                player_melee_after_defence(damage, protection, |protected| {
+                    reduce(protected, None, armor)
+                })
+            })
         }) else {
             return;
         };
@@ -1857,12 +2009,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 .and_then(|read| read.protections.get(&kind).copied())
                 .or_else(|| {
-                    if hit.weapon.ranged.is_none() {
-                        if kind == Kind::Physical {
-                            protection
-                        } else {
-                            target.equipped_element_protection(kind)
-                        }
+                    if hit.weapon.ranged.is_none() && kind != Kind::Physical {
+                        target.equipped_element_protection(kind)
                     } else {
                         None
                     }
@@ -1922,6 +2070,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return;
         };
+        let poison = hit
+            .weapon
+            .ranged
+            .as_ref()
+            .and_then(|r| r.scripted_arrow())
+            .filter(|arrow| *arrow == ranged::ScriptedArrow::Poison)
+            .and_then(|_| ranged::poison_definition())
+            .map(|definition| {
+                (
+                    definition,
+                    swing_occurrence(hit.actor, hit.lineage, hit.ordinal, b"poison-arrow"),
+                )
+            });
         let batch = crate::spell::combat_batch::OwnerCombatBatch {
             caster: hit.actor,
             attacker: hit.attacker,
@@ -1954,6 +2115,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 hit.modes,
                 hit.black,
                 damage,
+                poison,
             )
             .await
         {
@@ -1983,6 +2145,9 @@ fn train_pvp_swing(
     trained: &mut TrainingDue,
 ) {
     let block = swing_block(magnitude);
+    if !hit.train {
+        return;
+    }
     if let Some(ranged) = &hit.weapon.ranged {
         if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
             train_hit(
@@ -2190,6 +2355,39 @@ pub(super) fn select_swing(
     })
 }
 
+fn player_melee_after_defence(
+    damage: i64,
+    protection: impl IntoIterator<Item = crate::content::ReferenceRationalPercent>,
+    armor: impl FnOnce(i64) -> Option<i64>,
+) -> Option<i64> {
+    let protected = protection.into_iter().try_fold(damage, |damage, percent| {
+        percent.validate().ok()?;
+        let denominator = 100 * i128::from(percent.denominator);
+        let reduction = i128::from(percent.numerator).clamp(-denominator, denominator);
+        let remaining = i128::from(damage).checked_mul(denominator - reduction)? / denominator;
+        i64::try_from(remaining).ok()
+    })?;
+    armor(protected)
+}
+
+/// Training observes the defence or armor block before the creature's mitigation.
+pub(super) fn creature_melee_damage(
+    policy: &oteryn_gameplay_content::content::creature_policy::CompiledCreaturePolicy,
+    damage: i64,
+    blocked: bool,
+    armor: u32,
+    reduce: impl Fn(i64, bool, u32) -> Option<(i64, HitBlock)>,
+) -> Option<(HitBlock, i64)> {
+    let (defended, defence_block) = reduce(damage, blocked, 0)?;
+    if defended == 0 {
+        return Some((defence_block, 0));
+    }
+    let resisted = creature_physical_resistance(policy, defended)?;
+    let (armored, armor_block) = reduce(resisted, false, armor)?;
+    let landed = creature_melee_mitigation(policy, armored)?;
+    Some((armor_block, landed))
+}
+
 fn melee_swing_formula(
     constants: &AttackConstants,
     vocation: crate::spell::Vocation,
@@ -2219,15 +2417,26 @@ fn melee_swing_formula(
     (formula, weapon.attack(constants.fist.attack), revision)
 }
 
-fn draw_swing_damage(
+pub(super) struct SwingDamageContext<'a> {
+    pub(super) root: &'a GameplayDecisionRoot,
+    pub(super) offence: &'a EquippedOffence,
+    pub(super) pure_elemental_with_attack_points: bool,
+    pub(super) area: bool,
+}
+
+pub(super) fn draw_swing_damage(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
     selected: &SelectedSwing,
     constants: &AttackConstants,
-    root: &GameplayDecisionRoot,
-    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
-    pure_elemental_with_attack_points: bool,
+    context: SwingDamageContext<'_>,
 ) -> Option<(i64, &'static str)> {
+    let SwingDamageContext {
+        root,
+        offence,
+        pure_elemental_with_attack_points,
+        area,
+    } = context;
     let SelectedSwing {
         target,
         character_facts,
@@ -2236,32 +2445,22 @@ fn draw_swing_damage(
         ordinal,
         ..
     } = *selected;
-    if selected.weapon.ranged.is_some() && runtime.contains_live_creature(target) {
+    let creature = runtime.contains_live_creature(target);
+    if selected.weapon.ranged.is_some() && creature {
         entry
             .state
             .record_hit(swing.at, constants.in_fight_micros());
     }
-    let mode = constants.fight_mode(fight_mode(entry.modes.fight_mode));
+    let mut scripted = None;
     let (formula, attack_value, revision) = if let Some(ranged) = &selected.weapon.ranged {
-        let from = runtime.read_actor_position(entry.actor).ok()?.position();
-        let to = runtime.read_actor_position(target).ok()?.position();
-        let distance = from.x.abs_diff(to.x).max(from.y.abs_diff(to.y));
-        let roll = swing_draw(
-            root,
-            entry.actor,
-            swing.lineage,
-            ordinal,
-            b"hit-chance",
-            "attack.hit-chance",
-            0,
-            99,
-        )?;
-        let perfect = matches!(ranged.damage, ranged::RangedDamage::Distance { .. })
-            && (offence.perfect_damage(from.x.abs_diff(to.x), from.x.abs_diff(to.x)) != 0
-                || offence.perfect_damage(from.y.abs_diff(to.y), from.y.abs_diff(to.y)) != 0);
-        if !perfect && !ranged.hit(distance, skills.attack, u64::try_from(roll).ok()?)? {
-            return Some((-1, "formula:player-distance"));
+        if !area {
+            let from = runtime.read_actor_position(entry.actor).ok()?.position();
+            let to = runtime.read_actor_position(target).ok()?.position();
+            if !ranged.hits_target(entry, selected, from, to, root, offence)? {
+                return Some((-1, "formula:player-distance"));
+            }
         }
+        scripted = ranged.scripted_arrow();
         ranged.formula()?
     } else {
         melee_swing_formula(constants, character_facts.vocation, selected.weapon.weapon)
@@ -2272,11 +2471,22 @@ fn draw_swing_damage(
         base_power: None,
         attack_skill: skills.attack,
         attack_value,
-        attack_factor: mode.attack_factor,
+        attack_factor: AttackConstants::PLAYER_ATTACK_FACTOR,
         shielding_skill: skills.shielding,
         shield_defense: None,
     };
-    let creature = runtime.contains_live_creature(target);
+    if let Some(script) = scripted {
+        return script.damage(
+            &inputs,
+            root,
+            swing_occurrence(
+                entry.actor,
+                swing.lineage,
+                ordinal,
+                b"scripted-arrow-damage",
+            ),
+        );
+    }
     let (mut minimum, mut maximum) = if let Some(ranged) = &selected.weapon.ranged {
         ranged.roll_bounds(&formula, &inputs, creature)?
     } else {
@@ -2573,6 +2783,39 @@ fn reported_primary(primary: i64, committed: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::{melee_swing_formula, swing_lands};
+
+    #[test]
+    fn global_parity_wiki_200_damage_with_zaoan_helmet_protection_amulet_and_armor_9()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::ReferenceRationalPercent;
+        use oteryn_gameplay_combat_rules::resolution::player_armor_mitigated;
+
+        let constants = super::AttackConstants::checked_in().ok_or("attack constants")?;
+        let helmet = ReferenceRationalPercent::new(5, 1)?;
+        let amulet = ReferenceRationalPercent::new(6, 1)?;
+        let equipped_total = ReferenceRationalPercent::new(11, 1)?;
+        let helmet_only = super::player_melee_after_defence(200, [helmet], Some);
+        assert_eq!(helmet_only, Some(190));
+        for (draw, expected) in (0..4).zip([174, 173, 172, 171]) {
+            let armor = |protected| {
+                assert_eq!(protected, 178);
+                let protected = u32::try_from(protected).ok()?;
+                Some(i64::from(player_armor_mitigated(
+                    constants, protected, 9, draw,
+                )))
+            };
+            assert_eq!(
+                super::player_melee_after_defence(200, [helmet, amulet], armor),
+                Some(expected)
+            );
+            // The current equipment snapshot supplies one summed physical protection.
+            assert_eq!(
+                super::player_melee_after_defence(200, Some(equipped_total), armor),
+                Some(expected)
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn t174_converted_melee_wheel_preserves_both_mitigated_components()

@@ -324,8 +324,7 @@ impl StrikeCastModifiers {
         )
         .map_err(|_| Error::InvalidMagnitude)?;
         Ok(Self {
-            // Keep the established raw/stance snapshot. Crystal's delayed Combat
-            // reads gem and Focus bonuses at the actual strike, not at planting.
+            // Crystal's delayed Combat reads current gem and Focus bonuses.
             source_bonus: needed(a.source_damage_multiplier_percent)?,
             damage_percent,
             base_damage_augments: a.item_augments.iter().filter(|augment| {
@@ -664,15 +663,15 @@ impl PreparedMagnitudeOwner {
         )
         .map_err(|_| Error::InvalidMagnitude)
     }
-    /// F's planted raw/late-modifier split. This changes only numerical inputs;
+    /// Retain the damage buffs sampled when the strike was planted.
     /// `attributes` and `caster` remain intact for commit-time owner validation.
     pub fn select_planted_strike(&mut self, snapshot: &StrikeCastModifiers) -> Result<(), Error> {
         let wheel_bonus = self.selected_wheel_damage_bonus()?;
         self.selected_item_augments.retain(|augment| augment.kind != oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage);
         self.selected_item_augments
             .extend(snapshot.base_damage_augments.iter().cloned());
-        // The raw formula remains planted. Wheel flat belongs to the current
-        // Combat after target block, alongside its current gem/Focus modifiers.
+        // Wheel flat belongs to the current Combat after target block,
+        // alongside its current gem/Focus modifiers.
         self.resolved_attributes.source_damage_multiplier_percent = Some(
             snapshot
                 .source_bonus

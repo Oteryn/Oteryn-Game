@@ -790,6 +790,14 @@ impl NpcConversations {
         }
     }
 }
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static ROBBERY_DIALOGUE_OBSERVED: (
+        std::sync::Arc<tokio::sync::Notify>,
+        std::sync::Arc<tokio::sync::Notify>,
+    );
+}
+
 /// Command 7 Bank integration: native retained command first, then the current NPC owner's
 /// conversation, and finally the native settlement owner.
 pub(super) async fn npc_bank_talk(
@@ -921,7 +929,7 @@ pub(super) async fn npc_bank_talk(
         .filter(|context| bank_robbery::interested(&context.2))
     {
         drop(runtime);
-        if let Some(outcome) = bank_robbery::talk(
+        let robbery = bank_robbery::talk(
             admission,
             command,
             &intent,
@@ -929,15 +937,33 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
             native,
         )
-        .await
+        .await;
+        #[cfg(test)]
+        if robbery.is_some()
+            && let Ok((observed, displaced)) = ROBBERY_DIALOGUE_OBSERVED.try_with(Clone::clone)
         {
-            return outcome;
+            observed.notify_one();
+            displaced.notified().await;
         }
         runtime = admission.runtime.lock().await;
+        // The robbery lookup ran without the runtime lock. Qualify the reply
+        // again before publishing its Open state.
         if conversations.current_npc(&admission.states.chat, &runtime, actor, session, &intent)
             != Some(context)
         {
+            bank_robbery::clear(admission, session);
+            if let Some(mut outcome) = robbery
+                && (outcome.unknown || outcome.inventory_changed)
+            {
+                if let Some(conversation) = outcome.conversation.as_mut() {
+                    conversation.open = None;
+                }
+                return outcome;
+            }
             return rejected();
+        }
+        if let Some(outcome) = robbery {
+            return outcome;
         }
     } else {
         bank_robbery::clear(admission, session);
@@ -1518,16 +1544,34 @@ pub(super) async fn resume_bank_talk(
             npc_key,
             npc_identity,
             npc_generation,
-        }) => Some(NpcConversations::bank_reply(
-            &NpcTalkIntent {
+        }) => {
+            let intent = NpcTalkIntent {
                 npc_actor: EntityRef {
                     identity: npc_identity,
                     generation: npc_generation,
                 },
                 text: String::new(),
-            },
-            bank_robbery::clue(&npc_key).into(),
-        )),
+            };
+            let runtime = admission.runtime.lock().await;
+            let mut reply =
+                NpcConversations::bank_reply(&intent, bank_robbery::clue(&npc_key).into());
+            if !admission
+                .states
+                .npc_conversations
+                .current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                )
+                .is_some_and(|(_, _, key)| key == npc_key)
+                && let Some(conversation) = reply.conversation.as_mut()
+            {
+                conversation.open = None;
+            }
+            Some(reply)
+        }
         Err(_) => Some(held_bank_outcome()),
     }
 }

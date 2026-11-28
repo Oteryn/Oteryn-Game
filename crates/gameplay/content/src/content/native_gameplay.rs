@@ -6822,6 +6822,42 @@ mod equipment_projection_tests {
             assert!(claims.vocations.is_empty(), "{key}");
         }
     }
+
+    #[test]
+    fn shipped_equippable_items_have_known_eligibility() {
+        use ReferenceItemField::{Known, Unknown};
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let input = NativeGameplayInput::from_manifest(&manifest).expect("native gameplay input");
+        let profiles = input.item_profiles.expect("composed item profiles");
+        let document: ItemProfilesDocument =
+            serde_json::from_slice(&profiles.bytes).expect("native item profiles json");
+        let mut incomplete = Vec::new();
+        for record in document.records {
+            let Known(equipment) = record.semantics.equipment else {
+                continue;
+            };
+            let Known(patterns) = equipment.patterns else {
+                continue;
+            };
+            for pattern in patterns {
+                if let Known(slot) = pattern.primary_slot
+                    && (pattern.level == Unknown || pattern.vocations == Unknown)
+                {
+                    incomplete.push(format!(
+                        "{} pattern {} ({slot:?})",
+                        record.production_definition.production_key, pattern.pattern_id,
+                    ));
+                }
+            }
+        }
+        assert!(
+            incomplete.is_empty(),
+            "{} equipment patterns have unknown eligibility:\n{}",
+            incomplete.len(),
+            incomplete.join("\n"),
+        );
+    }
 }
 
 /// Return only a compiler-qualified, immutable source Item effect body.

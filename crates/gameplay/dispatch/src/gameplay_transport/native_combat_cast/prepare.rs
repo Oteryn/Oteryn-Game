@@ -442,7 +442,9 @@ async fn prepare_spatial(
         None => facing.map(direction).unwrap_or(Direction::North), // unused by symmetric/self recipes
     };
     let is_delayed = parameters.get("delay_ms").is_some();
-    let held = is_delayed
+    let is_divine_grenade = parameters["spell_name"] == "divine grenade";
+    // Crystal 201189f spells.cpp:1252-1257 uses the caster tile when no position is sent.
+    let held = (is_delayed && !is_divine_grenade)
         .then(|| delayed_strikes::held_target(runtime, attack_target))
         .flatten();
     let origin = if let Some(saved) = saved {
@@ -459,6 +461,12 @@ async fn prepare_spatial(
             SpellTarget::None if needs_direction => {
                 let (dx, dy) = delta(facing_direction);
                 offset(position, dx, dy)?
+            }
+            // Crystal spells.cpp:1254–1257 uses the caster when there is no cursor tile.
+            SpellTarget::None | SpellTarget::AttackTarget
+                if parameters["spell_name"] == "death echo" =>
+            {
+                position
             }
             SpellTarget::None | SpellTarget::AttackTarget if is_delayed => {
                 if spell
@@ -688,6 +696,7 @@ async fn prepare_spatial(
             &tiles,
             held.map(|(a, _)| u64::from(a.actor_local_id())),
             saved,
+            is_divine_grenade,
         )?)
     } else {
         None
@@ -1526,7 +1535,9 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &mut magnitude,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    if saved.scheduled.captured_raw_bounds.is_some() {
+    if strike.modifier_timing
+        == crate::spell::native_delayed::ModifierTiming::CastBuffsAndOccurrenceModifiers
+    {
         magnitude
             .select_planted_strike(&saved.cast_modifiers)
             .map_err(|_| SpellCastDisposition::Rejected)?;
