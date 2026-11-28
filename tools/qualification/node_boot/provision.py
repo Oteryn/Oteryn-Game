@@ -40,6 +40,10 @@ def provision(socket_path, session, profile):
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
     answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
+    if answer == b"not_committed\n":
+        raise RuntimeError("node verified that the qualification Item mint did not commit")
+    if answer == b"unavailable\n":
+        raise RuntimeError("node could not verify the qualification Item mint outcome")
     if answer != b"qualified\n":
         # repr escapes control/non-ASCII bytes; the 65th byte only detects overflow.
         raise RuntimeError(

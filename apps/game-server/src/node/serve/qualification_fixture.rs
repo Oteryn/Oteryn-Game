@@ -75,16 +75,28 @@ pub(super) async fn prepare(
                 return "rejected";
             }
         };
-    match Box::pin(prepare_build(
+    let outcome = Box::pin(prepare_build(
         root, authority, proof, config, native, session, profile,
     ))
-    .await
-    {
+    .await;
+    prepare_reply(&session, profile, outcome)
+}
+
+fn prepare_reply(
+    session: &[u8; 16],
+    profile: &str,
+    outcome: Result<(), Box<dyn std::error::Error>>,
+) -> &'static str {
+    match outcome {
         Ok(()) => "qualified",
-        Err(error) => {
-            emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
-            "rejected"
-        }
+        Err(error) => match error.downcast_ref::<FixtureMintRecovery>() {
+            Some(FixtureMintRecovery::NotCommitted) => "not_committed",
+            Some(FixtureMintRecovery::Unavailable) => "unavailable",
+            None => {
+                emit(PROCESS, &refusal_warning(session, profile, error.as_ref()));
+                "rejected"
+            }
+        },
     }
 }
 
@@ -696,11 +708,19 @@ async fn prepare_build(
         root, authority, proof, &current, spec, policy, deadline,
     )
     .await?;
+    let fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+        character_id: character,
+        game_session_id: current.current_game_session_id(),
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: current.current_character_lease().generation(),
+        runtime_scope: current.current_runtime_scope(),
+        scope_ownership_generation: current.current_scope_generation(),
+    };
     prepare_items(
         root,
         authority,
         proof,
-        &current,
+        fence,
         native,
         deadline,
         profile == "g23",
@@ -748,29 +768,15 @@ async fn prepare_items(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
-    current: &crate::foundation::GameSessionAuthoritySnapshot<
-        crate::foundation::AuthenticatedTransportRefV1,
-    >,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     native: &NativeGameplayState,
     deadline: tokio::time::Instant,
     fund_promotion: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
-    use crate::durability::item_transfer::CurrentCharacterItemFence;
     use crate::durability::reward_claim_mint::RewardClaimMintRequest;
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
-    let fence = CurrentCharacterItemFence {
-        character_id: crate::domain::CharacterId::from_bytes(
-            *current.current_character_lease().character_id().as_bytes(),
-        )
-        .map_err(|error| format!("qualification character: {error:?}"))?,
-        game_session_id: current.current_game_session_id(),
-        connection_generation: current.current_connection_generation(),
-        character_lease_generation: current.current_character_lease().generation(),
-        runtime_scope: current.current_runtime_scope(),
-        scope_ownership_generation: current.current_scope_generation(),
-    };
     let read_inventory = async || {
         qualification_build::retry_holder(
             Some(root),
@@ -792,7 +798,7 @@ async fn prepare_items(
     if inventory.backpack.is_none() {
         use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
         let template = StarterTemplate {
-            key: fixture_gear_claim(current.current_game_session_id(), "backpack"),
+            key: fixture_gear_claim(fence.game_session_id, "backpack"),
             ..StarterTemplate::main()
         };
         let outcome = qualification_build::retry_holder(
@@ -869,12 +875,12 @@ async fn prepare_items(
             additional_items: Vec::new(),
             // Reserved fixture ids cannot collide with the client's low command ids.
             command: crate::foundation::CommandRef::new(
-                current.current_game_session_id(),
+                fence.game_session_id,
                 crate::foundation::CommandId::new(u64::MAX - ordinal as u64)?,
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: fixture_gear_claim(current.current_game_session_id(), item_key),
+                production_key: fixture_gear_claim(fence.game_session_id, item_key),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
@@ -892,30 +898,7 @@ async fn prepare_items(
             quest_transition: None,
             key_number: None,
         };
-        // Reservation replay retains the same CommandRef and frozen semantic intent.
-        let mut candidate = qualification_build::retry_holder(
-            Some(root),
-            deadline,
-            |error| {
-                matches!(
-                    error,
-                    crate::durability::reward_claim_mint::RewardClaimMintError::Unavailable(
-                        DurabilityError::RootUnavailable
-                    )
-                )
-            },
-            async || {
-                root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
-                    .await
-            },
-        )
-        .await
-        .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
-        let outcome = root
-            .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
-            .await
-            .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        fixture_item_committed(outcome)?;
+        mint_fixture_item(root, authority, proof, fence, deadline, request).await?;
     }
     Ok(())
 }
@@ -959,17 +942,90 @@ impl crate::durability::item_loop_move::ItemLoopContent for FixtureItemContent<'
     }
 }
 
+#[derive(Debug)]
+enum FixtureMintRecovery {
+    NotCommitted,
+    Unavailable,
+}
+
+impl std::fmt::Display for FixtureMintRecovery {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(match self {
+            Self::NotCommitted => "qualification Item mint did not commit",
+            Self::Unavailable => "qualification Item mint outcome is unavailable",
+        })
+    }
+}
+
+impl std::error::Error for FixtureMintRecovery {}
+
+async fn mint_fixture_item(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    deadline: tokio::time::Instant,
+    request: crate::durability::reward_claim_mint::RewardClaimMintRequest,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::reward_claim_mint::{RewardClaimMintError, RewardClaimMintOutcome};
+    let quantity = request.quantity;
+    // Reservation replay retains the same CommandRef and frozen semantic intent.
+    let mut candidate = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        |error| {
+            matches!(
+                error,
+                RewardClaimMintError::Unavailable(DurabilityError::RootUnavailable)
+            )
+        },
+        async || {
+            root.freeze_reward_claim_mint(authority, proof, fence, request.clone())
+                .await
+        },
+    )
+    .await
+    .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
+    let outcome = root
+        .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
+        .await;
+    let outcome = match outcome {
+        Ok(outcome) => outcome,
+        Err(RewardClaimMintError::Unavailable(DurabilityError::CommitOutcomeUnknown)) => {
+            // The unknown-outcome pass retires its holder. Recover it before
+            // reading the receipt for the same frozen command.
+            tokio::time::timeout_at(deadline, root.await_ready())
+                .await
+                .map_err(|_| FixtureMintRecovery::Unavailable)?
+                .map_err(|_| FixtureMintRecovery::Unavailable)?;
+            let receipt = root
+                .reconcile_reward_claim_mint_waiting(authority, &mut candidate, deadline)
+                .await
+                .map_err(|_| FixtureMintRecovery::Unavailable)?
+                .ok_or(FixtureMintRecovery::NotCommitted)?;
+            return fixture_item_committed(
+                RewardClaimMintOutcome::AlreadyCommitted(receipt),
+                quantity,
+            )
+            .map_err(|_| FixtureMintRecovery::Unavailable.into());
+        }
+        Err(error) => return Err(format!("qualification Item commit: {error:?}").into()),
+    };
+    fixture_item_committed(outcome, quantity)
+}
+
 fn fixture_item_committed(
     outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+    quantity: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::reward_claim_mint::RewardClaimMintOutcome;
     let receipt = match outcome {
         RewardClaimMintOutcome::Committed(receipt)
         | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt,
     };
-    if receipt.quantity != 1 {
+    if receipt.quantity != quantity {
         return Err(format!(
-            "qualification Item receipt has quantity {}",
+            "qualification Item receipt has quantity {}, expected {quantity}",
             receipt.quantity
         )
         .into());
@@ -1457,20 +1513,180 @@ mod tests {
         use crate::durability::reward_claim_mint::{
             CommittedRewardClaimMint, RewardClaimMintOutcome,
         };
-        let receipt = CommittedRewardClaimMint {
+        let receipt = |quantity| CommittedRewardClaimMint {
             transaction_id: [1; 16],
             event_id: [2; 16],
             item_instance_id: [3; 16],
             occurred_at_unix_ms: 1,
             envelope_sha256: [4; 32],
-            quantity: 1,
+            quantity,
             destination: crate::durability::item_transfer::ContainerEntryPosition {
                 parent_item_instance_id: [5; 16],
                 placement_ordinal: 0,
             },
         };
-        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone())).is_ok());
-        assert!(fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt)).is_ok());
+        for quantity in [1, 2] {
+            assert!(
+                fixture_item_committed(
+                    RewardClaimMintOutcome::Committed(receipt(quantity)),
+                    quantity
+                )
+                .is_ok()
+            );
+            assert!(
+                fixture_item_committed(
+                    RewardClaimMintOutcome::AlreadyCommitted(receipt(quantity)),
+                    quantity
+                )
+                .is_ok()
+            );
+        }
+        assert!(
+            fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt(1)), 2)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn g23_fixture_provisions_two_crystal_coins() -> crate::bestiary_postgres_harness::TestResult {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        g23_funding_case(admin, "g23_funding", None, "qualified")
+    }
+
+    #[test]
+    fn g23_fixture_reconciles_a_lost_mint_acknowledgement()
+    -> crate::bestiary_postgres_harness::TestResult {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        // The funding call first reads inventory, reserves, and charges a work unit.
+        // Losing the charge ack stops before minting; losing the next ack leaves a receipt.
+        g23_funding_case(admin.clone(), "g23_no_receipt", Some(2), "not_committed")?;
+        g23_funding_case(admin, "g23_late_ack", Some(3), "qualified")
+    }
+
+    fn g23_funding_case(
+        admin: String,
+        tag: &'static str,
+        stall_after: Option<usize>,
+        expected_reply: &'static str,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness as f;
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                f::runtime()
+                    .map_err(f::debug)?
+                    .block_on(async {
+                        let harness = f::Harness::create(admin, tag, true).await?;
+                        let outcome =
+                            exercise_g23_funding(&harness, stall_after, expected_reply).await;
+                        harness.cleanup().await?;
+                        outcome
+                    })
+                    .map_err(f::debug)
+            })?
+            .join()
+            .map_err(|_| "G23 fixture funding thread failed")?
+            .map_err(Into::into)
+    }
+
+    async fn exercise_g23_funding(
+        h: &crate::bestiary_postgres_harness::Harness,
+        stall_after: Option<usize>,
+        expected_reply: &str,
+    ) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness as f;
+        use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+        use crate::domain::currency::Coin;
+        use crate::durability::content_activation::ContentActivationRequest;
+        use crate::durability::with_single_stalled_commit_response;
+
+        let fence = f::item_fence()?;
+        let world = fence.runtime_scope.world_id();
+        let channel = fence
+            .runtime_scope
+            .channel_id()
+            .ok_or("missing G23 channel")?;
+        let (controller, pin) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .ok_or("missing G23 native content")?;
+        sqlx::query(
+            "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation)
+             VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 4)",
+        )
+        .bind(world.as_bytes().as_slice())
+        .bind(channel.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
+        h.root
+            .record_content_activation(&ContentActivationRequest {
+                world_id: world,
+                channel_id: channel,
+                activation_sequence: 1,
+                previous_sequence: None,
+                server_artifact_digest: native.source_digest(),
+                client_artifact_digest: pin.identity().client_artifact_digest(),
+                frame_binding_digest: pin.frame_binding().digest(),
+            })
+            .await
+            .map_err(f::debug)?;
+
+        let seal = h.recovery.seal_current().map_err(f::debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(f::debug)?;
+        let prepare = |fund_promotion| {
+            prepare_items(
+                &h.root,
+                &authority,
+                &h.node,
+                fence,
+                native,
+                tokio::time::Instant::now() + Duration::from_secs(15),
+                fund_promotion,
+            )
+        };
+        let outcome = if let Some(skip) = stall_after {
+            prepare(false).await?;
+            let (outcome, stalled) = with_single_stalled_commit_response(skip, prepare(true)).await;
+            assert!(
+                stalled,
+                "expected a late COMMIT acknowledgement for G23: {outcome:?}"
+            );
+            outcome
+        } else {
+            prepare(true).await
+        };
+        assert_eq!(
+            prepare_reply(fence.game_session_id.as_bytes(), "g23", outcome),
+            expected_reply
+        );
+        let inventory = h
+            .root
+            .read_item_use_inventory(&authority, &h.node, fence)
+            .await
+            .map_err(f::debug)?;
+        let bag = inventory.backpack.ok_or("missing G23 backpack")?;
+        let quantities: Vec<_> = bag
+            .entries
+            .iter()
+            .filter(|entry| entry.item.definition.production_key == Coin::Crystal.production_key())
+            .map(|entry| entry.item.quantity)
+            .collect();
+        let expected: &[_] = if expected_reply == "qualified" {
+            &[2]
+        } else {
+            &[]
+        };
+        assert_eq!(quantities, expected);
+        Ok(())
     }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {

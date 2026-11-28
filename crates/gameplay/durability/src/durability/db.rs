@@ -2269,17 +2269,45 @@ pub(super) async fn commit_semantic_read(
 
 #[cfg(any(test, feature = "test-support"))]
 tokio::task_local! {
-    static STALL_COMMIT_RESPONSE: std::cell::Cell<bool>;
+    static STALL_COMMIT_RESPONSE: std::cell::Cell<CommitStall>;
+}
+
+#[cfg(any(test, feature = "test-support"))]
+#[derive(Clone, Copy)]
+enum CommitStall {
+    EveryCommit { reached: bool },
+    After(usize),
+    Finished,
 }
 
 /// Withhold a successful COMMIT response until the pass deadline cancels it.
 /// The flag reports whether the operation reached the injected stall.
 #[cfg(any(test, feature = "test-support"))]
 pub async fn with_stalled_commit_response<F: Future>(operation: F) -> (F::Output, bool) {
+    with_commit_stall(CommitStall::EveryCommit { reached: false }, operation).await
+}
+
+/// Withhold one successful COMMIT response after `skip` ordinary commits.
+#[cfg(any(test, feature = "test-support"))]
+pub async fn with_single_stalled_commit_response<F: Future>(
+    skip: usize,
+    operation: F,
+) -> (F::Output, bool) {
+    with_commit_stall(CommitStall::After(skip), operation).await
+}
+
+#[cfg(any(test, feature = "test-support"))]
+async fn with_commit_stall<F: Future>(stall: CommitStall, operation: F) -> (F::Output, bool) {
     STALL_COMMIT_RESPONSE
-        .scope(std::cell::Cell::new(false), async {
+        .scope(std::cell::Cell::new(stall), async {
             let result = operation.await;
-            (result, STALL_COMMIT_RESPONSE.with(std::cell::Cell::get))
+            let reached = STALL_COMMIT_RESPONSE.with(|stall| {
+                matches!(
+                    stall.get(),
+                    CommitStall::EveryCommit { reached: true } | CommitStall::Finished
+                )
+            });
+            (result, reached)
         })
         .await
 }
@@ -2287,7 +2315,24 @@ pub async fn with_stalled_commit_response<F: Future>(operation: F) -> (F::Output
 async fn commit_transaction(transaction: Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
     transaction.commit().await?;
     #[cfg(any(test, feature = "test-support"))]
-    if STALL_COMMIT_RESPONSE.try_with(|reached| reached.set(true)).is_ok() {
+    if STALL_COMMIT_RESPONSE
+        .try_with(|stall| match stall.get() {
+            CommitStall::EveryCommit { .. } => {
+                stall.set(CommitStall::EveryCommit { reached: true });
+                true
+            }
+            CommitStall::After(0) => {
+                stall.set(CommitStall::Finished);
+                true
+            }
+            CommitStall::After(skip) => {
+                stall.set(CommitStall::After(skip - 1));
+                false
+            }
+            CommitStall::Finished => false,
+        })
+        .unwrap_or(false)
+    {
         std::future::pending::<()>().await;
     }
     Ok(())

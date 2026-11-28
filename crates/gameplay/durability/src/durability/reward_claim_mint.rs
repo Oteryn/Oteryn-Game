@@ -1058,14 +1058,36 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         candidate: &mut RewardClaimMintCandidate,
     ) -> Result<Option<CommittedRewardClaimMint>> {
+        self.reconcile_reward_claim_mint_with_deadline(authority, candidate, None)
+            .await
+    }
+
+    /// Qualification recovery can wait for the holder without repeating the work-unit charge.
+    pub async fn reconcile_reward_claim_mint_waiting(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        candidate: &mut RewardClaimMintCandidate,
+        deadline: tokio::time::Instant,
+    ) -> Result<Option<CommittedRewardClaimMint>> {
+        self.reconcile_reward_claim_mint_with_deadline(authority, candidate, Some(deadline))
+            .await
+    }
+
+    async fn reconcile_reward_claim_mint_with_deadline(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        candidate: &mut RewardClaimMintCandidate,
+        deadline: Option<tokio::time::Instant>,
+    ) -> Result<Option<CommittedRewardClaimMint>> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
-        self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate, None)
+        self.charge_reward_claim_mint_work_unit(recovery.clone(), candidate, deadline)
             .await?;
         let command = candidate.request.command;
         let binding = candidate.intent_binding;
-        self.try_issue_semantic_pass()?
+        self.reward_claim_pass(deadline)
+            .await?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;

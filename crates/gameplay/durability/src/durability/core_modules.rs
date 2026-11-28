@@ -175,7 +175,7 @@ pub mod world_reset;
 
 pub use admission_journal::AdmissionReconnectJournal;
 #[cfg(any(test, feature = "test-support"))]
-pub use db::with_stalled_commit_response;
+pub use db::{with_single_stalled_commit_response, with_stalled_commit_response};
 pub use db::{
     DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
     IssuedSemanticPass, ROOT_RECOVERY_WINDOW, with_holder_trace,
