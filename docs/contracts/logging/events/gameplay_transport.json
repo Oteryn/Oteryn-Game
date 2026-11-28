@@ -281,7 +281,7 @@
         "stage"
       ],
       "codes": [],
-      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
+      "note": "Closed logout refusal stage with the connection trace in the log envelope. A release_retry_lifted summary is followed by one detail stage: release_condition_save, release_death_save, release_drome_sync, release_familiar_save, release_fence_wait, release_gourmet_checkpoint, release_item_effects, release_kill_rewards, release_offline_training, release_spell_training, release_timed_equipment, or release_wheel_or_monk_save. No account, session or authentication material."
     },
     {
       "event": "logout_unknown",
@@ -310,6 +310,17 @@
       ],
       "codes": [],
       "note": "Successfully encoded domain 17 map replacement (not delivery): exact encoded nonempty tile/item counts and native map origin, including whether its tile has items. Join delivery is established by snapshot_flushed. No player identity, item identity or payload."
+    },
+    {
+      "event": "monster_target_protection_started",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "kind",
+        "started_owner_us"
+      ],
+      "codes": [],
+      "note": "A fresh_login or reentry window was installed for a traced connection. The log envelope carries the server Unix timestamp in milliseconds and the connection trace. started_owner_us is the exact monotonic owner time used to set the deadline. No player or session identifiers."
     },
     {
       "event": "native_owner_turn",

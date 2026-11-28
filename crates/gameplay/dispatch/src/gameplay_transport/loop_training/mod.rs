@@ -5,7 +5,7 @@ pub(in crate::gameplay_transport) use exercise::EXERCISE_READBACK_BARRIER;
 pub(super) mod wire;
 use super::capabilities::OfferedCapability;
 use super::connection::{AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
-use super::{ComposedFreshAdmission, item_view::ItemKey};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, item_view::ItemKey};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::exercise_training::ExerciseDummyKey;
 use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -19,6 +19,12 @@ use oteryn_protocol_oteryn::loop_training::{
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
+
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static TRAINING_RELEASE_FENCE_BARRIER:
+        Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
 
 pub(in crate::gameplay_transport) struct TrainingRuntime {
     pub config: Option<Arc<TrainingRates>>,
@@ -254,7 +260,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if selected.is_some_and(|(bound, _)| bound != item) {
             return None;
         }
-        let fence = self.training_fence(item).await?;
+        #[cfg(test)]
+        if let Ok(barrier) = TRAINING_RELEASE_FENCE_BARRIER.try_with(Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        // These reads prepare the release but write nothing. A busy holder
+        // can recover within the command budget without repeating any save.
+        let fence = AdmissionRetryBudget::for_command(self.root)
+            .retry_durability("offline_training", || self.training_fence_durable(item))
+            .await
+            .ok()
+            .flatten()?;
         let selected = selected.map(|(_, skill)| skill);
         let house = if let Some(actor) = admitted.runtime_actor {
             let runtime = self.runtime.lock().await;
