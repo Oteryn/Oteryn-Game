@@ -4,8 +4,7 @@
 //! 1. Walk from the provisioned character's saved position to an authored
 //!    `oteryn:creature.rat`; expect every STEP reply to move by the compiled map.
 //! 2. Send ATTACK_TARGET and expect acceptance, damage deltas, target removal,
-//!    and a corpse projection. Repeat by ordinary hunting when the chance roll
-//!    legitimately produces an empty corpse, until there is loot.
+//!    and a corpse projection. An empty roll cannot qualify pickup.
 //! 3. Send USE for the corpse handle; expect a committed reply and an open-
 //!    container delta. Assert every rolled definition belongs to the production
 //!    rat table and every count is within that entry's admitted min..=max range.
@@ -98,7 +97,7 @@ fn rat_ranges() -> TestResult<BTreeMap<u32, (u32, u32)>> {
         .collect()
 }
 
-fn quantity(client: &DevClientSession, definition: u32) -> TestResult<u64> {
+pub(super) fn quantity(client: &DevClientSession, definition: u32) -> TestResult<u64> {
     Ok(client
         .inventory()
         .ok_or("inventory-snapshot-missing")?
@@ -109,19 +108,63 @@ fn quantity(client: &DevClientSession, definition: u32) -> TestResult<u64> {
         .sum())
 }
 
-async fn logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    verdict::Harness::global().bounded_wait(deadline, "logout-combat-lock");
     loop {
-        let reply = client.session_mut().logout().await?;
-        if reply.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-            return Ok(());
+        let combat = client
+            .session_mut()
+            .combat_state()
+            .ok_or("step-6-missing-combat-state-before-logout")?;
+        if !combat.in_fight {
+            break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step-6-logout-timeout-observed={reply:?}").into());
+            return Err("step-6-combat-lock-did-not-expire".into());
         }
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step-6-logout-refused-observed={reply:?}").into());
+    }
+    Ok(())
+}
+
+pub(super) async fn prepare_rat_attack(client: &mut DevClientSession) -> TestResult {
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
+
+    let wanted = FightModes {
+        fight_mode: FightMode::Offensive,
+        chase: ChaseMode::Chase,
+        secure: true,
+    };
+    let before = client
+        .session_mut()
+        .combat_state()
+        .ok_or("step-2-missing-combat-state-before-mode-change")?
+        .modes;
+    if before == wanted {
+        return Err("step-2-combat-modes-already-match".into());
+    }
+    let reply = client.session_mut().set_fight_modes(&wanted).await?;
+    if reply.disposition != AttackIntentDisposition::Ok {
+        return Err(format!("step-2-offensive-chase-mode-refused observed={reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while client
+        .session_mut()
+        .combat_state()
+        .is_none_or(|state| state.modes != wanted)
+    {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("step-2-offensive-chase-mode-missing observed={reply:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+    }
+    Ok(())
 }
 
 fn shows_damage(detail: EntityDetail) -> bool {
@@ -135,12 +178,27 @@ pub(super) async fn kill_and_open(
     client: &mut DevClientSession,
     name: &str,
 ) -> TestResult<Vec<ItemEntry>> {
+    Ok(kill_and_open_tracked(client, name, None).await?.entries)
+}
+
+struct OpenedCorpse {
+    target: oteryn_dev_client::EntityRef,
+    corpse: oteryn_dev_client::EntityRef,
+    entries: Vec<ItemEntry>,
+}
+
+async fn kill_and_open_tracked(
+    client: &mut DevClientSession,
+    name: &str,
+    selected: Option<oteryn_dev_client::EntityRef>,
+) -> TestResult<OpenedCorpse> {
     let position = client.world_spatial().actor_position;
     let target = client
         .world_entities()
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && selected.is_none_or(|target| entry.entity == target)
                     && entry.display_name.is_some_and(|label| label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name)))
                     && entry.position.floor == position.floor
                     && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y)) <= 1
@@ -200,7 +258,11 @@ pub(super) async fn kill_and_open(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         if let Some(view) = client.open_container().filter(|view| view.container_handle == Some(handle)) {
-            return Ok(view.entries.clone());
+            return Ok(OpenedCorpse {
+                target: target.entity,
+                corpse: corpse.entity,
+                entries: view.entries.clone(),
+            });
         }
         if tokio::time::Instant::now() >= deadline {
             return Err("step-3-open-timeout-observed=no-container-delta".into());
@@ -217,6 +279,25 @@ pub(super) async fn travel_to_named_spawn(
     creature: &str,
     name: &str,
 ) -> TestResult {
+    travel_to_spawn_with_steps(client, world, spawns, creature, name, false).await.map(drop)
+}
+
+pub(super) async fn travel_to_rat(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    travel_to_spawn_with_steps(client, world, spawns, "oteryn:creature.rat", "Rat", true).await
+}
+
+async fn travel_to_spawn_with_steps(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+    name: &str,
+    strict: bool,
+) -> TestResult<oteryn_dev_client::EntityRef> {
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -239,7 +320,12 @@ pub(super) async fn travel_to_named_spawn(
             })
     })
     .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
-    walk(client, world, &path).await?;
+    if strict {
+        walk_rat_route(client, world, &path).await?;
+    } else {
+        walk(client, world, &path).await?;
+    }
+    let mut selected = None;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;
         let target = client
@@ -249,6 +335,7 @@ pub(super) async fn travel_to_named_spawn(
                     .iter()
                     .filter(|entry| {
                         entry.kind == oteryn_dev_client::EntityKind::Creature
+                            && selected.is_none_or(|target| entry.entity == target)
                             && entry.position.floor == here.floor
                             && entry.display_name.is_some_and(|label| label.as_str().is_ok_and(|shown| shown.eq_ignore_ascii_case(name)))
                     })
@@ -262,17 +349,78 @@ pub(super) async fn travel_to_named_spawn(
             })
             .copied()
             .ok_or_else(|| format!("spawn route has no visible {name}"))?;
+        if strict {
+            selected = Some(target.entity);
+        }
+        let target_id = target.entity;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
         })
         .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
-            return Ok(());
+            return Ok(target_id);
         };
-        walk(client, world, &[*direction]).await?;
+        if strict {
+            walk_rat_route(client, world, &[*direction]).await?;
+        } else {
+            walk(client, world, &[*direction]).await?;
+        }
     }
     Err("could not approach a live creature within the route budget".into())
+}
+
+async fn walk_rat_route(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+) -> TestResult {
+    let mut remaining = VecDeque::from(path.to_vec());
+    let mut detours = 0;
+    while let Some(direction) = remaining.pop_front() {
+        let before = client.world_spatial().actor_position;
+        let from = tile(before)?;
+        let expected = destination(world, from, direction).ok_or("rat route step has no landing")?;
+        let outcome = client.step(direction).await?;
+        if outcome.disposition == StepDisposition::Blocked && client.world_spatial().actor_position == before {
+            let occupant = client.world_entities().and_then(|entities| {
+                entities.iter().find(|entry| entry.kind == EntityKind::Creature && tile(entry.position).ok() == Some(expected))
+            }).copied();
+            let Some(occupant) = occupant else {
+                return Err(format!("BLOCKER-SERVER rat-route blocked with no creature frame from={from:?} to={expected:?} result={outcome:?}").into());
+            };
+            if detours >= 4 {
+                return Err("rat route exhausted its four tracked-occupant detours".into());
+            }
+            detours += 1;
+            client.service_liveness(Duration::from_millis(100)).await?;
+            let current = client.world_entities().and_then(|entities| entities.get(&occupant.entity)).map(|entry| entry.position);
+            evidence(&format!("W22A_MOVE_BLOCKED creature={:?} before={:?} current={current:?} reply={outcome:?}", occupant.entity, occupant.position));
+            if current != Some(occupant.position) {
+                remaining.push_front(direction);
+                continue;
+            }
+            remaining = route_around_occupant(
+                from,
+                expected,
+                &remaining,
+                |at| client.world_entities().is_some_and(|entities| entities.iter().all(|entry| tile(entry.position).ok() != Some(at))),
+                |at, step| destination(world, at, step),
+            )
+            .ok_or("rat route has no detour around the tracked creature")?
+            .into();
+            continue;
+        }
+        if outcome.disposition != StepDisposition::Moved
+            || outcome.world_spatial_delta.is_none()
+            || tile(client.world_spatial().actor_position)? != expected
+        {
+            return Err(format!("rat route step mismatch from={from:?} expected={expected:?} reply={outcome:?}").into());
+        }
+        verdict::Harness::global().progress("walk");
+        client.take_events();
+    }
+    Ok(())
 }
 
 pub(super) async fn move_loot(client: &mut DevClientSession, entries: &[oteryn_protocol_oteryn::item_view::ItemEntry]) -> TestResult {
@@ -298,55 +446,102 @@ pub(super) async fn move_loot(client: &mut DevClientSession, entries: &[oteryn_p
     Ok(())
 }
 
+async fn verify_rat_roll(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+    opened: &OpenedCorpse,
+) -> TestResult {
+    const RAT: &str = "oteryn:creature.rat";
+    let death = committed_hunt_death(
+        client,
+        clients,
+        Some(clients.characters[1]),
+        RAT,
+        opened.target,
+        tokio::time::Instant::now() + Duration::from_secs(5),
+    )
+    .await?;
+    let actor = death.actor;
+    let channel = actor.channel_id().ok_or("step-3-rat-death-outside-channel")?;
+    if opened.corpse.identity != actor.corpse_identity() {
+        return Err("step-3-opened-corpse-does-not-belong-to-attacked-rat".into());
+    }
+    let seed = crate::combat::LootPlanDeathKey::new(
+        *actor.world_id().as_bytes(),
+        *channel.as_bytes(),
+        actor.scope_generation().get(),
+        actor.actor_local_id(),
+        actor.actor_local_generation(),
+    );
+    let row = rewards.row(RAT).map_err(|error| format!("step-3-rat-loot-definition: {error:?}"))?;
+    let reference = row.loot_table_ref.as_ref().ok_or("step-3-rat-loot-table-missing")?;
+    // These are the admitted estimates from the retained Global Rat loot sample.
+    // Source: https://tibia.fandom.com/wiki/Loot_Statistics:Rat
+    let rates = BTreeMap::from([
+        ("oteryn:item.tibia.i3031", (1, 4, Some(903_036))),
+        ("oteryn:item.tibia.i3607", (1, 1, Some(356_433))),
+    ]);
+    for entry in &row.loot_table.entries {
+        if rates.get(entry.item.production_key.as_str())
+            != Some(&(entry.min_count, entry.max_count, entry.probability_ppm))
+        {
+            return Err(format!("step-3-wrong-base-loot-entry: {entry:?}").into());
+        }
+    }
+    if row.loot_table.entries.len() != rates.len() {
+        return Err("step-3-wrong-base-loot-table-size".into());
+    }
+    let plan = crate::combat::plan_creature_loot(seed, reference, &row.loot_table)
+        .map_err(|error| format!("step-3-rat-loot-plan: {error:?}"))?;
+    let index = provisioning::item_index()?;
+    let mut expected = BTreeMap::new();
+    for entry in plan.entries {
+        let reference = index
+            .definition_ref(&entry.item.family, &entry.item.production_key, &entry.item.revision_ref)
+            .ok_or("step-3-rat-loot-plan-item-missing")?;
+        *expected.entry(reference).or_insert(0_u64) += u64::from(entry.quantity);
+    }
+    let mut observed = BTreeMap::new();
+    for entry in &opened.entries {
+        *observed.entry(entry.item_definition_ref).or_insert(0_u64) += u64::from(entry.count.get());
+    }
+    if observed != expected {
+        return Err(format!("step-3-rat-roll-mismatch expected={expected:?} observed={observed:?}").into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let generation = load_world_generation(
         bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let world = &generation.bundle;
     let mut client = connect_world(clients, 0xb2).await?;
-    travel_to_named_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat", "Rat").await?;
-    row.pass("walk-to-rat", "STEP replies moved to authored rat spawn");
-    let mut attempts = 1_u8;
-    let mut entries = kill_and_open(&mut client, "Rat").await?;
+    let start = client.world_spatial().actor_position;
+    let target = travel_to_rat(&mut client, world, &metadata.spawns).await?;
+    let arrived = client.world_spatial().actor_position;
+    if arrived == start {
+        return Err("step-1-rat-route-did-not-move-the-player".into());
+    }
+    row.pass("walk-to-rat", format!("from={start:?} to={arrived:?} rat={target:?}"));
+    prepare_rat_attack(&mut client).await?;
+    let opened = kill_and_open_tracked(&mut client, "Rat", Some(target)).await?;
     row.pass(
         "attack-and-death",
         "ATTACK accepted and damage/removal/corpse frames received",
     );
-    while entries.is_empty() && attempts < 4 {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-        loop {
-            client.service_liveness(Duration::from_millis(250)).await?;
-            client.take_events();
-            if travel_to_named_spawn(
-                &mut client,
-                world,
-                &metadata.spawns,
-                "oteryn:creature.rat",
-                "Rat",
-            )
-            .await
-            .is_ok()
-            {
-                break;
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(format!(
-                    "step-3-empty-chance-roll-attempts={attempts}-observed=no-rat-respawn-within-70s"
-                )
-                .into());
-            }
-        }
-        attempts += 1;
-        entries = kill_and_open(&mut client, "Rat").await?;
-    }
-    if entries.is_empty() {
-        return Err(format!("step-3-empty-chance-roll-observed-after-attempts={attempts}").into());
-    }
+    verify_rat_roll(&mut client, clients, &generation.rewards, &opened).await?;
+    let entries = opened.entries;
+    let item = *entries
+        .first()
+        .ok_or("step-3-empty-first-roll-cannot-qualify-pickup")?;
     let ranges = rat_ranges()?;
     for entry in &entries {
         let (min, max) = ranges
@@ -361,9 +556,17 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         }
     }
     row.pass("base-roll-bounds", format!("entries={} all definitions/counts admitted", entries.len()));
-    let item = entries[0];
     let definition = item.item_definition_ref.get();
     let before = quantity(&client, definition)?;
+    let expected_quantity = before + u64::from(item.count.get());
+    let mut expected_corpse = client
+        .open_container()
+        .ok_or("step-4-pre-move-corpse-view-missing")?
+        .clone();
+    if expected_corpse.entries != entries {
+        return Err("step-4-pre-move-corpse-view-changed".into());
+    }
+    expected_corpse.entries.remove(0);
     let moved = client
         .move_item(&oteryn_dev_client::ItemMoveIntent {
             source: item.handle,
@@ -374,27 +577,41 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("step-4-item-move-refused-observed={moved:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while quantity(&client, definition)? != before + u64::from(item.count.get()) {
+    while quantity(&client, definition)? != expected_quantity
+        || client.open_container() != Some(&expected_corpse)
+    {
         if tokio::time::Instant::now() >= deadline {
-            return Err("step-4-observed-missing-inventory-delta".into());
+            return Err("step-4-observed-inventory-or-corpse-mismatch".into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
-    if client.open_container().is_none_or(|view| view.entries.iter().any(|entry| entry.handle == item.handle)) {
-        return Err("step-4-observed-missing-corpse-removal-delta".into());
-    }
-    row.pass("loot-pickup", format!("definition={definition} count={}", item.count));
+    row.pass(
+        "loot-pickup",
+        format!("definition={definition} count={}", item.count),
+    );
+    let inventory_after_pickup = client
+        .inventory()
+        .ok_or("step-5-inventory-missing")?
+        .clone();
     let refused = client
         .move_item(&oteryn_dev_client::ItemMoveIntent {
             source: item.handle,
             destination: ItemMoveDestination::MainBackpack,
         })
         .await?;
-    if refused.outcome != ItemMoveOutcome::Stale || quantity(&client, definition)? != before + u64::from(item.count.get()) {
-        return Err(format!("step-5-expected-stale-with-no-duplication-observed={refused:?}").into());
+    if refused.outcome != ItemMoveOutcome::Stale
+        || client.inventory() != Some(&inventory_after_pickup)
+        || client.open_container() != Some(&expected_corpse)
+    {
+        return Err(
+            format!("step-5-expected-stale-with-no-duplication-observed={refused:?}").into(),
+        );
     }
-    row.pass("stale-move-refusal", format!("outcome={:?}", refused.outcome));
+    row.pass(
+        "stale-move-refusal",
+        format!("outcome={:?}", refused.outcome),
+    );
     let saved_position = client.world_spatial().actor_position;
     let old_session = client.join_snapshot().game_session_id;
     let saved_quantity = quantity(&client, definition)?;

@@ -1579,6 +1579,30 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   for knob in NODE_BOOT_E2E_ONLY NODE_BOOT_NO_FAILFAST NODE_BOOT_NO_PROGRESS_S; do
     [[ -z "${!knob+x}" ]] || test_env+=("$knob=${!knob}")
   done
+  local w22a_capture= w22a_full=0
+  if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+    local groups=${NODE_BOOT_E2E_ONLY:-}
+    groups=",${groups//[[:space:]]/},"
+    local batch=${OTERYN_E2E_ROW_BATCH:-0:15}
+    if [[ "$groups" == ,, || "$groups" == *,rows,* ]]; then
+      if [[ "$batch" == all ]] || python3 - "$batch" 219 <<'PY_W22A_BATCH'
+import re
+import sys
+
+match = re.fullmatch(r"\+?([0-9]+):\+?([0-9]+)", sys.argv[1])
+if match is None:
+    sys.exit(1)
+start, length = map(int, match.groups())
+index = int(sys.argv[2])
+sys.exit(not (start <= index < start + length))
+PY_W22A_BATCH
+      then
+        w22a_capture=$(mktemp -d "$WORK/w22a-capture.XXXXXX")
+        test_env+=("W22A_CAPTURE_DIR=$w22a_capture")
+      fi
+      [[ "$batch" != 20:1 ]] || w22a_full=1
+    fi
+  fi
   local staged_manifest="${NODE_GAMEPLAY_ENV[0]:-}"
   staged_manifest="${staged_manifest#OTERYN_NATIVE_GAMEPLAY_MANIFEST=}"
   local test_dir="$PWD"
@@ -1588,6 +1612,10 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
     # Cargo runs each test with its package directory as the working directory.
     test_dir="$GAME_SOURCE/apps/game-server"
     test_command=("$NODE_BOOT_LIBTEST" "qualification::$qualification" --ignored --exact --nocapture)
+  fi
+  local w22a_seam_log=/dev/null
+  if [[ -n "$w22a_capture" || "$w22a_full" == 1 ]]; then
+    w22a_seam_log=$(mktemp "$WORK/w22a-seam.XXXXXX")
   fi
   (
     cd "$test_dir"
@@ -1606,7 +1634,30 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
       WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
       WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
       "${test_command[@]}"
-  )
+  ) | tee "$w22a_seam_log"
+  if [[ -n "$w22a_capture" ]]; then
+    local witness replay
+    witness=$(sed -n 's/^SEAM_EVIDENCE e2e_capture scenario=W22a\.client status=CAPTURED evidence=//p' "$w22a_seam_log")
+    if [[ "$witness" =~ ^session=[0-9a-f-]{36}\ open_sequence=[0-9]+\ pickup_sequence=[0-9]+$ ]] &&
+      replay=$(W22A_CAPTURE_DIR="$w22a_capture" cargo +1.100.0 test --locked -p oteryn-session --lib \
+        tests::e2e_w22a::e2e_w22a_rat_corpse_loot_replay -- --exact --nocapture) &&
+      grep -Fxq "W22A_REPLAY $witness" <<< "$replay" &&
+      grep -q '^test result: ok\. 1 passed; 0 failed;' <<< "$replay"; then
+      printf '%s\n' "$replay"
+      printf 'SEAM_EVIDENCE e2e_all scenario=W22a.client status=PASS seconds=0.000 evidence=%s\n' "${witness// /_}"
+    else
+      printf '%s\n' "${replay:-}"
+      if ! grep -q '^SEAM_EVIDENCE e2e_all scenario=W22a\.client status=FAIL ' "$w22a_seam_log"; then
+        printf 'SEAM_EVIDENCE e2e_all scenario=W22a.client status=FAIL seconds=0.000 evidence=live-capture-or-replay-failed\n'
+      fi
+      return 1
+    fi
+  fi
+  if [[ "$w22a_full" == 1 ]] &&
+    ! grep -q '^SEAM_EVIDENCE e2e_all scenario=W22a\.full status=\(PASS\|FAIL\) ' "$w22a_seam_log"; then
+    printf 'SEAM_EVIDENCE e2e_all scenario=W22a.full status=FAIL seconds=0.000 evidence=missing-row-verdict\n'
+    return 1
+  fi
 }
 
 graceful_shutdown() { # ready=false first, socket removed
