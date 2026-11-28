@@ -916,6 +916,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=cast observed=vitals-absent")?;
     caster.take_events();
     observer.take_events();
+    let cast_sent = tokio::time::Instant::now();
     let cast = caster
         .cast_spell(spell_index(&book)?, SpellTarget::None, false)
         .await?;
@@ -941,7 +942,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let active = invisibility_remaining(&mut caster)
         .await?
         .ok_or("C17b active condition absent after cast")?;
-    if !(195_000..=200_000).contains(&active) {
+    let elapsed_ms = i64::try_from(cast_sent.elapsed().as_micros().div_ceil(1_000))?;
+    let minimum = 195_000.max(200_000 - elapsed_ms);
+    if !(minimum..=200_000).contains(&active) {
         return Err(
             format!("C17b initial invisibility duration {active}ms outside Global range").into(),
         );
@@ -999,19 +1002,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }).await?;
     full_e2ef5::with_observer_liveness(&mut observer, async {
         if caster.session_mut().combat_state().is_none_or(|state| state.target != Some(rat)) {
-            live_rat_tile(&caster, rat, "reselect-before-clear")?;
-            let selected = caster.session_mut().attack_target(Some(&rat)).await?;
-            require_mechanic_acceptance(selected.status, "C17b exact Rat reselection")?;
-            if selected.disposition != AttackIntentDisposition::Ok {
-                return Err(format!("C17b exact Rat reselection refused: {selected:?}").into());
-            }
-            let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
-            while caster.session_mut().combat_state().is_none_or(|state| state.target != Some(rat)) {
-                if tokio::time::Instant::now() >= deadline {
-                    return Err("C17b exact Rat reselection did not project the target".into());
-                }
-                caster.service_liveness(Duration::from_millis(50)).await?;
-            }
+            return Err("C17b first Rat selection was absent before clear".into());
         }
         let clear = caster.session_mut().attack_target(None).await?;
         require_mechanic_acceptance(clear.status, "C17b Rat target clear")?;
@@ -1055,7 +1046,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let position = caster.world_spatial().actor_position;
     let vitals = caster.actor_vitals().ok_or("C17b pre-logout vitals missing")?;
     let durable_vitals = (vitals.mana, vitals.soul);
-    if durable_vitals.0 >= before.mana || durable_vitals.1 != before.soul {
+    if durable_vitals != (paid.value.mana, paid.value.soul) {
         return Err(format!("C17b pre-logout resources disagree with paid cast: mana={} soul={}", durable_vitals.0, durable_vitals.1).into());
     }
     let logout_sent = Instant::now();
