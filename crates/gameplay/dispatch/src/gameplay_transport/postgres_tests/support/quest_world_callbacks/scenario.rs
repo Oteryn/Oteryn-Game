@@ -164,7 +164,9 @@ fn scenario_case(
     let hot_cuisine_books = name == "m42-hot-cookbooks";
     let katana_lever = name == "katana-hidden-lever";
     let hunter_hymn = name == "hunter-hymn-piano";
-    let native_crop = hot_cuisine_books || pinned_qc_world
+    use super::super::questpc7_eligibility_fixtures::{MAKE_BELIEVE_CASE, POCARO, WAYLAND};
+    let make_believe = name == MAKE_BELIEVE_CASE;
+    let native_crop = make_believe || hot_cuisine_books || pinned_qc_world
         || katana_lever
         || hunter_hymn
         || eroth_mirror
@@ -1202,7 +1204,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if hot_cuisine_books {
+        let world = if make_believe {
+            super::super::qc_pinned_world::world_near(
+                generation.native_gameplay().ok_or("Make Believe native policies")?,
+                &[(WAYLAND.x, WAYLAND.y), (POCARO.x, POCARO.y)],
+            )?
+        } else if hot_cuisine_books {
             use crate::map::overlay::TilePos;
             super::super::source_world_crop::world(
                 TilePos { x: 33064, y: 32529, floor: -5 },
@@ -1626,8 +1633,8 @@ fn scenario_case(
             new_frontier_journey_fixtures::NAME | new_frontier_journey_fixtures::POLISHER_RETRY => Some(8),
             super::super::classic_quest_parity_fixtures::NPC_CASE => Some(8),
             "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
-            "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high"
-                | "questpc7-eligibility-make-believe-high" => Some(1000),
+            "questpc7-eligibility-high" | "questpc7-eligibility-outfit-high" => Some(1000),
+            MAKE_BELIEVE_CASE => Some(300),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
             "questpc7-grave" => Some(250),
@@ -2052,7 +2059,7 @@ fn scenario_case(
         .map_err(debug)?;
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
         if koshei || alawars_vault || (frontier && !recover_bait)
-            || name == "questpc7-eligibility-make-believe-high"
+            || make_believe
         {
             let journal = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
             owner.quest_log_content = Some(

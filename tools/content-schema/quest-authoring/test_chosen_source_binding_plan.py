@@ -28,7 +28,6 @@ REGISTERED_TALK_STAGES = {(key, "s1") for key in REGISTERED_TALK_QUESTS} | {
     ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
     ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
     ("oteryn:quest.authored.make_believe_quest", "s1"),
-    ("oteryn:quest.authored.make_believe_quest", "s3"),
     ("oteryn:quest.shadows_of_yalahar_quest", "s1"),
     ("oteryn:quest.the_shattered_isles_quest", "s1"),
     ("oteryn:quest.the_shattered_isles_quest", "s3"),

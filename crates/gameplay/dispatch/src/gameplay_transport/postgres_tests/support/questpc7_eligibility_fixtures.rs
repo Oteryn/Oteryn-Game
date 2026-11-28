@@ -4,6 +4,12 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
+use oteryn_gameplay_quests::quest::world_callbacks::Position;
+
+pub(super) const MAKE_BELIEVE_CASE: &str = "questpc7-eligibility-make-believe-high";
+pub(super) const WAYLAND: Position = Position { x: 32961, y: 32076, floor: -6 };
+pub(super) const POCARO: Position = Position { x: 34073, y: 32504, floor: -6 };
+
 pub(super) async fn complete_parent_key(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -88,7 +94,7 @@ pub(super) async fn exercise(
         .fetch_one(&h.pool)
         .await?;
     eprintln!("QUESTPC7_ELIGIBILITY POSTGRES_STARTED version={version}");
-    if name == "questpc7-eligibility-make-believe-high" {
+    if name == MAKE_BELIEVE_CASE {
         return make_believe_contacts(owner, admitted, h).await;
     }
     let [elane, wayland] = super::classic_quests_fixtures::install(
@@ -297,10 +303,11 @@ async fn make_believe_contacts(
     const START: &str = "oteryn:quest-reward/make-believe/accept";
     const READY: &str = "oteryn:quest-reward/make-believe/storehouse-ready";
     const DEFENCE: &str = "oteryn:quest-reward/make-believe/salgadara-defence";
-    let [wayland, pocaro] = super::classic_quests_fixtures::install(
+    let [wayland, pocaro] = super::classic_quests_fixtures::install_positions(
         owner,
         admitted,
         ["oteryn:npc.wayland_smythers", "oteryn:npc.mayor_pocaro"],
+        [WAYLAND, POCARO],
     )
     .await?;
     let mut supported = admitted.continuity.selected_capabilities.as_slice().to_vec();
@@ -310,20 +317,15 @@ async fn make_believe_contacts(
             .ok_or("NPC capability selection")?;
     let actor = admitted.runtime_actor.ok_or("Make Believe player")?;
     let session = admitted.game_session_id;
+    let entry = owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
+    assert_eq!((entry.x, entry.y, entry.floor), (i32::from(WAYLAND.x) - 1, i32::from(WAYLAND.y), -i16::from(WAYLAND.floor)));
     let words = [
-        (pocaro, "hi"),
-        (pocaro, "help"),
-        (pocaro, "bye"),
         (wayland, "hi"),
         (wayland, "further"),
         (wayland, "yes"),
         (wayland, "infiltration"),
         (wayland, "yes"),
-        (wayland, "further"),
-        (wayland, "yes"),
-        (wayland, "bye"),
         (pocaro, "hi"),
-        (pocaro, "help"),
         (pocaro, "help"),
     ];
     let commands = words
@@ -343,7 +345,7 @@ async fn make_believe_contacts(
         admitted,
         commands,
         async |index, reply| {
-            if matches!(index, 3..=7 | 11..=12) {
+            if index <= 2 {
                 assert_eq!(decode_npc_intent_result(reply).map_err(debug)?, NpcIntentDisposition::Ok);
             }
             let receipts = sqlx::query_scalar::<_, String>(
@@ -357,12 +359,7 @@ async fn make_believe_contacts(
             .bind(DEFENCE)
             .fetch_all(&h.pool)
             .await?;
-            let expected: &[&str] = match index {
-                0..=4 => &[],
-                5..=6 => &[START],
-                7..=11 => &[START, READY],
-                _ => &[START, READY, DEFENCE],
-            };
+            let expected: &[&str] = if index < 2 { &[] } else { &[START] };
             assert_eq!(receipts, expected, "progress after NPC command {index}");
             let QuestLogObservation::Changed(journal) =
                 owner.quest_log_observation(actor, session, None).await
@@ -375,6 +372,16 @@ async fn make_believe_contacts(
                 "journal visibility follows mission acceptance",
             );
             assert!(journal.copy.quest_state(QUEST).is_none_or(|state| !state.completed));
+            assert_eq!(
+                journal.copy.track_value("oteryn:quest-progress/make-believe/story").unwrap_or(0),
+                i64::from(index >= 2),
+                "the live track stops at acceptance",
+            );
+            assert_eq!(
+                owner.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
+                entry,
+                "the held route keeps the player at the Venore contact",
+            );
             if (index + 1).is_multiple_of(MAX_TALK_INTENTS_PER_SECOND as usize) {
                 // Wait for the production admission window to expire.
                 tokio::time::sleep(std::time::Duration::from_micros(RATE_WINDOW_MICROS)).await;

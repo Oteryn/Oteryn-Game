@@ -45,7 +45,7 @@
               "outfit": null,
               "achievement": null,
               "reply": [
-                "The supply ships leave from a concealed storehouse in Venore. Ask me about {infiltration}."
+                "I've recorded your offer to look for Doctor Marrow. Passage to Thalassara is currently unavailable."
               ],
               "sources": [
                 "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Wayland_Smythers",
@@ -118,147 +118,8 @@
                   "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Wayland_Smythers",
                   "https://tibia.fandom.com/wiki/Make_Believe_Quest"
                 ]
-              },
-              {
-                "key": "oteryn:quest-reward/make-believe/storehouse-briefing",
-                "quest": "oteryn:quest.authored.make_believe_quest",
-                "npc": "oteryn:npc.wayland_smythers",
-                "keywords": [
-                  "infiltration"
-                ],
-                "topic": 0,
-                "next_topic": 111,
-                "storage": [
-                  {
-                    "track": "oteryn:quest-progress/make-believe/story",
-                    "minimum": 1,
-                    "maximum": 1,
-                    "set": 1,
-                    "preserve": true
-                  }
-                ],
-                "requires_premium": true,
-                "take": [],
-                "give": null,
-                "outfit": null,
-                "achievement": null,
-                "reply": [
-                  "Use a cargo crate as cover. Keep moving, avoid the guards and noisy grates, and reach the northwest loading area. Are you ready? {yes} or {no}?"
-                ],
-                "sources": [
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Access_to_Thalassara",
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Wayland_Smythers",
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest"
-                ]
-              },
-              {
-                "key": "oteryn:quest-reward/make-believe/decline-storehouse",
-                "quest": "oteryn:quest.authored.make_believe_quest",
-                "npc": "oteryn:npc.wayland_smythers",
-                "keywords": [
-                  "no"
-                ],
-                "topic": 111,
-                "next_topic": 0,
-                "storage": [
-                  {
-                    "track": "oteryn:quest-progress/make-believe/story",
-                    "minimum": 1,
-                    "maximum": 1,
-                    "set": 1,
-                    "preserve": true
-                  }
-                ],
-                "requires_premium": true,
-                "take": [],
-                "give": null,
-                "outfit": null,
-                "achievement": null,
-                "reply": [
-                  "Speak to me again when you are ready."
-                ],
-                "sources": [
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Wayland_Smythers",
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest"
-                ]
-              },
-              {
-                "key": "oteryn:quest-reward/make-believe/storehouse-ready",
-                "quest": "oteryn:quest.authored.make_believe_quest",
-                "npc": "oteryn:npc.wayland_smythers",
-                "keywords": [
-                  "yes"
-                ],
-                "topic": 111,
-                "next_topic": 0,
-                "storage": [
-                  {
-                    "track": "oteryn:quest-progress/make-believe/story",
-                    "minimum": 1,
-                    "maximum": 1,
-                    "set": 2
-                  }
-                ],
-                "requires_premium": true,
-                "take": [],
-                "give": null,
-                "outfit": null,
-                "achievement": null,
-                "reply": [
-                  "When you reach Thalassara, speak with Mayor Pocaro in Salgadora."
-                ],
-                "sources": [
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Access_to_Thalassara",
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Wayland_Smythers",
-                  "https://tibia.fandom.com/wiki/Make_Believe_Quest"
-                ],
-                "minimum_level": 300,
-                "failure_reply": [
-                  "You need level 300 and Premium to take this assignment."
-                ]
               }
             ]
-          }
-        },
-        {
-          "key": "s3",
-          "completes": false,
-          "trigger": {
-            "kind": "npc_dialogue",
-            "callback": {
-              "key": "oteryn:quest-reward/make-believe/salgadara-defence",
-              "quest": "oteryn:quest.authored.make_believe_quest",
-              "npc": "oteryn:npc.mayor_pocaro",
-              "keywords": [
-                "help"
-              ],
-              "topic": 0,
-              "next_topic": 0,
-              "storage": [
-                {
-                  "track": "oteryn:quest-progress/make-believe/story",
-                  "minimum": 2,
-                  "maximum": 2,
-                  "set": 3
-                }
-              ],
-              "requires_premium": true,
-              "take": [],
-              "give": null,
-              "outfit": null,
-              "achievement": null,
-              "reply": [
-                "Defend Salgadora during the next Moonspawn raid. Help defeat the Juggernaut, then report back here."
-              ],
-              "sources": [
-                "https://tibia.fandom.com/wiki/Make_Believe_Quest/Spoiler#Moonspawn_Juggernaut",
-                "crystal:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/mayor_pocaro.lua:59-69"
-              ],
-              "minimum_level": 300,
-              "failure_reply": [
-                "You need level 300 and Premium to take this assignment."
-              ]
-            }
           }
         }
       ],

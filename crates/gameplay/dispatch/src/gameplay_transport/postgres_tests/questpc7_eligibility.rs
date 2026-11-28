@@ -1,6 +1,7 @@
 //! Reward prerequisites are authoritative and precede every progress/value effect.
 
 use super::TestResult;
+use super::questpc7_eligibility_fixtures::{MAKE_BELIEVE_CASE, WAYLAND};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 fn run_case(name: &'static str) -> TestResult {
@@ -8,13 +9,13 @@ fn run_case(name: &'static str) -> TestResult {
         return Ok(());
     };
     let started = std::time::Instant::now();
-    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, || {
+    let result = super::kill_reward_e2e_fixtures::scenario_thread::run(name, move || {
         super::quest_world_callbacks_fixtures::scenario(
             name,
-            Position {
-                x: 33294,
-                y: 31677,
-                floor: -15,
+            if name == MAKE_BELIEVE_CASE {
+                WAYLAND
+            } else {
+                Position { x: 33294, y: 31677, floor: -15 }
             },
             false,
         )
@@ -46,6 +47,6 @@ fn questpc7_wayland_outfit_repeats_full_menu_with_one_intro_receipt() -> TestRes
 }
 
 #[test]
-fn w16_make_believe_wayland_and_pocaro_advance_once_in_order() -> TestResult {
-    run_case("questpc7-eligibility-make-believe-high")
+fn w16_make_believe_stops_at_venore_acceptance() -> TestResult {
+    run_case(MAKE_BELIEVE_CASE)
 }

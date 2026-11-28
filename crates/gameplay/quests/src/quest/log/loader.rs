@@ -211,9 +211,8 @@ fn make_believe_journal(lowered: &LoweredQuestState) -> Option<QuestLogQuest> {
     let track = lowered
         .catalogue()
         .track("oteryn:quest-progress/make-believe/story")?;
-    // This opening journal remains active while the raid and subsequent stages
-    // are held. Visiting the mayor does not complete either the raid or the quest.
-    let after_briefing = 4;
+    // Keep the journal open and show the hold for any saved opening stage.
+    let end_value = track.max.checked_add(1)?;
     Some(QuestLogQuest {
         key: track.quest.clone(),
         title: "Make Believe".into(),
@@ -222,26 +221,13 @@ fn make_believe_journal(lowered: &LoweredQuestState) -> Option<QuestLogQuest> {
         start: Some((track.key.clone(), 1)),
         hide_when_completed: false,
         missions: vec![QuestLogMission {
-            name: "Salgadara's Defence".into(),
+            name: "Passage to Thalassara".into(),
             track: track.key.clone(),
             start_value: 1,
-            end_value: after_briefing,
-            journal: QuestJournal::PerStage(
-                [
-                    (1, "Ask Wayland about boarding the Thalassara supply ship."),
-                    (
-                        2,
-                        "Cross the storehouse and find Mayor Pocaro in Salgadara.",
-                    ),
-                    (
-                        3,
-                        "Help defeat a Moonspawn Juggernaut during a raid on Salgadara.",
-                    ),
-                ]
-                .into_iter()
-                .map(|(value, text)| (value, JournalText::Text(text.into())))
-                .collect(),
-            ),
+            end_value,
+            journal: QuestJournal::Fixed(JournalText::Text(
+                "Wayland has recorded your offer to help. Passage to Thalassara is currently unavailable.".into(),
+            )),
         }],
     })
 }
