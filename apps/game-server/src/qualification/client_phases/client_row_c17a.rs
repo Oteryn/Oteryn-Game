@@ -95,7 +95,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let ground = world.ground_speed(start);
     let base = oteryn_gameplay_characters::speed::player_base_speed(level)
         .ok_or("C17a invalid base speed")?;
-    check_step(&mut client, outward, neighbor, base, ground).await?;
+    check_step(&mut client, outward, neighbor, base, 100, ground).await?;
     let strong_index = client
         .session_mut()
         .spell_catalog()?
@@ -115,7 +115,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     let _ = cast_and_query(&mut client, "utani hur", 390, 30_000).await?;
-    check_step(&mut client, inward, start, base * 130 / 100, ground).await?;
+    check_step(&mut client, inward, start, base, 130, ground).await?;
     character_prep::grant_premium(&client).await?;
     require_current_premium(&mut client, "after_free_cast").await?;
     wait_support_cooldown(&mut client).await?;
@@ -164,7 +164,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (strong, strong_payload) =
         cast_and_query(&mut client, "utani gran hur", 230, 22_000).await?;
     let strong_sequence = client.last_server_sequence();
-    check_step(&mut client, outward, neighbor, base * 170 / 100, ground).await?;
+    check_step(&mut client, outward, neighbor, base, 170, ground).await?;
     let cast_session = client.join_snapshot().game_session_id;
     let strong_remaining = haste_remaining(&strong)?;
     logout(&mut client).await?;
@@ -180,7 +180,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     {
         return Err("C17a fresh admission did not retain Strong Haste and its mana debit".into());
     }
-    check_step(&mut client, inward, start, base * 170 / 100, ground).await?;
+    check_step(&mut client, inward, start, base, 170, ground).await?;
     logout(&mut client).await?;
 
     let path = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("C17a capture directory missing")?;
@@ -206,14 +206,23 @@ async fn check_step(
     client: &mut oteryn_dev_client::DevClientSession,
     direction: StepDirection,
     destination: TilePos,
-    speed: u32,
+    base: u32,
+    expected_percent: u32,
     ground: u16,
 ) -> TestResult {
     use oteryn_gameplay_characters::speed::StepSpeedTable;
+    let speed = base * expected_percent / 100;
     let expected = StepSpeedTable::embedded()
         .and_then(|table| table.step_duration(u16::try_from(speed).ok()?, ground))
         .ok_or("C17a expected pace unavailable")?;
     let frame = client.step(direction).await?;
+    evidence(&format!(
+        "C17A_STEP direction={direction:?} destination={destination:?} ground_speed={ground} base_speed={base} expected_haste_percent={expected_percent} expected_speed_delta={} expected_step_wait_ms={} accepted_step_wait_ms={} disposition={:?}",
+        speed - base,
+        expected.as_millis(),
+        frame.step_wait_ms,
+        frame.disposition,
+    ));
     if frame.disposition != StepDisposition::Moved
         || tile(client.world_spatial().actor_position)? != destination
         || u128::from(frame.step_wait_ms) != expected.as_millis()
@@ -223,9 +232,6 @@ async fn check_step(
             expected.as_millis(), frame.step_wait_ms, frame.disposition
         ).into());
     }
-    evidence(&format!(
-        "C17A_STEP speed={speed} ground={ground} frame={frame:?}"
-    ));
     Ok(())
 }
 
