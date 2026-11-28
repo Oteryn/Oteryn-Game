@@ -14,6 +14,9 @@ use crate::durability::reward_claim_mint::{
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::interaction_chest_use::{ChestUseError, chest_use_disposition, entry_chest};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(test)]
+use std::time::Duration;
 
 #[derive(Debug, Clone, Copy)]
 enum ChestRefusal {
@@ -246,8 +249,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.settle_native_claim_premium(claim, bound, command)
                 .await;
         }
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+        let mint_started = AtomicBool::new(false);
         Some(
-            tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            chest_use_deadline(deadline, &mint_started, async {
                 let Some(permit) = self.spell_lane_permit().await else {
                     return refusal(
                         command,
@@ -459,7 +464,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.schedule_quest_refresh(command.game_session_id);
                 }
                 #[cfg(test)]
-                hold_reward_mint_checkout_for_test(self.root).await;
+                let contention_started = {
+                    if EXPIRE_REWARD_PREFLIGHT.try_with(|()| ()).is_ok() {
+                        tokio::time::sleep_until(deadline - std::time::Duration::from_millis(750))
+                            .await;
+                    }
+                    hold_reward_mint_checkout_for_test(self.root)
+                };
+                mint_started.store(true, Ordering::Relaxed);
                 let result = self
                     .root
                     .mint_bundle_chest_reward(
@@ -471,17 +483,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &NativeItemWeights(native),
                     )
                     .await;
+                #[cfg(test)]
+                if let Some(started) = contention_started {
+                    REWARD_MINT_HOLDER.with(|state| state.set((None, Some(started.elapsed()))));
+                }
                 drop(permit);
                 // The mint owns the atomic obligation insert. The quest owner applies
                 // it in its revision slot; admission/cadence resumes an unacknowledged
                 // commit without minting the reward or advancing the track twice.
                 if quest_transition.is_some() && result.is_ok() {
-                    self.refresh_quest_session(command.game_session_id, false)
-                        .await;
+                    let _ = tokio::time::timeout_at(
+                        deadline,
+                        self.refresh_quest_session(command.game_session_id, false),
+                    )
+                    .await;
                 }
                 match result {
                     Ok((mint, notice)) => {
-                        super::quest_collections::after_reward(self, actor, command).await;
+                        let _ = tokio::time::timeout_at(
+                            deadline,
+                            super::quest_collections::after_reward(self, actor, command),
+                        )
+                        .await;
                         UseOutcome {
                             earned: super::earned_notice(
                                 self.achievements,
@@ -498,6 +521,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .unwrap_or_else(|_| refusal(command, ChestRefusal::Timeout, UseDisposition::Rejected)),
         )
+    }
+}
+
+async fn chest_use_deadline(
+    deadline: tokio::time::Instant,
+    mint_started: &AtomicBool,
+    operation: impl std::future::Future<Output = UseOutcome>,
+) -> Result<UseOutcome, tokio::time::error::Elapsed> {
+    let mut operation = std::pin::pin!(operation);
+    match tokio::time::timeout_at(deadline, operation.as_mut()).await {
+        // Keep polling the same mint. Checkout and storage have their own
+        // budgets, and only the latter can prove an issued result.
+        Err(_) if mint_started.load(Ordering::Relaxed) => Ok(operation.await),
+        result => result,
     }
 }
 
@@ -531,16 +568,24 @@ fn mint_refusal(command: UseCommand, error: RewardClaimMintError) -> UseOutcome 
 
 #[cfg(test)]
 tokio::task_local! {
-    static REWARD_MINT_HOLDER: std::cell::Cell<(Option<std::time::Duration>, bool)>;
+    static REWARD_MINT_HOLDER: std::cell::Cell<(Option<Duration>, Option<Duration>)>;
+    static EXPIRE_REWARD_PREFLIGHT: ();
+}
+
+#[cfg(test)]
+pub(super) async fn with_expiring_reward_preflight<F: std::future::Future>(
+    operation: F,
+) -> F::Output {
+    EXPIRE_REWARD_PREFLIGHT.scope((), operation).await
 }
 
 #[cfg(test)]
 pub(super) async fn with_busy_reward_mint_holder<F: std::future::Future>(
-    duration: std::time::Duration,
+    duration: Duration,
     operation: F,
-) -> (F::Output, bool) {
+) -> (F::Output, Option<Duration>) {
     REWARD_MINT_HOLDER
-        .scope(std::cell::Cell::new((Some(duration), false)), async {
+        .scope(std::cell::Cell::new((Some(duration), None)), async {
             let result = operation.await;
             (result, REWARD_MINT_HOLDER.with(|state| state.get().1))
         })
@@ -548,18 +593,18 @@ pub(super) async fn with_busy_reward_mint_holder<F: std::future::Future>(
 }
 
 #[cfg(test)]
-async fn hold_reward_mint_checkout_for_test(root: &crate::durability::DurabilityRoot) {
-    let Ok(Some(duration)) = REWARD_MINT_HOLDER.try_with(|state| {
-        let (duration, held) = state.get();
-        state.set((None, held));
-        duration
-    }) else {
-        return;
-    };
-    let Ok(holder) = root.try_issue_semantic_pass() else {
-        return;
-    };
-    REWARD_MINT_HOLDER.with(|state| state.set((None, true)));
+fn hold_reward_mint_checkout_for_test(
+    root: &crate::durability::DurabilityRoot,
+) -> Option<tokio::time::Instant> {
+    let duration = REWARD_MINT_HOLDER
+        .try_with(|state| {
+            let (duration, elapsed) = state.get();
+            state.set((None, elapsed));
+            duration
+        })
+        .ok()??;
+    let holder = root.try_issue_semantic_pass().ok()?;
+    let started = tokio::time::Instant::now();
     tokio::spawn(async move {
         holder
             .run(move |_, _| {
@@ -570,4 +615,5 @@ async fn hold_reward_mint_checkout_for_test(root: &crate::durability::Durability
             })
             .await
     });
+    Some(started)
 }
