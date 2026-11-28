@@ -175,6 +175,10 @@ fn public_enabled(material: &Material) -> bool {
         .is_some_and(|p| p.enabled)
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "keeps the authority, scope, and capture source explicit"
+)]
 async fn capture_once(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
