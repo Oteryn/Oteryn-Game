@@ -102,6 +102,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,
     oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V2,
     oteryn_protocol_oteryn::weapon_proficiency::CAPABILITY_WEAPON_PROFICIENCY_V1,
+    oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1,
     oteryn_protocol_oteryn::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
     // CL26s4: personal boss reward commands.
     oteryn_protocol_oteryn::team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1,
@@ -440,12 +441,12 @@ mod native_advertisement_tests {
             client_build_id: "native-advertisement-regression",
             supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
         })?;
-        assert_eq!(
-            decode_wire_envelope(&bootstrap)?
-                .client_bootstrap()?
-                .supported_capabilities,
-            CLIENT_SUPPORTED_CAPABILITIES
-        );
+        let envelope = decode_wire_envelope(&bootstrap)?;
+        let supported = envelope.client_bootstrap()?.supported_capabilities;
+        assert_eq!(supported, CLIENT_SUPPORTED_CAPABILITIES);
+        assert!(supported.contains(
+            &oteryn_protocol_oteryn::cyclopedia_tracker::CAPABILITY_CYCLOPEDIA_TRACKER_V1
+        ));
         // The real acceptance encoder additionally checks registration and every
         // transitive registry prerequisite when the full advertisement is selected.
         encode_server_accepted(&ServerAcceptedValue {
