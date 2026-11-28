@@ -219,7 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(false);
             };
             let Some(spell_cooldowns) = checkpoint_cooldowns(&state.cooldowns, now) else {
-                return false;
+                return Ok(false);
             };
             CharacterConditionSnapshot {
                 spell_cooldowns,
