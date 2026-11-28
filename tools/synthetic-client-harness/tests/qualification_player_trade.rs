@@ -38,8 +38,8 @@ mod client_world {
             .take()
             .ok_or_else(|| "partner already connected".into())
     }
-    /// Mirrors `client_phases::world::logout_retrying_busy`; the scripted peer never answers Busy.
-    pub(super) async fn logout_retrying_busy(
+    /// Mirrors the fixture logout adapter. The scripted peer always answers on the first attempt.
+    pub(super) async fn fixture_logout_retrying_busy(
         client: &mut DevClientSession,
     ) -> TestResult<(Option<logout::LogoutResult>, String, usize, bool)> {
         let outcome = client
