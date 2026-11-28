@@ -235,12 +235,21 @@ async fn sail(
     if before == arrival {
         return Err(format!("P16 {keyword} departure already at arrival {arrival:?}").into());
     }
-    for text in ["hi", keyword] {
-        let (_, lines) = talk(client, npc, text).await?;
-        evidence(&format!(
-            "P16_FERRY_DIALOGUE route={keyword} sent={text:?} server_sequence={} lines={lines:?}",
-            client.last_server_sequence()
-        ));
+    let (_, greeting) = talk(client, npc, "hi").await?;
+    evidence(&format!(
+        "P16_FERRY_DIALOGUE route={keyword} sent=\"hi\" server_sequence={} lines={greeting:?}",
+        client.last_server_sequence()
+    ));
+    let (_, quote) = talk(client, npc, keyword).await?;
+    evidence(&format!(
+        "P16_FERRY_DIALOGUE route={keyword} sent={keyword:?} server_sequence={} lines={quote:?}",
+        client.last_server_sequence()
+    ));
+    let expected_quote = format!("Do you seek a passage to {keyword} for {fare} gold?");
+    if !matches!(quote.as_slice(), [line] if line.eq_ignore_ascii_case(&expected_quote)) {
+        return Err(
+            format!("P16 {keyword} expected quote={expected_quote:?} observed={quote:?}").into(),
+        );
     }
     tokio::time::sleep(Duration::from_millis(260)).await;
     let payload = wire::encode_npc_talk_intent(&wire::NpcTalkIntent {
@@ -334,6 +343,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     ];
     let initial = gold(&client, &coins)?;
     character_prep::grant_item(&client, 3035, 2).await?;
+    character_prep::grant_premium(&client).await?;
+    evidence("P16_FIXTURE prereqs=premium,200-gold ferry-access-only");
     let preparation_session = client.join_snapshot().game_session_id;
     let logout = client.session_mut().logout().await?;
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
