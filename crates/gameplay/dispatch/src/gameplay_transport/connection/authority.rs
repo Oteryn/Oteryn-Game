@@ -1294,13 +1294,31 @@ pub trait FreshAdmissionAuthority {
         async { crate::gameplay_transport::StaffReply::Rejected }
     }
 
-    /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
-    /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
-    /// domain then shows nothing new and every query is `REJECTED`.
     fn quest_tracker_is_premium(&self, _session: GameSessionId) -> impl Future<Output = bool> {
         async { false }
     }
 
+    fn load_quest_tracker(
+        &self,
+        _admitted: AdmittedSession,
+        _mission_tracking: bool,
+    ) -> impl Future<Output = Option<Vec<crate::durability::quest_tracker::QuestTrackerEntry>>>
+    {
+        std::future::ready(None)
+    }
+
+    fn save_quest_tracker(
+        &self,
+        _admitted: AdmittedSession,
+        _mission_tracking: bool,
+        _selection: Vec<crate::durability::quest_tracker::QuestTrackerEntry>,
+    ) -> impl Future<Output = bool> {
+        std::future::ready(false)
+    }
+
+    /// QUEST-LOG-WIRE-1: the session's quest copy with the quest log content, unless the copy
+    /// still has version `since` (`Unchanged`). `Unavailable` while the copy is not loaded: the
+    /// domain then shows nothing new and every query is `REJECTED`.
     fn observe_quest_log(
         &self,
         _actor: ExactActorRef,

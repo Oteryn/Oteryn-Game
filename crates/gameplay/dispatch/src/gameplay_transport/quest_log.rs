@@ -17,9 +17,11 @@
 //!   since the one it projected; a committed receipt that changes what the domain shows sends a
 //!   delta.
 //!
-//! Nothing here writes. Boot composes the journal content and the admitted-session copy source.
+//! Boot composes the journal content and the admitted-session copy source.
 
 use std::sync::Arc;
+
+use crate::durability::quest_tracker::QuestTrackerEntry;
 
 use oteryn_gameplay_quests::quest::log::{ProjectedLine, QuestLogContent, QuestLogFacts};
 use oteryn_protocol_oteryn::quest_log::{
@@ -139,6 +141,39 @@ impl QuestLogContinuity {
         missions: TrackedMissions::NONE,
         queries: QueryWindow::EMPTY,
     };
+
+    pub(super) fn restore(
+        &mut self,
+        source: &QuestLogSource,
+        mission_tracking: bool,
+        saved: Vec<QuestTrackerEntry>,
+    ) {
+        let catalogue = source.content.0.active().quests();
+        let resolved = saved.into_iter().filter_map(|entry| {
+            let index = catalogue
+                .binary_search_by(|quest| quest.key.cmp(&entry.quest_key))
+                .ok()?;
+            let quest_index = u32::try_from(index).ok()?;
+            Some((quest_index, entry.mission))
+        });
+        if mission_tracking {
+            let pairs: Vec<_> = resolved
+                .filter_map(|(quest_index, mission)| {
+                    let (revision, mission_index) = mission?;
+                    (source.mission_revision(quest_index)? == revision).then_some(TrackedMission {
+                        quest_index,
+                        mission_index,
+                    })
+                })
+                .collect();
+            self.missions = TrackedMissions::new(&pairs).unwrap_or(TrackedMissions::NONE);
+        } else {
+            let indexes: Vec<_> = resolved
+                .filter_map(|(index, mission)| mission.is_none().then_some(index))
+                .collect();
+            self.tracked = TrackedQuests::new(&indexes).unwrap_or(TrackedQuests::NONE);
+        }
+    }
 }
 
 /// Quest log content in which every quest of every revision has a worst-case line within
@@ -147,6 +182,41 @@ impl QuestLogContinuity {
 pub struct QuestLogLines(Arc<QuestLogContent>);
 
 impl QuestLogSource {
+    fn mission_revision(&self, quest_index: u32) -> Option<&str> {
+        let active = self.content.0.active();
+        let key = &active.quests().get(usize::try_from(quest_index).ok()?)?.key;
+        Some(
+            self.copy
+                .quest_state(key)
+                .filter(|state| !state.completed)
+                .map_or(active.content_revision(), |state| {
+                    state.pinned_content_revision
+                }),
+        )
+    }
+
+    pub(super) fn saved_quest(&self, quest_index: u32) -> Option<QuestTrackerEntry> {
+        let quest = self
+            .content
+            .0
+            .active()
+            .quests()
+            .get(usize::try_from(quest_index).ok()?)?;
+        Some(QuestTrackerEntry {
+            quest_key: quest.key.clone(),
+            mission: None,
+        })
+    }
+
+    pub(super) fn saved_mission(&self, pair: TrackedMission) -> Option<QuestTrackerEntry> {
+        let mut entry = self.saved_quest(pair.quest_index)?;
+        entry.mission = Some((
+            self.mission_revision(pair.quest_index)?.to_owned(),
+            pair.mission_index,
+        ));
+        Some(entry)
+    }
+
     pub(in crate::gameplay_transport) fn titles(&self) -> Vec<(u32, String)> {
         self.content.0.titles(&*self.copy)
     }
@@ -214,7 +284,7 @@ pub struct QuestLogDomain {
 pub struct QuestLogFault;
 
 /// One connection's quest log.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct QuestLogState {
     view: Option<RequestedView>,
     /// The copy version last projected.
@@ -223,6 +293,7 @@ pub struct QuestLogState {
     sent: Vec<u8>,
     include_map_marks: bool,
     mission_tracking: bool,
+    pub(super) tracker_loaded: bool,
 }
 
 fn line(projected: ProjectedLine) -> QuestLine {

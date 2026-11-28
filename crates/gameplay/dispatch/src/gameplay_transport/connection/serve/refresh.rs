@@ -78,13 +78,15 @@ where
     let Some(state) = session.quest_log.as_mut() else {
         return Ok(());
     };
+    let restore = !state.tracker_loaded && session.admitted.item_fence.is_some();
+    let since = if restore { None } else { state.version() };
     let observation = authority
-        .observe_quest_log(
-            session.actor,
-            session.admitted.game_session_id,
-            state.version(),
-        )
+        .observe_quest_log(session.actor, session.admitted.game_session_id, since)
         .await;
+    if restore {
+        state.tracker_loaded =
+            restore_quest_tracker(authority, &mut session.admitted, &observation).await;
+    }
     let Ok(changed) = state.refresh(&mut session.admitted.continuity.quest_log, observation) else {
         return Err(ServeEnd::Disconnected);
     };
@@ -102,6 +104,31 @@ where
         return Err(ServeEnd::Disconnected);
     }
     Ok(())
+}
+
+pub(super) async fn restore_quest_tracker<A: FreshAdmissionAuthority>(
+    authority: &A,
+    admitted: &mut AdmittedSession,
+    observation: &QuestLogObservation,
+) -> bool {
+    let QuestLogObservation::Changed(source) = observation else {
+        return false;
+    };
+    let mission_tracking = admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1);
+    let Some(saved) = authority
+        .load_quest_tracker(*admitted, mission_tracking)
+        .await
+    else {
+        return false;
+    };
+    admitted
+        .continuity
+        .quest_log
+        .restore(source, mission_tracking, saved);
+    true
 }
 
 pub(super) async fn chat<S, A>(

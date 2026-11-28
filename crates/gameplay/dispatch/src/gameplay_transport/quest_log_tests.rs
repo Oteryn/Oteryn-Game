@@ -571,6 +571,16 @@ mod connection {
             self.premium
         }
 
+        async fn save_quest_tracker(
+            &self,
+            _admitted: AdmittedSession,
+            _mission_tracking: bool,
+            _selection: Vec<crate::durability::quest_tracker::QuestTrackerEntry>,
+        ) -> bool {
+            // This fixture exercises transport continuity; the composed PG case exercises writes.
+            true
+        }
+
         async fn observe_quest_log(
             &self,
             _actor: ExactActorRef,

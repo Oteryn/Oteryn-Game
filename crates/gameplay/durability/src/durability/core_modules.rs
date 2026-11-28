@@ -142,6 +142,7 @@ pub mod pvp_live;
 mod pvp_skull_storage;
 pub mod pvp_state;
 pub mod quest_state;
+pub mod quest_tracker;
 pub mod recovery_evidence_composition;
 pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;

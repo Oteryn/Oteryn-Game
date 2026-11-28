@@ -4,6 +4,29 @@ use super::quest_log::{QuestLogObservation, QuestLogSource};
 use super::{ComposedFreshAdmission, ExactActorRef, GameSessionId};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn quest_tracker_preference(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        mission_tracking: bool,
+        selection: Option<Vec<crate::durability::quest_tracker::QuestTrackerEntry>>,
+    ) -> Option<Vec<crate::durability::quest_tracker::QuestTrackerEntry>> {
+        let fence = admitted.item_fence.filter(|fence| {
+            fence.game_session_id == admitted.game_session_id
+                && fence.connection_generation.get() == admitted.continuity.connection_generation
+        })?;
+        let _permit = self.spell_lane_permit().await?;
+        self.root
+            .quest_tracker(
+                self.character,
+                self.holder,
+                fence,
+                mission_tracking,
+                selection,
+            )
+            .await
+            .ok()?
+    }
+
     pub(super) async fn quest_log_observation(
         &self,
         actor: ExactActorRef,

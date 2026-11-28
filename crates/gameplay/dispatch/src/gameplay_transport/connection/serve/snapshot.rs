@@ -424,19 +424,23 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
         let observation = authority
             .observe_quest_log(actor, admitted.game_session_id, None)
             .await;
-        let Ok((state, domain)) = QuestLogState::snapshot(
+        let mission_tracking = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1);
+        let tracker_loaded =
+            super::refresh::restore_quest_tracker(authority, admitted, &observation).await;
+        let Ok((mut state, domain)) = QuestLogState::snapshot(
             &mut admitted.continuity.quest_log,
             observation,
             admitted.continuity.selected_capabilities.contains(
                 oteryn_protocol_oteryn::personal_map_marks::CAPABILITY_PERSONAL_MAP_MARKS_V1,
             ),
-            admitted
-                .continuity
-                .selected_capabilities
-                .contains(oteryn_protocol_oteryn::quest_log::CAPABILITY_QUEST_MISSION_TRACKING_V1),
+            mission_tracking,
         ) else {
             return Err(ServeEnd::Disconnected);
         };
+        state.tracker_loaded = tracker_loaded;
         quest_log_snapshot = domain;
         domains.push(OwnedDomain {
             domain_id: STATE_DOMAIN_QUEST_LOG,

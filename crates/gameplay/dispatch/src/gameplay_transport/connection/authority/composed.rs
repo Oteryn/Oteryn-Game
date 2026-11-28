@@ -355,6 +355,36 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.session_premium_gate(session).await.premium_current()
     }
 
+    async fn load_quest_tracker(
+        &self,
+        admitted: connection::AdmittedSession,
+        mission_tracking: bool,
+    ) -> Option<Vec<crate::durability::quest_tracker::QuestTrackerEntry>> {
+        let mut entries = self
+            .quest_tracker_preference(admitted, mission_tracking, None)
+            .await?;
+        if mission_tracking
+            && entries.len() > oteryn_protocol_oteryn::quest_log::MAX_FREE_TRACKED_MISSIONS
+            && !self
+                .quest_tracker_is_premium(admitted.game_session_id)
+                .await
+        {
+            entries.truncate(oteryn_protocol_oteryn::quest_log::MAX_FREE_TRACKED_MISSIONS);
+        }
+        Some(entries)
+    }
+
+    async fn save_quest_tracker(
+        &self,
+        admitted: connection::AdmittedSession,
+        mission_tracking: bool,
+        selection: Vec<crate::durability::quest_tracker::QuestTrackerEntry>,
+    ) -> bool {
+        self.quest_tracker_preference(admitted, mission_tracking, Some(selection))
+            .await
+            .is_some()
+    }
+
     async fn observe_quest_log(
         &self,
         actor: ExactActorRef,
