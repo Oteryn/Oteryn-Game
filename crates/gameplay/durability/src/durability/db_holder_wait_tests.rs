@@ -50,14 +50,23 @@ fn a_short_or_abandoned_wait_is_not_reported() {
     note_wait_refused(&mut waits, waiter, Some(owner), start);
     assert!(finish_wait(&mut waits, waiter, start + Duration::from_millis(499)).is_none());
     // Refused long ago, then nothing until a much later checkout: the waiter gave up.
-    note_wait_refused(&mut waits, waiter, None, start);
+    note_wait_refused(&mut waits, waiter, Some(owner), start);
     let later = start + HOLDER_WAIT_STALE + Duration::from_secs(1);
     assert!(finish_wait(&mut waits, waiter, later).is_none());
     // A refusal after a stale one starts a new wait.
-    note_wait_refused(&mut waits, waiter, None, start);
-    note_wait_refused(&mut waits, waiter, None, later);
+    note_wait_refused(&mut waits, waiter, Some(owner), start);
+    note_wait_refused(&mut waits, waiter, Some(owner), later);
     let fresh = finish_wait(&mut waits, waiter, later + Duration::from_millis(500));
     assert_eq!(fresh.map(|wait| wait.attempts), Some(1));
+}
+
+#[test]
+fn idle_checkout_after_an_ownerless_miss_reports_no_holder_wait() {
+    let waiter = site();
+    let start = Instant::now();
+    let mut waits = Vec::new();
+    note_wait_refused(&mut waits, waiter, None, start);
+    assert!(finish_wait(&mut waits, waiter, start + Duration::from_millis(650)).is_none());
 }
 
 #[test]
@@ -110,7 +119,7 @@ fn a_dropped_pass_and_its_waiter_carry_the_issuing_connection_trace() -> Result<
                 note_wait_refused(
                     &mut waits,
                     waiter,
-                    None,
+                    Some(site()),
                     Instant::now() - Duration::from_millis(600),
                 );
             }
