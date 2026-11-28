@@ -78,6 +78,7 @@ pub(super) async fn request(
                 required_quest_tracks: Vec::new(),
             },
             keyword: "travora".into(),
+            crystal_callback: false,
             postman: false,
             carpet: false,
             held: false,

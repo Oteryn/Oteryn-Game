@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::durability::character_authority::CharacterAuthorityError;
+use crate::durability::character_build::DurableBuildState;
 use crate::durability::cyclopedia_character::combat::CombatSnapshot;
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, ConnectionGeneration};
 use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
@@ -21,17 +22,40 @@ fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "P12c combat scenario panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn self_defence_tab_reports_weapon_base_when_extra_defence_is_unauthored() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "Hand defence scenario panicked")??;
+    Ok(())
+}
+
+fn scenario(hand_defence_only: bool) -> TestResult {
     use super::cyclopedia_fixtures::support::exchange;
     run(async |admin| {
         reset();
-        let h = Harness::create_with_admission_seed(admin, "p12c_combat", true, false).await?;
+        let h = Harness::create_with_admission_seed(
+            admin,
+            if hand_defence_only {
+                "panel_hand_defence"
+            } else {
+                "p12c_combat"
+            },
+            true,
+            false,
+        )
+        .await?;
         eprintln!("POSTGRES_STARTED P12C cyclopedia_combat_snapshot");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -113,7 +137,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         deps.admitted.runtime_actor = Some(deps.actor);
-        seed(&h).await?;
+        seed(&h, hand_defence_only).await?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
@@ -125,6 +149,15 @@ fn scenario() -> TestResult {
         let armor = effects.1;
         {
             let runtime = deps.runtime.lock().await;
+            if hand_defence_only {
+                let build = DurableBuildState::new("monk", (0, 0), [(10, 0); 7])?;
+                assert!(owner.states.spell_states.lock().await.load_owned_build(
+                    &runtime,
+                    deps.actor,
+                    deps.admitted.game_session_id,
+                    &build,
+                ));
+            }
             owner
                 .install_admission_suppressions(
                     &runtime,
@@ -167,6 +200,20 @@ fn scenario() -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[6, 17, CAPABILITY_CYCLOPEDIA_CHARACTER_V1])
                 .ok_or("capabilities")?;
+        if hand_defence_only {
+            let (status, bytes) = exchange(&owner, &mut admitted, 2, tab, &[9, 0, 0, 20]).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            let defence = CombatStats::decode(&bytes).map_err(debug)?;
+            assert_eq!(defence.get(Stat::DefenceEquipment), Some(22));
+            assert!(
+                defence.get(Stat::Mitigation).is_some_and(|value| value > 0),
+                "Twin Hooks must contribute to the Cyclopedia Mitigation stat"
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let target = {
             let runtime = deps.runtime.lock().await;
             let visible = runtime.visible_entities();
@@ -418,7 +465,7 @@ fn scenario() -> TestResult {
     })
 }
 
-async fn seed(h: &Harness) -> TestResult {
+async fn seed(h: &Harness, hand_defence_only: bool) -> TestResult {
     // Only custody/effect provisioning is fixture SQL. Every observed value passes through the
     // native content, equipment and combat owners before the new writer persists it.
     let mut tx = h.pool.begin().await?;
@@ -427,20 +474,28 @@ async fn seed(h: &Harness) -> TestResult {
         .await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING")
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
-    for (seed, key, slot) in [
-        (112_u8, "oteryn:item.tibia.i3264", 6_i16),
-        (114, "oteryn:item.tibia.i6529", 4),
+    let weapon = if hand_defence_only {
+        "oteryn:item.tibia.i10392"
+    } else {
+        "oteryn:item.tibia.i3264"
+    };
+    for (seed, key, slot, tier) in [
+        (
+            112_u8,
+            weapon,
+            6_i16,
+            if hand_defence_only { 0_i16 } else { 10 },
+        ),
+        (114, "oteryn:item.tibia.i6529", 4, 10),
     ] {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
             .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(key).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slot).bind(id(seed).as_slice()).execute(&mut *tx).await?;
-        sqlx::query(
-            "INSERT INTO game_item_tiers(item_instance_id,tier) VALUES(encode($1,'hex')::uuid,10)",
-        )
-        .bind(id(seed).as_slice())
-        .execute(&mut *tx)
-        .await?;
+        if tier != 0 {
+            sqlx::query("INSERT INTO game_item_tiers(item_instance_id,tier) VALUES(encode($1,'hex')::uuid,$2)")
+                .bind(id(seed).as_slice()).bind(tier).execute(&mut *tx).await?;
+        }
     }
     for key in [
         "oteryn:blessing.spiritual_shielding",

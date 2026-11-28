@@ -82,8 +82,8 @@ fn source_catalogue_keeps_every_item_family_and_numeric_mount_identity() -> Resu
         captured["grants"].as_array().ok_or("source grants")?.len(),
         205
     );
-    assert_eq!(c.rules.len(), 49);
-    assert_eq!(c.grants.len(), 202);
+    assert_eq!(c.rules.len(), 55);
+    assert_eq!(c.grants.len(), 210);
     let doll = rule("oteryn:item.tibia.i6579").ok_or("doll")?;
     assert_eq!(doll.choices.len(), 88);
     let mount = rule("oteryn:item.tibia.i37746").ok_or("mount")?;

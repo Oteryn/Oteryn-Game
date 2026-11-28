@@ -1,0 +1,1082 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/thieves-guild-cathedral-note",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32598,
+            "y": 32381,
+            "floor": -10
+          },
+          "ordinal": 1,
+          "appearance": 1451
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission08",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7873",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1793-1796",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_note.lua:1-24"
+      ],
+      "effects": {},
+      "present": []
+    },
+    {
+      "key": "oteryn:quest-callback/thieves-guild-fish-room-exit",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32359,
+            "y": 32787,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 7941
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32359,
+        "y": 32786,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": "The fish must be somewhere in this room.",
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_door.lua:1-13"
+      ],
+      "effects": {
+        "player_speech": "You slip through the door."
+      },
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i7936",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/thieves-guild-fish-room-key",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32359,
+            "y": 32787,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 7941
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32359,
+        "y": 32788,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7934",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18"
+      ],
+      "effects": {
+        "player_speech": "Your key breaks as you slip inside."
+      },
+      "present": []
+    },
+    {
+      "key": "oteryn:quest-callback/thieves-guild-goldfish",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32791,
+          "floor": -6
+        },
+        "ordinal": 3,
+        "unique": 9266,
+        "action": null,
+        "appearance": 7936
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:313,4555-4560",
+        "tibiawiki:The_Thieves_Guild_Quest/Spoiler:2024-12-14:Mission 6 Fishnapping"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7936",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "present": []
+    },
+    {
+      "key": "oteryn:quest-callback/thieves-guild-sarina-vase",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32337,
+            "y": 31812,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 7892
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7889",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1789-1792",
+        "tibiawiki:The_Thieves_Guild_Quest/Spoiler:2024-12-14:Mission 2 Burglary"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i227",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "present": []
+    },
+    {
+      "key": "oteryn:quest-callback/thieves-guild-sarina-vine-climb",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32337,
+            "y": 31814,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 7890
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32336,
+        "y": 31813,
+        "floor": -6
+      },
+      "storage": [],
+      "offerings": [],
+      "requires_world_admission": false,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1780-1788",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_climbing_vine.lua:1-25"
+      ],
+      "effects": {
+        "requires_no_pz_lock": true
+      },
+      "present": []
+    },
+    {
+      "key": "oteryn:quest-callback/thieves-guild-sarina-vine-descend",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32337,
+            "y": 31814,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 7891
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32337,
+        "y": 31815,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "requires_world_admission": false,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:1780-1788",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_climbing_vine.lua:1-25"
+      ],
+      "effects": {
+        "requires_no_pz_lock": true
+      },
+      "present": []
+    },
+    {
+      "key": "oteryn:quest-callback/white-raven-monks-diary",
+      "quest": "oteryn:quest.the_white_raven_monastery_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 32262,
+            "y": 31861,
+            "floor": -11
+          },
+          "ordinal": 2,
+          "appearance": 4240
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary_retrieved",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/door",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/container_quest.lua:519-547",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/costello.lua:63-95"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3212",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "present": [],
+      "track_initials": {
+        "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/diary_retrieved": 0
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/elvenbane-mirror-crystal",
+      "quest": "oteryn:quest.to_blind_the_enemy_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32592,
+          "y": 31645,
+          "floor": -2
+        },
+        "unique": null,
+        "action": 4001,
+        "appearance": 132
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3463",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true,
+        "target_remove": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/to_blind_the_enemy_quest/mirror.lua:9-22:sha256:3ee1f1a6843f6a71ef6c15c9e846fc8b36b5fe3d26c95966f34e875d1cb23c20",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:396-400:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32592,
+            "y": 31645,
+            "floor": -2
+          },
+          "effect": 182
+        },
+        "player_speech": "The spying crystal shatters!",
+        "reset_after_ms": 60000
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-eclipse-brew-32657-31927",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32657,
+          "y": 31927,
+          "floor": -1
+        },
+        "unique": null,
+        "action": 2000,
+        "appearance": 2008
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:57-63:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32657,
+            "y": 31927,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-eclipse-brew-32658-31927",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32658,
+          "y": 31927,
+          "floor": -1
+        },
+        "unique": null,
+        "action": 2000,
+        "appearance": 2009
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:57-63:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32658,
+            "y": 31927,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-eclipse-brew-32657-31928",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32657,
+          "y": 31928,
+          "floor": -1
+        },
+        "unique": null,
+        "action": 2000,
+        "appearance": 2010
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:57-63:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32657,
+            "y": 31928,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-eclipse-brew-32658-31928",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32658,
+          "y": 31928,
+          "floor": -1
+        },
+        "unique": null,
+        "action": 2000,
+        "appearance": 2011
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission02",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i133",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "selected_instance": true
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_holy_water.lua:57-63:sha256:464b7766160ab76a99d28ff1e87c8e1d870caffff69c7757171c50511c5fcffa",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:78-86:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "magic": {
+          "position": {
+            "x": 32658,
+            "y": 31928,
+            "floor": -1
+          },
+          "effect": 7
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-vampire-hunt-coffin",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32779,
+          "y": 31979,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 2002,
+        "appearance": 7875
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/actions_vampire_hunt.lua:8-30:sha256:bd663d78f221586914a4f93a826e9b7a364c4b9cd902659d67c7b8d9780e2bc1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32777,
+                "y": 31979,
+                "floor": -9
+              },
+              "to": {
+                "x": 32777,
+                "y": 31980,
+                "floor": -9
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32777,
+                "y": 31981,
+                "floor": -9
+              },
+              "creature": "oteryn:creature.the_count"
+            }
+          ],
+          "room_min": {
+            "x": 32775,
+            "y": 31980,
+            "floor": -9
+          },
+          "room_max": {
+            "x": 32778,
+            "y": 31983,
+            "floor": -9
+          }
+        }
+      },
+      "use_range": 2
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-vampire-hunt-coffin-side",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32779,
+          "y": 31980,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 2002,
+        "appearance": 1989
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/actions_vampire_hunt.lua:8-30:sha256:bd663d78f221586914a4f93a826e9b7a364c4b9cd902659d67c7b8d9780e2bc1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32777,
+                "y": 31979,
+                "floor": -9
+              },
+              "to": {
+                "x": 32777,
+                "y": 31980,
+                "floor": -9
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32777,
+                "y": 31981,
+                "floor": -9
+              },
+              "creature": "oteryn:creature.the_count"
+            }
+          ],
+          "room_min": {
+            "x": 32775,
+            "y": 31980,
+            "floor": -9
+          },
+          "room_max": {
+            "x": 32778,
+            "y": 31983,
+            "floor": -9
+          }
+        }
+      },
+      "use_range": 2
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-weakened-coffin",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32779,
+          "y": 31979,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 2002,
+        "appearance": 7875
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 8,
+          "maximum": 9,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32777,
+            "y": 31982,
+            "floor": -9
+          },
+          "item": "oteryn:item.tibia.i3083",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32779,
+            "y": 31977,
+            "floor": -9
+          },
+          "item": "oteryn:item.tibia.i3083",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32781,
+            "y": 31982,
+            "floor": -9
+          },
+          "item": "oteryn:item.tibia.i3083",
+          "count": 1
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/actions_vampire_hunt.lua:1-30:sha256:bd663d78f221586914a4f93a826e9b7a364c4b9cd902659d67c7b8d9780e2bc1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32777,
+                "y": 31979,
+                "floor": -9
+              },
+              "to": {
+                "x": 32777,
+                "y": 31980,
+                "floor": -9
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32777,
+                "y": 31981,
+                "floor": -9
+              },
+              "creature": "oteryn:creature.the_weakened_count"
+            }
+          ],
+          "room_min": {
+            "x": 32775,
+            "y": 31980,
+            "floor": -9
+          },
+          "room_max": {
+            "x": 32778,
+            "y": 31983,
+            "floor": -9
+          }
+        }
+      },
+      "use_range": 2
+    },
+    {
+      "key": "oteryn:quest-callback/inquisition-weakened-coffin-side",
+      "quest": "oteryn:quest.the_inquisition_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32779,
+          "y": 31980,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 2002,
+        "appearance": 1989
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+          "minimum": 8,
+          "maximum": 9,
+          "set": 9
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/mission03",
+          "minimum": 3,
+          "maximum": 4,
+          "set": 4
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32777,
+            "y": 31982,
+            "floor": -9
+          },
+          "item": "oteryn:item.tibia.i3083",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32779,
+            "y": 31977,
+            "floor": -9
+          },
+          "item": "oteryn:item.tibia.i3083",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32781,
+            "y": 31982,
+            "floor": -9
+          },
+          "item": "oteryn:item.tibia.i3083",
+          "count": 1
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "item_on_target": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_inquisition_quest/actions_vampire_hunt.lua:1-30:sha256:bd663d78f221586914a4f93a826e9b7a364c4b9cd902659d67c7b8d9780e2bc1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:330-336:sha256:7f551a398529e18ccad1ba56d740a4961874bbddd4736dd2df00272ddf6ea6ad"
+      ],
+      "effects": {
+        "encounter": {
+          "minimum_level": 1,
+          "players": [
+            {
+              "from": {
+                "x": 32777,
+                "y": 31979,
+                "floor": -9
+              },
+              "to": {
+                "x": 32777,
+                "y": 31980,
+                "floor": -9
+              }
+            }
+          ],
+          "monsters": [
+            {
+              "position": {
+                "x": 32777,
+                "y": 31981,
+                "floor": -9
+              },
+              "creature": "oteryn:creature.the_weakened_count"
+            }
+          ],
+          "room_min": {
+            "x": 32775,
+            "y": 31980,
+            "floor": -9
+          },
+          "room_max": {
+            "x": 32778,
+            "y": 31983,
+            "floor": -9
+          }
+        }
+      },
+      "use_range": 2
+    }
+  ]
+}

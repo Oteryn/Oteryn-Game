@@ -556,6 +556,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                                 | "oteryn:quest.tower_defence_quest"
+                                | "oteryn:quest.troll_sabotage_quest"
                         )
                 });
                 let authored = Self::from_json_documents(AUTHORED_NPC_RULE_PROGRAMS)?;
@@ -735,8 +736,8 @@ impl NpcRuleCatalog {
     }
 }
 
-// These accepted source programmes add only new NPC-owned tracks to an existing
-// quest. Its exact previous definition remains valid even without a shared track.
+// These source programmes extend a definition already served by another owner.
+// Retain its exact predecessor even when its track is absent from the donor import.
 fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
     program.document.schema == 1
         && matches!(
@@ -745,6 +746,7 @@ fn additive_legacy_owner(program: &NpcRuleProgram) -> bool {
                 program.document.program_key.as_deref(),
             ),
             ("oteryn:quest.elemental_spheres_quest", None)
+                | ("oteryn:quest.troll_sabotage_quest", None)
                 | (
                     "oteryn:quest.outfit_and_addon_quests",
                     Some("oteryn:quest-npc-program.citizen-source-sagas")

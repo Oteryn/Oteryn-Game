@@ -58,16 +58,7 @@ async fn install(
         .chat
         .admit(admitted.game_session_id, "Royal visitor", owner.owner_now());
     owner.states.chat.set_npc_service(admitted.game_session_id);
-    let placements: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../../../content/world/npc-placements/placements-00000-00055.json"
-    ))?;
-    let row = placements["records"]
-        .as_array()
-        .ok_or("placements")?
-        .iter()
-        .map(|row| &row["declaration"])
-        .find(|row| row["npc"] == KING)
-        .ok_or("native royal placement")?;
+    let row = super::npc_placement_fixtures::published(KING)?.ok_or("native royal placement")?;
     assert_eq!(
         row["cell"],
         serde_json::json!({"x":32311,"y":32172,"floor":6})

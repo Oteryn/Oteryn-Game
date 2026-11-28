@@ -3,7 +3,29 @@
   "source": {
     "repository": "opentibiabr/crystalserver",
     "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
-    "path": "data/modules/scripts/gamestore/gamestore.lua"
+    "path": "data/modules/scripts/gamestore/gamestore.lua",
+    "crystal_charged_items": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/modules/scripts/gamestore/gamestore.lua",
+      "sha256": "6affeb63a5d10fbdff1da5311d6db9e37e2097e6f13a2b14e9d2b8e87bca5df7",
+      "evidence": "OTS_HYPOTHESIS_ONLY",
+      "offer_keys": [
+        "store:exercise-wraps",
+        "store:gold-converter",
+        "store:great-health-keg",
+        "store:great-mana-keg",
+        "store:great-spirit-keg",
+        "store:health-keg",
+        "store:magic-gold-converter",
+        "store:mana-keg",
+        "store:strong-health-keg",
+        "store:strong-mana-keg",
+        "store:supreme-health-keg",
+        "store:ultimate-mana-keg",
+        "store:ultimate-spirit-keg"
+      ]
+    }
   },
   "offers": [
     {
@@ -211,6 +233,84 @@
       "source_line": 127
     },
     {
+      "key": "store:exercise-wraps",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Wraps",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i50293",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 488
+    },
+    {
+      "key": "store:gold-converter",
+      "category": "useful-things",
+      "title": "Gold Converter",
+      "price": 5,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i23722",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 6579
+    },
+    {
+      "key": "store:great-health-keg",
+      "category": "consumables.kegs",
+      "title": "Great Health Keg",
+      "price": 103,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25905",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 579
+    },
+    {
+      "key": "store:great-mana-keg",
+      "category": "consumables.kegs",
+      "title": "Great Mana Keg",
+      "price": 66,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25910",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 588
+    },
+    {
+      "key": "store:great-spirit-keg",
+      "category": "consumables.kegs",
+      "title": "Great Spirit Keg",
+      "price": 105,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25913",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 597
+    },
+    {
+      "key": "store:health-keg",
+      "category": "consumables.kegs",
+      "title": "Health Keg",
+      "price": 26,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25903",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 606
+    },
+    {
       "key": "store:lasting-exercise-axe",
       "category": "consumables.exercise-weapons",
       "title": "Lasting Exercise Axe",
@@ -315,6 +415,32 @@
       "source_line": 217
     },
     {
+      "key": "store:magic-gold-converter",
+      "category": "useful-things",
+      "title": "Magic Gold Converter",
+      "price": 15,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28525",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 6597
+    },
+    {
+      "key": "store:mana-keg",
+      "category": "consumables.kegs",
+      "title": "Mana Keg",
+      "price": 26,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25908",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 615
+    },
+    {
       "key": "store:prey-list-expansion",
       "category": "useful-things.prey",
       "title": "Prey List Expansion",
@@ -323,6 +449,71 @@
       "currency": "TIBIA_COIN",
       "unlock_key": "prey-list-expansion",
       "source_line": 0
+    },
+    {
+      "key": "store:strong-health-keg",
+      "category": "consumables.kegs",
+      "title": "Strong Health Keg",
+      "price": 53,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25904",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 624
+    },
+    {
+      "key": "store:strong-mana-keg",
+      "category": "consumables.kegs",
+      "title": "Strong Mana Keg",
+      "price": 43,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25909",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 633
+    },
+    {
+      "key": "store:supreme-health-keg",
+      "category": "consumables.kegs",
+      "title": "Supreme Health Keg",
+      "price": 288,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25907",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 642
+    },
+    {
+      "key": "store:ultimate-mana-keg",
+      "category": "consumables.kegs",
+      "title": "Ultimate Mana Keg",
+      "price": 202,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25911",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 660
+    },
+    {
+      "key": "store:ultimate-spirit-keg",
+      "category": "consumables.kegs",
+      "title": "Ultimate Spirit Keg",
+      "price": 202,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i25914",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 668
     }
   ]
 }

@@ -38,7 +38,7 @@ pub(super) async fn run(
         let back = route_work(client, move || Ok(snapshot.path(here, start, Some(start))))
             .await?
             .ok_or("map journey has no return route")?;
-        walk(client, world, &back).await
+        walk_map_route(client, world, &back, start).await
     }
     .await;
     let (index, reason) = match restore {
@@ -64,6 +64,23 @@ pub(super) async fn run(
         return Err(format!("map journey: {failures} failed checks").into());
     }
     Ok(())
+}
+
+async fn walk_map_route(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    bounds: TilePos,
+) -> TestResult {
+    let world = world.clone();
+    walk_with_landing_budget(
+        client,
+        path,
+        move |at, direction| destination(&world, at, direction),
+        None,
+        Some(bounds),
+    )
+    .await
 }
 
 async fn check(
@@ -138,7 +155,7 @@ async fn check(
     let Some((path, at, direction, landing)) = approaches.first() else {
         return Ok(Some("no_reachable_approach_within_160_tile_2_floor_budget"));
     };
-    walk(client, &model.world, path).await?;
+    walk_map_route(client, &model.world, path, bounds).await?;
     if tile(client.world_spatial().actor_position)? != *at {
         return Err("map approach did not end at predicted position".into());
     }

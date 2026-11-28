@@ -266,9 +266,9 @@ def requested_keys(root, extra_keys=()):
 
 def _requested_inputs(root, extra_keys=()):
     # Retain both the selected startup source cohort and authored callback custody.
-    sys.path.insert(0, str(root / 'tools/content-schema/world-authoring'))
-    from quest_chest_bindings import outlaw_key_claim, panpipe_key_claim
-    sys.path.insert(0, str(root / 'tools/content-schema/reward-claim-authoring'))
+    sys.path.insert(0, str((root / 'tools/content-schema/world-authoring').resolve()))
+    from quest_chest_bindings import outlaw_key_claim, panpipe_key_claim, verified_source_charges
+    sys.path.insert(0, str((root / 'tools/content-schema/reward-claim-authoring').resolve()))
     import container_native
 
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
@@ -286,14 +286,18 @@ def _requested_inputs(root, extra_keys=()):
     authored_callbacks = []
     # Executable authored callbacks use the same exact canonical/native Item
     # qualification as source chests. Include every output, never a partial bag.
-    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json'):
+    for relative in ('authored-world-callbacks.json', 'chosen-reward-callbacks.json',
+                     'npc-callbacks/quest-contacts.json', 'world-callbacks/quest-contacts.json'):
         path = root / 'content/quests' / relative
         if not path.is_file():
             continue
         for callback in json.loads(path.read_bytes())['callbacks']:
             authored_callbacks.append(callback)
             reward = callback.get('give') or callback.get('effects', {}).get('item_reward')
-            if reward:
+            if (reward and callback.get('key')
+                    != 'oteryn:quest-reward/their-masters-voice-slime-gobbler'):
+                # Their Master's Voice already admits the Slime Gobbler through the
+                # World Change overlay. Its newly published NPC shares that custody.
                 authored_keys.add(reward['item'])
                 authored_keys.update(child['item'] for field in ('contents', 'backpack_outputs')
                                      for child in reward.get(field, []))
@@ -313,6 +317,13 @@ def _requested_inputs(root, extra_keys=()):
                 if tool.get('replacement'):
                     authored_keys.add(tool['replacement'])
                     keys.add(tool['replacement'])
+    classic_pickups = root / 'content/quests/world-callbacks/cursed-crystal.json'
+    if classic_pickups.is_file():
+        keys.update(
+            reward['item']
+            for callback in json.loads(classic_pickups.read_bytes())['callbacks']
+            if (reward := callback.get('effects', {}).get('item_reward'))
+        )
     # The Outlaw Camp binding is embedded by the Quest crate. Its terminal
     # bag and its contents use the existing canonical Item profile admission.
     outlaw = json.loads((root / 'content/quests/authored-bindings/outlaw_camp_journey.json').read_bytes())
@@ -367,10 +378,11 @@ def _requested_inputs(root, extra_keys=()):
                         or outlaw_key_claim(definition)):
                     keys.update(item['item']['key'] for placement in definition['placements']
                                 for item in placement['reward']['items'])
-                elif (definition.get('readiness') != 'waiting_implementation'
-                      or definition.get('data_holds') != []
-                      or definition.get('native_contents', {}).get('schema')
-                      != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
+                elif not verified_source_charges(definition, definition.get('native_contents', {})) and (
+                        definition.get('readiness') != 'waiting_implementation'
+                        or definition.get('data_holds') != []
+                        or definition.get('native_contents', {}).get('schema')
+                        != 'OTERYN_NATIVE_CONTAINER_REWARD/v1'):
                     raise ValueError('SELECTED_QUEST_CHEST_REWARD_NOT_READY')
                 selected_chests.remove(definition['identity']['key'])
             # QUEST-FINISH owner scope: retain the donor record as evidence,

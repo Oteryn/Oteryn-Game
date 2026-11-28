@@ -6,13 +6,16 @@ const BRUTUS: &str = "oteryn:npc.brutus_the_baker";
 const BRUTUS_POSITION: (u16, u16, i8) = (33303, 32064, 7);
 
 const SANTA: &str = "oteryn:npc.santa_claus";
+const MESSENGER: &str = "oteryn:npc.messenger_of_santa";
+const SANTA_COUNT: usize = 15;
+const CHRISTMAS_COUNT: usize = 20;
 
 // Crystal201189f data-global/npc/santa_claus.lua:1-25 identifies the native NPC;
 // its donor spawn registry supplies no seasonal placement. Exact positions are
 // retained structured BR source, not donor spawn coordinates:
 // docs/reference/content-prep/season-20261107/seasonal-calendar-source.json:87
 // binds all15 placements to Santa Claus revision443236, original lines38-52.
-const SANTA_POSITIONS: [(u16, u16, i8); 20] = [
+const POSITIONS: [(u16, u16, i8); 25] = [
     (32655, 31665, 8),
     (33070, 32878, 6),
     (32307, 31837, 8),
@@ -28,6 +31,14 @@ const SANTA_POSITIONS: [(u16, u16, i8); 20] = [
     (32357, 32210, 7),
     (32915, 32070, 9),
     (32809, 31245, 7),
+    // TibiaWiki BR page 28529, revision 416417, locates the merchants beside
+    // Santa. Its five in-scope markers are also Santa's retained anchors.
+    // Each merchant uses adjacent clear ground in the same room.
+    (32654, 31665, 8),
+    (32308, 31837, 8),
+    (32641, 31892, 9),
+    (32356, 32210, 7),
+    (32916, 32070, 9),
     // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:232-239,
     // :489-495 binds these exact baker positions to their native identities.
     (32345, 31819, 7),
@@ -45,10 +56,12 @@ const BAKERS: [&str; 5] = [
     "oteryn:npc.billy_the_baker",
 ];
 fn key(index: usize) -> &'static str {
-    if index < 15 {
+    if index < SANTA_COUNT {
         SANTA
+    } else if index < CHRISTMAS_COUNT {
+        MESSENGER
     } else {
-        BAKERS[index - 15]
+        BAKERS[index - CHRISTMAS_COUNT]
     }
 }
 
@@ -57,8 +70,8 @@ pub(super) struct SeasonalNpcSpawns {
     brutus_admitted: bool,
     brutus_present: bool,
     brutus_actor: Option<crate::foundation::ExactActorRef>,
-    positions: [bool; SANTA_POSITIONS.len()],
-    actors: [Option<crate::foundation::ExactActorRef>; SANTA_POSITIONS.len()],
+    positions: [bool; POSITIONS.len()],
+    actors: [Option<crate::foundation::ExactActorRef>; POSITIONS.len()],
 }
 
 impl SeasonalNpcSpawns {
@@ -68,12 +81,12 @@ impl SeasonalNpcSpawns {
         enterable: impl Fn(TilePos) -> bool,
     ) -> Self {
         let positions = std::array::from_fn(|index| {
-            let event = if index < 15 {
+            let event = if index < CHRISTMAS_COUNT {
                 "christmas"
             } else {
                 "piece_of_cake"
             };
-            let (x, y, z) = SANTA_POSITIONS[index];
+            let (x, y, z) = POSITIONS[index];
             seasonal.iter().any(|active| active == event)
                 && boot.is_some_and(|boot| boot.admits(key(index)))
                 && enterable(TilePos { x, y, floor: -z })
@@ -85,7 +98,7 @@ impl SeasonalNpcSpawns {
             brutus_present: false,
             brutus_actor: None,
             positions,
-            actors: [None; SANTA_POSITIONS.len()],
+            actors: [None; POSITIONS.len()],
         }
     }
 
@@ -142,7 +155,7 @@ impl SeasonalNpcSpawns {
             .map(|npc| (npc.actor, npc.position))
             .collect();
         let mut outcome = self.reconcile_brutus(runtime);
-        for (index, (x, y, z)) in SANTA_POSITIONS.into_iter().enumerate() {
+        for (index, (x, y, z)) in POSITIONS.into_iter().enumerate() {
             let floor = -z;
             let key = key(index);
             if !self.positions[index]

@@ -294,10 +294,11 @@ impl DurabilityRoot {
                     .bind(&death.boss_key).bind(minted).bind(expires).bind(if now >= expires { 0_i32 } else { chest.items.len() as i32 })
                     .execute(&mut **tx).await?;
             for (index, item) in chest.items.into_iter().enumerate() {
-                sqlx::query("INSERT INTO game_boss_reward_items(character_id,world_id,death_id,item_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity,expired) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9)")
+                sqlx::query("INSERT INTO game_boss_reward_items(character_id,world_id,death_id,item_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity,expired,parent_item_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9,$10)")
                         .bind(chest.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(death.death.as_slice())
                         .bind((index + 1) as i32).bind(item.definition.family).bind(item.definition.production_key)
-                        .bind(item.definition.revision_ref).bind(i64::from(item.quantity)).bind(now >= expires).execute(&mut **tx).await?;
+                        .bind(item.definition.revision_ref).bind(i64::from(item.quantity)).bind(now >= expires)
+                        .bind(item.parent_ordinal.map(i32::from)).execute(&mut **tx).await?;
             }
         }
         if let Some(pity_key) = pity_key {
@@ -357,7 +358,14 @@ fn validate_death(death: &BossRewardDeath) -> Option<i64> {
         {
             return None;
         }
-        for item in &chest.items {
+        for (index, item) in chest.items.iter().enumerate() {
+            if let Some(parent) = item.parent_ordinal {
+                let parent = usize::from(parent).checked_sub(1)?;
+                let container = chest.items.get(..index)?.get(parent)?;
+                if container.parent_ordinal.is_some() || container.quantity != 1 {
+                    return None;
+                }
+            }
             if item.definition.family != "Item"
                 || item.quantity == 0
                 || check_content_key(&item.definition.production_key).is_err()
@@ -391,8 +399,15 @@ fn intent(
         "character": chest.character_id.as_bytes(), "session": chest.session_id.as_bytes(),
         "lease": chest.lease_generation, "dealt": chest.contribution.damage_dealt,
         "received": chest.contribution.damage_received, "healed": chest.contribution.healing_others,
-        "items": chest.items.iter().map(|item| json!({"family":item.definition.family,
-            "key":item.definition.production_key,"revision":item.definition.revision_ref,"quantity":item.quantity})).collect::<Vec<_>>()
+        "items": chest.items.iter().map(|item| {
+            let mut value = json!({"family":item.definition.family,
+                "key":item.definition.production_key,"revision":item.definition.revision_ref,"quantity":item.quantity});
+            // Keep the exact first-commit intent for existing flat settlements.
+            if let Some(parent) = item.parent_ordinal {
+                value["parent_ordinal"] = json!(parent);
+            }
+            value
+        }).collect::<Vec<_>>()
     })).collect::<Vec<_>>();
     serde_json::to_vec(&json!({"world":scope.world_id().as_bytes(),"scope_kind":kind,
         "scope":scope_id,"generation":generation.get(),"death":death.death,
@@ -438,6 +453,7 @@ mod tests {
                         revision_ref: "definition-r1".into(),
                     },
                     quantity: 1,
+                    parent_ordinal: None,
                 }],
             }],
         }

@@ -396,6 +396,7 @@ pub(super) async fn walk_bot_to_logout(
                 path,
                 move |at, direction| destination(&world, at, direction),
                 Some(STEP_BUDGET),
+                None,
             )
             .await
         },

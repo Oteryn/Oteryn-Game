@@ -89,6 +89,7 @@ enum ActionContext<'a> {
     CakeBaker(&'a CakeBakerContext),
     Ground(&'a GroundActionContext),
     DispenserTarget(&'a GroundActionContext),
+    DispenserMapTarget(&'a super::map_item_mint::FrozenMint),
     DispenserHouseTarget(&'a HouseActionContext),
 }
 
@@ -168,6 +169,33 @@ impl DurabilityRoot {
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub async fn consume_dispenser_from_map<C: ItemLoopContent>(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ConsumeTransformRequest,
+        mint: super::map_item_mint::MapItemMintRequest,
+        native: &NativeGameplayState,
+        content: &C,
+    ) -> Result<Option<ConsumeTransformResult>, super::map_item_mint::MapItemMintError> {
+        use super::map_item_mint::{FrozenMint, MAP_DISPENSER_KEY, MapItemMintError};
+        if mint.command != request.command || mint.item.definition.production_key != MAP_DISPENSER_KEY {
+            return Err(MapItemMintError::InvalidInput);
+        }
+        permit.check_scope(fence.runtime_scope)?;
+        let record = recovery.record_for(self).map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let mut candidate = self.freeze_map_item_mint(recovery, node, fence, mint).await?;
+        self.charge_map_item_mint_work_unit(record, &mut candidate).await?;
+        let frozen = FrozenMint::of(&candidate);
+        Ok(self.consume_transform_inner(
+            permit, recovery, node, fence, request, native, content, false, None,
+            ActionContext::DispenserMapTarget(&frozen),
+        ).await?)
+    }
+
     /// Probe or commit an action. Replay precedes live handle and custody resolution;
     /// an unknown acknowledgement cannot select a second outcome or repeat its grant.
     #[allow(clippy::too_many_arguments)]
@@ -229,6 +257,25 @@ impl DurabilityRoot {
                 return Ok(Some(result));
             }
             if probe { tx.commit(deadline).await?; return Ok(None); }
+            let mut request = request;
+            if let ActionContext::DispenserMapTarget(frozen) = context.3 {
+                use super::map_item_mint::{MapItemMintError, MapItemMintOutcome, commit_frozen_in_transaction};
+                let disposition = match commit_frozen_in_transaction(
+                    &mut tx, context.4, &record, &node, &fence, frozen,
+                ).await? {
+                    Ok(MapItemMintOutcome::Committed(receipt) | MapItemMintOutcome::AlreadyCommitted(receipt)) => {
+                        request.target = Some(receipt.item_instance_id);
+                        None
+                    }
+                    Err(MapItemMintError::Refused(_)) => Some(UseDisposition::StaleState),
+                    Err(MapItemMintError::Unavailable(error)) => return Err(error),
+                    Err(MapItemMintError::CapacityExceeded) => return Err(DurabilityError::Unavailable),
+                    Err(_) => Some(UseDisposition::Rejected),
+                };
+                if let Some(disposition) = disposition {
+                    return Ok(Some(ConsumeTransformResult::refused(disposition)));
+                }
+            }
             if let ActionContext::DispenserHouseTarget(house) = context.3 {
                 super::db::lock_admission_relations(&mut tx).await?;
                 if !house.dispenser_current(&mut tx, &node).await? {
@@ -329,7 +376,7 @@ async fn write<C: ItemLoopContent>(
             Some(plan) => Some(plan),
             None if matches!(
                 ground,
-                ActionContext::DispenserTarget(_) | ActionContext::DispenserHouseTarget(_)
+                ActionContext::DispenserTarget(_) | ActionContext::DispenserMapTarget(_) | ActionContext::DispenserHouseTarget(_)
             ) =>
             {
                 return Ok(ConsumeTransformResult::refused(

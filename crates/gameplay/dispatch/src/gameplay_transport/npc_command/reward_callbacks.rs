@@ -110,6 +110,40 @@ pub(super) fn prepare(
         intent,
         runtime,
         |context, topic, _, tracks| {
+            const EROTH_AUTHORED: &str = "oteryn:quest-reward/to-blind-the-enemy/";
+            const EROTH_LEGACY: &str = "oteryn:quest-reward/elvenbane-mirror-";
+            const EROTH_LEGACY_TRACK: &str =
+                "oteryn:quest-progress/quest/u8_1/to_blind_the_enemy/questline";
+            // Both Eroth programmes use the same NPC and confirmation topic.
+            // New players start the authored journey; existing legacy saves
+            // keep their route through the mirror and report.
+            let eroth_uses_authored = (context.2 == "oteryn:npc.eroth"
+                && catalogue
+                    .transition("oteryn:quest-reward/to-blind-the-enemy/offer")
+                    .is_some())
+            .then(|| {
+                tracks
+                    .get(EROTH_LEGACY_TRACK)
+                    .is_none_or(|stage| *stage <= 0)
+                    || tracks
+                        .get("oteryn:quest-progress/to-blind-the-enemy/mission")
+                        .is_some_and(|stage| *stage > 0)
+            });
+            let callbacks = callbacks
+                .iter()
+                .filter(|callback| match eroth_uses_authored {
+                    Some(true) => !callback.key.starts_with(EROTH_LEGACY),
+                    Some(false) => !callback.key.starts_with(EROTH_AUTHORED),
+                    None => true,
+                });
+            let offers = offers.offers.iter().filter(|offer| {
+                eroth_uses_authored != Some(true)
+                    || offer.npc != context.2
+                    || !offer
+                        .storage
+                        .iter()
+                        .any(|gate| gate.track == EROTH_LEGACY_TRACK)
+            });
             let text = callback_keyword(&context.2, &intent.text);
             let meets_level = |minimum: Option<u32>| {
                 minimum.is_none_or(|minimum| inventory.is_some_and(|facts| facts.level >= minimum))
@@ -139,7 +173,7 @@ pub(super) fn prepare(
                 } else {
                     topic.number
                 };
-                let matching_stage = callbacks.iter().filter(|c| {
+                let matching_stage = callbacks.filter(|c| {
                     c.carried_item.is_none()
                         && c.npc == context.2
                         && c.topic == topic
@@ -195,8 +229,7 @@ pub(super) fn prepare(
                 return rottin_dialogue(topic, &text, tracks, refusal);
             }
             if let Some(offer) = offers
-                .offers
-                .iter()
+                .clone()
                 .find(|c| c.admits(&context.2, topic.number, &text, catalogue, tracks))
             {
                 if !meets_level(offer.minimum_level) {
@@ -226,7 +259,7 @@ pub(super) fn prepare(
             }
             // A source-owned offer may explain why a mission prerequisite is
             // missing. Select an unambiguous stage before falling back to lore.
-            let mut blocked = offers.offers.iter().filter(|offer| {
+            let mut blocked = offers.filter(|offer| {
                 offer.npc == context.2
                     && offer.matches_topic(topic.number)
                     && offer.keywords.contains(&text)
@@ -242,7 +275,7 @@ pub(super) fn prepare(
             // A unique exchange owns its exact keyword even before eligibility.
             // Let the locked writer return the stage refusal, rather than falling
             // through to an unrelated legacy dialogue with the same text.
-            let mut matching = callbacks.iter().filter(|c| {
+            let mut matching = callbacks.filter(|c| {
                 c.carried_item.is_none()
                     && c.npc == context.2
                     && c.topic == topic.number
@@ -335,6 +368,7 @@ pub(super) fn unhandled_confirmation(
     command: UseCommand,
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
+    received_at: oteryn_simulation_determinism::SemanticTimeMicros,
 ) -> bool {
     let text = intent.text.trim().to_ascii_lowercase();
     if matches!(text.as_str(), "hi" | "hello" | "bye" | "farewell") {
@@ -349,7 +383,7 @@ pub(super) fn unhandled_confirmation(
     ) else {
         return false;
     };
-    if admission.has_pending_paid_confirmation(command, intent, &context) {
+    if admission.has_pending_paid_confirmation(command, intent, &context, received_at) {
         return false;
     }
     let Ok(sessions) = admission.states.npc_conversations.sessions.lock() else {

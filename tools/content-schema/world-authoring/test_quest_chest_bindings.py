@@ -13,6 +13,122 @@ import world_region_codec as codec
 
 
 class QuestChestBindings(unittest.TestCase):
+    def test_tyrsung_barrel_publishes_crystal_reward_uid(self):
+        placements = chests.ROOT / chests.INDEX
+        palette = json.loads(placements.read_bytes())["palette"]
+        region = placements.with_name(codec.region_name(8, 126, 122))
+        _, _, _, sectors = codec.decode_region(region.read_bytes())
+        barrels = [
+            (attributes or {}).get("unique")
+            for _, tiles in sectors
+            for x, y, _, _, _, items in tiles
+            if (x, y) == (32431, 31235)
+            for index, depth, attributes in items
+            if depth == 0 and palette[index]["source_item_id"] == 2523
+        ]
+        self.assertEqual(barrels, [6216])
+
+    def test_classic_quest_boxes_have_exact_shipped_selectors(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        for z, rx, ry, expected in (
+            (
+                9,
+                129,
+                125,
+                {
+                    (33038, 32171): (2472, 6049),
+                    (33039, 32171): (2472, 6050),
+                    (33040, 32171): (2472, 6051),
+                },
+            ),
+            (5, 126, 124, {(32467, 31970): (2469, 6257)}),
+        ):
+            path = (
+                chests.ROOT / "content/world/placements" / codec.region_name(z, rx, ry)
+            )
+            raw = path.read_bytes()
+            _, _, _, sectors = codec.parse_region(raw)
+            selectors = {}
+            for local, offset, length in sectors:
+                payload = codec.zstandard.ZstdDecompressor().decompress(
+                    raw[offset : offset + length],
+                    max_output_size=codec.MAX_SECTOR_BYTES,
+                )
+                for x, y, _, _, _, items in codec.decode_sector(
+                    payload, rx * 8 + local % 8, ry * 8 + local // 8
+                ):
+                    if (x, y) not in expected:
+                        continue
+                    for palette, depth, attrs in items:
+                        appearance = index["palette"][palette]["source_item_id"]
+                        if depth == 0 and appearance == expected[(x, y)][0]:
+                            self.assertNotIn((x, y), selectors)
+                            selectors[(x, y)] = (
+                                appearance,
+                                (attrs or {}).get("unique"),
+                            )
+            self.assertEqual(selectors, expected)
+
+    def test_quest_reward_selectors_are_present_in_repository_regions(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        selectors = (
+            (32565, 32119, 3, 2472, 6160),
+            (33143, 31719, 10, 2473, 6039),
+            (33143, 31721, 10, 2473, 6040),
+            (33189, 31688, 14, 2469, 6041),
+            (33195, 31688, 14, 2469, 6042),
+            (33188, 31682, 14, 2469, 6071),
+            (33158, 31621, 15, 2469, 6043),
+            (33158, 31622, 15, 2469, 6044),
+            (32970, 32646, 8, 2472, 6258),
+            (32972, 31461, 10, 1986, 6278),
+        )
+        for x, y, z, appearance, unique in selectors:
+            with self.subTest(unique=unique):
+                region = (
+                    chests.ROOT
+                    / "content/world/placements"
+                    / codec.region_name(z, x // 256, y // 256)
+                )
+                _, _, _, sectors = codec.decode_region(region.read_bytes())
+                found = [
+                    (attrs or {}).get("unique")
+                    for _, tiles in sectors
+                    for tx, ty, _, _, _, items in tiles
+                    if (tx, ty) == (x, y)
+                    for palette, depth, attrs in items
+                    if depth == 0
+                    and index["palette"][palette]["source_item_id"] == appearance
+                ]
+                self.assertEqual(found, [unique])
+
+    def test_committed_source_boxes_and_access_attributes(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        for position, appearance, attribute, value in (
+            ((32450, 32044, 8), 6248, "action", 3142),
+            ((32601, 31776, 9), 2473, "unique", 6152),
+            ((32769, 32302, 10), 2480, "unique", 6063),
+            ((32774, 32289, 10), 355, "action", 101),
+            ((32778, 32282, 11), 4024, "unique", 6062),
+        ):
+            with self.subTest(position=position):
+                x, y, z = position
+                name = codec.region_name(z, x // 256, y // 256)
+                path = f"content/world/placements/{name}"
+                (entry,) = [r for r in index["regions"] if r["path"] == path]
+                raw = (chests.ROOT / path).read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["sha256"])
+                matches = [
+                    (attrs or {}).get(attribute)
+                    for _, tiles in codec.decode_region(raw)[3]
+                    for tx, ty, _, _, _, items in tiles
+                    if (tx, ty) == (x, y)
+                    for item, depth, attrs in items
+                    if not depth
+                    and index["palette"][item]["source_item_id"] == appearance
+                ]
+                self.assertEqual(matches, [value])
+
     def test_current_committed_corpus_captures_exact_elvenbane_startup_uids(self):
         from pathlib import Path
 
@@ -108,6 +224,20 @@ class QuestChestBindings(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "LEVEL_SOURCE_PIN"):
             chests.captured_level_access(raw + b"changed", {key})
+
+    def test_fishnapped_goldfish_retains_its_unmovable_startup_uid(self):
+        index = json.loads((chests.ROOT / chests.INDEX).read_bytes())
+        path = chests.ROOT / "content/world/placements" / codec.region_name(6, 126, 128)
+        _, _, _, sectors = codec.decode_region(path.read_bytes())
+        fish = [
+            attrs
+            for _, tiles in sectors
+            for x, y, _, _, _, items in tiles
+            if (x, y) == (32359, 32791)
+            for ordinal, depth, attrs in items
+            if depth == 0 and index["palette"][ordinal]["source_item_id"] == 7936
+        ]
+        self.assertEqual(fish, [{"unique": 9266}])
 
     def test_annihilator_retains_exact_level100_startup_gate_with_reward(self):
         selected, _ = chests.selections()
