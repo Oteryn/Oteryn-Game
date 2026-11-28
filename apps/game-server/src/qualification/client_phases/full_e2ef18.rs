@@ -274,20 +274,32 @@ fn learned(
 }
 
 async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    // Node boot configures a 60-second combat lock. Observe its server state
+    // before issuing the single asserted logout.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. })
-                if tokio::time::Instant::now() < deadline =>
-            {
-                client.service_liveness(Duration::from_millis(250)).await?;
-                client.take_events();
-            }
-            _ => return Err(format!("step=logout observed={reply:?} need=accepted-after-lock").into()),
+        let state = client
+            .session_mut()
+            .combat_state()
+            .ok_or("step=logout observed=no-combat-state")?;
+        if state.target.is_some() {
+            return Err(format!("step=logout observed=held-target need=disengaged state={state:?}").into());
         }
+        if !state.in_fight {
+            break;
+        }
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            return Err("step=logout observed=combat-lock-still-active need=natural-expiry".into());
+        }
+        client.service_liveness(remaining.min(Duration::from_millis(250))).await?;
+        client.take_events();
     }
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={reply:?} need=accepted-after-lock").into());
+    }
+    Ok(())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {

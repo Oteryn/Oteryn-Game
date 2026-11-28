@@ -30,6 +30,16 @@ class RangedItemProfilesTest(unittest.TestCase):
         for item_id, kind, element, mana in [(3074, 'WAND', 'ENERGY', 1), (3066, 'ROD', 'EARTH', 2)]:
             self.assertEqual(profiles[item_id], dict(kind=kind, element=element, damage_min=8, damage_max=18, mana_per_shot=mana, range_cells=3))
 
+    def test_scorcher_global_profile_reaches_starter_provider(self):
+        expected = dict(kind='WAND', element='FIRE', damage_min=6, damage_max=10,
+                        mana_per_shot=1, range_cells=3)
+        profiles, _, _ = ranged.source_profiles(ranged.ROOT)
+        self.assertEqual(profiles[21348], expected)
+        starter = json.loads((ranged.ROOT / 'content/items/definitions/starting-loadout-profiles.json').read_bytes())
+        record = next(row for row in starter['records']
+                      if row['production_definition']['production_key'] == 'oteryn:item.tibia.i21348')
+        self.assertEqual(record['authoring']['ranged'], expected)
+
     def test_defaults_are_compiled_once_and_ranges_expand(self):
         raw = item({'weaponType': 'distance', 'ammoType': 'arrow'}, item_id='fromid="1" toid="2"')
         profiles, held, counts = ranged.build(raw)

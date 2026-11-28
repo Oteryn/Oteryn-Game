@@ -61,9 +61,18 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         .ok_or("C14 raw spell-catalog snapshot was absent")?;
 
     let expected_display = expected(&display, &catalog.entries);
+    let capture_session = uuid_text(session.as_bytes());
+    let catalog_metadata = format!(
+        "{capture_session} {} {} {} {}\n",
+        reply.server_sequence,
+        catalog_snapshot.domain_id,
+        catalog_snapshot.snapshot_type,
+        catalog_snapshot.revision
+    );
     for (file, bytes) in [
         ("c14-skill-display.bin", reply.payload.as_slice()),
         ("c14-spell-catalog.bin", catalog_snapshot.payload.as_slice()),
+        ("c14-spell-catalog-meta.txt", catalog_metadata.as_bytes()),
         ("c14-expected.txt", expected_display.as_bytes()),
     ] {
         std::fs::OpenOptions::new()
@@ -76,6 +85,9 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         "C14_CLIENT_CAPTURE session={session:?} skill_sequence={} catalog_revision={} level={} experience={}",
         reply.server_sequence, catalog_snapshot.revision, display.level, display.experience,
     ));
+    if display.level == 1 && display.experience == 0 {
+        return Err("C14 live capture has no progression: level 1, experience 0".into());
+    }
     Ok(())
 }
 

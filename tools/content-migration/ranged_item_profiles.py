@@ -22,6 +22,8 @@ SOURCE = "imports/canary/items-xml/items.xml"
 REVISION = "47dfd51f45280a59a1d3e50ba7edd573d7234446"
 SOURCE_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 PROFILES = "content/items/definitions/spell-native-profiles.json"
+STARTER_PROFILES = "content/items/definitions/starting-loadout-profiles.json"
+SCORCHER = 21348
 RANGED_PROFILES = "content/items/ranged-profiles.json"
 MANIFEST = "content/spells.manifest.json"
 REPORT = "tools/content-migration/samples/ranged-content-source.json"
@@ -179,7 +181,11 @@ def source_profiles(root):
     raw = (root / SOURCE).read_bytes()
     if hashlib.sha256(raw).hexdigest() != SOURCE_SHA256:
         raise ValueError("RANGED_SOURCE_DIGEST")
-    return build(raw)
+    profiles, held, counts = build(raw)
+    # Tibia Global, The Scorcher (Fandom revision 2026-09-02T23:03:57Z).
+    # https://tibia.fandom.com/wiki/The_Scorcher
+    profiles[SCORCHER].update(damage_min=6, damage_max=10)
+    return profiles, held, counts
 
 
 def item_rows(root):
@@ -252,13 +258,30 @@ def apply_authoring(root, document):
 
 def apply_native(root, generated):
     document = json.loads(generated[PROFILES])
-    apply_authoring(root, document)
+    starter = None
+    starter_scorcher = []
+    if STARTER_PROFILES in generated:
+        starter = json.loads(generated[STARTER_PROFILES])
+        starter_scorcher = [
+            row for row in starter["records"]
+            if row["production_definition"]["production_key"] == f"oteryn:item.tibia.i{SCORCHER}"
+        ]
+    apply_authoring(root, {"records": document["records"] + starter_scorcher})
     # Match the active provider's compact serialization within its existing 8 MiB bound.
     generated[PROFILES] = encode(document)
     manifest = json.loads(generated[MANIFEST])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(
         generated[PROFILES]
     ).hexdigest()
+    if starter_scorcher:
+        rows = ",\n".join("    " + encode(row).decode().rstrip("\n") for row in starter["records"])
+        generated[STARTER_PROFILES] = (
+            '{\n  "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",\n  "records": [\n'
+            + rows + '\n  ]\n}\n'
+        ).encode()
+        manifest["starting_loadout_item_profiles"]["sha256"] = hashlib.sha256(
+            generated[STARTER_PROFILES]
+        ).hexdigest()
     generated[MANIFEST] = encode(manifest)
 
 
