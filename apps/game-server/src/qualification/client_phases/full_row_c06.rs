@@ -56,7 +56,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let scope = SeamClients { accounts: &accounts, characters: &characters, ..*clients };
     let peer = character_prep::dedicated_character(&scope, "NODE_BOOT_C06_PEER_ACCOUNT").await?;
     let (accounts, characters) = peer.replace_slot(&scope, 0)?;
-    let clients = &SeamClients { accounts: &accounts, characters: &characters, ..scope };
+    // The packet account pool also contains fixtures for other rows.
+    // C06 admits only its dedicated peer (slot 0) and caster (slot 1).
+    let clients = &SeamClients {
+        accounts: &accounts[..2],
+        characters: &characters[..2],
+        ..scope
+    };
     if clients.accounts.iter().any(|account| !requires_platform_grant(account)) {
         return Err(super::full_row_c02::PLATFORM_ADMISSION_GAP.into());
     }
