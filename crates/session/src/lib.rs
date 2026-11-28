@@ -19,6 +19,7 @@
 /// Real wire codecs for downstream transport fixtures; no session mutation helpers.
 #[cfg(feature = "test-support")]
 pub mod test_support {
+    pub use crate::framing::capture_server_frames;
     pub use oteryn_protocol_oteryn as wire;
 }
 

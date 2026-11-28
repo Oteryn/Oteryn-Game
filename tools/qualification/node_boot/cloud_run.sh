@@ -85,8 +85,12 @@ uid=$(id -u 2>/dev/null) && [[ "$uid" =~ ^[0-9]+$ ]] || blocked uid_unavailable
   || blocked need_escalated_sandbox
 
 export OTERYN_AUTO_START=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+cargo_build_jobs="${CARGO_BUILD_JOBS:-}"
 # shellcheck source=/dev/null
 source /workspace/oteryn-env/env.sh >/dev/null 2>&1 || blocked cloud_env_unavailable
+if [[ -n "$cargo_build_jobs" ]]; then
+  export CARGO_BUILD_JOBS="$cargo_build_jobs"
+fi
 export OTERYN_AUTO_START=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
 RUNNER_TEMP="$(select_work_parent /tmp /var/tmp /dev/shm "${RUNNER_TEMP:-}" /workspace)" \
   || blocked work_dir_unavailable

@@ -1551,8 +1551,14 @@ e02_client_replay() {
     return 1
   fi
 
+  local binding
+  binding="$(sed -nE 's/^SEAM_EVIDENCE e2e_capture scenario=E02\.client status=CAPTURED .* (session=[0-9a-f-]{36} sequence=[0-9]+)$/\1/p' "$seam_log")"
+  if [[ -z "$binding" ]]; then
+    echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=missing-live-capture-binding"
+    return 1
+  fi
   local replay_test=tests::e2e_e02::e02_coin_inventory_replay
-  if ! replay_output="$(cargo +1.100.0 test --locked -p oteryn-session --lib "$replay_test" -- --exact)"; then
+  if ! replay_output="$(E02_LIVE_CAPTURE_BINDING="$binding" cargo +1.100.0 test --locked -p oteryn-session --lib "$replay_test" -- --exact)"; then
     printf '%s\n' "$replay_output"
     echo "SEAM_EVIDENCE e2e_all scenario=E02.client status=FAIL evidence=replay-failed"
     return 1

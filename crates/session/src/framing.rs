@@ -179,6 +179,24 @@ pub(super) async fn read_frame_after<S: AsyncRead + Unpin>(
     read_frame_body(stream, prefix).await
 }
 
+#[cfg(feature = "test-support")]
+tokio::task_local! {
+    static SERVER_CAPTURE: std::cell::RefCell<Option<Vec<u8>>>;
+}
+
+/// Runs a qualification future with a bounded recording of its incoming frames.
+/// The returned bytes include the original length prefixes. Overflow invalidates the recording.
+#[cfg(feature = "test-support")]
+pub async fn capture_server_frames<T>(future: impl Future<Output = T>) -> (T, Option<Vec<u8>>) {
+    SERVER_CAPTURE
+        .scope(std::cell::RefCell::new(Some(Vec::new())), async {
+            let result = future.await;
+            let frames = SERVER_CAPTURE.with(|capture| capture.borrow_mut().take());
+            (result, frames)
+        })
+        .await
+}
+
 pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     stream: &mut S,
     prefix: [u8; 4],
@@ -186,6 +204,19 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    #[cfg(feature = "test-support")]
+    let _ = SERVER_CAPTURE.try_with(|capture| {
+        const CAPTURE_LIMIT: usize = 16 * 1024 * 1024;
+        let mut capture = capture.borrow_mut();
+        if let Some(frames) = capture.as_mut() {
+            if frames.len() + prefix.len() + body.len() > CAPTURE_LIMIT {
+                *capture = None;
+            } else {
+                frames.extend_from_slice(&prefix);
+                frames.extend_from_slice(&body);
+            }
+        }
+    });
     Ok(body)
 }
 

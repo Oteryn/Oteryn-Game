@@ -1,27 +1,18 @@
 //! E02 client replay capture: the NPC gold-to-platinum exchange changes the backpack coins.
 //! Client owner: the CharacterInventory domain in `crates/session` (`Session::inventory`). The
-//! inventory views are session-owned and re-encoded with the production encoder (C09/I11 practice).
+//! replay consumes the incoming admission and inventory frames from this live session.
 use super::*;
 use oteryn_dev_client::client_runtime::npc_shop as runtime;
 use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
 use oteryn_protocol_oteryn::item_view;
 use oteryn_protocol_oteryn::npc_service as wire;
 
-// Crystal 201189f8 places Kepar at (32193, 32297, 6), by the E02 world start.
+// Global TibiaWiki (Kepar) documents his coin exchange at the Adventurers' Guild.
 const BANKER: &str = "oteryn:npc.kepar";
 const GOLD_ID: u32 = 3031;
 const PLATINUM_ID: u32 = 3035;
 const CRYSTAL_ID: u32 = 3043;
 const PROMPT: &str = "How many platinum coins would you like to get?";
-
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("E02_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
-}
 
 fn pairs(client: &DevClientSession) -> String {
     client.inventory().map_or_else(String::new, |inventory| {
@@ -206,6 +197,23 @@ pub(super) async fn coin_profile<'a>(
     tag: u8,
     refs: [std::num::NonZeroU32; 3],
 ) -> TestResult<(Vec<[u8; 16]>, DevClientSession)> {
+    let characters = seed_coin_profile(clients, row, name, tag, refs).await?;
+    let dedicated = SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let client = connect_world(&dedicated, tag).await?;
+    require_seeded_coins(&client, refs)?;
+    Ok((characters, client))
+}
+
+async fn seed_coin_profile(
+    clients: &SeamClients<'_>,
+    row: &str,
+    name: &str,
+    tag: u8,
+    refs: [std::num::NonZeroU32; 3],
+) -> TestResult<Vec<[u8; 16]>> {
     mod hunt_route {
         use super::*;
         include!("qualification_hunt_route.rs");
@@ -213,7 +221,10 @@ pub(super) async fn coin_profile<'a>(
 
     let mut characters = clients.characters.to_vec();
     characters[1] = hunt_route::qualification_character(clients, 1, tag, name, "Knight").await?;
-    let dedicated = SeamClients { characters: &characters, ..*clients };
+    let dedicated = SeamClients {
+        characters: &characters,
+        ..*clients
+    };
     let mut client = connect_world(&dedicated, tag).await?;
     let before = backpack_coins(&client, refs)?;
     if before != [50, 0, 0] {
@@ -233,13 +244,15 @@ pub(super) async fn coin_profile<'a>(
     if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("E02 setup logout refused: {:?}", logout.result).into());
     }
-    drop(client);
-    let client = connect_world(&dedicated, tag).await?;
-    let after = backpack_coins(&client, refs)?;
+    Ok(characters)
+}
+
+fn require_seeded_coins(client: &DevClientSession, refs: [std::num::NonZeroU32; 3]) -> TestResult {
+    let after = backpack_coins(client, refs)?;
     if after != [100, 0, 0] {
         return Err(format!("E02 seeded gold expected [100, 0, 0], observed {after:?}").into());
     }
-    Ok((characters, client))
+    Ok(())
 }
 
 fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
@@ -254,30 +267,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
+    let world = load_world(
+        bytes,
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let refs = coin_refs()?;
-    let (characters, mut client) =
-        coin_profile(clients, "E02.client", "Coin Exchange Capture", 0x33, refs).await?;
-    let dedicated = SeamClients { characters: &characters, ..*clients };
-    let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
-    let initial = backpack_coins(&client, refs)?;
-    let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
-    let before_pairs = pairs(&client);
-    let before_payload = encoded_backpack(&client)?;
-    let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
-    let platinum = [initial[0] - 100, initial[1] + 1, initial[2]];
-    wait_coins(&mut client, refs, platinum, "gold-to-platinum").await?;
-    if !exact_delta(initial, platinum, [-100, 1, 0]) || !reply.lines.iter().any(|line| line == "Here you are.") {
-        return Err(format!("step=gold-to-platinum observed=reply:{:?},coins:{platinum:?}", reply.lines).into());
-    }
-    let after_pairs = pairs(&client);
-    capture("e02-before.bin", &before_payload);
-    capture("e02-after.bin", &encoded_backpack(&client)?);
-    capture(
-        "e02-expected.txt",
-        format!("before={before_pairs}\nafter={after_pairs}\n").as_bytes(),
-    );
+    use oteryn_dev_client::native_session::test_support::capture_server_frames;
+
+    let characters =
+        seed_coin_profile(clients, "E02.client", "Coin Exchange Capture", 0x33, refs).await?;
+    let dedicated = SeamClients {
+        characters: &characters,
+        ..*clients
+    };
+    let (exchange_result, frames) = capture_server_frames(async {
+        let mut client = connect_world(&dedicated, 0x33).await?;
+        require_seeded_coins(&client, refs)?;
+        let talk_book = full_e2ef20::qualification_npc_talk_book(&mut client).await?;
+        let initial = backpack_coins(&client, refs)?;
+        let (actor, npc_key) = find_exchange_npc(&mut client, world, &metadata.npcs, &talk_book).await?;
+        let before = pairs(&client);
+        let before_sequence = client.last_server_sequence();
+        let reply = exchange(&mut client, actor, &["1", "yes"]).await?;
+        let platinum = [initial[0] - 100, initial[1] + 1, initial[2]];
+        wait_coins(&mut client, refs, platinum, "gold-to-platinum").await?;
+        if !exact_delta(initial, platinum, [-100, 1, 0]) || !reply.lines.iter().any(|line| line == "Here you are.") {
+            return Err(format!("step=gold-to-platinum observed=reply:{:?},coins:{platinum:?}", reply.lines).into());
+        }
+        let after = pairs(&client);
+        let after_sequence = client.last_server_sequence();
+        let proof = format!("before={before}\nafter={after}\nbefore_sequence={before_sequence}\nafter_sequence={after_sequence}\n");
+        TestResult::Ok((client, npc_key, initial, platinum, proof))
+    }).await;
+    let (mut client, npc_key, initial, platinum, proof) = exchange_result?;
     let old_session = client.join_snapshot().game_session_id;
+    let session_id = uuid_text(old_session.as_bytes());
+    let sequence = client.last_server_sequence();
+    let frames = frames.ok_or("E02 capture overflow")?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
@@ -299,11 +327,23 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err("step=client-capture-final-logout observed=refused".into());
     }
-    Ok(format!("npc={npc_key} before={initial:?} after={platinum:?} relog={persisted:?}"))
+    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        let root = Path::new(&root);
+        std::fs::write(root.join("e02-server.frames"), frames)?;
+        std::fs::write(
+            root.join("e02-expected.txt"),
+            format!("session={session_id}\n{proof}"),
+        )?;
+    }
+    Ok(format!(
+        "npc={npc_key} before={initial:?} after={platinum:?} relog={persisted:?} session={session_id} sequence={sequence}"
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=E02.client status=CAPTURED evidence={observed}"
         )),

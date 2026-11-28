@@ -2,8 +2,8 @@
 //! by `SnapshotState::decode` and applied by `Session::apply_state_delta`
 //! (`crates/session/src/domain_dispatch.rs`), read through `Session::inventory`.
 //!
-//! The before inventory and the applied after inventory are session-owned views of the same
-//! character, re-encoded by the row with the production encoder (the C09/I11 practice).
+//! The live case admits from the captured server frames, then passes the original inventory
+//! deltas through the session reducer. The standalone synthetic fixture checks codec negatives.
 use super::*;
 use crate::tests::{BoxError, admission_with, join_peer_with};
 use oteryn_protocol_oteryn::{encode_state_delta, item_view};
@@ -52,22 +52,6 @@ fn entry(handle: u64, reference: u32, count: u32) -> Result<ItemEntry, BoxError>
 }
 
 fn fixture() -> Result<Capture, BoxError> {
-    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let path = std::path::Path::new(&path);
-        let expected = std::fs::read_to_string(path.join("e02-expected.txt"))?;
-        let value = |key: &str| -> Result<&str, BoxError> {
-            expected
-                .lines()
-                .find_map(|line| line.strip_prefix(key))
-                .ok_or_else(|| format!("e02 expected lacks {key}").into())
-        };
-        return Ok(Capture {
-            before: std::fs::read(path.join("e02-before.bin"))?,
-            after: std::fs::read(path.join("e02-after.bin"))?,
-            before_units: parse(value("before=")?)?,
-            after_units: parse(value("after=")?)?,
-        });
-    }
     let encode = |entries: Vec<ItemEntry>| -> Result<Vec<u8>, BoxError> {
         let inventory = CharacterInventory {
             main_backpack: Some(entry(2, 2854, 1)?),
@@ -84,9 +68,82 @@ fn fixture() -> Result<Capture, BoxError> {
     })
 }
 
+async fn replay_live(path: &std::path::Path) -> Result<(), BoxError> {
+    let expected = std::fs::read_to_string(path.join("e02-expected.txt"))?;
+    let value = |key: &str| -> Result<&str, BoxError> {
+        expected
+            .lines()
+            .find_map(|line| line.strip_prefix(key))
+            .ok_or_else(|| format!("E02 expected lacks {key}").into())
+    };
+    let session_id = value("session=")?;
+    let before_sequence: u64 = value("before_sequence=")?.parse()?;
+    let after_sequence: u64 = value("after_sequence=")?.parse()?;
+    let binding = format!("session={session_id} sequence={after_sequence}");
+    if let Ok(live_binding) = std::env::var("E02_LIVE_CAPTURE_BINDING")
+        && binding != live_binding
+    {
+        return Err("E02 replay binding differs from live verdict".into());
+    }
+    let before = parse(value("before=")?)?;
+    let after = parse(value("after=")?)?;
+    assert_ne!(before, after);
+    assert!(before_sequence < after_sequence);
+
+    let frames = std::fs::read(path.join("e02-server.frames"))?;
+    let (client, mut server) = tokio::io::duplex(256 * 1024);
+    let peer = tokio::spawn(async move { server.write_all(&frames).await });
+    let mut session =
+        Session::admit(client, admission_with(CLIENT_SUPPORTED_CAPABILITIES)?).await?;
+    let live_session: String = session
+        .join_snapshot()
+        .game_session_id
+        .as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    assert_eq!(live_session, session_id.replace('-', ""));
+    assert!(session.last_server_sequence() <= before_sequence);
+
+    let mut inventory_changed = false;
+    while session.last_server_sequence() < after_sequence {
+        if session.last_server_sequence() == before_sequence {
+            assert_eq!(units(session.inventory()), before);
+        }
+        let (kind, sequence, payload) =
+            session.read_sequenced_push("E02 captured exchange").await?;
+        if kind == MessageType::StateDelta
+            && decode_state_delta(&payload)?.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY
+        {
+            session.apply_state_delta(sequence, &payload)?;
+            inventory_changed |= sequence > before_sequence;
+        }
+    }
+    assert!(inventory_changed);
+    assert_eq!(units(session.inventory()), after);
+    let mut trailing = Vec::new();
+    tokio::time::timeout(
+        Duration::from_secs(2),
+        session.stream.read_to_end(&mut trailing),
+    )
+    .await??;
+    assert!(
+        trailing.is_empty(),
+        "frames remain after the live sequence boundary"
+    );
+    peer.await??;
+    Ok(())
+}
+
 #[test]
 fn e02_coin_inventory_replay() -> Result<(), BoxError> {
     crate::tests::block_on(async {
+        if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            return replay_live(std::path::Path::new(&path)).await;
+        }
+        if std::env::var_os("E02_LIVE_CAPTURE_BINDING").is_some() {
+            return Err("E02 live replay requires a capture directory".into());
+        }
         let capture = fixture()?;
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let before = capture.before.clone();
