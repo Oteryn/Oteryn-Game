@@ -8,6 +8,7 @@ use std::num::NonZeroU32;
 #[derive(Default)]
 struct MoveOwner {
     moved: Cell<bool>,
+    written: Cell<bool>,
     refused: Cell<bool>,
     reads: Cell<usize>,
     background_operations: Cell<usize>,
@@ -46,12 +47,16 @@ impl FreshAdmissionAuthority for MoveOwner {
         _: ExactActorRef,
         _: GameSessionId,
     ) -> Option<InventoryItems> {
+        let mut document = item(2);
+        if self.written.get() {
+            document.item_definition_ref = NonZeroU32::new(2)?;
+        }
         Some(InventoryItems {
             main_backpack: Some(item(1)),
             entries: if self.moved.get() {
-                vec![item(2), item(3)]
+                vec![document, item(3)]
             } else {
-                vec![item(2)]
+                vec![document]
             },
             equipment: Vec::new(),
         })
@@ -97,6 +102,25 @@ impl FreshAdmissionAuthority for MoveOwner {
         self.moved.set(true);
         self.refused.set(true);
         crate::gameplay_transport::item_move::LoopMoveResult::Committed
+    }
+
+    async fn mail_command(
+        &self,
+        _: ExactActorRef,
+        _: AdmittedSession,
+        _: u64,
+        payload: &[u8],
+        target: Option<ItemKey>,
+        _: Option<ItemKey>,
+    ) -> Option<oteryn_protocol_oteryn::mail::MailOutcome> {
+        use oteryn_protocol_oteryn::mail::{MailIntent, MailOutcome, decode_intent};
+        assert_eq!(target, Some(item(2).key));
+        assert!(matches!(
+            decode_intent(payload),
+            Ok(MailIntent::WriteText { .. })
+        ));
+        self.written.set(true);
+        Some(MailOutcome::TextWritten)
     }
 }
 
@@ -221,6 +245,69 @@ fn item_move_refused_container_without_browse_retries_next_visibility_tick() -> 
         })?
         .join()
         .map_err(|_| "container retry test thread panicked")?
+}
+
+#[test]
+fn committed_mail_write_refreshes_the_document_definition() -> TestResult {
+    use oteryn_protocol_oteryn::mail::{self, MailIntent};
+
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(async {
+                    let authority = MoveOwner::default();
+                    let (mut stream, _client) = tokio::io::duplex(1 << 20);
+                    let mut admitted = admitted(false)?;
+                    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                        &[4, 6, u32::from(mail::CAPABILITY_MAIL_V1)],
+                    )
+                    .ok_or("mail capabilities")?;
+                    let actor = admitted.runtime_actor.ok_or("actor")?;
+                    let mut session = setup::prepare(
+                        &mut stream,
+                        &mut admitted,
+                        &authority,
+                        IDLE_LIVENESS,
+                        actor,
+                        observation(),
+                        integrity::Integrity::default(),
+                    )
+                    .await
+                    .map_err(|_| "setup")?;
+                    let view = session.item_view.as_ref().ok_or("item view")?;
+                    let revision = view.continuity().inventory_revision;
+                    let handle = view.table().handle(&item(2).key).ok_or("document handle")?;
+                    let payload = mail::encode_intent(&MailIntent::WriteText {
+                        item_handle: handle.get(),
+                        text: "Sealed inscription".into(),
+                    })
+                    .map_err(|error| format!("{error:?}"))?;
+                    let frame = command_frame(1, u32::from(mail::COMMAND_TYPE_MAIL), &payload)?;
+                    let input = receive(
+                        &mut stream,
+                        &authority,
+                        &mut session,
+                        Next::Held(frame, false, tokio::time::Instant::now()),
+                    )
+                    .await
+                    .map_err(|_| "receive inscription")?
+                    .ok_or("inscription input")?;
+                    command::execute(&mut stream, &authority, &mut session, input)
+                        .await
+                        .map_err(|_| "execute inscription")?;
+                    assert!(authority.written.get(), "MAIL must commit through dispatch");
+                    let view = session.item_view.as_ref().ok_or("updated view")?;
+                    assert_eq!(view.continuity().inventory_revision, revision + 1);
+                    assert_eq!(view.table().handle(&item(2).key), Some(handle));
+                    Ok(())
+                })
+        })?
+        .join()
+        .map_err(|_| "mail refresh test thread panicked")?
 }
 
 #[test]
