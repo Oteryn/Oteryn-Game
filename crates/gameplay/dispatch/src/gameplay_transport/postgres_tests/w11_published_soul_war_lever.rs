@@ -3,6 +3,8 @@ use super::fixture::{Harness, debug};
 use super::srx3_activity_source_fixture::prepare_player;
 use super::{TestResult, reset};
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+use crate::durability::activity_handoff::{ActivityContentPin, ActivityHandoffOwner};
+use crate::durability::with_stalled_commit_response;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
@@ -16,7 +18,7 @@ fn w11_soul_war_lever_enters_pinned_spite_from_published_world_postgres() -> Tes
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
-        scenario(admin, PinnedActivitySourceRoom::GoshnarsSpite).await
+        scenario(admin, PinnedActivitySourceRoom::GoshnarsSpite, false).await
     })
 }
 
@@ -26,11 +28,25 @@ fn w11_soul_war_published_final_lever_refuses_before_chain_postgres() -> TestRes
         return Ok(());
     };
     super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
-        scenario(admin, PinnedActivitySourceRoom::GoshnarsMegalomania).await
+        scenario(admin, PinnedActivitySourceRoom::GoshnarsMegalomania, false).await
     })
 }
 
-async fn scenario(admin: String, source: PinnedActivitySourceRoom) -> TestResult {
+#[test]
+fn w11_soul_war_spite_lever_keeps_lost_publication_ack_outstanding_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run_async(async move |_| {
+        scenario(admin, PinnedActivitySourceRoom::GoshnarsSpite, true).await
+    })
+}
+
+async fn scenario(
+    admin: String,
+    source: PinnedActivitySourceRoom,
+    stall_publication: bool,
+) -> TestResult {
     reset();
     let (creature, expect_entry) = match source {
         PinnedActivitySourceRoom::GoshnarsSpite => ("oteryn:creature.goshnar_s_spite", true),
@@ -136,6 +152,37 @@ async fn scenario(admin: String, source: PinnedActivitySourceRoom) -> TestResult
         .item_fence
         .ok_or("current World fence")?
         .runtime_scope;
+    if stall_publication {
+        let body = wire::encode_boss_key(creature).map_err(debug)?;
+        let (result, stalled) = with_stalled_commit_response(owner.boss_activity_wire(
+            admitted,
+            admitted.continuity.next_command_id,
+            wire::COMMAND_TYPE_BOSS_LEVER,
+            &body,
+        ))
+        .await;
+        assert!(stalled, "first Spite lever must reach the publication COMMIT");
+        h.root.await_ready().await?;
+        let publication = ActivityHandoffOwner::new(h.root.clone())
+            .read_boss_room_with_pin(
+                &authority,
+                owner.holder,
+                admitted.item_fence.ok_or("current World fence")?,
+                "oteryn:boss.goshnar_s_spite",
+                ActivityContentPin {
+                    coordinate_frame_digest: scene.pin.frame_binding_digest(),
+                    map_revision_digest: scene.pin.map_revision_digest(),
+                    server_artifact_digest: scene.pin.server_artifact_digest(),
+                },
+            )
+            .await?
+            .ok_or("publication must be readable with the committed World pin")?;
+        assert_eq!(publication.boss_creature_key, creature);
+        assert!(
+            result.is_none(),
+            "lost publication acknowledgment must leave the lever outstanding: {result:?}"
+        );
+    }
     let (_, result, barrier) =
         super::boss_activity_fixtures::exchange(&owner, &mut admitted, creature, expect_entry)
             .await?;

@@ -2,6 +2,7 @@
 //! shared scope handoff. A client key never supplies an actor, position or grant.
 use super::connection::{AdmittedSession, ConnectionIdentifiers};
 use super::native_activity::{NativeActivityOutcome, boss_room_native_ready};
+use super::soul_war_entry::SoulWarCatalogueError;
 use super::{ComposedFreshAdmission, SecureIdentifiers};
 use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterRequest, ActivityHandoffOwner, ActivityParticipant,
@@ -156,13 +157,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refusal(reason);
         }
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER
-            && soul_war.is_some()
-            && let Err(reason) = self
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER && soul_war.is_some() {
+            match self
                 .prepare_soul_war_catalogue(admitted, &intent.boss_key)
                 .await
-        {
-            return refusal(reason);
+            {
+                Ok(()) => {}
+                Err(SoulWarCatalogueError::Refused(reason)) => return refusal(reason),
+                Err(SoulWarCatalogueError::Outstanding) => return None,
+            }
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
             && rotten.is_some()

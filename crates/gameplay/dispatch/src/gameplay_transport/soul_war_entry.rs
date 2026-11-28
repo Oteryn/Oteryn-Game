@@ -3,10 +3,22 @@ use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::content::bosses::activity_template::{
     PinnedActivitySourceRoom as Room, QualifiedActivityRoomTemplate,
 };
+use crate::durability::DurabilityError;
 use crate::durability::activity_handoff::{
     ActivityHandoffOwner, ActivityRefusal, boss_room::BossRoomDefinition,
 };
 use crate::foundation::{ChannelContentPin, MovementLocalPosition};
+
+pub(super) enum SoulWarCatalogueError {
+    Refused(ActivityRefusal),
+    Outstanding,
+}
+
+impl From<ActivityRefusal> for SoulWarCatalogueError {
+    fn from(reason: ActivityRefusal) -> Self {
+        Self::Refused(reason)
+    }
+}
 
 pub(super) fn is_soul_war(key: &str) -> Option<&'static str> {
     Some(match key {
@@ -89,7 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         admitted: AdmittedSession,
         key: &str,
-    ) -> Result<(), ActivityRefusal> {
+    ) -> Result<(), SoulWarCatalogueError> {
         let template = self.soul_war_template(key)?;
         let active = self
             .active_generation
@@ -118,7 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let qualified =
             origin.pinned_activity_source_room() == source(key) || world_origin.is_some();
         if !qualified {
-            return Err(ActivityRefusal::ContentUnavailable);
+            return Err(ActivityRefusal::ContentUnavailable.into());
         }
         let fence = admitted
             .item_fence
@@ -137,15 +149,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 world_origin.as_ref().map(|_| (origin, &origin_pin)),
             )
             .await
-            .map_err(|_error| {
+            .map_err(|error| {
                 #[cfg(test)]
-                eprintln!("PR3056_SOUL_WAR_ENTRY stage=catalogue_activation refusal={_error:?}");
-                ActivityRefusal::AuthorityRejected
+                eprintln!("PR3056_SOUL_WAR_ENTRY stage=catalogue_activation error={error:?}");
+                match error {
+                    DurabilityError::Unavailable | DurabilityError::SessionUseAuthorization(_) => {
+                        ActivityRefusal::AuthorityRejected.into()
+                    }
+                    // Publication and activation can both lose their COMMIT response.
+                    // Only a definite refusal can be written as a terminal result.
+                    _ => SoulWarCatalogueError::Outstanding,
+                }
             })?
         {
             #[cfg(test)]
             eprintln!("PR3056_SOUL_WAR_ENTRY stage=catalogue_activation refusal=ContentChanged");
-            return Err(ActivityRefusal::ContentChanged);
+            return Err(ActivityRefusal::ContentChanged.into());
         }
         Ok(())
     }
