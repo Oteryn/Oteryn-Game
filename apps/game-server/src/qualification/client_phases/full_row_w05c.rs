@@ -199,7 +199,11 @@ pub(super) async fn approach(
     target: TilePos,
 ) -> TestResult<EntityRef> {
     let start = tile(client.world_spatial().actor_position)?;
-    if world.base().tile(target.x, target.y, target.floor).is_none() {
+    if world
+        .base()
+        .tile(target.x, target.y, target.floor)
+        .is_none()
+    {
         return Err(format!(
             "step=walk-weekday-destination observed=Rashid-placement-outside-served-map to={target:?} source=tools/qualification/node_boot/run.sh:139"
         ).into());
@@ -212,7 +216,9 @@ pub(super) async fn approach(
         ), error) })?;
     for _ in 0..8 {
         let actor = {
-            let entities = client.world_entities().ok_or("step=observe-weekday-spawn observed=missing-world-entities")?;
+            let entities = client
+                .world_entities()
+                .ok_or("step=observe-weekday-spawn observed=missing-world-entities")?;
             let mut matches = entities.iter().filter(|entry| rashid_at(entry, target));
             let actor = matches.next().copied().ok_or_else(|| {
                 format!("step=observe-weekday-spawn observed=Rashid-not-visible within-three-tiles-of={target:?}")
@@ -229,7 +235,9 @@ pub(super) async fn approach(
         }
         let path = full_route(world, here, at)
             .ok_or("step=approach-Rashid observed=no-route-to-visible-actor")?;
-        let direction = path.first().ok_or("step=approach-Rashid observed=no-approach-step")?;
+        let direction = path
+            .first()
+            .ok_or("step=approach-Rashid observed=no-approach-step")?;
         walk(client, world, &[*direction]).await?;
     }
     Err("step=approach-Rashid observed=actor-remained-out-of-talk-range".into())
@@ -296,7 +304,8 @@ async fn open_trade(client: &mut DevClientSession, actor: EntityRef) -> TestResu
 
 fn outside_rashid_range(at: TilePos, anchor: TilePos) -> bool {
     at.floor == anchor.floor
-        && u32::from(at.x.abs_diff(anchor.x).max(at.y.abs_diff(anchor.y))) > npc::TALK_RANGE_TILES + 3
+        && u32::from(at.x.abs_diff(anchor.x).max(at.y.abs_diff(anchor.y)))
+            > npc::TALK_RANGE_TILES + 3
 }
 
 fn range_refused(status: CommandStatus, disposition: npc::NpcIntentDisposition) -> bool {
@@ -311,7 +320,7 @@ async fn refusal(
 ) -> TestResult {
     let origin = tile(client.world_spatial().actor_position)?;
     let path = route(world, origin, |at| outside_rashid_range(at, npc_position))
-    .ok_or("step=leave-range observed=no-route need=walkable-tile-beyond-NPC-range")?;
+        .ok_or("step=leave-range observed=no-route need=walkable-tile-beyond-NPC-range")?;
     walk(client, world, &path).await?;
     client.take_events();
     let payload = npc::encode_npc_talk_intent(&npc::NpcTalkIntent {
@@ -470,13 +479,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xe5).await?;
     let target = destination_tile(today()?);
     // A missing weekday destination does not prevent observing the timed NPC.
-    if world.base().tile(target.x, target.y, target.floor).is_none() {
+    if world
+        .base()
+        .tile(target.x, target.y, target.floor)
+        .is_none()
+    {
         let weekday = approach(&mut client, world, target).await;
         let timed = observe_day_night_transition(&mut client, world).await;
         if timed.is_ok() {
             row.pass(DAY_NIGHT_ACTION);
         } else if let Err(error) = timed {
-            evidence(&format!("W05c_GAP step={DAY_NIGHT_ACTION} observed={error}"));
+            evidence(&format!(
+                "W05c_GAP step={DAY_NIGHT_ACTION} observed={error}"
+            ));
         }
         if let Err(error) = logout(&mut client).await {
             evidence(&format!("W05c_GAP step=logout observed={error}"));
@@ -484,18 +499,30 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return weekday.map(|_| ());
     }
     let first_session = client.join_snapshot().game_session_id;
+    let admitted_tile = tile(client.world_spatial().actor_position)?;
     let actor = approach(&mut client, world, target).await?;
     row.pass("walk-weekday-destination");
     open_trade(&mut client, actor).await?;
     row.pass("weekday-dialogue-trade");
     refusal(&mut client, world, actor, target).await?;
     row.pass("out-of-range-refusal");
+    let saved_tile = tile(client.world_spatial().actor_position)?;
+    if saved_tile == admitted_tile {
+        return Err("step=logout-position observed=unchanged-from-admission".into());
+    }
     logout(&mut client).await?;
     drop(client);
 
     let mut fresh = connect_world(clients, 0xe6).await?;
     if fresh.join_snapshot().game_session_id == first_session {
         return Err("step=fresh-admission observed=reused-game-session need=new-session".into());
+    }
+    let resumed_tile = tile(fresh.world_spatial().actor_position)?;
+    if resumed_tile != saved_tile {
+        return Err(format!(
+            "step=fresh-admission-position observed={resumed_tile:?} need={saved_tile:?}"
+        )
+        .into());
     }
     let fresh_target = destination_tile(today()?);
     let actor = approach(&mut fresh, world, fresh_target).await?;
@@ -514,19 +541,46 @@ mod tests {
 
     #[test]
     fn review_rashid_refusal_covers_the_whole_wander_area() {
-        let anchor = TilePos { x: 100, y: 100, floor: -7 };
+        let anchor = TilePos {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
         assert!(!outside_rashid_range(TilePos { x: 107, ..anchor }, anchor));
         assert!(outside_rashid_range(TilePos { x: 108, ..anchor }, anchor));
-        assert!(range_refused(CommandStatus::Rejected, npc::NpcIntentDisposition::NotInRange));
-        assert!(!range_refused(CommandStatus::Rejected, npc::NpcIntentDisposition::RateLimited));
+        assert!(range_refused(
+            CommandStatus::Rejected,
+            npc::NpcIntentDisposition::NotInRange
+        ));
+        assert!(!range_refused(
+            CommandStatus::Rejected,
+            npc::NpcIntentDisposition::RateLimited
+        ));
     }
 
     #[test]
     fn rashid_can_wander_three_tiles_on_the_scheduled_floor() {
-        let target = TilePos { x: 32328, y: 31782, floor: -6 };
-        assert!(rashid_wander_area(TilePos { x: 32331, y: 31779, ..target }, target));
+        let target = TilePos {
+            x: 32328,
+            y: 31782,
+            floor: -6,
+        };
+        assert!(rashid_wander_area(
+            TilePos {
+                x: 32331,
+                y: 31779,
+                ..target
+            },
+            target
+        ));
         assert!(!rashid_wander_area(TilePos { x: 32332, ..target }, target));
-        assert!(!rashid_wander_area(TilePos { floor: -7, ..target }, target));
+        assert!(!rashid_wander_area(
+            TilePos {
+                floor: -7,
+                ..target
+            },
+            target
+        ));
     }
 
     #[test]
