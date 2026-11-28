@@ -444,6 +444,40 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("duplicate-refusal", duplicate.code);
 
+    wait_presence(
+        &mut watcher, entry, Status::Unconfirmed, Some(false), "presence-before-consent",
+    ).await?;
+    let pending = ok(
+        &mut target, &request(wire::Operation::Query, 0, ""), "target-query-pending-consent",
+    ).await?;
+    let pending_view = view(&pending, "target-query-pending-consent")?;
+    let Some([invitation]) = pending_view["consents"].as_array().map(Vec::as_slice) else {
+        return Err("step=presence-consent need=one-pending-invitation".into());
+    };
+    let handle = invitation["handle"].as_u64().filter(|handle| *handle != 0)
+        .ok_or("step=presence-consent need=valid-invitation-handle")?;
+    if invitation["name"].as_str() != Some("Vip Watcher")
+        || invitation["accepted"].as_bool() != Some(false)
+    {
+        return Err("step=presence-consent need=unaccepted-invitation-from-watcher".into());
+    }
+    let accepted = ok(
+        &mut target, &request(wire::Operation::Accept, handle, ""), "target-accept-consent",
+    ).await?;
+    let confirmed = ok(
+        &mut watcher, &request(wire::Operation::Query, 0, ""), "watcher-query-confirmed-entry",
+    ).await?;
+    let mut confirmed_view = retained_view;
+    if confirmed_view["entries"][0]["confirmed"].as_bool() != Some(false) {
+        return Err("step=presence-consent need=unconfirmed-list-entry-before-accept".into());
+    }
+    confirmed_view["entries"][0]["confirmed"] = serde_json::Value::Bool(true);
+    if accepted.revision <= pending.revision
+        || unchanged.revision.checked_add(1) != Some(confirmed.revision)
+        || view(&confirmed, "watcher-query-confirmed-entry")? != confirmed_view
+    {
+        return Err("step=presence-consent need=exact-confirmed-list-entry".into());
+    }
     let online = wait_presence(
         &mut watcher,
         entry,
@@ -491,7 +525,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         "fresh-query",
     )
     .await?;
-    if fresh.revision != unchanged.revision || view(&fresh, "fresh-query")? != retained_view {
+    if fresh.revision != confirmed.revision || view(&fresh, "fresh-query")? != confirmed_view {
         return Err(format!(
             "step=fresh-admission-durability observed=reply:{fresh:?} need=identical-durable-view"
         )
