@@ -71,15 +71,8 @@
                   "floor": -12
                 },
                 "appearance": 5120,
-                "native": {
-                  "position": {
-                    "x": 33271,
-                    "y": 32418,
-                    "floor": -12
-                  },
-                  "appearance": 5120,
-                  "ordinal": 1
-                }
+                "action": 1040,
+                "ordinal": 1
               },
               "reversible": false,
               "requires_world_admission": true,

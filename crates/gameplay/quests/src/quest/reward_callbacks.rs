@@ -1838,36 +1838,6 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
     // Keep published quest snapshots readable after the dialogue and selector changes.
     for (quest, hash) in [
         (
-            "oteryn:quest.authored.top_of_the_city_quest",
-            super::published_quest_pins::hash(
-                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
-            ),
-        ),
-        (
-            "oteryn:quest.koshei_the_deathless_quest",
-            super::published_quest_pins::hash(
-                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
-            ),
-        ),
-        (
-            "oteryn:quest.sinatuki_quest",
-            super::published_quest_pins::hash(
-                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
-            ),
-        ),
-        (
-            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
-            super::published_quest_pins::hash(
-                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
-            ),
-        ),
-        (
-            "oteryn:quest.travora_ticket",
-            super::published_quest_pins::hash(
-                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
-            ),
-        ),
-        (
             "oteryn:quest.citizen_outfits_quest_on_rook",
             ROOK_CITIZEN_BEFORE_NORMA_RESTART,
         ),
@@ -1895,11 +1865,7 @@ pub fn extend(mut catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue,
         if !predecessors.iter().any(|entry| entry.hash == hash) {
             predecessors.push(super::NpcDefinitionPredecessor {
                 hash,
-                defaults: if quest == "oteryn:quest.sinatuki_quest" {
-                    BTreeMap::from([(sinatuki::CONTRIBUTION.into(), 0)])
-                } else {
-                    BTreeMap::new()
-                },
+                defaults: BTreeMap::new(),
             });
         }
     }
@@ -2181,6 +2147,41 @@ fn later_outfit_reward(callback: &RewardCallback) -> bool {
 pub(super) fn retain_qc_reward_predecessors(active: &mut QuestStateCatalogue) {
     type DefinitionPin = (&'static str, [u8; 32], &'static [(&'static str, i64)]);
     const PREVIOUS: &[DefinitionPin] = &[
+        (
+            "oteryn:quest.authored.top_of_the_city_quest",
+            super::published_quest_pins::hash(
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+            ),
+            &[(super::top_of_the_city::ASSASSINS, 0)],
+        ),
+        (
+            "oteryn:quest.koshei_the_deathless_quest",
+            super::published_quest_pins::hash(
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+            ),
+            &[],
+        ),
+        (
+            "oteryn:quest.sinatuki_quest",
+            super::published_quest_pins::hash(
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+            ),
+            &[(sinatuki::CONTRIBUTION, 0)],
+        ),
+        (
+            "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+            super::published_quest_pins::hash(
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+            ),
+            &[],
+        ),
+        (
+            "oteryn:quest.travora_ticket",
+            super::published_quest_pins::hash(
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+            ),
+            &[],
+        ),
         (
             "oteryn:quest.brotherhood_outfits_quest",
             super::published_quest_pins::BROTHERHOOD_BEFORE_DREAD_LORD,
@@ -2625,6 +2626,48 @@ pub fn primary_transition(callback: &RewardCallback) -> Result<QuestTransition, 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reviewed_quest_saves_resume_after_content_corrections() -> Result<(), String> {
+        let loaded = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|err| format!("{err:?}"))?;
+        let catalogue = loaded.catalogue();
+        for (quest, hash, counter) in [
+            (
+                "oteryn:quest.authored.top_of_the_city_quest",
+                b"99c3aa00ad9d7de8643ef8f8097439e138da52df576afe3b46672ca0256a3daf",
+                Some(super::super::top_of_the_city::ASSASSINS),
+            ),
+            (
+                "oteryn:quest.sinatuki_quest",
+                b"d1fabeca86e223f3804fb5809074f7105296aef22d58c79fd8b3b1e87a121423",
+                Some(sinatuki::CONTRIBUTION),
+            ),
+            (
+                "oteryn:quest.twenty_miles_beneath_the_sea_quest",
+                b"5b12a2ef58a71accdc1b61967669d20138bef65e363fa65c337c89e93a262dee",
+                None,
+            ),
+            (
+                "oteryn:quest.koshei_the_deathless_quest",
+                b"7f73c73a296ff0341476e2f970590fb0d2994bd2c86650beafda29309b605887",
+                None,
+            ),
+            (
+                "oteryn:quest.travora_ticket",
+                b"4b02c16e3715b73fe2b18feeace0e01f5762de7440795d819f613002a5f8eaec",
+                None,
+            ),
+        ] {
+            let pin = super::super::published_quest_pins::hash(hash);
+            let defaults = super::super::npc_rules::legacy_defaults(catalogue, quest, &pin)
+                .ok_or_else(|| format!("missing predecessor for {quest}"))?;
+            if let Some(counter) = counter {
+                assert_eq!(defaults.get(counter), Some(&0), "{quest}");
+            }
+        }
+        Ok(())
+    }
+
     #[test]
     fn fiend_programme_requires_the_forgemaster_reward_at_every_stage() -> Result<(), String> {
         let callbacks = super::load()?;
