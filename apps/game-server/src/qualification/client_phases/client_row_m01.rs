@@ -124,11 +124,29 @@ fn position(client: &Client) -> ActorPosition {
     client.world_spatial().actor_position
 }
 
+fn own_motion(client: &Client) -> Option<oteryn_protocol_oteryn::actor_motion::ActorMotion> {
+    let entities = client.world_entities()?;
+    entities
+        .iter()
+        .find(|entity| &entity.entity.identity == entities.own_identity())?
+        .motion
+}
+
 async fn step_once(
     client: &mut Client,
     direction: StepDirection,
     expected: ActorPosition,
 ) -> TestResult<Duration> {
+    let forecast_index = match direction {
+        StepDirection::North => 0,
+        StepDirection::East => 1,
+        StepDirection::South => 2,
+        StepDirection::West => 3,
+        _ => return Err("M01 requires a cardinal STEP".into()),
+    };
+    let forecast = own_motion(client)
+        .ok_or("M01 STEP forecast absent")?
+        .prewalk_ms[forecast_index];
     let outcome = client.step(direction).await?;
     if outcome.disposition != StepDisposition::Moved || position(client) != expected {
         return Err(format!(
@@ -138,18 +156,10 @@ async fn step_once(
         )
         .into());
     }
-    let committed = client
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .find(|entity| &entity.entity.identity == entities.own_identity())
-        })
-        .and_then(|actor| actor.motion)
-        .ok_or("M01 STEP motion absent")?;
-    if outcome.step_wait_ms == 0 || outcome.step_wait_ms != committed.step_duration_ms {
+    let committed = own_motion(client).ok_or("M01 STEP motion absent")?;
+    if forecast == 0 || outcome.step_wait_ms != forecast || committed.step_duration_ms != forecast {
         return Err(format!(
-            "M01 STEP pacing receipt={} motion={}",
+            "M01 STEP pacing forecast={forecast} receipt={} motion={}",
             outcome.step_wait_ms, committed.step_duration_ms
         )
         .into());
@@ -172,18 +182,27 @@ async fn observe(
     Ok(())
 }
 
+fn landing_is_causal(sequence: u64, boundary: u64, peer_seen: bool) -> bool {
+    sequence > boundary && peer_seen
+}
+
 async fn expect_path(
     client: &mut Client,
     label: &str,
     start: ActorPosition,
     receipt_sequence: u64,
     landings: &[ActorPosition],
+    peer_landing: Option<(
+        oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+        ActorPosition,
+    )>,
 ) -> TestResult {
     use oteryn_dev_client::native_session::SessionEvent;
     use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
     let mut deadline = tokio::time::Instant::now() + LANDING_DEADLINE;
     let mut previous = start;
     let mut remaining = landings;
+    let mut peer_seen = peer_landing.is_none();
     loop {
         for event in client.take_events() {
             let (sequence, at) = match event {
@@ -191,6 +210,12 @@ async fn expect_path(
                     (delta.server_sequence, delta.value.actor_position)
                 }
                 SessionEvent::WorldSpatialEntities(delta) => {
+                    if let Some((identity, expected)) = peer_landing {
+                        peer_seen |= delta.server_sequence > receipt_sequence
+                            && delta.value.update.iter().any(|entity| {
+                                entity.entity == identity && entity.position == expected
+                            });
+                    }
                     (delta.server_sequence, delta.value.actor_position)
                 }
                 SessionEvent::TutorialNotice(delta) if matches!(&delta.value, TutorialNotice::StatusText(text) if text == "There is no way.") =>
@@ -199,8 +224,11 @@ async fn expect_path(
                 }
                 _ => continue,
             };
-            if sequence <= receipt_sequence || at == previous {
+            if at == previous {
                 continue;
+            }
+            if !landing_is_causal(sequence, receipt_sequence, peer_seen) {
+                return Err(format!("M01 {label} premature landing {at:?} sequence={sequence} cutoff={receipt_sequence} peer_seen={peer_seen}").into());
             }
             let Some((expected, rest)) = remaining.split_first() else {
                 return Err(format!("M01 {label} moved beyond the expected path to {at:?}").into());
@@ -277,6 +305,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         temple(1),
         receipt_sequence,
         &[temple(2), temple(3), temple(4), temple(5), temple(6)],
+        None,
     )
     .await?;
     evidence("M01_CHECK autowalk PASS landed=32369,32232,7");
@@ -294,6 +323,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         temple(6),
         receipt_sequence,
         &[temple(5), temple(4), temple(3)],
+        None,
     )
     .await?;
     evidence("M01_CHECK return-walk PASS landed=32369,32235,7");
@@ -311,6 +341,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         temple(3),
         receipt_sequence,
         &[temple(4)],
+        None,
     )
     .await?;
     capture
@@ -347,8 +378,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ));
     }
 
-    let mut peer =
-        provisioning::with_peer_liveness(&mut client, connect_character(clients, 0x6e, 0)).await?;
+    let mut peer = super::mp::observations::while_servicing_liveness(
+        connect_character(clients, 0x6e, 0),
+        async || {
+            client.service_liveness(Duration::from_millis(25)).await?;
+            assert_stationary(&mut client, "after TURN", stopped)
+        },
+    )
+    .await??;
     if position(&peer) != temple(0) {
         return Err(format!("M01 peer town entry {:?}", position(&peer)).into());
     }
@@ -367,7 +404,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .is_some_and(|entity| entity.position == temple(1))
     })
     .await?;
-    client.take_events();
+    assert_stationary(&mut client, "before FOLLOW", stopped)?;
     let receipt_sequence = capture
         .command(&mut client, "follow", TargetMoveIntent::Follow(target))
         .await?;
@@ -377,10 +414,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         temple(4),
         receipt_sequence,
         &[temple(3), temple(2)],
+        None,
     )
     .await?;
     evidence("M01_CHECK initial-follow PASS landed=32369,32236,7");
 
+    client.service_liveness(Duration::from_millis(25)).await?;
+    assert_stationary(&mut client, "before peer STEP", temple(2))?;
     let before_peer_step = client.last_server_sequence();
     step_once(&mut peer, StepDirection::South, temple(0)).await?;
     evidence("M01_CHECK peer-step-south PASS landed=32369,32238,7");
@@ -390,6 +430,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         temple(2),
         before_peer_step,
         &[temple(1)],
+        Some((target, temple(0))),
     )
     .await?;
     evidence("M01_CHECK continued-follow PASS landed=32369,32237,7");
@@ -418,4 +459,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     evidence(&format!("M01_CHECK relog PASS position={saved:?}"));
     capture.verify()
+}
+
+#[test]
+fn m01_rejects_early_and_unwitnessed_landings() {
+    assert!(!landing_is_causal(9, 10, true));
+    assert!(!landing_is_causal(10, 10, true));
+    assert!(!landing_is_causal(11, 10, false));
+    assert!(landing_is_causal(11, 10, true));
 }
