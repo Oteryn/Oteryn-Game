@@ -67,9 +67,21 @@ impl ChannelRuntimeV1 {
         let base = self.companion_policy(&snapshot.state.policy.definition_key)?;
         if let Some(role) =
             super::tibiadrome_modifiers::DromeCreatureRole::from_key(&base.definition_key)
-            && u64::try_from(base.maximum_health).ok() != Some(role.base_health())
         {
-            return Err(CarrierError::InvalidCreatureHealth);
+            if u64::try_from(base.maximum_health).ok() != Some(role.base_health()) {
+                return Err(CarrierError::InvalidCreatureHealth);
+            }
+            // All five Global creature pages publish these traits. The existing
+            // condition, summoning and illusion owners consume them from the profile.
+            if base.flags.illusionable
+                || base.summonable
+                || base.convinceable
+                || !base
+                    .condition_immunities
+                    .contains(&ConditionType::Paralysis)
+            {
+                return Err(CarrierError::InvalidSpawnDefinition);
+            }
         }
         let maximum = scaled_tibiadrome_health(base.maximum_health, level)?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
