@@ -769,7 +769,10 @@ async fn prepare_build(
         .await
         .map_err(qualification_build::debug)?;
         let account = *record.account_id.as_bytes();
-        if uuid_text(&account) != "01934f10-7c00-7000-8000-000000000021" {
+        if !matches!(
+            uuid_text(&account).as_str(),
+            "01934f10-7c00-7000-8000-000000000021" | "01934f10-7c00-7000-8000-000000000025"
+        ) {
             return Err("house fixture account mismatch".into());
         }
         if profile == "house-g01" {
