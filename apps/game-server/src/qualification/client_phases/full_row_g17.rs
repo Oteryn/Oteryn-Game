@@ -322,9 +322,9 @@ mod tests {
         let existing = item("existing");
         let reward = item("reward");
         let extra = item("extra");
-        assert!(added_only_reward(&[existing.clone()], &[existing.clone(), reward.clone()], "reward"));
-        assert!(!added_only_reward(&[existing.clone()], &[existing.clone(), reward.clone(), extra.clone()], "reward"));
-        assert!(!added_only_reward(&[existing.clone()], &[extra, reward], "reward"));
+        assert!(added_only_reward(std::slice::from_ref(&existing), &[existing.clone(), reward.clone()], "reward"));
+        assert!(!added_only_reward(std::slice::from_ref(&existing), &[existing.clone(), reward.clone(), extra.clone()], "reward"));
+        assert!(!added_only_reward(std::slice::from_ref(&existing), &[extra, reward], "reward"));
         assert!(!added_only_reward(std::slice::from_ref(&existing), std::slice::from_ref(&existing), "reward"));
     }
 
