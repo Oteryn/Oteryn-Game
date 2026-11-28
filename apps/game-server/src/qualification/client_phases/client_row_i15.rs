@@ -10,6 +10,11 @@ const FIELD: TilePos = TilePos {
     y: 32249,
     floor: -8,
 };
+const APPROACH: TilePos = TilePos {
+    x: FIELD.x,
+    y: FIELD.y - 1,
+    floor: FIELD.floor,
+};
 const FIELD_DAMAGE: u32 = 100;
 const RING_COST: u32 = 2 * FIELD_DAMAGE;
 
@@ -140,22 +145,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
     let start = tile(client.world_spatial().actor_position)?;
     let navigation_world = world.clone();
-    let mut path = route_work(&mut client, move || {
-        // Explore the served bundle's cardinal movement graph. A route to this floor
-        // may leave the town helper's start-centred rectangle before returning.
+    let path = route_work(&mut client, move || {
         find_route(
             start,
-            |at| at == FIELD,
-            |at, direction| destination(&navigation_world, at, direction),
+            |at| at == APPROACH,
+            |at, direction| destination(&navigation_world, at, direction).filter(|landing| *landing != FIELD),
         )
         .map_err(|visited| {
             format!(
-                "I15 no route to native Energy Field {FIELD:?} from {start:?}; visited={visited}"
+                "I15 no route to the staged field approach {APPROACH:?} from {start:?}; visited={visited}"
             )
         })
     })
     .await?;
-    let entry = path.pop().ok_or("I15 already standing on Energy Field")?;
+    if path.is_empty() {
+        return Err("I15 fresh admission already on the staged field approach".into());
+    }
     for direction in path {
         let from = tile(client.world_spatial().actor_position)?;
         step(&mut client, world, from, direction).await?;
@@ -167,8 +172,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .checked_sub(RING_COST)
         .ok_or("I15 insufficient pre-hit mana")?;
     let from = tile(client.world_spatial().actor_position)?;
+    if from != APPROACH || destination(world, from, StepDirection::South) != Some(FIELD) {
+        return Err(format!(
+            "I15 south STEP from the staged approach {from:?} does not land on {FIELD:?}"
+        )
+        .into());
+    }
     let (generation, base_revision) = client.session_mut().arm_actor_vitals_capture();
-    let sequence = step(&mut client, world, from, entry).await?;
+    let sequence = step(&mut client, world, from, StepDirection::South).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let after = loop {
         if let Some(delta) = client

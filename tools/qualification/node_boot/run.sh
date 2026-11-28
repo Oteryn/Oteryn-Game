@@ -708,6 +708,10 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   evidence "world_profile=$NODE_BOOT_WORLD_PROFILE regions=$WORLD_REGIONS"
   compile_world=compile-regions
   if [[ "$NODE_BOOT_WORLD_PROFILE" == town ]]; then compile_world=compile-town-qualification; fi
+  if [[ "$NODE_BOOT_WORLD_PROFILE" == town && "${NODE_BOOT_E2E_ONLY:-}" == rows &&
+        "${OTERYN_E2E_ROW_BATCH:-}" == 126:1 ]]; then
+    compile_world=compile-i15-qualification
+  fi
   "${WORLD_COMPILER[@]}" "$compile_world" "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" "$WORLD_REGIONS" > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'

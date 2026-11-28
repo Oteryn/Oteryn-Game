@@ -285,9 +285,15 @@ GAME_SOURCE=/fixture/game
 WORLD_REGIONS=126,125
 WORK=.
 '''
-        for profile, command in [('town', 'compile-town-qualification'), ('quests', 'compile-regions')]:
-            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as work:
-                result = bash(setup + compile_world, {'NODE_BOOT_WORLD_PROFILE': profile}, cwd=work)
+        for profile, batch, command in [
+            ('town', '125:1', 'compile-town-qualification'),
+            ('town', '126:1', 'compile-i15-qualification'),
+            ('quests', '126:1', 'compile-regions'),
+        ]:
+            with self.subTest(profile=profile, batch=batch), tempfile.TemporaryDirectory() as work:
+                env = {'NODE_BOOT_WORLD_PROFILE': profile, 'NODE_BOOT_E2E_ONLY': 'rows',
+                       'OTERYN_E2E_ROW_BATCH': batch}
+                result = bash(setup + compile_world, env, cwd=work)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(Path(work, 'world-compile.json').read_text().strip(), command)
 

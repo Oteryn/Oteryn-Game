@@ -148,21 +148,36 @@ pub fn project_regions(root: &Path, selected: &[(u16, u16)]) -> Result<Project, 
 
 /// The disposable node-boot town bundle includes an automatic floor change for M03.
 pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
-    // Enter from the street to repeat Scorch on the same upper landing and in the
-    // same direction as the stair experiment. Only the floor-change owner differs.
-    const ENTRANCE: LegacyPosition = (32377, 32217, 7);
-    const LANDING: LegacyPosition = (32376, 32219, 6);
+    // Repeat Scorch on the same upper landing as the stair experiment.
+    project_qualification_portal(root, selected, (32377, 32217, 7), (32376, 32219, 6))
+}
+
+/// Stage the dedicated character next to the authored I15 field in a disposable crop.
+pub fn project_i15_qualification(root: &Path, selected: &[(u16, u16)]) -> Result<Project, Error> {
+    project_qualification_portal(root, selected, (32377, 32217, 7), (32474, 32248, 8))
+}
+
+fn project_qualification_portal(
+    root: &Path,
+    selected: &[(u16, u16)],
+    entrance: LegacyPosition,
+    landing: LegacyPosition,
+) -> Result<Project, Error> {
     const PORTAL: &str = "oteryn:item.tibia.i1949";
 
     let mut project = project_regions(root, selected)?;
-    let error = |what| Error::Format(format!("M03 qualification portal: {what}"));
+    let error = |what| {
+        Error::Format(format!(
+            "qualification portal {entrance:?} -> {landing:?}: {what}"
+        ))
+    };
     let palette = project.index["palette"]
         .as_array()
         .and_then(|palette| palette.iter().position(|entry| entry["key"] == PORTAL))
         .and_then(|index| u32::try_from(index).ok())
         .ok_or_else(|| error("missing portal palette entry"))?;
     let mut budget = bundle::BUNDLE_BUDGET;
-    for at in [LANDING, ENTRANCE] {
+    for at in [landing, entrance] {
         let (x, y, z) = at;
         let [rx_lo, rx_hi] = (x / 256).to_le_bytes();
         let [ry_lo, ry_hi] = (y / 256).to_le_bytes();
@@ -185,7 +200,7 @@ pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Resul
         {
             return Err(error("expected a non-house tile outside protection"));
         }
-        if at == ENTRANCE {
+        if at == entrance {
             if project.families.teleports.contains_key(&at)
                 || tile.items.iter().any(|item| item.attrs.teleport.is_some())
             {
@@ -195,12 +210,12 @@ pub fn project_town_qualification(root: &Path, selected: &[(u16, u16)]) -> Resul
                 palette,
                 depth: 0,
                 attrs: sector::Attrs {
-                    teleport: Some(LANDING),
+                    teleport: Some(landing),
                     ..sector::Attrs::default()
                 },
             });
             *bytes = crate::authored_props::encode(&region)?;
-            project.families.teleports.insert(at, LANDING);
+            project.families.teleports.insert(at, landing);
         }
     }
     Ok(project)
