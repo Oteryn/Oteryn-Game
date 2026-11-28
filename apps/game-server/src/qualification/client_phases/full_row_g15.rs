@@ -5,7 +5,7 @@
 //!    the server catalogue and the coin worth must be exactly 1, 100 and 10000 for the three coins.
 //! 3. Query the party hunt analyser (735) from both members with a price list: both members'
 //!    names (read-only SQL) must appear in each reply.
-//! 4. Leave the party and log both out. No kills are made, so loot tracker totals stay zero.
+//! 4. Verify one consumed supply at two prices, then leave the party and relog both members.
 
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -232,31 +232,40 @@ fn coin_worth(index: &[(u32, u32)], item: u32) -> Option<u64> {
         .map(|(_, worth)| u64::from(*worth))
 }
 
-fn idle_accounting(members: &[hunt::Member], names: &[&str; 2]) -> bool {
+fn accounting_matches(
+    members: &[hunt::Member],
+    roster: &[(&str, u64); 2],
+    elapsed: &std::ops::RangeInclusive<u64>,
+    supplier: &str,
+    price: u64,
+) -> bool {
     let [first, second] = members else {
         return false;
     };
     first.handle != second.handle
-        && names
-            .iter()
-            .all(|name| members.iter().any(|member| member.name == *name))
+        && roster.iter().all(|(name, handle)| {
+            members
+                .iter()
+                .any(|member| member.name == *name && member.handle == *handle)
+        })
         && members.iter().all(|member| {
-            member.available
+            elapsed.contains(&member.elapsed_seconds)
+                && member.available
                 && !member.incomplete
                 && member.needed_prices.is_empty()
+                && member.supplies == u64::from(member.name == supplier)
+                && member.supply_cost == if member.name == supplier { price } else { 0 }
                 && [
                     member.kills,
                     member.xp,
                     member.raw_xp,
                     member.loot_items,
                     member.loot_value,
-                    member.supplies,
-                    member.supply_cost,
                     member.unpriced_loot,
                     member.unpriced_supplies,
                     member.damage,
                     member.healing,
-                ] == [0; 11]
+                ] == [0; 9]
         })
 }
 
@@ -266,6 +275,7 @@ fn invitation_handle(
     inviter: &str,
     now: u64,
     expires: u64,
+    lifetime_window: &std::ops::RangeInclusive<u64>,
 ) -> Option<u64> {
     let [invite] = view.invitations.as_slice() else {
         return None;
@@ -275,8 +285,9 @@ fn invitation_handle(
         && view.members.is_empty()
         && invite.name == inviter
         && invite.expires_at > now
-        && invite.expires_at == expires)
-        .then_some(invite.handle)
+        && invite.expires_at == expires
+        && lifetime_window.contains(&expires))
+    .then_some(invite.handle)
 }
 
 fn catalogue_matches(rows: &[items::ItemInfo], expected: &[items::ItemInfo]) -> bool {
@@ -298,23 +309,106 @@ async fn members(
     Ok(hunt::decode_reply(&reply)?)
 }
 
+fn supply_count(
+    inventory: &oteryn_protocol_oteryn::item_view::CharacterInventory,
+    potion: std::num::NonZeroU32,
+) -> u64 {
+    inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == potion)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum()
+}
+
+async fn consume_supply(
+    client: &mut DevClientSession,
+    potion: std::num::NonZeroU32,
+) -> TestResult<u64> {
+    use oteryn_dev_client::SessionEvent;
+    use oteryn_protocol_oteryn::analyser::AnalyserFact;
+    let inventory = client.inventory().ok_or("supply inventory absent")?;
+    let entry = inventory
+        .entries
+        .iter()
+        .find(|entry| entry.item_definition_ref == potion)
+        .ok_or("carried mana potion absent")?;
+    let handle = entry.handle;
+    let before = supply_count(inventory, potion);
+    client.take_events();
+    let reply = client.use_item(handle).await?;
+    if reply.status != CommandStatus::Accepted
+        || reply.disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+    {
+        return Err(format!("step=supply observed={reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut supplied = 0;
+    loop {
+        for event in client.take_events() {
+            let facts = match event {
+                SessionEvent::AnalyserFacts(delta) => delta.value,
+                SessionEvent::AnalyserAttributedFacts(delta) => {
+                    delta.value.into_iter().map(|entry| entry.fact).collect()
+                }
+                _ => continue,
+            };
+            for fact in facts {
+                if let AnalyserFact::SupplyUsed(item) = fact
+                    && item.item_type == potion
+                {
+                    supplied += u64::from(item.count.get());
+                }
+            }
+        }
+        let after = supply_count(
+            client
+                .inventory()
+                .ok_or("supply inventory absent after use")?,
+            potion,
+        );
+        if supplied == 1 && after == before - 1 {
+            return Ok(after);
+        }
+        if supplied > 1 || tokio::time::Instant::now() >= deadline {
+            return Err(
+                format!("step=supply before={before} after={after} notified={supplied}").into(),
+            );
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    }
+}
+
+// Use the same database clock for the edges of the wire request.
+async fn database_seconds(db: &mut sqlx::PgConnection) -> TestResult<u64> {
+    let seconds: i64 =
+        sqlx::query_scalar("SELECT ceil(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(db)
+            .await?;
+    Ok(seconds.try_into()?)
+}
+
 async fn body(
     a: &mut DevClientSession,
     b: &mut DevClientSession,
     clients: &SeamClients<'_>,
-) -> TestResult {
+    admission: (u64, u64),
+) -> TestResult<(std::num::NonZeroU32, u64)> {
     let a_name = name_of(clients, 0).await?;
     let b_name = name_of(clients, 1).await?;
     for client in [&mut *a, &mut *b] {
         assert_solo(client).await?;
     }
     let b_seen = see_each_other(a, b, clients).await?;
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let invite_before = database_seconds(&mut db).await?;
     let (reply, _) = party(a, Some(PartyIntent::Invite(b_seen))).await?;
     if reply != PartyDisposition::Ok {
         return Err(format!("step=invite observed={reply:?}").into());
     }
+    let invite_after = database_seconds(&mut db).await?;
+    let lifetime_window = invite_before + 300..=invite_after + 300;
     let (reply, invitation) = party(b, None).await?;
-    let mut db = sqlx::PgConnection::connect(clients.url).await?;
     let (now, expires): (i64, i64) = sqlx::query_as(
         "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint,
                 ceil(extract(epoch FROM i.expires_at))::bigint
@@ -327,13 +421,13 @@ async fn body(
     .bind(clients.characters[1].as_slice())
     .fetch_one(&mut db)
     .await?;
-    drop(db);
     let handle = invitation_handle(
         reply,
         &invitation,
         &a_name,
         now.try_into()?,
         expires.try_into()?,
+        &lifetime_window,
     )
     .ok_or_else(|| {
         format!("step=invite observed={reply:?}/{invitation:?} now={now} expected-expiry={expires}")
@@ -430,25 +524,48 @@ async fn body(
         return Err(format!("step=items observed={rows:?} expected={expected:?}").into());
     }
 
-    let prices: Vec<hunt::Price> = ids
-        .iter()
-        .map(|item| hunt::Price {
-            item: *item,
-            loot: Some(1),
-            supply: Some(1),
-        })
-        .collect();
+    let potion = provisioning::item_reference(&index, 268)?;
+    let remaining = consume_supply(a, potion).await?;
     for (who, client) in [("leader", &mut *a), ("member", &mut *b)] {
-        let rows = members(client, &prices).await?;
-        if !idle_accounting(&rows, &[a_name.as_str(), b_name.as_str()]) {
-            return Err(format!(
-                "step=party-analyser observed={who}-names:{:?} needed={a_name}+{b_name}",
-                rows
-            )
-            .into());
+        let (disposition, view) = party(client, None).await?;
+        let [first, second] = view.members.as_slice() else {
+            return Err(format!("step=accounting-roster observed={view:?}").into());
+        };
+        if disposition != PartyDisposition::Ok
+            || !view.invitations.is_empty()
+            || !view
+                .members
+                .iter()
+                .any(|entry| entry.name == a_name && entry.leader)
+            || !view
+                .members
+                .iter()
+                .any(|entry| entry.name == b_name && !entry.leader)
+        {
+            return Err(format!("step=accounting-roster observed={view:?}").into());
+        }
+        let roster = [
+            (first.name.as_str(), first.handle),
+            (second.name.as_str(), second.handle),
+        ];
+        for price in [7, 19] {
+            let prices = [hunt::Price {
+                item: potion.get(),
+                loot: None,
+                supply: Some(price),
+            }];
+            let earliest = database_seconds(&mut db).await?;
+            let rows = members(client, &prices).await?;
+            let latest = database_seconds(&mut db).await?;
+            // The ceil timestamps allow one second for quantization.
+            let elapsed = earliest.saturating_sub(admission.1).saturating_sub(1)
+                ..=latest.saturating_sub(admission.0) + 1;
+            if !accounting_matches(&rows, &roster, &elapsed, &a_name, price) {
+                return Err(format!("step=party-analyser viewer={who} price={price} elapsed={elapsed:?} observed={rows:?}").into());
+            }
         }
     }
-    Ok(())
+    Ok((potion, remaining))
 }
 
 async fn assert_solo(client: &mut DevClientSession) -> TestResult {
@@ -460,6 +577,8 @@ async fn assert_solo(client: &mut DevClientSession) -> TestResult {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let before_admission = database_seconds(&mut db).await?;
     let mut a = connect_character(clients, 0x78, 0).await?;
     let mut b = match connect_character(clients, 0x79, 1).await {
         Ok(b) => b,
@@ -469,9 +588,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             return Err(error);
         }
     };
+    let admission = (before_admission, database_seconds(&mut db).await?);
+    drop(db);
     let before = a.world_spatial().actor_position;
     let outcome = verdict::observe(async {
-        body(&mut a, &mut b, clients).await?;
+        let supply = body(&mut a, &mut b, clients, admission).await?;
         let (reply, _) = party(&mut b, Some(PartyIntent::Leave)).await?;
         if reply != PartyDisposition::Ok {
             return Err(format!("step=leave observed={reply:?}").into());
@@ -482,13 +603,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         if after == before {
             return Err("step=position observed=unchanged".into());
         }
-        TestResult::Ok(after)
+        TestResult::Ok((after, supply))
     })
     .await;
     let member_position = b.world_spatial().actor_position;
     let closed_b = verdict::observe(finish(&mut b)).await;
     let closed_a = verdict::observe(finish(&mut a)).await;
-    let expected = outcome?;
+    let (expected, (potion, remaining)) = outcome?;
     closed_b?;
     closed_a?;
     for (index, tag, position) in [(0, 0x7a, expected), (1, 0x7b, member_position)] {
@@ -502,6 +623,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .into());
             }
             assert_solo(&mut relogged).await?;
+            if index == 0 {
+                let inventory = relogged
+                    .inventory()
+                    .ok_or("relog supply inventory absent")?;
+                let actual = supply_count(inventory, potion);
+                if actual != remaining {
+                    return Err(format!("step=relog supply={actual} expected={remaining}").into());
+                }
+            }
             let rows = members(&mut relogged, &[]).await?;
             if !rows.is_empty() {
                 return Err(format!("step=relog player={index} stale-accounting={rows:?}").into());
@@ -531,7 +661,7 @@ mod tests {
     }
 
     #[test]
-    fn idle_accounting_rejects_false_positives() {
+    fn accounting_matches_rejects_false_positives() {
         let member = |name: &str| hunt::Member {
             handle: if name == "Alpha" { 1 } else { 2 },
             name: name.to_owned(),
@@ -543,8 +673,8 @@ mod tests {
             raw_xp: 0,
             loot_items: 0,
             loot_value: 0,
-            supplies: 0,
-            supply_cost: 0,
+            supplies: u64::from(name == "Alpha"),
+            supply_cost: if name == "Alpha" { 7 } else { 0 },
             unpriced_loot: 0,
             unpriced_supplies: 0,
             damage: 0,
@@ -552,25 +682,42 @@ mod tests {
             needed_prices: Vec::new(),
         };
         let rows = [member("Alpha"), member("beta")];
-        let names = ["Alpha", "beta"];
-        assert!(idle_accounting(&rows, &names));
-        assert!(!idle_accounting(
+        let names = [("Alpha", 1), ("beta", 2)];
+        let elapsed = 0..=2;
+        assert!(accounting_matches(&rows, &names, &elapsed, "Alpha", 7));
+        assert!(!accounting_matches(&rows, &names, &elapsed, "Alpha", 19));
+        assert!(!accounting_matches(
             &[rows[0].clone(), rows[0].clone()],
-            &names
+            &names,
+            &elapsed,
+            "Alpha",
+            7
         ));
-        assert!(!idle_accounting(
+        assert!(!accounting_matches(
             &[rows[0].clone(), rows[1].clone(), member("extra")],
-            &names
+            &names,
+            &elapsed,
+            "Alpha",
+            7
         ));
+        let mut swapped = rows.clone();
+        swapped[0].handle = 2;
+        swapped[1].handle = 1;
+        assert!(!accounting_matches(&swapped, &names, &elapsed, "Alpha", 7));
         for corrupt in [
             |m: &mut hunt::Member| m.available = false,
             |m: &mut hunt::Member| m.incomplete = true,
             |m: &mut hunt::Member| m.loot_value = 1,
             |m: &mut hunt::Member| m.supply_cost = 1,
+            |m: &mut hunt::Member| {
+                m.supplies = 0;
+                m.supply_cost = 0;
+            },
+            |m: &mut hunt::Member| m.elapsed_seconds = 3,
         ] {
             let mut bad = rows.clone();
             corrupt(&mut bad[0]);
-            assert!(!idle_accounting(&bad, &names));
+            assert!(!accounting_matches(&bad, &names, &elapsed, "Alpha", 7));
         }
     }
 
@@ -609,19 +756,58 @@ mod tests {
             channel: None,
         });
         assert_eq!(
-            invitation_handle(PartyDisposition::Ok, &view, "Leader", 100, 400),
+            invitation_handle(
+                PartyDisposition::Ok,
+                &view,
+                "Leader",
+                100,
+                400,
+                &(400..=402)
+            ),
             Some(1)
         );
         assert_eq!(
-            invitation_handle(PartyDisposition::Rejected, &view, "Leader", 100, 400),
+            invitation_handle(
+                PartyDisposition::Rejected,
+                &view,
+                "Leader",
+                100,
+                400,
+                &(400..=402)
+            ),
             None
         );
         assert_eq!(
-            invitation_handle(PartyDisposition::Ok, &view, "Leader", 400, 400),
+            invitation_handle(
+                PartyDisposition::Ok,
+                &view,
+                "Leader",
+                400,
+                400,
+                &(400..=402)
+            ),
             None
         );
         assert_eq!(
-            invitation_handle(PartyDisposition::Ok, &view, "Leader", 100, 401),
+            invitation_handle(
+                PartyDisposition::Ok,
+                &view,
+                "Leader",
+                100,
+                400,
+                &(700..=702)
+            ),
+            None
+        );
+        assert_eq!(
+            invitation_handle(
+                PartyDisposition::Ok,
+                &view,
+                "Leader",
+                100,
+                401,
+                &(400..=402)
+            ),
             None
         );
     }
