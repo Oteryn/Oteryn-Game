@@ -352,14 +352,32 @@ async fn query_icon(
     observer: &mut DevClientSession,
     target: spatial::EntityRef,
 ) -> TestResult<SkullObservation> {
-    let reply = observer
-        .session_mut()
-        .gated_command(
-            party_skull::CAPABILITY_PARTY_SKULL_V1,
-            party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
-            &[],
-        )
-        .await?;
+    let reply = tokio::time::timeout(Duration::from_secs(10), async {
+        const ATTEMPTS: usize = 5;
+        for number in 1..=ATTEMPTS {
+            let reply = observer
+                .session_mut()
+                .gated_command(
+                    party_skull::CAPABILITY_PARTY_SKULL_V1,
+                    party_skull::COMMAND_TYPE_PARTY_SKULL_QUERY,
+                    &[],
+                )
+                .await?;
+            if reply.status != CommandStatus::Rejected
+                || reply.payload != oteryn_protocol_oteryn::COMMAND_BUSY_REFUSAL
+            {
+                return TestResult::Ok(reply);
+            }
+            // PARTY SKULL QUERY only reads visible icons. Its typed Busy has no state effect.
+            evidence(&format!("S08_SKULL_QUERY_BUSY attempt={number} frame={reply:?}"));
+            if number < ATTEMPTS {
+                observer.service_liveness(Duration::from_millis(500)).await?;
+            }
+        }
+        Err("step=skull Busy attempt limit".into())
+    })
+    .await
+    .map_err(|_| "step=skull query deadline")??;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("step=skull refused {reply:?}").into());
     }
