@@ -59,27 +59,18 @@ pub(super) async fn run(
     covet: bool,
     starter_seconds: f64,
 ) -> TestResult<DevClientSession> {
-    for (id, used, action, route) in [
-        (
-            I08,
-            primal,
-            "obtain-primal-bag",
-            "Primal Bag 39546: no carried bag observed, Hazard 12 Primal Ordeal reward held and no Plunder Patriarch spawn in the compiled town regions (reward_bag_use.rs:16)",
-        ),
-        (
-            I13,
-            covet,
-            "obtain-bag-you-covet",
-            "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill (reward_bag_use.rs:16)",
-        ),
-    ] {
+    for (id, used) in [(I08, primal), (I13, covet)] {
         match used {
             true => evidence(&format!(
                 "e2e_all scenario={id}.full status=PASS seconds={starter_seconds:.3} evidence=use-consume-pinned-reward-fresh-admission-quantities"
             )),
-            false => Check::new(id, action).finish(Err(route.into())),
+            false if id == I13 => Check::new(id, "obtain-bag-you-covet").finish(Err(
+                "Bag You Covet 43895: no carried bag observed, Rotten Blood bosses Bakragore, Chagorz, Ichgahal, Murcion and Vemiath have no spawn in the compiled town regions and Crimson Offering requires a Bakragore kill (reward_bag_use.rs:16)".into(),
+            )),
+            false => {}
         }
     }
+    let mut primal = (!primal).then(|| Check::new(I08, "obtain-primal-bag"));
     let mut mining = Check::new(I12, "obtain-pick-and-shiny-stone");
     let mut ring = Check::new(I15, "obtain-energy-ring");
     let mut client = match observations {
@@ -88,6 +79,9 @@ pub(super) async fn run(
             Ok(client) => client,
             Err(rejoin) => {
                 let detail = format!("starter={error}; recovery-admission={rejoin}");
+                if let Some(check) = primal {
+                    check.finish(Err(detail.clone().into()));
+                }
                 mining.finish(Err(detail.clone().into()));
                 ring.finish(Err(detail.into()));
                 return Err(rejoin);
@@ -98,6 +92,18 @@ pub(super) async fn run(
         .and_then(|(metadata, world)| Ok((metadata, world, provisioning::item_index()?)));
     match setup {
         Ok((metadata, world, index)) => {
+            if let Some(mut check) = primal.take() {
+                let result = acquire_and_use_primal_bag(
+                    &mut client,
+                    clients,
+                    &mut check,
+                    world,
+                    &metadata.spawns,
+                    &index,
+                )
+                .await;
+                check.finish(result);
+            }
             let result = refine(&mut client, clients, &mut mining, world, &metadata, &index).await;
             mining.finish(result);
             let result =
@@ -105,11 +111,45 @@ pub(super) async fn run(
             ring.finish(result);
         }
         Err(error) => {
+            if let Some(check) = primal {
+                check.finish(Err(error.to_string().into()));
+            }
             mining.finish(Err(error.to_string().into()));
             ring.finish(Err(error));
         }
     }
     Ok(client)
+}
+
+async fn acquire_and_use_primal_bag(
+    client: &mut DevClientSession,
+    clients: &SeamClients<'_>,
+    check: &mut Check,
+    world: &QualificationWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    const BAG: u32 = 39546;
+    let reference = provisioning::item_reference(index, BAG)?;
+    hunt_for(client, world, spawns, BAG, |client| {
+        carried(client, reference).is_some()
+    })
+    .await?;
+    check.action = "use-primal-bag";
+    if !reward_bag(client, "PRIMAL_BAG").await? {
+        return Err("Primal Bag absent after live loot transfer".into());
+    }
+    check.action = "relogin-primal-reward";
+    let expected = quantities(client)?;
+    rejoin(client, clients, None).await?;
+    let observed = quantities(client)?;
+    if observed != expected {
+        return Err(format!(
+            "fresh Primal Bag reward expected={expected:?}; observed={observed:?}"
+        )
+        .into());
+    }
+    Ok(())
 }
 
 pub(super) fn load_hunt_world(
