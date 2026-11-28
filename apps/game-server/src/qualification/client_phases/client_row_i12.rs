@@ -12,8 +12,10 @@ const SHINY_STONE: u32 = 10310;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
+    let budget = Duration::from_secs(30);
+    let deadline = tokio::time::Instant::now() + budget;
     let result =
-        verdict::indexed_timeout(Duration::from_secs(30), verdict::observe(journey(clients))).await;
+        verdict::indexed_timeout(budget, verdict::observe(journey(clients, deadline))).await;
     let (status, detail) = match result {
         Ok(Ok(detail)) => ("PASS", detail),
         Ok(Err(error)) => ("FAIL", error.to_string().replace([' ', '\n', '\r'], "_")),
@@ -25,7 +27,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+async fn journey(clients: &SeamClients<'_>, deadline: tokio::time::Instant) -> TestResult<String> {
     let capture_dir =
         std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("I12 requires a fresh capture directory")?;
     let capture_dir = Path::new(&capture_dir);
@@ -108,15 +110,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         reply.command_id,
         reply.server_sequence,
     ));
-    client.service_liveness(Duration::from_millis(250)).await?;
-    let delta = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
+    evidence("I12_STEP phase=inventory_publication_wait bound=row_deadline");
+    let delta = loop {
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        let events = client.wait_for_events(remaining).await?;
+        if let Some(delta) = events.into_iter().find_map(|event| match event {
             SessionEvent::Inventory(delta) => Some(delta),
             _ => None,
-        })
-        .ok_or("committed pick refine sent no inventory delta")?;
+        }) {
+            break delta;
+        }
+    };
     let (frame, received_at) = client
         .session_mut()
         .take_inventory_frame()
