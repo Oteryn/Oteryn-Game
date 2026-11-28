@@ -281,7 +281,7 @@
         "stage"
       ],
       "codes": [],
-      "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
+      "note": "Closed logout refusal stage with the connection trace in the log envelope. A release_retry_lifted summary is followed by one detail stage: release_condition_save, release_death_save, release_drome_sync, release_familiar_save, release_fence_wait, release_gourmet_checkpoint, release_item_effects, release_kill_rewards, release_offline_training, release_spell_training, release_timed_equipment, or release_wheel_or_monk_save. No account, session or authentication material."
     },
     {
       "event": "logout_unknown",
