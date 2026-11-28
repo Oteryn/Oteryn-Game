@@ -699,12 +699,13 @@
         "outfit": "oteryn:outfit.yalaharian",
         "addons": 1
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/yalahari_of_wisdom",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+        "https://tibia.fandom.com/index.php?curid=62819&oldid=753357"
       ],
       "present": [
         {
@@ -743,12 +744,13 @@
         "outfit": "oteryn:outfit.yalaharian",
         "addons": 2
       },
-      "achievement": null,
+      "achievement": "oteryn:achievement/yalahari_of_power",
       "reply": [
         "Thank you for your help."
       ],
       "sources": [
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/palimuth.lua:sha256:643768cf31b4ec0a26cfeadfa1c5f6bd3dd2ad7de0c32aa249bc7326020fb8db",
+        "https://tibia.fandom.com/index.php?curid=62818&oldid=753121"
       ],
       "present": [
         {
@@ -8595,6 +8597,12 @@
         {
           "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest",
           "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/to_outfox_afox_quest/questline",
+          "minimum": -1,
           "maximum": 1,
           "set": 2
         }

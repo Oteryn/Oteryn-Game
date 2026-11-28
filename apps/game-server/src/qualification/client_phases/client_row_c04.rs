@@ -70,7 +70,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 .ok_or("C04 client cooldown group ordinal absent")
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let mut client = connect_world(clients, 0xc6).await?;
+    let client = connect_world(clients, 0xc6).await?;
+    let mut client = provisioning::provision_fixture(client, clients, 1, 100).await?;
     let snapshot = client
         .session_mut()
         .gated_snapshot(20)
@@ -78,10 +79,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .payload
         .clone();
 
+    let before = client
+        .actor_vitals()
+        .copied()
+        .ok_or("C04 client vitals absent")?;
     let pz = client
         .cast_spell(aggressive, SpellTarget::None, false)
         .await?;
-    if pz.disposition != SpellCastDisposition::Rejected {
+    if pz.status != CommandStatus::Rejected
+        || pz.disposition != SpellCastDisposition::Rejected
+        || pz.actor_vitals_delta.is_some()
+        || client.actor_vitals().copied() != Some(before)
+    {
         return Err(format!("C04 client PZ gate reply={pz:?}").into());
     }
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;

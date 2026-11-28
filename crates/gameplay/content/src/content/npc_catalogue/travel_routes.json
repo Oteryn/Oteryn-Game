@@ -531,6 +531,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 120,
     "premium": true,
@@ -543,6 +544,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/krailos",
+    "use_authored_fare_and_premium": true,
     "keyword": "krailos",
     "price": 60,
     "premium": true,
@@ -555,6 +557,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_gulliver/thais",
+    "use_authored_fare_and_premium": true,
     "keyword": "thais",
     "price": 150,
     "premium": true,
@@ -644,6 +647,7 @@
     "keyword": "calassa",
     "price": 200,
     "premium": true,
+    "premium_override": false,
     "x": 31911,
     "y": 32710,
     "floor": 6,
@@ -672,11 +676,12 @@
     "price": 0,
     "premium": false,
     "x": 32298,
-    "y": 32895,
+    "y": 32896,
     "floor": 6,
     "postman": false,
     "held": false,
-    "carpet": false
+    "carpet": false,
+    "project_required_quest_tracks": []
   },
   {
     "key": "oteryn:service.travel.captain_pelagia/darashia",
@@ -2255,6 +2260,7 @@
   },
   {
     "key": "oteryn:service.travel.petros/issavi",
+    "use_authored_fare_and_premium": true,
     "keyword": "issavi",
     "price": 130,
     "premium": true,
@@ -2642,6 +2648,62 @@
     "carpet": true
   },
   {
+    "key": "oteryn:service.travel.tarak_inner/monument_tower",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/passage",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_inner/trip",
+    "crystal_callback": true,
+    "keyword": "monument tower",
+    "price": 50,
+    "premium": false,
+    "x": 32940,
+    "y": 31182,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.tarak_sunken/passage",
+    "crystal_callback": true,
+    "keyword": "yalahar",
+    "price": 0,
+    "premium": false,
+    "x": 32916,
+    "y": 31199,
+    "floor": 7,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.thorgrin/cormaya",
     "keyword": "cormaya",
     "price": 110,
@@ -2749,6 +2811,26 @@
     "postman": true,
     "held": false,
     "carpet": true
+  },
+  {
+    "key": "oteryn:service.travel.uzon/eclipse",
+    "keyword": "eclipse",
+    "price": 110,
+    "premium": false,
+    "x": 32659,
+    "y": 31915,
+    "floor": 0,
+    "postman": true,
+    "held": false,
+    "carpet": true,
+    "native_addition": true,
+    "quest_tracks": [
+      {
+        "track": "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline",
+        "minimum": 4,
+        "maximum": 5
+      }
+    ]
   },
   {
     "key": "oteryn:service.travel.uzon/edron",

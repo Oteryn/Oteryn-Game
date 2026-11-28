@@ -597,7 +597,11 @@ pub(super) async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    check_recovery_fence(tx, record, true).await
+    if recovery_fence_is_current(tx, record, true).await? {
+        Ok(())
+    } else {
+        Err(DurabilityError::Unavailable)
+    }
 }
 
 /// Snapshot comparison for advisory reads only; this never authorizes a mutation.
@@ -605,14 +609,20 @@ pub(super) async fn observe_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    check_recovery_fence(tx, record, false).await
+    if recovery_fence_is_current(tx, record, false).await? {
+        Ok(())
+    } else {
+        Err(DurabilityError::Unavailable)
+    }
 }
 
-async fn check_recovery_fence(
+/// A verified successor is a permanent fence for the caller's captured admission.
+/// Callers may distinguish it from failed reads without relaxing the write fence.
+pub(super) async fn recovery_fence_is_current(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
     lock: bool,
-) -> std::result::Result<(), DurabilityError> {
+) -> std::result::Result<bool, DurabilityError> {
     // A row lock alone cannot fence an append-only successor: a SELECT queued
     // behind reconciliation can retain a snapshot containing only its predecessor.
     // The shared transaction gate precedes the SELECT and stays held through commit.
@@ -631,6 +641,10 @@ async fn check_recovery_fence(
         .try_get::<String, _>("recovery_generation")?
         .parse::<u64>()
         .map_err(|_| DurabilityError::Unavailable)?;
+    let scope = row.try_get::<String, _>("authority_scope_id")?;
+    if scope == record.authority_scope_id && generation > record.recovery_generation {
+        return Ok(false);
+    }
     let predecessor = row
         .try_get::<String, _>("predecessor_generation")?
         .parse::<u64>()
@@ -639,7 +653,7 @@ async fn check_recovery_fence(
         .try_get::<String, _>("issued_at")?
         .parse::<u64>()
         .map_err(|_| DurabilityError::Unavailable)?;
-    if row.try_get::<String, _>("authority_scope_id")? != record.authority_scope_id
+    if scope != record.authority_scope_id
         || generation != record.recovery_generation
         || uuid_text(row.try_get("recovery_event_id")?)? != record.recovery_event_id
         || predecessor != record.predecessor_generation
@@ -649,7 +663,7 @@ async fn check_recovery_fence(
     {
         return Err(DurabilityError::Unavailable);
     }
-    Ok(())
+    Ok(true)
 }
 
 /// Predecessor evidence as stored: absent for generation one.

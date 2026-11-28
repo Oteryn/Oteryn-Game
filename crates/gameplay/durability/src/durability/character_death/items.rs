@@ -85,7 +85,11 @@ pub(super) async fn select<const N: usize>(
     .bind(character.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    let rows = sqlx::query("SELECT s.slot, i.item_instance_id::text, i.definition_production_key, i.definition_family FROM (SELECT slot,item_instance_id FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid UNION ALL SELECT 9::smallint,item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid) s JOIN game_item_instances i USING(item_instance_id) ORDER BY i.item_instance_id LIMIT 11 FOR UPDATE OF i")
+    let rows = sqlx::query("SELECT s.slot, i.item_instance_id::text, i.definition_production_key, i.definition_family, \
+        split.retained_item IS NOT NULL AS custody_protected, split.next_item IS NOT NULL AS has_unbound_branch \
+        FROM (SELECT slot,item_instance_id FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid UNION ALL SELECT 9::smallint,item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid) s JOIN game_item_instances i USING(item_instance_id) \
+        LEFT JOIN LATERAL game_player_death_custody_split(i.item_instance_id,encode($1,'hex')::uuid,i.world_id) split ON TRUE \
+        ORDER BY i.item_instance_id LIMIT 11 FOR UPDATE OF i")
         .bind(character.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     if rows.len() > 10 {
         return Err(DurabilityError::InvalidStoredState);
@@ -106,7 +110,13 @@ pub(super) async fn select<const N: usize>(
             10 => EquipmentSlot::Ammo,
             _ => return Err(DurabilityError::InvalidStoredState),
         };
-        amulet |= slot == EquipmentSlot::Necklace
+        // A mixed container keeps its slot's loss rule for its unbound branches.
+        let custody_protected = row.try_get::<bool, _>("custody_protected")?;
+        if custody_protected && !row.try_get::<bool, _>("has_unbound_branch")? {
+            continue;
+        }
+        amulet |= !custody_protected
+            && slot == EquipmentSlot::Necklace
             && row.try_get::<String, _>("definition_family")? == "Item"
             && row.try_get::<String, _>("definition_production_key")? == "oteryn:item.tibia.i3057";
         equipment.push(EquippedItem {

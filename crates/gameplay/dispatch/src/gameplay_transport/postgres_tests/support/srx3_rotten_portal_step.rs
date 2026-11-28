@@ -13,7 +13,7 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection as D, StepDisposition}
 
 pub(super) async fn exercise(
     h: &Harness,
-    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("actual portal step fence")?;
@@ -25,16 +25,16 @@ pub(super) async fn exercise(
         .activity_runtimes
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("actual portal scope")?;
-    super::srx3_activity_source_fixture::drive_native_cycle(&owner.runtime_view(&registered))
-        .await?;
+    let clock_view = owner.runtime_view(&registered);
+    let clock = super::srx3_native_source_cast_fixtures::NativeOwnerClock::new(&clock_view);
+    // Leave wall-clock scheduling out of the source movement and portal deadlines.
+    clock.set(clock_view.owner_now().get());
+    super::srx3_activity_source_fixture::drive_native_cycle(&clock_view).await?;
     // Move the real target away, allowing the native boss to vacate the centre.
     // One real lure step vacates the boss centre without drawing the source
     // Elders beyond the separate two-tile STEP predicate.
     for direction in [D::West] {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(1))
-            .ok_or("source approach clock")?;
+        clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
         // The owner clock advance can select an older Item continuation before onMove.
         super::srx3_activity_source_fixture::settle_native_work(&view).await?;
@@ -48,10 +48,7 @@ pub(super) async fn exercise(
         );
         super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
     }
-    owner.clock_origin = owner
-        .clock_origin
-        .checked_sub(std::time::Duration::from_secs(90))
-        .ok_or("source addEvent clock")?;
+    clock.set(clock_view.owner_now().get() + 90_000_000);
     {
         let view = owner.runtime_view(&registered);
         super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
@@ -80,19 +77,19 @@ pub(super) async fn exercise(
         y: 32335,
         floor: 15,
     };
-    // The actual Elders can be three tiles east of the portal when it opens.
-    // Approach their current target through real paced movement so their own
-    // native movement can bring one within the separate two-tile STEP test.
+    // Lure from one tile away so an Elder adjacent to the player can also
+    // satisfy the portal's two-tile STEP requirement on either side of the player.
     let lure = {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
-        let occupied = runtime
+        let mut occupied = runtime
             .visible_entities()
             .creatures
             .into_iter()
             .map(|c| runtime.read_actor_position(c.actor).map(|p| p.position()))
             .collect::<Result<Vec<_>, _>>()
             .map_err(debug)?;
+        occupied.push(centre);
         super::srx3_primal_terminal::source_route(
             view.effective_movement_cells(),
             runtime
@@ -101,7 +98,7 @@ pub(super) async fn exercise(
                 .position(),
             MovementLocalPosition {
                 x: 33042,
-                y: 32337,
+                y: 32336,
                 floor: 15,
             },
             &occupied,
@@ -113,10 +110,7 @@ pub(super) async fn exercise(
         "actual Elder lure stays inside the portal lifetime"
     );
     for direction in lure {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(1))
-            .ok_or("source Elder lure clock")?;
+        clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
         // The owner clock advance can select an older Item continuation before onMove.
         super::srx3_activity_source_fixture::settle_native_work(&view).await?;
@@ -176,10 +170,7 @@ pub(super) async fn exercise(
     );
     let mut step_window = None;
     for direction in route {
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(std::time::Duration::from_secs(1))
-            .ok_or("source ingress clock")?;
+        clock.set(clock_view.owner_now().get() + 1_000_000);
         let view = owner.runtime_view(&registered);
         let started = view.owner_now().get();
         // The owner clock advance can select an older Item continuation before onMove.
@@ -255,10 +246,7 @@ pub(super) async fn exercise(
                     )
                     .ok_or("current massive attack fixture health credit")?;
             }
-            owner.clock_origin = owner
-                .clock_origin
-                .checked_sub(std::time::Duration::from_secs(1))
-                .ok_or("massive attack clock")?;
+            clock.set(clock_view.owner_now().get() + 1_000_000);
             let view = owner.runtime_view(&registered);
             super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
             let states = view.states.spell_states.lock().await;

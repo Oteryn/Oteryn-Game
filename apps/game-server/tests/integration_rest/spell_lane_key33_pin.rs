@@ -19,24 +19,41 @@ const KEY33_TABLES: [&str; 5] = [
     "game_elemental_energy_field_adoptions",
 ];
 
-/// SQL functions that take `pg_advisory_xact_lock(..., 33)` and the table their trigger guards.
-const SQL_KEY33_FUNCTIONS: [(&str, &str); 5] = [
+/// SQL functions that take `pg_advisory_xact_lock(..., 33)`, the table their trigger guards
+/// and the trigger's timing. The arena reset trigger fires BEFORE DELETE ahead of
+/// `game_item_ground_owner_lock` (trigger names sort first) and takes the same Channel key
+/// that owner lock takes for the deleted row, so its top-item check runs under that lock; its
+/// only caller (`retire_arena_pit_items`, lane permit) already holds that key in the transaction.
+const SQL_KEY33_FUNCTIONS: [(&str, &str, &str); 6] = [
+    (
+        "game_arena_reset_ground_top",
+        "game_item_ground_locations",
+        "BEFORE DELETE",
+    ),
     (
         "game_elemental_energy_adoption_stamp",
         "game_elemental_energy_field_adoptions",
+        "BEFORE INSERT",
     ),
     (
         "game_elemental_energy_field_admit",
         "game_elemental_energy_field_receipts",
+        "BEFORE INSERT",
     ),
-    ("game_item_ground_owner_lock", "game_item_ground_locations"),
+    (
+        "game_item_ground_owner_lock",
+        "game_item_ground_locations",
+        "BEFORE INSERT",
+    ),
     (
         "game_spell_corpse_entry_owner_lock",
         "game_item_corpse_container_entries",
+        "BEFORE INSERT",
     ),
     (
         "game_native_map_adoption_stamp",
         "game_native_map_scope_adoptions",
+        "BEFORE INSERT",
     ),
 ];
 
@@ -44,8 +61,10 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 5] = [
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
 const RUST_KEY33_SITES: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/arena_match/pit_reset.rs", "retire_arena_pit_items"),
     ("crates/gameplay/durability/src/durability/consume_transform.rs", "consume_count"),
     ("crates/gameplay/durability/src/durability/consume_transform.rs", "persist_action"),
+    ("crates/gameplay/durability/src/durability/consume_transform/dispenser.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "dispenser_row"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "read_ground_action_source"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "write"),
@@ -53,11 +72,12 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
     ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "create"),
     ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "has_room"),
+    ("crates/gameplay/durability/src/durability/item_craft/event_containers.rs", "place_drop"),
     ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
-    ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
+    ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move_with_source_policy"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_loop_move/altar_arrival.rs", "commit_item_loop_altar_arrival"),
     ("crates/gameplay/durability/src/durability/item_loop_move/dreamer_ring.rs", "commit_item_loop_dreamer_ring"),
@@ -92,6 +112,7 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
 const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/consume_transform/dispenser.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "dispenser_row"),
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "read_ground_action_source"),
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
@@ -265,14 +286,14 @@ fn sql_key33_lock_functions_and_triggers_are_pinned() {
     }
     let pinned: BTreeSet<String> = SQL_KEY33_FUNCTIONS
         .iter()
-        .map(|(name, _)| (*name).to_owned())
+        .map(|(name, _, _)| (*name).to_owned())
         .collect();
     assert_eq!(
         found, pinned,
         "SQL key-33 lock functions changed; review against the spell lane"
     );
-    for (function, table) in SQL_KEY33_FUNCTIONS {
-        let trigger = format!("CREATE TRIGGER {function} BEFORE INSERT");
+    for (function, table, timing) in SQL_KEY33_FUNCTIONS {
+        let trigger = format!("CREATE TRIGGER {function} {timing}");
         let at = sql.find(&trigger).expect("key-33 trigger present");
         let statement = &sql[at..at + sql[at..].find(';').expect("trigger end")];
         assert!(

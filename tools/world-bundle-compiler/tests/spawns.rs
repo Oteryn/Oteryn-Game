@@ -534,7 +534,9 @@ fn boss_spawn_world_points_reach_bundle_at_fixed_cells() -> TestResult {
             checked += 1;
         }
     }
-    assert_eq!(checked, 34);
+    // Crystal 201189f8 data-global/world/world-monster.xml:190614–190616
+    // gives Shard of Corruption a fixed 90-second respawn.
+    assert_eq!(checked, 35);
     Ok(())
 }
 

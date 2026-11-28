@@ -36,7 +36,9 @@ pub(super) async fn actual_source_suffix(
     // Purple's 35-Think attack clock gives the 2 s ordinary spells and the
     // 7 s source callback only two shared phases per cycle. Sample several
     // cycles because repinning the native artifact changes both chance draws.
-    'turns: for turn in 0..210_u64 {
+    // Leave enough shared phases for a real hit and a source cast under a new pin.
+    const MAX_SEARCH_TURNS: u64 = 35 * 28;
+    'turns: for turn in 0..MAX_SEARCH_TURNS {
         let now = start
             .checked_add(turn.checked_mul(7_000_000).ok_or("native turn interval")?)
             .ok_or("native turn time")?;
@@ -190,16 +192,17 @@ pub(super) async fn actual_source_suffix(
     let due = retry_now
         .checked_add(7_000_000)
         .ok_or("source seven-second delay")?;
+    let expected_schedule = vec![(
+        boss,
+        selected.source_occurrence.clone(),
+        selected.observed_at_us,
+        due,
+    )];
     {
         let states = owner.states.spell_states.lock().await;
         assert_eq!(
             states.soul_war_callbacks.source_attack_schedule_for_test(),
-            vec![(
-                boss,
-                selected.source_occurrence.clone(),
-                selected.observed_at_us,
-                due
-            )],
+            expected_schedule,
             "one retained occurrence: original ordering time, actual execution +7s"
         );
         assert!(
@@ -218,9 +221,26 @@ pub(super) async fn actual_source_suffix(
     );
     let health_before = health(owner, player, session).await?;
     let cues_before = effects(owner)?;
+    let heal_before_due = owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .source_heal_receipt_for_test(player, session);
     drain_attacks_at(owner, due - 1).await?;
     assert_eq!(health(owner, player, session).await?, health_before);
     assert_eq!(effects(owner)?, cues_before, "no early source area");
+    {
+        let states = owner.states.spell_states.lock().await;
+        assert_eq!(
+            states.soul_war_callbacks.source_attack_schedule_for_test(),
+            expected_schedule
+        );
+        assert_eq!(
+            states.source_heal_receipt_for_test(player, session),
+            heal_before_due
+        );
+    }
     owner
         .states
         .spell_states
@@ -237,12 +257,7 @@ pub(super) async fn actual_source_suffix(
         let states = owner.states.spell_states.lock().await;
         assert_eq!(
             states.soul_war_callbacks.source_attack_schedule_for_test(),
-            vec![(
-                boss,
-                selected.source_occurrence.clone(),
-                selected.observed_at_us,
-                due
-            )],
+            expected_schedule,
             "post-HP refusal retains the original source and its partial area"
         );
         states

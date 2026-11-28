@@ -190,7 +190,7 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
                 serialized_item_stacks(reward, claim_items, stack_problem)
-            poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
+            poison_daggers.verify_canonical(source['identity']['key'], placement['position'], reward)
             global_corrections.correct_canonical(source['identity']['key'], placement['position'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])

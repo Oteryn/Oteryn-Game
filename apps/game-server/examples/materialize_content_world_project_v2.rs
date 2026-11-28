@@ -1029,6 +1029,25 @@ fn write_documents(
     Ok(value)
 }
 
+fn complete_predecessor_package(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()?;
+    let status = std::process::Command::new("python3")
+        .arg(repo.join("tools/content-migration/native_world_canonicalization.py"))
+        .arg("--repo-root")
+        .arg(&repo)
+        .arg("--input-root")
+        .arg(root.canonicalize()?)
+        .arg("--materializer")
+        .arg(env::current_exe()?)
+        .status()?;
+    if !status.success() {
+        return Err(format!("World predecessor completion failed: {status}").into());
+    }
+    Ok(())
+}
+
 fn canonicalize_existing_world(
     source: &Path,
     output: &Path,
@@ -3197,19 +3216,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // The canonical writer requires an absent root for the successor package.
         fs::remove_dir_all(&root)?;
         write_documents(&root, &documents)?;
-        // The predecessor CLI is also used directly by the G4 package job.
-        let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let completion = std::process::Command::new("python3")
-            .arg(repo.join("tools/content-migration/native_world_canonicalization.py"))
-            .arg("--repo-root")
-            .arg(&repo)
-            .arg("--input-root")
-            .arg(&root)
-            .status()?;
-        if !completion.success() {
-            return Err(format!("WorldProject completion failed: {completion}").into());
-        }
-        return Ok(());
+        return complete_predecessor_package(&root);
     }
     let promoted = protected_r7_p04_gold_coin_item_family_import(
         B1_EVIDENCE,
