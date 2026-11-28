@@ -127,11 +127,16 @@ where
         .map_err(|error| command::disconnect(command, "command_result_write", error.kind()))?;
     // A read-only refusal has no effects to flush. Leave pending cues
     // to the normal view refresh and keep this result independent of them.
-    if command.command_type == oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY
-        && matches!(
-            dispatch,
-            Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _) | Dispatch::Unregistered
-        )
+    let daily_boost =
+        command.command_type == oteryn_protocol_oteryn::daily_boost::COMMAND_TYPE_DAILY_BOOST_QUERY;
+    let item_use =
+        command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT;
+    let rejected_reply = matches!(
+        dispatch,
+        Dispatch::Reply(crate::foundation::CommandStatus::Rejected, _)
+    );
+    if ((daily_boost || item_use) && rejected_reply)
+        || (daily_boost && matches!(dispatch, Dispatch::Unregistered))
     {
         return Ok(());
     }

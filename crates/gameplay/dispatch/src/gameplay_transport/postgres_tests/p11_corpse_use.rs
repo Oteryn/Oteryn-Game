@@ -1,7 +1,10 @@
-use super::autowalk_fixtures::{read, send};
+use super::autowalk_fixtures::{ack_probe, read, send};
 use super::fixture::join_two;
 use super::full_world_support::*;
-use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+use crate::durability::DurabilityRoot;
+use crate::gameplay_transport::connection::{
+    AFTER_COMMAND_INPUT_GUARDS, ConnectionEnd, IDLE_LIVENESS, serve_admitted,
+};
 use oteryn_protocol_oteryn::item_view::{self, ItemHandle};
 use oteryn_protocol_oteryn::world_object::{
     CAPABILITY_RUNE_USE_V1, COMMAND_TYPE_USE_INTENT, UseDisposition, decode_use_result,
@@ -14,7 +17,9 @@ use oteryn_protocol_oteryn::zones_nologout::{self, ServerMessage};
 use oteryn_protocol_oteryn::{
     CommandStatus, MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
 };
+use std::time::Instant;
 use tokio::io::{AsyncWriteExt, DuplexStream};
+use tokio::sync::Notify;
 
 #[test]
 fn p11_demon_removal_handle_opens_on_next_use_and_delivers_loot_notice() -> TestResult {
@@ -22,10 +27,60 @@ fn p11_demon_removal_handle_opens_on_next_use_and_delivers_loot_notice() -> Test
         return Ok(());
     };
     drop(admin);
-    super::kill_reward_e2e_fixtures::scenario_thread::run("p11-corpse-use", demon_corpse_use)
+    super::kill_reward_e2e_fixtures::scenario_thread::run("p11-corpse-use", || {
+        demon_corpse_use(None)
+    })
 }
 
-fn demon_corpse_use() -> TestResult {
+#[test]
+fn w13_corpse_use_waits_for_holder_and_opens_once_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run(Contention::Released)
+}
+
+#[test]
+fn w13_corpse_use_busy_refusal_replays_and_next_use_opens_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    run(Contention::Exhausted)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Contention {
+    Released,
+    Exhausted,
+}
+
+fn run(contention: Contention) -> TestResult {
+    super::kill_reward_e2e_fixtures::scenario_thread::run("w13-corpse-use", move || {
+        let mut result = Ok(());
+        let lines = oteryn_error_codes::capture(|| result = demon_corpse_use(Some(contention)));
+        result?;
+        let outcome = match contention {
+            Contention::Released => "retry_finished",
+            Contention::Exhausted => "holder_busy",
+        };
+        assert!(
+            lines.iter().any(|line| {
+                line.contains("event=session_holder_wait")
+                    && line.contains("purpose=corpse_open")
+                    && line.contains("p11_corpse_use.rs")
+                    && line.contains("held_ms=")
+                    && line.contains("waited_ms=")
+                    && line.contains(&format!("outcome={outcome}"))
+            }),
+            "{lines:?}"
+        );
+        Ok(())
+    })
+}
+
+fn demon_corpse_use(contention: Option<Contention>) -> TestResult {
     world_scenario!(
         "p11_corpse_use",
         |h,
@@ -97,6 +152,7 @@ fn demon_corpse_use() -> TestResult {
                 generation: target.actor_local_generation(),
             };
             let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            let barrier = Arc::new((Notify::new(), Notify::new()));
             let drive = async {
                 let result = async {
                     loop {
@@ -139,14 +195,70 @@ fn demon_corpse_use() -> TestResult {
                             break handle;
                         }
                     };
-                    let command_id = admitted.continuity.next_command_id;
-                    send(
-                        &mut client,
-                        command_id,
-                        COMMAND_TYPE_USE_INTENT,
-                        &encode_use_item_intent(handle),
-                    )
-                    .await?;
+                    let mut command_id = admitted.continuity.next_command_id;
+                    let payload = encode_use_item_intent(handle);
+                    send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &payload).await?;
+                    if let Some(case) = contention {
+                        barrier.0.notified().await;
+                        let mut holder = owner.root.try_acquire_ready()?;
+                        let checkout_started = tokio::time::Instant::now();
+                        barrier.1.notify_one();
+
+                        if case == Contention::Exhausted {
+                            // Keep the holder across the terminal result and its replay.
+                            // Neither can publish an open or re-enter the durable read.
+                            for status in [CommandStatus::Rejected, CommandStatus::DuplicateReplay] {
+                                while proof.reply.is_none() {
+                                    proof
+                                        .read(&mut client, entity, target.corpse_identity())
+                                        .await?;
+                                }
+                                assert_eq!(
+                                    proof.reply.take(),
+                                    Some((
+                                        command_id,
+                                        status,
+                                        UseDisposition::Rejected
+                                    ))
+                                );
+                                assert_eq!(proof.open_deltas, 0);
+                                if status == CommandStatus::Rejected {
+                                    assert!(checkout_started.elapsed()
+                                        >= crate::gameplay_transport::AdmissionRetryBudget::holder_wait_window());
+                                    send(
+                                        &mut client,
+                                        command_id,
+                                        COMMAND_TYPE_USE_INTENT,
+                                        &payload,
+                                    )
+                                    .await?;
+                                }
+                            }
+                        } else {
+                            // Longer than the old command window, shorter than the P18 read window.
+                            tokio::time::sleep(
+                                crate::gameplay_transport::COMMAND_HOLDER_WINDOW
+                                    + Duration::from_millis(250),
+                            )
+                            .await;
+                        }
+                        assert_eq!(
+                            holder
+                                .return_to_pool_observed_until(
+                                    Instant::now() + crate::durability::DB_PASS_DEADLINE,
+                                )
+                                .await,
+                            sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+                        );
+
+                        if case == Contention::Exhausted {
+                            command_id += 1;
+                            send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &payload)
+                                .await?;
+                            barrier.0.notified().await;
+                            barrier.1.notify_one();
+                        }
+                    }
                     while !proof.loot_notice || proof.opened.is_none() || proof.reply.is_none() {
                         proof
                             .read(&mut client, entity, target.corpse_identity())
@@ -163,6 +275,20 @@ fn demon_corpse_use() -> TestResult {
                         }
                     }
                     assert_eq!(proof.opened, Some(handle));
+                    assert_eq!(proof.open_deltas, 1);
+                    if contention.is_some() {
+                        proof.reply = None;
+                        send(&mut client, command_id, COMMAND_TYPE_USE_INTENT, &payload).await?;
+                        while proof.reply.is_none() {
+                            proof
+                                .read(&mut client, entity, target.corpse_identity())
+                                .await?;
+                        }
+                        assert_eq!(proof.reply, Some((
+                            command_id, CommandStatus::DuplicateReplay, UseDisposition::Committed,
+                        )));
+                        assert_eq!(proof.open_deltas, 1);
+                    }
                     TestResult::Ok(())
                 }
                 .await;
@@ -172,7 +298,21 @@ fn demon_corpse_use() -> TestResult {
             let (end, result) = tokio::time::timeout(
                 std::time::Duration::from_secs(20),
                 join_two(
-                    serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS),
+                    async {
+                        let serve = DurabilityRoot::with_holder_owner(serve_admitted(
+                            &mut server,
+                            admitted,
+                            &owner,
+                            IDLE_LIVENESS,
+                        ));
+                        if contention.is_some() {
+                            AFTER_COMMAND_INPUT_GUARDS
+                                .scope(barrier.clone(), serve)
+                                .await
+                        } else {
+                            serve.await
+                        }
+                    },
                     drive,
                 ),
             )
@@ -192,6 +332,7 @@ struct CorpseWireProof {
     removed: bool,
     handle: Option<ItemHandle>,
     opened: Option<ItemHandle>,
+    open_deltas: usize,
     reply: Option<(u64, CommandStatus, UseDisposition)>,
     loot_notice: bool,
 }
@@ -206,6 +347,11 @@ impl CorpseWireProof {
         let frame = read(client).await?;
         let envelope = decode_wire_envelope(&frame)?;
         match envelope.message_type() {
+            MessageType::ProtocolError => {
+                let error = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?;
+                return Err(format!("unexpected protocol error E{}", error.error_code).into());
+            }
+            MessageType::LivenessProbe => ack_probe(client, &frame).await?,
             MessageType::CommandResult => {
                 let result = decode_command_result(envelope.payload())?;
                 self.reply = Some((
@@ -231,6 +377,7 @@ impl CorpseWireProof {
                         }
                     }
                     item_view::STATE_DOMAIN_OPEN_CONTAINER => {
+                        self.open_deltas += 1;
                         self.opened = item_view::decode_open_container(delta.payload).map_err(debug)?.container_handle;
                     }
                     zones_nologout::STATE_DOMAIN_SERVER_MESSAGES => {

@@ -1168,8 +1168,8 @@ mod connection {
                         (
                             Some(CorpseOpenRefusal::HolderBusy),
                             live,
-                            CommandStatus::Accepted,
-                            UseDisposition::StaleState,
+                            CommandStatus::Rejected,
+                            UseDisposition::Rejected,
                             2,
                         ),
                         (
