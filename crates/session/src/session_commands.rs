@@ -134,16 +134,32 @@ impl<S: SessionStream> Session<S> {
         let result = self
             .send_and_read_result(COMMAND_TYPE_ITEM_MOVE_INTENT, payload)
             .await?;
-        let outcome = item_view::decode_item_move_result_for(
-            self.item_result_payload(&result.payload)?.0,
-            item_view::ItemMoveSelection {
-                equip_drop: self.is_selected(12),
-                container_tree: self.is_selected(14),
-                world_interaction: self.is_selected(11),
-                manual_sort: self.is_selected(510),
-            },
-        )
-        .map_err(SessionError::ItemView)?;
+        let decoded = self
+            .item_result_payload(&result.payload)
+            .and_then(|(payload, _)| {
+                item_view::decode_item_move_result_for(
+                    payload,
+                    item_view::ItemMoveSelection {
+                        equip_drop: self.is_selected(12),
+                        container_tree: self.is_selected(14),
+                        world_interaction: self.is_selected(11),
+                        manual_sort: self.is_selected(510),
+                    },
+                )
+                .map_err(SessionError::ItemView)
+            });
+        if decoded.is_err() && self.replay.capture_inventory {
+            let hex = result
+                .payload
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            eprintln!(
+                "ITEM_MOVE_RESULT_DECODE_FAILED command_id={} status={:?} server_sequence={} payload_hex={hex:?}",
+                result.command_id, result.status, result.server_sequence,
+            );
+        }
+        let outcome = decoded?;
         // Command 9 accepts every typed outcome, including an equipment refusal.
         check_status_pairing(result.command_id, result.status, false)?;
         Ok(ItemMoveOutcomeResult {

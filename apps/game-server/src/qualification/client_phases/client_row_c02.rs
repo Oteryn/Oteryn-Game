@@ -2,7 +2,9 @@
 //! checks its durable equipment state on a fresh admission.
 
 use super::*;
-use full_row_c02::{approach_rat, clear_bow_offhand, count, equip, logout, reference, retreat_from_combat, stop};
+use full_row_c02::{
+    approach_rat, clear_bow_offhand, count, equip, logout, reference, retreat_from_combat, stop,
+};
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::{attack::AttackIntentDisposition, item_view};
 use std::{io::Write, num::NonZeroU32, path::PathBuf};
@@ -47,8 +49,7 @@ fn replay_capture(
     let after = std::fs::read(root.join("c02-debit.wire"))?;
     let pre_sequence = oteryn_protocol_oteryn::decode_wire_envelope(&before)?.server_sequence();
     let session = client.session_mut();
-    let (_, pre_revision, pre_inventory) =
-        session.replay_inventory_frame(&before, pre_sequence)?;
+    let (_, pre_revision, pre_inventory) = session.replay_inventory_frame(&before, pre_sequence)?;
     let (base_revision, _, post_inventory) =
         session.replay_inventory_frame(&after, debit_sequence)?;
     if pre_sequence >= result_sequence
@@ -121,13 +122,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(full_row_c02::PLATFORM_ADMISSION_GAP.into());
     }
 
-    let mut client = connect_character(&clients, 0xc2, 0).await?;
+    let mut client = connect_character(&clients, 0xc2, 0)
+        .await
+        .inspect_err(|error| {
+            eprintln!("C02_READ_FAILED read=\"preparation admission\" error={error}")
+        })?;
     character_prep::grant_item(&client, BOW, 1).await?;
     character_prep::grant_item(&client, ARROW, 2).await?;
     let prepared_session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
     drop(client);
-    let mut client = connect_character(&clients, 0xc2, 0).await?;
+    let mut client = connect_character(&clients, 0xc2, 0)
+        .await
+        .inspect_err(|error| {
+            eprintln!("C02_READ_FAILED read=\"equipment admission\" error={error}")
+        })?;
     let equipped_session = client.join_snapshot().game_session_id;
     let bow = reference(BOW)?;
     let arrow = reference(ARROW)?;
@@ -138,9 +147,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("C02 ranged kit preparation did not persist".into());
     }
     client.session_mut().enable_inventory_replay_capture();
-    clear_bow_offhand(&mut client).await?;
-    equip(&mut client, bow, item_view::EquipmentSlot::RightHand).await?;
-    equip(&mut client, arrow, item_view::EquipmentSlot::Ammo).await?;
+    clear_bow_offhand(&mut client).await.inspect_err(|error| {
+        eprintln!("C02_READ_FAILED read=\"clear offhand ITEM_MOVE\" error={error}")
+    })?;
+    equip(&mut client, bow, item_view::EquipmentSlot::RightHand)
+        .await
+        .inspect_err(|error| {
+            eprintln!("C02_READ_FAILED read=\"equip bow ITEM_MOVE\" error={error}")
+        })?;
+    equip(&mut client, arrow, item_view::EquipmentSlot::Ammo)
+        .await
+        .inspect_err(|error| {
+            eprintln!("C02_READ_FAILED read=\"equip arrows ITEM_MOVE\" error={error}")
+        })?;
     approach_rat(&mut client, world, &metadata.spawns, PROOF_RANGE).await?;
     let here = client.world_spatial().actor_position;
     let target = client
@@ -171,16 +190,27 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("C02 ATTACK must start with two equipped arrows".into());
     }
     client.take_events();
-    let before = client.session_mut().take_inventory_replay_frame()
+    let before = client
+        .session_mut()
+        .take_inventory_replay_frame()
         .ok_or("C02 original pre-attack inventory envelope absent")?;
     let reply = client.session_mut().attack_target(Some(&target)).await?;
     if reply.disposition != AttackIntentDisposition::Ok {
         return Err(format!("C02 ATTACK refused: {reply:?}").into());
     }
     let debit_sequence = first_debit(&mut client, arrow, reply.result_server_sequence).await?;
-    let after = client.session_mut().take_inventory_replay_frame()
+    let after = client
+        .session_mut()
+        .take_inventory_replay_frame()
         .ok_or("C02 original debit inventory envelope absent")?;
-    replay_capture(&mut client, &before, &after, reply.result_server_sequence, debit_sequence, arrow)?;
+    replay_capture(
+        &mut client,
+        &before,
+        &after,
+        reply.result_server_sequence,
+        debit_sequence,
+        arrow,
+    )?;
     stop(&mut client).await?;
     if client
         .inventory()
