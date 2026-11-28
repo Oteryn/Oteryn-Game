@@ -16,7 +16,7 @@ INSERT INTO game_character_forge_dust_entries(entry_id, character_id, kind, caus
 VALUES ('00000000-0000-7000-8000-000000000009', '00000000-0000-7000-8000-000000000001',
     'GAIN', 'creature_kill', '00000000-0000-7000-8000-00000000000a',
     '00000000-0000-7000-8000-00000000000b', 100, 0, 0, 100, 100, 100);
-INSERT INTO game_character_forge_dust_limit_reservations(character_id, occurrence_id, world_id,
+INSERT INTO game_forge_dust_limit_reservations(character_id, occurrence_id, world_id,
     channel_id, transaction_id, event_id, entry_id, occurred_at, expected_upgrade_count,
     content_digest, ruleset_revision, simulation_profile_revision, work_units_used)
 VALUES ('00000000-0000-7000-8000-000000000001', '00000000-0000-7000-8000-000000000005',
