@@ -53,8 +53,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return Err(Rejected),
             }
         };
-        // The grant is not authenticated yet: a classified answer here would reveal another
-        // world's character, so only 1100/1101 may precede authentication (N8 precedence).
+        // The grant is not authenticated yet. Holder expiry describes node availability.
+        // Keep the Character's world mismatch on the existing silent rejection path.
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
             return Err(Rejected);
         }
@@ -85,6 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // evidence, bounded; the grant replay key still admits at most one GameSession.
         let mut premium_entry = None;
         let (request, reservation) = loop {
+            budget.check_deadline().map_err(|_| FRESH_JOIN_EXPIRED)?;
             // D4: the five-second source-age bound requires evidence fetched for
             // this attempt; S2 custody retains it and the composition decides.
             if self
@@ -746,7 +747,10 @@ impl AdmissionRetryBudget<'_> {
         if refusal != AdmissionRefusal::Unavailable {
             return Ok(false);
         }
-        if self.retries_unavailable_with_minimum(refusal, Duration::ZERO).await {
+        if self
+            .retries_unavailable_with_minimum(refusal, Duration::ZERO)
+            .await
+        {
             return Ok(true);
         }
         Err(FRESH_JOIN_EXPIRED)
