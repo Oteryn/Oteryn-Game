@@ -62,7 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .item_fence
             .is_none_or(|fence| !matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }))
         {
-            return owner.logout_session(admitted).await;
+            return owner.logout_session_for_command(admitted, command).await;
         }
         // NOLOGOUT, paid work and PvP/PvE fight gates keep their existing policy.
         // The native return rechecks the combat hold under its reservation locks.
@@ -110,7 +110,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         destination
             .as_ref()
             .unwrap_or(self)
-            .logout_session(next)
+            .logout_session_for_command(next, command)
             .await
     }
 }

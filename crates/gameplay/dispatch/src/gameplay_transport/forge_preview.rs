@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::{forge_preview as wire, item_forge::Operation};
 pub enum Outcome {
     Payload(Vec<u8>),
     Rejected,
+    Busy,
     Unavailable,
 }
 fn operation(selection: wire::Selection) -> Option<ForgeOperation> {
@@ -104,19 +105,24 @@ pub(super) async fn read(
             })
         }
     };
-    let snapshot = match owner
-        .root
-        .read_forge_preview(
+    let budget = super::AdmissionRetryBudget::for_holder_window(
+        owner.root,
+        super::AdmissionRetryBudget::holder_wait_window(),
+    );
+    let snapshot = match budget.retry_logged_holder(
+        "forge_preview",
+        async || owner.root.read_forge_preview(
             owner.character,
             owner.holder,
             fence,
             CommandRef::new(admitted.game_session_id, command),
             native,
             selection,
-        )
-        .await
-    {
+        ).await,
+        |error| matches!(error, ForgeDustLimitError::Unavailable(crate::durability::DurabilityError::RootUnavailable)),
+    ).await {
         Ok(value) => value,
+        Err(ForgeDustLimitError::Unavailable(crate::durability::DurabilityError::RootUnavailable)) => return Outcome::Busy,
         Err(ForgeDustLimitError::Unavailable(_)) => return Outcome::Unavailable,
         Err(_) => return Outcome::Rejected,
     };
@@ -183,6 +189,10 @@ pub(super) async fn read(
     .encode()
     .map_or(Outcome::Unavailable, Outcome::Payload)
 }
+pub(super) fn refused_reply(nonce: u64) -> Option<Vec<u8>> {
+    wire::Reply { nonce, payload: wire::Payload::Refused }.encode()
+}
+
 // Raising the limit has never required a backpack. Reuse command668's current balance owner,
 // and explicitly omit unrelated inventory counts rather than fabricating zero balances.
 async fn limit_review(

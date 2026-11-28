@@ -7,6 +7,10 @@ use super::super::recovery_evidence_composition::{
     RecoveryEvidenceSubject, decide_with_registered_recovery,
 };
 use super::*;
+use crate::durability::{
+    SqlxFailureClass,
+    db::{commit_semantic_read, try_lock_admission_relations},
+};
 use crate::foundation::fnd04_verifier::{
     RecoveryCurrentEvidence, RecoveryDurabilityTrustContextV2, VerifiedRecoveryDurabilityFactsV2,
 };
@@ -14,6 +18,19 @@ use crate::foundation::{AuthenticatedTransportRefV1, ConnectionGeneration, GameS
 
 mod mismatch;
 pub(crate) use mismatch::OfflineActivityMismatchRelease;
+
+/// Activity discovery and first input share the holder with unrelated sessions.
+async fn try_activity_admission_fence(tx: &mut Transaction<'_, Postgres>) -> Result<()> {
+    try_lock_admission_relations(tx)
+        .await
+        .map_err(|error| match error {
+            DurabilityError::Database(SqlxFailureClass::RetryableStatement) => {
+                // The first application statement refused before any write.
+                DurabilityError::RootUnavailable
+            }
+            other => other,
+        })
+}
 
 /// An inert, current routing projection. Callers must retain the actual native
 /// actor/spell state; the authored destination cell is not permission to reset it.
@@ -89,9 +106,9 @@ impl ActivityHandoffOwner {
             .run(move |pass, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(pass, deadline).await?;
-                    lock_admission_relations(&mut tx).await?;
+                    try_activity_admission_fence(&mut tx).await?;
                     let candidate = load(&mut tx, &root, session).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    commit_semantic_read(tx, deadline).await?;
                     Ok(candidate)
                 })
             })
@@ -112,7 +129,7 @@ impl ActivityHandoffOwner {
         let node = node.clone();
         self.root.try_issue_semantic_pass()?.run(move |pass, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(pass, deadline).await?;
-            lock_admission_relations(&mut tx).await?;
+            try_activity_admission_fence(&mut tx).await?;
             let activity: bool = sqlx::query_scalar(
                 "SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND (activity_handoff_id IS NOT NULL OR activity_return_id IS NOT NULL))")
                 .bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
@@ -135,8 +152,10 @@ impl ActivityHandoffOwner {
                 }
                 sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts(operation_key,operation_json,decided_at) VALUES($1,'{}',floor(extract(epoch FROM clock_timestamp()))::bigint) ON CONFLICT DO NOTHING")
                     .bind(input_key(fence.game_session_id)).execute(&mut *tx).await?;
+                commit_semantic_transaction(tx, deadline).await
+            } else {
+                commit_semantic_read(tx, deadline).await
             }
-            commit_semantic_transaction(tx, deadline).await
         })).await
     }
 

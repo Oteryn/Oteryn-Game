@@ -315,20 +315,38 @@
       "level": "info",
       "span": false,
       "fields": [
-        "stage"
+        "stage",
+        "phase"
       ],
       "codes": [],
       "note": "NBFIX: closed logout refusal stage; no account, session or authentication material."
+    },
+    {
+      "event": "logout_release_completed",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "command_id",
+        "attempt",
+        "elapsed_ms"
+      ],
+      "codes": [],
+      "note": "A release completed after a checkpoint had deferred."
     },
     {
       "event": "logout_release_retry",
       "level": "info",
       "span": false,
       "fields": [
-        "stage"
+        "phase",
+        "command_id",
+        "attempt",
+        "elapsed_ms",
+        "holder",
+        "held_ms"
       ],
       "codes": [],
-      "note": "Closed name of the release prerequisite that deferred logout before the terminal transaction."
+      "note": "The release checkpoint and the holder observed when it deferred."
     },
     {
       "event": "logout_unknown",
@@ -336,7 +354,8 @@
       "span": false,
       "fields": [
         "stage",
-        "kind"
+        "kind",
+        "phase"
       ],
       "codes": [],
       "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."

@@ -89,13 +89,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
-    ) -> bool {
+    ) -> Result<bool, crate::durability::DurabilityError> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok((current, _)) = store.current_session_at(session).await else {
-            return false;
-        };
+        let (current, _) = store.current_session_at(session).await?;
         let Some(fence) = item_fence_of(current) else {
-            return false;
+            return Ok(false);
         };
         let saved = {
             let runtime = self.runtime.lock().await;
@@ -118,17 +116,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             };
             if !valid {
-                return true;
+                return Ok(true);
             }
             let Ok(states) = self.states.spell_states.try_lock() else {
-                return false;
+                return Ok(false);
             };
             let Some((_, _, state)) = states
                 .actors
                 .iter()
                 .find(|(a, s, _)| *a == actor && *s == session)
             else {
-                return true;
+                return Ok(true);
             };
             let now = self.owner_now().get();
             let native = if states.is_dead(actor) {
@@ -145,7 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 };
                 let Ok(native) = native else {
-                    return false;
+                    return Ok(false);
                 };
                 Some(native)
             };
@@ -161,7 +159,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .unwrap_or(live)
                 .persistent_snapshot_with_native(native, now)
             else {
-                return false;
+                return Ok(false);
             };
             CharacterConditionSnapshot {
                 lease_generation: fence.character_lease_generation,
@@ -182,8 +180,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(()) | Err(ItemUseError::AuthorityRejected) => true,
-            Err(_) => false,
+            Ok(()) | Err(ItemUseError::AuthorityRejected) => Ok(true),
+            Err(ItemUseError::Unavailable(error)) => Err(error),
+            Err(_) => Ok(false),
         }
     }
 }

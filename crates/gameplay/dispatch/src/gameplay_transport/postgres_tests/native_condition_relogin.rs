@@ -37,6 +37,23 @@ fn native_condition_postgres_terminal_save_excludes_environment_and_stale_lease(
     on_thread(admin, true)
 }
 
+#[test]
+fn native_condition_relogin_retries_its_busy_read_in_place_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e_fixtures::scenario_thread::run("relog-conditions-holder", move || {
+        let runtime = crate::bestiary_postgres_harness::runtime()?;
+        runtime.block_on(async {
+            let h = Harness::create_with_admission_seed(admin, "relog_conditions_holder", true, false).await?;
+            let result = scenario(&h, false, true).await;
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        })
+    })
+}
+
 fn on_thread(admin: String, with_environment: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -50,7 +67,7 @@ fn on_thread(admin: String, with_environment: bool) -> TestResult {
                     false,
                 ))?;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    rt.block_on(scenario(&h, with_environment))
+                    rt.block_on(scenario(&h, with_environment, false))
                 }));
                 let cleanup = rt.block_on(h.cleanup());
                 match result {
@@ -79,7 +96,7 @@ impl ConnectionIdentifiers for FreshIds {
     }
 }
 
-async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
+async fn scenario(h: &Harness, with_environment: bool, contend_conditions: bool) -> TestResult {
     let recovery = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -178,14 +195,31 @@ async fn scenario(h: &Harness, with_environment: bool) -> TestResult {
     )
     .map_err(debug)?;
     let (mut server, _client) = tokio::io::duplex(1 << 20);
-    let fresh = crate::gameplay_transport::connection::admit_frame(
+    let admit = crate::gameplay_transport::connection::admit_frame(
         &mut server,
         &frame,
         &fresh_owner,
         &FreshIds,
-    )
-    .await
-    .map_err(debug)?;
+    );
+    let fresh = if contend_conditions {
+        use crate::gameplay_transport::composed_admission::RELOG_CONDITIONS_BARRIER;
+        let barrier = std::sync::Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+        let hold = async {
+            barrier.0.notified().await;
+            let held = h.root.try_issue_semantic_pass()?;
+            barrier.1.notify_one();
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            held.run(|_, _| Box::pin(async { Ok(()) })).await
+        };
+        let (admitted, held) = tokio::time::timeout(Duration::from_secs(15), async {
+            tokio::join!(RELOG_CONDITIONS_BARRIER.scope(barrier.clone(), admit), hold)
+        }).await?;
+        held?;
+        // A full first-entry retry would hit the barrier a second time and time out.
+        admitted.map_err(debug)?
+    } else {
+        admit.await.map_err(debug)?
+    };
     assert_ne!(fresh.game_session_id, session);
     assert!(
         matches!(
