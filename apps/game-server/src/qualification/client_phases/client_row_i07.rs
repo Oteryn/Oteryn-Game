@@ -1278,7 +1278,7 @@ pub(super) async fn journey(
     capture.visible_top = Some(visible_top);
     if full {
         capture
-            .probe(&mut fresh, 21, unassigned_pouch.clone(), &[])
+            .probe(&mut fresh, 21, unassigned_pouch, &[])
             .await?;
         require_unassigned_pouch(&mut database, character, &pouch).await?;
         capture
