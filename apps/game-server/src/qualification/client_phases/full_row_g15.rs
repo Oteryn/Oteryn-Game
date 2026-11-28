@@ -205,13 +205,24 @@ async fn party(
         }
         None => runtime::PartyCommand::query(),
     };
-    let reply = runtime::send(client.session_mut(), &command).await?;
-    let operation = runtime::party::decode_party_result(&reply.operation)
-        .map_err(|e| format!("step=party operation={e:?}"))?;
-    let view =
-        runtime::party::decode_party_result(reply.view.as_deref().ok_or("step=party view-absent")?)
-            .map_err(|e| format!("step=party view={e:?}"))?;
-    Ok((operation.disposition, view))
+    let reply = client
+        .session_mut()
+        .gated_command(
+            runtime::party::CAPABILITY_PARTY_V1,
+            command.kind,
+            &command.payload,
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!(
+            "step=party command={} observed={:?} payload={:?}",
+            command.kind, reply.status, reply.payload
+        )
+        .into());
+    }
+    let result = runtime::party::decode_party_result(&reply.payload)
+        .map_err(|e| format!("step=party command={} decode={e:?}", command.kind))?;
+    Ok((result.disposition, result))
 }
 
 fn coin_worth(index: &[(u32, u32)], item: u32) -> Option<u64> {
