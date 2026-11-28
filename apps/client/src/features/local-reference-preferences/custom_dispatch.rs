@@ -398,6 +398,7 @@ impl PlayLink {
                     return false;
                 }
                 mailbox.world_context.pending = true;
+                mailbox.use_with_pending = target_mode != ObjectTarget::Use;
                 mailbox.custom_hotkey_feedback = None;
                 true
             }

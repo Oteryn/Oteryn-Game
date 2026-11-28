@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(super) struct RewardFacts {
     pub quantities: BTreeMap<String, u64>,
     pub first_fish: BTreeMap<String, u64>,
+    pub first_fish_id: Option<[u8; 16]>,
     pub level: u32,
 }
 
@@ -36,9 +37,7 @@ pub(super) async fn read(
         if seen.insert(item.item_instance_id) && item.definition.family == "Item" {
             if oteryn_gameplay_quests::quest::reward_callbacks::is_sinatuki_fish(
                 &item.definition.production_key,
-            ) && first_fish
-                .as_ref()
-                .is_none_or(|(id, _, _)| item.item_instance_id < *id)
+            ) && first_fish.is_none()
             {
                 first_fish = Some((
                     item.item_instance_id,
@@ -61,6 +60,7 @@ pub(super) async fn read(
         .ok()??;
     Some(RewardFacts {
         quantities,
+        first_fish_id: first_fish.as_ref().map(|(id, _, _)| *id),
         first_fish: first_fish
             .into_iter()
             .map(|(_, key, qty)| (key, qty))

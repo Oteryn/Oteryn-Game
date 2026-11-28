@@ -343,7 +343,7 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
     let rune = SpellCatalogEntry {
         cast_index: 71,
         name: "Test rune".into(),
-        words: "test".into(),
+        words: String::new(),
         level: 1,
         mana: 1,
         mana_percent: false,
@@ -374,5 +374,13 @@ fn closed_rune_requires_a_handle_before_arming_or_dispatching()
         );
         assert!(commands.try_recv().is_err());
     }
+    use oteryn_client_runtime::world_interaction::{Selection, Target};
+    let position = oteryn_session::ActorPosition { x: 100, y: 201, floor: 7 };
+    crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = Some((Target::Position(position), Selection { position, binding: None }));
+    let action = CustomAction::Object { definition: 901, sub_type: 0, target: ObjectTarget::CursorPosition };
+    assert!(link.custom_hotkey_action(&play, &action));
+    assert!(play.use_with_click(oteryn_renderer::TileCoord::new(101, 200), &link));
+    assert!(matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command) if matches!(command.action, oteryn_client_runtime::world_interaction::Action::UseDefinitionOn(reference) if reference.get() == 901)));
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

@@ -122,6 +122,7 @@ pub(super) async fn sample(
     );
     let weights = Weights(native);
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

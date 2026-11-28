@@ -104,6 +104,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         .map_err(f::debug)?;
     super::engitem_reward_text::equip_backpack(h, &authority, native, &weights).await?;
     let admission = QuestRewardAdmission {
+        selected_fish: None,
         native,
         weights: &weights,
         fee_payment: None,

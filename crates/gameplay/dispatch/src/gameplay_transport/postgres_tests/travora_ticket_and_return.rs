@@ -18,16 +18,20 @@ fn travora_ticket_and_last_port_survive_expiry_postgres() -> TestResult {
     }
     super::kill_reward_e2e_fixtures::scenario_thread::run("travora-ticket-and-return", || {
         run(async |admin| {
-            let h =
-                Harness::create_with_admission_seed(admin, "travora_ticket", true, false).await?;
-            let result = exercise_published_routes(&h).await;
-            h.cleanup().await?;
-            result
+            for (name, expire_inbound) in
+                [("travora_ticket", false), ("travora_ticket_inbound", true)]
+            {
+                let h = Harness::create_with_admission_seed(admin.clone(), name, true, false).await?;
+                let result = exercise_published_routes(&h, expire_inbound).await;
+                h.cleanup().await?;
+                result?;
+            }
+            Ok(())
         })
     })
 }
 
-async fn exercise_published_routes(h: &Harness) -> TestResult {
+async fn exercise_published_routes(h: &Harness, expire_inbound: bool) -> TestResult {
     let catalogue = crate::content::NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
         std::ffi::OsStr::new("world"),
@@ -147,7 +151,8 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
         .execute(&h.pool)
         .await?;
-    super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), 3000, 80).await?;
+    let starting_gold = if expire_inbound { 3000 } else { 2000 };
+    super::guild_bank_fixtures::bank_seed::balance(h, id(40), id(41), starting_gold, 80).await?;
     owner.refresh_quest_session(session, true).await;
     use oteryn_gameplay_quests::quest::world_callbacks::Position;
     let [captain, petros, tiberius, sharon] = super::classic_quests_fixtures::install_positions(
@@ -224,7 +229,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
                 .iter()
                 .any(|line| line.contains("offer has expired"))
         ),
-        (0, false, 3000, true),
+        (0, false, starting_gold, true),
         "travel quote must replace ticket topic {armed}: {expired:?}"
     );
     talk(&mut owner, &deps.admitted, captain, 5, "bye").await?;
@@ -248,7 +253,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     ).bind(TRACK).fetch_one(&h.pool).await?;
     assert_eq!(
         (purchased, balance),
-        (false, 3000),
+        (false, starting_gold),
         "declined ticket must stay cancelled"
     );
     talk(&mut owner, &deps.admitted, petros, 10, "ticket").await?;
@@ -257,7 +262,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         "SELECT (SELECT value FROM game_character_quest_tracks WHERE track_key=$1),(SELECT balance FROM game_account_bank_balances)"
     ).bind(TRACK).fetch_one(&h.pool).await?;
     assert!(stamp >= now, "ticket records the database clock");
-    assert_eq!(balance, 2000);
+    assert_eq!(balance, starting_gold - 1000);
     let fence = owner
         .current_quest_fence(session)
         .await
@@ -270,10 +275,6 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
             .map_err(debug)?,
         Ok(0)
     );
-
-    let offer = talk(&mut owner, &deps.admitted, petros, 12, "travora").await?;
-    assert!(offer.iter().any(|line| line.contains("for 0 gold")));
-    talk(&mut owner, &deps.admitted, petros, 13, "no").await?;
 
     let mut passage = request(&owner, &deps, 48101, "petros").await?;
     passage.route = inbound.clone();
@@ -300,7 +301,8 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     complete(&owner, &deps, passage.arrival.occurrence).await?;
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'")
         .execute(&h.pool).await?;
-    expire_ticket(h, stamp).await?;
+    // Age the purchased ticket in the fixture without changing the production clock.
+    age_ticket(h, stamp).await?;
 
     let fence = owner
         .current_quest_fence(session)
@@ -336,14 +338,18 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
         .map_err(debug)?
         .position();
     assert_eq!((returned.x, returned.y, returned.floor), (33289, 32480, 6));
-    let renewed = assert_renewal(h, 48104, 1000, stamp).await?;
-    expire_ticket(h, renewed).await?;
+    let returned_stamp = assert_arrived_fare(h, 48104, starting_gold - 2000, 1000, stamp).await?;
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+    if expire_inbound {
+        age_ticket(h, returned_stamp).await?;
+    }
+    let inbound_fare = if expire_inbound { 1000 } else { 0 };
     talk(&mut owner, &deps.admitted, petros, 48105, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, petros, 48106, "travora").await?;
-    assert!(offer.iter().any(|line| line.contains("for 1000 gold")));
+    let quoted_fare = format!("for {inbound_fare} gold");
+    assert!(offer.iter().any(|line| line.contains(&quoted_fare)));
     talk(&mut owner, &deps.admitted, petros, 48107, "yes").await?;
-    assert_renewal(h, 48107, 0, renewed).await?;
+    assert_arrived_fare(h, 48107, 0, inbound_fare, returned_stamp).await?;
     sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
     talk(&mut owner, &deps.admitted, sharon, 48108, "hi").await?;
     let offer = talk(&mut owner, &deps.admitted, sharon, 48109, "check").await?;
@@ -376,7 +382,7 @@ async fn exercise_published_routes(h: &Harness) -> TestResult {
     Ok(())
 }
 
-async fn expire_ticket(h: &Harness, stamp: i64) -> TestResult {
+async fn age_ticket(h: &Harness, stamp: i64) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -393,10 +399,11 @@ async fn expire_ticket(h: &Harness, stamp: i64) -> TestResult {
     Ok(())
 }
 
-async fn assert_renewal(
+async fn assert_arrived_fare(
     h: &Harness,
     command: i64,
     expected_balance: i64,
+    expected_fare: i64,
     previous: i64,
 ) -> TestResult<i64> {
     let (balance, renewed, paid): (i64, i64, i64) = sqlx::query_as(
@@ -408,7 +415,11 @@ async fn assert_renewal(
     .bind(command)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!((balance, paid), (expected_balance, 1000));
-    assert!(renewed >= previous);
+    assert_eq!(
+        (balance, paid),
+        (expected_balance, expected_fare),
+        "command {command}"
+    );
+    assert!(renewed >= previous, "command {command}");
     Ok(renewed)
 }

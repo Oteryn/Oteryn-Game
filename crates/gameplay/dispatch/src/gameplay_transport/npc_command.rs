@@ -1119,7 +1119,7 @@ pub(super) async fn npc_bank_talk(
     } else {
         (None, None)
     };
-    if let Some(step) = reward_callbacks::prepare(
+    if let Some(mut step) = reward_callbacks::prepare(
         admission,
         actor,
         command,
@@ -1128,6 +1128,7 @@ pub(super) async fn npc_bank_talk(
         inventory.as_ref(),
         reward_callbacks::Phase::Rewards { skip_opening },
     ) {
+        step.selected_fish = inventory.as_ref().and_then(|facts| facts.first_fish_id);
         drop(runtime);
         drop(_trade_permit);
         return quest_dialogue::apply(admission, actor, command, intent, step).await;

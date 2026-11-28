@@ -145,6 +145,7 @@ impl State {
 }
 
 pub(super) struct Step {
+    pub(super) selected_fish: Option<[u8; 16]>,
     context: Context,
     topic: Topic,
     next_topic: Option<Topic>,
@@ -213,6 +214,7 @@ pub(super) fn prepare(
     let tracks = copy.read_tracks(admission.quest_catalogue.as_deref()?)?;
     let choice = select(&context, &topic, fresh_conversation, &tracks)?;
     Some(Step {
+        selected_fish: None,
         context,
         topic,
         next_topic: choice.next_topic,
@@ -540,6 +542,7 @@ pub(super) async fn apply(
             request,
             std::sync::Arc::clone(catalogue),
             crate::durability::reward_claim_mint::QuestRewardAdmission {
+                selected_fish: step.selected_fish,
                 native,
                 weights: &weights,
                 fee_payment: fee_payment.as_ref(),

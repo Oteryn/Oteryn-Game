@@ -874,6 +874,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .and_then(|_| native.zip(weights.as_ref()))
                 .map(|(native, weights)| {
                     crate::durability::reward_claim_mint::QuestRewardAdmission {
+                        selected_fish: None,
                         actor_conditions: None,
                         carried_use: None,
                         creature_use: None,
