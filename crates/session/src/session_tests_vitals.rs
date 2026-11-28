@@ -1,8 +1,14 @@
 /// An admitted session whose join carried actor vitals, paired with the peer end.
 pub(super) async fn vitals_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+    vitals_pair_with_content(CONTENT_GENERATION).await
+}
+
+async fn vitals_pair_with_content(
+    content_generation: [u8; 32],
+) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
     let (client, mut peer) = tokio::io::duplex(64 * 1024);
     let joining = tokio::spawn(async move {
-        send_vitals_join(&mut peer).await?;
+        send_vitals_join_with_content(&mut peer, content_generation).await?;
         Ok::<_, BoxError>(peer)
     });
     let session = Session::admit(client, admission()?).await?;

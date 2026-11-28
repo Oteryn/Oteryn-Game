@@ -22,7 +22,7 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
             )
         } else {
             let observation = WireSpatialObservation {
-                content_generation: CONTENT_GENERATION,
+                content_generation: [0x22; 32],
                 actor_position: ActorPosition {
                     x: 32_369,
                     y: 32_238,
@@ -58,7 +58,8 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
         );
         assert_eq!(visible, expected);
 
-        let (mut session, _peer) = vitals_pair().await?;
+        // A replay uses the captured World's generation for its synthetic admission.
+        let (mut session, _peer) = vitals_pair_with_content(observation.content_generation).await?;
         let spatial = encode_state_delta(
             1,
             41,
@@ -68,7 +69,11 @@ fn replays_temple_respawn_payloads_and_rejects_invalid_vitals() -> Result<(), Bo
             DELTA_TYPE_WORLD_SPATIAL_V1,
             &spatial_payload,
         )?;
-        session.apply_state_delta(41, decode_wire_envelope(&spatial)?.payload())?;
+        let applied = session.apply_state_delta(41, decode_wire_envelope(&spatial)?.payload());
+        assert!(
+            matches!(applied, Ok(SessionEvent::WorldSpatial(_))),
+            "{applied:?}"
+        );
         let full = encode_state_delta(1, 42, 3, 3, 4, 1, &vitals_payload)?;
         session.apply_state_delta(42, decode_wire_envelope(&full)?.payload())?;
         assert_eq!(session.world_spatial(), &observation);
