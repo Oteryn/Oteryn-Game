@@ -3,10 +3,9 @@
 //! 1. Admit the node-boot Character and send a Cyclopedia query; expect an accepted,
 //!    decodable state frame identifying revision, discovery, POIs, donation pool,
 //!    reset epoch and improved-respawn state.
-//! 2. Send FIND before starting exploration; expect an accepted result frame with
-//!    refusal code 4 and no discovery, POI, pool, epoch or respawn-state mutation.
-//! 3. Send START.  A premium Character must receive code 0 and seven server-selected
-//!    POIs; a non-premium Character must receive code 2 with unchanged durable state.
+//! 2. Send FIND from the same position during automatic exploration; require the
+//!    exact current state. See TibiaWiki, Measuring Tibia Quest (Summer Update 2026).
+//! 3. Send legacy START and require it to preserve the active exploration.
 //! 4. When START succeeds, discover the POIs only by walking the Character through
 //!    the compiled world and sending FIND at each server-revealed coordinate; expect
 //!    found-count deltas culminating in discovered=true, found=7 and 100 percent.
@@ -25,7 +24,7 @@ use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::cyclopedia as wire;
 
-const SOURCE_GAP: &str = "source:crates/gameplay/domain/src/domain/cyclopedia/basic.rs:6";
+const SOURCE_GAP: &str = "source:crates/gameplay/durability/src/durability/character_cyclopedia/speed.rs:46";
 
 #[derive(Debug)]
 struct Failure {
@@ -148,22 +147,22 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     let first_session = client.join_snapshot().game_session_id;
     let initial = query(&mut client, 1).await?;
 
-    let refused_find = action(&mut client, 2, 3, 0).await?;
-    if refused_find.code != 4 || !stable(&initial, &refused_find) {
+    let stationary_find = action(&mut client, 2, 3, 0).await?;
+    if initial.code != 0 || stationary_find != initial {
         return Err(Failure::new(
             2,
-            format!("expected-code=4-and-no-delta;observed={refused_find:?}"),
+            format!("expected-success-and-no-delta;observed={stationary_find:?}"),
         ));
     }
 
     let started = action(&mut client, 3, 1, 0).await?;
-    if !matches!(started.code, 0 | 2) || (started.code == 2 && !stable(&initial, &started)) {
+    if started != stationary_find {
         return Err(Failure::new(
             3,
-            format!("expected-start-or-premium-refusal;observed={started:?}"),
+            format!("expected-idempotent-legacy-start;observed={started:?}"),
         ));
     }
-    // START's private points are deliberately revealed only in the player's viewport.
+    // Automatic exploration reveals private points only in the player's viewport.
     // Exercise every currently revealed point with real automatic-walk and FIND commands.
     let mut progress = started.clone();
     if started.code == 0 {
@@ -270,12 +269,6 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
     }
     cleanup?;
 
-    if started.code == 2 {
-        return Err(Failure::new(
-            3,
-            format!("premium-required;reply={started:?}"),
-        ));
-    }
     if !progress.discovered || progress.found != 7 || progress.area_percent != 100 {
         return Err(Failure::new(
             4,
@@ -286,10 +279,10 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
         return Err(Failure::new(5, format!("goal-donation-refused={goal:?}")));
     }
     // Reaching this point proves the playable discovery/donation lifecycle.  The owner
-    // still emits no speed result/delta, so the full row cannot honestly claim PASS.
+    // currently gates discovery speed on the active area, unlike Global’s permanent bonus.
     Err(Failure::new(
         7,
-        format!("movement-speed-delta-unavailable;{SOURCE_GAP}"),
+        format!("permanent-movement-speed-parity-unverified;{SOURCE_GAP}"),
     ))
 }
 

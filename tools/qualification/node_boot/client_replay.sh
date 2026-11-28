@@ -1,6 +1,11 @@
 replay_client() {
   local log=$1 captures=$2 row=$3 package=$4 case_name=$5 started=$SECONDS
   local status=FAIL
+  if [[ "$row" == W12.client ]]; then
+    local W12_CAPTURE_BINDING
+    W12_CAPTURE_BINDING=$(sed -n 's/^SEAM_EVIDENCE e2e_capture scenario=W12[.]client status=CAPTURED //p' "$log")
+    export W12_CAPTURE_BINDING
+  fi
   # The journey owns its failure verdict. A second result would invalidate
   # the evidence consumed by e2e_all's duplicate-scenario check.
   if grep -qF "e2e_all scenario=$row status=FAIL " "$log"; then
@@ -38,6 +43,7 @@ selected_client_replays() {
 190 W04.client oteryn-client e2e_w04_replays_raid_schedule_state_and_refusal
 192 W05c.client oteryn-client-ui w05c_rashid_payloads_replay_into_service_panel
 193 W10.client oteryn-client-ui e2e_w10_replays_hazard_state_selection_and_locked_refusal
+195 W12.client oteryn-client e2e_w12_replays_map_query_find_and_start
 196 W13.client oteryn-client-ui e2e_w13_replays_daily_boost_selection_and_refusal
 REPLAYS
 }

@@ -1,22 +1,17 @@
-//! W12 client replay capture: the real Cyclopedia map QUERY reply, the FIND-before-START refusal
-//! (code 4), the START reply (code 0 premium or 2 non-premium) and a malformed intent refusal.
-//! The consumer is `apply` in `apps/client/src/features/0057-cyclopedia-map/protocol.rs`.
+//! Live Cyclopedia map replies for the production client reducer replay.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::cyclopedia_map as wire;
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W12_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(root: &Path, name: &str, bytes: &[u8]) -> TestResult {
+    std::fs::write(root.join(name), bytes)?;
+    Ok(())
 }
 
 async fn exchange(
     client: &mut DevClientSession,
     operation: u8,
+    root: &Path,
     file: &str,
 ) -> TestResult<wire::MapResult> {
     let (kind, payload) = wire::request(operation, 0).map_err(|_| "map request encoder")?;
@@ -27,8 +22,12 @@ async fn exchange(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("map operation {operation} status={:?}", reply.status).into());
     }
-    capture(file, &reply.payload);
-    wire::decode_result(&reply.payload).map_err(|_| format!("operation {operation} result malformed").into())
+    let mut frame = reply.command_id.to_le_bytes().to_vec();
+    frame.extend_from_slice(&reply.server_sequence.to_le_bytes());
+    frame.extend_from_slice(&reply.payload);
+    capture(root, file, &frame)?;
+    wire::decode_result(&reply.payload)
+        .map_err(|_| format!("operation {operation} result malformed").into())
 }
 
 fn describe(prefix: &str, result: &wire::MapResult) -> String {
@@ -48,14 +47,24 @@ fn describe(prefix: &str, result: &wire::MapResult) -> String {
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0xfc).await?;
-    let query = exchange(&mut client, 0, "w12-query.bin").await?;
-    let find = exchange(&mut client, 3, "w12-find.bin").await?;
-    if find.code != 4 {
-        return Err(format!("FIND before START was not refused with code 4: {find:?}").into());
+    let root = std::path::PathBuf::from(
+        std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("missing capture directory")?,
+    )
+    .join("w12");
+    std::fs::create_dir(&root)?;
+    let query = exchange(&mut client, 0, &root, "w12-query.bin").await?;
+    let find = exchange(&mut client, 3, &root, "w12-find.bin").await?;
+    if query.code != 0 || find != query {
+        return Err(format!(
+            "stationary FIND changed the automatic exploration state: {query:?} -> {find:?}"
+        )
+        .into());
     }
-    let start = exchange(&mut client, 1, "w12-start.bin").await?;
-    if !matches!(start.code, 0 | 2) {
-        return Err(format!("START returned neither success nor premium refusal: {start:?}").into());
+    let start = exchange(&mut client, 1, &root, "w12-start.bin").await?;
+    if start != find {
+        return Err(
+            format!("legacy START changed active exploration: {find:?} -> {start:?}").into(),
+        );
     }
     let refused = client
         .session_mut()
@@ -74,14 +83,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         describe("find", &find),
         describe("start", &start)
     );
-    capture("w12-expected.txt", expected.as_bytes());
-    Ok(expected.replace('\n', ";").replace(' ', ""))
+    let mut frame = refused.command_id.to_le_bytes().to_vec();
+    frame.extend_from_slice(&refused.server_sequence.to_le_bytes());
+    frame.extend_from_slice(&refused.payload);
+    capture(&root, "w12-refused.bin", &frame)?;
+    let session = format!("{:?}", client.join_snapshot().game_session_id);
+    capture(
+        &root,
+        "w12-expected.txt",
+        format!("session={session}\n{expected}").as_bytes(),
+    )?;
+    Ok(format!(
+        "session={session} sequence={}",
+        refused.server_sequence
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=W12.client status=CAPTURED evidence={observed}"
+            "e2e_capture scenario=W12.client status=CAPTURED {observed}"
         )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W12.client status=FAIL evidence={error}"
