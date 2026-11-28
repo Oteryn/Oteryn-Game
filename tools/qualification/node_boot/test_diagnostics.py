@@ -433,6 +433,60 @@ class KnownFailRowsTests(unittest.TestCase):
         log = 'SEAM_EVIDENCE e2e_all scenario=C01.full status=FAIL seconds=1\n'
         self.assertEqual(self.rows(log, 'FAIL', ''), ('C01.full', ''))
 
+    def test_selected_live_rows_require_the_expected_verdict(self):
+        helpers = "\n".join(
+            re.search(rf"(?m)^{name}\(\).*$", TEXT).group(0)
+            for name in ("stage_rows", "known_rows")
+        )
+        script = "\n".join(
+            (
+                "set -Eeuo pipefail",
+                "WORK=$1; VARS=/dev/null; GAME_SOURCE=$2",
+                "OTERYN_E2E_ROW_BATCH=$3; NODE_BOOT_E2E_ONLY=rows",
+                "NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0",
+                "declare -A STATUS=(); ORDER=()",
+                "evidence() { :; }; start_runtime_diagnostics() { :; }",
+                "stop_runtime_diagnostics() { :; }; pg_observability_dump() { :; }",
+                helpers,
+                function("node_boot_required_rows"),
+                'node_log="$WORK/node.log"; failed_node_log="$WORK/failed.log"',
+                function("stage"),
+                "stage seam_stages -- printf '%s\\n' \"$4\"",
+                'echo "verdict=${STATUS[seam_stages]}"',
+            )
+        )
+        world_chat = "e2e_all scenario=S04c.full status=PASS"
+        cases = (
+            ("42:1", "", "FAIL(rows)"),
+            ("42:1", "e2e_all scenario=S04c.full status=FAIL", "FAIL(rows)"),
+            ("42:1", world_chat, "PASS"),
+            ("+42:+1", world_chat, "PASS"),
+            ("all", "", "FAIL(rows)"),
+            ("all", world_chat, "PASS"),
+            ("41:1", "", "PASS"),
+        )
+        with tempfile.TemporaryDirectory() as work:
+            for batch, log, verdict in cases:
+                with self.subTest(batch=batch, log=log):
+                    result = subprocess.run(
+                        [
+                            "bash",
+                            "-c",
+                            script,
+                            "required-row-verdicts",
+                            work,
+                            Path(__file__).resolve().parents[3],
+                            batch,
+                            log,
+                        ],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    self.assertEqual(
+                        result.stdout.splitlines()[-1], f"verdict={verdict}"
+                    )
+
     def test_seed_list_has_one_reason_per_row(self):
         listed = SOURCE.with_name('known_fail_rows.txt').read_text().splitlines()
         rows = [line.split(None, 1) for line in listed if line.strip() and not line.startswith('#')]
