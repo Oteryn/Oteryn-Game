@@ -5919,7 +5919,7 @@ async fn pvp_name(client: &mut PvpClient) -> TestResult<String> {
         .ok_or_else(|| "PvP victim ranking omitted own name".into())
 }
 
-async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
+pub(super) async fn player_gold(client: &mut DevClientSession) -> TestResult<u64> {
     use native::atelier::resources as money;
     let reply = client
         .session_mut()

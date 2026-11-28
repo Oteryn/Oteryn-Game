@@ -31,6 +31,8 @@ const REQUIRED: &[&str] = &[
 
 // Tibia Fandom, Health Potion: npcprice = 50. The row buys two from a regular seller.
 const HEALTH_POTION_PRICE: u64 = 50;
+const MEAT_PRICE: u64 = 5;
+const POTION_FUNDING: u32 = 100;
 const POTION_PURCHASE_QUANTITY: u32 = 2;
 
 struct Row {
@@ -216,6 +218,13 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
+fn check_debit(before: u64, after: u64, cost: u64) -> TestResult {
+    if before.checked_sub(cost) != Some(after) {
+        return Err(format!("I14 gold debit expected {cost}: before={before} after={after}").into());
+    }
+    Ok(())
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -225,19 +234,33 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let meat = provisioning::item_reference(&index, 3577)?;
     let flask = provisioning::item_reference(&index, 285)?;
     let missing = provisioning::item_reference(&index, 268)?;
-    let mut client = connect_world(clients, 0xb4).await?;
+    let fixture = character_prep::dedicated_character(clients, "NODE_BOOT_I14_ACCOUNT").await?;
+    let scope = fixture.clients(clients);
+    let mut client = connect_character(&scope, 0xb4, 0).await?;
+    let seed_session = client.join_snapshot().game_session_id;
+    let starting_gold = full_e2ef7::player_gold(&mut client).await?;
+    character_prep::declare_seeded("I14.full", "gold coin (3031) x100", "potion purchase funding");
+    character_prep::grant_item(&client, 3031, POTION_FUNDING).await?;
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_character(&scope, 0xb4, 0).await?;
+    let funded_gold = full_e2ef7::player_gold(&mut client).await?;
+    if client.join_snapshot().game_session_id == seed_session
+        || starting_gold.checked_add(u64::from(POTION_FUNDING)) != Some(funded_gold)
+    {
+        return Err(format!("I14 gold fixture expected +{POTION_FUNDING}: before={starting_gold} after={funded_gold}").into());
+    }
     let purchase_meat = acquire_with_approach::<true>(&mut client, world, 3577, 2).await?;
-    full_e2ef7::earn_gold(
-        &mut client,
-        world,
-        HEALTH_POTION_PRICE * u64::from(POTION_PURCHASE_QUANTITY),
-    ).await?;
+    let after_meat = full_e2ef7::player_gold(&mut client).await?;
+    check_debit(funded_gold, after_meat, 2 * MEAT_PRICE)?;
     let potion_before = quantity(&client, potion)?;
     let purchase_potion = acquire_with_approach::<true>(&mut client, world, 266, POTION_PURCHASE_QUANTITY).await?;
     if quantity(&client, potion)? != potion_before + u64::from(POTION_PURCHASE_QUANTITY) {
         return Err("buy item=266 did not credit exactly two health potions".into());
     }
-    row.pass("npc-purchase", format!("meat_sequence={purchase_meat} potion_sequence={purchase_potion}"));
+    let after_potion = full_e2ef7::player_gold(&mut client).await?;
+    check_debit(after_meat, after_potion, HEALTH_POTION_PRICE * u64::from(POTION_PURCHASE_QUANTITY))?;
+    row.pass("npc-purchase", format!("meat_sequence={purchase_meat} potion_sequence={purchase_potion} gold={funded_gold}->{after_meat}->{after_potion}"));
     let (food_reply, _) = use_one(&mut client, meat).await?;
     if food_reply != UseDisposition::Committed { return Err(format!("food USE reply={food_reply:?}").into()); }
     row.pass("food-consume", format!("reply={food_reply:?} remaining={}", quantity(&client, meat)?));
@@ -255,8 +278,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let vitals = client.actor_vitals().copied();
     let session = client.join_snapshot().game_session_id;
     logout(&mut client).await?;
-    client = connect_world(clients, 0xb4).await?;
-    if client.join_snapshot().game_session_id == session || quantities(&client)? != durable || client.actor_vitals().copied() != vitals { return Err("fresh admission changed durable consumable state/vitals".into()); }
+    client = connect_character(&scope, 0xb4, 0).await?;
+    if client.join_snapshot().game_session_id == session || quantities(&client)? != durable || client.actor_vitals().copied() != vitals || full_e2ef7::player_gold(&mut client).await? != after_potion { return Err("fresh admission changed durable consumable state/vitals".into()); }
     row.pass("fresh-admission", "new-session exact-inventory-and-vitals");
     // `use_item` requires a server-issued handle. The absence itself is established by the
     // inventory frame; encode the hotkey command directly, as required for an uncarried variant.
@@ -319,6 +342,15 @@ fn quantities_match(expected: &[(std::num::NonZeroU32, u64)], count: impl Fn(std
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn purchase_debit_rejects_no_op_overcharge_and_underflow() -> TestResult {
+        check_debit(140, 40, 100)?;
+        assert!(check_debit(140, 140, 100).is_err());
+        assert!(check_debit(140, 39, 100).is_err());
+        assert!(check_debit(99, 0, 100).is_err());
+        Ok(())
+    }
+
     #[test]
     fn review_second_refill_requires_both_legs_in_one_observation() -> TestResult {
         let flask = std::num::NonZeroU32::new(285).ok_or("flask id")?;
