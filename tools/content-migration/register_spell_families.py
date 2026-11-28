@@ -640,6 +640,54 @@ def project_spell_catalog(root: Path, generated: dict[str, bytes]) -> None:
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
 
 
+def preserve_hand_equipment_groups(items: list[dict], authored_rows: list[dict]) -> None:
+    """Carry the authored hand occupancy into the active native provider."""
+    group = "oteryn:equipment-group.non_quiver_left_hand"
+    groups_field = "mutually_exclusive_groups"
+    reservations_field = "additional_reserved_slots"
+
+    def patterns(item):
+        equipment = item.get("semantics", {}).get("equipment", {})
+        return equipment.get("value", {}).get("patterns", {}).get("value", [])
+
+    authored = {}
+    for row in authored_rows:
+        item = row["definition"]
+        identity = item["identity"]
+        for pattern in patterns(item):
+            slot = pattern["primary_slot"].get("value")
+            authored[identity["key"], identity["revision"], slot] = pattern
+
+    for row in items:
+        definition = row["production_definition"]
+        key = definition["production_key"]
+        revision = definition["revision_ref"]
+        is_quiver = row["authoring"].get("taxonomy", {}).get("primary") == "Quivers"
+        for pattern in patterns(row):
+            slot = pattern["primary_slot"].get("value")
+            source = authored.get((key, revision, slot), {})
+            groups = source.get(groups_field, {}).get("value")
+            reserves_shield = any(
+                "SHIELD" in p.get(reservations_field, {}).get("value", [])
+                for p in (source, pattern)
+            )
+            if slot == "SHIELD":
+                # Crystal 201189f8 src/creatures/players/player.cpp:4658-4671.
+                # Some native shields have no authored equipment facts yet.
+                wanted = [] if is_quiver else [group]
+            elif slot == "WEAPON" and (reserves_shield or group in (groups or [])):
+                wanted = []
+            else:
+                continue
+            if groups is not None:
+                pattern[groups_field] = source[groups_field]
+                if slot == "WEAPON" and group in groups:
+                    # A launcher shares the group with shields and can keep a quiver.
+                    pattern[reservations_field] = source[reservations_field]
+            else:
+                pattern[groups_field] = {"state": "KNOWN", "value": wanted}
+
+
 def outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes]:
     from native_profile_composition import compact_native_profile_scope
     from qualification_inputs import appearance_input_scope
@@ -1964,6 +2012,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     crystal_equipment_slice_4.complete_monk_bonds(root, items, starter_items)
     imbuement_item_profiles.apply_crystal_audit(root, items, starter_items)
     native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    preserve_hand_equipment_groups(
+        items["records"] + starter_items["records"], ranged_item_profiles.item_rows(root)
+    )
     starting_loadout_profiles.write_fragment(generated, native_manifest, starter_items["records"])
     generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
     # Complete the consumer facts after equipment and loot settle Item custody.

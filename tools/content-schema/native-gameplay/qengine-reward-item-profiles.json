@@ -49457,7 +49457,10 @@
                     "value": 0
                   },
                   "mutually_exclusive_groups": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": [
+                      "oteryn:equipment-group.non_quiver_left_hand"
+                    ]
                   },
                   "pattern_id": 1,
                   "primary_slot": {
@@ -50017,7 +50020,10 @@
                     "value": 0
                   },
                   "mutually_exclusive_groups": {
-                    "state": "UNKNOWN"
+                    "state": "KNOWN",
+                    "value": [
+                      "oteryn:equipment-group.non_quiver_left_hand"
+                    ]
                   },
                   "pattern_id": 1,
                   "primary_slot": {

@@ -155,5 +155,74 @@ class SpellFamilyImportTests(unittest.TestCase):
                     self.assertEqual(target.read_bytes(), b"changed\n")
 
 
+CONTENT = importer.ROOT / 'content'
+GROUP = 'oteryn:equipment-group.non_quiver_left_hand'
+
+
+def patterns(item):
+    equipment = item.get('semantics', {}).get('equipment', {})
+    return equipment.get('value', {}).get('patterns', {}).get('value', [])
+
+
+class HandEquipmentGroupsTest(unittest.TestCase):
+    def test_shipped_hand_patterns_preserve_authored_groups_and_class_rule(self):
+        authored = {}
+        for path in sorted((CONTENT / 'items/definitions').glob('items-*.json')):
+            for row in json.loads(path.read_bytes())['records']:
+                item = row['definition']
+                identity = item['identity']
+                for pattern in patterns(item):
+                    slot = pattern['primary_slot'].get('value')
+                    authored[identity['key'], identity['revision'], slot] = pattern
+
+        manifest = json.loads((CONTENT / 'spells.manifest.json').read_bytes())
+        served = {}
+        for provider in ('item_profiles', 'item_profile_updates', 'starting_loadout_item_profiles'):
+            for row in json.loads((CONTENT / manifest[provider]['path']).read_bytes())['records']:
+                definition = row['production_definition']
+                served[definition['production_key'], definition['revision_ref']] = row
+
+        affected = {}
+        checked = set()
+        for (key, revision), row in served.items():
+            authoring = row['authoring']
+            is_quiver = authoring.get('taxonomy', {}).get('primary') == 'Quivers'
+            loads_ammo = authoring.get('ranged', {}).get('ammunition') in ('ARROW', 'BOLT')
+            weapon_type = row['semantics'].get('weapon', {}).get('value', {}).get('weapon_type', {})
+            is_distance = weapon_type.get('value') == 'DISTANCE'
+            for pattern in patterns(row):
+                slot = pattern['primary_slot'].get('value')
+                source = authored.get((key, revision, slot), {})
+                authored_groups = source.get('mutually_exclusive_groups', {}).get('value')
+                served_groups = pattern['mutually_exclusive_groups'].get('value')
+                served_reservations = pattern['additional_reserved_slots'].get('value', [])
+                authored_reservations = source.get('additional_reserved_slots', {}).get('value', [])
+                reserves_shield = 'SHIELD' in served_reservations or 'SHIELD' in authored_reservations
+                claims_group = GROUP in (authored_groups or []) or GROUP in (served_groups or [])
+                is_launcher = slot == 'WEAPON' and (loads_ammo or (is_distance and claims_group))
+                if slot != 'SHIELD' and not (slot == 'WEAPON' and (
+                    is_launcher or reserves_shield or claims_group
+                )):
+                    continue
+
+                # Crystal 201189f8 hand-slot rules. Quivers can coexist with launchers.
+                # Two-handed melee reserves SHIELD directly and uses an empty group list.
+                expected = [GROUP] if (slot == 'SHIELD' and not is_quiver) or is_launcher else []
+                checked.add((key, revision))
+                if (served_groups != expected
+                        or (authored_groups is not None and served_groups != authored_groups)
+                        or (is_launcher and 'SHIELD' in served_reservations)):
+                    affected.setdefault((key, revision), []).append(
+                        f'{slot}: served={served_groups}, authored={authored_groups}, class={expected}'
+                        f', reserved={served_reservations}'
+                    )
+
+        self.assertTrue(checked)
+        details = '\n'.join(f'{key}@{revision} {", ".join(errors)}'
+                            for (key, revision), errors in sorted(affected.items()))
+        if affected:
+            self.fail(f'{len(affected)} of {len(checked)} items affected\n{details}')
+        print(f'{len(checked)} shipped hand-slot items agree with the class rule and known authored groups')
+
 if __name__ == "__main__":
     unittest.main()
