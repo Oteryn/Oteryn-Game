@@ -13,6 +13,7 @@ struct Capture {
     house: String,
     member: [u8; 16],
     page: Vec<u8>,
+    preceding_pages: Vec<Vec<u8>>,
     request: Option<Vec<u8>>,
     acl: Vec<u8>,
     stale: Vec<u8>,
@@ -27,7 +28,9 @@ fn hex(text: &str) -> Vec<u8> {
 }
 
 fn id(text: &str) -> Result<[u8; 16], Box<dyn std::error::Error>> {
-    hex(text).try_into().map_err(|_| "capture id is not 16 bytes".into())
+    hex(text)
+        .try_into()
+        .map_err(|_| "capture id is not 16 bytes".into())
 }
 
 fn text(hex: &[u8]) -> String {
@@ -35,7 +38,8 @@ fn text(hex: &[u8]) -> String {
 }
 
 fn summary(house: &str, acl_revision: u64) -> wire::HouseSummary {
-    wire::HouseSummary { details: None,
+    wire::HouseSummary {
+        details: None,
         house: house.into(),
         kind: wire::HouseKind::PrivateHouse,
         state: 1,
@@ -60,11 +64,19 @@ fn load() -> Result<Capture, Box<dyn std::error::Error>> {
                 .find_map(|line| line.strip_prefix(&format!("{key}=")))
                 .ok_or_else(|| format!("n01-expected.txt lacks {key}").into())
         };
+        let preceding_count: usize = value("preceding_pages")?.parse()?;
+        if preceding_count > 5 {
+            return Err("N01 catalogue prefix exceeds the live search bound".into());
+        }
+        let preceding_pages = (0..preceding_count)
+            .map(|index| std::fs::read(root.join(format!("n01-preceding-{index}.bin"))))
+            .collect::<Result<Vec<_>, _>>()?;
         return Ok(Capture {
             world: id(value("world")?)?,
             house: value("house")?.into(),
             member: id(value("member")?)?,
             page: std::fs::read(root.join("n01-page.bin"))?,
+            preceding_pages,
             request: Some(std::fs::read(root.join("n01-acl-request.bin"))?),
             acl: std::fs::read(root.join("n01-acl.bin"))?,
             stale: std::fs::read(root.join("n01-stale.bin"))?,
@@ -79,6 +91,7 @@ fn load() -> Result<Capture, Box<dyn std::error::Error>> {
         member: [0x02, 2, 2, 2, 2, 2, 0x72, 2, 0x82, 2, 2, 2, 2, 2, 2, 2],
         page: wire::encode_house_page(&[summary(house, 3)], None, true)
             .map_err(|error| format!("{error:?}"))?,
+        preceding_pages: Vec::new(),
         request: None,
         acl: wire::encode_house_result(wire::HouseDisposition::Ok, 4),
         stale: wire::encode_house_result(wire::HouseDisposition::Conflict, 4),
@@ -103,12 +116,24 @@ fn e2e_n01_house_owner_guest_update_and_stale_refusal() -> Result<(), Box<dyn st
     lock(&link.mailbox).properties.house.initialize(true);
     link.house_world(&text(&capture.world));
     link.house_edit(1, TOWN.into());
-    link.house_request(0);
-    let PlayCommand::Feature(query) = receiver.try_recv()? else {
-        return Err("catalogue query was not enqueued".into());
-    };
-    assert_eq!((query.capability, query.kind), (49, 57));
-    outbox.properties_result(&query, &reply(&capture.page));
+    let mut cursor = None;
+    for (index, bytes) in capture
+        .preceding_pages
+        .iter()
+        .chain([&capture.page])
+        .enumerate()
+    {
+        link.house_request(usize::from(index != 0));
+        let PlayCommand::Feature(query) = receiver.try_recv()? else {
+            return Err("catalogue query was not enqueued".into());
+        };
+        assert_eq!((query.capability, query.kind), (49, 57));
+        let decoded = wire::decode_house_query(&query.payload)
+            .map_err(|error| format!("catalogue query decode: {error:?}"))?;
+        assert_eq!(decoded.cursor, cursor);
+        outbox.properties_result(&query, &reply(bytes));
+        cursor = oteryn_client_runtime::house::page(bytes)?.cursor;
+    }
     let panel = link.house_panel();
     let position = panel
         .model
@@ -132,7 +157,10 @@ fn e2e_n01_house_owner_guest_update_and_stale_refusal() -> Result<(), Box<dyn st
     };
     assert_eq!((command.capability, command.kind), (49, 56));
     if let Some(request) = &capture.request {
-        assert_eq!(&command.payload, request, "client request differs from the accepted one");
+        assert_eq!(
+            &command.payload, request,
+            "client request differs from the accepted one"
+        );
     }
     assert_eq!(
         wire::decode_house_intent(&command.payload).map_err(|error| format!("{error:?}"))?,
@@ -150,7 +178,10 @@ fn e2e_n01_house_owner_guest_update_and_stale_refusal() -> Result<(), Box<dyn st
     let panel = link.house_panel();
     assert!(panel.model.pending.is_none());
     assert_eq!(panel.model.feedback, "House updated");
-    assert_eq!(panel.model.page.rows[position].acl_revision, capture.acl_revision);
+    assert_eq!(
+        panel.model.page.rows[position].acl_revision,
+        capture.acl_revision
+    );
     assert!(capture.acl_revision > capture.page_acl_revision);
 
     // The stale refusal (disposition 3) answers a resend of the update and changes nothing.
@@ -166,6 +197,9 @@ fn e2e_n01_house_owner_guest_update_and_stale_refusal() -> Result<(), Box<dyn st
         panel.model.feedback,
         "The server refused the action: catalogue changed; refresh before retrying"
     );
-    assert_eq!(panel.model.page.rows[position].acl_revision, capture.acl_revision);
+    assert_eq!(
+        panel.model.page.rows[position].acl_revision,
+        capture.acl_revision
+    );
     Ok(())
 }

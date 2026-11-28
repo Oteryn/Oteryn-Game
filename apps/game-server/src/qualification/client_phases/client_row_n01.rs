@@ -2,7 +2,7 @@
 //! command, and the same update is replayed with the now-stale ACL revision. Client owner:
 //! `apps/client/src/features/0049-house` (`prepare` and the `Panel::apply` reducer in client-ui).
 //!
-//! Captured: the first catalogue page after the winning bid (the page the client request is built
+//! Captured: the selected catalogue page after the winning bid (the page the client request is built
 //! from), the exact request the server accepted, the accepted ACL reply and the stale refusal.
 use super::*;
 use oteryn_dev_client::DevClientSession;
@@ -15,15 +15,10 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!(
-            "N01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
-        ));
-    }
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    let root = required("E2E_ALL_CAPTURE_DIR")?;
+    std::fs::write(Path::new(&root).join(name), bytes)?;
+    Ok(())
 }
 
 async fn send(
@@ -69,12 +64,35 @@ fn observe_page(command: u32, page: &house::Page) {
     }
 }
 
-async fn first_page(
+async fn guests(
     client: &mut DevClientSession,
     world: [u8; 16],
+    house_key: &str,
+) -> TestResult<wire::HouseAclSnapshot> {
+    let request = house::acl_query(
+        world,
+        TOWN_KEY,
+        &wire::HouseAclRead {
+            house: house_key.to_owned(),
+            selector: wire::HouseAclSelector::Guest,
+        },
+    )
+    .map_err(|error| format!("guest list query encode {error}"))?;
+    let reply = send(client, request).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("guest list query status {:?}", reply.status).into());
+    }
+    wire::decode_house_acl_snapshot(&reply.payload)
+        .map_err(|error| format!("guest list decode {error:?}").into())
+}
+
+async fn catalogue_page(
+    client: &mut DevClientSession,
+    world: [u8; 16],
+    cursor: Option<&str>,
 ) -> TestResult<(house::Page, Vec<u8>)> {
     let request =
-        house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
+        house::query(world, TOWN_KEY, cursor).map_err(|error| format!("query encode {error}"))?;
     let reply = observed_exchange(client, request).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("catalogue status {:?}", reply.status).into());
@@ -115,7 +133,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world_bytes = *world_id.as_bytes();
     // Character 0 owns the house; S05 uses character 1 and the first private house of the page.
     let mut client = connect_character(clients, 0xab, 0).await?;
-    let (initial, _) = first_page(&mut client, world_bytes).await?;
+    let (mut page, mut page_bytes) = catalogue_page(&mut client, world_bytes, None).await?;
     let auction_order_selected = client
         .selected_capabilities()
         .contains(&wire::CAPABILITY_HOUSE_AUCTION_ORDER_V1);
@@ -135,46 +153,66 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let from = tile(client.world_spatial().actor_position)?;
     let mut chosen = None;
-    // The wire decoder bounds this page to 20 rows. Choose once, before walking
-    // or bidding. A closed entrance is approached from an adjacent tile.
-    for row in initial.rows {
-        if row.kind != wire::HouseKind::PrivateHouse as u64 || row.state != 1 || row.owned {
-            evidence(&format!(
-                "N01_CANDIDATE house={} status=rejected reason=not_vacant_private kind={} state={} owned={}",
-                row.house, row.kind, row.state, row.owned
-            ));
-            continue;
-        }
-        let at = match entrance(&row.house) {
-            Ok(at) => at,
-            Err(error) => {
+    let mut page_cursor = None;
+    let mut preceding_pages = Vec::new();
+    // Six wire pages bound the search to at most 120 catalogue records.
+    'pages: for page_index in 0..6 {
+        for row in page.rows {
+            if row.kind != wire::HouseKind::PrivateHouse as u64 || row.state != 1 || row.owned {
                 evidence(&format!(
-                    "N01_CANDIDATE house={} status=rejected reason=entrance_lookup error={error}",
-                    row.house
+                    "N01_CANDIDATE house={} status=rejected reason=not_vacant_private kind={} state={} owned={}",
+                    row.house, row.kind, row.state, row.owned
                 ));
                 continue;
             }
-        };
-        let approach = |candidate: TilePos| {
-            candidate.floor == at.floor
-                && u32::from(candidate.x.abs_diff(at.x)) + u32::from(candidate.y.abs_diff(at.y))
-                    == 1
-        };
-        if let Some(path) = route(world, from, approach) {
+            let at = match entrance(&row.house) {
+                Ok(at) => at,
+                Err(error) => {
+                    evidence(&format!(
+                        "N01_CANDIDATE house={} status=rejected reason=entrance_lookup error={error}",
+                        row.house
+                    ));
+                    continue;
+                }
+            };
+            let approach = |candidate: TilePos| {
+                candidate.floor == at.floor
+                    && u32::from(candidate.x.abs_diff(at.x)) + u32::from(candidate.y.abs_diff(at.y))
+                        == 1
+            };
+            if let Some(path) = route(world, from, approach) {
+                evidence(&format!(
+                    "N01_CANDIDATE house={} status=selected entrance={at:?} steps={}",
+                    row.house,
+                    path.len()
+                ));
+                chosen = Some((row, path));
+                break 'pages;
+            }
             evidence(&format!(
-                "N01_CANDIDATE house={} status=selected entrance={at:?} steps={}",
-                row.house,
-                path.len()
+                "N01_CANDIDATE house={} status=rejected reason=no_walkable_approach from={from:?} entrance={at:?}",
+                row.house
             ));
-            chosen = Some((row, path));
+        }
+        let Some(next_cursor) = page.cursor else {
+            break;
+        };
+        if page_index == 5 {
             break;
         }
-        evidence(&format!(
-            "N01_CANDIDATE house={} status=rejected reason=no_walkable_approach from={from:?} entrance={at:?}",
-            row.house
-        ));
+        if page_cursor
+            .as_ref()
+            .is_some_and(|cursor| cursor >= &next_cursor)
+        {
+            return Err("house catalogue cursor did not advance".into());
+        }
+        preceding_pages.push(page_bytes);
+        page_cursor = Some(next_cursor);
+        (page, page_bytes) =
+            catalogue_page(&mut client, world_bytes, page_cursor.as_deref()).await?;
     }
-    let (private, path) = chosen.ok_or("no reachable vacant private house on the first page")?;
+    let (private, path) =
+        chosen.ok_or("no reachable vacant private house in six catalogue pages")?;
     walk(&mut client, world, &path).await?;
     let maximum = private.price.max(private.rent).max(1);
     let bid = house::mutation(
@@ -199,16 +237,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
 
-    let (page, page_bytes) = first_page(&mut client, world_bytes).await?;
+    let (page, page_bytes) =
+        catalogue_page(&mut client, world_bytes, page_cursor.as_deref()).await?;
     let current = page
         .rows
         .iter()
         .find(|row| row.house == private.house)
-        .ok_or("owned house missing from the first page")?;
+        .ok_or("owned house missing from the selected page")?;
     if !current.owned {
         return Err("bid has not settled into house ownership".into());
     }
     let guest = clients.characters[1];
+    let before = guests(&mut client, world_bytes, &private.house).await?;
+    if before.revision != current.acl_revision || before.members.contains(&guest) {
+        return Err("guest-list pre-state diverges from the owned catalogue page".into());
+    }
     let acl = house::mutation(
         world_bytes,
         &private.house,
@@ -226,6 +269,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     {
         return Err(format!("acl reply d={acl_disposition} revision={acl_revision}").into());
     }
+    let committed = guests(&mut client, world_bytes, &private.house).await?;
+    if committed.revision != acl_revision || committed.members != [guest] {
+        return Err("accepted guest edit did not persist the exact guest list".into());
+    }
     let stale_reply = send(&mut client, acl).await?;
     let (stale_disposition, _) = house::result(&stale_reply.payload)
         .map_err(|error| format!("stale decode {error}; status {:?}", stale_reply.status))?;
@@ -233,20 +280,37 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("stale reply d={stale_disposition}").into());
     }
 
+    let after_stale = guests(&mut client, world_bytes, &private.house).await?;
+    if after_stale != committed {
+        return Err("stale guest edit changed the guest list".into());
+    }
+    let logout = client.session_mut().logout().await?;
+    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("N01 logout refused: {logout:?}").into());
+    }
+    drop(client);
+    let mut fresh = connect_character(clients, 0xac, 0).await?;
+    if guests(&mut fresh, world_bytes, &private.house).await? != committed {
+        return Err("guest list after relog differs from the committed list".into());
+    }
     let expected = format!(
-        "world={}\nhouse={}\nmember={}\npage_acl_revision={}\nacl_disposition={acl_disposition}\n\
+        "world={}\nhouse={}\nmember={}\npage_acl_revision={}\npreceding_pages={}\nacl_disposition={acl_disposition}\n\
          acl_revision={acl_revision}\nstale_disposition={stale_disposition}\n",
         hex(&world_bytes),
         private.house,
         hex(&guest),
         current.acl_revision,
+        preceding_pages.len(),
     );
-    capture("n01-page.bin", &page_bytes);
-    capture("n01-acl-request.bin", &acl_request);
-    capture("n01-acl.bin", &acl_reply.payload);
-    capture("n01-stale.bin", &stale_reply.payload);
-    capture("n01-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    for (index, bytes) in preceding_pages.iter().enumerate() {
+        capture(&format!("n01-preceding-{index}.bin"), bytes)?;
+    }
+    capture("n01-page.bin", &page_bytes)?;
+    capture("n01-acl-request.bin", &acl_request)?;
+    capture("n01-acl.bin", &acl_reply.payload)?;
+    capture("n01-stale.bin", &stale_reply.payload)?;
+    capture("n01-expected.txt", expected.as_bytes())?;
+    drop(fresh);
     Ok(format!(
         "house={}|acl_revision={}->{acl_revision}|stale={stale_disposition}",
         private.house, current.acl_revision
