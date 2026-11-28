@@ -196,22 +196,42 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-pub(super) fn weapon_display_name(
-    native: &NativeGameplayState,
+fn weapon_display_name<'a>(
+    native: &'a NativeGameplayState,
     key: &str,
     revision: &str,
-    definition: std::num::NonZeroU32,
-) -> String {
-    native
+    profile_name: &'a str,
+) -> &'a str {
+    // The pinned weapon catalogue retains the display casing and may prefix it
+    // with the weapon class and hand count. Item metadata gives the actual name
+    // when the profile label names a class or weapon family instead.
+    let label = profile_name
+        .split_once(' ')
+        .filter(|(class, _)| {
+            matches!(
+                *class,
+                "Sword" | "Club" | "Axe" | "Distance" | "Wand" | "Rod"
+            )
+        })
+        .and_then(|(_, name)| {
+            name.strip_prefix("1H ")
+                .or_else(|| name.strip_prefix("2H "))
+        })
+        .or_else(|| profile_name.strip_prefix("Throw - "))
+        .unwrap_or(profile_name);
+    let item_name = native
         .item_policy(key, revision)
         .and_then(|policy| match &policy.record().semantics.presentation {
             ReferenceItemField::Known(presentation) => match &presentation.name {
-                ReferenceItemField::Known(name) => Some(name.clone()),
+                ReferenceItemField::Known(name) => Some(name.as_str()),
                 _ => None,
             },
             _ => None,
         })
-        .unwrap_or_else(|| format!("Weapon {definition}"))
+        .filter(|name| !name.is_empty());
+    item_name
+        .filter(|name| !name.eq_ignore_ascii_case(label))
+        .unwrap_or(label)
 }
 
 /// Immutable production adapter over the promoted proficiency catalogue.
@@ -227,6 +247,17 @@ pub struct ProductionProficiencyCatalogue {
 }
 
 impl ProductionProficiencyCatalogue {
+    pub(super) fn browse_display_name<'a>(
+        &'a self,
+        native: &'a NativeGameplayState,
+        key: &str,
+        revision: &str,
+    ) -> Option<&'a str> {
+        let binding = self.data.bindings().get(key)?;
+        let definition = self.data.definitions().get(&binding.profile_binding.key)?;
+        Some(weapon_display_name(native, key, revision, &definition.name))
+    }
+
     pub(super) fn catalogue_page(
         &self,
         index: &oteryn_gameplay_content::content::item_ref::ItemDefinitionIndex,
@@ -285,7 +316,9 @@ impl ProductionProficiencyCatalogue {
                 weapon: key.clone(),
                 name: item.map_or_else(
                     || definition.name.clone(),
-                    |(revision, reference)| weapon_display_name(native, key, revision, reference),
+                    |(revision, _)| {
+                        weapon_display_name(native, key, revision, &definition.name).to_owned()
+                    },
                 ),
                 experience: track.map_or(0, |track| track.progress),
                 thresholds: *resolved.shape.track_shape().class().thresholds(),

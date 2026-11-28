@@ -123,6 +123,9 @@ fn scenario() -> TestResult {
                 .position(|reference| *reference == sword_definition.get())
                 .ok_or("sword index")?,
         )?;
+        let sceptre_offset = u32::try_from(
+            keys.iter().position(|reference| *reference == 1660).ok_or("Snake God's Sceptre index")?,
+        )?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
@@ -170,6 +173,11 @@ fn scenario() -> TestResult {
                     .await?
                     .is_none()
                 );
+                let sceptre = wire_query(
+                    client, 4, &sceptre_offset.to_be_bytes(), protocol::CommandStatus::Accepted,
+                ).await?.and_then(|page| page.rows.into_iter().next()).ok_or("Snake God's Sceptre row")?;
+                assert_eq!(sceptre.definition.get(), 1660);
+                assert_eq!(sceptre.name, "Snake God's Sceptre");
                 Ok(())
             })
             .await?

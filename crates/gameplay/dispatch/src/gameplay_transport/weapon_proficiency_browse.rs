@@ -65,7 +65,7 @@ pub(super) async fn execute(
             let track = track.unwrap_or(&empty);
             rows.push(ProficiencyRow {
                 definition,
-                name: super::weapon_proficiency::weapon_display_name(native, key, revision, definition),
+                name: catalogue.browse_display_name(native, key, revision)?.to_owned(),
                 experience: track.progress,
                 level: track.shape.track_shape().level(track.progress),
                 selections: track.selections.clone(),
