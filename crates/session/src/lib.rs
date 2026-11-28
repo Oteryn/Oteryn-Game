@@ -450,6 +450,8 @@ pub use oteryn_protocol_oteryn::stash;
 pub mod property_services;
 pub use entities::WorldEntities;
 pub use error::SessionError;
+#[cfg(feature = "test-support")]
+pub use framing::capture_server_frames;
 use framing::*;
 pub use framing::{read_frame, write_frame};
 pub use outcomes::*;

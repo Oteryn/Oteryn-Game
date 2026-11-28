@@ -1,6 +1,24 @@
 //! Framing and exchange validation shared by session features.
 use super::*;
 
+// Scoped to a qualification future. Client writes, including bootstrap credentials, are excluded.
+#[cfg(feature = "test-support")]
+tokio::task_local! {
+    static SERVER_FRAME_CAPTURE: std::cell::RefCell<Option<Vec<u8>>>;
+}
+
+/// Runs a qualification journey with a bounded capture of the original inbound wire frames.
+#[cfg(feature = "test-support")]
+pub async fn capture_server_frames<F: Future>(journey: F) -> (F::Output, Option<Vec<u8>>) {
+    SERVER_FRAME_CAPTURE
+        .scope(std::cell::RefCell::new(Some(Vec::new())), async {
+            let outcome = journey.await;
+            let capture = SERVER_FRAME_CAPTURE.with(|capture| capture.borrow_mut().take());
+            (outcome, capture)
+        })
+        .await
+}
+
 /// A validated, correlated `CommandResult` with its typed payload still undecoded.
 pub(super) struct ReceivedResult {
     pub(super) command_id: u64,
@@ -125,6 +143,19 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
+    #[cfg(feature = "test-support")]
+    let _ = SERVER_FRAME_CAPTURE.try_with(|capture| {
+        const MAX_CAPTURE_BYTES: usize = 64 * 1024 * 1024;
+        let mut capture = capture.borrow_mut();
+        if let Some(bytes) = capture.as_mut() {
+            if bytes.len() + prefix.len() + body.len() > MAX_CAPTURE_BYTES {
+                *capture = None;
+            } else {
+                bytes.extend_from_slice(&prefix);
+                bytes.extend_from_slice(&body);
+            }
+        }
+    });
     Ok(body)
 }
 

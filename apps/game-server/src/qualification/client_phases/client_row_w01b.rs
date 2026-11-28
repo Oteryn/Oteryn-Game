@@ -1,18 +1,12 @@
-//! W01b client replay capture: a rat is killed (damage, removal and corpse deltas) and, after the
-//! authored respawn interval, a replacement actor is present at the authored point. The session retains typed entity deltas
-//! only, so every captured delta is the server-delivered `WorldSpatialEntitiesDelta` encoded with
-//! the production encoder (the same convention as C09 and S04b), preceded by an entity snapshot of
-//! the view at the segment start. The consumer is `Session::apply_state_delta` and
-//! `Session::world_entities` in `crates/session`.
-use super::full_row_w01b::is_rat;
-use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity};
-use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
-use oteryn_protocol_oteryn::world_spatial_entities::{
-    WorldSpatialEntitiesSnapshot, encode_world_spatial_entities_delta,
-    encode_world_spatial_entities_snapshot,
+//! W01b live journey and original inbound frame capture.
+use super::full_row_w01b::{
+    SPAWN, authored_spawn_cells, is_rat, logout, rat_points, walk_first_attempt,
 };
-
+use super::*;
+use oteryn_dev_client::{
+    DevClientSession, EntityDetail, EntityRef, SessionEvent, WorldSpatialEntity,
+};
+use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 fn capture(name: &str, bytes: &[u8]) -> TestResult {
     use std::io::Write as _;
 
@@ -21,10 +15,6 @@ fn capture(name: &str, bytes: &[u8]) -> TestResult {
     let result = std::fs::File::create_new(Path::new(&root).join(name))
         .and_then(|mut file| file.write_all(bytes));
     result.map_err(|error| format!("W01b client capture: write {name}: {error}").into())
-}
-
-fn distance(a: ActorPosition, b: ActorPosition) -> u32 {
-    a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
 }
 
 fn hex(bytes: &[u8]) -> String {
@@ -36,7 +26,8 @@ fn text_of(entity: Option<&WorldSpatialEntity>) -> String {
         return "absent".into();
     };
     let health = match entity.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent.to_string(),
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent.to_string(),
         _ => "-".into(),
     };
     format!(
@@ -45,100 +36,25 @@ fn text_of(entity: Option<&WorldSpatialEntity>) -> String {
     )
 }
 
-fn plain(mut entity: WorldSpatialEntity) -> WorldSpatialEntity {
-    if let EntityDetail::Object {
-        item_definition_ref,
-        quantity,
-        ..
-    } = entity.detail
-    {
-        entity.detail = EntityDetail::Object {
-            item_definition_ref,
-            quantity,
-            item_handle: None,
+fn record_target(events: Vec<SessionEvent>, target: EntityRef, trace: &mut Vec<String>) {
+    for event in events {
+        let SessionEvent::WorldSpatialEntities(delta) = event else {
+            continue;
         };
-    }
-    entity
-}
-
-/// An entity snapshot of the view at the segment start plus the entity deltas applied after it.
-struct Segment {
-    name: &'static str,
-    target: EntityRef,
-    snapshot: Vec<u8>,
-    initial: String,
-    deltas: Vec<Vec<u8>>,
-    trace: Vec<String>,
-}
-
-impl Segment {
-    fn begin(
-        client: &DevClientSession,
-        name: &'static str,
-        target: EntityRef,
-    ) -> TestResult<Self> {
-        let view = client.world_entities().ok_or("entity view absent")?;
-        let observation = client.world_spatial();
-        let snapshot = encode_world_spatial_entities_snapshot(&WorldSpatialEntitiesSnapshot {
-            content_generation: observation.content_generation,
-            actor_position: observation.actor_position,
-            own_identity: *view.own_identity(),
-            entities: view.iter().copied().map(plain).collect(),
-        })
-        .map_err(|error| format!("encode snapshot: {error:?}"))?;
-        Ok(Self {
-            name,
-            target,
-            snapshot,
-            initial: text_of(view.get(&target)),
-            deltas: Vec::new(),
-            trace: Vec::new(),
-        })
-    }
-
-    fn record(&mut self, events: Vec<SessionEvent>) -> TestResult {
-        for event in events {
-            let SessionEvent::WorldSpatialEntities(delta) = event else {
-                continue;
-            };
-            let mut value = delta.value;
-            value.enter = value.enter.into_iter().map(plain).collect();
-            value.update = value.update.into_iter().map(plain).collect();
-            let line = if value.leave.contains(&self.target) {
-                "absent".to_owned()
-            } else if let Some(entity) = value
-                .enter
-                .iter()
-                .chain(&value.update)
-                .find(|entity| entity.entity == self.target)
-            {
-                text_of(Some(entity))
-            } else {
-                "same".to_owned()
-            };
-            self.deltas.push(
-                encode_world_spatial_entities_delta(&value)
-                    .map_err(|error| format!("encode delta: {error:?}"))?,
-            );
-            self.trace.push(line);
-        }
-        Ok(())
-    }
-
-    fn write(&self, expected: &mut String) -> TestResult {
-        capture(&format!("w01b-{}-snapshot.bin", self.name), &self.snapshot)?;
-        for (index, bytes) in self.deltas.iter().enumerate() {
-            capture(&format!("w01b-{}-delta{index}.bin", self.name), bytes)?;
-        }
-        expected.push_str(&format!(
-            "{n}.target={}:{}\n{n}.initial={}\n{n}.trace={}\n",
-            hex(&self.target.identity),
-            self.target.generation,
-            self.initial,
-            self.trace.join(";"),
-            n = self.name
-        ));
-        Ok(())
+        let value = delta.value;
+        let line = if value.leave.contains(&target) {
+            "absent".to_owned()
+        } else if let Some(entity) = value
+            .enter
+            .iter()
+            .chain(&value.update)
+            .find(|entity| entity.entity == target)
+        {
+            text_of(Some(entity))
+        } else {
+            "same".to_owned()
+        };
+        trace.push(line);
     }
 }
 
@@ -182,54 +98,60 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_W01B_ACCOUNT").await?;
     let clients = &dedicated.clients(clients);
     let mut client = character_prep::w01b_rat_hunter("W01b.client", clients, 0x0c).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    let here = client.world_spatial().actor_position;
-    let target = client
-        .world_entities()
-        .and_then(|entities| {
-            entities
-                .iter()
-                .filter(|entry| {
-                    entry.kind == oteryn_dev_client::EntityKind::Creature
-                        && entry.position.floor == here.floor
-                })
-                .min_by_key(|entry| distance(entry.position, here))
-        })
-        .copied()
-        .ok_or("W01b client capture: no live rat")?;
-    if !is_rat(&target) {
-        return Err("W01b client capture: nearest creature is not a rat".into());
+    let spawn = SPAWN;
+    let mut points = rat_points(&metadata.spawns).filter(|(point, _)| *point == spawn);
+    let (_, respawn_ms) = points.next().ok_or("W01b authored Rat point absent")?;
+    if points.next().is_some() {
+        return Err("W01b authored Rat point ambiguous".into());
     }
-    let target_at = tile(target.position)?;
-    let creatures = &metadata.spawns.creatures;
-    let (spawn, respawn_ms) = metadata
-        .spawns
-        .sources
+    let spawn_cells = authored_spawn_cells(&metadata.spawns);
+    let available = |at| !spawn_cells.contains(&at);
+    let joined_position = client.world_spatial().actor_position;
+    let initial_position = tile(joined_position)?;
+    let approach = route_avoiding(
+        world,
+        initial_position,
+        |at| {
+            tile_distance(at, spawn) == 1
+                && world
+                    .base()
+                    .tile(at.x, at.y, at.floor)
+                    .is_some_and(|cell| !cell.protection_zone())
+        },
+        available,
+    )
+    .filter(|route| !route.is_empty())
+    .ok_or("W01b initial route absent")?;
+    walk_first_attempt(&mut client, world, &approach).await?;
+    let target = creature_at(&client, spawn).ok_or("W01b authored cell has no live Rat")?;
+    if !is_rat(&target)
+        || !matches!(
+            target.detail,
+            EntityDetail::Actor {
+                health_percent: 100,
+                ..
+            } | EntityDetail::ActorWithIcons {
+                health_percent: 100,
+                ..
+            }
+        )
+    {
+        return Err(format!("W01b expected a full-health Rat before attack: {target:?}").into());
+    }
+
+    let prior_corpses: Vec<_> = client
+        .world_entities()
+        .ok_or("W01b entity view absent")?
         .iter()
-        .flat_map(|source| {
-            source.points.iter().filter_map(move |point| {
-                creatures
-                    .get(point.creature as usize)
-                    .filter(|creature| creature.key == "oteryn:creature.rat")
-                    .map(|_| {
-                        (
-                            TilePos {
-                                x: point.x,
-                                y: point.y,
-                                floor: source.floor,
-                            },
-                            point.respawn_ms,
-                        )
-                    })
-            })
-        })
-        .filter(|(point, _)| tile_distance(*point, target_at) <= 8)
-        .min_by_key(|(point, _)| tile_distance(*point, tile(here).unwrap_or(target_at)))
-        .ok_or("W01b client capture: no authored rat point near the live rat")?;
+        .filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
 
     // Kill: attack and record the damage, removal and corpse deltas.
     client.take_events();
-    let mut kill = Segment::begin(&client, "kill", target.entity)?;
+    let before = client.last_server_sequence();
+    let initial = text_of(Some(&target));
+    let mut trace = Vec::new();
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -245,16 +167,24 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         let events = client.take_events();
         for event in &events {
             if let SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(entity) = delta.value.update.iter().find(|entry| entry.entity == target.entity)
+                && let Some(entity) = delta
+                    .value
+                    .update
+                    .iter()
+                    .find(|entry| entry.entity == target.entity)
             {
                 last = entity.position;
             }
         }
-        kill.record(events)?;
+        record_target(events, target.entity, &mut trace);
         if let Some(corpse) = client.world_entities().and_then(|entities| {
             entities
                 .iter()
-                .find(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse && entity.position == last)
+                .find(|entity| {
+                    entity.kind == oteryn_dev_client::EntityKind::Corpse
+                        && entity.position == last
+                        && !prior_corpses.contains(&entity.entity)
+                })
                 .copied()
         }) && target_state(&client, target.entity).is_none()
         {
@@ -269,9 +199,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
             .into());
         }
     };
-    if !kill.trace.iter().any(|line| line.ends_with("|-") || line == "absent")
-        || !kill.trace.iter().any(|line| {
-            line.rsplit('|').next().and_then(|health| health.parse::<u32>().ok()).is_some_and(|health| health < 100)
+    let killed = client.last_server_sequence();
+    if !trace.iter().any(|line| line == "absent")
+        || !trace.iter().any(|line| {
+            line.rsplit('|')
+                .next()
+                .and_then(|health| health.parse::<u32>().ok())
+                .is_some_and(|health| (1..100).contains(&health))
         })
     {
         return Err("W01b client capture: kill lacked a damage delta or a removal delta".into());
@@ -279,9 +213,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     // Respawn: leave interest, wait out the authored interval, return, require a new actor.
     let from = tile(client.world_spatial().actor_position)?;
-    let away = route(world, from, |at| tile_distance(at, spawn) >= 20)
+    let away = route_avoiding(world, from, |at| tile_distance(at, spawn) >= 20, available)
+        .filter(|route| !route.is_empty())
         .ok_or("W01b client capture: no route outside spawn interest")?;
-    walk(&mut client, world, &away).await?;
+    walk_first_attempt(&mut client, world, &away).await?;
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_millis(u64::from(respawn_ms) + 1_000);
@@ -289,11 +224,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        tile_distance(at, spawn) <= 1
-    })
+    let back = route_avoiding(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        |at| tile_distance(at, spawn) == 1,
+        available,
+    )
+    .filter(|route| !route.is_empty())
     .ok_or("W01b client capture: no route back to the rat point")?;
-    walk(&mut client, world, &back).await?;
+    walk_first_attempt(&mut client, world, &back).await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     let replacement = loop {
         if let Some(entity) = creature_at(&client, spawn)
@@ -313,13 +252,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if !is_rat(&replacement) {
         return Err("W01b client capture: replacement at the authored point is not a rat".into());
     }
-    let respawn = Segment::begin(&client, "respawn", replacement.entity)?;
-    capture("w01b-respawn-snapshot.bin", &respawn.snapshot)?;
-
-    let mut expected = String::new();
-    kill.write(&mut expected)?;
+    let returned = client.last_server_sequence();
+    let first_session = client.join_snapshot().game_session_id;
+    let mut expected = format!(
+        "kill.target={}:{}\nkill.initial={initial}\nkill.trace={}\nbefore={before}\nattack.sequence={}\nkilled={killed}\nreturned={returned}\nfirst.session={}\n",
+        hex(&target.entity.identity),
+        target.entity.generation,
+        trace.join(";"),
+        attack.result_server_sequence,
+        hex(first_session.as_bytes()),
+    );
     expected.push_str(&format!(
-        "corpse={}:{}\ncorpse.position={},{},{}\nspawn={},{},{}\nreplacement={}:{}\nreplacement.position={},{},{}\nkilled.absent=true\n",
+        "corpse={}:{}\ncorpse.position={},{},{}\nspawn={},{},{}\nreplacement={}:{}\n",
         hex(&corpse.entity.identity),
         corpse.entity.generation,
         corpse.position.x,
@@ -331,15 +275,57 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         -i16::from(spawn.floor),
         hex(&replacement.entity.identity),
         replacement.entity.generation,
-        replacement.position.x,
-        replacement.position.y,
-        replacement.position.floor,
     ));
-    let logout = client.session_mut().logout().await?;
-    if logout.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
-        return Err(format!("W01b client capture: logout refused: {logout:?}").into());
+    // Leave the replacement behind before waiting for the combat lock. Use the same
+    // authored route rule as the first departure and prove the Rat left interest.
+    let departure = route_avoiding(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        |at| tile_distance(at, spawn) >= 20,
+        available,
+    )
+    .filter(|route| !route.is_empty())
+    .ok_or("W01b no logout route outside spawn interest")?;
+    walk_first_attempt(&mut client, world, &departure).await?;
+    if target_state(&client, replacement.entity).is_some() {
+        return Err("W01b replacement is still in interest at the logout position".into());
     }
-    capture("w01b-expected.txt", expected.as_bytes())?;
+    let position = client.world_spatial().actor_position;
+    if tile(position)? == initial_position {
+        return Err("W01b logout position must differ from initial placement".into());
+    }
+    let logout_sequence = logout(&mut client).await?;
+    drop(client);
+    let mut fresh = connect_character(clients, 0x0d, 0).await?;
+    let fresh_session = fresh.join_snapshot().game_session_id;
+    if fresh_session == first_session
+        || fresh.world_spatial().actor_position != position
+        || target_state(&fresh, target.entity).is_some()
+        || target_state(&fresh, replacement.entity).is_some()
+    {
+        return Err("W01b relog did not restore the saved position outside spawn interest".into());
+    }
+    let check = route_avoiding(
+        world,
+        tile(position)?,
+        |at| tile_distance(at, spawn) == 1,
+        available,
+    )
+    .filter(|route| !route.is_empty())
+    .ok_or("W01b restored position has no route to spawn")?;
+    walk_first_attempt(&mut fresh, world, &check).await?;
+    let restored_rat = target_state(&fresh, replacement.entity)
+        .ok_or("W01b replacement missing after returning from the restored position")?;
+    if !is_rat(&restored_rat) || target_state(&fresh, target.entity).is_some() {
+        return Err("W01b relog changed the observed Rat identity".into());
+    }
+    let fresh_sequence = fresh.last_server_sequence();
+    expected.push_str(&format!(
+        "fresh.sequence={fresh_sequence}\nlogout.sequence={}\nfresh.session={}\nposition={},{},{}\njoined.position={},{},{}\n",
+        logout_sequence, hex(fresh_session.as_bytes()),
+        position.x, position.y, position.floor,
+        joined_position.x, joined_position.y, joined_position.floor,
+    ));
     Ok(expected)
 }
 
@@ -348,8 +334,21 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         evidence("e2e_all scenario=W01b.client status=FAIL evidence=missing-capture-directory");
         return;
     }
-    match verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(clients)))
-        .await
+    match verdict::indexed_timeout(
+        Duration::from_secs(420),
+        verdict::observe(async {
+            let (outcome, frames) =
+                oteryn_dev_client::native_session::capture_server_frames(journey(clients)).await;
+            let expected = outcome?;
+            capture(
+                "w01b-server-frames.bin",
+                &frames.ok_or("W01b server frame capture overflowed")?,
+            )?;
+            capture("w01b-expected.txt", expected.as_bytes())?;
+            TestResult::Ok(expected)
+        }),
+    )
+    .await
     {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_capture scenario=W01b.client status=CAPTURED evidence={:?}",

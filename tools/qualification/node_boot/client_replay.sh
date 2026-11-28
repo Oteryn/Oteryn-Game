@@ -1,6 +1,10 @@
 replay_client() {
   local log=$1 captures=$2 row=$3 package=$4 case_name=$5 started=$SECONDS
   local status=FAIL
+  local -a test_args=()
+  if [[ $row == W01b.client ]]; then
+    test_args=(-- --ignored)
+  fi
   # The journey owns its failure verdict. A second result would invalidate
   # the evidence consumed by e2e_all's duplicate-scenario check.
   if grep -qF "e2e_all scenario=$row status=FAIL " "$log"; then
@@ -8,7 +12,7 @@ replay_client() {
   fi
   # The live journey and the exact client replay must both reach their assertions.
   if [[ $(grep -cF "e2e_capture scenario=$row status=CAPTURED " "$log") == 1 ]] \
-    && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" \
+    && E2E_ALL_CAPTURE_DIR="$captures" "${CARGO:-cargo}" test --locked -p "$package" --lib "$case_name" "${test_args[@]}" \
       > "$captures/$row.replay.log" 2>&1 \
     && grep -qE '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$captures/$row.replay.log"; then
     status=PASS

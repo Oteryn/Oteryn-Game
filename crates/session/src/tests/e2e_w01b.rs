@@ -25,7 +25,9 @@ fn state_text(entity: Option<&WorldSpatialEntity>) -> String {
         return "absent".into();
     };
     let health = match entity.detail {
-        Detail::Actor { health_percent, .. } => health_percent.to_string(),
+        Detail::Actor { health_percent, .. } | Detail::ActorWithIcons { health_percent, .. } => {
+            health_percent.to_string()
+        }
         _ => "-".into(),
     };
     format!(
@@ -36,6 +38,9 @@ fn state_text(entity: Option<&WorldSpatialEntity>) -> String {
 
 fn parse_target(text: &str) -> Result<EntityRef, BoxError> {
     let (identity, generation) = text.split_once(':').ok_or("target lacks generation")?;
+    if identity.len() != 32 || !identity.is_ascii() {
+        return Err("target identity must contain 32 hex digits".into());
+    }
     let mut bytes = [0_u8; 16];
     for (index, byte) in bytes.iter_mut().enumerate() {
         *byte = u8::from_str_radix(&identity[index * 2..index * 2 + 2], 16)?;
@@ -47,23 +52,6 @@ fn parse_target(text: &str) -> Result<EntityRef, BoxError> {
 }
 
 fn fixture() -> Result<Fixture, BoxError> {
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = std::path::Path::new(&root);
-        let expected = std::fs::read_to_string(root.join("w01b-expected.txt"))?;
-        let count = value(&expected, "kill.trace")?.split(';').count();
-        let mut kill_deltas = Vec::new();
-        for index in 0..count {
-            kill_deltas.push(std::fs::read(
-                root.join(format!("w01b-kill-delta{index}.bin")),
-            )?);
-        }
-        return Ok(Fixture {
-            kill_snapshot: std::fs::read(root.join("w01b-kill-snapshot.bin"))?,
-            respawn_snapshot: std::fs::read(root.join("w01b-respawn-snapshot.bin"))?,
-            kill_deltas,
-            expected,
-        });
-    }
     // Inline fixture: the rat at (14, 10) drops to 40%, dies and leaves a corpse; a replacement
     // generation stands at the authored point after the respawn interval.
     let header = ActorPosition {
@@ -127,8 +115,284 @@ fn at_text(text: &str) -> Result<ActorPosition, BoxError> {
     })
 }
 
+fn recorded_sessions(tape: &[u8]) -> Result<Vec<&[u8]>, BoxError> {
+    let mut starts = Vec::new();
+    let mut offset = 0;
+    while offset < tape.len() {
+        let prefix = tape
+            .get(offset..offset + 4)
+            .ok_or("truncated frame prefix")?;
+        let length = FrameLength::from_prefix(prefix)?.get() as usize;
+        let frame = tape
+            .get(offset + 4..offset + 4 + length)
+            .ok_or("truncated frame")?;
+        if decode_wire_envelope(frame)?.message_type() == MessageType::ServerAccepted {
+            starts.push(offset);
+        }
+        offset += 4 + length;
+    }
+    assert_eq!(
+        starts.len(),
+        3,
+        "expected staging, hunt and relog admissions"
+    );
+    assert_eq!(starts[0], 0);
+    starts.push(tape.len());
+    Ok(starts
+        .windows(2)
+        .map(|pair| &tape[pair[0]..pair[1]])
+        .collect())
+}
+
+struct ReplayStream<'a>(&'a [u8]);
+
+impl tokio::io::AsyncRead for ReplayStream<'_> {
+    fn poll_read(
+        mut self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        buffer: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<io::Result<()>> {
+        let length = buffer.remaining().min(self.0.len());
+        buffer.put_slice(&self.0[..length]);
+        self.0 = &self.0[length..];
+        std::task::Poll::Ready(Ok(()))
+    }
+}
+
+impl tokio::io::AsyncWrite for ReplayStream<'_> {
+    fn poll_write(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+        bytes: &[u8],
+    ) -> std::task::Poll<io::Result<usize>> {
+        std::task::Poll::Ready(Ok(bytes.len()))
+    }
+
+    fn poll_flush(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<io::Result<()>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+
+    fn poll_shutdown(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<io::Result<()>> {
+        std::task::Poll::Ready(Ok(()))
+    }
+}
+
+async fn replay_recording(expected: &str, tape: &[u8]) -> Result<(), BoxError> {
+    fn id_text(bytes: &[u8]) -> String {
+        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    let parts = recorded_sessions(tape)?;
+    let target = parse_target(value(expected, "kill.target")?)?;
+    let corpse = parse_target(value(expected, "corpse")?)?;
+    let replacement = parse_target(value(expected, "replacement")?)?;
+    let before: u64 = value(expected, "before")?.parse()?;
+    let killed: u64 = value(expected, "killed")?.parse()?;
+    let returned: u64 = value(expected, "returned")?.parse()?;
+    let logout: u64 = value(expected, "logout.sequence")?.parse()?;
+    assert!(before < killed && killed < returned && returned < logout);
+    assert_ne!(replacement, target);
+    let spawn = at_text(value(expected, "spawn")?)?;
+
+    let mut session = Session::admit(ReplayStream(parts[1]), entity_admission()?).await?;
+    let first_id = session.join_snapshot().game_session_id;
+    assert_eq!(
+        id_text(first_id.as_bytes()),
+        value(expected, "first.session")?
+    );
+    let entry = at_text(value(expected, "joined.position")?)?;
+    let saved = at_text(value(expected, "position")?)?;
+    assert_eq!(session.world_spatial().actor_position, entry);
+    assert_ne!(saved, entry);
+    assert!(session.last_server_sequence() < before);
+    let attack: u64 = value(expected, "attack.sequence")?.parse()?;
+    assert!(before < attack && attack < killed);
+    let mut attack_seen = false;
+    let mut trace = Vec::new();
+    let mut damaged = false;
+    let mut removed = false;
+    while session.last_server_sequence() < logout {
+        let bytes = session.read_post_admission("W01b recorded frame").await?;
+        let frame = decode_wire_envelope(&bytes)?;
+        let sequence = session.next_sequence(&frame)?;
+        match frame.message_type() {
+            MessageType::CommandResult => {
+                let result = decode_command_result(frame.payload())?;
+                if sequence == attack {
+                    use oteryn_protocol_oteryn::attack::{
+                        AttackIntentDisposition, decode_attack_intent_result,
+                    };
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    assert_eq!(
+                        decode_attack_intent_result(result.payload)
+                            .map_err(SessionError::Attack)?,
+                        AttackIntentDisposition::Ok
+                    );
+                    attack_seen = true;
+                }
+                if sequence == logout {
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    assert_eq!(
+                        logout::decode_logout_result(result.payload)
+                            .map_err(SessionError::Logout)?,
+                        logout::LogoutResult::Accepted
+                    );
+                }
+            }
+            MessageType::StateDelta => {
+                assert_ne!(sequence, logout);
+                let event = session.apply_state_delta(sequence, frame.payload())?;
+                if sequence > before
+                    && sequence <= killed
+                    && let SessionEvent::WorldSpatialEntities(delta) = event
+                {
+                    let line = if delta.value.leave.contains(&target) {
+                        removed = true;
+                        "absent".to_owned()
+                    } else if let Some(entity) = delta
+                        .value
+                        .enter
+                        .iter()
+                        .chain(&delta.value.update)
+                        .find(|entity| entity.entity == target)
+                    {
+                        damaged |= matches!(
+                            entity.detail,
+                            Detail::Actor {
+                                health_percent: 1..=99,
+                                ..
+                            } | Detail::ActorWithIcons {
+                                health_percent: 1..=99,
+                                ..
+                            }
+                        );
+                        state_text(Some(entity))
+                    } else {
+                        "same".to_owned()
+                    };
+                    trace.push(line);
+                }
+            }
+            unexpected => {
+                return Err(format!("unexpected recorded W01b frame: {unexpected:?}").into());
+            }
+        }
+        let view = session
+            .world_entities()
+            .ok_or("recorded entity view absent")?;
+        if sequence == before {
+            let initial_rat = view.get(&target).ok_or("original recorded Rat absent")?;
+            assert_eq!(initial_rat.kind, EntityKind::Creature);
+            assert_eq!(initial_rat.position, spawn);
+            assert!(
+                initial_rat
+                    .display_name
+                    .is_some_and(|name| name.as_str() == Ok("Rat"))
+            );
+            let initial = state_text(Some(initial_rat));
+            assert_eq!(initial, value(expected, "kill.initial")?);
+            assert!(initial.ends_with("|100"));
+            assert!(view.get(&corpse).is_none() && view.get(&replacement).is_none());
+        }
+        if sequence == killed {
+            assert!(damaged && removed && view.get(&target).is_none());
+            let entry = view.get(&corpse).ok_or("recorded corpse absent")?;
+            assert_eq!(entry.kind, EntityKind::Corpse);
+            assert_eq!(
+                entry.position,
+                at_text(value(expected, "corpse.position")?)?
+            );
+        }
+        if sequence == returned {
+            let entry = view
+                .get(&replacement)
+                .ok_or("recorded replacement absent")?;
+            assert_eq!(entry.kind, EntityKind::Creature);
+            assert_eq!(entry.position, spawn);
+            assert!(
+                entry
+                    .display_name
+                    .is_some_and(|name| name.as_str() == Ok("Rat"))
+            );
+            assert!(view.get(&target).is_none());
+        }
+    }
+    assert!(attack_seen && session.stream.0.is_empty());
+    assert_eq!(session.world_spatial().actor_position, saved);
+    assert_eq!(trace.join(";"), value(expected, "kill.trace")?);
+    let mut fresh = Session::admit(ReplayStream(parts[2]), entity_admission()?).await?;
+    let fresh_id = fresh.join_snapshot().game_session_id;
+    assert_ne!(first_id, fresh_id);
+    assert_eq!(
+        id_text(fresh_id.as_bytes()),
+        value(expected, "fresh.session")?
+    );
+    assert_eq!(fresh.world_spatial().actor_position, saved);
+    let fresh_sequence: u64 = value(expected, "fresh.sequence")?.parse()?;
+    assert!(fresh_sequence > fresh.last_server_sequence());
+    let view = fresh
+        .world_entities()
+        .ok_or("fresh recorded entity view absent")?;
+    assert!(view.get(&target).is_none() && view.get(&replacement).is_none());
+    while fresh.last_server_sequence() < fresh_sequence {
+        let bytes = fresh
+            .read_post_admission("W01b recorded relog walk")
+            .await?;
+        let frame = decode_wire_envelope(&bytes)?;
+        let sequence = fresh.next_sequence(&frame)?;
+        match frame.message_type() {
+            MessageType::CommandResult => {
+                decode_command_result(frame.payload())?;
+            }
+            MessageType::StateDelta => {
+                fresh.apply_state_delta(sequence, frame.payload())?;
+            }
+            unexpected => return Err(format!("unexpected W01b relog frame: {unexpected:?}").into()),
+        }
+    }
+    assert_eq!(fresh.last_server_sequence(), fresh_sequence);
+    while !fresh.stream.0.is_empty() {
+        let bytes = read_frame(&mut fresh.stream).await?;
+        let frame = decode_wire_envelope(&bytes)?;
+        frame.validate(Direction::ServerToClient, true)?;
+        fresh.check_generation(&frame)?;
+        assert_eq!(frame.message_type(), MessageType::LivenessProbe);
+        fresh.answer_probe(frame.payload()).await?;
+    }
+    let view = fresh
+        .world_entities()
+        .ok_or("fresh recorded entity view absent")?;
+    assert!(view.get(&target).is_none());
+    let replacement = view
+        .get(&replacement)
+        .ok_or("fresh recorded replacement absent")?;
+    assert_eq!(replacement.kind, EntityKind::Creature);
+    assert!(
+        replacement
+            .display_name
+            .is_some_and(|name| name.as_str() == Ok("Rat"))
+    );
+    Ok(())
+}
+
 #[test]
+#[ignore = "requires original frames from the live node-boot row"]
 fn e2e_w01b_rat_kill_and_respawn_replay() -> Result<(), BoxError> {
+    let root = std::env::var_os("E2E_ALL_CAPTURE_DIR").ok_or("W01b capture directory absent")?;
+    let root = std::path::Path::new(&root);
+    let expected = std::fs::read_to_string(root.join("w01b-expected.txt"))?;
+    let tape = std::fs::read(root.join("w01b-server-frames.bin"))?;
+    block_on(replay_recording(&expected, &tape))?
+}
+
+#[test]
+fn synthetic_w01b_entity_reducer_regression() -> Result<(), BoxError> {
     let fixture = fixture()?;
     let expected = &fixture.expected;
     let target = parse_target(value(expected, "kill.target")?)?;
@@ -241,6 +505,28 @@ fn e2e_w01b_rat_kill_and_respawn_replay() -> Result<(), BoxError> {
         assert!(view.get(&target).is_none());
         drop(session);
         peer.await??;
+        Ok(())
+    })?
+}
+
+#[cfg(feature = "test-support")]
+#[test]
+fn w01b_capture_retains_original_frame_prefixes_and_bodies() -> Result<(), BoxError> {
+    let wire = [0, 0, 0, 2, 0x91, 0x11, 0, 0, 0, 1, 0x80];
+    block_on(async {
+        let mut reader = ReplayStream(&wire);
+        let (result, capture) = capture_server_frames(async {
+            assert_eq!(read_frame(&mut reader).await?, [0x91, 0x11]);
+            let byte = reader.read_u8().await?;
+            assert_eq!(
+                crate::framing::read_frame_after(&mut reader, byte).await?,
+                [0x80]
+            );
+            Ok::<(), SessionError>(())
+        })
+        .await;
+        result?;
+        assert_eq!(capture.as_deref(), Some(wire.as_slice()));
         Ok(())
     })?
 }
