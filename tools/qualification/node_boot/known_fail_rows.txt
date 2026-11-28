@@ -6,7 +6,6 @@ C01.full assertion at C01.full/admission
 C02.full no-progress at C02.full/walk; watch-aborted-before-verdict
 C03.full assertion at C03.full/baseline; watch-aborted-before-verdict
 C04.full assertion at C04.full/admission; step-1-observed-PZ-CAST-expected-accepted-rejected-no-delta-reply-CastOutcome---command_id:-1--status:-Rejected--disposition:-Rejected--resu
-C05.full assertion at C05.full/row-check; observed-runtime-failure-see-C05_GAP
 C06.full assertion at C06.full/admission; required-actions-unproven-see-C06_GAP
 C09.full assertion at C09.full/admission; runtime-step-failed-see-C09_GAP
 C11.full assertion at C11.full/admission; step=player-monk-choice-observed=Oressa-absent_step=solo-serene-observed=vitals=Some(ActorVitals-{-health:-150,-max_health:-150,-mana:-55,-m
