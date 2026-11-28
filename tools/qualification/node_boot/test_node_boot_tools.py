@@ -396,7 +396,7 @@ class SeamPassThroughTests(unittest.TestCase):
             cargo.write_text("#!/bin/sh\necho 'test result: ok. 0 passed; 0 failed; 0 ignored;'\n")
             cargo.chmod(0o755)
             live = textwrap.dedent('''\
-                for file in s06-before.bin s06-catalogue-event.bin s06-commit.bin s06-request.bin s06-expected.txt s06-refusal-{1,2}.bin s06-refused-request-{1,2}.bin; do
+                for file in s06-before.bin s06-{commit,control}-event.bin s06-{commit,control}.bin s06-{commit,control}-request.bin s06-expected.txt s06-refusal-{1,2}.bin s06-refused-request-{1,2}.bin; do
                     printf fixture > "$NODE_BOOT_S06_CAPTURE_DIR/$file"
                 done
                 echo "SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=run-$NODE_BOOT_S06_CAPTURE_RUN"
@@ -409,6 +409,23 @@ class SeamPassThroughTests(unittest.TestCase):
             )
         self.assertNotEqual(log.returncode, 0)
         self.assertRegex(log.stdout, r'scenario=S06\.client status=FAIL seconds=\d+ evidence=client-replay-not-executed')
+
+    def test_s06_replay_rejects_a_capture_missing_the_matched_control(self):
+        with tempfile.TemporaryDirectory() as temp:
+            live = textwrap.dedent('''\
+                for file in s06-before.bin s06-{commit,control}-event.bin s06-commit.bin s06-{commit,control}-request.bin s06-expected.txt s06-refusal-{1,2}.bin s06-refused-request-{1,2}.bin; do
+                    printf fixture > "$NODE_BOOT_S06_CAPTURE_DIR/$file"
+                done
+                echo "SEAM_EVIDENCE e2e_capture scenario=S06.client status=CAPTURED evidence=run-$NODE_BOOT_S06_CAPTURE_RUN"
+            ''')
+            log = subprocess.run(
+                ['bash', str(HERE / 's06_client_replay.sh'), temp, 'bash', '-c', live],
+                env={**os.environ, 'NODE_BOOT_E2E_ONLY': 'rows',
+                     'OTERYN_E2E_ROW_BATCH': '197:1'},
+                capture_output=True, text=True, check=False,
+            )
+        self.assertNotEqual(log.returncode, 0)
+        self.assertIn('evidence=missing-s06-control.bin', log.stdout)
 
     def test_s06_replay_rejects_a_selected_batch_without_live_capture(self):
         with tempfile.TemporaryDirectory() as temp:

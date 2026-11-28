@@ -4,24 +4,26 @@ use oteryn_dev_client::{DevClientSession, SessionEvent, native_session::Appearan
 use oteryn_protocol_oteryn::appearance;
 
 const CITIZEN: &str = "oteryn:content.outfit.citizen_outfits";
+const FEMALE_CITIZEN_LOOK: u32 = 136;
 
 struct Observed {
     files: Vec<(String, Vec<u8>)>,
     expected: String,
 }
 
-fn citizen(catalogue: &appearance::Catalogue) -> TestResult<&appearance::OutfitOption> {
+fn citizen(catalogue: &appearance::Catalogue) -> TestResult {
     let option = catalogue
         .outfits
         .iter()
         .find(|option| option.key == CITIZEN)
         .ok_or("step=citizen outfit absent")?;
-    if option.permitted_addons != 0 || !matches!(option.look_type, 128 | 136) {
-        return Err(
-            format!("step=citizen expected zero addons and Citizen look, got {option:?}").into(),
-        );
+    if option.permitted_addons != 0 || option.look_type != FEMALE_CITIZEN_LOOK {
+        return Err(format!(
+            "step=citizen expected zero addons and female Citizen look, got {option:?}"
+        )
+        .into());
     }
-    Ok(option)
+    Ok(())
 }
 
 fn own_binding<'a>(
@@ -68,6 +70,40 @@ fn visible_look(client: &mut DevClientSession) -> TestResult<appearance::Look> {
         .find(|visible| visible.entity.entity.identity == own)
         .and_then(|visible| visible.look)
         .ok_or_else(|| "own visible appearance absent".into())
+}
+
+fn peer_look(
+    observer: &mut DevClientSession,
+    actor: appearance::EntityRef,
+) -> Option<appearance::Look> {
+    observer
+        .session_mut()
+        .visible_appearances()
+        .into_iter()
+        .find(|visible| visible.entity.entity == actor)
+        .and_then(|visible| visible.look)
+}
+
+async fn require_peer_look(
+    observer: &mut DevClientSession,
+    actor: appearance::EntityRef,
+    expected: &appearance::Look,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let observed = peer_look(observer, actor);
+        if observed.as_ref() == Some(expected) {
+            return Ok(());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=peer-appearance actor={actor:?} expected={expected:?} observed={observed:?}"
+            )
+            .into());
+        }
+        observer.service_liveness(Duration::from_millis(25)).await?;
+        observer.take_events();
+    }
 }
 
 fn require_look(observed: &appearance::Look, expected: &appearance::Look) -> TestResult {
@@ -129,49 +165,14 @@ fn content_revision() -> TestResult<String> {
         .ok_or_else(|| "step=input missing content revision".into())
 }
 
-async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
-    let mut client = connect_world(clients, 0x69).await?;
-    if !client
-        .selected_capabilities()
-        .contains(&appearance::CAPABILITY_APPEARANCE_V1)
-    {
-        return Err("step=admission appearance capability not selected".into());
-    }
-    let (before_bytes, before) = raw_snapshot(&mut client)?;
-    let look_type = citizen(&before.catalogue)?.look_type;
-    let before_look = visible_look(&mut client)?;
-    let colours = match before
-        .catalogue
-        .selected
-        .as_ref()
-        .map(|s| s.selection.colours)
-    {
-        Some([4, 3, 2, 1]) => [1, 2, 3, 4],
-        _ => [4, 3, 2, 1],
-    };
-    let selection = appearance::Selection {
-        outfit_key: CITIZEN.to_owned(),
-        colours,
-        addons: 0,
-        mount_key: None,
-    };
-    let expected_look = appearance::Look::Outfit {
-        look_type,
-        colours,
-        addons: 0,
-    };
-    if before_look == expected_look {
-        return Err("step=select visible look already equals target".into());
-    }
-    let revision = content_revision()?;
-    let request = appearance::Change {
-        context: before.catalogue.context,
-        expected_root_revision: before.catalogue.root_revision,
-        prior: before.catalogue.selected.clone(),
-        selection: selection.clone(),
-        content_revision: revision.clone(),
-    };
-    let commit = change(&mut client, &request).await?;
+async fn commit_observed(
+    client: &mut DevClientSession,
+    state: &mut appearance::Snapshot,
+    request: &appearance::Change,
+    expected_look: &appearance::Look,
+    label: &str,
+) -> TestResult<Observed> {
+    let commit = change(client, request).await?;
     let committed = match appearance::ChangeResult::decode(&commit.payload) {
         Ok(appearance::ChangeResult::Committed(value))
             if commit.status == CommandStatus::Accepted =>
@@ -179,12 +180,14 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
             value
         }
         observed => {
-            return Err(
-                format!("step=select status={:?} result={observed:?}", commit.status).into(),
-            );
+            return Err(format!(
+                "step={label} status={:?} result={observed:?}",
+                commit.status
+            )
+            .into());
         }
     };
-    let mut after = before.clone();
+    let prior_root = state.catalogue.root_revision;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut observed_update = None;
     loop {
@@ -205,10 +208,10 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
                             .map_err(|error| format!("step=encode-catalogue-event {error:?}"))?,
                     ));
                 }
-                full_row_s06::apply_appearance(&mut after, delta.value);
+                full_row_s06::apply_appearance(state, delta.value);
             }
         }
-        if observed_update.is_some() && visible_look(&mut client)? == expected_look {
+        if observed_update.is_some() && visible_look(client)? == *expected_look {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
@@ -217,46 +220,108 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         client.service_liveness(Duration::from_millis(25)).await?;
     }
     let (sequence, base, new, delta) = observed_update.ok_or("missing live catalogue event")?;
-    citizen(&after.catalogue)?;
-    if after.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
-        || after.catalogue.root_revision != committed
-        || committed <= before.catalogue.root_revision
+    citizen(&state.catalogue)?;
+    if state.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&request.selection)
+        || state.catalogue.root_revision != committed
+        || committed <= prior_root
     {
         return Err("step=select the catalogue does not show the committed selection".into());
     }
 
-    let selected_revision = after
+    let selected_revision = state
         .catalogue
         .selected
         .as_ref()
         .ok_or("committed selection absent")?
         .revision;
-    let binding = own_binding(&client, &after)?.clone();
-    require_committed_binding(&binding, &expected_look, selected_revision)?;
+    let binding = own_binding(client, state)?;
+    require_committed_binding(binding, expected_look, selected_revision)?;
     if binding.root_revision != committed {
         return Err("step=select visible binding root revision differs from commit".into());
     }
 
-    let mut files = vec![
-        ("s06-before.bin".into(), before_bytes),
-        ("s06-catalogue-event.bin".into(), delta),
-        ("s06-commit.bin".into(), commit.payload),
+    let files = vec![
+        (format!("s06-{label}-event.bin"), delta),
+        (format!("s06-{label}.bin"), commit.payload),
         (
-            "s06-request.bin".into(),
+            format!("s06-{label}-request.bin"),
             request.encode().map_err(|error| format!("{error:?}"))?,
         ),
     ];
+    let expected = format!(
+        "{label}_revision={committed}\n{label}_id={}\n{label}_sequence={}\n{label}_status={:?}\n{label}_event_sequence={sequence}\n{label}_event_base={base}\n{label}_event_new={new}\n",
+        commit.command_id, commit.server_sequence, commit.status,
+    );
+    Ok(Observed { files, expected })
+}
+
+async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
+    let mut observer = connect_character(clients, 0x68, 0).await?;
+    let mut client = connect_world(clients, 0x69).await?;
+    if !client
+        .selected_capabilities()
+        .contains(&appearance::CAPABILITY_APPEARANCE_V1)
+    {
+        return Err("step=admission appearance capability not selected".into());
+    }
+    let (before_bytes, before) = raw_snapshot(&mut client)?;
+    citizen(&before.catalogue)?;
+    let actor = own_binding(&client, &before)?.entity;
+    let before_look = visible_look(&mut client)?;
+    require_peer_look(&mut observer, actor, &before_look).await?;
+    let colours = match before
+        .catalogue
+        .selected
+        .as_ref()
+        .map(|s| s.selection.colours)
+    {
+        Some([4, 3, 2, 1]) => [1, 2, 3, 4],
+        _ => [4, 3, 2, 1],
+    };
+    let selection = appearance::Selection {
+        outfit_key: CITIZEN.to_owned(),
+        colours,
+        addons: 0,
+        mount_key: None,
+    };
+    let expected_look = appearance::Look::Outfit {
+        look_type: FEMALE_CITIZEN_LOOK,
+        colours,
+        addons: 0,
+    };
+    if before_look == expected_look {
+        return Err("step=select visible look already equals target".into());
+    }
+    let revision = content_revision()?;
+    let request = appearance::Change {
+        context: before.catalogue.context,
+        expected_root_revision: before.catalogue.root_revision,
+        prior: before.catalogue.selected.clone(),
+        selection: selection.clone(),
+        content_revision: revision.clone(),
+    };
+    let mut after = before.clone();
+    let mut first =
+        commit_observed(&mut client, &mut after, &request, &expected_look, "commit").await?;
+    require_peer_look(&mut observer, actor, &expected_look).await?;
+    evidence("S06_CLIENT_CHECK peer=exact-appearance-after-commit");
+    let binding = own_binding(&client, &after)?.clone();
+    let control = appearance::Change {
+        context: after.catalogue.context,
+        expected_root_revision: after.catalogue.root_revision,
+        prior: after.catalogue.selected.clone(),
+        selection: appearance::Selection {
+            colours: [5, 6, 7, 8],
+            ..selection.clone()
+        },
+        content_revision: revision.clone(),
+    };
+    first.files.push(("s06-before.bin".into(), before_bytes));
+    let files = &mut first.files;
     let mut refusals = String::new();
     for addon in [1, 2] {
-        let mut forbidden = selection.clone();
-        forbidden.addons = addon;
-        let refusal = appearance::Change {
-            context: after.catalogue.context,
-            expected_root_revision: after.catalogue.root_revision,
-            prior: after.catalogue.selected.clone(),
-            selection: forbidden,
-            content_revision: revision.clone(),
-        };
+        let mut refusal = control.clone();
+        refusal.selection.addons = addon;
         let refused = change(&mut client, &refusal).await?;
         if refused.status != CommandStatus::Rejected
             || appearance::ChangeResult::decode(&refused.payload)
@@ -300,6 +365,13 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         }
         require_look(&visible_look(&mut client)?, &expected_look)
             .map_err(|error| format!("step=refusal addon={addon} {error}"))?;
+        observer
+            .service_liveness(Duration::from_millis(500))
+            .await?;
+        observer.take_events();
+        if peer_look(&mut observer, actor).as_ref() != Some(&expected_look) {
+            return Err(format!("step=refusal addon={addon} changed peer look").into());
+        }
         files.push((format!("s06-refusal-{addon}.bin"), refused.payload));
         files.push((
             format!("s06-refused-request-{addon}.bin"),
@@ -315,6 +387,22 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
             "S06_CLIENT_CHECK addon={addon} status=Rejected visible-look=unchanged"
         ));
     }
+    let control_look = appearance::Look::Outfit {
+        look_type: FEMALE_CITIZEN_LOOK,
+        colours: control.selection.colours,
+        addons: 0,
+    };
+    let second =
+        commit_observed(&mut client, &mut after, &control, &control_look, "control").await?;
+    require_peer_look(&mut observer, actor, &control_look).await?;
+    evidence("S06_CLIENT_CHECK valid-control=committed peer=exact-appearance-after-control");
+    files.extend(second.files);
+    let selected_revision = after
+        .catalogue
+        .selected
+        .as_ref()
+        .ok_or("control selection absent")?
+        .revision;
     let session = client.join_snapshot().game_session_id;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -331,11 +419,11 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     citizen(&persisted.catalogue)?;
     require_committed_binding(
         own_binding(&fresh, &persisted)?,
-        &expected_look,
+        &control_look,
         selected_revision,
     )
     .map_err(|error| format!("step=relog {error}"))?;
-    require_look(&visible_look(&mut fresh)?, &expected_look)
+    require_look(&visible_look(&mut fresh)?, &control_look)
         .map_err(|error| format!("step=relog {error}"))?;
     evidence("S06_CLIENT_CHECK relog=exact-catalogue-and-visible-look");
     if fresh.session_mut().logout().await?.result
@@ -343,15 +431,18 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     {
         return Err("fresh appearance logout refused".into());
     }
-    let [head, body, legs, feet] = colours;
-    let expected = format!(
-        "outfit={CITIZEN}\ncolours={head},{body},{legs},{feet}\ncommitted={committed}\ncontent_revision={revision}\nsession={}\ncommit_id={}\ncommit_sequence={}\ncommit_status={:?}\nevent_sequence={sequence}\nevent_base={base}\nevent_new={new}\n{refusals}",
+    if observer.session_mut().logout().await?.result
+        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
+    {
+        return Err("observer logout refused".into());
+    }
+    first.expected = format!(
+        "session={}\n{}{refusals}{}",
         uuid_text(session.as_bytes()),
-        commit.command_id,
-        commit.server_sequence,
-        commit.status,
+        first.expected,
+        second.expected,
     );
-    Ok(Observed { files, expected })
+    Ok(first)
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
@@ -413,12 +504,18 @@ fn s06_citizen_entitlement_and_visible_look_guards_reject_false_positives() -> T
         palette: Vec::new(),
         outfits: vec![appearance::OutfitOption {
             key: CITIZEN.into(),
-            look_type: 128,
+            look_type: FEMALE_CITIZEN_LOOK,
             permitted_addons: 0,
         }],
         mounts: Vec::new(),
     };
     citizen(&catalogue)?;
+    catalogue.outfits[0].look_type = 128;
+    assert!(
+        citizen(&catalogue).is_err(),
+        "female fixture accepted the male Citizen look"
+    );
+    catalogue.outfits[0].look_type = FEMALE_CITIZEN_LOOK;
     for invalid in [1, 2, 3] {
         catalogue.outfits[0].permitted_addons = invalid;
         assert!(
@@ -427,24 +524,24 @@ fn s06_citizen_entitlement_and_visible_look_guards_reject_false_positives() -> T
         );
     }
     let expected = appearance::Look::Outfit {
-        look_type: 128,
+        look_type: FEMALE_CITIZEN_LOOK,
         colours: [4, 3, 2, 1],
         addons: 0,
     };
     require_look(&expected, &expected)?;
     for wrong in [
         appearance::Look::Outfit {
-            look_type: 128,
+            look_type: FEMALE_CITIZEN_LOOK,
             colours: [4, 3, 2, 1],
             addons: 1,
         },
         appearance::Look::Outfit {
-            look_type: 128,
+            look_type: FEMALE_CITIZEN_LOOK,
             colours: [0; 4],
             addons: 0,
         },
         appearance::Look::Outfit {
-            look_type: 136,
+            look_type: 128,
             colours: [4, 3, 2, 1],
             addons: 0,
         },

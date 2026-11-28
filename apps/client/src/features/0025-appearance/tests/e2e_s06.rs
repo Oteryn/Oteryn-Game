@@ -83,112 +83,151 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
     };
 
     let before = wire::Snapshot::decode(&read("s06-before.bin")?).map_err(|e| format!("{e:?}"))?;
-    let committed = number("committed")?;
-    let outfit = value("outfit")?;
-    assert_eq!(outfit, "oteryn:content.outfit.citizen_outfits");
-    let colours = value("colours")?;
+    let outfit = "oteryn:content.outfit.citizen_outfits";
     let mut panel = Panel {
         selected: true,
         ..Panel::default()
     };
-    catalogue(&mut panel, before.catalogue.clone());
+    assert!(
+        before
+            .catalogue
+            .outfits
+            .iter()
+            .any(|entry| entry.key == outfit
+                && entry.look_type == 136
+                && entry.permitted_addons == 0)
+    );
+    catalogue(&mut panel, before.catalogue);
     assert!(
         panel
             .summary
             .contains(&format!("Outfit: {outfit}; allowed addon mask: 0"))
     );
-    panel.fields = [
-        outfit.into(),
-        "0".into(),
-        String::new(),
-        colours.into(),
-        value("content_revision")?.into(),
-    ];
-    let (mut applying, change) = pending(&panel)?;
-    assert_eq!(
-        (change.capability, change.kind),
-        (
-            wire::CAPABILITY_APPEARANCE_V1,
-            wire::COMMAND_TYPE_APPEARANCE_CHANGE
-        )
-    );
-    assert_eq!(change.payload, read("s06-request.bin")?);
-    let sent = wire::Change::decode(&change.payload).map_err(|e| format!("{e:?}"))?;
-    assert_ne!(
-        before
-            .catalogue
-            .selected
-            .as_ref()
-            .map(|selected| &selected.selection),
-        Some(&sent.selection)
-    );
-
-    let commit = reply("commit", "s06-commit.bin", CommandStatus::Accepted)?;
-    assert!(commit.command_id > 0 && commit.server_sequence > 0);
-    let event_sequence = number("event_sequence")?;
-    let base_revision = number("event_base")?;
-    let new_revision = number("event_new")?;
-    assert!(
-        event_sequence > 0
-            && event_sequence != commit.server_sequence
-            && new_revision > base_revision
-    );
-    let event_catalogue = wire::Catalogue::decode(&read("s06-catalogue-event.bin")?)
-        .map_err(|error| format!("{error:?}"))?;
-    let mut event = Some(oteryn_session::SessionEvent::Appearance(
-        oteryn_session::AppliedDelta {
-            server_sequence: event_sequence,
-            base_revision,
-            new_revision,
-            value: oteryn_session::AppearanceUpdate::Catalogue(event_catalogue.clone()),
-        },
-    ));
-    if event_sequence < commit.server_sequence {
-        applying = show_event(
-            applying,
-            event.take().ok_or("missing earlier appearance event")?,
+    let replay = |mut panel: Panel, label: &str, previous: (u64, u64)| {
+        let committed = number(&format!("{label}_revision"))?;
+        let request_bytes = read(&format!("s06-{label}-request.bin"))?;
+        let decoded = wire::Change::decode(&request_bytes).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(decoded.selection.outfit_key, outfit);
+        assert_eq!(decoded.selection.addons, 0);
+        assert_eq!(decoded.selection.mount_key, None);
+        let [head, body, legs, feet] = decoded.selection.colours;
+        panel.fields = [
+            outfit.into(),
+            "0".into(),
+            String::new(),
+            format!("{head},{body},{legs},{feet}"),
+            decoded.content_revision.clone(),
+        ];
+        let (mut applying, change) = pending(&panel)?;
+        assert_eq!(
+            (change.capability, change.kind),
+            (
+                wire::CAPABILITY_APPEARANCE_V1,
+                wire::COMMAND_TYPE_APPEARANCE_CHANGE
+            )
         );
-    }
-    let confirmed_before_reply = applying.confirmed.clone();
-    apply(&mut applying, &change, &commit);
-    assert!(!applying.pending);
+        assert_eq!(change.payload, request_bytes);
+        let sent = decoded;
+        assert_ne!(
+            panel.confirmed.as_ref().map(|selected| &selected.selection),
+            Some(&sent.selection)
+        );
+
+        let commit = reply(label, &format!("s06-{label}.bin"), CommandStatus::Accepted)?;
+        assert!(commit.command_id > previous.0 && commit.server_sequence > previous.1);
+        let event_sequence = number(&format!("{label}_event_sequence"))?;
+        let base_revision = number(&format!("{label}_event_base"))?;
+        let new_revision = number(&format!("{label}_event_new"))?;
+        assert!(
+            event_sequence > previous.1
+                && event_sequence != commit.server_sequence
+                && new_revision > base_revision
+        );
+        let event_catalogue = wire::Catalogue::decode(&read(&format!("s06-{label}-event.bin"))?)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut event = Some(oteryn_session::SessionEvent::Appearance(
+            oteryn_session::AppliedDelta {
+                server_sequence: event_sequence,
+                base_revision,
+                new_revision,
+                value: oteryn_session::AppearanceUpdate::Catalogue(event_catalogue.clone()),
+            },
+        ));
+        if event_sequence < commit.server_sequence {
+            applying = show_event(
+                applying,
+                event.take().ok_or("missing earlier appearance event")?,
+            );
+        }
+        let confirmed_before_reply = applying.confirmed.clone();
+        apply(&mut applying, &change, &commit);
+        assert!(!applying.pending);
+        assert_eq!(
+            applying.feedback,
+            format!("Appearance committed at revision {committed}; catalogue updates follow")
+        );
+        assert_eq!(applying.confirmed, confirmed_before_reply);
+
+        if let Some(event) = event {
+            assert_eq!(applying.confirmed, panel.confirmed);
+            applying = show_event(applying, event);
+        }
+        assert!(
+            event_catalogue
+                .outfits
+                .iter()
+                .any(|entry| entry.key == outfit
+                    && entry.look_type == 136
+                    && entry.permitted_addons == 0)
+        );
+        let confirmed = applying
+            .confirmed
+            .as_ref()
+            .ok_or("live event did not confirm selection")?;
+        assert_eq!(confirmed.selection, sent.selection);
+        assert_eq!(confirmed.revision, committed);
+        assert_eq!(applying.catalogue.as_ref(), Some(&event_catalogue));
+        assert_eq!(event_catalogue.root_revision, committed);
+        assert!(applying.summary.starts_with(&format!(
+            "Current outfit: {outfit}\r\nAddons: 0\r\nMount: None\r\nColours: {:?}\r\n",
+            sent.selection.colours
+        )));
+
+        Ok::<_, String>((
+            applying,
+            change,
+            sent,
+            commit.command_id,
+            commit.server_sequence.max(event_sequence),
+        ))
+    };
+    let (applying, change, prior_request, mut last_id, mut last_sequence) =
+        replay(panel, "commit", (0, 0))?;
+    let control_request =
+        wire::Change::decode(&read("s06-control-request.bin")?).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(control_request.context, prior_request.context);
     assert_eq!(
-        applying.feedback,
-        format!("Appearance committed at revision {committed}; catalogue updates follow")
+        control_request.content_revision,
+        prior_request.content_revision
     );
-    assert_eq!(applying.confirmed, confirmed_before_reply);
-
-    if let Some(event) = event {
-        assert_eq!(applying.confirmed, before.catalogue.selected);
-        applying = show_event(applying, event);
-    }
-    let confirmed = applying
-        .confirmed
-        .as_ref()
-        .ok_or("live event did not confirm selection")?;
-    assert_eq!(confirmed.selection, sent.selection);
-    assert_eq!(confirmed.revision, committed);
-    assert_eq!(applying.catalogue.as_ref(), Some(&event_catalogue));
-    assert_eq!(event_catalogue.root_revision, committed);
-    assert!(applying.summary.starts_with(&format!(
-        "Current outfit: {outfit}\r\nAddons: 0\r\nMount: None\r\nColours: {:?}\r\n",
-        sent.selection.colours
-    )));
-
-    let mut last_id = commit.command_id;
-    let mut last_sequence = commit.server_sequence.max(event_sequence);
+    assert_eq!(control_request.prior, applying.confirmed);
+    assert_eq!(
+        control_request.expected_root_revision,
+        number("commit_revision")?
+    );
+    assert_ne!(
+        control_request.selection.colours,
+        prior_request.selection.colours
+    );
     for addon in [1, 2] {
         let refused_request = read(&format!("s06-refused-request-{addon}.bin"))?;
         let refused = wire::Change::decode(&refused_request).map_err(|e| format!("{e:?}"))?;
-        let mut expected_change = wire::Change {
-            context: event_catalogue.context,
-            expected_root_revision: committed,
-            prior: applying.confirmed.clone(),
-            ..sent.clone()
-        };
+        let mut expected_change = control_request.clone();
         expected_change.selection.addons = addon;
         assert_eq!(refused, expected_change);
         let mut bad = applying.clone();
+        let [head, body, legs, feet] = control_request.selection.colours;
+        bad.fields[3] = format!("{head},{body},{legs},{feet}");
         bad.fields[1] = addon.to_string();
         assert_eq!(
             command(&bad, Intent::Apply).err().as_deref(),
@@ -221,6 +260,7 @@ fn e2e_s06_outfit_commit_and_unearned_refusal_replay() -> Result<(), String> {
         // Negative variants exercise result validation after the actual live refusal.
         assert_invalid_replies(&applying, &probe, &refusal);
     }
+    replay(applying, "control", (last_id, last_sequence))?;
     Ok(())
 }
 
