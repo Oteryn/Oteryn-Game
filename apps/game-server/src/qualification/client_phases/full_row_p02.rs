@@ -248,10 +248,6 @@ async fn observe_combat(
     }
 }
 
-pub(super) async fn kill(c: &mut DevClientSession, key: &str) -> TestResult {
-    fight(c, key).await.map(|_| ())
-}
-
 async fn fight(c: &mut DevClientSession, key: &str) -> TestResult<oteryn_dev_client::EntityRef> {
     let session = uuid_text(c.join_snapshot().game_session_id.as_bytes());
     let answer = request_spawn(session, key.to_owned())
@@ -354,7 +350,7 @@ fn credit_belongs_to_death(death_key: &[u8], principal: &[u8; 16], occurrence: &
         && occurrence[9..] == digest[3..10]
 }
 
-async fn credited_death(
+pub(super) async fn credited_death(
     c: &mut DevClientSession,
     clients: &SeamClients<'_>,
     key: &str,
@@ -494,6 +490,7 @@ const DEEPLING_AXE: u32 = 13991;
 async fn equip_boss_axe(
     mut client: DevClientSession,
     clients: &SeamClients<'_>,
+    funded: bool,
 ) -> TestResult<DevClientSession> {
     let reference = provisioning::item_reference(&provisioning::item_index()?, DEEPLING_AXE)?;
     let session = client.join_snapshot().game_session_id;
@@ -506,6 +503,15 @@ async fn equip_boss_axe(
     evidence(&format!(
         "P02 FIXTURE input=weapon item={DEEPLING_AXE} quantity=1 result=accepted"
     ));
+    if funded {
+        request_fixture_control(
+            uuid_text(session.as_bytes()),
+            "--profile",
+            "item-3031-20".to_owned(),
+        )
+        .await?;
+        evidence("P02 FIXTURE input=gold item=3031 quantity=20 result=accepted");
+    }
     logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0x71).await?;
@@ -560,11 +566,11 @@ pub(super) async fn prepare_combat(
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let boosted_combat = row == "P02.full";
-    let prerequisites = if boosted_combat {
-        "level 100, Deepling Axe, boss placement"
+    let funded = row == "P02.client";
+    let prerequisites = if funded {
+        "level 100, Deepling Axe, boss placement, 20 gold"
     } else {
-        "level 100, axe, boss placement"
+        "level 100, Deepling Axe, boss placement"
     };
     character_prep::declare_seeded(
         row,
@@ -572,16 +578,8 @@ pub(super) async fn prepare_combat(
         "combat inputs are prepared; credit and slots must come from live gameplay",
     );
     let client = connect_world(clients, tag).await?;
-    let c = if boosted_combat {
-        provisioning::provision_once(client, clients, 1, 100).await?
-    } else {
-        provisioning::provision_fixture(client, clients, 1, 100).await?
-    };
-    let mut c = if boosted_combat {
-        equip_boss_axe(c, clients).await?
-    } else {
-        c
-    };
+    let c = provisioning::provision_once(client, clients, 1, 100).await?;
+    let mut c = equip_boss_axe(c, clients, funded).await?;
     prepare_boss_ground(&mut c, world).await?;
     let modes = FightModes {
         fight_mode: FightMode::Offensive,

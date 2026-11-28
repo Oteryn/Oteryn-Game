@@ -1,12 +1,10 @@
 //! P02 replay feeds live replies through the production reducer after matching the requests.
 use super::*;
-use oteryn_client_runtime::{
-    boss_encounter::bosstiary_slots::BossSlotReply,
-    raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult},
-};
+use oteryn_client_runtime::raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult};
 
 const BOSS: &str = "oteryn:creature.rotworm_queen";
 const RAT: &str = "oteryn:creature.rat";
+const BELOW_PROWESS: &str = "oteryn:creature.ferumbras";
 type Error = Box<dyn std::error::Error>;
 
 struct Exchange {
@@ -90,11 +88,19 @@ fn assert_credit(panel: &BossEncounterPanel) {
     );
 }
 
-fn assert_slots(panel: &BossEncounterPanel, status: u8, boss: &str, ready: u64) {
+fn assert_slots(
+    panel: &BossEncounterPanel,
+    status: u8,
+    boss: &str,
+    ready: u64,
+    unlocked: u8,
+    bonus: u16,
+    points: u32,
+) {
     let slots = panel.slots.as_ref();
     assert_eq!(
         slots.map(|value| (value.status, value.unlocked, value.bonus, value.points)),
-        Some((status, 1, 26, 10))
+        Some((status, unlocked, bonus, points))
     );
     assert_eq!(
         slots.map(|value| value.bosses.as_slice()),
@@ -106,11 +112,11 @@ fn assert_slots(panel: &BossEncounterPanel, status: u8, boss: &str, ready: u64) 
     } else {
         "Updated"
     };
-    let fee = slots.map_or(0, |value| value.remove_fee);
+    assert_eq!(slots.map(|value| value.remove_fee), Some(0));
     assert_eq!(
         panel.summary,
         format!(
-            "Boss slots: {label}\r\n1: {boss} | 2: \r\nUnlocked mask: 1 | Bonus: 26 | Points: 10\r\nRemoval fee: {fee} | Ready at: {ready}"
+            "Boss slots: {label}\r\n1: {boss} | 2: \r\nUnlocked mask: {unlocked} | Bonus: {bonus} | Points: {points}\r\nRemoval fee: 0 | Ready at: {ready}"
         )
     );
 }
@@ -157,11 +163,26 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
         return Ok(());
     };
     let directory = std::path::Path::new(&directory);
+    let locked = read_exchange(directory, "p02-locked.bin")?;
     let cooldowns = read_exchange(directory, "p02-cooldowns.bin")?;
     let slots = read_exchange(directory, "p02-slots.bin")?;
     let refused = read_exchange(directory, "p02-refused.bin")?;
+    let ineligible_catalogue = read_exchange(directory, "p02-ineligible-catalogue.bin")?;
+    let ineligible = read_exchange(directory, "p02-ineligible.bin")?;
+    let catalogue = read_exchange(directory, "p02-catalogue.bin")?;
+    let ready = read_exchange(directory, "p02-ready.bin")?;
     let invested = read_exchange(directory, "p02-equipped.bin")?;
-    let exchanges = [&cooldowns, &slots, &refused, &invested];
+    let exchanges = [
+        &locked,
+        &cooldowns,
+        &slots,
+        &refused,
+        &ineligible_catalogue,
+        &ineligible,
+        &catalogue,
+        &ready,
+        &invested,
+    ];
     if cooldowns.session == [0; 16]
         || exchanges.iter().any(|item| {
             item.session != cooldowns.session
@@ -180,6 +201,8 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
         selected: true,
         ..BossEncounterPanel::default()
     };
+    apply_exchange(&mut panel, Intent::SlotsQuery, &locked)?;
+    assert_slots(&panel, 0, "", 0, 0, 25, 0);
     assert!(panel.snapshot.is_none());
     apply_exchange(&mut panel, Intent::Refresh, &cooldowns)?;
     assert_credit(&panel);
@@ -195,38 +218,59 @@ fn e2e_p02_replays_bosstiary_progress_slots_and_refusal() -> Result<(), Error> {
                 taints.rotten_blood_final
             ) == (0, 0, 0, false))
     );
-    assert!(panel.slots.is_none());
-    apply_exchange(&mut panel, Intent::SlotsQuery, &slots)?;
-    assert_slots(&panel, 0, "", 0);
-    let empty = panel.slots.clone().ok_or("P02 UI slot state missing")?;
+    apply_exchange(&mut panel, Intent::SlotsDetailed, &slots)?;
+    assert_slots(&panel, 0, "", 0, 1, 26, 10);
+    let mut empty = panel.slots.clone().ok_or("P02 UI slot state missing")?;
+    let detailed = empty.details.take().ok_or("P02 UI slot details missing")?;
+    assert_eq!((detailed.base_bonus, detailed.bonuses), (26, [0, 0]));
+    assert_ne!(detailed.boosted, BELOW_PROWESS);
+    empty.status = 1;
     panel.fields = [RAT.into(), "1".into(), String::new()];
     apply_exchange(&mut panel, Intent::SlotEquip, &refused)?;
-    assert_slots(&panel, 1, "", 0);
-    assert_eq!(
-        panel.slots,
-        Some(BossSlotReply {
-            status: 1,
-            ..empty.clone()
-        })
-    );
+    assert_slots(&panel, 1, "", 0, 1, 26, 10);
+    assert_eq!(panel.slots.as_ref(), Some(&empty));
 
-    panel.fields[0] = BOSS.into();
-    apply_exchange(&mut panel, Intent::SlotEquip, &invested)?;
-    let equipped =
-        BossSlotReply::decode(&invested.reply.payload).ok_or("P02 assigned slot reply")?;
-    assert!(equipped.ready_at_ms > 0);
-    assert_slots(&panel, 0, BOSS, equipped.ready_at_ms);
-    assert_eq!(
-        panel.slots,
-        Some(BossSlotReply {
-            bosses: [BOSS.into(), String::new()],
-            ready_at_ms: equipped.ready_at_ms,
-            ..empty
-        })
+    panel.browser_search = "Ferumbras".into();
+    apply_exchange(&mut panel, Intent::Catalogue, &ineligible_catalogue)?;
+    assert!(
+        panel
+            .catalogue
+            .as_ref()
+            .is_some_and(
+                |page| page.entries.iter().any(|entry| entry.key == BELOW_PROWESS
+                    && entry.category == 3
+                    && entry.kills == 0
+                    && entry.thresholds[0] == 1
+                    && entry.stage() == 0)
+            )
     );
+    panel.fields[0] = BELOW_PROWESS.into();
+    apply_exchange(&mut panel, Intent::SlotEquip, &ineligible)?;
+    assert_slots(&panel, 1, "", 0, 1, 26, 10);
+    assert_eq!(panel.slots.as_ref(), Some(&empty));
+
+    panel.browser_search = "Rotworm Queen".into();
+    apply_exchange(&mut panel, Intent::Catalogue, &catalogue)?;
+    apply_exchange(&mut panel, Intent::SlotsDetailed, &ready)?;
+    assert_slots(&panel, 0, "", 0, 1, 26, 10);
+    panel.fields[0] = BOSS.into();
+    apply_exchange(&mut panel, Intent::SlotEquipSelected, &invested)?;
+    let equipped = panel.slots.as_ref().ok_or("P02 assigned slot reply")?;
+    let details = equipped
+        .details
+        .as_ref()
+        .ok_or("P02 assignment server timestamp missing")?;
+    let expected_ready = details
+        .now
+        .checked_add(490)
+        .ok_or("P02 assignment timestamp overflow")?;
+    assert_ne!(details.now, 0);
+    assert_eq!((details.base_bonus, details.bonuses), (26, [26, 0]));
+    assert_eq!(details.boosted, detailed.boosted);
+    assert_slots(&panel, 0, BOSS, expected_ready, 1, 26, 10);
     assert_malformed_preserves_state(&mut panel, &slots, &cooldowns)?;
     println!(
-        "SEAM_EVIDENCE P02_REPLAY progress=exact requests=4 refusal=unlocked assignment=exact malformed=2"
+        "SEAM_EVIDENCE P02_REPLAY progress=exact requests=9 refusals=rat,below-prowess assignment=exact cooldown_ms=490 malformed=2"
     );
     Ok(())
 }
