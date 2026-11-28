@@ -1422,7 +1422,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || callback.storage.len() + callback.operation_count() > MAX_EFFECTS
             || callback
                 .minimum_level
-                .is_some_and(|level| level == 0 || !callback.has_personal_state())
+                .is_some_and(|level| level == 0 || (!callback.has_personal_state()
+                    && !(matches!(callback.key.as_str(), "oteryn:quest-callback/galthen-forest-entry" | "oteryn:quest-callback/galthen-forest-return")
+                        && callback.trigger == Trigger::StepIn && callback.teleport.is_some() && callback.return_on_failure)))
             || callback.admission.as_ref().is_some_and(|a| {
                 (!a.regular_blessings && !a.promotion && !a.premium)
                     || callback.actor_kind != ActorKind::Player
@@ -3064,7 +3066,7 @@ mod tests {
     }
 
     #[test]
-    fn galthen_level_gated_routes_load_with_fenced_travel() -> Result<(), String> {
+    fn galthen_level_gated_routes_load_without_writing_quest_progress() -> Result<(), String> {
         let callbacks = load()?;
         for (suffix, trigger, from, to, level, appearance) in [
             (
@@ -3095,20 +3097,15 @@ mod tests {
             assert_eq!(callback.selector.appearance, appearance);
             assert_eq!(callback.teleport, Some(position(to)));
             assert_eq!(callback.minimum_level, Some(level));
-            assert!(callback.requires_world_admission);
+            assert!(callback.storage.is_empty());
+            assert!(!callback.requires_durable_commit());
             assert_eq!(callback.return_on_failure, trigger == Trigger::StepIn);
         }
         let state = super::super::loader::load_embedded_quest_state("content-1")
             .map_err(|error| format!("{error:?}"))?;
         for suffix in ["forest-entry", "forest-return"] {
             let key = format!("oteryn:quest-callback/galthen-{suffix}");
-            assert!(
-                !state
-                    .catalogue()
-                    .transition(&key)
-                    .ok_or("fenced route transition")?
-                    .completes
-            );
+            assert!(state.catalogue().transition(&key).is_none());
         }
         Ok(())
     }

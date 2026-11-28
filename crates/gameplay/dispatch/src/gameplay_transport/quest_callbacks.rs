@@ -2078,6 +2078,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
             let optional_pvp = self.special_movement_policy(permit, actor, session).await;
             let mut final_position = None;
+            if let Some(minimum) = callback
+                .minimum_level
+                .filter(|_| !callback.requires_durable_commit())
+            {
+                let (runtime, states) = self.callback_guards().await;
+                if states
+                    .get(&runtime, actor, session)
+                    .is_none_or(|s| s.character_facts().level < minimum)
+                {
+                    return (UseDisposition::Rejected, optional_pvp, None);
+                }
+            }
             let result = match observation {
                 Ok(observation) => {
                     Box::pin(self.execute_quest_callback(
@@ -2142,7 +2154,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 runtime.read_actor_position(actor).unwrap_or(entered)
             }
-            Err(_) if callback.is_read_only() => {
+            Err(_)
+                if callback.is_read_only()
+                    || (callback.minimum_level.is_some()
+                        && !callback.requires_durable_commit()) =>
+            {
                 // This path cannot have a durable commit to reconcile. A cancelled
                 // read returns to the step origin rather than reserving a write.
                 let optional_pvp = self.special_movement_policy(permit, actor, session).await;

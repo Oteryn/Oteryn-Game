@@ -311,7 +311,8 @@ pub fn roll_calendar(world: &[u8; 16], reset_epoch: u64, month: u8, day: u8) -> 
     })
 }
 
-pub(crate) fn draw_for_epoch(world: &[u8; 16], epoch: u64, purpose: &str) -> u64 {
+/// A purpose-specific world draw shared by all channels until the next reset.
+pub fn draw_for_epoch(world: &[u8; 16], epoch: u64, purpose: &str) -> u64 {
     let (root, occurrence) = decision_context(world, epoch);
     draw(&root, occurrence, purpose)
 }

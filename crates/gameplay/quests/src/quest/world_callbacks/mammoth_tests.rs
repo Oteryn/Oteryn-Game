@@ -67,6 +67,22 @@ fn barbarian_horn_loader_binds_donor_effects_at_the_targets() -> Result<(), Stri
     ] {
         let key = format!("oteryn:quest-callback/{key}");
         let callback = callbacks.iter().find(|row| row.key == key).ok_or(&key)?;
+        if callback.item_on_target.is_some() {
+            let transition = super::primary_transition(callback)?;
+            let loaded = crate::quest::loader::load_embedded_quest_state("horn")
+                .map_err(|e| format!("{e:?}"))?;
+            for stage in -1..=8 {
+                let tracks = std::collections::BTreeMap::from([(
+                    barbarian_mead::TRACKS[0].to_owned(),
+                    stage,
+                )]);
+                let changes = loaded
+                    .catalogue()
+                    .evaluate(&transition, &tracks, 0)
+                    .map_err(|e| format!("{key}: {e:?}"))?;
+                assert!(changes.iter().all(|change| change.before == change.after));
+            }
+        }
         let magic = callback.effects.magic.as_ref().ok_or(&key)?;
         assert_eq!(Some(magic.position), callback.selector.position, "{key}");
         assert_eq!(magic.effect, effect, "{key}");

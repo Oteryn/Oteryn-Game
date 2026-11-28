@@ -790,14 +790,10 @@ async fn spike_surveys(
         let key = format!("oteryn:quest-reward/l12-spike-tracking-survey-{phase}");
         let survey = rows.iter().find(|row| row.key == key)
             .and_then(|row| row.survey.as_ref()).ok_or("survey")?;
-        let areas = serde_json::to_value(survey)?;
-        let at = areas["areas"].as_array().ok_or("survey areas")?.iter().find_map(|area| {
-            let p: oteryn_gameplay_quests::quest::world_callbacks::Position =
-                serde_json::from_value(area["minimum"].clone()).ok()?;
-            let at = MovementLocalPosition { x: p.x.into(), y: p.y.into(), floor: -i16::from(p.floor) };
-            survey.clue(character.as_bytes(), owner.reset_epoch, at.x, at.y, at.floor)
-                .is_none().then_some(at)
-        }).ok_or("selected survey area")?;
+        let (x, y, floor) = survey.presence(character.as_bytes(), 0).ok_or("presence")?;
+        assert!((32171..=32352).contains(&x) && (32512..=32671).contains(&y));
+        let at = MovementLocalPosition { x, y, floor };
+        assert!(survey.clue(character.as_bytes(), 0, 0, x, y, floor).is_none());
         {
             let mut runtime = owner.runtime.lock().await;
             let before = runtime.read_actor_position(actor).map_err(debug)?;

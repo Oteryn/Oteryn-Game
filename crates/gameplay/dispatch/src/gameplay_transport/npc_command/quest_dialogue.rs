@@ -242,6 +242,21 @@ fn reply(
     }
 }
 
+fn close_delivered_parcel(
+    chat: &ChatRuntime,
+    session: GameSessionId,
+    context: &Context,
+    reply: &mut NpcTalkOutcome,
+) {
+    if context.2 == "oteryn:npc.gnome_trooper"
+        && let Some(conversation) = &mut reply.conversation
+        && let Some(npc) = chat.engaged(session)
+        && chat.end_engagement(session, npc)
+    {
+        conversation.open = None;
+    }
+}
+
 /// A receipt remains successful when its original conversation has ended. Only
 /// the current conversation may receive dialogue, including a refusal line.
 /// Reconciliation must not reopen an older generation or publish into another
@@ -538,7 +553,7 @@ pub(super) async fn apply(
                     &callback.magic_effects,
                 );
             }
-            publish_committed_reply(
+            let mut reply = publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
                     &runtime,
@@ -548,7 +563,14 @@ pub(super) async fn apply(
                 ),
                 &step.context,
                 rendered,
-            )
+            );
+            close_delivered_parcel(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &mut reply,
+            );
+            reply
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
@@ -659,7 +681,7 @@ pub(in crate::gameplay_transport) async fn resume(
                 );
                 rendered.inventory_changed = value_callback;
                 let runtime = admission.runtime.lock().await;
-                Some(publish_committed_reply(
+                let mut reply = publish_committed_reply(
                     admission.states.npc_conversations.current_npc(
                         &admission.states.chat,
                         &runtime,
@@ -669,7 +691,14 @@ pub(in crate::gameplay_transport) async fn resume(
                     ),
                     &pending.context,
                     rendered,
-                ))
+                );
+                close_delivered_parcel(
+                    &admission.states.chat,
+                    command.game_session_id,
+                    &pending.context,
+                    &mut reply,
+                );
+                Some(reply)
             } else {
                 Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
             }

@@ -381,6 +381,30 @@ pub struct RewardCallback {
     pub sources: Vec<String>,
 }
 
+/// Crystal stores a deadline and refuses while deadline >= now. Native
+/// commissions store the last report time instead.
+pub fn spike_commission_wait(
+    accept: &str,
+    tracks: &std::collections::BTreeMap<String, i64>,
+    now: i64,
+) -> Option<i64> {
+    let track = match accept {
+        "oteryn:quest-reward/l12-spike-parcel-accept" => {
+            "oteryn:quest-progress/spike/lower/parcel/reported_at"
+        }
+        "oteryn:quest-reward/l12-spike-temperature-accept" => {
+            "oteryn:quest-progress/spike/temperature/reported_at"
+        }
+        "oteryn:quest-reward/l12-spike-tracking-accept" => {
+            "oteryn:quest-progress/spike/tracking/reported_at"
+        }
+        _ => return None,
+    };
+    let reported = *tracks.get(track)?;
+    let remaining = reported.saturating_add(72_000).saturating_sub(now);
+    (reported > 0 && remaining >= 0).then_some(remaining)
+}
+
 impl RewardCallback {
     /// Select the entire bundle using a zero-based percentile. The ordinary
     /// bundle comes first, followed by the alternatives in authored order.
@@ -883,9 +907,36 @@ fn the_common_elane_sale_is_the_only_fresh_sale_when_both_are_registered() -> Re
     Ok(())
 }
 
+pub const PARCEL_TRACK_PREFIX: &str = "oteryn:quest-progress/spike/lower/parcel/";
+pub const PARCEL_GREETING: &str = "Do you have something to deliver?";
+
+static CALLBACKS: OnceLock<Result<Vec<RewardCallback>, String>> = OnceLock::new();
+
+pub fn parcel_outpost(x: i32, y: i32, floor: i16) -> Option<&'static str> {
+    let rows = CALLBACKS
+        .get_or_init(|| embedded_document().map(|document| document.callbacks))
+        .as_ref()
+        .ok()?;
+    let row = rows.iter().find(|row| {
+        row.npc == "oteryn:npc.gnome_trooper"
+            && row
+                .npc_area
+                .as_ref()
+                .is_some_and(|area| area.contains(x, y, floor))
+    })?;
+    Some(&row.storage.first()?.track)
+}
+
+pub fn accepts_parcel(site: &str, tracks: &BTreeMap<String, i64>) -> bool {
+    (1..=4).contains(
+        tracks
+            .get("oteryn:quest-progress/spike/lower/parcel/progress")
+            .unwrap_or(&0),
+    ) && tracks.get(site).copied().unwrap_or(0) == 0
+}
+
 pub fn load() -> Result<Vec<RewardCallback>, String> {
     // The embedded sources do not change between quest receipts.
-    static CALLBACKS: OnceLock<Result<Vec<RewardCallback>, String>> = OnceLock::new();
     CALLBACKS
         .get_or_init(|| embedded_document().map(|document| document.callbacks))
         .clone()
@@ -2857,6 +2908,16 @@ mod tests {
                 1
             );
         }
+        for task in ["parcel", "temperature", "tracking"] {
+            let key = format!("oteryn:quest-reward/l12-spike-{task}-accept");
+            let callback = rows.iter().find(|c| c.key == key).ok_or("commission")?;
+            let clock = callback.state_ops.first().ok_or("report clock")?;
+            let tracks = std::collections::BTreeMap::from([(clock.track.clone(), 100_000)]);
+            let catalogue = loaded.catalogue();
+            let transition = catalogue.transition(&key).ok_or("acceptance")?;
+            assert!(catalogue.evaluate(transition, &tracks, 172_000).is_err());
+            assert!(catalogue.evaluate(transition, &tracks, 172_001).is_ok());
+        }
         let readings = rows
             .iter()
             .filter(|row| row.survey.is_some())
@@ -2868,9 +2929,9 @@ mod tests {
             .and_then(|row| row.survey.as_ref())
             .ok_or("thermometer survey")?;
         for player in [[0; 16], [1; 16]] {
-            assert_eq!(thermometer.clue(&player, 0, 32263, 32481, 13), None);
-            assert!(thermometer.clue(&player, 1, 32263, 32481, 13).is_some());
-            assert_eq!(thermometer.clue(&player, 1, 32163, 32558, 13), None);
+            assert_eq!(thermometer.clue(&player, 0, 0, 32263, 32481, 13), None);
+            assert!(thermometer.clue(&player, 0, 1, 32263, 32481, 13).is_some());
+            assert_eq!(thermometer.clue(&player, 0, 1, 32163, 32558, 13), None);
         }
         let ghost = readings
             .iter()
@@ -2884,6 +2945,23 @@ mod tests {
             2
         );
         assert_eq!(ghost.iter().filter(|row| row.take.len() == 1).count(), 1);
+        for row in ghost {
+            let detector = row.survey.as_ref().ok_or("detector")?;
+            let player = [7; 16];
+            let (x, y, z) = detector.presence(&player, 0).ok_or("presence")?;
+            assert_ne!(detector.presence(&player, 72001), Some((x, y, z)));
+            assert!(detector.clue(&player, 0, 0, x + 4, y + 4, z).is_none());
+            for (distance, expected) in [
+                (10, "to the east"),
+                (100, "far to the east"),
+                (275, "very far to the east"),
+            ] {
+                assert_eq!(
+                    detector.clue(&player, 0, 0, x - distance, y, z),
+                    Some(format!("The detector points {expected}."))
+                );
+            }
+        }
         Ok(())
     }
 

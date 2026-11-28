@@ -320,7 +320,27 @@ pub(super) fn prepare(
                     return Some(Choice {
                         transition: Some(callback.key.clone()),
                         next_topic: Some(Topic::from(callback.next_topic)),
-                        reply: callback.reply.clone(),
+                        reply: if callback.npc == "oteryn:npc.gnome_trooper"
+                            && callback
+                                .key
+                                .starts_with("oteryn:quest-reward/l12-spike-parcel-")
+                        {
+                            let phase =
+                                track_value("oteryn:quest-progress/spike/lower/parcel/progress")?;
+                            let lines = [
+                                "It's a pipe! What can be more relaxing for a gnome than to smoke his pipe after a day of duty at the front. At least it's a chance to do something really dangerous after all!",
+                                "Ah, a letter from home! Oh - I had no idea she felt that way! This is most interesting!",
+                                "It's a model of the gnomebase Alpha! For self-assembly! With toothpicks...! Yeeaah...! I guess.",
+                                "A medal of honour! At last they saw my true worth!",
+                            ];
+                            vec![
+                                lines
+                                    .get(usize::try_from(phase.checked_sub(1)?).ok()?)?
+                                    .to_string(),
+                            ]
+                        } else {
+                            callback.reply.clone()
+                        },
                     });
                 }
                 // Crystal storkus.lua:121-141 displays 20 minus the saved counter
@@ -378,6 +398,32 @@ pub(super) fn prepare(
             }) {
                 if !meets_level(offer.minimum_level, offer.maximum_level) {
                     return refusal(&offer.failure_reply);
+                }
+                let accept = match (offer.npc.as_str(), offer.next_topic) {
+                    ("oteryn:npc.gnomargery", 31) => {
+                        Some("oteryn:quest-reward/l12-spike-parcel-accept")
+                    }
+                    ("oteryn:npc.gnomargery", 32) => {
+                        Some("oteryn:quest-reward/l12-spike-temperature-accept")
+                    }
+                    ("oteryn:npc.gnomilly", 32) => {
+                        Some("oteryn:quest-reward/l12-spike-tracking-accept")
+                    }
+                    _ => None,
+                };
+                if let Some(key) = accept {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .ok()?;
+                    if let Some(wait) = reward_callbacks::spike_commission_wait(
+                        key,
+                        tracks,
+                        i64::try_from(now.as_secs()).ok()?,
+                    ) {
+                        return refusal(&[format!(
+                            "Sorry, you have to wait {wait} seconds before this task gets available again."
+                        )]);
+                    }
                 }
                 if let Some(key) = &offer.transition {
                     // Keep the original callback, value plan and saved-definition pin.
@@ -596,15 +642,27 @@ const JORGE: &str = "oteryn:npc.jorge";
 
 fn matches_menu_or_exact_keyword(npc: &str, keywords: &[String], text: &str) -> bool {
     keywords.iter().any(|word| {
-        word == text || (npc == JORGE && word == "souvenir" && message_contains(text, word))
+        word == text
+            || (matches!(
+                (npc, word.as_str()),
+                (
+                    "oteryn:npc.gnomargery",
+                    "deliver" | "delivery" | "temperature" | "report"
+                ) | ("oteryn:npc.gnomilly", "track" | "tracking" | "report")
+            ) && message_contains(text, word))
+            || (npc == JORGE && word == "souvenir" && message_contains(text, word))
     })
 }
 
 fn matches_reward_keyword(callback: &reward_callbacks::RewardCallback, text: &str) -> bool {
-    if callback.npc == "oteryn:npc.gnome_trooper"
-        && callback
-            .key
-            .starts_with("oteryn:quest-reward/l12-spike-parcel-")
+    if callback
+        .key
+        .strip_prefix("oteryn:quest-reward/l12-spike-")
+        .is_some_and(|name| {
+            name.starts_with("parcel-")
+                || name.starts_with("tracking-")
+                || name.starts_with("temperature-")
+        })
     {
         return callback
             .keywords

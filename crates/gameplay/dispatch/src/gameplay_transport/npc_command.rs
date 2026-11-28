@@ -904,7 +904,38 @@ pub(super) async fn npc_bank_talk(
             session,
             quest_shop::eligible_items(admission, session, native, blank_scroll_available),
         );
-    let ordinary = conversations.talk_admitted(
+    use oteryn_gameplay_quests::quest::reward_callbacks as rewards;
+    let parcel_site =
+        service_context::npc_in_talk_range(&runtime, actor, session, intent.npc_actor)
+            .filter(|npc| {
+                npc.key == "oteryn:npc.gnome_trooper"
+                    && admission
+                        .states
+                        .chat
+                        .npc_talk()
+                        .and_then(|book| book.get(&npc.key))
+                        .is_some_and(|entry| entry.matches_greeting(&intent.text))
+            })
+            .and_then(|npc| {
+                rewards::parcel_outpost(npc.position.x, npc.position.y, npc.position.floor)
+            });
+    if let Some(site) = parcel_site {
+        let eligible = admission
+            .states
+            .quest_sessions
+            .lock()
+            .ok()
+            .is_some_and(|sessions| {
+                sessions
+                    .get(&session)
+                    .and_then(|s| s.copy.as_ref())
+                    .is_some_and(|copy| rewards::accepts_parcel(site, copy.tracks()))
+            });
+        if !eligible {
+            return rejected();
+        }
+    }
+    let mut ordinary = conversations.talk_admitted(
         &admission.states.chat,
         &runtime,
         actor,
@@ -923,6 +954,12 @@ pub(super) async fn npc_bank_talk(
         && let Some(state) = sessions.get_mut(&session)
     {
         state.quest_dialogue.restart_topic();
+    }
+    if parcel_site.is_some()
+        && let Some(conversation) = &mut ordinary.conversation
+    {
+        conversation.lines = vec![rewards::PARCEL_GREETING.into()];
+        return ordinary;
     }
     if let Some(context) = conversations
         .current_npc(&admission.states.chat, &runtime, actor, session, &intent)

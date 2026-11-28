@@ -2910,7 +2910,10 @@
       ],
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/draconia/movement-exit_teleport.lua:1-36"
-      ]
+      ],
+      "effects": {
+        "teleport_effect": 11
+      }
     },
     {
       "key": "oteryn:quest-callback/draconia-lever-30006",
@@ -5564,7 +5567,6 @@
       },
       "lever": null,
       "reversible": false,
-      "requires_world_admission": true,
       "passages": [],
       "teleport": {
         "x": 32405,
@@ -5575,17 +5577,7 @@
         "teleport_effect": 11
       },
       "minimum_level": 250,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/galthen/forest-of-life-visited",
-          "minimum": 0,
-          "maximum": 1,
-          "set": 1
-        }
-      ],
-      "track_initials": {
-        "oteryn:quest-progress/galthen/forest-of-life-visited": 0
-      },
+      "storage": [],
       "offerings": [],
       "item_on_target": null,
       "return_on_failure": true,
@@ -5610,7 +5602,6 @@
       },
       "lever": null,
       "reversible": false,
-      "requires_world_admission": true,
       "passages": [],
       "teleport": {
         "x": 32424,
@@ -5621,17 +5612,7 @@
         "teleport_effect": 11
       },
       "minimum_level": 250,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/galthen/forest-of-life-visited",
-          "minimum": 0,
-          "maximum": 1,
-          "set": 1
-        }
-      ],
-      "track_initials": {
-        "oteryn:quest-progress/galthen/forest-of-life-visited": 0
-      },
+      "storage": [],
       "offerings": [],
       "item_on_target": null,
       "return_on_failure": true,

@@ -798,6 +798,9 @@ impl QuestStateCatalogue {
         {
             return Err(QuestRefusal::NotSupported);
         }
+        if reward_callbacks::spike_commission_wait(&transition.key, stored, now).is_some() {
+            return Err(QuestRefusal::StageMismatch);
+        }
         if let Some(nightmare) = world_callbacks::tower_nightmare_rank(&transition.key) {
             let qualifies = [world_callbacks::TOWER_BROTHERHOOD_RANK, nightmare]
                 .into_iter()

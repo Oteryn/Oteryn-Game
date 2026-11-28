@@ -81,9 +81,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
-          "minimum": 4,
+          "minimum": -1,
           "maximum": 8,
-          "set": 4,
+          "set": -1,
           "at_least": true
         }
       ],
@@ -135,9 +135,9 @@
       "storage": [
         {
           "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
-          "minimum": 4,
+          "minimum": -1,
           "maximum": 8,
-          "set": 4,
+          "set": -1,
           "at_least": true
         }
       ],

@@ -1031,6 +1031,20 @@ fn npc_answer(
         reply.text = greeting.to_owned();
         reply.continuation.clear();
     }
+    use oteryn_gameplay_quests::quest::reward_callbacks as rewards;
+    if prior != Some(reply.id)
+        && speaking.engaged == Some(reply.id)
+        && runtime.npc_key(reply.id) == Some("oteryn:npc.gnome_trooper")
+        && let Some((_, _, p, _)) = spots.iter().find(|(actor, ..)| *actor == reply.id)
+        && let Some(site) = rewards::parcel_outpost(p.x, p.y, i16::from(p.floor))
+    {
+        if !quest_tracks.is_some_and(|tracks| rewards::accepts_parcel(site, tracks)) {
+            speaking.engaged = prior;
+            return;
+        }
+        reply.text = rewards::PARCEL_GREETING.into();
+        reply.continuation.clear();
+    }
     let name = speaking.name.clone();
     if speaking.engaged.is_some_and(|npc| prior != Some(npc))
         && crowded(sessions, session, reply.id)
@@ -1215,12 +1229,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
+        use oteryn_gameplay_quests::quest::reward_callbacks::PARCEL_TRACK_PREFIX;
         let quest_tracks = self.states.quest_sessions.lock().ok().and_then(|sessions| {
             let copy = sessions.get(&session)?.copy.as_ref()?;
             Some(
                 oteryn_gameplay_npc::quest_greetings::CONDITIONAL_QUEST_TRACKS
                     .into_iter()
                     .filter_map(|key| copy.tracks().get(key).map(|value| (key.to_owned(), *value)))
+                    .chain(
+                        copy.tracks()
+                            .range(PARCEL_TRACK_PREFIX.to_owned()..)
+                            .take_while(|(key, _)| key.starts_with(PARCEL_TRACK_PREFIX))
+                            .map(|(key, value)| (key.clone(), *value)),
+                    )
                     .collect::<BTreeMap<_, _>>(),
             )
         });

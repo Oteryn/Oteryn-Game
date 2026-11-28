@@ -41,16 +41,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read_actor_position(actor)
             .map_err(|_| ())?
             .position();
+        let reported_at = self
+            .states
+            .quest_sessions
+            .lock()
+            .map_err(|_| ())?
+            .get(&command.game_session_id)
+            .and_then(|session| session.copy.as_ref())
+            .ok_or(())?
+            .tracks()
+            .get("oteryn:quest-progress/spike/tracking/reported_at")
+            .copied()
+            .unwrap_or(0);
         if let Some(clue) = survey.clue(
             character.as_bytes(),
-            self.reset_epoch,
+            reported_at,
+            oteryn_gameplay_world_change::daily::draw_for_epoch(
+                self.world_id.as_bytes(),
+                self.reset_epoch,
+                "spike.hottest_pool",
+            ),
             position.x,
             position.y,
             position.floor,
         ) {
             self.states
                 .chat
-                .push_quest_feedback(command.game_session_id, clue);
+                .push_quest_feedback(command.game_session_id, &clue);
             return Ok(false);
         }
         Ok(true)
@@ -349,6 +366,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         drop(creature_runtime);
         drop(revision);
+        if matches!(result, QuestTransitionOutcome::Committed(_)) && callback.survey.is_some() {
+            let session = command.game_session_id;
+            for line in &callback.reply {
+                self.states.chat.push_quest_feedback(session, line);
+            }
+            if callback.carried_item.as_deref() == Some("oteryn:item.tibia.i19206") {
+                self.states.chat.push_quest_feedback(session, "Whew! That was that hot, it melted the thermometer! At least you've found the hot spot!");
+                let runtime = self.runtime.lock().await;
+                if let Some(map) = self.bundle_map()
+                    && let Ok(position) = runtime.read_actor_position(actor)
+                    && let Some(tile) = super::quest_callbacks::native(position.position())
+                {
+                    map.facts.emit_movement_effect(tile, 16);
+                }
+            } else if !callback.take.is_empty() {
+                self.states
+                    .chat
+                    .push_quest_feedback(session, "Report the task to Gnomilly.");
+            }
+        }
         drop(permit);
         let disposition = if matches!(
             result,
