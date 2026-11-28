@@ -3187,3 +3187,5 @@ fn node_boot_readiness_serves_the_interpreted_content_revision() {
     assert_eq!(readiness, Some(INTERPRETATION[2]));
     assert_eq!(SERVED_CONTENT_REVISION, INTERPRETATION[2]);
 }
+
+pub(super) mod forge_draw_replay;

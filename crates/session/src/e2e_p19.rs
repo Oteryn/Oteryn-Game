@@ -96,9 +96,13 @@ async fn replay_forge() -> Result<(), BoxError> {
 
     if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let path = std::path::Path::new(&path);
-        for (directory, stacks) in [(path.to_path_buf(), 3), (path.join("fiendish"), 15)] {
+        for (directory, fiendish) in [(path.to_path_buf(), false), (path.join("fiendish"), true)] {
             let input = ReplayInput::read(&directory, P19_FILES, APPEARANCE)?;
-            assert_eq!(input.expected, stacks);
+            assert!(if fiendish {
+                input.expected == 15
+            } else {
+                (1..=5).contains(&input.expected)
+            });
             assert_forge(&input, &mut input.admit().await?)?;
         }
     }

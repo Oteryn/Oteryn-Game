@@ -655,16 +655,22 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
         .enable_all()
         .build()?
         .block_on(async {
-            for (folder, label, death) in [
-                ("", "[Influenced 3] Rat", false),
-                ("fiendish", "[Fiendish] Rat", false),
-                ("influenced-death", "[Influenced 3] Rat", true),
-                ("fiendish-death", "[Fiendish] Rat", true),
+            for (folder, fiendish, death) in [
+                ("", false, false),
+                ("fiendish", true, false),
+                ("influenced-death", false, true),
+                ("fiendish-death", true, true),
             ] {
                 let (link, _, outbox) = play_channel();
                 let mut view = None;
                 let mut held = Vec::new();
-                oteryn_session::test_support::p19_session(&root.join(folder), |session, target, event, final_state| {
+                oteryn_session::test_support::p19_session(&root.join(folder), |session, target, stacks, event, final_state| {
+                    let label = match (fiendish, stacks) {
+                        (true, 15) => "[Fiendish] Rat".to_owned(),
+                        (false, 1..=5) => format!("[Influenced {stacks}] Rat"),
+                        _ => return Err(format!("{folder}: wrong Forge class {stacks}").into()),
+                    };
+
                     let own = session.world_spatial().actor_position;
                     let view = match &mut view {
                         Some(view) => view,
@@ -683,7 +689,7 @@ fn cl6_p19_live_capture_reaches_native_nameplates() -> Result<(), Box<dyn std::e
                             | oteryn_session::EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
                             _ => return Err("P19 nameplate target is not an actor".into()),
                         };
-                        Some((oteryn_renderer::TileCoord::new(entity.position.x, entity.position.y), label, health))
+                        Some((oteryn_renderer::TileCoord::new(entity.position.x, entity.position.y), label.as_str(), health))
                     } else {
                         None
                     };

@@ -24,17 +24,18 @@ pub async fn p19_session(
     mut observe: impl FnMut(
         &mut Session<DuplexStream>,
         EntityRef,
+        u8,
         Option<&SessionEvent>,
         bool,
     ) -> Result<(), BoxError>,
 ) -> Result<(), BoxError> {
     let input = ReplayInput::read(path, super::replay_capture::P19_FILES, APPEARANCE)?;
     let mut session = input.admit().await?;
-    observe(&mut session, input.entity, None, false)?;
+    observe(&mut session, input.entity, input.expected, None, false)?;
     input.apply_observed(&mut session, |session, event| {
-        observe(session, input.entity, Some(event), false)
+        observe(session, input.entity, input.expected, Some(event), false)
     })?;
-    observe(&mut session, input.entity, None, true)
+    observe(&mut session, input.entity, input.expected, None, true)
 }
 use std::path::Path;
 use world_spatial_entities::EntityRef;

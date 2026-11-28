@@ -69,7 +69,8 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
     evidence(&format!("P19 live summon={owned:?}"));
     let seed = 19;
     let draw = forge_population_draw(&mut client, seed).await?;
-    let selected = verify_forge_draw(&draw, seed, owned)?;
+    let mut selected = verify_forge_draw(&draw, seed, owned)?;
+    selected.sort_by_key(|(_, _, stacks)| *stacks == 15);
     require_logout(&mut summoner, &summoner_clients).await?;
     drop(summoner);
 
@@ -87,16 +88,13 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             return Err("P19 pre-combat backpack and Forge sliver counts disagree".into());
         }
     let mut encounters = Vec::new();
-    for (classification, wanted_fiendish, folder) in [
-        ("influenced", false, ""),
-        ("fiendish", true, "fiendish"),
-    ] {
-        let (target, exact, stacks) = selected.iter()
-            .find(|(target, _, stacks)| {
-                (*stacks == 15) == wanted_fiendish && target["creature_key"] == "oteryn:creature.rat"
-            })
-            .ok_or_else(|| format!("P19 production draw selected no {classification} Rat"))?;
-        let (exact, stacks) = (*exact, *stacks);
+    for (target, exact, stacks) in selected {
+        let (classification, folder) = if stacks == 15 {
+            ("fiendish", "fiendish")
+        } else {
+            ("influenced", "")
+        };
+        let creature_key = target["creature_key"].as_str().ok_or("P19 selected target lacks creature key")?;
         let position = &target["position"];
         let (x, y, floor) = (draw_number(position, "x")?, draw_number(position, "y")?,
             position["floor"].as_i64().ok_or("P19 selected target lacks floor")?);
@@ -104,8 +102,26 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             u64::from(at.x).abs_diff(x) <= 1 && u64::from(at.y).abs_diff(y) <= 1
                 && i64::from(at.floor) == -floor
                 && (u64::from(at.x), u64::from(at.y)) != (x, y)
-        }).ok_or_else(|| format!("P19 selected Rat is unreachable at {position}"))?;
+        }).ok_or_else(|| format!("P19 selected {creature_key} {exact:?} is unreachable at {position}"))?;
         move_first_attempt(&mut client, world, path).await?;
+        if creature_key != "oteryn:creature.rat"
+            || encounters.iter().any(|(kind, _, _, _)| *kind == classification)
+        {
+            tokio::time::timeout(Duration::from_secs(15), async {
+                loop {
+                    let appearances = client.session_mut().visible_appearances();
+                    if let Some(entry) = appearances.iter().find(|entry| entry.entity.entity == exact) {
+                        if entry.forge_stacks != Some(stacks) {
+                            return Err(format!("P19 {creature_key} {exact:?} expected stacks={stacks}, got {:?}", entry.forge_stacks).into());
+                        }
+                        return TestResult::Ok(());
+                    }
+                    client.wait_for_events(Duration::from_secs(15)).await?;
+                }
+            }).await.map_err(|_| format!("P19 selected {creature_key} {exact:?} was not visible at {position}"))??;
+            evidence(&format!("P19_FORGE creature_key={creature_key} entity={exact:?} forge_stacks={stacks}"));
+            continue;
+        }
         let first: u64 = tokio::time::timeout(Duration::from_secs(15), async {
             let mut first_binding = None;
             loop {
@@ -138,6 +154,9 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
             }
         })
         .await??;
+        evidence(&format!(
+            "P19_FORGE creature_key={creature_key} entity={exact:?} forge_stacks={stacks} sequence={first}"
+        ));
         let files = tokio::time::timeout(Duration::from_secs(5), async {
             loop {
                 if let Some(files) = client.session_mut().p19_capture_files(exact) {
@@ -153,10 +172,6 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         for (name, bytes) in files {
             std::fs::write(directory.join(name), bytes)?;
         }
-        evidence(&format!(
-            "P19_FORGE entity={exact:?} forge_stacks={stacks} sequence={}",
-            first
-        ));
         let candidates = client.session_mut().visible_appearances();
         let entry = candidates.iter().find(|entry| entry.entity.entity == exact)
             .ok_or("P19 selected actor is missing from the live client")?;
@@ -167,6 +182,11 @@ async fn prove(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
         }
         let selected = exact;
         encounters.push((classification, stacks, selected, tile(client.world_spatial().actor_position)?));
+    }
+    for classification in ["influenced", "fiendish"] {
+        if !encounters.iter().any(|(kind, _, _, _)| *kind == classification) {
+            return Err(format!("P19 production draw selected no {classification} Rat for the combat proof").into());
+        }
     }
         let combat_tile = tile(client.world_spatial().actor_position)?;
         let retreat = route(world, combat_tile, |at| is_logout_rest_tile(world, at))
@@ -624,7 +644,6 @@ fn draw_entity(value: &serde_json::Value) -> TestResult<EntityRef> {
 
 fn verify_forge_draw(draw: &serde_json::Value, seed: u64, owned: EntityRef)
 -> TestResult<Vec<(&serde_json::Value, EntityRef, u8)>> {
-    use sha2::{Digest, Sha256};
     let array = |key: &str| draw[key].as_array().ok_or_else(|| format!("P19 Forge draw missing {key}"));
     let eligible = array("eligible")?.iter()
         .map(|entry| Ok((draw_entity(entry)?, draw_number(entry, "spawn_identity")?)))
@@ -632,49 +651,20 @@ fn verify_forge_draw(draw: &serde_json::Value, seed: u64, owned: EntityRef)
     let selected = array("selected")?.iter()
         .map(|entry| Ok((entry, draw_entity(entry)?, u8::try_from(draw_number(entry, "stacks")?)?)))
         .collect::<TestResult<Vec<_>>>()?;
-    let retained = array("retained")?.iter()
-        .map(|entry| Ok((draw_entity(entry)?, draw_number(entry, "stacks")?)))
-        .collect::<TestResult<Vec<_>>>()?;
     let exclusions = array("excluded_owned_summons")?.iter()
-        .map(|entry| Ok((draw_entity(entry)?, &entry["reason"])))
-        .collect::<TestResult<Vec<_>>>()?;
-    if !exclusions.iter().any(|(actor, reason)| *actor == owned && *reason == "owned_summon")
+        .filter_map(|entry| Some((crate::node::uuid_bytes(entry["id"].as_str()?)?, &entry["reason"])))
+        .collect::<Vec<_>>();
+    if !exclusions.iter().any(|(actor, reason)| *actor == owned.identity && *reason == "owned_summon")
         || selected.iter().any(|(_, actor, _)| *actor == owned)
         || eligible.iter().any(|(actor, _)| *actor == owned)
     {
         return Err("P19 live owned summon exclusion mismatch".into());
     }
-    let now = draw_number(draw, "now_micros")?;
-    let mut ranked: Vec<_> = eligible.iter().copied()
-        .filter(|(actor, _)| !retained.iter().any(|(prior, _)| prior == actor))
-        .collect();
-    ranked.sort_unstable_by_key(|(_, point)| {
-        let hash: [u8; 32] = Sha256::new().chain_update(b"FORGECREATURE/fiend-selection/v1")
-            .chain_update(seed.to_be_bytes()).chain_update(now.to_be_bytes())
-            .chain_update(point.to_be_bytes()).finalize().into();
-        (hash, *point)
-    });
-    let slots = draw_number(draw, "fiendish_vacancy")?.min(draw_number(draw, "fiendish_available_slots")?);
-    let mut expected: Vec<_> = ranked.drain(..ranked.len().min(usize::try_from(slots)?))
-        .map(|(actor, _)| (actor, 15)).collect();
-    if retained.iter().filter(|(_, stacks)| *stacks != 15).count() < 300 && !ranked.is_empty() {
-        let digest = draw["server_artifact_digest"].as_str()
-            .ok_or("P19 Forge draw missing server_artifact_digest")?;
-        let digest = crate::node::operator_files::hex_bytes::<32>(digest)
-            .map_err(|_| "P19 Forge draw invalid server_artifact_digest")?;
-        let (actor, roll) = ranked.iter().map(|(actor, _)| {
-            let hash: [u8; 32] = Sha256::new().chain_update(b"FORGECREATURE/spawn/v1")
-                .chain_update(digest).chain_update(actor.identity)
-                .chain_update(actor.generation.to_be_bytes()).chain_update(seed.to_be_bytes())
-                .finalize().into();
-            (*actor, u64::from_be_bytes([hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7]]))
-        }).min_by_key(|(_, roll)| *roll).ok_or("P19 missing Influenced candidate")?;
-        expected.push((actor, 1 + (roll % 5) as u8));
+    if draw_number(draw, "seed")? != seed {
+        return Err("P19 Forge draw returned the wrong seed".into());
     }
-    let actual: Vec<_> = selected.iter().map(|(_, actor, stacks)| (*actor, *stacks)).collect();
-    if expected != actual {
-        return Err(format!("P19 seeded selection mismatch expected={expected:?} actual={actual:?}").into());
-    }
+    crate::qualification::forge_draw_replay::assert_replayed_selection(draw)?;
+    evidence("P19 exact production draw and owned summon exclusion verified");
     Ok(selected)
 }
 
