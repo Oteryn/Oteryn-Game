@@ -243,15 +243,11 @@ async fn journey(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
-    let accounts = [required("NODE_BOOT_G23_ACCOUNT")?];
-    let characters = [full_row_g01::fixture_character(clients, &accounts[0]).await?];
-    let clients = &SeamClients {
-        accounts: &accounts,
-        characters: &characters,
-        ..*clients
-    };
+    let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_G23_ACCOUNT").await?;
+    let scope = dedicated.clients(clients);
+    let clients = &scope;
     let mut client = connect_character(clients, 0x88, 0).await?;
-    if full_row_p20::promotion_for(clients, &characters[0])
+    if full_row_p20::promotion_for(clients, &clients.characters[0])
         .await?
         .is_none()
     {
