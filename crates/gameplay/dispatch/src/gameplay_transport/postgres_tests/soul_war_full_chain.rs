@@ -1,12 +1,14 @@
-//! Soul War entry prerequisites, native death settlement, and one-time reward MINT.
+//! Soul War NPC access, captured-death settlement, one-time rewards, and durable readmission.
+#[path = "w11_journey/session.rs"]
+mod session_fixture;
 use super::fixture::{Harness, debug};
 use super::kill_reward_e2e_fixtures::scenario_thread::run_async;
-use super::soul_war_fixtures::{command, current, kill};
+use super::soul_war_fixtures::{current, kill};
 use super::w11_chain::prerequisite;
 use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session, reset};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::quest_state::soul_war::{
-    SOUL_WAR_REWARD_PLACEMENT, SOUL_WAR_REWARD_REVISION, SoulWarCommand,
+    SOUL_WAR_REWARD_PLACEMENT, SOUL_WAR_REWARD_REVISION,
 };
 use crate::durability::reward_claim_mint::{
     RewardClaimMintError, RewardClaimMintOutcome, RewardClaimMintRequest, RewardClaimRefusal,
@@ -88,7 +90,7 @@ fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(controller.active().ok_or("active generation")?);
         let mut admitted = deps.admitted;
-        owner.admit_progression_session(&mut admitted).await;
+        session_fixture::prepare(&deps, &owner, &mut admitted).await?;
         super::qengine_outfit_stories_fixtures::earn_level(
             &owner,
             &admitted,
@@ -99,17 +101,19 @@ fn scenario(case: Case) -> TestResult {
 
         let session = admitted.game_session_id;
         assert!(!read(&owner, session).await?.access());
-        if matches!(case, Case::Entry) {
-            for (key, _) in MINIS {
-                assert_eq!(
-                    prerequisite(&owner, admitted, key).await?,
-                    Err(EntryRefusal::QuestAccess),
-                    "{key}"
-                );
-            }
+        for (key, _) in MINIS {
+            assert_eq!(
+                prerequisite(&owner, admitted, key).await?,
+                Err(EntryRefusal::QuestAccess),
+                "{key}"
+            );
         }
-        let start = command(&owner, session, 501, SoulWarCommand::Start).await?;
-        assert!(start.result.is_ok() && start.state.access());
+        // TibiaWiki Soul War Quest/Spoiler (oldid 1134584), Method.
+        let npc = session_fixture::npc(&owner, admitted, "oteryn:npc.flickering_soul").await?;
+        session_fixture::converse(&mut owner, admitted, npc, 501, &["hi", "task"]).await?;
+        assert!(!read(&owner, session).await?.access());
+        session_fixture::converse(&mut owner, admitted, npc, 503, &["yes"]).await?;
+        assert!(read(&owner, session).await?.access());
         if matches!(case, Case::Entry) {
             for (key, _) in MINIS {
                 assert_eq!(prerequisite(&owner, admitted, key).await?, Ok(()), "{key}");
@@ -183,7 +187,22 @@ fn scenario(case: Case) -> TestResult {
             (0, None)
         );
 
-        claim(&owner, &h, session, &pin, case).await?;
+        let character = current(&owner, session).await?.character_id;
+        let outfit_count = || {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_account_appearance_unlocks u
+                 JOIN game_character_roots c USING(account_id)
+                 WHERE c.character_id=encode($1,'hex')::uuid
+                   AND u.unlock_key='oteryn:appearance-grant/quest/soul-war/revenant-base'",
+            )
+            .bind(character.as_bytes().as_slice())
+            .fetch_one(&h.pool)
+        };
+        assert_eq!(outfit_count().await?, 0);
+        session_fixture::converse(&mut owner, admitted, npc, 504, &["task"]).await?;
+        assert_eq!(outfit_count().await?, 1);
+        claim(&owner, &h, admitted, &pin, case).await?;
+        assert_eq!(outfit_count().await?, 1);
         drop(owner);
         drop(authority);
         drop(seal);
@@ -209,10 +228,11 @@ async fn read(
 async fn claim(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
-    session: GameSessionId,
+    admitted: crate::gameplay_transport::connection::AdmittedSession,
     pin: &crate::content::channel_content_pin::ChannelContentPin,
     case: Case,
 ) -> TestResult {
+    let session = admitted.game_session_id;
     let fence = current(owner, session).await?;
     let pending = h
         .root
@@ -351,5 +371,14 @@ async fn claim(
         );
         assert_eq!(rows().await?, (1, 1, 1));
     }
+    let fresh = session_fixture::relog(h, owner, admitted).await?;
+    let retained = owner
+        .root
+        .read_soul_war_state(owner.character, owner.holder, fresh)
+        .await
+        .map_err(debug)?;
+    assert_eq!(retained, claimed);
+    assert_eq!(rows().await?, (1, 1, 1));
+    eprintln!("w11chain-marker: Soul War rewards retained after fresh durable admission");
     Ok(())
 }
