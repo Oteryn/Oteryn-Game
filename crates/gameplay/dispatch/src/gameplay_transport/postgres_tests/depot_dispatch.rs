@@ -1,6 +1,8 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
 #[path = "depot_dispatch/container_batch_cases.rs"]
 mod container_batch_cases;
+#[path = "depot_dispatch/cross_town_cases.rs"]
+mod cross_town_cases;
 #[path = "depot_dispatch/depot_list.rs"]
 mod depot_list;
 #[path = "depot_dispatch/mail_capacity.rs"]
@@ -250,6 +252,8 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     Plain,
+    CrossTown,
+    StashEligibility,
     ManagedContainerMove,
     ManagedArmor,
     StashContainer,
@@ -320,6 +324,7 @@ fn scenario_with_premium(
         Mode::Mail | Mode::MailCapacity | Mode::MailPostCapacity | Mode::List
     );
     let retrieve = mode == Mode::Retrieve;
+    let two_towns = matches!(mode, Mode::CrossTown | Mode::StashEligibility);
     let managed = matches!(mode, Mode::ManagedContainerMove | Mode::ManagedArmor);
     let batch = mode == Mode::StashContainer || managed;
     run(async |admin| {
@@ -400,6 +405,7 @@ fn scenario_with_premium(
             .find(|t| t.x == 6)
             .ok_or("locker tile")?;
         locker.items.get_mut(1).ok_or("locker item")?.attrs.depot = Some(0);
+        let remote_locker = two_towns.then(|| locker.clone());
         if mail {
             // An authored mailbox (Canary items.xml 3501) beside the start and one out of reach.
             let mut entry = bundle.manifest.palette.get(3).ok_or("item palette")?.clone();
@@ -424,7 +430,7 @@ fn scenario_with_premium(
                 sector.tiles.push(tile.clone());
             }
         }
-        if ground_movement {
+        if ground_movement || two_towns {
             let sector = bundle.sectors.first_mut().ok_or("sector")?;
             let mut tile = sector
                 .tiles
@@ -436,6 +442,12 @@ fn scenario_with_premium(
             for x in [8, 9] {
                 tile.x = x;
                 sector.tiles.push(tile.clone());
+            }
+            if let Some(mut locker) = remote_locker {
+                locker.x = 10;
+                locker.items.get_mut(1).ok_or("locker item")?.attrs.depot =
+                    Some(cross_town_cases::OTHER_TOWN);
+                sector.tiles.push(locker);
             }
         }
         let bytes =
@@ -624,7 +636,7 @@ fn scenario_with_premium(
         } else {
             None
         };
-        let armor = if mode == Mode::ManagedArmor {
+        let armor = if matches!(mode, Mode::ManagedArmor | Mode::StashEligibility) {
             let reference = index.definition_ref("Item", "oteryn:item.tibia.i811", "definition-r1")
                 .ok_or("armor reference")?;
             let definition = crate::gameplay_transport::item_look::typed_definition(index, reference)
@@ -685,7 +697,11 @@ fn scenario_with_premium(
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if bag || (mail && special_item.is_some()) || mode == Mode::ManagedArmor {
+                        quantity: if bag
+                            || (mail && special_item.is_some())
+                            || mode == Mode::ManagedArmor
+                            || (mode == Mode::StashEligibility && ordinal == 3)
+                        {
                             1
                         } else if managed {
                             40
@@ -861,6 +877,36 @@ fn scenario_with_premium(
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
+        if two_towns {
+            if mode == Mode::CrossTown {
+                let carried = carried.ok_or("source")?;
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(60),
+                    cross_town_cases::depot(&owner, admitted, &harness.pool, handle, carried),
+                )
+                .await
+                .map_err(|_| "cross-town depot exchange timed out")??;
+            } else {
+                let nonstackable = view
+                    .table()
+                    .handle(&ItemKey::Instance(stacks[2]))
+                    .ok_or("single item")?;
+                let bag = view
+                    .table()
+                    .handle(&ItemKey::Instance(main_bag.ok_or("main bag")?))
+                    .ok_or("main bag handle")?;
+                tokio::time::timeout(
+                    std::time::Duration::from_secs(60),
+                    stash_cases::stackable_only(&owner, admitted, &harness.pool, nonstackable, bag),
+                )
+                .await
+                .map_err(|_| "cross-town stash eligibility exchange timed out")??;
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if mode == Mode::ManualSort {
             let handles = stacks
                 .iter()

@@ -201,6 +201,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     // Party join and leave notices on domain 57 (576, requires 42 and 92).
     party::CAPABILITY_PARTY_MEMBERSHIP_NOTICES_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_ACTOR_COOLDOWN_DELTAS_V1,
+    npc_service::CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

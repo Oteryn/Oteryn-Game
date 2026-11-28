@@ -606,6 +606,11 @@ pub trait FreshAdmissionAuthority {
         std::future::pending()
     }
 
+    /// Channel-local revision for deadline changes that may affect inventory.
+    fn item_deadline_epoch(&self) -> u64 {
+        0
+    }
+
     /// A durable Newhaven kit changed carried items; consume its bounded display notification.
     fn take_newhaven_inventory_changed(&self, _session: GameSessionId) -> bool {
         false
@@ -1100,6 +1105,23 @@ pub trait FreshAdmissionAuthority {
                 return None;
             }
             self.depot(actor, command, intent, item).await
+        }
+    }
+
+    /// Selects the regular depot address or a capability-627 town compartment.
+    fn depot_request(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        request: oteryn_protocol_oteryn::depot::DepotRequest,
+        item: Option<ItemKey>,
+    ) -> impl Future<Output = Option<DepotObservation>> {
+        async move {
+            if request.cross_town {
+                return None;
+            }
+            self.depot_at(actor, command, request.intent, request.slot, item)
+                .await
         }
     }
 

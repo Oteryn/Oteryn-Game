@@ -1,0 +1,18 @@
+{
+  "id": 629,
+  "name": "NPC_PURCHASE_ATTRIBUTION_V1",
+  "constant": "npc_service::CAPABILITY_NPC_PURCHASE_ATTRIBUTION_V1",
+  "requires": [
+    3,
+    4
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

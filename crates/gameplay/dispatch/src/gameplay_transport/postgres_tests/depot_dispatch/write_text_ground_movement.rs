@@ -173,7 +173,7 @@ pub(super) async fn dispatch(
     Ok(())
 }
 
-async fn step(
+pub(super) async fn step(
     client: &mut tokio::io::DuplexStream,
     command_id: u64,
     direction: StepDirection,
@@ -194,7 +194,7 @@ async fn step(
     Ok(())
 }
 
-async fn read_step(client: &mut tokio::io::DuplexStream, command_id: u64) -> TestResult {
+pub(super) async fn read_step(client: &mut tokio::io::DuplexStream, command_id: u64) -> TestResult {
     loop {
         let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame)?;

@@ -699,6 +699,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await;
     }
 
+    fn item_deadline_epoch(&self) -> u64 {
+        self.states
+            .item_deadline_epoch
+            .load(std::sync::atomic::Ordering::Acquire)
+    }
+
     fn take_newhaven_inventory_changed(&self, session: GameSessionId) -> bool {
         self.states
             .tutorial_sessions
@@ -869,7 +875,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::depot::DepotIntent,
         item: Option<item_view::ItemKey>,
     ) -> Option<connection::DepotObservation> {
-        depot::execute(self, actor, command, intent, None, item).await
+        self.depot_at(actor, command, intent, None, item).await
     }
 
     async fn depot_at(
@@ -880,7 +886,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         slot: Option<u32>,
         item: Option<item_view::ItemKey>,
     ) -> Option<connection::DepotObservation> {
-        depot::execute(self, actor, command, intent, slot, item).await
+        self.depot_request(
+            actor,
+            command,
+            oteryn_protocol_oteryn::depot::DepotRequest::local(intent, slot),
+            item,
+        )
+        .await
+    }
+
+    async fn depot_request(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: oteryn_protocol_oteryn::depot::DepotRequest,
+        item: Option<item_view::ItemKey>,
+    ) -> Option<connection::DepotObservation> {
+        depot::execute(self, actor, command, request, item).await
     }
 
     async fn committed_loop_move(
@@ -1345,6 +1367,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        if self
+            .states
+            .command_ingress
+            .promotion_scroll_use_pending(session)
+        {
+            return true;
+        }
         let states = self.states.spell_states.lock().await;
         states
             .pending_gourmet

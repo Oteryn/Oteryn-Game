@@ -51,6 +51,8 @@ struct Plan {
     lines: Vec<Value>,
 }
 
+// Stored balances may still be withdrawn under their original definition policy.
+// The stow planners also require a stackable definition for newly converted items.
 fn stowable(native: &NativeGameplayState, definition: &TypedDefinitionRef) -> bool {
     definition.family=="Item" && native.item_policy(&definition.production_key,&definition.revision_ref)
         .is_some_and(|policy| {
@@ -390,8 +392,10 @@ async fn plan<C: ItemLoopContent>(
     if facts.definition != definition {
         refuse!(Unsupported);
     }
-    let maximum = stack_maximum(facts.stack).map(|(m, _)| m).unwrap_or(0);
-    if maximum == 0 || maximum > 100 || facts.container_capacity.is_some() {
+    let Ok((maximum, stackable)) = stack_maximum(facts.stack) else {
+        refuse!(Unsupported);
+    };
+    if (stow && !stackable) || facts.container_capacity.is_some() {
         refuse!(Unsupported);
     }
     if (stow && amount > maximum) || (!stow && amount > MAX_STASH_OUTPUTS * maximum) {

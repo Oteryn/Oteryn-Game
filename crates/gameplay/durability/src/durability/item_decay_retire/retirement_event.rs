@@ -37,6 +37,17 @@ pub(super) fn decay_message(
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
     };
     world_reset_cause::bind_message(&mut message, step.cause);
+    if matches!(step.cause, world_reset_cause::RetireCause::CorpseDecay)
+        && let Some(edge) = admitted.death_entry
+    {
+        message.corpse_entry = None;
+        message.ground_container_entry = Some(audit::OneItemGroundContainerEntryV1 {
+            parent_item_instance_id: edge.parent.to_vec(),
+            placement_ordinal: edge.ordinal,
+            parent_ground: Some(admitted.corpse_ground.clone()),
+            tree_root_item_instance_id: Some(step.corpse_item_instance_id.to_vec()),
+        });
+    }
     if let Some(death_entry) = admitted.death_entry
         && let Some(entry) = message.ground_container_entry.as_mut()
     {

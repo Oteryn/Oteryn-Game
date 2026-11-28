@@ -1,0 +1,17 @@
+{
+  "id": 627,
+  "name": "CROSS_TOWN_DEPOT_V1",
+  "constant": "depot::CAPABILITY_CROSS_TOWN_DEPOT_V1",
+  "requires": [
+    37
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

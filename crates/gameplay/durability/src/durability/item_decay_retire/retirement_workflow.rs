@@ -564,8 +564,8 @@ impl DurabilityRoot {
     }
 
     /// Drain one decayed corpse from durable state alone: one step per entry
-    /// still live in its container (in ordinal order, each its own freeze and
-    /// commit), then the corpse's own step. An entry that is no longer in the
+    /// still live below it (contents before their containers, each with its
+    /// own freeze and commit), then the corpse's own step. An entry that is no longer in the
     /// corpse by the time its step runs (picked up) is skipped, never retired.
     /// Resuming after a partial drain simply finds fewer live entries.
     pub async fn retire_decayed_corpse(
@@ -587,16 +587,17 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
+                    let bound = oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX;
                     let rows = sqlx::query(
-                        "SELECT item_instance_id::text FROM game_item_corpse_container_entries \
-                          WHERE parent_item_instance_id = encode($1,'hex')::uuid \
-                          ORDER BY placement_ordinal LIMIT $2",
+                        "SELECT item::text AS item_instance_id
+                         FROM game_corpse_loot_postorder(encode($1,'hex')::uuid,$2)
+                         ORDER BY visit_ordinal",
                     )
                     .bind(corpse_item_instance_id.as_slice())
-                    .bind(i64::try_from(CORPSE_CONTAINER_ENTRIES_MAX + 1).unwrap_or(i64::MAX))
+                    .bind(i32::try_from(bound + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
                     .fetch_all(&mut *tx)
                     .await?;
-                    if rows.len() > CORPSE_CONTAINER_ENTRIES_MAX {
+                    if rows.len() > bound {
                         return Err(DurabilityError::InvalidStoredState);
                     }
                     let entries = rows

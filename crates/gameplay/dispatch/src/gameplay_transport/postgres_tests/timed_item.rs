@@ -110,10 +110,23 @@ async fn exchange(
 }
 async fn exchange_kind(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    mut admitted: AdmittedSession,
+    admitted: AdmittedSession,
     kind: u32,
     commands: &[(u64, Vec<u8>)],
 ) -> TestResult<Vec<Vec<u8>>> {
+    Ok(exchange_results(owner, admitted, kind, commands)
+        .await?
+        .into_iter()
+        .map(|(_, payload)| payload)
+        .collect())
+}
+
+async fn exchange_results(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: AdmittedSession,
+    kind: u32,
+    commands: &[(u64, Vec<u8>)],
+) -> TestResult<Vec<(crate::foundation::CommandStatus, Vec<u8>)>> {
     admitted.continuity.next_command_id = commands.first().map_or(1, |(id, _)| *id);
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     for (id, payload) in commands {
@@ -146,7 +159,7 @@ async fn exchange_kind(
         let frame = crate::foundation::decode_wire_envelope(&bytes[cursor + 4..cursor + 4 + len])?;
         if frame.message_type() == MessageType::CommandResult {
             let result = oteryn_protocol_oteryn::decode_command_result(frame.payload())?;
-            results.push(result.payload.to_vec());
+            results.push((result.status, result.payload.to_vec()));
         }
         cursor += 4 + len;
     }
@@ -313,6 +326,32 @@ fn scenario() -> TestResult {
         let receipts_before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_commands")
             .fetch_one(&h.pool)
             .await?;
+        let unknown = exchange_results(
+            &owner,
+            admitted,
+            COMMAND_TYPE_TIMED_ITEM_INTENT,
+            &[(
+                3,
+                intent_bytes(TimedItemIntent {
+                    action: TimedAction::Inspect,
+                    target: ItemHandle::MAX,
+                    ..intent
+                })?,
+            )],
+        )
+        .await?;
+        let [(status, payload)] = unknown.as_slice() else {
+            return Err("expected one result for Inspect of an unknown handle".into());
+        };
+        assert_eq!(
+            *status,
+            crate::foundation::CommandStatus::Accepted,
+            "unknown Inspect target returns a typed result"
+        );
+        assert_eq!(
+            result_value(payload)?,
+            TimedItemResult::refused(TimedDisposition::Stale)
+        );
         let inspected = exchange(
             &owner,
             admitted,

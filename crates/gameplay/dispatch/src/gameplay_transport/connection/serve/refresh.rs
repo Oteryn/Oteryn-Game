@@ -621,10 +621,10 @@ where
 {
     sounds(stream, authority, session).await?;
     *step = "inventory_pending";
-    let inventory_refresh_pending = session
-        .item_view
-        .as_ref()
-        .is_some_and(|view| view.inventory_refresh_pending);
+    let item_deadline_epoch = authority.item_deadline_epoch();
+    let inventory_refresh_pending = session.item_view.as_ref().is_some_and(|view| {
+        view.inventory_refresh_pending || view.item_deadline_epoch != item_deadline_epoch
+    });
     super::native_cues::refresh(stream, authority, session).await?;
     if let Some(view) = session.item_view.as_mut()
         && inventory_refresh_pending
@@ -640,6 +640,8 @@ where
         )
         .await
         .ok_or(ServeEnd::Disconnected)?;
+        // The refresh retains its pending flag if the inventory projection is unavailable.
+        view.item_deadline_epoch = item_deadline_epoch;
     }
     *step = "newhaven_inventory";
     refresh_newhaven_inventory(

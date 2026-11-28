@@ -620,6 +620,13 @@ impl State {
         {
             self.npc(stream, authority, admitted, &update).await?;
         }
+        if self
+            .items
+            .as_ref()
+            .is_some_and(|view| view.inventory_refresh_pending)
+        {
+            self.refresh_inventory(stream, authority, admitted).await?;
+        }
         self.spatial(stream, authority, admitted, true).await?;
         let Some(view) = self.visibility.as_ref() else {
             return Ok(());

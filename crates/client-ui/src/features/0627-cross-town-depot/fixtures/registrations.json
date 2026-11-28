@@ -1,0 +1,18 @@
+[
+  {
+    "mechanic": "0627-cross-town-depot",
+    "kind": "handlers",
+    "id": "0627-cross-town-depot-select",
+    "status": "unsupported",
+    "commands": [],
+    "direction": "client_to_server",
+    "reason": "The native Depot panel has no town selector. The session API can send the optional field through command 36.",
+    "not_applicable": {
+      "state": "The server owns the selected depot page.",
+      "protocol": "The native client does not advertise capability 627.",
+      "view": "The Depot panel shows the current locker town.",
+      "input": "The Depot panel sends the existing local requests.",
+      "settings": "Town selection is a per-request action."
+    }
+  }
+]

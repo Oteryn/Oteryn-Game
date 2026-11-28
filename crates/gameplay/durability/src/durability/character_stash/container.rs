@@ -89,8 +89,10 @@ async fn eligible_stacks<C: ItemLoopContent>(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         if !stowable(native, &definition)
             || !content.loop_facts(&definition).is_some_and(|facts| {
-                facts.definition == definition && facts.container_capacity.is_none()
-                    && stack_maximum(facts.stack).is_ok_and(|(max, _)| (1..=100).contains(&max) && (1..=max).contains(&quantity))
+                facts.definition == definition
+                    && facts.container_capacity.is_none()
+                    && stack_maximum(facts.stack)
+                        .is_ok_and(|(max, stackable)| stackable && (1..=max).contains(&quantity))
             })
         {
             continue;

@@ -4,6 +4,7 @@ use crate::item_view::ItemHandle;
 use crate::world_interaction::WorldInteractionWireError as Error;
 
 pub const CAPABILITY_DEPOT_V1: u32 = 37;
+pub const CAPABILITY_CROSS_TOWN_DEPOT_V1: u32 = 627;
 pub const COMMAND_TYPE_DEPOT_INTENT: u32 = 36;
 pub const MAX_DEPOT_PAGE: u32 = 14_999 / 32;
 
@@ -23,6 +24,24 @@ pub struct DepotIntent {
     pub box_number: u8,
     pub page: u32,
     pub action: DepotAction,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DepotRequest {
+    pub intent: DepotIntent,
+    pub slot: Option<u32>,
+    /// Capability 627: the named town selects storage at any reachable locker.
+    pub cross_town: bool,
+}
+
+impl DepotRequest {
+    pub const fn local(intent: DepotIntent, slot: Option<u32>) -> Self {
+        Self {
+            intent,
+            slot,
+            cross_town: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,8 +88,17 @@ pub fn encode_depot_intent(value: DepotIntent) -> Result<Vec<u8>, Error> {
 /// the item takes in the box's view order (newest first). Without a slot the bytes are those of
 /// [`encode_depot_intent`].
 pub fn encode_depot_intent_at(value: DepotIntent, slot: Option<u32>) -> Result<Vec<u8>, Error> {
+    encode_depot_request(DepotRequest::local(value, slot))
+}
+
+pub fn encode_depot_request(request: DepotRequest) -> Result<Vec<u8>, Error> {
+    let DepotRequest {
+        intent: value,
+        slot,
+        cross_town,
+    } = request;
     if !valid(value.box_number, value.page)
-        || (value.town.is_none() && value.action != DepotAction::Browse)
+        || (value.town.is_none() && (cross_town || value.action != DepotAction::Browse))
         || matches!(
             value.action,
             DepotAction::Withdraw(0) | DepotAction::WithdrawDisplayed(0)
@@ -99,6 +127,9 @@ pub fn encode_depot_intent_at(value: DepotIntent, slot: Option<u32>) -> Result<V
     if let Some(slot) = slot {
         push_varint_field(&mut out, 6, u64::from(slot));
     }
+    if cross_town {
+        push_varint_field(&mut out, 7, 1);
+    }
     Ok(out)
 }
 
@@ -111,19 +142,40 @@ pub fn decode_depot_intent_at(
     bytes: &[u8],
     manual_sort: bool,
 ) -> Result<(DepotIntent, Option<u32>), Error> {
+    let request = decode_request(bytes, manual_sort, false)?;
+    Ok((request.intent, request.slot))
+}
+
+pub fn decode_depot_request(bytes: &[u8], selected: &[u32]) -> Result<DepotRequest, Error> {
+    decode_request(
+        bytes,
+        selected.contains(&crate::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1),
+        selected.contains(&CAPABILITY_CROSS_TOWN_DEPOT_V1),
+    )
+}
+
+fn decode_request(
+    bytes: &[u8],
+    manual_sort: bool,
+    cross_town: bool,
+) -> Result<DepotRequest, Error> {
     if bytes.len() > 48 {
         return Err(Error::LimitExceeded);
     }
-    let mut fields = [None; 6];
-    let last = if manual_sort { 6 } else { 5 };
+    let mut fields = [None; 7];
     let mut at = 0;
     while at < bytes.len() {
         let tag = read_varint(bytes, &mut at)?;
-        if tag & 7 != 0 || !(1..=last).contains(&(tag >> 3)) {
+        let field = tag >> 3;
+        if tag & 7 != 0
+            || !matches!(field, 1..=7)
+            || (field == 6 && !manual_sort)
+            || (field == 7 && !cross_town)
+        {
             return Err(Error::Malformed);
         }
         set_once(
-            &mut fields[(tag >> 3) as usize - 1],
+            &mut fields[field as usize - 1],
             read_varint(bytes, &mut at)?,
         )?;
     }
@@ -148,8 +200,18 @@ pub fn decode_depot_intent_at(
         .map(u32::try_from)
         .transpose()
         .map_err(|_| Error::Malformed)?;
-    encode_depot_intent_at(value, slot)?;
-    Ok((value, slot))
+    let cross_town = match fields[6] {
+        None => false,
+        Some(1) => true,
+        _ => return Err(Error::Malformed),
+    };
+    let request = DepotRequest {
+        intent: value,
+        slot,
+        cross_town,
+    };
+    encode_depot_request(request)?;
+    Ok(request)
 }
 
 pub fn encode_depot_reply(value: &DepotReply) -> Result<Vec<u8>, Error> {

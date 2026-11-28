@@ -114,12 +114,8 @@ pub(super) fn meaningful(
                     )
             )
         }),
-        36 => depot::decode_depot_intent_at(
-            command.payload,
-            selected
-                .contains(&oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1),
-        )
-        .is_ok_and(|(intent, _)| intent.action != depot::DepotAction::Browse),
+        36 => depot::decode_depot_request(command.payload, selected)
+            .is_ok_and(|request| request.intent.action != depot::DepotAction::Browse),
         38 => timed_item::decode_timed_item_intent(command.payload)
             .is_ok_and(|intent| intent.action != timed_item::TimedAction::Inspect),
         48 | 49 => {

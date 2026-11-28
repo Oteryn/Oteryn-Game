@@ -20,7 +20,16 @@ impl DurabilityRoot {
             let allowed:bool=sqlx::query_scalar(VISIBLE_SQL).bind(viewer_fence.character_id.as_bytes().as_slice()).bind(target.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if !allowed { return Ok(Err(CharacterAuthorityError::Rejected)); }
             let Some(name)=sqlx::query_scalar::<_,String>("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(target.as_bytes().as_slice()).fetch_optional(&mut *tx).await? else { return Ok(Err(CharacterAuthorityError::Rejected)); };
-            let ids:Vec<i16>=sqlx::query_scalar("SELECT badge FROM game_account_badges WHERE account_id=(SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) ORDER BY badge LIMIT 33").bind(target.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
+            let ids: Vec<i16> = sqlx::query_scalar(
+                "SELECT b.badge FROM game_account_badges b
+                 LEFT JOIN game_account_badge_visibility v USING (account_id, badge)
+                 WHERE b.account_id = (SELECT account_id FROM game_character_roots WHERE character_id = encode($1,'hex')::uuid)
+                   AND ($2 OR COALESCE(v.is_public, true))
+                 ORDER BY b.badge LIMIT 33",
+            )
+            .bind(target.as_bytes().as_slice())
+            .bind(target == viewer_fence.character_id)
+            .fetch_all(&mut *tx).await?;
             let mut badges=Vec::new();
             for id in ids { let Some(badge)=u8::try_from(id).ok().and_then(Badge::from_id) else { return Ok(Err(CharacterAuthorityError::Rejected)); }; badges.push(badge); }
             let rows=sqlx::query(INSPECTION_SQL).bind(target.as_bytes().as_slice()).fetch_all(&mut *tx).await?;

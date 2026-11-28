@@ -243,6 +243,21 @@ async fn player_credit_scenario(admin: String, local_final_blow: bool) -> TestRe
     assert_eq!(rows[0].occurrence, *death.occurrence.as_bytes());
     assert_eq!(rows[0].victim, id(101));
     assert_eq!(rows[0].final_blow, local_final_blow);
+    let character = CharacterId::from_bytes(id(41)).map_err(debug)?;
+    let committed_at: i64 = sqlx::query_scalar(
+        "SELECT committed_at FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid",
+    )
+    .bind(death.occurrence.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let summary = h.root.read_character_info(
+        &authority,
+        character,
+        character,
+        oteryn_protocol_oteryn::character_info::PageRequest { offset: 0, limit: 1 },
+        committed_at,
+    ).await.map_err(debug)?;
+    assert_eq!(summary.get(67..69), Some([1, 0].as_slice()), "Character Info counts the justified kill credit");
     let late_credit = sqlx::query(
         "INSERT INTO game_character_player_kill_credits
            (character_id, death_occurrence_id, committed_at, final_blow)

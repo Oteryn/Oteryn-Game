@@ -54,11 +54,12 @@ pub(super) async fn assert_corpse_source(
     let (world, channel) =
         scope_of(fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
     let allowed: bool = sqlx::query_scalar("SELECT EXISTS (
-        SELECT 1 FROM game_item_corpse_container_entries e
-        JOIN game_item_ground_locations g ON g.item_instance_id=e.parent_item_instance_id
+        SELECT 1 FROM game_item_ground_locations g
         JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id
         JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id
-        WHERE e.item_instance_id=encode($1,'hex')::uuid AND e.parent_item_instance_id=encode($2,'hex')::uuid
+        WHERE g.item_instance_id=encode($2,'hex')::uuid
+          AND g.item_instance_id=(SELECT corpse FROM game_corpse_loot_origin(encode($1,'hex')::uuid,encode($3,'hex')::uuid))
+          AND NOT EXISTS (SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)
           AND g.world_id=encode($3,'hex')::uuid AND g.channel_id=encode($4,'hex')::uuid
           AND (g.runtime_scope_ownership_generation=$5::text::numeric OR game_dragged_rat_ground_current(i.item_instance_id,g.world_id,g.channel_id,$5::text::numeric,g.stack_ordinal)) AND g.spatial_position=$6
           AND i.lifecycle=1 AND r.loot_purpose_key='CORPSE_MATERIALIZATION' AND r.draw_ordinal=0
@@ -319,9 +320,7 @@ impl DurabilityRoot {
                 for corpse in corpses {
                     let corpse_id=uuid_text(corpse.try_get("item_instance_id")?)?;
                     let corpse_cell: [u8;10]=corpse.try_get::<Vec<u8>,_>("spatial_position")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?;
-                    let entries=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal LIMIT $2 FOR UPDATE OF i")
-                        .bind(corpse_id.as_slice()).bind((MAX_TRANSFERS_PER_COMMAND-result.items.len()) as i64).fetch_all(&mut *tx).await?;
-                    let entries: Vec<_> = entries.into_iter().map(|entry| Ok((uuid_text(entry.try_get("item_instance_id")?)?, definition_of(&entry)?))).collect::<LoopResult<_>>()?;
+                    let entries = corpse_entries(&mut tx, corpse_id, MAX_TRANSFERS_PER_COMMAND - result.items.len()).await?;
                     let policy_settings = LootSettings { category_targets: settings.category_targets.clone(), unassigned_target: settings.unassigned_target, fallback_to_main: settings.fallback_to_main };
                     let corpse = Corpse { key: corpse_id, distance: 0, age_millis: 0, top_damage_or_party: corpse.try_get("loot_allowed")?, items: entries.iter().map(|(item,definition)| LootItem { key: *item, category: preferred_category(content, definition, |category| settings.category_targets.contains_key(&category)), is_coin: is_loot_coin(definition), allowed_by_filter: if settings.accept_only {settings.accepted_items.contains(&definition.production_key)} else {!settings.skipped_items.contains(&definition.production_key)} }).collect() };
                     let mode = if request.action == QuickLootAction::Click { ManualLootMode::Click } else { ManualLootMode::AllNearby };
@@ -356,6 +355,33 @@ impl DurabilityRoot {
             }
         })).await
     }
+}
+
+// Use the kill-loot custody layout and its eight-level bound. Process each bag's
+// contents before the bag while preserving ascending placement order among siblings.
+async fn corpse_entries(
+    tx: &mut Transaction<'_, Postgres>,
+    corpse: [u8; 16],
+    remaining: usize,
+) -> LoopResult<Vec<([u8; 16], TypedDefinitionRef)>> {
+    let rows = sqlx::query(
+        "SELECT i.item_instance_id::text, i.definition_family, i.definition_production_key, i.definition_revision_ref
+           FROM game_corpse_loot_postorder(encode($1,'hex')::uuid,$2) loot
+           JOIN game_item_instances i ON i.item_instance_id=loot.item AND i.lifecycle=1
+          ORDER BY loot.visit_ordinal FOR UPDATE OF i",
+    )
+    .bind(corpse.as_slice())
+    .bind(i32::try_from(remaining).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .fetch_all(&mut **tx)
+    .await?;
+    rows.into_iter()
+        .map(|row| {
+            Ok((
+                uuid_text(row.try_get("item_instance_id")?)?,
+                definition_of(&row)?,
+            ))
+        })
+        .collect()
 }
 
 fn assignment(request: QuickLootRequest) -> LoopResult<Recipient<[u8; 16]>> {

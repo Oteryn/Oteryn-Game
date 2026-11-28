@@ -6,10 +6,15 @@ message DepotIntentV1 {
   uint32 action = 1; // 1 browse/open, 2 deposit whole carried entry, 3 withdraw whole entry
   uint32 box_number = 2; // 1..17
   uint32 page = 3; // zero based, 32 entries, 0..468
-  optional uint32 town = 4; // 0..65535; required for moves, checked against current locker
+  optional uint32 town = 4; // 0..65535; required for moves, checked against current locker when cross_town is absent
   uint64 item = 5; // deposit: session item handle; withdraw: displayed depot ordinal; browse: 0
   // Capability 510 (container-manual-sort-v1.md) only: a deposit's slot in the box's view order.
   optional uint32 slot = 6;
+  // Capability 627 only. When present, the sole valid value is true and town is required.
+  // Town then selects an authored depot compartment in this World. A reachable locker
+  // is still required and may belong to any town. The reply town identifies the selected
+  // compartment. The existing box, page, item and receipt rules apply to that address.
+  optional bool cross_town = 7;
 }
 message DepotEntryV1 {
   // Nonzero and descending. With capability 510 it is an opaque per-session withdrawal
@@ -32,3 +37,5 @@ message DepotReplyV1 {
 // There is no persistent open view or transferable locker authority. Reconnect starts closed.
 // A historical Moved replay after leaving the locker has absent town and an empty page:
 // the terminal transfer is acknowledged without granting a new locker view.
+// Global source (Tibia Fandom archive, Depot): "all depot slots are now interconnected."
+// https://tibia.fandom.com/wiki/Depot

@@ -2,6 +2,7 @@
 //! Query: empty. Intent: operation:u8 (1 start, 2 shuffle, 3 find, 4 donate),
 //! area:u32, amount:u32 (zero except donate). Results are documented in the contract.
 pub mod atlas;
+pub mod raid_warnings;
 
 pub const COMMAND_TYPE_CYCLOPEDIA_SPEED_QUERY: u32 = 6178;
 pub const COMMAND_TYPE_CYCLOPEDIA_QUERY: u32 = 72;

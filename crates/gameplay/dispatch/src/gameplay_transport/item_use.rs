@@ -42,6 +42,9 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::item_use::fluid::{
     ItemFluidChange, ItemFluidOutcome, ItemFluidRequest, ItemFluidSplash,
 };
+use crate::durability::item_use::promotion_scroll::{
+    self, PromotionScrollOutcome, PromotionScrollReceiptKey,
+};
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
@@ -64,6 +67,16 @@ pub(super) const ITEMUSE0_RL_04_AMBIGUOUS_MS: u64 = 2_000;
 const POTION_COOLDOWN_MS: u64 = 1_000;
 /// The `food` cooldown. `PARITY_PENDING`: no official value.
 const FOOD_COOLDOWN_MS: u64 = 200;
+
+#[cfg(test)]
+thread_local! {
+    static LOSE_PROMOTION_SCROLL_ACK: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn lose_next_promotion_scroll_ack() {
+    LOSE_PROMOTION_SCROLL_ACK.set(true);
+}
 
 /// The item-use state of one present actor; runtime state only (ITEM-USE-0 §9 item 3).
 #[derive(Debug, Default)]
@@ -127,13 +140,8 @@ impl ItemUseGate {
             ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. } => {
                 return Err(UseDisposition::Rejected);
             }
-            // The concoction cooldown is durable; the writer refuses inside it.
-            ItemUseKind::Concoction => {
-                self.in_flight_since_ms = Some(now_ms);
-                return Ok(());
-            }
-            // WU26-06: the Temple Teleport Scroll has no cooldown of its own.
-            ItemUseKind::TempleScroll => {
+            // The concoction cooldown is durable. Scrolls have no cooldown of their own.
+            ItemUseKind::Concoction | ItemUseKind::PromotionScroll | ItemUseKind::TempleScroll => {
                 self.in_flight_since_ms = Some(now_ms);
                 return Ok(());
             }
@@ -243,6 +251,19 @@ impl ItemUseGates {
         gate.settle(1, UseDisposition::Committed, &[]);
         Some(())
     }
+    pub(super) fn settle_recovered_promotion_scroll(
+        &mut self,
+        actor: ExactActorRef,
+        command: crate::foundation::CommandRef,
+        disposition: UseDisposition,
+    ) {
+        if let Some((_, _, gate)) = self.0.iter_mut().find(|(present, session, _)| {
+            *present == actor && *session == command.game_session_id()
+        }) {
+            gate.settle(command.command_id().get(), disposition, &[]);
+        }
+    }
+
     pub(in crate::gameplay_transport) fn house_transfer_ready(
         &self,
         actor: ExactActorRef,
@@ -352,8 +373,6 @@ pub(super) fn hireling_refusal(
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
-    /// W22c: the durable effect row is the whole effect; the kill settle reads it.
-    Concoction,
 }
 
 enum UseSource {
@@ -663,26 +682,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
+            _ if promotion_scroll::points(
+                &entry.item.definition.family,
+                &entry.item.definition.production_key,
+            )
+            .is_some() =>
+            {
+                (ItemUseKind::PromotionScroll, None, ItemUseFlaskPlan::None)
+            }
             _ if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
-                (
-                    ItemUseKind::Concoction,
-                    Effect::Concoction,
-                    ItemUseFlaskPlan::None,
-                )
+                (ItemUseKind::Concoction, None, ItemUseFlaskPlan::None)
             }
             None => return Err(UseDisposition::NothingToUse),
             Some(consumption) => match consumption {
                 ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
                     if food.regeneration_seconds > 0 =>
                 {
-                    let effect = Effect::Food(food.regeneration_seconds);
+                    let effect = Some(Effect::Food(food.regeneration_seconds));
                     (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
                 }
                 ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
                     let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
-                    let effect = Effect::Potion(potion.restores.clone());
+                    let effect = Some(Effect::Potion(potion.restores.clone()));
                     (ItemUseKind::Potion, effect, flask)
                 }
                 _ => return Err(UseDisposition::NothingToUse),
@@ -727,13 +750,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .then(|| states.get(&runtime, actor, session))
                 .flatten()
                 .ok_or(UseDisposition::Rejected)?;
-            if record.is_some_and(|record| {
-                !requirements_met(&record.semantics.use_requirements, state.character_facts())
-            }) {
+            if kind != ItemUseKind::PromotionScroll
+                && record.is_some_and(|record| {
+                    !requirements_met(&record.semantics.use_requirements, state.character_facts())
+                })
+            {
                 return Err(UseDisposition::RequirementNotMet);
             }
             // FOOD-REGEN-1: eating that would reach the cap is refused; nothing is burned.
-            if let Effect::Food(seconds) = effect
+            if let Some(Effect::Food(seconds)) = effect
                 && eat_food(&mut state.clone(), seconds, self.owner_ms()).is_err()
             {
                 return Err(UseDisposition::Full);
@@ -747,17 +772,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let analyser_supply =
             matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
-        let commit = self
-            .root
-            .commit_item_use(self.character, self.holder, fence, request);
+        let scroll = kind == ItemUseKind::PromotionScroll;
+        if scroll {
+            self.mark_use_receipt(
+                command,
+                Some(super::session_ingress::UseReceipt::PromotionScroll(
+                    PromotionScrollReceiptKey {
+                        transaction_id: request.transaction_id,
+                        source,
+                    },
+                )),
+            );
+        }
+        let commit = async {
+            if scroll {
+                let outcome = self
+                    .root
+                    .redeem_promotion_scroll(self.character, self.holder, fence, request)
+                    .await?;
+                #[cfg(test)]
+                if outcome == PromotionScrollOutcome::Redeemed
+                    && LOSE_PROMOTION_SCROLL_ACK.replace(false)
+                {
+                    return Err(ItemUseError::Unavailable(
+                        crate::durability::DurabilityError::CommitOutcomeUnknown,
+                    ));
+                }
+                return Ok(match outcome {
+                    PromotionScrollOutcome::Redeemed => (UseDisposition::Committed, true),
+                    PromotionScrollOutcome::AlreadyCommitted => (UseDisposition::Committed, false),
+                    PromotionScrollOutcome::LevelRequired => {
+                        (UseDisposition::RequirementNotMet, false)
+                    }
+                    PromotionScrollOutcome::AlreadyUsed => {
+                        self.states.chat.push_quest_feedback(
+                            session,
+                            "You have already used an item of this type",
+                        );
+                        (UseDisposition::NotPossible, false)
+                    }
+                });
+            }
+            self.root
+                .commit_item_use(self.character, self.holder, fence, request)
+                .await
+                .map(|outcome| {
+                    (
+                        UseDisposition::Committed,
+                        matches!(outcome, ItemUseOutcome::Written { .. }),
+                    )
+                })
+        };
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {
-            Ok(Ok(ItemUseOutcome::Written { .. })) => (UseDisposition::Committed, true, false),
-            // A replay committed earlier; its effect, if any, was applied then.
-            Ok(Ok(ItemUseOutcome::AlreadyCommitted { .. })) => {
-                (UseDisposition::Committed, false, false)
-            }
+            Ok(Ok((disposition, written))) => (disposition, written, false),
             Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false, false),
             Ok(Err(ItemUseError::Cooldown)) => (UseDisposition::Exhausted, false, false),
             Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
@@ -765,21 +834,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(Err(_)) => (UseDisposition::Rejected, false, false),
         };
+        if scroll && ambiguous {
+            // The live routes leave this command outstanding. Resume probes the
+            // original transaction, even after the source handle has retired.
+            return Err(UseDisposition::Rejected);
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         if known_commit {
             if let Some(definition) = &analyser_supply {
                 states.analyser.supply(actor, session, definition, 1);
             }
-            apply_effect(
-                &runtime,
-                &mut states,
-                actor,
-                session,
-                command.command_id,
-                &effect,
-                self.owner_ms(),
-            );
+            if let Some(effect) = &effect {
+                apply_effect(
+                    &runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    command.command_id,
+                    effect,
+                    self.owner_ms(),
+                );
+            }
+            if kind == ItemUseKind::PromotionScroll {
+                self.states.chat.push_quest_feedback(
+                    session,
+                    "You have successfully used the item and received bonus promotion points.",
+                );
+            }
         }
         if disposition == UseDisposition::Committed && matches!(kind, ItemUseKind::Potion) {
             *utterance = Some(PotionUtterance::Restore);
@@ -791,6 +873,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if ambiguous { &reserved } else { &[] },
             );
             gate.last_utterance = *utterance;
+        }
+        if scroll {
+            // Publish the proven result only after releasing the gate. A cancellation
+            // before this point leaves the pending receipt available for resume.
+            if disposition == UseDisposition::Committed {
+                if let Ok(id) = crate::foundation::CommandId::new(command.command_id) {
+                    let reference = crate::foundation::CommandRef::new(session, id);
+                    self.states
+                        .command_ingress
+                        .complete_item_use(reference, disposition);
+                }
+            } else {
+                self.mark_use_receipt(command, None);
+            }
         }
         Ok(disposition)
     }
@@ -1380,7 +1476,6 @@ fn apply_effect(
                 };
             }
         }
-        Effect::Concoction => {}
     }
 }
 

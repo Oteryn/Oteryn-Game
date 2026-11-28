@@ -5,8 +5,8 @@ use super::item_look_fixtures::{read_frame, seed_main_backpack};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelContentPin, ExactActorRef, GameSessionId, MessageType,
-    WorldId, decode_wire_envelope,
+    ActivityTransferMember, AuthenticatedTransportRefV1, ChannelContentPin, CharacterId,
+    CharacterLease, ExactActorRef, GameSessionId, MessageType, WorldId, decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -38,6 +38,7 @@ use tokio::io::{AsyncWriteExt as _, DuplexStream};
 
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
+const SCROLL: &str = "oteryn:item.tibia.i43946";
 
 #[derive(Clone, Copy)]
 enum Case {
@@ -48,6 +49,29 @@ enum Case {
     CubeCommitted,
     CoinCommitted,
     CoinNotApplied,
+    ScrollDefinitionCommitted,
+    ScrollHandleCommitted,
+    ScrollRuneCommitted,
+    ScrollRolledBack,
+    ScrollWithoutCapability,
+}
+
+impl Case {
+    fn scroll_lost_ack(self) -> bool {
+        matches!(
+            self,
+            Self::ScrollDefinitionCommitted
+                | Self::ScrollHandleCommitted
+                | Self::ScrollRuneCommitted
+        )
+    }
+
+    fn scroll_handle(self) -> bool {
+        matches!(
+            self,
+            Self::ScrollHandleCommitted | Self::ScrollRuneCommitted
+        )
+    }
 }
 
 #[test]
@@ -106,6 +130,46 @@ fn s7c_resume_rejects_unapplied_coin_exchange_without_converting() -> TestResult
     run(admin, Case::CoinNotApplied)
 }
 
+#[test]
+fn wheel_promotion_scroll_definition_lost_ack_replays_committed() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ScrollDefinitionCommitted)
+}
+
+#[test]
+fn wheel_promotion_scroll_handle_lost_ack_replays_committed() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ScrollHandleCommitted)
+}
+
+#[test]
+fn wheel_promotion_scroll_rune_fallback_lost_ack_replays_committed() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ScrollRuneCommitted)
+}
+
+#[test]
+fn wheel_promotion_scroll_rollback_replays_rejected() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ScrollRolledBack)
+}
+
+#[test]
+fn wheel_promotion_scroll_requires_item_use_capability() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, Case::ScrollWithoutCapability)
+}
+
 fn run(admin: String, case: Case) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -152,6 +216,11 @@ async fn scenario(admin: String, case: Case) -> TestResult {
         Case::CubeCommitted => ("s7c_cube_committed", &[(DROME_CUBE_KEY, 1)]),
         Case::CoinCommitted => ("s7c_coin_committed", &[(GOLD, 100)]),
         Case::CoinNotApplied => ("s7c_coin_not_applied", &[(GOLD, 100)]),
+        Case::ScrollDefinitionCommitted => ("wheel_scroll_def_ack", &[(SCROLL, 1)]),
+        Case::ScrollHandleCommitted => ("wheel_scroll_handle_ack", &[(SCROLL, 1)]),
+        Case::ScrollRuneCommitted => ("wheel_scroll_rune_ack", &[(SCROLL, 1)]),
+        Case::ScrollRolledBack => ("wheel_scroll_rollback", &[(SCROLL, 1)]),
+        Case::ScrollWithoutCapability => ("wheel_scroll_cap", &[(SCROLL, 1)]),
     };
     let h = Harness::create_with_admission_seed(admin, label, true, false).await?;
     let result = exercise(&h, case, entries).await;
@@ -163,7 +232,10 @@ async fn scenario(admin: String, case: Case) -> TestResult {
 }
 
 async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResult {
-    let recovery = if matches!(case, Case::Gold | Case::CubeShort) {
+    let recovery = if matches!(
+        case,
+        Case::Gold | Case::CubeShort | Case::ScrollWithoutCapability
+    ) {
         prepare_current_session(h).await?;
         None
     } else {
@@ -183,6 +255,21 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
         .await?;
     }
     seed_main_backpack(h, entries).await?;
+    if case.scroll_lost_ack()
+        || matches!(case, Case::ScrollRolledBack | Case::ScrollWithoutCapability)
+    {
+        super::atelier_fixtures::fixture::eligible(&h.pool).await?;
+    }
+    if matches!(case, Case::ScrollRolledBack) {
+        // The receipt and item mutation have already been staged when the outbox insert fails.
+        sqlx::raw_sql(
+            "CREATE FUNCTION scroll_no_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+                 BEGIN RAISE EXCEPTION 'injected scroll audit rollback' USING ERRCODE='23514'; END $$;
+             CREATE TRIGGER scroll_no_audit BEFORE INSERT ON game_item_audit_outbox
+                 FOR EACH ROW EXECUTE FUNCTION scroll_no_audit()",
+        ).execute(&h.pool).await?;
+    }
+
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -277,14 +364,31 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             .current_session_at(admitted.game_session_id)
             .await?;
     let fence = item_fence_of(current).ok_or("current item fence")?;
+    if case.scroll_lost_ack() || matches!(case, Case::ScrollRolledBack) {
+        let lease = CharacterLease::new(
+            CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+            fence.character_lease_generation,
+        )
+        .map_err(debug)?;
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(deps.actor, admitted.game_session_id, lease)
+            .map_err(debug)?;
+    }
     admitted.item_fence = Some(fence);
-    let supported = [4, 6, 11, 15, 18, 22, 171];
+    let supported: &[u32] = match case {
+        // Scrolls use ITEM_USE_V1. WORLD_INTERACTION_V1 also requires it.
+        Case::ScrollWithoutCapability => &[4, 6, 18],
+        Case::ScrollHandleCommitted => &[4, 6, 11, 15, 18, 171],
+        _ => &[4, 6, 11, 15, 18, 22, 171],
+    };
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &supported)
+        SelectedCapabilities::select(owner.offered_capabilities(), supported)
             .ok_or("selected USE capabilities")?;
     assert_eq!(
         admitted.continuity.selected_capabilities.as_slice(),
-        &supported
+        supported
     );
     owner.states.command_ingress.admit(admitted.game_session_id);
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -319,8 +423,40 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 client.shutdown().await?;
                 Ok(None)
             }
+            Case::ScrollWithoutCapability => {
+                let scroll = definition(SCROLL)?;
+                let handle = inventory
+                    .iter()
+                    .find(|item| item.item_definition_ref == scroll)
+                    .ok_or("scroll in initial view")?
+                    .handle;
+                for (command, target) in [
+                    (1, UseTarget::Item(handle)),
+                    (2, UseTarget::ItemByDefinition(scroll)),
+                ] {
+                    send_use(&mut client, 1, command, target).await?;
+                    assert_ne!(
+                        read_use(&mut client, command).await?.1,
+                        UseDisposition::Committed
+                    );
+                }
+                client.shutdown().await?;
+                Ok(None)
+            }
             _ => {
-                let target = if matches!(case, Case::CoinCommitted | Case::CoinNotApplied) {
+                let target = if case.scroll_handle() {
+                    let scroll = definition(SCROLL)?;
+                    let item = inventory
+                        .iter()
+                        .find(|item| item.item_definition_ref == scroll)
+                        .ok_or("scroll in initial view")?;
+                    UseTarget::Item(item.handle)
+                } else if matches!(
+                    case,
+                    Case::ScrollDefinitionCommitted | Case::ScrollRolledBack
+                ) {
+                    UseTarget::ItemByDefinition(definition(SCROLL)?)
+                } else if matches!(case, Case::CoinCommitted | Case::CoinNotApplied) {
                     let gold = definition(GOLD)?;
                     let stack = inventory
                         .iter()
@@ -397,6 +533,23 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             .await?,
             1
         ),
+        Case::ScrollDefinitionCommitted
+        | Case::ScrollHandleCommitted
+        | Case::ScrollRuneCommitted
+        | Case::ScrollRolledBack
+        | Case::ScrollWithoutCapability => {
+            let expected = i64::from(case.scroll_lost_ack());
+            assert_eq!(
+                count(
+                    h,
+                    "SELECT count(*) FROM game_item_use_records WHERE cause_kind=3358"
+                )
+                .await?,
+                expected
+            );
+            let live = count(h, "SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i43946' AND lifecycle=1").await?;
+            assert_eq!(live, 1 - expected);
+        }
     }
     if let Some(target) = original_target {
         assert!(!owner.states.command_ingress.resumable(&retained));
@@ -411,13 +564,18 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
                 recovery_material: token.as_bytes(),
                 transport: AuthenticatedTransportRefV1::decode(&[2; 16]).map_err(debug)?,
                 last_applied_server_sequence: retained.continuity.server_sequence,
-                supported_capabilities: &supported,
+                supported_capabilities: supported,
             })
             .await
             .map_err(|error| format!("pending USE resume: {error:?}"))?;
         assert!(owner.states.command_ingress.resumable(&resumed));
         assert_eq!(resumed.continuity.next_command_id, 2);
-        let committed = matches!(case, Case::CubeCommitted | Case::CoinCommitted);
+        if case.scroll_lost_ack() || matches!(case, Case::ScrollRolledBack) {
+            assert_scroll_handoff_prepares(&owner, resumed).await?;
+        }
+
+        let committed =
+            case.scroll_lost_ack() || matches!(case, Case::CubeCommitted | Case::CoinCommitted);
         let expected = if committed {
             UseDisposition::Committed
         } else {
@@ -433,21 +591,35 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
             let inventory = read_inventory(&mut client).await?;
             if let UseTarget::Item(old) = target {
                 assert!(inventory.iter().all(|item| item.handle > old));
-                let gold = definition(GOLD)?;
+                let (key, quantity) = if case.scroll_handle() {
+                    (SCROLL, 1)
+                } else {
+                    (GOLD, 100)
+                };
+                let definition = definition(key)?;
                 assert_eq!(
                     inventory
                         .iter()
-                        .filter(|item| item.item_definition_ref == gold)
+                        .filter(|item| item.item_definition_ref == definition)
                         .map(|item| item.count.get())
                         .sum::<u32>(),
-                    if committed { 0 } else { 100 },
+                    if committed { 0 } else { quantity },
                 );
             } else {
-                let cube = definition(DROME_CUBE_KEY)?;
+                let item = definition(
+                    if matches!(
+                        case,
+                        Case::ScrollDefinitionCommitted | Case::ScrollRolledBack
+                    ) {
+                        SCROLL
+                    } else {
+                        DROME_CUBE_KEY
+                    },
+                )?;
                 assert_eq!(
                     inventory
                         .iter()
-                        .filter(|item| item.item_definition_ref == cube)
+                        .filter(|entry| entry.item_definition_ref == item)
                         .map(|item| item.count.get())
                         .sum::<u32>(),
                     if committed { 0 } else { 1 },
@@ -466,6 +638,47 @@ async fn exercise(h: &Harness, case: Case, entries: &[(&str, i64)]) -> TestResul
         replay?;
         assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
     }
+    Ok(())
+}
+
+async fn assert_scroll_handoff_prepares(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    resumed: AdmittedSession,
+) -> TestResult {
+    let actor = resumed.runtime_actor.ok_or("resumed scroll user")?;
+    let session = resumed.game_session_id;
+    let destination = GameSessionId::decode(&id(99)).map_err(debug)?;
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let attack = owner.states.attack.lock().await;
+    // These are the production admission steps used by House and boss entry.
+    assert!(
+        states
+            .prepare_house_transfer_views(&runtime, &attack, actor, session, destination)
+            .is_some(),
+        "a resolved scroll must allow House transfer preparation"
+    );
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let member = ActivityTransferMember {
+        source_actor: actor,
+        source_session: session,
+        source_lease: lease,
+        destination_session: destination,
+        destination_lease: CharacterLease::new(lease.character_id(), lease.generation() + 1)
+            .map_err(debug)?,
+        destination_cell: runtime
+            .read_actor_position(actor)
+            .map_err(debug)?
+            .position(),
+    };
+    let mut destination_states =
+        crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
+    let mut prepared = states
+        .prepare_activity_states(&mut destination_states, &[member])
+        .map_err(|()| "a resolved scroll must allow native boss entry preparation")?;
+    states.abort_activity_states(&mut prepared);
     Ok(())
 }
 
@@ -513,6 +726,36 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         self.owner.observe_world_map(actor, view, items).await
     }
 
+    async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.owner.item_use_pending(actor, session).await
+    }
+
+    async fn use_item_by_definition(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        definition: NonZeroU32,
+    ) -> UseOutcome {
+        if matches!(self.case, Case::ScrollDefinitionCommitted) {
+            crate::gameplay_transport::item_use::lose_next_promotion_scroll_ack();
+        }
+        self.owner
+            .use_item_by_definition(actor, command, definition)
+            .await
+    }
+
+    async fn use_item_completion(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+    ) -> Option<UseOutcome> {
+        if matches!(self.case, Case::ScrollHandleCommitted) {
+            crate::gameplay_transport::item_use::lose_next_promotion_scroll_ack();
+        }
+        self.owner.use_item_completion(actor, command, item).await
+    }
+
     async fn use_rune(
         &self,
         actor: ExactActorRef,
@@ -522,6 +765,9 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         visible: bool,
         field_runes: bool,
     ) -> Option<UseOutcome> {
+        if matches!(self.case, Case::ScrollRuneCommitted) {
+            crate::gameplay_transport::item_use::lose_next_promotion_scroll_ack();
+        }
         let result = self
             .owner
             .use_rune(actor, command, intent.clone(), key, visible, field_runes)
@@ -582,7 +828,14 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
                 crate::gameplay_transport::item_use::drome_cube::test_faults::lose_next_ack();
                 return using.await;
             }
-            Case::Gold | Case::CoinCommitted | Case::CoinNotApplied => return using.await,
+            Case::Gold
+            | Case::CoinCommitted
+            | Case::CoinNotApplied
+            | Case::ScrollDefinitionCommitted
+            | Case::ScrollHandleCommitted
+            | Case::ScrollRuneCommitted
+            | Case::ScrollRolledBack
+            | Case::ScrollWithoutCapability => return using.await,
             Case::CubeShort => Duration::from_millis(100),
             Case::CubeExhausted | Case::AidProbeExhausted => {
                 COMMAND_HOLDER_WINDOW + Duration::from_millis(200)

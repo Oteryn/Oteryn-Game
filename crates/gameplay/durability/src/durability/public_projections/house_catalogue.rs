@@ -1,4 +1,4 @@
-//! Producer-only catalogue capture; no housing acquisition or mutation authority.
+//! Publish checked house metadata and admit vacant properties for the active World.
 use super::*;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{ChannelId, WorldId};
@@ -34,6 +34,25 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         update: PublicHouseCatalogue,
     ) -> Result<()> {
+        self.sync_house_catalogue(authority, node, update, false).await
+    }
+
+    pub async fn admit_world_house_properties(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        update: PublicHouseCatalogue,
+    ) -> Result<()> {
+        self.sync_house_catalogue(authority, node, update, true).await
+    }
+
+    async fn sync_house_catalogue(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        update: PublicHouseCatalogue,
+        admit_properties: bool,
+    ) -> Result<()> {
         let _boot = self.boot_pass_deadline(super::RESYNC_DEADLINE);
         let recovery = authority.record_for(self)?;
         if update.generation == 0 || update.houses.as_ref().is_some_and(|rows| rows.len() > 1000) {
@@ -46,9 +65,14 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             let fact = node.fact();
-            let applied: bool = sqlx::query_scalar(
+            let statement = if admit_properties {
+                "SELECT game_world_house_properties_admit(encode($1,'hex')::uuid,encode($2,'hex')::uuid,\
+                 $3::text::numeric,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8::text::numeric,$9)"
+            } else {
                 "SELECT game_public_house_catalogue_sync(encode($1,'hex')::uuid,encode($2,'hex')::uuid,\
-                 $3::text::numeric,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8::text::numeric,$9)")
+                 $3::text::numeric,$4::text::numeric,$5,$6,encode($7,'hex')::uuid,$8::text::numeric,$9)"
+            };
+            let applied: bool = sqlx::query_scalar(statement)
                 .bind(update.world.as_bytes().as_slice())
                 .bind(update.channel.as_bytes().as_slice())
                 .bind(update.generation.to_string())

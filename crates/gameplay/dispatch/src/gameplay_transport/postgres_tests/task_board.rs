@@ -980,6 +980,24 @@ fn scenario_with_bootstrap(
         let selected = full_board(&owner, &mut admitted, 8, 0, "").await?;
         assert_eq!(selected.refusal, 0);
         let bounty = selected.bounty.active.clone().expect("active bounty");
+        let legacy = board(&owner, &mut admitted, 0, 0).await?;
+        assert!(
+            legacy.tasks.is_empty(),
+            "legacy query keeps an empty task list while Weekly and Bounty hunts are active"
+        );
+        assert_eq!((legacy.refused, legacy.selected, legacy.kills), (false, 0, 0));
+        assert_eq!(
+            (u64::try_from(legacy.points)?, u64::try_from(legacy.bounty_points)?),
+            (selected.points, selected.bounty_points),
+        );
+        for action in [1, 2] {
+            let refused = board(&owner, &mut admitted, action, 1).await?;
+            assert_eq!(refused, wire::TaskBoardReply { refused: true, ..legacy.clone() });
+        }
+        let full = full_board(&owner, &mut admitted, 4, 0, "").await?;
+        assert!(full.weekly.started && full.weekly.kills.iter().any(|task| !task.race.is_empty()));
+        assert_eq!(full.weekly, selected.weekly);
+        assert_eq!(full.bounty, selected.bounty);
         assert_eq!(
             full_board(&owner, &mut admitted, 9, 0, "").await?.refusal,
             2

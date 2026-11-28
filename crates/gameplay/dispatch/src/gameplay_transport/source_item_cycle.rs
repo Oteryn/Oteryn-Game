@@ -416,7 +416,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // pass. Immutable SQL deadlines reconcile them without another cause.
         states.next_item_deadline_pass_us = now.saturating_add(1_000_000);
         let scope = runtime.binding().runtime_scope();
-        let mut ground_change = super::loop_move::GroundChange(Some(&self.states.loop_ground));
+        let mut change = DeadlineChange {
+            ground: super::loop_move::GroundChange(Some(&self.states.loop_ground)),
+            inventory: Some(&self.states.item_deadline_epoch),
+        };
         let result = self
             .root
             .drain_spell_item_deadlines(
@@ -428,7 +431,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         if matches!(result, Ok(0)) {
-            ground_change.0 = None;
+            change.ground.0 = None;
+            change.inventory = None;
+        }
+    }
+}
+
+// Cancelled passes and lost acknowledgements may still commit. Invalidate the
+// display projections before releasing the lane so readers re-observe custody.
+struct DeadlineChange<'a> {
+    ground: super::loop_move::GroundChange<'a>,
+    inventory: Option<&'a std::sync::atomic::AtomicU64>,
+}
+
+impl Drop for DeadlineChange<'_> {
+    fn drop(&mut self) {
+        if let Some(epoch) = self.inventory {
+            epoch.fetch_add(1, std::sync::atomic::Ordering::Release);
         }
     }
 }

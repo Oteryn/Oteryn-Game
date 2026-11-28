@@ -143,9 +143,6 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
     if value.world_reset.is_some() {
         return world_reset::check(value);
     }
-    if value.ground_container_entry.is_some() {
-        return Err(AuditError::InvalidInput);
-    }
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
     let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
@@ -167,7 +164,15 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
     {
         return Err(AuditError::InvalidInput);
     }
-    let shape = match value.corpse_entry.as_ref() {
+    let shape = if let Some(entry) = &value.ground_container_entry {
+        world_reset::check_entry(entry, &before.item_instance_id)?;
+        if entry.tree_root_item_instance_id.as_deref() != Some(cause.corpse_item_instance_id.as_slice())
+            || entry.parent_item_instance_id == cause.corpse_item_instance_id
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        DecayRetireShape::GroundContainerEntry
+    } else { match value.corpse_entry.as_ref() {
         None => {
             // The corpse's own step retires the corpse named by the cause.
             if before.item_instance_id != cause.corpse_item_instance_id {
@@ -188,7 +193,7 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
             }
             DecayRetireShape::Entry
         }
-    };
+    }};
     DECAY_RETIRE_USAGE.check()?;
     Ok(shape)
 }

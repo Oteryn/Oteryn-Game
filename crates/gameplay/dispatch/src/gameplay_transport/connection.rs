@@ -1406,15 +1406,26 @@ fn item_view_delta(
     delta: &ItemViewDelta,
 ) -> Option<(u64, Vec<u8>)> {
     let delta_sequence = sequence.checked_add(1)?;
-    let frame = encode_state_delta(
-        generation,
-        delta_sequence,
-        delta.domain_id,
-        delta.from,
-        delta.to,
-        delta.delta_type,
-        &delta.payload,
-    )
+    let frame = if delta.npc_purchase_command_ids.is_empty() {
+        encode_state_delta(
+            generation,
+            delta_sequence,
+            delta.domain_id,
+            delta.from,
+            delta.to,
+            delta.delta_type,
+            &delta.payload,
+        )
+    } else {
+        oteryn_protocol_oteryn::encode_npc_purchase_inventory_delta(
+            generation,
+            delta_sequence,
+            delta.from,
+            delta.to,
+            &delta.payload,
+            &delta.npc_purchase_command_ids,
+        )
+    }
     .ok()?;
     Some((delta_sequence, frame))
 }

@@ -111,7 +111,7 @@ use join::JoinAcceptance;
 pub use oteryn_protocol_oteryn::coin_market;
 pub use oteryn_protocol_oteryn::coin_transfer;
 pub use oteryn_protocol_oteryn::depot::{
-    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply,
+    DepotAction, DepotEntry, DepotIntent, DepotOutcome, DepotReply, DepotRequest,
 };
 /// Guild command and query wire values for the selected client feature.
 pub use oteryn_protocol_oteryn::guild;
@@ -409,6 +409,7 @@ pub struct Session<S> {
     inventory_revision: u64,
     container_revision: u64,
     inventory: Option<CharacterInventory>,
+    inventory_npc_purchase_ids: Vec<u64>,
     open_container: Option<OpenContainer>,
     container_views: Option<container_tree::ContainerViews>,
     /// `Some` exactly when capability 7 is selected.

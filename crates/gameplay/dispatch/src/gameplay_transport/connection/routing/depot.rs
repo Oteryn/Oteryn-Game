@@ -22,9 +22,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             .continuity
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1);
-        if let Ok((intent, slot)) =
-            oteryn_protocol_oteryn::depot::decode_depot_intent_at(command.payload, manual_sort)
-        {
+        if let Ok(request) = oteryn_protocol_oteryn::depot::decode_depot_request(
+            command.payload,
+            admitted.continuity.selected_capabilities.as_slice(),
+        ) {
+            let intent = request.intent;
             let item = match intent.action {
                 DepotAction::Deposit(handle) => {
                     item_view.as_ref().and_then(|view| view.resolve(handle))
@@ -63,15 +65,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 })
                 .unwrap_or_default();
             let mut observation = authority
-                .depot_at(
+                .depot_request(
                     actor,
                     UseCommand {
                         game_session_id: admitted.game_session_id,
                         command_id: command.command_id,
                         item_fence: admitted.item_fence,
                     },
-                    intent,
-                    slot,
+                    request,
                     item,
                 )
                 .await?;
