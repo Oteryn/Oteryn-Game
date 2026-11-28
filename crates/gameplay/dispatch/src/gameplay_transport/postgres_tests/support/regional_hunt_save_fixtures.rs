@@ -6,11 +6,16 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     harness: &Harness,
+    variant: &str,
 ) -> TestResult {
     use super::classic_quests_fixtures::{install, talk};
 
     // Captured with quest_definition_hashes on d481467205 and origin/main.
-    const SAVED_HASH: &str = "eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5";
+    let saved_hash = match variant {
+        "train-save" => "4a317ee678707134f01b13b2bd781e299c7d781df6bb6efb644259f7b62085d3",
+        "published-save" => "3ab25e379c74158e9a2f9a093fd6684084de2e257e6d179ac39f426268768ff1",
+        _ => "eec799aef21078c75e2e7ffaabab6e71f8c59f9310d376854f9bbe9ab57ddab5",
+    };
     let catalogue = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
     let report = offered_for(catalogue)?
         .into_iter()
@@ -25,7 +30,7 @@ pub(super) async fn exercise(
         owner,
         admitted,
         &report.quest,
-        SAVED_HASH,
+        saved_hash,
         &phase.track,
         phase.minimum,
     )
@@ -61,7 +66,7 @@ pub(super) async fn exercise(
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
-    assert_eq!(stored_hash, SAVED_HASH);
+    assert_eq!(stored_hash, saved_hash);
     assert_eq!(saved.tracks().get(&phase.track), Some(&phase.minimum));
 
     let [daniel] = install(owner, admitted, [report.npc.as_str()]).await?;

@@ -33,11 +33,15 @@ mod rafzane_elevator;
 mod reward_door;
 mod rewards;
 mod rotten_flame;
+#[cfg(test)]
+pub(super) use rotten_flame::INTERRUPT_FLAME_VISUAL;
 mod scene;
 mod scene_actors;
 mod scene_items;
 mod serpentine_lever;
 mod shared_gate;
+#[cfg(test)]
+pub(super) use shared_gate::TIMED_GATE_READ;
 mod soul_war_reward;
 mod source_transforms;
 mod timed_encounter;
@@ -107,6 +111,7 @@ struct ObservedWorldCallback {
 
 #[derive(Default)]
 pub(super) struct PendingCallbacks {
+    source_boss: std::sync::Mutex<Option<court_warlock::PendingSourceBoss>>,
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     scene_item_receipts: scene_items::SceneItemReceipts,
@@ -931,6 +936,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// A debit receipt belongs to the original World occurrence. Keep the
     /// actor and its reservation available until that occurrence is projected.
     pub(super) fn has_pending_paid_quest_callback(&self, session: GameSessionId) -> bool {
+        if self.has_pending_source_boss(session) {
+            return true;
+        }
         self.states
             .quest_callbacks
             .records
@@ -1120,7 +1128,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
-        if !self.reconcile_grizzly_boss(session).await {
+        if !self.reconcile_source_boss(session).await || !self.reconcile_grizzly_boss(session).await
+        {
             return false;
         }
         let session = match self.states.quest_callbacks.records.lock() {

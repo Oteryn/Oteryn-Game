@@ -248,10 +248,13 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(2))
             .ok_or("clock")?;
     }
-    assert_eq!(
-        use_coffin(owner, admitted, weakened, if lost_ack { 63 } else { 62 }).await?,
-        UseDisposition::Committed
-    );
+    let delivery = use_coffin(owner, admitted, weakened, if lost_ack { 63 } else { 62 });
+    let outcome = if lost_ack {
+        super::source_boss_handoff_fixtures::with_unrelated_admission(owner, delivery).await??
+    } else {
+        delivery.await?
+    };
+    assert_eq!(outcome, UseDisposition::Committed);
     let expected = if foreign_generation || ordinary_restart {
         let fallback = weakened
             .vampire_coffin_fallback()

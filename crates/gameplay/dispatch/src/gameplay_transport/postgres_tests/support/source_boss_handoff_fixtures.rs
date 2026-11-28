@@ -18,6 +18,35 @@ use crate::gameplay_transport::{
 use std::sync::Arc;
 use std::time::Duration;
 
+pub(super) async fn with_unrelated_admission<T>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    delivery: impl std::future::Future<Output = T>,
+) -> TestResult<T> {
+    use crate::foundation::{GameSessionId, MovementFacing, MovementLocalPosition};
+    use crate::gameplay_transport::quest_callbacks::PRE_SOURCE_BOSS_CHARGE;
+    let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+    let delivery = PRE_SOURCE_BOSS_CHARGE.scope(barrier.clone(), delivery);
+    tokio::pin!(delivery);
+    tokio::select! {
+        _ = &mut delivery => return Err("delivery missed its payment barrier".into()),
+        () = barrier.0.notified() => {}
+    }
+    let (observer, turned) = {
+        let mut runtime = owner.runtime.lock().await;
+        let session = GameSessionId::decode(&id(237)).map_err(debug)?;
+        let slot = runtime.reserve_fresh_session(session).map_err(debug)?;
+        let observer = runtime.commit_fresh_session(slot).map_err(debug)?;
+        runtime.initialize_pinned_test_position(observer, MovementLocalPosition { x: 80, y: 80, floor: 7 }).map_err(debug)?;
+        let before = runtime.read_actor_position(observer).map_err(debug)?;
+        let turned = runtime.borrow_movement_position().commit_turn(before, MovementFacing::East).map_err(debug)?;
+        (observer, turned)
+    };
+    barrier.1.notify_one();
+    let result = delivery.await;
+    assert_eq!(owner.runtime.lock().await.read_actor_position(observer), Ok(turned));
+    Ok(result)
+}
+
 pub(super) async fn assert_paid_handoff(
     h: &Harness,
     deps: &Dependencies,

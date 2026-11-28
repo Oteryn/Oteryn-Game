@@ -3,7 +3,7 @@ use super::*;
 use crate::content::{CollisionClass, LogicalCell};
 use crate::map::{facts::QuestCallbackProjection, view::EntryFacts};
 use oteryn_gameplay_entities::carrier::encounter_access::{
-    DetachedQuestEncounter, EncounterDefenders, StagedQuestEncounter,
+    EncounterDefenders, ReservedQuestEncounter, StagedQuestEncounter,
 };
 
 pub(super) struct PreparedPhase {
@@ -22,29 +22,25 @@ pub(super) type StagedSourceBoss<'owner> =
 
 pub(super) struct SourceBossProjection<N> {
     native: N,
-    players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
     capture: Option<EncounterCreditPublication>,
     visit: Option<EncounterVisit>,
 }
 
-impl StagedSourceBoss<'_> {
-    pub(super) fn detach(self) -> SourceBossProjection<DetachedQuestEncounter<PreparedPhase>> {
-        SourceBossProjection {
-            native: self.native.detach(),
-            players: self.players,
-            capture: self.capture,
-            visit: self.visit,
-        }
-    }
+pub(super) struct ReservedSourceBoss {
+    pub(super) native: ReservedQuestEncounter,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>,
 }
 
-impl SourceBossProjection<DetachedQuestEncounter<PreparedPhase>> {
-    pub(super) fn resume(self, runtime: &mut ChannelRuntimeV1) -> Option<StagedSourceBoss<'_>> {
-        Some(SourceBossProjection {
-            native: self.native.resume(runtime)?,
+impl StagedSourceBoss<'_> {
+    pub(super) fn reserve(self) -> Result<ReservedSourceBoss, UseDisposition> {
+        let actors = self.players.iter().map(|p| p.0).collect::<Vec<_>>();
+        Ok(ReservedSourceBoss {
+            native: self
+                .native
+                .reserve(&actors)
+                .map_err(|_| UseDisposition::Rejected)?,
             players: self.players,
-            capture: self.capture,
-            visit: self.visit,
         })
     }
 }
@@ -268,21 +264,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None,
             Some(&mut staged),
         );
-        let Some(mut staged) = staged else {
+        let Some(staged) = staged else {
             return disposition;
         };
         let [count] = staged.native.prepared().actors.as_slice() else {
             return UseDisposition::Rejected;
         };
         let count = *count;
-        // Once this ID is sent to PostgreSQL, an uncertain commit must never
-        // let a different creature inherit it from the original carrier.
-        if staged.native.retain_spawn_generation(count).is_err() {
+        let Ok(held) = staged.reserve() else {
             return UseDisposition::Rejected;
-        }
-        let staged = staged.detach();
+        };
         drop(spell_guard);
         drop(runtime_guard);
+        #[cfg(test)]
+        if let Ok(barrier) =
+            super::court_warlock::PRE_SOURCE_BOSS_CHARGE.try_with(std::sync::Arc::clone)
+        {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
         let delivery = self
             .root
             .deliver_vampire_coffin(
@@ -316,11 +316,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if matches!(delivery, Ok(true)) {
             let (mut runtime, mut states) = self.quest_turn_with(&self.states.spell_states).await;
-            let Some(staged) = staged.resume(&mut runtime) else {
-                return UseDisposition::Rejected;
-            };
-            self.publish_staged_encounter(staged, &mut states, map, coffin, Some(reservation));
-            UseDisposition::Committed
+            let published = held.native.publish(&mut runtime, |runtime| {
+                let mut staged = None;
+                self.quest_encounter(
+                    runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    map,
+                    callback,
+                    key,
+                    expected,
+                    after,
+                    false,
+                    cause,
+                    Some(reservation),
+                    None,
+                    Some(&mut staged),
+                );
+                let Some(staged) = staged else { return false };
+                if staged.players != held.players
+                    || staged.native.prepared().actors.as_slice() != [count]
+                {
+                    return false;
+                }
+                self.publish_staged_encounter(staged, &mut states, map, coffin, Some(reservation));
+                true
+            });
+            if published {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            }
         } else {
             // The payment is durable. A fresh use may recover it after an
             // abandoned delivery, including when its identity write committed.

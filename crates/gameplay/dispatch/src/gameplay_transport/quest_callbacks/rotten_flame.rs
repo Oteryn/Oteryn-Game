@@ -5,7 +5,10 @@ use crate::durability::quest_state::rotten_flame::{
 };
 use oteryn_gameplay_quests::quest::rotten_blood::flames;
 
-fn selected(map: &BundleMap, key: u64) -> Option<(u16, MovementLocalPosition, u64, u64)> {
+pub(super) fn selected(
+    map: &BundleMap,
+    key: u64,
+) -> Option<(u16, MovementLocalPosition, u64, u64)> {
     let (at, ordinal) = crate::map::view::placement_of(key)?;
     if map.facts.base_hidden(key) {
         return None;
@@ -124,6 +127,11 @@ pub(super) fn qualify(
     };
     RottenFlameUse::from_current_owner(runtime, native, actor, command, context.clone(), &reader)
 }
+#[cfg(test)]
+tokio::task_local! {
+    pub(in crate::gameplay_transport) static INTERRUPT_FLAME_VISUAL: std::cell::Cell<bool>;
+}
+
 pub(super) fn publish(runtime: &ChannelRuntimeV1, map: &BundleMap, input: &RottenFlameUse) -> bool {
     if !input.current_scope(runtime) {
         return false;
@@ -147,6 +155,13 @@ pub(super) fn publish(runtime: &ChannelRuntimeV1, map: &BundleMap, input: &Rotte
     for visual in input.visual_changes().iter().flatten() {
         if map.facts.object_revision(visual.key) == visual.revision
             && !map.facts.transform_movement_item(visual.key, visual.after)
+        {
+            return false;
+        }
+        #[cfg(test)]
+        if INTERRUPT_FLAME_VISUAL
+            .try_with(|flag| flag.replace(false))
+            .unwrap_or(false)
         {
             return false;
         }

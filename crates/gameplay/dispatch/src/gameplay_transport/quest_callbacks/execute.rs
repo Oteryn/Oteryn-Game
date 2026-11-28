@@ -94,33 +94,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let binding = runtime.binding();
         let activation = runtime.content_pin().activation_sequence();
-        // The spell lane orders writers. Observers can use the runtime while
-        // the receipt is pending. A changed placement leaves replay to reconcile it.
-        macro_rules! await_receipt {
-            ($future:expr) => {{
-                let future = $future;
-                drop(spell_guard);
-                drop(runtime_guard);
-                let result = future.await;
-                (runtime_guard, spell_guard) =
-                    self.quest_turn_with(&self.states.spell_states).await;
-                runtime = &mut *runtime_guard;
-                states = &mut *spell_guard;
-                if runtime.owner_fence().is_err()
-                    || runtime.binding() != binding
-                    || runtime.content_pin().activation_sequence() != activation
-                    || runtime.read_actor_position(actor) != Ok(initial_position)
-                    || !runtime
-                        .player_control_facts(actor, session)
-                        .is_ok_and(|facts| facts.control_loss.is_none())
-                    || states.is_dead(actor)
-                    || map.facts.object_revision(key) != expected_revision
-                {
-                    return UseDisposition::StaleState;
-                }
-                result
-            }};
-        }
         // Another user may have obtained the lane after this caller's first
         // receipt check. Only the original batch or its exact receipt can
         // release this placement for a new close.
@@ -241,28 +214,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             (pos, after)
         };
-        if map.facts.object_revision(key) != expected_revision {
+        let accepted_revision = map.facts.object_revision(key);
+        if accepted_revision != expected_revision {
             // A known-commit source visual batch may have published its first
             // fixed object before a retry. Only that retained exact post-CAS
             // revision is replayable; a later party's revision never aliases it.
-            let retained_flame = self
-                .states
-                .quest_callbacks
-                .records
-                .lock()
-                .ok()
-                .and_then(|records| records.get(&session).and_then(|p| p.flame.clone()));
+            let retained_flame =
+                self.states
+                    .quest_callbacks
+                    .records
+                    .lock()
+                    .ok()
+                    .and_then(|records| {
+                        records
+                            .get(&session)
+                            .filter(|p| {
+                                p.actor == actor
+                                    && p.cause == cause
+                                    && p.callback == callback.key
+                                    && p.key == key
+                                    && p.revision == expected_revision
+                            })
+                            .and_then(|p| p.flame.clone())
+                    });
             let replayed_visual = retained_flame.as_ref().is_some_and(|input| {
                 input.current_scope(runtime)
                     && input.visual_changes().iter().flatten().any(|visual| {
                         visual.key == key
-                            && map.facts.object_revision(key) == visual.revision + 1
+                            && visual.revision == expected_revision
+                            && visual.revision.checked_add(1) == Some(accepted_revision)
                             && after.appearance_id == visual.after
                     })
             });
             if !replayed_visual {
                 return UseDisposition::StaleState;
             }
+        }
+        let source_flame =
+            oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key).is_some();
+        let accepted_appearance = after.appearance_id;
+        // The spell lane orders writers. Observers can use the runtime while
+        // the receipt is pending. A changed placement leaves replay to reconcile it.
+        macro_rules! await_receipt {
+            ($future:expr) => {{
+                let future = $future;
+                drop(spell_guard);
+                drop(runtime_guard);
+                let result = future.await;
+                (runtime_guard, spell_guard) =
+                    self.quest_turn_with(&self.states.spell_states).await;
+                runtime = &mut *runtime_guard;
+                states = &mut *spell_guard;
+                if runtime.owner_fence().is_err()
+                    || runtime.binding() != binding
+                    || runtime.content_pin().activation_sequence() != activation
+                    || runtime.read_actor_position(actor) != Ok(initial_position)
+                    || !runtime
+                        .player_control_facts(actor, session)
+                        .is_ok_and(|facts| facts.control_loss.is_none())
+                    || states.is_dead(actor)
+                    || map.facts.object_revision(key) != accepted_revision
+                    || (source_flame
+                        && super::rotten_flame::selected(map, key)
+                            .is_none_or(|visual| visual.0 != accepted_appearance))
+                {
+                    return UseDisposition::StaleState;
+                }
+                result
+            }};
         }
         let opening;
         let callback = if callback.key == super::serpentine_lever::JOURNEY
@@ -984,8 +1003,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None => None,
             }
         };
-        let source_flame =
-            oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key).is_some();
         if !callback.is_read_only()
             && !map.facts.quest_callback_capacity(
                 key,
@@ -1153,6 +1170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 expected,
             ))
+            .allows(self.owner_now().get())
         {
             return UseDisposition::Rejected;
         }

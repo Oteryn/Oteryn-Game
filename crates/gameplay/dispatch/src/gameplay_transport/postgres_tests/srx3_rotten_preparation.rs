@@ -31,9 +31,17 @@ fn srx3_rotten_essence_already_held_actual_wire_returns_true_with_literal_feedba
 -> TestResult {
     run_flame_case(FlameCase::EssenceAlreadyHeld)
 }
+#[test]
+fn srx3_partial_flame_publication_recovers() -> TestResult {
+    for index in 0..4 {
+        run_flame_case(FlameCase::Interrupted(index))?;
+    }
+    Ok(())
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FlameCase {
     Normal,
+    Interrupted(usize),
     NoEssence,
     HistoricalGlobalActive,
     EssenceAlreadyHeld,
@@ -46,15 +54,17 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
     let result = super::kill_reward_e2e_fixtures::scenario_thread::run("srx3-bakragore-flame", move || {
         run(async |admin| {
             super::reset();
-            // Exact source walkable tile next to Murcion's literal flame.
-            let scene = SourceScene::new(
-                PinnedActivitySourceRoom::Bakragore,
-                MovementLocalPosition {
-                    x: 33084,
-                    y: 32398,
-                    floor: 15,
-                },
-            )?;
+            use oteryn_gameplay_quests::quest::rotten_blood::{ESSENCES, flames};
+            let index = match mode { FlameCase::Interrupted(i) => i, _ => 0 };
+            let source = flames::FLAMES[index];
+            let item = ESSENCES.iter().find(|item| item.track == source.storage).ok_or("source essence")?.item;
+            let [x, y, floor] = source.flame;
+            let start = MovementLocalPosition {
+                x: x + (source.pillar[0] - x).signum(),
+                y: y + (source.pillar[1] - y).signum(),
+                floor: floor.try_into()?,
+            };
+            let scene = SourceScene::new(PinnedActivitySourceRoom::Bakragore, start)?;
             let deps = scene.dependencies()?;
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_bak_flame", false, false).await?;
@@ -64,7 +74,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
             super::item_look_fixtures::seed_main_backpack(
                 &h,
                 &[(
-                    "oteryn:item.tibia.i43501",
+                    item,
                     if mode == FlameCase::EssenceAlreadyHeld {
                         2
                     } else {
@@ -106,7 +116,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
             let essence = native
                 .item_index()
                 .and_then(|index| {
-                    index.definition_ref("Item", "oteryn:item.tibia.i43501", "definition-r1")
+                    index.definition_ref("Item", item, "definition-r1")
                 })
                 .ok_or("actual source essence")?;
             let item_use =
@@ -189,12 +199,12 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                     UseDisposition::Committed,
                     "real essence USE sets its canonical flag"
                 );
-                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/storage/52280'").bind(id(41).as_slice()).fetch_one(&h.pool).await?,1);
+                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(source.storage).fetch_one(&h.pool).await?,1);
             }
             let map = owner.bundle_map().ok_or("actual captured public map")?;
             let tile = crate::map::overlay::TilePos {
-                x: 33085,
-                y: 32398,
+                x: x.try_into()?,
+                y: y.try_into()?,
                 floor: -15,
             };
             let stack = crate::map::view::compose_tile(&map.overlay, &map.facts, tile)
@@ -203,7 +213,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
             let mut selected = stack
                 .entries
                 .iter()
-                .filter(|entry| entry.facts.appearance_id == 43983);
+                .filter(|entry| entry.facts.appearance_id == source.inactive);
             let entry = selected.next().ok_or("actual inactive Murcion flame")?;
             assert!(selected.next().is_none());
             let crate::map::view::EntrySource::Base {
@@ -229,20 +239,25 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("source USE clock")?;
-            let (reply, feedback) = flame_wire(
+            let use_flame = flame_wire(
                 &owner,
                 &mut admitted,
                 if mode == FlameCase::NoEssence { 1 } else { 2 },
                 payload,
-            )
-            .await?;
+            );
+            let interrupted = matches!(mode, FlameCase::Interrupted(_));
+            let (reply, feedback) = crate::gameplay_transport::quest_callbacks::INTERRUPT_FLAME_VISUAL
+                .scope(std::cell::Cell::new(interrupted), use_flame).await?;
+            if interrupted {
+                assert!(owner.reconcile_quest_callbacks(admitted.game_session_id).await);
+            }
             assert_eq!(
                 oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-                UseDisposition::Committed,
+                if interrupted { UseDisposition::Rejected } else { UseDisposition::Committed },
                 "actual source flame USE returns true for mode {mode:?}; only Normal consumes the essence"
             );
-            if mode != FlameCase::Normal {
-                let held=sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/storage/52280'").bind(id(41).as_slice()).fetch_optional(&h.pool).await?.unwrap_or(0);
+            if !matches!(mode, FlameCase::Normal | FlameCase::Interrupted(_)) {
+                let held=sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(source.storage).fetch_optional(&h.pool).await?.unwrap_or(0);
                 assert_eq!(
                     held,
                     if mode == FlameCase::NoEssence { 0 } else { 1 },
@@ -274,7 +289,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                         .ok_or("actual unlit tile")?
                         .entries
                         .iter()
-                        .any(|entry| entry.facts.appearance_id == 43983)
+                        .any(|entry| entry.facts.appearance_id == source.inactive)
                 );
                 assert!(
                     map.facts
@@ -287,7 +302,7 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                 drop(seal);
                 return h.cleanup().await;
             }
-            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/storage/52280'").bind(id(41).as_slice()).fetch_one(&h.pool).await?,0);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2").bind(id(41).as_slice()).bind(source.storage).fetch_one(&h.pool).await?,0);
             let map = owner.bundle_map().ok_or("current source map")?;
             let after = crate::map::view::compose_tile(&map.overlay, &map.facts, tile)
                 .map_err(debug)?
@@ -296,23 +311,32 @@ fn run_flame_case(mode: FlameCase) -> TestResult {
                 after
                     .entries
                     .iter()
-                    .any(|entry| entry.facts.appearance_id == 43984),
+                    .any(|entry| entry.facts.appearance_id == source.active),
                 "the actual public flame transforms after the known commit"
             );
+            let pillar = crate::map::overlay::TilePos {
+                x: source.pillar[0].try_into()?,
+                y: source.pillar[1].try_into()?,
+                floor: -15,
+            };
+            assert!(crate::map::view::compose_tile(&map.overlay, &map.facts, pillar)
+                .map_err(debug)?.ok_or("source pillar")?.entries.iter()
+                .any(|entry| entry.facts.appearance_id == flames::PILLAR_ACTIVE));
+            assert!(!owner.has_pending_quest_callback(admitted.game_session_id));
             let flame_effects = map.facts.movement_effects_since(flame_effect_cursor);
             assert_eq!(
                 flame_effects
                     .iter()
                     .filter(|(_, at, effect)| *effect == 13
-                        && at.x == 33084
-                        && at.y == 32398
+                        && i32::from(at.x) == start.x
+                        && i32::from(at.y) == start.y
                         && at.floor == -15)
                     .count(),
                 1,
                 "source Flame USE emits one native MagicBlue at the actual activating Player"
             );
-            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-callback/rotten-blood/prepare-murcion'").fetch_one(&h.pool).await?,1);
-            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_rotten_bak_preparations WHERE character_id=encode($1,'hex')::uuid AND flavor=0 AND flame_key IS NOT NULL AND pillar_key IS NOT NULL").bind(id(41).as_slice()).fetch_one(&h.pool).await?,1,
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1").bind(source.key).fetch_one(&h.pool).await?,1);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_rotten_bak_preparations WHERE character_id=encode($1,'hex')::uuid AND flavor=$2 AND flame_key IS NOT NULL AND pillar_key IS NOT NULL").bind(id(41).as_slice()).bind(i16::try_from(index)?).fetch_one(&h.pool).await?,1,
                 "actual source burn retains one immutable scoped preparation with exact reset CAS provenance");
 
             drop(owner);

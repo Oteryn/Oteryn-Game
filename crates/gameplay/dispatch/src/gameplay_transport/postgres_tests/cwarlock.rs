@@ -371,7 +371,12 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     .store(true, Ordering::Release);
             }
             let before = owner.owner_now().get();
-            let outcome = use_lever(&owner, &admitted, &placement, 0, 4).await;
+            let lever = use_lever(&owner, &admitted, &placement, 0, 4);
+            let outcome = if mode == 5 {
+                super::source_boss_handoff_fixtures::with_unrelated_admission(&owner, lever).await?
+            } else {
+                lever.await
+            };
             let began = owner.owner_now().get();
             if interrupted {
                 assert_eq!(outcome, UseDisposition::Rejected);

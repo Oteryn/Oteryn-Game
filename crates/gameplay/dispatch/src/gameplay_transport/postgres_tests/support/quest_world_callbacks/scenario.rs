@@ -3102,9 +3102,12 @@ fn scenario_case(
             ))
             .await?;
         } else if name == "regional-hunt-save" {
-            Box::pin(super::super::regional_hunt_save_fixtures::exercise(&mut owner, &mut admitted, &h))
+            Box::pin(super::super::regional_hunt_save_fixtures::exercise(&mut owner, &mut admitted, &h, variant))
                 .await?;
         } else if name == "token-exchanges" {
+            if matches!(variant, "train-save" | "published-save") {
+                super::super::token_exchanges_fixtures::seed_unfinished_exchanges(&h, variant).await?;
+            }
             super::super::token_exchanges_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if hot_cuisine_books {
             super::super::m42_hot_cuisine_fixtures::exercise_books(&mut owner, &mut admitted, &h).await?;
@@ -3632,6 +3635,13 @@ fn scenario_case(
         } else if name == "authored-colours-opening" {
             super::super::questpc8_colours_opening_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-wrath-opening" {
+            if let Some(pin) = match variant {
+                "train-save" => Some("542b939eb16b9ce3692470efa448e7a90e5dfc3e409061960aa894cb90fd3ba6"),
+                "published-save" => Some("6eaae3ce74eaedd8e8bd32d9714a148691090c7db9ba5be350f4f7bf6584c7b6"),
+                _ => None,
+            } {
+                super::super::qc_pinned_world::seed_unfinished_state(&h, "oteryn:quest.wrath_of_the_emperor_quest", pin).await?;
+            }
             super::super::questpc8_wrath_opening_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
         } else if name == "authored-winterlight" {
             super::super::questpc8_winterlight_fixtures::exercise(&mut owner, &mut admitted, &h).await?;
