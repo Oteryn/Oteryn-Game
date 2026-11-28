@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::wheel;
 use std::{io::Write, path::PathBuf};
 
 const CORE_SLOT: usize = 20;
+const FULL_ROW_INDEX: usize = 57;
 
 fn capture(roots: &[PathBuf], name: &str, bytes: &[u8]) -> TestResult {
     for root in roots {
@@ -136,7 +137,7 @@ async fn run_capture(clients: &SeamClients<'_>) -> TestResult<String> {
     let dedicated = character_prep::dedicated_character(clients, "NODE_BOOT_Q_P06_ACCOUNT").await?;
     let scope = dedicated.clients(clients);
     let setup = async {
-        if e2e_row_selected(57) {
+        if e2e_row_selected(FULL_ROW_INDEX) {
             // In an aggregate run the preceding full row has already bought promotion and reset.
             full_row_p06::connect_eligible(&scope, 0x28).await
         } else {
