@@ -77,7 +77,7 @@ fn first_combat_tabs(tag: &str, armed: bool, first_tab: CharacterTab) -> TestRes
         let native = generation.native_gameplay().ok_or("native gameplay")?;
         super::tutorial_vitals_fixture::publish_native_activation(&h, &pin).await?;
         if armed {
-            seed(&h, false).await?;
+            seed(&h, false, None).await?;
         }
         super::tutorial_vitals_fixture::native_asset_revisions(&h, generation).await?;
         let room = pin.qualified_room().clone();
