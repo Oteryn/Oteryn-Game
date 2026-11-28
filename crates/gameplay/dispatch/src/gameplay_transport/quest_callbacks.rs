@@ -1282,7 +1282,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some((runtime, _)) = guards.as_mut() else {
                 return false;
             };
-            if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
+            let at_origin = runtime.read_actor_position(pending.actor) == Ok(pending.expected);
+            if pending.ingress_settled
+                && let Some(actors) = &pending.tomb_actors
+                && (!at_origin
+                    || map.facts.object_revision(pending.key) != pending.revision
+                    || actors
+                        .iter()
+                        .any(|actor| runtime.read_actor_position(*actor).is_err()))
+            {
+                // The receipt is settled. A later life, defender or sundial revision
+                // cannot inherit the interrupted visit.
+                drop(guards);
+                let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
+                    return false;
+                };
+                records.remove(&pending.session);
+                drop(records);
+                self.schedule_quest_refresh(pending.session);
+                continue;
+            }
+            if !at_origin {
                 return false;
             }
             let result = match observation {
