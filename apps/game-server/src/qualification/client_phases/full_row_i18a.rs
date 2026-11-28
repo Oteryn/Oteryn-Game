@@ -511,6 +511,21 @@ fn authored_wrong_floor(
     Err("step=browse-other-floor observed=no-authored-tile-within-horizontal-reach".into())
 }
 
+async fn unopened_view_barrier(client: &mut DevClientSession) -> TestResult {
+    let (outcome, _) = browse_command(
+        client,
+        browse::BrowseFieldIntent::Seek {
+            view_id: 0,
+            index: 0,
+        },
+    )
+    .await?;
+    if outcome != tree::ContainerViewOutcome::Stale {
+        return Err(format!("step=browse-barrier observed={outcome:?};needed=Stale").into());
+    }
+    Ok(())
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = open_world(clients).await?;
     let mut client = connect_world(clients, 0xf1).await?;
@@ -546,6 +561,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     })
     .ok_or("step=walk-away observed=no-route;needed:walkable-tiles-around-the-town-start")?;
     walk_once(&mut client, world, &away).await?;
+    // STEP returns at its spatial delta. Its map frames are written before the
+    // next command result, so finish setup before taking the refusal baseline.
+    let setup_landing = tile(client.world_spatial().actor_position)?;
+    unopened_view_barrier(&mut client).await?;
+    if tile(client.world_spatial().actor_position)? != setup_landing
+        || inventory(&client)? != &after_drop_relog
+    {
+        return Err("step=setup-barrier observed=unexpected-position-or-inventory".into());
+    }
     let distant = tile(client.world_spatial().actor_position)?;
     if distant.floor != t0.floor || distant.x.abs_diff(t0.x).max(distant.y.abs_diff(t0.y)) < 4 {
         return Err("step=walk-away observed=actor-not-distant".into());
@@ -574,17 +598,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     .await?;
     // Seek an unopened view as an ordered, read-only barrier. No state-changing request
     // is sent while draining the refusal's frames.
-    let (barrier, _) = browse_command(
-        &mut client,
-        browse::BrowseFieldIntent::Seek {
-            view_id: 0,
-            index: 0,
-        },
-    )
-    .await?;
+    unopened_view_barrier(&mut client).await?;
     client.service_liveness(Duration::from_secs(1)).await?;
     if refused != tree::ContainerViewOutcome::TooFar
-        || barrier != tree::ContainerViewOutcome::Stale
         || client
             .take_events()
             .iter()
@@ -593,7 +609,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         || client.inventory() != Some(&inventory_before_refusal)
         || client.session_mut().container_views() != views_before_refusal.as_ref()
     {
-        return Err(format!("step=browse-other-floor observed={refused:?} barrier={barrier:?};needed=TooFar-with-unchanged-position-inventory-and-views").into());
+        return Err(format!("step=browse-other-floor observed={refused:?};needed=TooFar-with-unchanged-position-inventory-views-and-map").into());
     }
     let view = browse_open(&mut client, world, at, t0, true).await?;
     let arrived = tile(client.world_spatial().actor_position)?;
