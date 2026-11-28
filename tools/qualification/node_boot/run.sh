@@ -754,7 +754,9 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
-stage_chat_relay_key_ring "$BASE/node/secrets"
+if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+  stage_chat_relay_key_ring "$BASE/node/secrets"
+fi
 
 cat > "$WORK/ops.toml" <<TOML
 [operator]
@@ -900,8 +902,11 @@ launch_node() { # PID variable, config, log
       read -ra fields <<< "${proc_stat##*) }"
       printf '%s\n' "${fields[19]}" > "$WORK/node-pids/$pid"
     fi
-    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" \
-      OTERYN_CHAT_RELAY_KEYS_FILE="${2%/*}/secrets/chat-relay.keys" "$BASE/bin/oteryn-game-server" \
+    local -a chat_relay_env=()
+    if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
+      chat_relay_env+=("OTERYN_CHAT_RELAY_KEYS_FILE=${2%/*}/secrets/chat-relay.keys")
+    fi
+    exec "${as_service[@]}" env "${NODE_GAMEPLAY_ENV[@]}" "${chat_relay_env[@]}" "$BASE/bin/oteryn-game-server" \
       serve --config "$2" "${NODE_NPC_ARGS[@]}"
   ) < /dev/null > /dev/null 2> "$3" &
   printf -v "$1" '%s' "$!"

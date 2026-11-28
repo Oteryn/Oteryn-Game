@@ -30,6 +30,39 @@ def function(name):
     return found.group(0) if found else ""
 
 
+class ChatRelayLaunchTests(unittest.TestCase):
+    def test_only_world_nodes_receive_the_stack_relay_key(self):
+        script = "\n".join((
+            "set -Eeuo pipefail",
+            "BASE=$1; NODE_BOOT_WORLD=$2; NODE_BOOT_UNPRIVILEGED=0",
+            "as_service=(); NODE_GAMEPLAY_ENV=(); NODE_NPC_ARGS=()",
+            function("launch_node"),
+            'launch_node node_pid "$3" "$BASE/node.log"',
+            'wait "$node_pid"',
+            'cat "$BASE/node.log"',
+        ))
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            (root / "bin").mkdir()
+            node = root / "bin/oteryn-game-server"
+            node.write_text('#!/bin/sh\nprintf "%s\\n" "${OTERYN_CHAT_RELAY_KEYS_FILE-unset}" >&2\n')
+            node.chmod(0o700)
+            environment = dict(os.environ)
+            environment.pop("OTERYN_CHAT_RELAY_KEYS_FILE", None)
+            for world, node_dir in (("0", "node"), ("1", "node"), ("1", "pvp/node")):
+                with self.subTest(world=world, node_dir=node_dir):
+                    config = root / node_dir / "node.toml"
+                    result = subprocess.run(
+                        ["bash", "-c", script, "relay-launch", work, world, config],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                        env=environment,
+                    )
+                    expected = config.parent / "secrets/chat-relay.keys" if world == "1" else "unset"
+                    self.assertEqual(result.stdout.strip(), str(expected))
+
+
 class RuntimeEvidenceTests(unittest.TestCase):
     def test_served_content_revision_is_the_characters_interpretation(self):
         # NBSEAM: the quest and Task Board owners refuse a Character whose stored progression
