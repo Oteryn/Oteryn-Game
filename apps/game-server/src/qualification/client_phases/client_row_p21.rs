@@ -146,14 +146,14 @@ async fn require_shrine_picker(
                     )
                     && !world.facts().base_hidden(key)
                 {
-                    shrines.insert((sector.floor, tile.x, tile.y, key));
+                    shrines.insert((sector.floor, tile.x, tile.y, key, item.palette));
                 }
             }
         }
         Ok(())
     })?;
     let adjacent = |at: TilePos| {
-        shrines.iter().find(|&&(floor, x, y, _)| {
+        shrines.iter().find(|&&(floor, x, y, _, _)| {
             floor == at.floor && x.abs_diff(at.x).max(y.abs_diff(at.y)) <= 1
         })
     };
@@ -162,14 +162,25 @@ async fn require_shrine_picker(
     })
     .ok_or("P21 no reachable authored imbuing shrine")?;
     walk(client, world, &path).await?;
-    let &(floor, x, y, key) = adjacent(tile(client.world_spatial().actor_position)?)
+    let &(floor, x, y, key, palette) = adjacent(tile(client.world_spatial().actor_position)?)
         .ok_or("P21 did not reach the authored imbuing shrine")?;
     let mut placement = world.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
     let result = client.session_mut().use_object(&placement, 0).await?;
+    let item = &bundle.manifest.palette[palette as usize].key;
+    let canonical_body = oteryn_protocol_oteryn::world_object::encode_use_result_with_gate(
+        result.disposition,
+        result.gate_message_id,
+    )
+    .map_err(|error| format!("P21 shrine disposition encoding: {error:?}"))?;
     evidence(&format!(
-        "P21_SHRINE_USE x={x} y={y} floor={floor} placement={key} disposition={:?}",
-        result.disposition
+        "P21_SHRINE_USE x={x} y={y} floor={floor} placement={key} item={item} bundle={} command_id={} status={:?} result_sequence={} disposition={:?} canonical_body={}",
+        hex(&world.base().digest()),
+        result.command_id,
+        result.status,
+        result.result_server_sequence,
+        result.disposition,
+        hex(&canonical_body)
     ));
     // USE_INTENT has no imbuing-picker result or event yet. A generic Use acknowledgement
     // gives no evidence that the shrine opened the picker, so block before sending Query.
