@@ -11,10 +11,13 @@ pub mod raid_warnings;
 mod state;
 mod view;
 pub use input::open_key;
-pub use state::{Intent, Panel, Section};
-pub use view::{MapPoint, discovery_speed_tooltip, map_page, map_points, map_text, panel_text};
+pub use state::{CurrentSubarea, Intent, Panel, Section};
+pub use view::{
+    MapPoint, current_subarea_text, discovery_speed_tooltip, map_page, map_points, map_text,
+    panel_text,
+};
 mod protocol;
-pub use protocol::request;
+pub use protocol::{apply_current_subarea, request};
 
 #[cfg(test)]
 mod tests;

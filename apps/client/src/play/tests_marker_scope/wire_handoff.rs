@@ -10,6 +10,9 @@ use tokio::io::DuplexStream;
 #[path = "wire_handoff/house_scope.rs"]
 mod house_scope;
 
+#[path = "../../features/0057-cyclopedia-map/tests/current_subarea.rs"]
+mod current_subarea;
+
 type Error = Box<dyn std::error::Error + Send + Sync>;
 const DEADLINE: Duration = Duration::from_secs(3);
 

@@ -8,6 +8,8 @@ mod diagnostics;
 mod exit;
 mod frame_pacing;
 mod game_ui;
+#[cfg(test)]
+pub(crate) use game_ui::check_current_subarea_and_query;
 mod gameplay_dialogs;
 mod health_circle;
 mod hints;

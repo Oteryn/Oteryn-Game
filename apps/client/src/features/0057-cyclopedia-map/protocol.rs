@@ -1,9 +1,10 @@
-use crate::play::feature_0115_mail::protocol::accepted;
+use crate::play::{Outbox, Stepper, feature_0115_mail::protocol::accepted, mailbox::lock};
 use oteryn_client_runtime::{
     cyclopedia_map as wire,
     raw_feature::{FeatureCommand, GatedCommandResult},
 };
-use oteryn_client_ui::cyclopedia_map::{Intent, Panel};
+use oteryn_client_ui::cyclopedia_map::{Intent, Panel, apply_current_subarea};
+use oteryn_session::{ActorPosition, SessionError};
 
 pub(super) const DISCOVERY_NOTICE: &str = "Subarea discovered! All seven points of interest found.";
 
@@ -32,6 +33,55 @@ impl crate::play::mailbox::Mailbox {
                 panel.discovery_banner = Some(delta.server_sequence);
             }
         }
+    }
+}
+
+impl Outbox {
+    /// Refresh only the visible map, using the confirmed position in the live session.
+    pub(in crate::play) async fn refresh_current_subarea<T: Stepper>(
+        &self,
+        session: &mut T,
+        queried: &mut Option<ActorPosition>,
+    ) -> Result<bool, SessionError> {
+        if !session.feature_selected(wire::CAPABILITY_SUBAREA_V1) {
+            return Ok(false);
+        }
+        {
+            let mut mailbox = lock(&self.0);
+            if mailbox.scope_pending || mailbox.scope_initialize {
+                return Ok(false);
+            }
+            let panel = &mut mailbox.properties.cyclopedia_map;
+            let position = if panel.open || panel.geometry.open {
+                session.world_position()
+            } else {
+                None
+            };
+            if *queried == position {
+                return Ok(false);
+            }
+            *queried = position;
+            panel.current_subarea = Default::default();
+            if position.is_none() {
+                return Ok(false);
+            }
+        }
+
+        let result = session
+            .feature(&FeatureCommand {
+                capability: wire::CAPABILITY_SUBAREA_V1,
+                kind: wire::COMMAND_TYPE_SUBAREA_QUERY,
+                payload: Vec::new(),
+            })
+            .await?;
+        // Unsolicited spatial updates can arrive before the command result.
+        if *queried == session.world_position() {
+            let panel = &mut lock(&self.0).properties.cyclopedia_map;
+            if panel.open || panel.geometry.open {
+                apply_current_subarea(panel, &result);
+            }
+        }
+        Ok(true)
     }
 }
 

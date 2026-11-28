@@ -10,6 +10,8 @@ mod coin_market;
 mod cyclopedia;
 mod cyclopedia_items;
 mod cyclopedia_map;
+#[cfg(test)]
+pub(crate) use cyclopedia_map::check_current_subarea_and_query;
 mod cyclopedia_navigation;
 #[cfg(test)]
 #[path = "cyclopedia/tests.rs"]

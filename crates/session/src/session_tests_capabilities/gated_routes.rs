@@ -16,6 +16,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         // P-C06 routes existing timed-item, cyclopedia-map and party-skull queries/intents.
         (39, &[38], &[]),
         (57, &[72, 73, 6178], &[]),
+        (93, &[109], &[]),
         (134, &[155], &[]),
         (40, &[40, 41], &[]),
         (42, &[45, 46], &[]),

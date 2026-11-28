@@ -1,14 +1,57 @@
-use super::Panel;
+use super::{CurrentSubarea, Panel};
+
+pub fn current_subarea_text(panel: &Panel) -> Option<String> {
+    let (region, subarea) = match panel.current_subarea {
+        CurrentSubarea::Unavailable => return None,
+        CurrentSubarea::Outside => return Some("Outside mapped subareas".into()),
+        CurrentSubarea::Member { region, subarea } => (region, subarea),
+    };
+    let name = |id, parent| {
+        panel
+            .geometry
+            .areas
+            .iter()
+            .find(|area| area.id == id && area.parent == parent)
+            .map(|area| area.name.as_str())
+            .or_else(|| {
+                panel
+                    .region_atlas
+                    .as_ref()?
+                    .areas
+                    .iter()
+                    .find(|area| area.id == id && area.parent == parent)
+                    .map(|area| area.name.as_str())
+            })
+            .or_else(|| {
+                panel
+                    .atlas
+                    .as_ref()?
+                    .areas
+                    .iter()
+                    .find(|area| area.id == id && area.parent == parent)
+                    .map(|area| area.name.as_str())
+            })
+            .map_or_else(|| format!("#{id}"), str::to_owned)
+    };
+    Some(format!(
+        "Current region: {} | Current subarea: {}",
+        name(region, 0),
+        name(subarea, region)
+    ))
+}
+
 pub fn panel_text(panel: &Panel) -> String {
+    let membership =
+        current_subarea_text(panel).map_or_else(String::new, |line| format!("{line}\r\n"));
     if panel.atlas.is_some() {
         return format!(
-            "Cyclopedia atlas\r\n{}\r\n{}",
+            "Cyclopedia atlas\r\n{membership}{}\r\n{}",
             super::atlas_detail(panel),
             discovery_speed_tooltip(panel)
         );
     }
     format!(
-        "Cyclopedia map\r\nWorld atlas: Ctrl+Alt+Shift+F9\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}",
+        "Cyclopedia map\r\nWorld atlas: Ctrl+Alt+Shift+F9\r\n{membership}{}\r\n{}\r\n{}\r\n{}\r\n{}",
         discovery_speed_tooltip(panel),
         panel.summary,
         super::region_atlas_view::text(panel),

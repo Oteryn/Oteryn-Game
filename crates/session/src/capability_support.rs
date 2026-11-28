@@ -76,6 +76,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     property_services::pvp_expert::CAPABILITY_PVP_EXPERT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1,
+    property_services::cyclopedia_map::CAPABILITY_SUBAREA_V1,
     // CL26s4: boss encounter prerequisite of boss rewards (224).
     property_services::character_info::CAPABILITY_CHARACTER_INFO_V1,
     oteryn_protocol_oteryn::quick_loot::CAPABILITY_QUICK_LOOT_V1,
@@ -238,6 +239,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     property_services::loop_training::CAPABILITY_TRAINING_V1,
     property_services::guild_bank::CAPABILITY_GUILD_BANK_V1,
     property_services::cyclopedia_map::CAPABILITY_CYCLOPEDIA_MAP_V1,
+    property_services::cyclopedia_map::CAPABILITY_SUBAREA_V1,
     oteryn_protocol_oteryn::house_move_out::CAPABILITY_HOUSE_MOVE_OUT_V1,
     player_trade::CAPABILITY_PLAYER_TRADE_V1,
     stash::CAPABILITY_STASH_V1,

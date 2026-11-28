@@ -57,6 +57,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     let mut read_initial_features = !outbox.scope_waiting();
     let mut query_returner = true;
     let mut bar_fallback = None;
+    let mut queried_subarea_position = None;
     'session: loop {
         if outbox.session_cancelled() {
             return;
@@ -65,6 +66,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             reset_modal(&session, &outbox, &mut modal);
         }
         if outbox.scope_needs_initialize() {
+            queried_subarea_position = None;
             if let Err(error) = super::session_initialize::initialize_scope(&session, &outbox) {
                 outbox.end(public_class(&error));
                 return;
@@ -538,7 +540,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
                 Err(error) => error,
             },
-            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => match session.serve(IDLE_SLICE).await {
+            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => match async {
+                if outbox.refresh_current_subarea(&mut session, &mut queried_subarea_position).await?
+                {
+                    return Ok(());
+                }
+                session.serve(IDLE_SLICE).await
+            }.await {
                 Ok(()) => {
                     publish(&mut session, &outbox, &mut held);
                     continue;

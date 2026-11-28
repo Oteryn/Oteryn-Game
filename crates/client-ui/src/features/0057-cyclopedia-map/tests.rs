@@ -129,3 +129,47 @@ fn exploration_layers_cycle_confirmed_floors_and_filter_pois() {
     unavailable.select_floor(false);
     assert_eq!(unavailable.floor, 0);
 }
+
+#[test]
+fn gap_0093_cyclopedia_map_reduces_current_membership_without_altering_the_atlas_selection() {
+    use oteryn_client_runtime::{
+        cyclopedia_map::{encode_current_subarea, geometry::Area},
+        raw_feature::{CommandStatus, GatedCommandResult},
+    };
+
+    let mut panel = Panel::default();
+    panel.geometry.selected = Some(42);
+    panel.geometry.areas.extend([
+        Area {
+            id: 23,
+            parent: 0,
+            name: "Thais".into(),
+        },
+        Area {
+            id: 109,
+            parent: 23,
+            name: "Ancient Temple".into(),
+        },
+    ]);
+    let mut result = GatedCommandResult {
+        status: CommandStatus::DuplicateReplay,
+        command_id: 1,
+        server_sequence: 1,
+        payload: encode_current_subarea(Some((23, 109))).to_vec(),
+    };
+    apply_current_subarea(&mut panel, &result);
+    assert_eq!(
+        current_subarea_text(&panel).as_deref(),
+        Some("Current region: Thais | Current subarea: Ancient Temple")
+    );
+    assert_eq!(panel.geometry.selected, Some(42));
+
+    result.status = CommandStatus::Rejected;
+    apply_current_subarea(&mut panel, &result);
+    assert_eq!(current_subarea_text(&panel), None);
+
+    result.status = CommandStatus::Accepted;
+    apply_current_subarea(&mut panel, &result);
+    panel.invalidate_atlas();
+    assert_eq!(current_subarea_text(&panel), None);
+}

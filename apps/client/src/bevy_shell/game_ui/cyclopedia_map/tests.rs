@@ -28,6 +28,24 @@ fn has_text(app: &mut App, text: &str) -> bool {
         .iter(app.world())
         .any(|t| t.0.contains(text))
 }
+pub(crate) fn check_current_subarea_and_query(
+    link: crate::play::PlayLink,
+    current_subarea: &str,
+) -> Result<(), String> {
+    let mut app = fixture(link).map_err(|error| error.to_string())?;
+    assert!(has_text(&mut app, current_subarea));
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| {
+            (action.kind == Kind::Explore(Intent::Query)).then_some(entity)
+        })
+        .ok_or("missing exploration status control")?;
+    app.world_mut().trigger(Activate { entity });
+    Ok(())
+}
+
 fn has_window_title(app: &mut App) -> bool {
     app.world_mut()
         .query::<(&Text, &ChildOf)>()

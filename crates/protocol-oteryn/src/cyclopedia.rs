@@ -22,6 +22,20 @@ pub fn encode_current_subarea(membership: Option<(u32, u32)>) -> [u8; 9] {
     }
     bytes
 }
+
+pub fn decode_current_subarea(bytes: &[u8]) -> Result<Option<(u32, u32)>, MapWireError> {
+    if bytes.len() != 9 {
+        return Err(MapWireError);
+    }
+    let region = u32::from_le_bytes(bytes[1..5].try_into().map_err(|_| MapWireError)?);
+    let subarea = u32::from_le_bytes(bytes[5..9].try_into().map_err(|_| MapWireError)?);
+    match (bytes[0], region, subarea) {
+        (0, 0, 0) => Ok(None),
+        (1, 1.., 1..) => Ok(Some((region, subarea))),
+        _ => Err(MapWireError),
+    }
+}
+
 pub const MAX_REQUEST_BYTES: usize = 9;
 pub const MAX_RESULT_BYTES: usize = 30 + 8 * 5;
 
@@ -188,6 +202,26 @@ fn decode_result_in(
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+    #[test]
+    fn gap_0093_current_subarea_decodes_the_existing_reply_layout() {
+        let membership = Some((0x1234, 0x5678));
+        let bytes = [1, 0x34, 0x12, 0, 0, 0x78, 0x56, 0, 0];
+        assert_eq!(encode_current_subarea(membership), bytes);
+        assert_eq!(decode_current_subarea(&bytes), Ok(membership));
+        assert_eq!(decode_current_subarea(&[0; 9]), Ok(None));
+
+        for invalid in [
+            [2, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0],
+            [1, 1, 0, 0, 0, 0, 0, 0, 0],
+        ] {
+            assert_eq!(decode_current_subarea(&invalid), Err(MapWireError));
+        }
+        assert_eq!(decode_current_subarea(&bytes[..8]), Err(MapWireError));
+        assert_eq!(decode_current_subarea(&[0; 10]), Err(MapWireError));
+    }
+
     #[test]
     fn cyclopedia_codec_rejects_invalid_and_bounds_results() {
         assert!(decode_request(72, &[]).is_ok());

@@ -303,6 +303,9 @@ fn project(
         owner.generation(),
         Subject::Map,
     );
+    if let Some(text) = oteryn_client_ui::cyclopedia_map::current_subarea_text(&panel) {
+        label(&mut commands, &skins, root, text);
+    }
     let bar = commands
         .spawn(Node {
             flex_wrap: FlexWrap::Wrap,
@@ -566,3 +569,5 @@ fn project(
 }
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) use tests::check_current_subarea_and_query;

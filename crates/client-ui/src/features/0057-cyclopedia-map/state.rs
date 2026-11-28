@@ -9,6 +9,17 @@ pub enum Intent {
     Find,
     Donate,
 }
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum CurrentSubarea {
+    #[default]
+    Unavailable,
+    Outside,
+    Member {
+        region: u32,
+        subarea: u32,
+    },
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
     pub geometry: super::geometry::Atlas,
@@ -27,6 +38,7 @@ pub struct Panel {
     pub discovery_banner: Option<u64>,
     pub discovery_notice_sequence: u64,
     pub selected: bool,
+    pub current_subarea: CurrentSubarea,
     pub raid_warnings_selected: bool,
     pub raid_warnings: super::raid_warnings::Warnings,
     pub open: bool,
@@ -140,6 +152,7 @@ impl Panel {
 
 impl Panel {
     pub fn invalidate_atlas(&mut self) {
+        self.current_subarea = CurrentSubarea::Unavailable;
         self.geometry = Default::default();
         self.raid_warnings = Default::default();
         self.region_atlas = None;

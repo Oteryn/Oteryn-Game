@@ -1,17 +1,20 @@
 {
   "mechanic": "0093-subarea",
   "kind": "handlers",
-  "id": "0093-subarea-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0093-subarea-command-109",
+  "status": "supported",
   "commands": [
     109
   ],
+  "capability": 93,
+  "direction": "client_to_server",
+  "entry_owner": "session",
+  "entry": "gated_command.rs::gated_command",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "state": "Current membership is held by the Cyclopedia Map panel (0057).",
+    "protocol": "The negotiated Session command route uses the Cyclopedia wire codec.",
+    "view": "The Cyclopedia Map panel (0057) displays the current region and subarea.",
+    "input": "Opening the Cyclopedia Map enables refresh from confirmed actor location.",
+    "settings": "Current membership has no persistent client settings."
   }
 }
