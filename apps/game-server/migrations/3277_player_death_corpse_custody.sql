@@ -1,5 +1,17 @@
 -- A new death drop names its corpse placement and any replacement bag. The
 -- nullable fields preserve the receipts and proofs of historical loose drops.
+DO $player_death_corpse_custody$
+BEGIN
+-- The migration installs its schema and guard arms atomically. A direct
+-- reapply must leave the installed definitions intact, including later arms.
+IF EXISTS (
+ SELECT 1 FROM pg_constraint
+ WHERE conrelid='game_player_death_item_records'::regclass
+   AND conname='game_player_death_corpse_destination'
+) THEN
+ RETURN;
+END IF;
+
 ALTER TABLE game_player_death_item_records
  ADD COLUMN destination_corpse_id UUID REFERENCES game_item_instances(item_instance_id),
  ADD COLUMN destination_ordinal NUMERIC(20,0),
@@ -105,7 +117,7 @@ END
 $$;
 
 DO $migration$
-DECLARE body TEXT; amended TEXT; signature TEXT; anchor TEXT;
+DECLARE body TEXT; amended TEXT; signature TEXT; anchor TEXT; begin_end INTEGER;
 BEGIN
  FOREACH signature IN ARRAY ARRAY[
   'game_player_death_corpse_custody(uuid)','game_player_death_corpse_mint_proven(uuid)',
@@ -167,8 +179,11 @@ BEGIN
       RETURN NULL;
     END IF;
     $arm$ END;
-  IF position(E'\nBEGIN\n' IN body)=0 THEN RAISE EXCEPTION 'missing placement proof: %',signature; END IF;
-  EXECUTE overlay(body placing E'\nBEGIN\n'||anchor FROM position(E'\nBEGIN\n' IN body) FOR 7);
+  -- 3056 writes its packed-purchase arm on the same line as BEGIN.
+  -- Insert after the keyword and preserve every byte of the preceding body.
+  begin_end:=regexp_instr(body,E'(?n)^[ \t]*BEGIN\\M',1,1,1,'i');
+  IF begin_end=0 THEN RAISE EXCEPTION 'missing placement proof: %',signature; END IF;
+  EXECUTE overlay(body placing E'\n'||anchor||E'\n' FROM begin_end FOR 0);
  END LOOP;
 END
 $migration$;
@@ -294,3 +309,5 @@ BEGIN
  $arm$ FROM begin_at FOR 5);
 END
 $migration$;
+END
+$player_death_corpse_custody$;
