@@ -816,6 +816,20 @@ class CloudRunSummaryTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertIn(f'STAGE_STATUS={status}', result.stdout)
 
+    def test_w15c_full_fails_without_fresh_capture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "node.log"
+            log.write_text("SEAM_EVIDENCE e2e_all scenario=W15c.full status=PASS\n")
+            result = subprocess.run(
+                [sys.executable, str(HERE / "client_replay.py"), str(log)],
+                env=dict(os.environ, OTERYN_E2E_ROW_BATCH="298:1", E2E_ALL_CAPTURE_DIR=tmp),
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("scenario=W15c.full replay=e2e_w15c", result.stdout)
+            self.assertIn("status=FAIL cause=capture-missing", result.stdout)
+
     def test_client_replay_verdicts(self):
         cases = [
             (False, 0, 1, 'PASS', 'FAIL cause=capture-missing', False),
