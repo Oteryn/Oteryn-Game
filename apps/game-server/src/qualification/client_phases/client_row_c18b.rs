@@ -43,12 +43,24 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("C18b.client expected level 120, got {level}").into());
     }
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world
+        if !world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
+        {
+            return false;
+        }
+        let cursor = (0..3).try_fold(at, |from, _| {
+            destination(world, from, StepDirection::East).filter(|to| to.floor == at.floor)
+        });
+        cursor.is_some_and(|to| {
+            world
+                .base()
+                .tile(to.x, to.y, to.floor)
+                .is_some_and(|tile| !tile.protection_zone())
+        })
     })
-    .ok_or("C18b.client needs reachable non-PZ tile")?;
+    .ok_or("C18b.client needs a reachable non-PZ firing tile with an open east cursor line")?;
     walk(&mut client, world, &path).await?;
     let here = client.world_spatial().actor_position;
     let target = SpellTargetPosition {
@@ -100,10 +112,11 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let delta = outcome
         .actor_vitals_delta
         .ok_or("C18b.client cast omitted actor-vitals delta")?;
-    if delta.server_sequence <= outcome.result_server_sequence
-        || delta.value.mana != expected_mana
-        || delta.value.soul != before.soul
-    {
+    let expected = oteryn_protocol_oteryn::actor_spell::ActorVitals {
+        mana: expected_mana,
+        ..before
+    };
+    if delta.server_sequence <= outcome.result_server_sequence || delta.value != expected {
         return Err(format!(
             "C18b.client cast did not debit mana in the applied vitals: {before:?} -> {:?}",
             delta.value
