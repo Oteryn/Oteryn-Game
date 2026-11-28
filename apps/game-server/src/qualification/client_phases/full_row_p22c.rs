@@ -9,6 +9,7 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{CommandStatus, cyclopedia_tracker as tr};
 use sqlx::Connection;
 
+const BAT: &str = "oteryn:creature.bat";
 const RAT: &str = "oteryn:creature.rat";
 
 // The same character is used for all three admissions and the durable lookup.
@@ -104,20 +105,19 @@ fn change(action: tr::TrackerAction, key: &str) -> tr::TrackerRequest {
     }
 }
 
-fn expected_bestiary(tracked: bool) -> tr::TrackerSnapshot {
+fn expected_bestiary(keys: &[&str]) -> tr::TrackerSnapshot {
     tr::TrackerSnapshot {
         boss: false,
-        entries: if tracked {
-            vec![tr::TrackerEntry {
-                creature_key: RAT.to_owned(),
+        entries: keys
+            .iter()
+            .map(|key| tr::TrackerEntry {
+                creature_key: (*key).to_owned(),
                 kill_count: 0,
-                // Crystal Rat unlocks, also pinned in Oteryn's creature profile.
+                // Both creatures are common, trivial Bestiary entries in Global.
                 thresholds: [10, 100, 250],
                 completed: false,
-            }]
-        } else {
-            Vec::new()
-        },
+            })
+            .collect(),
     }
 }
 
@@ -168,21 +168,22 @@ fn expect_command_snapshot(
     )
 }
 
-fn expect_durable(rows: &[(i16, String)], tracked: bool, step: &str) -> TestResult {
-    let matches = if tracked {
-        matches!(rows, [(1, key)] if key == RAT)
-    } else {
-        rows.is_empty()
-    };
-    expect(matches, step, rows)
+fn expect_durable(rows: &[(i16, String)], keys: &[&str], step: &str) -> TestResult {
+    expect(
+        rows.iter()
+            .map(|(kind, key)| (*kind, key.as_str()))
+            .eq(keys.iter().map(|key| (1, *key))),
+        step,
+        rows,
+    )
 }
 
 async fn durable(clients: &SeamClients<'_>) -> TestResult<Vec<(i16, String)>> {
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
-    // Two rows suffice to distinguish the only valid outcomes: empty or exactly one Rat.
+    // The expected list has at most two rows. Fetch one extra to detect any surplus.
     let rows = sqlx::query_as(
         "SELECT tracker_kind, creature_key FROM game_character_cyclopedia_tracker \
-         WHERE character_id=encode($1,'hex')::uuid ORDER BY tracker_kind, creature_key LIMIT 2",
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY tracker_kind, creature_key LIMIT 3",
     )
     .bind(clients.characters[CHARACTER_INDEX].as_slice())
     .fetch_all(&mut connection)
@@ -193,8 +194,9 @@ async fn durable(clients: &SeamClients<'_>) -> TestResult<Vec<(i16, String)>> {
 async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
     let best = tr::COMMAND_TYPE_BESTIARY_TRACKER;
     let read = tr::TrackerRequest::Read;
-    let empty = expected_bestiary(false);
-    let tracked = expected_bestiary(true);
+    let empty = expected_bestiary(&[]);
+    let baseline = expected_bestiary(&[BAT]);
+    let tracked = expected_bestiary(&[BAT, RAT]);
     let mut client = connect_tracker(clients, 0xd3).await?;
     check_login(&mut client, &empty)?;
     expect_command_snapshot(
@@ -202,13 +204,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         &empty,
         "read-before-add",
     )?;
-    expect_durable(&durable(clients).await?, false, "durable-before-add")?;
+    expect_durable(&durable(clients).await?, &[], "durable-before-baseline")?;
+    // Track Bat through the same wire command so a faulty Rat mutation cannot clear it.
+    expect_command_snapshot(
+        call(&mut client, best, &change(tr::TrackerAction::Add, BAT)).await?,
+        &baseline,
+        "add-bat",
+    )?;
+    expect_durable(&durable(clients).await?, &[BAT], "durable-before-add")?;
     expect_command_snapshot(
         call(&mut client, best, &change(tr::TrackerAction::Add, RAT)).await?,
         &tracked,
         "add",
     )?;
-    expect_durable(&durable(clients).await?, true, "durable-after-add")?;
+    expect_durable(&durable(clients).await?, &[BAT, RAT], "durable-after-add")?;
     logout(&mut client).await?;
 
     let mut client = connect_tracker(clients, 0xd4).await?;
@@ -218,22 +227,22 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<Verdict> {
         &tracked,
         "read-after-relog",
     )?;
-    expect_durable(&durable(clients).await?, true, "durable-after-relog")?;
+    expect_durable(&durable(clients).await?, &[BAT, RAT], "durable-after-relog")?;
     expect_command_snapshot(
         call(&mut client, best, &change(tr::TrackerAction::Remove, RAT)).await?,
-        &empty,
+        &baseline,
         "remove",
     )?;
     logout(&mut client).await?;
 
     let mut client = connect_tracker(clients, 0xd5).await?;
-    check_login(&mut client, &empty)?;
+    check_login(&mut client, &baseline)?;
     expect_command_snapshot(
         call(&mut client, best, &read).await?,
-        &empty,
+        &baseline,
         "read-after-remove-relog",
     )?;
-    expect_durable(&durable(clients).await?, false, "durable-after-remove")?;
+    expect_durable(&durable(clients).await?, &[BAT], "durable-after-remove")?;
     logout(&mut client).await?;
     Ok((
         "PASS",
@@ -300,8 +309,8 @@ mod tests {
 
     #[test]
     fn tracker_checks_reject_missing_stale_and_wrong_lists() {
-        let tracked = expected_bestiary(true);
-        let empty = expected_bestiary(false);
+        let tracked = expected_bestiary(&[BAT, RAT]);
+        let empty = expected_bestiary(&[]);
         let boss = tr::TrackerSnapshot {
             boss: true,
             entries: Vec::new(),
@@ -318,10 +327,16 @@ mod tests {
         let mut duplicate = tracked.clone();
         duplicate.entries.push(tracked.entries[0].clone());
         let mut spurious = duplicate.clone();
-        spurious.entries[1].creature_key = "oteryn:creature.bat".to_owned();
+        spurious.entries[2].creature_key = "oteryn:creature.cave_rat".to_owned();
         let mut wrong_progress = tracked.clone();
         wrong_progress.entries[0].kill_count = 1;
-        for wrong in [empty.clone(), duplicate, spurious, wrong_progress] {
+        for wrong in [
+            empty.clone(),
+            expected_bestiary(&[RAT]),
+            duplicate,
+            spurious,
+            wrong_progress,
+        ] {
             let payload = frame(&wrong, &boss);
             assert!(expect_login_snapshot(Some((1, 1, &payload)), &tracked).is_err());
             assert!(
@@ -333,11 +348,11 @@ mod tests {
             expect_command_snapshot((CommandStatus::Accepted, Some(tracked)), &empty, "pre-add")
                 .is_err()
         );
-        assert!(expect_durable(&[(1, RAT.to_owned())], false, "pre-add").is_err());
+        assert!(expect_durable(&[(1, RAT.to_owned())], &[BAT], "pre-add").is_err());
         assert!(
             expect_durable(
                 &[(1, RAT.to_owned()), (2, "unexpected".to_owned())],
-                true,
+                &[BAT, RAT],
                 "test"
             )
             .is_err()
