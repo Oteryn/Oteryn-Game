@@ -105,7 +105,9 @@ async fn relog(
     }
     // Premium refresh runs asynchronously on admission. Wait for this session's
     // authority evidence before issuing the single purchase or checking Wheel.
-    tokio::time::timeout(Duration::from_secs(8), async {
+    // Allow the normal 1/2/4/8-second refresh backoff to settle on the
+    // disposable node's single database holder while servicing the connection.
+    tokio::time::timeout(Duration::from_secs(25), async {
         loop {
             let observed = premium_evidence(clients).await?;
             if let Some((revision, 1, 1)) = observed
@@ -116,7 +118,7 @@ async fn relog(
                 ));
                 return Ok::<_, Box<dyn std::error::Error>>(());
             }
-            tokio::time::sleep(Duration::from_millis(100)).await;
+            client.service_liveness(Duration::from_millis(100)).await?;
         }
     })
     .await
