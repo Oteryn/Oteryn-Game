@@ -30,6 +30,8 @@ mod native;
 mod native_tests;
 #[path = "session_ingress/pending_use.rs"]
 mod pending_use;
+#[path = "session_ingress/receipt_recovery.rs"]
+mod receipt_recovery;
 pub(super) use pending_use::{TerrainQuestController, UseReceipt};
 
 #[derive(Default)]
@@ -55,6 +57,7 @@ struct PendingDelivery {
     command: u64,
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
+    reply_receipt: Option<crate::durability::command_receipt::ReplyReceipt>,
     buffered_step: bool,
 }
 
@@ -526,6 +529,7 @@ impl SessionCommandStream {
                     command,
                     selected: self.selected,
                     proven_native: None,
+                    reply_receipt: None,
                     buffered_step: false,
                 });
                 state.reconciled_sequence = None;

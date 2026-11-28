@@ -251,6 +251,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(Unavailable);
         }
+        self.recover_reply_receipt(retry, &lost, attempt.last_applied_server_sequence)
+            .await?;
         self.states
             .command_ingress
             .recover_trade_continuity(&mut lost)

@@ -58,6 +58,7 @@ pub mod character_wheel;
 pub mod charm_state;
 pub mod chat_text;
 pub mod coin_exchange;
+pub mod command_receipt;
 pub mod consume_transform;
 mod consume_transform_audit;
 pub mod consume_transform_cosmetics;

@@ -38,7 +38,7 @@ fn canonical(request: &PlayerReportRequest, position: PlayerReportPosition) -> V
     })
 }
 
-fn reply(result: &Value) -> Result<PlayerReportReply> {
+pub(super) fn reply(result: &Value) -> Result<PlayerReportReply> {
     let field = |name| {
         result
             .get(name)

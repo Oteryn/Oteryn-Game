@@ -124,15 +124,5 @@ pub(super) async fn execute(
     if !is_query && result.get("code").and_then(serde_json::Value::as_u64) == Some(1) {
         owner.states.chat.vip.invalidate();
     }
-    wire::encode_result(
-        u8::try_from(result.get("code")?.as_u64()?).ok()?,
-        result.get("revision")?.as_u64()?,
-        result.get("number")?.as_u64()?,
-        u8::try_from(result.get("wait")?.as_u64()?).ok()?,
-        &result
-            .get("view")
-            .map(serde_json::Value::to_string)
-            .unwrap_or_default(),
-    )
-    .ok()
+    crate::durability::vip::encode_receipt(&result)
 }

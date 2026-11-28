@@ -328,6 +328,7 @@ where
             route::StepAction::Dispatch(dispatch) => dispatch,
         }
     } else {
+        session.commands.track_reply_receipt(command);
         route::execute(stream, authority, session, command, &mut outcome).await?
     };
     if let Dispatch::Training(result) = &dispatch

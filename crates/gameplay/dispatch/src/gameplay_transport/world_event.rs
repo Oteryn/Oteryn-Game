@@ -18,6 +18,11 @@ pub(super) async fn dispatch(
     authority.world_event(command).await
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static STALL_QUERY_COMMIT: std::cell::Cell<bool>;
+}
+
 pub(super) async fn query(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
@@ -31,17 +36,24 @@ pub(super) async fn query(
     {
         return Some(Err(()));
     }
-    match owner
-        .root
-        .query_world_event(
-            owner.character,
-            owner.holder,
-            fence,
-            command.command_id,
-            owner.reset_epoch,
-        )
-        .await
-    {
+    let query = owner.root.query_world_event(
+        owner.character,
+        owner.holder,
+        fence,
+        command.command_id,
+        owner.reset_epoch,
+    );
+    #[cfg(test)]
+    let query = async {
+        if STALL_QUERY_COMMIT.try_with(|_| ()).is_ok() {
+            let (result, stalled) = crate::durability::with_stalled_commit_response(query).await;
+            STALL_QUERY_COMMIT.with(|reached| reached.set(stalled));
+            result
+        } else {
+            query.await
+        }
+    };
+    match query.await {
         Ok(bytes) => Some(Ok(bytes)),
         Err(CharacterProgressionError::Unavailable(_)) => None,
         Err(_) => Some(Err(())),

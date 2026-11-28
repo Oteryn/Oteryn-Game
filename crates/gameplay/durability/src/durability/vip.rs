@@ -10,7 +10,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::premium::PremiumStatus;
-use oteryn_protocol_oteryn::vip::{Operation, Request};
+use oteryn_protocol_oteryn::vip::{self as wire, Operation, Request};
 use serde_json::{Value, json};
 use sqlx::{Acquire, Postgres, Row, Transaction};
 
@@ -50,6 +50,21 @@ fn canonical(request: &Request) -> Value {
 fn rejected() -> Value {
     json!({"code":10,"revision":0,"number":0,"wait":0})
 }
+/// Produce the normal VIP wire payload from an immutable durable result.
+pub fn encode_receipt(result: &Value) -> Option<Vec<u8>> {
+    wire::encode_result(
+        u8::try_from(result.get("code")?.as_u64()?).ok()?,
+        result.get("revision")?.as_u64()?,
+        result.get("number")?.as_u64()?,
+        u8::try_from(result.get("wait")?.as_u64()?).ok()?,
+        &result
+            .get("view")
+            .map(serde_json::Value::to_string)
+            .unwrap_or_default(),
+    )
+    .ok()
+}
+
 async fn replay(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
