@@ -103,6 +103,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if logout.result != Some(LogoutResult::Accepted) {
         return Err(format!("C19a final logout refused: {logout:?}").into());
     }
+    evidence("C19A_PG_ASSERTIONS status=PASS prestate=empty poststate=one relog=same_instance");
     Ok(format!(
         "backpack_ref={backpack_ref} capture={capture_id} durable_instance={}",
         persisted.0
@@ -110,16 +111,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
-        .await
-    {
-        Ok(Ok(observed)) => evidence(&format!(
-            "e2e_all scenario=C19a.client status=PASS evidence={observed}"
-        )),
-        Ok(Err(error)) => evidence(&format!(
-            "e2e_all scenario=C19a.client status=FAIL evidence={}",
-            error.to_string().replace(' ', "_")
-        )),
-        Err(_) => evidence("e2e_all scenario=C19a.client status=FAIL evidence=timeout"),
-    }
+    let started = std::time::Instant::now();
+    let (status, detail) =
+        match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
+            .await
+        {
+            Ok(Ok(observed)) => ("PASS", observed),
+            Ok(Err(error)) => ("FAIL", error.to_string().replace(' ', "_")),
+            Err(_) => ("FAIL", "timeout".to_owned()),
+        };
+    evidence(&format!(
+        "e2e_all scenario=C19a.client status={status} seconds={:.3} evidence={detail}",
+        started.elapsed().as_secs_f64()
+    ));
 }
